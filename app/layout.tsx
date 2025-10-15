@@ -12,9 +12,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "CampusLyan",
-  description: "En ny plattform för studenter att hitta sitt nästa boende – skapad av studenter, för studenter.",
+  description: "En ny plattform för studenter att hitta sitt nästa boende – skapad av studenter, för studenter."
 };
 
 export default function RootLayout({
