@@ -8,10 +8,10 @@ import { useState, useEffect } from 'react';
 
 export default function Home() {
   const imageLogos = [
-    { src: "/logos/campuslyan-logo.svg", alt: "Logo 1", href: "https://example1.com" },
-    { src: "/logos/campuslyan-logo.svg", alt: "Logo 2", href: "https://example2.com" },
-    { src: "/logos/campuslyan-logo.svg", alt: "Logo 3", href: "https://example3.com" },
-    { src: "/logos/campuslyan-logo.svg", alt: "Logo 4", href: "https://example4.com" },
+    { src: "/logos/campuslyan-logo.svg", alt: "Logo 1", href: "https://campuslyan.se" },
+    { src: "/logos/campuslyan-logo.svg", alt: "Logo 2", href: "https://campuslyan.se" },
+    { src: "/logos/campuslyan-logo.svg", alt: "Logo 3", href: "https://campuslyan.se" },
+    { src: "/logos/campuslyan-logo.svg", alt: "Logo 4", href: "https://campuslyan.se" },
   ];
 
   // Dynamisk höjd och hastighet för LogoLoop beroende på skärmstorlek
@@ -84,7 +84,7 @@ Här kan du snart hitta lediga studentlägenheter, hyra ut rum och upptäcka sam
 
         {/* PARTNERS / LOGOLOOP */}
         <div className="w-full mt-10 flex flex-col items-center">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-700 mb-4">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-700 mb-8">
             Våra samarbetspartners
           </h3>
           <div className="w-full" style={{ height: `${logoHeight + 20}px` }}>
