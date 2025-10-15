@@ -33,14 +33,6 @@ export default function Home() {
           >
             Kontakta oss
           </a>
-          <a
-            href="https://www.linkedin.com/company/campuslyan/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 rounded-full border border-green-900 text-green-900 hover:bg-green-50 transition"
-          >
-            Följ oss på LinkedIn
-          </a>
         </div>
 
         {/* SOCIALA MEDIER */}
