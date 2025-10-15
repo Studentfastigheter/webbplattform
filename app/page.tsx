@@ -120,7 +120,7 @@ Här kan du snart hitta lediga studentlägenheter, hyra ut rum och upptäcka sam
 
       {/* FOOTER */}
       <footer className="mt-16 text-sm sm:text-base text-gray-500 text-center">
-        © {new Date().getFullYear()} CampusLyan AB – Alla rättigheter förbehållna.
+        © {new Date().getFullYear()} CampusLyan – Alla rättigheter förbehållna.
       </footer>
     </div>
   );
