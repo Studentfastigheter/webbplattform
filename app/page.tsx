@@ -6,7 +6,7 @@ export default function Home() {
       <main className="flex flex-col gap-10 items-center text-center max-w-2xl">
         {/* LOGO */}
         <Image
-          src="https://www.dropbox.com/scl/fi/uh3g03s182f9grcscjrch/UniStay-Logga-2.png?rlkey=43agd8o8zjs4kjilkoit2q6ni&st=4d8v1rw0&dl=0&raw=1"
+          src="/campuslyan-logo.png"
           alt="CampusLyan logo"
           width={180}
           height={180}
@@ -45,41 +45,14 @@ export default function Home() {
 
         {/* SOCIALA MEDIER */}
         <div className="flex gap-6 mt-8">
-          <a
-            href="https://www.linkedin.com/company/campuslyan/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/linkedin-icon-dark-2x.png"
-              alt="LinkedIn"
-              width={28}
-              height={28}
-            />
+          <a href="https://www.linkedin.com/company/campuslyan/" target="_blank" rel="noopener noreferrer">
+            <Image src="/icon-linkedin.svg" alt="LinkedIn" width={28} height={28} />
           </a>
-          <a
-            href="https://www.facebook.com/profile.php?id=61582374446085"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/facebook-icon-dark-2x.png"
-              alt="Facebook"
-              width={28}
-              height={28}
-            />
+          <a href="https://www.facebook.com/profile.php?id=61582374446085" target="_blank" rel="noopener noreferrer">
+            <Image src="/icon-facebook.svg" alt="Facebook" width={28} height={28} />
           </a>
-          <a
-            href="https://www.instagram.com/campuslyanse/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/instagram-icon-dark-2x.png"
-              alt="Instagram"
-              width={28}
-              height={28}
-            />
+          <a href="https://www.instagram.com/campuslyanse/" target="_blank" rel="noopener noreferrer">
+            <Image src="/icon-instagram.svg" alt="Instagram" width={28} height={28} />
           </a>
         </div>
       </main>
