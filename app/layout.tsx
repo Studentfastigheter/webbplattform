@@ -15,9 +15,6 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "CampusLyan",
   description: "En ny plattform för studenter att hitta sitt nästa boende – skapad av studenter, för studenter.",
-  icons: {
-    icon: "/favicon.png", // 🔥 Loggan i fliken
-  },
 };
 
 export default function RootLayout({

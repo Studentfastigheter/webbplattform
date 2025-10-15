@@ -6,7 +6,7 @@ export default function Home() {
       <main className="flex flex-col gap-10 items-center text-center max-w-2xl">
         {/* LOGO */}
         <Image
-          src="/campuslyan-logo.png"
+          src="/campuslyan-logo.svg"
           alt="CampusLyan logo"
           width={180}
           height={180}
@@ -16,7 +16,7 @@ export default function Home() {
 
         {/* RUBRIK */}
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-          Välkommen till <span className="text-green-900">CampusLyan</span>
+          Välkommen till <span className="text-[#004225]">CampusLyan</span>
         </h1>
 
         {/* TEXT */}
@@ -29,7 +29,7 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <a
             href="mailto:info@campuslyan.se"
-            className="px-6 py-3 rounded-full bg-green-900 text-white hover:bg-green-800 transition"
+            className="px-6 py-3 rounded-full bg-[#004225] text-white hover:bg-green-800 transition"
           >
             Kontakta oss
           </a>
