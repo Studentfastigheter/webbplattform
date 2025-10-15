@@ -2,101 +2,91 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+    <div className="font-sans grid grid-rows-[1fr_auto] min-h-screen items-center justify-items-center bg-gray-50 text-gray-800 p-8 sm:p-20">
+      <main className="flex flex-col gap-10 items-center text-center max-w-2xl">
+        {/* LOGO */}
         <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo" 
-          width={180} 
-          height={38}
-          priority 
+          src="https://www.dropbox.com/scl/fi/uh3g03s182f9grcscjrch/UniStay-Logga-2.png?rlkey=43agd8o8zjs4kjilkoit2q6ni&st=4d8v1rw0&dl=0&raw=1"
+          alt="CampusLyan logo"
+          width={180}
+          height={180}
+          className="rounded-xl"
+          priority
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Welcome to CampusLyan{" "} 
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
+        {/* RUBRIK */}
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          Välkommen till <span className="text-green-900">CampusLyan</span>
+        </h1>
+
+        {/* TEXT */}
+        <p className="text-gray-600 leading-relaxed text-base sm:text-lg">
+          En ny plattform för studenter att hitta sitt nästa boende – skapad av studenter, för studenter.  
+          Här kan du snart hitta lediga studentlägenheter, hyra ut rum och upptäcka samarbeten med stora studentbostadsbolag.
+        </p>
+
+        {/* CTA */}
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href="mailto:info@campuslyan.se"
+            className="px-6 py-3 rounded-full bg-green-900 text-white hover:bg-green-800 transition"
+          >
+            Kontakta oss
+          </a>
+          <a
+            href="https://www.linkedin.com/company/campuslyan/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3 rounded-full border border-green-900 text-green-900 hover:bg-green-50 transition"
+          >
+            Följ oss på LinkedIn
+          </a>
+        </div>
+
+        {/* SOCIALA MEDIER */}
+        <div className="flex gap-6 mt-8">
+          <a
+            href="https://www.linkedin.com/company/campuslyan/"
             target="_blank"
             rel="noopener noreferrer"
           >
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/linkedin-icon-dark-2x.png"
+              alt="LinkedIn"
+              width={28}
+              height={28}
             />
-            Deploy now
           </a>
           <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href="https://www.facebook.com/profile.php?id=61582374446085"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Read our docs
+            <Image
+              src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/facebook-icon-dark-2x.png"
+              alt="Facebook"
+              width={28}
+              height={28}
+            />
+          </a>
+          <a
+            href="https://www.instagram.com/campuslyanse/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/instagram-icon-dark-2x.png"
+              alt="Instagram"
+              width={28}
+              height={28}
+            />
           </a>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* FOOTER */}
+      <footer className="mt-16 text-sm text-gray-500">
+        © {new Date().getFullYear()} CampusLyan AB – Alla rättigheter förbehållna.
       </footer>
     </div>
   );
