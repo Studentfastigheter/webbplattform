@@ -9,9 +9,9 @@ import { useState, useEffect } from 'react';
 export default function Home() {
   const imageLogos = [
     { src: "/logos/campuslyan-logo.svg", alt: "Logo 1", href: "https://campuslyan.se" },
-    { src: "/logos/SGS-logo.svg", alt: "Logo 2", href: "https://sgs.se" },
+    { src: "/logos/sgs-logo.svg", alt: "Logo 2", href: "https://sgs.se" },
     { src: "/logos/campuslyan-logo.svg", alt: "Logo 3", href: "https://campuslyan.se" },
-    { src: "/logos/SGS-logo.svg", alt: "Logo 4", href: "https://sgs.se" },
+    { src: "/logos/sgs-logo.svg", alt: "Logo 4", href: "https://sgs.se" },
   ];
 
   // Dynamisk höjd och hastighet för LogoLoop beroende på skärmstorlek
