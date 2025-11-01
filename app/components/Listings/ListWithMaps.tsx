@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import ListingCard from "./ListingCard";
 import type { Listing } from "../MapFunctionality/MapView";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const MapView = dynamic(() => import("../MapFunctionality/MapView"), { ssr: false });
 
@@ -18,6 +19,7 @@ type ApiResp = {
 
 export default function ListWithMap() {
   const params = useSearchParams();
+  const { token, ready } = useAuth();
   const [data, setData] = useState<ApiResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -32,13 +34,15 @@ export default function ListWithMap() {
   }, [params, page]);
 
   useEffect(() => {
+    if (!ready) return;
     setLoading(true);
-    fetch(`/api/listings?${qs}`, { cache: "no-store" })
+    const url = token ? `/api/listings/secure?${qs}` : `/api/listings?${qs}`;
+    fetch(url, { cache: "no-store", headers: token ? { Authorization: `Bearer ${token}` } : undefined })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(setData)
       .catch(() => setData({ items: [], page: 0, size: 12, total: 0, totalPages: 0 }))
       .finally(() => setLoading(false));
-  }, [qs]);
+  }, [qs, token, ready]);
 
   const items = data?.items ?? [];
 

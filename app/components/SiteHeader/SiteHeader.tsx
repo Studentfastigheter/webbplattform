@@ -4,15 +4,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
-  const navLinks = [
+  const navLinks = user ? [
+    { href: "/listings", label: "Annonser" },
+  ] : [
     { href: "/listings", label: "Annonser" },
     { href: "/register", label: "Registrera" },
-    { href: "/login", label: "Login" },
+    { href: "/login", label: "Logga in" },
   ];
 
   return (
@@ -49,6 +53,12 @@ export default function SiteHeader() {
               </Link>
             );
           })}
+          {user && (
+            <>
+              <span className="text-foreground/70">{user.email}</span>
+              <button className="btn" onClick={logout}>Logga ut</button>
+            </>
+          )}
         </nav>
 
         {/* Mobile menu toggle */}
@@ -79,6 +89,11 @@ export default function SiteHeader() {
                 {link.label}
               </Link>
             ))}
+            {user && (
+              <button className="btn" onClick={() => { logout(); setOpen(false); }}>
+                Logga ut
+              </button>
+            )}
           </nav>
         </div>
       )}
