@@ -10,6 +10,8 @@ export default function RelevantQueues() {
   const { school } = useSchool();
   const { token, user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     if (!school?.id) { setRows([]); return; }
@@ -34,13 +36,27 @@ export default function RelevantQueues() {
         <div>
           <button
             className="btn btn-primary"
+            disabled={posting}
             onClick={async () => {
               if (!token) return;
-              await fetch(`/api/queues/join-all?schoolId=${school.id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+              setPosting(true); setMsg(null);
+              try {
+                const res = await fetch(`/api/queues/join-all?schoolId=${school.id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+                if (!res.ok) throw new Error(await res.text().catch(()=>res.statusText));
+                // refresh relevant queues list
+                const fresh = await fetch(`/api/schools/${school.id}/queues`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined, cache: 'no-store' }).then(r=>r.ok?r.json():[]);
+                setRows(fresh || []);
+                setMsg('Du står nu i alla relevanta köer.');
+              } catch (e:any) {
+                setMsg(e.message || 'Kunde inte gå med i köerna.');
+              } finally {
+                setPosting(false);
+              }
             }}
           >
-            Gå med i alla köer nära skolan
+            {posting ? 'Lägger till…' : 'Gå med i alla köer nära skolan'}
           </button>
+          {msg && <div className="text-sm text-brand mt-2">{msg}</div>}
         </div>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
