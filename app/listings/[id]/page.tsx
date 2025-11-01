@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
+import { useSchool } from '@/context/SchoolContext';
 
 type ListingPublic = {
   id: number;
@@ -26,22 +27,33 @@ type ListingPrivate = ListingPublic & {
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { token, ready } = useAuth();
+  const { school } = useSchool();
   const [data, setData] = useState<ListingPublic | ListingPrivate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [activities, setActivities] = useState<Array<{id:number;name:string;category:string;distanceKm:number}> | null>(null);
 
   useEffect(() => {
     if (!ready) return;
     if (!id) return;
     setLoading(true);
-    const url = token ? `/api/listings/${id}/secure` : `/api/listings/${id}`;
+    const qs = school?.id ? `?schoolId=${school.id}` : '';
+    const url = token ? `/api/listings/${id}/secure${qs}` : `/api/listings/${id}${qs}`;
     fetch(url, { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : undefined })
       .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(new Error(t || r.statusText))))
       .then(setData)
       .catch(e => setError(e.message || 'Kunde inte ladda annonsen'))
       .finally(() => setLoading(false));
-  }, [id, token, ready]);
+  }, [id, token, ready, school?.id]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/listings/${id}/activities?radiusKm=1.5`, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : [])
+      .then(setActivities)
+      .catch(() => setActivities([]));
+  }, [id]);
 
   if (!ready || loading) return <main className="container-page"><div className="section">Laddar…</div></main>;
   if (error) return <main className="container-page"><div className="section" style={{color:'crimson'}}>{error}</div></main>;
@@ -57,7 +69,7 @@ export default function ListingDetailPage() {
             <Image src={data.imageUrl || '/placeholder.svg'} alt={data.title} fill className="object-cover" />
           </div>
           <h1 className="h1 mb-2">{data.title}</h1>
-          <div className="text-muted mb-4">{data.city}</div>
+          <div className="text-muted mb-4">{data.city}{('distanceToSchoolKm' in data && (data as any).distanceToSchoolKm) ? ` • ${(data as any).distanceToSchoolKm.toFixed(1)} km till ${school?.name}` : ''}</div>
           {'description' in data && data.description && (
             <p className="leading-relaxed whitespace-pre-line">{data.description}</p>
           )}
@@ -90,6 +102,18 @@ export default function ListingDetailPage() {
             <Actions companyId={(data as ListingPrivate).companyId!} listingId={data.id} onMessage={setActionMsg} />
           )}
           {actionMsg && <div className="text-brand">{actionMsg}</div>}
+          <div className="card">
+            <div className="font-semibold mb-1">Nära aktiviteter</div>
+            {!activities && <div className="text-sm text-muted">Laddar…</div>}
+            {activities && activities.length === 0 && <div className="text-sm text-muted">Inga träffar i närheten.</div>}
+            {activities && activities.length > 0 && (
+              <ul className="text-sm space-y-1">
+                {activities.slice(0,8).map(a => (
+                  <li key={a.id} className="flex items-center justify-between"><span>{a.name} <span className="subtle">({a.category})</span></span><span className="subtle">{a.distanceKm.toFixed(1)} km</span></li>
+                ))}
+              </ul>
+            )}
+          </div>
         </aside>
       </section>
     </main>
@@ -130,4 +154,3 @@ function Actions({ companyId, listingId, onMessage }:{ companyId: number; listin
     </div>
   );
 }
-

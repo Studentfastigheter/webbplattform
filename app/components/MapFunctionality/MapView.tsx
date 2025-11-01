@@ -12,6 +12,7 @@ export type Listing = {
   latitude?: number | null;
   longitude?: number | null;
   imageUrl?: string | null; // används inte i kartan
+  distanceToSchoolKm?: number | null;
 };
 
 /** Skapa pil-ikon (SVG) som data-URL */

@@ -6,6 +6,7 @@ import ListingCard from "./ListingCard";
 import type { Listing } from "../MapFunctionality/MapView";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useSchool } from "@/context/SchoolContext";
 
 const MapView = dynamic(() => import("../MapFunctionality/MapView"), { ssr: false });
 
@@ -20,6 +21,7 @@ type ApiResp = {
 export default function ListWithMap() {
   const params = useSearchParams();
   const { token, ready } = useAuth();
+  const { school } = useSchool();
   const [data, setData] = useState<ApiResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -30,8 +32,9 @@ export default function ListWithMap() {
     const s = new URLSearchParams(params.toString());
     s.set("page", String(page));
     s.set("size", "12");
+    if (school?.id) s.set("schoolId", String(school.id));
     return s.toString();
-  }, [params, page]);
+  }, [params, page, school?.id]);
 
   useEffect(() => {
     if (!ready) return;

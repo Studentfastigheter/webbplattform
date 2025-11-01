@@ -4,6 +4,7 @@ import "./globals.css";
 import SiteHeader from "./components/SiteHeader/SiteHeader";
 import SiteFooter from "./components/SiteFooter/SiteFooter";
 import { AuthProvider } from "@/context/AuthContext";
+import { SchoolProvider } from "@/context/SchoolContext";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -19,9 +20,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="sv">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans bg-background text-foreground`}>
         <AuthProvider>
-          <SiteHeader />
-          <main className="container-page">{children}</main>
-          <SiteFooter />
+          <SchoolProvider>
+            <SiteHeader />
+            <main className="container-page">{children}</main>
+            <SiteFooter />
+          </SchoolProvider>
         </AuthProvider>
       </body>
     </html>

@@ -25,10 +25,13 @@ export default function ListingCard({
             fill
             className="object-cover"
           />
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-2 left-2 flex gap-2">
             <span className="badge badge-brand">
               {typeof l.price === "number" ? `${l.price} kr/mån` : "Pris ej angivet"}
             </span>
+            {typeof (l as any).distanceToSchoolKm === 'number' && (
+              <span className="badge">{(l as any).distanceToSchoolKm.toFixed(1)} km</span>
+            )}
           </div>
         </div>
 

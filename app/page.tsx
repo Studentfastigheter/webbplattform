@@ -2,6 +2,8 @@ import Intro from "./components/Intro";
 import Sponsors from "./components/Sponsors";
 import MapSection from "./components/MapFunctionality/MapSelection";
 import Suggested from "./components/Listings/Suggested";
+import SchoolSelector from "./components/School/SchoolSelector";
+import RelevantQueues from "./components/Queues/RelevantQueues";
 
 export default function HomePage() {
   return (
@@ -19,12 +21,20 @@ export default function HomePage() {
 
       {/* Karta */}
       <section className="section">
-        <MapSection />
+        <SchoolSelector />
+        <div className="mt-6">
+          <MapSection />
+        </div>
       </section>
 
       {/* Förslag under kartan */}
       <section className="section">
         <Suggested />
+      </section>
+
+      {/* Relevanta köer för vald skola */}
+      <section className="section">
+        <RelevantQueues />
       </section>
 
     </div>

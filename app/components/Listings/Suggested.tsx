@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSchool } from '@/context/SchoolContext';
 
 type Item = {
   id: number;
@@ -15,14 +16,16 @@ type Item = {
 type ApiResp = { items: Item[] };
 
 export default function Suggested() {
+  const { school } = useSchool();
   const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
-    fetch('/api/listings?size=10', { cache: 'no-store' })
+    const fetchUrl = school ? `/api/schools/${school.id}/listings?radiusKm=10&size=12` : '/api/listings?size=10';
+    fetch(fetchUrl, { cache: 'no-store' })
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then((data: ApiResp) => setItems(data.items || []))
+      .then((data: any) => setItems((data.items || data) as Item[]))
       .catch(() => setItems([]));
-  }, []);
+  }, [school?.id]);
 
   if (items.length === 0) return null;
 
@@ -40,10 +43,13 @@ export default function Suggested() {
                 </div>
                 <div className="font-semibold line-clamp-1">{l.title}</div>
                 <div className="text-muted text-sm">{l.city || '—'}</div>
-                <div className="mt-1">
+                <div className="mt-1 flex gap-2 items-center">
                   <span className="badge badge-brand">
                     {typeof l.price === 'number' ? `${l.price} kr/mån` : 'Pris ej angivet'}
                   </span>
+                  {typeof (l as any).distanceToSchoolKm === 'number' && (
+                    <span className="badge">{(l as any).distanceToSchoolKm.toFixed(1)} km</span>
+                  )}
                 </div>
               </article>
             </Link>
@@ -53,4 +59,3 @@ export default function Suggested() {
     </section>
   );
 }
-

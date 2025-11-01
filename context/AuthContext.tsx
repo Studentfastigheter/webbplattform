@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
-type User = { id: number; ssn: string; email: string; createdAt: string };
+type User = { id: number; ssn: string; email: string; createdAt: string; schoolId?: number | null; schoolName?: string | null };
 type LoginResp = { accessToken: string; user: User };
 
 type AuthCtx = {
@@ -55,4 +55,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
-
