@@ -11,6 +11,7 @@ type ListingPublic = {
   city: string;
   price: number;
   imageUrl?: string | null;
+  companyName?: string | null;
 };
 
 type ListingPrivate = ListingPublic & {
@@ -18,6 +19,8 @@ type ListingPrivate = ListingPublic & {
   longitude?: number | null;
   description?: string | null;
   address?: string | null;
+  companyId?: number | null;
+  userQueueDays?: number | null;
 };
 
 export default function ListingDetailPage() {
@@ -26,6 +29,7 @@ export default function ListingDetailPage() {
   const [data, setData] = useState<ListingPublic | ListingPrivate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -63,6 +67,15 @@ export default function ListingDetailPage() {
             <div className="text-sm text-muted">Hyra</div>
             <div className="text-2xl font-semibold">{data.price} kr/mån</div>
           </div>
+          <div className="card">
+            <div className="text-sm text-muted mb-1">Uthyres av</div>
+            <div className="font-semibold">{data.companyName || '—'}</div>
+            {isPrivate && 'userQueueDays' in data && (
+              <div className="mt-2 text-sm">
+                Dina ködagar hos {data.companyName || 'bolaget'}: <b>{(data as ListingPrivate).userQueueDays ?? 0}</b>
+              </div>
+            )}
+          </div>
           {isPrivate ? (
             <div className="card">
               <div className="text-sm text-muted mb-1">Adress</div>
@@ -73,9 +86,48 @@ export default function ListingDetailPage() {
               Logga in för att se adress och mer info.
             </div>
           )}
+          {isPrivate && 'companyId' in data && (data as ListingPrivate).companyId && (
+            <Actions companyId={(data as ListingPrivate).companyId!} listingId={data.id} onMessage={setActionMsg} />
+          )}
+          {actionMsg && <div className="text-brand">{actionMsg}</div>}
         </aside>
       </section>
     </main>
+  );
+}
+
+function Actions({ companyId, listingId, onMessage }:{ companyId: number; listingId: number; onMessage: (m:string)=>void }) {
+  const { token } = useAuth();
+  const [joining, setJoining] = useState(false);
+  const [interested, setInterested] = useState(false);
+
+  const join = async () => {
+    if (!token) { onMessage('Logga in för att gå med i kö.'); return; }
+    setJoining(true); onMessage('');
+    try {
+      const res = await fetch(`/api/queues/join?companyId=${companyId}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(await res.text().catch(()=>res.statusText));
+      onMessage('Du står nu i kön.');
+    } catch (e:any) { onMessage(e.message || 'Kunde inte gå med i kön.'); }
+    finally { setJoining(false); }
+  };
+
+  const interest = async () => {
+    if (!token) { onMessage('Logga in för att intresseanmäla.'); return; }
+    setInterested(true); onMessage('');
+    try {
+      const res = await fetch(`/api/listings/${listingId}/interest`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(await res.text().catch(()=>res.statusText));
+      onMessage('Intresseanmälan skickad.');
+    } catch (e:any) { onMessage(e.message || 'Kunde inte skicka intresse.'); }
+    finally { setInterested(false); }
+  };
+
+  return (
+    <div className="card space-y-2">
+      <button className="btn btn-outline" onClick={join} disabled={joining}>{joining ? 'Lägger till…' : 'Gå med i kö'}</button>
+      <button className="btn btn-primary" onClick={interest} disabled={interested}>{interested ? 'Skickar…' : 'Intresseanmälan'}</button>
+    </div>
   );
 }
 

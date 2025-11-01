@@ -13,6 +13,7 @@ export default function SiteHeader() {
 
   const navLinks = user ? [
     { href: "/listings", label: "Annonser" },
+    { href: "/queues", label: "Köer" },
   ] : [
     { href: "/listings", label: "Annonser" },
     { href: "/register", label: "Registrera" },
