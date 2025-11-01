@@ -1,27 +1,173 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
+/* ─────────────────────────────────────────────
+   Light theme (default) – CampusLyan design
+────────────────────────────────────────────── */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --brand: #004225;
+  --border: #e5e7eb;
+  --muted: #6b7280;
+
+  /* Lås sajten till light mode */
+  color-scheme: light;
 }
 
+/* ─────────────────────────────────────────────
+   Koppla variablerna till Tailwind tokens
+────────────────────────────────────────────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
+/* ─────────────────────────────────────────────
+   Bas
+────────────────────────────────────────────── */
+html, body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+img, svg, video, canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--brand) 25%, transparent);
+  color: #fff;
+}
+
+/* ─────────────────────────────────────────────
+   Layout helpers
+────────────────────────────────────────────── */
+.container-page {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+.section { padding-block: 3.5rem; }
+.section-sm { padding-block: 2rem; }
+
+/* ─────────────────────────────────────────────
+   Cards
+────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+/* ─────────────────────────────────────────────
+   Buttons
+────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .7rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  transition: .15s ease;
+}
+.btn:hover { filter: brightness(1.02); }
+
+.btn-primary {
+  background: var(--brand);
+  color: white;
+  border-color: transparent;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.btn-outline:hover {
+  background: color-mix(in oklab, var(--brand) 8%, transparent);
+}
+
+/* ─────────────────────────────────────────────
+   Typography
+────────────────────────────────────────────── */
+.h1 {
+  font-size: clamp(28px, 5vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.h2 {
+  font-size: clamp(22px, 3.5vw, 32px);
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────
+   Leaflet
+────────────────────────────────────────────── */
+/* Leaflet popup styling */
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 6px;
+}
+
+.leaflet-popup-tip {
+  display: none; /* renare look */
+}
+
+.leaflet-container {
+  background: #f9fafb;
+}
+
+.map-shell {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  min-height: 420px;
+}
+
+/* ─────────────────────────────────────────────
+   Header / Footer
+────────────────────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  background: color-mix(in oklab, var(--background) 85%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slideDown {
+  animation: slideDown .18s ease-out;
+}
