@@ -56,7 +56,7 @@ export default function SiteHeader() {
           {user && (
             <>
               <span className="text-foreground/70">{user.email}</span>
-              <button className="btn" onClick={logout}>Logga ut</button>
+              <button className="btn btn-outline" onClick={logout}>Logga ut</button>
             </>
           )}
         </nav>

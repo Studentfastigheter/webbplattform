@@ -29,21 +29,22 @@ export default function LoginPage() {
   };
 
   return (
-    <main style={{ maxWidth: 420, margin: '40px auto', padding: 16 }}>
-      <h1 style={{ marginBottom: 16 }}>Logga in</h1>
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          E‑post
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
-        </label>
-        <label>
-          Lösenord
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
-        </label>
-        <button type="submit" disabled={loading}>{loading ? 'Loggar in…' : 'Logga in'}</button>
-      </form>
-      {err && <p style={{ color: 'crimson', marginTop: 12 }}>{err}</p>}
+    <main className="container-page">
+      <section className="section" style={{ maxWidth: 520, margin: '0 auto' }}>
+        <h1 className="h1 mb-4">Logga in</h1>
+        <form onSubmit={onSubmit} className="form card shadow-soft">
+          <div className="fieldset">
+            <label className="label">E‑post</label>
+            <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+          </div>
+          <div className="fieldset">
+            <label className="label">Lösenord</label>
+            <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+          </div>
+          <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Loggar in…' : 'Logga in'}</button>
+        </form>
+        {err && <p className="subtle" style={{ color: 'crimson', marginTop: 12 }}>{err}</p>}
+      </section>
     </main>
   );
 }
-

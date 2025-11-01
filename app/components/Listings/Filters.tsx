@@ -38,43 +38,58 @@ export default function Filters() {
   }
 
   return (
-    <aside className="card">
+    <aside className="card shadow-soft">
       <div className="font-semibold mb-3">Filtrera</div>
 
       <div className="grid gap-3">
-        <input
-          className="border border-border rounded-md px-3 py-2"
-          placeholder="Sök titel eller stad"
-          value={q}
-          onChange={(e)=>setQ(e.target.value)}
-        />
-
-        <input
-          className="border border-border rounded-md px-3 py-2"
-          placeholder="Stad (t.ex. Göteborg)"
-          value={city}
-          onChange={(e)=>setCity(e.target.value)}
-        />
-
-        <div className="grid grid-cols-2 gap-3">
+        <div className="fieldset">
+          <label className="label">Sök</label>
           <input
-            className="border border-border rounded-md px-3 py-2"
-            placeholder="Min pris"
-            inputMode="numeric"
-            value={minPrice}
-            onChange={(e)=>setMinPrice(e.target.value.replace(/\D/g,''))}
-          />
-          <input
-            className="border border-border rounded-md px-3 py-2"
-            placeholder="Max pris"
-            inputMode="numeric"
-            value={maxPrice}
-            onChange={(e)=>setMaxPrice(e.target.value.replace(/\D/g,''))}
+            className="input"
+            placeholder="Titel eller stad"
+            value={q}
+            onChange={(e)=>setQ(e.target.value)}
           />
         </div>
 
-        <button className="btn btn-outline" onClick={reset}>Rensa filter</button>
+        <div className="fieldset">
+          <label className="label">Stad</label>
+          <input
+            className="input"
+            placeholder="t.ex. Göteborg"
+            value={city}
+            onChange={(e)=>setCity(e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="fieldset">
+            <label className="label">Min pris</label>
+            <input
+              className="input"
+              placeholder="0"
+              inputMode="numeric"
+              value={minPrice}
+              onChange={(e)=>setMinPrice(e.target.value.replace(/\D/g,''))}
+            />
+          </div>
+          <div className="fieldset">
+            <label className="label">Max pris</label>
+            <input
+              className="input"
+              placeholder="15000"
+              inputMode="numeric"
+              value={maxPrice}
+              onChange={(e)=>setMaxPrice(e.target.value.replace(/\D/g,''))}
+            />
+          </div>
+        </div>
+
+        <div>
+          <button className="btn btn-outline" onClick={reset}>Rensa filter</button>
+        </div>
       </div>
     </aside>
   );
 }
+

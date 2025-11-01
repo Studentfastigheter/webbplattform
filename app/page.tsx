@@ -1,6 +1,7 @@
 import Intro from "./components/Intro";
 import Sponsors from "./components/Sponsors";
 import MapSection from "./components/MapFunctionality/MapSelection";
+import Suggested from "./components/Listings/Suggested";
 
 export default function HomePage() {
   return (
@@ -19,6 +20,11 @@ export default function HomePage() {
       {/* Karta */}
       <section className="section">
         <MapSection />
+      </section>
+
+      {/* Förslag under kartan */}
+      <section className="section">
+        <Suggested />
       </section>
 
     </div>

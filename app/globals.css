@@ -8,8 +8,11 @@
   --background: #ffffff;
   --foreground: #171717;
   --brand: #004225;
+  --brand-600: #0a7a4a;
+  --brand-50: #e8f1ed;
   --border: #e5e7eb;
   --muted: #6b7280;
+  --muted-bg: #f7f8f9;
 
   /* Lås sajten till light mode */
   color-scheme: light;
@@ -32,7 +35,7 @@
    Bas
 ────────────────────────────────────────────── */
 html, body {
-  background: var(--background);
+  background: var(--muted-bg);
   color: var(--foreground);
   height: 100%;
   margin: 0;
@@ -67,6 +70,8 @@ img, svg, video, canvas {
 .section { padding-block: 3.5rem; }
 .section-sm { padding-block: 2rem; }
 
+.shadow-soft { box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.06); }
+
 /* ─────────────────────────────────────────────
    Cards
 ────────────────────────────────────────────── */
@@ -76,6 +81,8 @@ img, svg, video, canvas {
   border-radius: 14px;
   padding: 1rem;
 }
+.card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.06); }
+.card-flat { border-radius: 12px; border: 1px solid var(--border); background: #fff; }
 
 /* ─────────────────────────────────────────────
    Buttons
@@ -97,6 +104,7 @@ img, svg, video, canvas {
   color: white;
   border-color: transparent;
 }
+.btn-primary:hover { background: var(--brand-600); }
 
 .btn-outline {
   background: transparent;
@@ -107,6 +115,24 @@ img, svg, video, canvas {
 .btn-outline:hover {
   background: color-mix(in oklab, var(--brand) 8%, transparent);
 }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--foreground);
+  border-color: transparent;
+}
+
+/* Forms */
+.label { font-size: .9rem; color: var(--muted); margin-bottom: .25rem; display: block; }
+.input { border: 1px solid var(--border); border-radius: 10px; padding: .7rem .9rem; width: 100%; background: #fff; }
+.input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 15%, transparent); }
+.fieldset { display: grid; gap: .5rem; }
+.form { display: grid; gap: .9rem; }
+
+/* Badges */
+.badge { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .6rem; border-radius: 9999px; font-size: .78rem; border: 1px solid var(--border); background: #fff; color: var(--muted); }
+.badge-brand { border-color: transparent; background: var(--brand-50); color: var(--brand); }
+.pill { border: 1px solid var(--border); border-radius: 9999px; padding: .4rem .75rem; }
 
 /* ─────────────────────────────────────────────
    Typography
@@ -121,6 +147,10 @@ img, svg, video, canvas {
   font-size: clamp(22px, 3.5vw, 32px);
   font-weight: 700;
 }
+
+.subtle { color: var(--muted); }
+.text-brand { color: var(--brand); }
+.text-muted { color: var(--muted); }
 
 /* ─────────────────────────────────────────────
    Leaflet
@@ -155,7 +185,7 @@ img, svg, video, canvas {
   top: 0;
   z-index: 50;
   backdrop-filter: blur(8px);
-  background: color-mix(in oklab, var(--background) 85%, transparent);
+  background: color-mix(in oklab, #fff 85%, transparent);
   border-bottom: 1px solid var(--border);
 }
 

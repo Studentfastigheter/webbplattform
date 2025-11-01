@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Listing } from "../MapFunctionality/MapView";
 
 export default function ListingCard({
@@ -11,29 +12,35 @@ export default function ListingCard({
   onLeave?: () => void;
 }) {
   return (
-    <article
-      className="card hover:shadow-sm transition"
-      onMouseEnter={() => onHover?.(l.id)}
-      onMouseLeave={() => onLeave?.()}
-    >
-      <div className="relative w-full h-40 rounded-md overflow-hidden mb-3 bg-gray-100">
-        <Image
-          src={l.imageUrl || "/placeholder.jpg"}
-          alt={l.title}
-          fill
-          className="object-cover"
-        />
-      </div>
+    <Link href={`/listings/${l.id}`} className="block">
+      <article
+        className="card transition shadow-soft"
+        onMouseEnter={() => onHover?.(l.id)}
+        onMouseLeave={() => onLeave?.()}
+      >
+        <div className="relative w-full h-48 rounded-md overflow-hidden mb-3 bg-gray-100">
+          <Image
+            src={l.imageUrl || "/placeholder.svg"}
+            alt={l.title}
+            fill
+            className="object-cover"
+          />
+          <div className="absolute top-2 left-2">
+            <span className="badge badge-brand">
+              {typeof l.price === "number" ? `${l.price} kr/mån` : "Pris ej angivet"}
+            </span>
+          </div>
+        </div>
 
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="font-semibold">{l.title}</div>
-          <div className="text-muted text-sm">{l.city || "—"}</div>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="font-semibold line-clamp-1">{l.title}</div>
+            <div className="text-muted text-sm">{l.city || "—"}</div>
+          </div>
+          <div className="hidden sm:block text-sm pill">Visa ➜</div>
         </div>
-        <div className="font-semibold">
-          {typeof l.price === "number" ? `${l.price} kr/mån` : "—"}
-        </div>
-      </div>
-    </article>
+      </article>
+    </Link>
   );
 }
+
