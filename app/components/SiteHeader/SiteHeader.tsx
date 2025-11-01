@@ -12,7 +12,7 @@ export default function SiteHeader() {
   const navLinks = [
     { href: "/listings", label: "Annonser" },
     { href: "/register", label: "Registrera" },
-    { href: "/calc", label: "Miniräknare" },
+    { href: "/login", label: "Login" },
   ];
 
   return (
