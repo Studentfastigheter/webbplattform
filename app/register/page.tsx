@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ ssn: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { login } = useAuth();
+  const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
 
     if (!form.ssn || !form.email || !form.password) {
       setError("Fyll i alla fält.");
@@ -39,9 +41,9 @@ export default function RegisterPage() {
         throw new Error(msg);
       }
 
-      const user = await res.json();
-      setSuccess(`Konto skapat! Användar-ID: ${user.id}`);
-      setForm({ ssn: "", email: "", password: "" });
+      // Logga in direkt efter lyckad registrering
+      await login(form.email, form.password);
+      router.push("/listings");
     } catch (err: any) {
       setError(err.message ?? "Något gick fel.");
     } finally {
@@ -98,12 +100,8 @@ export default function RegisterPage() {
           {error && (
             <p className="subtle" style={{ color: 'crimson' }} role="alert">{error}</p>
           )}
-          {success && (
-            <p className="text-brand" role="status">{success}</p>
-          )}
         </form>
       </section>
     </main>
   );
 }
-

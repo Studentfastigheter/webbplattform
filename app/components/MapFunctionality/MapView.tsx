@@ -2,7 +2,7 @@
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type Listing = {
   id: number;
@@ -11,7 +11,7 @@ export type Listing = {
   price?: number;
   latitude?: number | null;
   longitude?: number | null;
-  imageUrl?: string | null; // används inte i kartan
+  imageUrl?: string | null;
   distanceToSchoolKm?: number | null;
 };
 
@@ -41,6 +41,25 @@ function svgIcon(color: string, size = 28, height = 42) {
 
 const iconDefault = svgIcon("#004225");           // CampusLyan-grön
 const iconHighlight = svgIcon("#0a7a4a", 32, 48); // större & ljusare vid hover/selekt
+
+function priceIconHtml(price?: number) {
+  const label = typeof price === 'number' ? `${price} kr/mån` : '—';
+  return `<div class="price-marker-inner">${label}</div>`;
+}
+
+function priceDivIcon(price?: number) {
+  return new L.DivIcon({
+    className: 'price-marker',
+    html: priceIconHtml(price),
+    iconAnchor: [30, 30]
+  });
+}
+
+function imageDivIcon(url?: string | null) {
+  const safe = url || '/placeholder.svg';
+  const html = `<div class=\"image-marker-inner\"><img src=\"${safe}\" alt=\"\" /></div>`;
+  return new L.DivIcon({ className: 'image-marker', html, iconAnchor: [42, 64] });
+}
 
 // Fit på data
 function FitOnData({
@@ -74,10 +93,12 @@ export default function MapView({
   listings,
   selectedId,
   onMarkerClick,
+  richMarkers,
 }: {
   listings?: ListingsInput;
   selectedId?: number | null;
   onMarkerClick?: (id: number) => void;
+  richMarkers?: boolean;
 }) {
   const center = useMemo<[number, number]>(() => [59.334, 18.066], []);
 
@@ -87,6 +108,8 @@ export default function MapView({
       ? listings.items!
       : [];
 
+  const [zoom, setZoom] = useState(5);
+
   return (
     <MapContainer center={center} zoom={5} scrollWheelZoom className="w-full h-[420px]">
       <TileLayer
@@ -94,17 +117,20 @@ export default function MapView({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
+      <ZoomLevel onChange={setZoom} />
       <FitOnData listings={rows} fallbackCenter={center} />
 
       {rows
         .filter(l => typeof l.latitude === "number" && typeof l.longitude === "number")
         .map(l => {
           const isSelected = selectedId === l.id;
+          const useImage = !!richMarkers && zoom >= 15;
+          const icon = useImage ? imageDivIcon(l.imageUrl) : (isSelected ? iconHighlight : priceDivIcon(l.price));
           return (
             <Marker
               key={l.id}
               position={[l.latitude as number, l.longitude as number]}
-              icon={isSelected ? iconHighlight : iconDefault}
+              icon={icon}
               eventHandlers={{ click: () => onMarkerClick?.(l.id) }}
             >
               <Popup>
@@ -121,4 +147,15 @@ export default function MapView({
         })}
     </MapContainer>
   );
+}
+
+function ZoomLevel({ onChange }:{ onChange:(z:number)=>void }) {
+  const map = useMap();
+  useEffect(() => {
+    const handler = () => onChange(map.getZoom());
+    handler();
+    map.on('zoomend', handler);
+    return () => { map.off('zoomend', handler); };
+  }, [map, onChange]);
+  return null;
 }

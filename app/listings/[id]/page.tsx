@@ -13,6 +13,11 @@ type ListingPublic = {
   price: number;
   imageUrl?: string | null;
   companyName?: string | null;
+  images?: string[];
+  area?: number | null;
+  rooms?: number | null;
+  type?: string | null;
+  availableFrom?: string | null;
 };
 
 type ListingPrivate = ListingPublic & {
@@ -33,6 +38,8 @@ export default function ListingDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [activities, setActivities] = useState<Array<{id:number;name:string;category:string;distanceKm:number}> | null>(null);
+  // Keep hooks at stable positions; define carousel state before any early returns
+  const [idx, setIdx] = useState(0);
 
   useEffect(() => {
     if (!ready) return;
@@ -61,15 +68,41 @@ export default function ListingDetailPage() {
 
   const isPrivate = 'address' in data || 'description' in data || 'latitude' in data;
 
+  const imgs = ((data as any)?.images as string[] | undefined) || undefined;
+
+  const go = (d: number) => {
+    if (!imgs || imgs.length === 0) return;
+    setIdx((prev) => (prev + d + imgs.length) % imgs.length);
+  };
+
   return (
     <main className="container-page">
       <section className="section grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
         <div>
           <div className="relative w-full h-72 rounded-md overflow-hidden bg-gray-100 mb-4">
-            <Image src={data.imageUrl || '/placeholder.svg'} alt={data.title} fill className="object-cover" />
+            <Image src={(imgs && imgs.length>0 ? imgs[idx] : (data.imageUrl || '/placeholder.svg'))} alt={data.title} fill className="object-cover" />
+            {imgs && imgs.length>1 && (
+              <>
+                <button className="btn btn-ghost" style={{ position:'absolute', top:'50%', left:8, transform:'translateY(-50%)' }} onClick={()=>go(-1)}>‹</button>
+                <button className="btn btn-ghost" style={{ position:'absolute', top:'50%', right:8, transform:'translateY(-50%)' }} onClick={()=>go(1)}>›</button>
+                <div style={{ position:'absolute', bottom:8, left:0, right:0 }} className="flex gap-2 justify-center">
+                  {imgs.map((u, i) => (
+                    <button key={i} className={`pill ${i===idx?'bg-brand text-white':'bg-white'}`} style={{ opacity: i===idx?1:0.6 }} onClick={()=>setIdx(i)}>
+                      {i+1}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           <h1 className="h1 mb-2">{data.title}</h1>
           <div className="text-muted mb-4">{data.city}{('distanceToSchoolKm' in data && (data as any).distanceToSchoolKm) ? ` • ${(data as any).distanceToSchoolKm.toFixed(1)} km till ${school?.name}` : ''}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            {typeof (data as any).area === 'number' && <div className="card"><div className="text-sm text-muted">Yta</div><div className="font-semibold">{(data as any).area} m²</div></div>}
+            {typeof (data as any).rooms === 'number' && <div className="card"><div className="text-sm text-muted">Rum</div><div className="font-semibold">{(data as any).rooms}</div></div>}
+            {(data as any).type && <div className="card"><div className="text-sm text-muted">Typ</div><div className="font-semibold">{(data as any).type}</div></div>}
+            {(data as any).availableFrom && <div className="card"><div className="text-sm text-muted">Inflytt</div><div className="font-semibold">{new Date((data as any).availableFrom as string).toLocaleDateString()}</div></div>}
+          </div>
           {'description' in data && data.description && (
             <p className="leading-relaxed whitespace-pre-line">{data.description}</p>
           )}

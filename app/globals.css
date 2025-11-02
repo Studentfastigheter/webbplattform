@@ -72,6 +72,43 @@ img, svg, video, canvas {
 
 .shadow-soft { box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.06); }
 
+/* Full-bleed utility to span viewport width */
+.bleed { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); }
+
+/* Landing hero */
+.hero-wrap { position: relative; isolation: isolate; overflow: hidden; }
+.hero-bg { display:none; }
+.hero-bg-img { position:absolute; inset:0; z-index: -2; background-size: cover; background-position: center; transform: scale(1.03); }
+.hero-overlay { position:absolute; inset:0; z-index: -1; background: linear-gradient(90deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.4) 45%, rgba(0,0,0,.15) 70%, rgba(0,0,0,0) 100%); }
+.hero-inner { display: grid; gap: 18px; padding-block: 96px; }
+.hero-inner.two-col { grid-template-columns: 1.2fr 1fr; align-items: center; gap: 28px; }
+.hero-title { font-size: clamp(28px, 6vw, 48px); font-weight: 800; letter-spacing: -0.02em; }
+.hero-sub { color: var(--muted); font-size: clamp(14px, 2.5vw, 18px); }
+.glass { background: rgba(255,255,255,.6); border: 1px solid var(--border); backdrop-filter: blur(8px); }
+.hero-points { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: 14px; }
+.hero-points span { border: 1px solid var(--border); border-radius: 9999px; padding: .35rem .6rem; background: #fff; }
+
+.hero-dark .hero-title { color: #fff; }
+.hero-dark .hero-sub { color: #f1f5f9; }
+.hero-dark .badge { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.3); }
+.hero-media img { width: 100%; max-width: 520px; transform: rotate(-2deg); border-radius: 22px; box-shadow: 0 25px 70px rgba(0,0,0,.35); }
+
+/* Companies marquee */
+.marquee { overflow: hidden; position: relative; }
+.marquee-track { display: flex; gap: 28px; animation: marquee 18s linear infinite; }
+.marquee-item { padding: .5rem .9rem; border: 1px solid var(--border); border-radius: 9999px; background: #fff; white-space: nowrap; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* Student cities */
+.city-card { position: relative; height: 220px; border-radius: 18px; overflow: hidden; min-width: 260px; }
+.city-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.city-card .overlay { position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.45)); }
+.city-card .label { position:absolute; left:12px; bottom:10px; color:#fff; font-weight:700; letter-spacing:.3px; }
+
+.cities-marquee { overflow: hidden; }
+.cities-track { display:flex; gap: 22px; animation: cities 30s linear infinite; padding-inline: 20px; }
+@keyframes cities { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
 /* ─────────────────────────────────────────────
    Cards
 ────────────────────────────────────────────── */
@@ -170,6 +207,8 @@ img, svg, video, canvas {
   background: #f9fafb;
 }
 
+.leaflet-top, .leaflet-bottom { z-index: 500; } /* keep controls below header */
+
 .map-shell {
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -177,13 +216,33 @@ img, svg, video, canvas {
   min-height: 420px;
 }
 
+/* Rich markers */
+.leaflet-div-icon.price-marker { background: transparent; border: 0; }
+.price-marker-inner {
+  background: #fff;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 24px rgba(0,0,0,.06);
+  padding: .35rem .55rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+.leaflet-div-icon.image-marker { background: transparent; border: 0; }
+.image-marker-inner {
+  width: 84px; height: 64px; border-radius: 8px; overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  border: 2px solid #fff;
+}
+.image-marker-inner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 /* ─────────────────────────────────────────────
    Header / Footer
 ────────────────────────────────────────────── */
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 1000; /* ensure header is above Leaflet popups/tiles */
   backdrop-filter: blur(8px);
   background: color-mix(in oklab, #fff 85%, transparent);
   border-bottom: 1px solid var(--border);
