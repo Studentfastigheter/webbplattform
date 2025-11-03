@@ -12,6 +12,7 @@ export type Listing = {
   latitude?: number | null;
   longitude?: number | null;
   imageUrl?: string | null;
+  images?: string[];
   distanceToSchoolKm?: number | null;
 };
 
@@ -125,7 +126,8 @@ export default function MapView({
         .map(l => {
           const isSelected = selectedId === l.id;
           const useImage = !!richMarkers && zoom >= 15;
-          const icon = useImage ? imageDivIcon(l.imageUrl) : (isSelected ? iconHighlight : priceDivIcon(l.price));
+          const heroImage = l.images?.[0] ?? l.imageUrl;
+          const icon = useImage ? imageDivIcon(heroImage) : (isSelected ? iconHighlight : priceDivIcon(l.price));
           return (
             <Marker
               key={l.id}

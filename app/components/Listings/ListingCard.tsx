@@ -20,7 +20,7 @@ export default function ListingCard({
       >
         <div className="relative w-full h-48 rounded-md overflow-hidden mb-3 bg-gray-100">
           <Image
-            src={l.imageUrl || "/placeholder.svg"}
+            src={(l.images?.[0] ?? l.imageUrl) || "/placeholder.svg"}
             alt={l.title}
             fill
             className="object-cover"
