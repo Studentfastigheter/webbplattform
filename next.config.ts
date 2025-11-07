@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
       { source: "/api/:path*", destination: "http://localhost:8080/api/:path*" },
     ];
   },
+  async redirects() {
+    return [
+      { source: "/our-queues", destination: "/alla-koer", permanent: true },
+      { source: "/our-queues/:path*", destination: "/alla-koer/:path*", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

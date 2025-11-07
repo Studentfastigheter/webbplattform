@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -62,7 +62,7 @@ export default function QueuesAndInterestsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-semibold">{i.title}</div>
-                        <div className="text-sm text-muted">{i.city} • {i.companyName || '—'}</div>
+                        <div className="text-sm text-muted">{i.city} · {i.companyName || '—'}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm text-muted">Skickad</div>
@@ -79,4 +79,3 @@ export default function QueuesAndInterestsPage() {
     </main>
   );
 }
-

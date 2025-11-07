@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 type QueueEntry = {
   companyId: number;
@@ -17,15 +17,30 @@ export default function QueuesPage() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!token) { setErr('Du måste vara inloggad.'); return; }
-    fetch('/api/queues/me', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
-      .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(new Error(t || r.statusText))))
+    if (!token) {
+      setErr("Du måste vara inloggad.");
+      return;
+    }
+    fetch("/api/queues/me", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t || r.statusText)))))
       .then(setItems)
-      .catch(e => setErr(e.message));
+      .catch((e) => setErr(e.message));
   }, [token, ready]);
 
-  if (!ready) return <main className="container-page"><section className="section">Laddar…</section></main>;
-  if (err) return <main className="container-page"><section className="section" style={{color:'crimson'}}>{err}</section></main>;
+  if (!ready)
+    return (
+      <main className="container-page">
+        <section className="section">Laddar…</section>
+      </main>
+    );
+  if (err)
+    return (
+      <main className="container-page">
+        <section className="section" style={{ color: "crimson" }}>
+          {err}
+        </section>
+      </main>
+    );
 
   return (
     <main className="container-page">
@@ -53,4 +68,3 @@ export default function QueuesPage() {
     </main>
   );
 }
-

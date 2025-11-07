@@ -13,24 +13,41 @@ export default function SiteFooter() {
     { href: "https://www.threads.net/@campuslyan", label: "Threads", icon: <SiThreads /> },
   ];
 
+  const footerLinks = [
+    { href: "/om", label: "Om CampusLyan" },
+    { href: "/partners", label: "Samarbetspartners" },
+    { href: "/kundservice", label: "Kundservice & kontakt" },
+    { href: "/privacy", label: "Integritet" },
+    { href: "/for-foretag", label: "För företag" },
+    { href: "/hyra-ut", label: "Hyra ut" },
+  ];
+
   return (
-    <footer className="mt-16 border-t border-border">
-      <div className="container-page py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-foreground">CampusLyan</span>
-          <span>© {year}</span>
+    <footer className="mt-16 bg-gradient-to-b from-[#0f172a] via-[#0b1120] to-[#020617] text-slate-200">
+      <div className="container-page border-t border-white/10 py-8 flex flex-col gap-6 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <span className="font-semibold text-white">CampusLyan</span>
+          <span className="text-slate-400">© {year} Alla rättigheter reserverade.</span>
         </div>
 
-        <nav className="flex flex-wrap items-center gap-4">
-          <a href="/om" className="hover:underline">Om CampusLyan</a>
-          <a href="/partners" className="hover:underline">Samarbetspartners</a>
-          <a href="/kundservice" className="hover:underline">Kundservice & kontakt</a>
-          <a href="/privacy" className="hover:underline">Integritet</a>
+        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-center text-slate-300">
+          {footerLinks.map((link) => (
+            <a key={link.href} href={link.href} className="transition hover:text-white">
+              {link.label}
+            </a>
+          ))}
         </nav>
 
-        <div className="flex items-center gap-3 text-xl">
-          {socials.map(s => (
-            <a key={s.label} href={s.href} target="_blank" rel="noreferrer" aria-label={s.label} className="text-foreground/70 hover:text-brand transition">
+        <div className="flex items-center justify-center gap-3 text-xl">
+          {socials.map((s) => (
+            <a
+              key={s.label}
+              href={s.href}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={s.label}
+              className="text-slate-300 transition hover:text-white"
+            >
               {s.icon}
             </a>
           ))}

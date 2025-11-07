@@ -1,103 +1,114 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import {
+  Navbar,
+  NavBody,
+  NavItems,
+  MobileNav,
+  NavbarButton,
+  MobileNavHeader,
+  MobileNavToggle,
+  MobileNavMenu,
+} from "@/components/ui/resizable-navbar";
+
+const baseNavItems = [
+  { name: "Annonser", link: "/listings" },
+  { name: "Alla köer", link: "/alla-koer" },
+  { name: "För företag", link: "/for-foretag" },
+  { name: "Hyra ut", link: "/hyra-ut" },
+];
 
 export default function SiteHeader() {
-  const [open, setOpen] = useState(false);
-  const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navLinks = user ? [
-    { href: "/listings", label: "Annonser" },
-    { href: "/queues-interests", label: "Köer & intressen" },
-  ] : [
-    { href: "/listings", label: "Annonser" },
-    { href: "/register", label: "Registrera" },
-    { href: "/login", label: "Logga in" },
-  ];
+  const navItems = user
+    ? [...baseNavItems, { name: "Köer & intressen", link: "/queues-interests" }]
+    : baseNavItems;
 
   return (
-    <header className="site-header">
-      <div className="container-page h-16 flex items-center justify-between">
-        
-        {/* Logo + Brand */}
-        <Link href="/" className="flex items-center gap-2">
-          <Image
-            src="/campuslyan-logo.svg"
-            alt="CampusLyan"
-            width={30}
-            height={30}
-          />
-          <span className="font-semibold text-lg tracking-tight">CampusLyan</span>
+    <Navbar className="top-4">
+      <NavBody>
+        <Link href="/" className="flex items-center gap-2 px-2 py-1 text-sm font-medium">
+          <Image src="/campuslyan-logo.svg" alt="CampusLyan" width={30} height={30} />
+          <div className="leading-tight">
+            <span className="text-base">CampusLyan</span>
+          </div>
         </Link>
 
-        {/* Desktop links */}
-        <nav className="hidden sm:flex items-center gap-8 text-[15px]">
-          {navLinks.map((link) => {
-            const active = pathname === link.href;
+        <NavItems items={navItems} />
 
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={
-                  active
-                    ? "text-brand font-medium border-b-2 border-brand pb-0.5"
-                    : "text-foreground/80 hover:text-brand transition"
-                }
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-          {user && (
+        <div className="hidden items-center gap-3 lg:flex">
+          {user ? (
             <>
-              <span className="text-foreground/70">{user.email}</span>
-              <button className="btn btn-outline" onClick={logout}>Logga ut</button>
+              <span className="text-sm text-neutral-500">{user.email}</span>
+              <NavbarButton variant="secondary" onClick={logout}>
+                Logga ut
+              </NavbarButton>
+            </>
+          ) : (
+            <>
+              <NavbarButton variant="secondary" href="/login">
+                Logga in
+              </NavbarButton>
+              <NavbarButton variant="primary" href="/register">
+                Skapa konto
+              </NavbarButton>
             </>
           )}
-        </nav>
-
-        {/* Mobile menu toggle */}
-        <button
-          className="sm:hidden rounded-md px-2 py-1 hover:bg-gray-100 transition"
-          aria-label="Öppna meny"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span className="text-2xl">☰</span>
-        </button>
-      </div>
-
-      {/* Mobile menu dropdown */}
-      {open && (
-        <div className="sm:hidden border-t border-border bg-white animate-slideDown">
-          <nav className="container-page py-3 flex flex-col gap-3 text-[15px]">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={`${
-                  pathname === link.href
-                    ? "text-brand font-medium"
-                    : "text-foreground/80"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-            {user && (
-              <button className="btn" onClick={() => { logout(); setOpen(false); }}>
-                Logga ut
-              </button>
-            )}
-          </nav>
         </div>
-      )}
-    </header>
+      </NavBody>
+
+      <MobileNav>
+        <MobileNavHeader>
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/campuslyan-logo.svg" alt="CampusLyan" width={26} height={26} />
+            <span className="text-sm font-semibold">CampusLyan</span>
+          </Link>
+          <MobileNavToggle
+            isOpen={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+          />
+        </MobileNavHeader>
+        <MobileNavMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
+          {navItems.map((item) => (
+            <Link
+              key={item.link}
+              href={item.link}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-base text-neutral-700"
+            >
+              {item.name}
+            </Link>
+          ))}
+          <div className="flex w-full flex-col gap-3 pt-2">
+            {user ? (
+              <NavbarButton
+                variant="secondary"
+                onClick={() => {
+                  logout();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                Logga ut
+              </NavbarButton>
+            ) : (
+              <>
+                <NavbarButton variant="secondary" href="/login">
+                  Logga in
+                </NavbarButton>
+                <NavbarButton variant="primary" href="/register">
+                  Skapa konto
+                </NavbarButton>
+              </>
+            )}
+          </div>
+        </MobileNavMenu>
+      </MobileNav>
+    </Navbar>
   );
 }
