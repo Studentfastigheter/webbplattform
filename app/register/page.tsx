@@ -33,8 +33,10 @@ export default function RegisterPage() {
       });
 
       if (!res.ok) {
+        // Prefer the `reason` field from the response body if provided
         const data = await res.json().catch(() => ({}));
         const msg =
+          (data as any)?.reason ||
           (data as any)?.error ||
           (data as any)?.message ||
           (res.status === 409 ? "E-post eller personnummer används redan." : "Kunde inte registrera användaren.");
