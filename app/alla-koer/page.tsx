@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import RelevantQueues from "@/app/components/Queues/RelevantQueues";
+import { Button } from "@heroui/button";
 
 type Company = { id: number; name: string };
 
@@ -63,17 +64,18 @@ export default function AllQueuesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {user ? (
-                    <button
-                      className="btn btn-outline"
-                      disabled={joiningId === c.id}
-                      onClick={() => joinQueue(c.id)}
+                    <Button
+                      variant="bordered"
+                      color="success"
+                      isDisabled={joiningId === c.id}
+                      onPress={() => joinQueue(c.id)}
                     >
                       {joiningId === c.id ? "Lägger till…" : "Gå med"}
-                    </button>
+                    </Button>
                   ) : null}
-                  <Link className="btn btn-primary" href={`/alla-koer/${c.id}`}>
+                  <Button as={Link} href={`/alla-koer/${c.id}`} color="success">
                     Läs mer
-                  </Link>
+                  </Button>
                 </div>
               </article>
             ))}

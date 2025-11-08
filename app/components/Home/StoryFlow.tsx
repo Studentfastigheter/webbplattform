@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Reveal from "@/lib/reveal";
+import { Button } from "@heroui/button";
 
 export default function StoryFlow() {
   return (
@@ -17,8 +18,12 @@ export default function StoryFlow() {
                 skicka intresse – allt med ett konto.
               </p>
               <div className="mt-4 flex gap-3">
-                <Link href="/listings" className="btn btn-primary">Utforska annonser</Link>
-                <Link href="/register" className="btn btn-outline">Skapa konto</Link>
+                <Button as={Link} href="/listings" color="success">
+                  Utforska annonser
+                </Button>
+                <Button as={Link} href="/register" variant="bordered" color="success">
+                  Skapa konto
+                </Button>
               </div>
             </div>
           </Reveal>
@@ -64,14 +69,18 @@ export default function StoryFlow() {
             <article className="card shadow-soft">
               <h3 className="h3 mb-1">Våra köer</h3>
               <p className="text-sm text-muted mb-2">Se alla bostadsköer vi stödjer och gå med när du skapat konto.</p>
-              <Link href="/alla-koer" className="btn btn-outline inline-block">Alla köer</Link>
+              <Button as={Link} href="/alla-koer" variant="bordered" color="success">
+                Alla köer
+              </Button>
             </article>
           </Reveal>
           <Reveal variant="right" delay={120}>
             <article className="card shadow-soft">
               <h3 className="h3 mb-1">Annonser</h3>
               <p className="text-sm text-muted mb-2">Bläddra bland aktuella studentbostäder från flera aktörer.</p>
-              <Link href="/listings" className="btn btn-primary inline-block">Se annonser</Link>
+              <Button as={Link} href="/listings" color="success">
+                Se annonser
+              </Button>
             </article>
           </Reveal>
         </div>

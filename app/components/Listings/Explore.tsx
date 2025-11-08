@@ -4,6 +4,7 @@ import { useState } from "react";
 import Filters from "./Filters";
 import ListOnly from "./ListOnly";
 import dynamic from "next/dynamic";
+import { Button, ButtonGroup } from "@heroui/button";
 
 const MapView = dynamic(() => import("../MapFunctionality/MapView"), { ssr: false });
 import { useAuth } from "@/context/AuthContext";
@@ -19,10 +20,22 @@ export default function Explore() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted">Visa läge</div>
-        <div className="flex gap-2">
-          <button className={`btn ${mode==='map'?'btn-primary':'btn-outline'}`} onClick={()=>setMode('map')}>Karta</button>
-          <button className={`btn ${mode==='list'?'btn-primary':'btn-outline'}`} onClick={()=>setMode('list')}>Lista</button>
-        </div>
+        <ButtonGroup radius="full" size="sm">
+          <Button
+            variant={mode === 'map' ? 'solid' : 'bordered'}
+            color="success"
+            onPress={() => setMode('map')}
+          >
+            Karta
+          </Button>
+          <Button
+            variant={mode === 'list' ? 'solid' : 'bordered'}
+            color="success"
+            onPress={() => setMode('list')}
+          >
+            Lista
+          </Button>
+        </ButtonGroup>
       </div>
 
       <Filters />
@@ -65,4 +78,3 @@ function MapMode() {
     </div>
   );
 }
-

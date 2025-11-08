@@ -186,41 +186,6 @@ img, svg, video, canvas {
 /* ─────────────────────────────────────────────
    Buttons
 ────────────────────────────────────────────── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .5rem;
-  padding: .7rem 1rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border);
-  transition: .15s ease;
-}
-.btn:hover { filter: brightness(1.02); }
-
-.btn-primary {
-  background: var(--brand);
-  color: white;
-  border-color: transparent;
-}
-.btn-primary:hover { background: var(--brand-600); }
-
-.btn-outline {
-  background: transparent;
-  color: var(--brand);
-  border-color: var(--brand);
-}
-
-.btn-outline:hover {
-  background: color-mix(in oklab, var(--brand) 8%, transparent);
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--foreground);
-  border-color: transparent;
-}
-
 /* Forms */
 .label { font-size: .9rem; color: var(--muted); margin-bottom: .25rem; display: block; }
 .input { border: 1px solid var(--border); border-radius: 10px; padding: .7rem .9rem; width: 100%; background: #fff; }
@@ -349,9 +314,6 @@ img, svg, video, canvas {
 .card { transition: transform .25s ease, box-shadow .25s ease; }
 .card:hover { transform: translateY(-3px); box-shadow: 0 4px 14px rgba(0,0,0,.08), 0 10px 30px rgba(0,0,0,.06); }
 
-.btn { transition: transform .15s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease; }
-.btn:hover { transform: translateY(-1px); }
-.btn-pill { border-radius: 999px; padding-inline: 1.2rem; }
 
 /* Infinite moving cards */
 .scroller {
@@ -517,3 +479,4 @@ img, svg, video, canvas {
     @apply bg-background text-foreground;
   }
 }
+

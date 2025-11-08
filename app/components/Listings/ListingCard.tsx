@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { Listing } from "../MapFunctionality/MapView";
+import { SkeletonImage } from "@/components/ui/skeleton-image";
 
 export default function ListingCard({
   l,
@@ -19,7 +19,7 @@ export default function ListingCard({
         onMouseLeave={() => onLeave?.()}
       >
         <div className="relative w-full h-48 rounded-md overflow-hidden mb-3 bg-gray-100">
-          <Image
+          <SkeletonImage
             src={(l.images?.[0] ?? l.imageUrl) || "/placeholder.svg"}
             alt={l.title}
             fill

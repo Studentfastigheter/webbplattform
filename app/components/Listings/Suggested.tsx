@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useSchool } from '@/context/SchoolContext';
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 
 type Item = {
   id: number;
@@ -40,7 +40,12 @@ export default function Suggested() {
             <Link key={l.id} href={`/listings/${l.id}`} className="block">
               <article className="card shadow-soft" style={{ width: 260 }}>
                 <div className="relative w-full h-40 rounded-md overflow-hidden mb-3 bg-gray-100">
-                  <Image src={(l.images?.[0] ?? l.imageUrl) || '/placeholder.svg'} alt={l.title} fill className="object-cover" />
+                  <SkeletonImage
+                    src={(l.images?.[0] ?? l.imageUrl) || '/placeholder.svg'}
+                    alt={l.title}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div className="font-semibold line-clamp-1">{l.title}</div>
                 <div className="text-muted text-sm">{l.city || '—'}</div>

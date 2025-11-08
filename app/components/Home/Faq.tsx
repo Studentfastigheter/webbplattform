@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@heroui/button";
 
 const faqs = [
   {
@@ -36,12 +37,15 @@ export default function Faq() {
           ))}
         </div>
         <div className="mt-6">
-          <Link
-            className="btn btn-outline border-slate-300 text-slate-900 hover:bg-white/60 dark:border-white/40 dark:text-white"
+          <Button
+            as={Link}
             href="/faq"
+            variant="bordered"
+            color="success"
+            className="border-slate-300 text-slate-900 hover:bg-white/60 dark:border-white/40 dark:text-white"
           >
             Läs fler frågor
-          </Link>
+          </Button>
         </div>
       </div>
     </section>

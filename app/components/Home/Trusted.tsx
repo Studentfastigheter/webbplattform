@@ -1,3 +1,5 @@
+import { SkeletonImg } from "@/components/ui/skeleton-image";
+
 export default function Trusted() {
   const logos = [
     { name: "SGS", src: "/campuslyan-logo.svg" },
@@ -11,11 +13,16 @@ export default function Trusted() {
         <div className="text-center text-sm text-muted mb-4">På väg att bli studenternas förstahandsval</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 items-center justify-items-center opacity-80">
           {logos.map((l, i) => (
-            <img key={i} src={l.src} alt={l.name} className="h-8" />
+            <SkeletonImg
+              key={i}
+              src={l.src}
+              alt={l.name}
+              className="h-8 w-auto"
+              skeletonClassName="h-8 w-24 rounded-full"
+            />
           ))}
         </div>
       </div>
     </section>
   );
 }
-

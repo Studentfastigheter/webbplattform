@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@heroui/button";
 
 export default function Filters() {
   const params = useSearchParams();
@@ -86,10 +87,11 @@ export default function Filters() {
         </div>
 
         <div>
-          <button className="btn btn-outline" onClick={reset}>Rensa filter</button>
+          <Button variant="bordered" color="success" onPress={reset}>
+            Rensa filter
+          </Button>
         </div>
       </div>
     </aside>
   );
 }
-

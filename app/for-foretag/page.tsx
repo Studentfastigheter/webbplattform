@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@heroui/button";
 
 export default function ForForetagPage() {
   return (
@@ -33,11 +34,14 @@ export default function ForForetagPage() {
         </div>
 
         <div className="flex gap-3">
-          <Link href="/register" className="btn btn-primary">Skapa företagskonto</Link>
-          <Link href="/kundservice" className="btn btn-outline">Kontakta oss</Link>
+          <Button as={Link} href="/register" color="success">
+            Skapa företagskonto
+          </Button>
+          <Button as={Link} href="/kundservice" variant="bordered" color="success">
+            Kontakta oss
+          </Button>
         </div>
       </section>
     </main>
   );
 }
-

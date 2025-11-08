@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Button, ButtonGroup } from "@heroui/button";
 
 type TabKey = "studenter" | "foretag" | "hyra";
 
@@ -11,32 +12,43 @@ export default function AudienceTabs() {
   return (
     <section className="section">
       <div className="container-page">
-        <div role="tablist" aria-label="Målgrupper" className="flex gap-2 mb-4">
-          <button
+        <ButtonGroup
+          role="tablist"
+          aria-label="Målgrupper"
+          className="mb-4"
+          radius="full"
+        >
+          <Button
             role="tab"
             aria-selected={tab === "studenter"}
-            className={`btn ${tab === "studenter" ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setTab("studenter")}
+            variant={tab === "studenter" ? "solid" : "bordered"}
+            color="success"
+            size="sm"
+            onPress={() => setTab("studenter")}
           >
             Studenter
-          </button>
-          <button
+          </Button>
+          <Button
             role="tab"
             aria-selected={tab === "foretag"}
-            className={`btn ${tab === "foretag" ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setTab("foretag")}
+            variant={tab === "foretag" ? "solid" : "bordered"}
+            color="success"
+            size="sm"
+            onPress={() => setTab("foretag")}
           >
             För företag
-          </button>
-          <button
+          </Button>
+          <Button
             role="tab"
             aria-selected={tab === "hyra"}
-            className={`btn ${tab === "hyra" ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setTab("hyra")}
+            variant={tab === "hyra" ? "solid" : "bordered"}
+            color="success"
+            size="sm"
+            onPress={() => setTab("hyra")}
           >
             Hyra ut
-          </button>
-        </div>
+          </Button>
+        </ButtonGroup>
 
         {tab === "studenter" && (
           <article className="card shadow-soft">
@@ -47,8 +59,12 @@ export default function AudienceTabs() {
               <li>Spara tid — allt samlat på ett ställe, gratis.</li>
             </ul>
             <div className="mt-3 flex gap-3">
-              <Link href="/listings" className="btn btn-primary">Se annonser</Link>
-              <Link href="/alla-koer" className="btn btn-outline">Alla köer</Link>
+              <Button as={Link} href="/listings" color="success">
+                Se annonser
+              </Button>
+              <Button as={Link} href="/alla-koer" variant="bordered" color="success">
+                Alla köer
+              </Button>
             </div>
           </article>
         )}
@@ -62,8 +78,12 @@ export default function AudienceTabs() {
               <li>Smidig intressehantering och varumärkesvänliga mallar.</li>
             </ul>
             <div className="mt-3 flex gap-3">
-              <Link href="/for-foretag" className="btn btn-primary">För företag</Link>
-              <Link href="/kundservice" className="btn btn-outline">Kontakta oss</Link>
+              <Button as={Link} href="/for-foretag" color="success">
+                För företag
+              </Button>
+              <Button as={Link} href="/kundservice" variant="bordered" color="success">
+                Kontakta oss
+              </Button>
             </div>
           </article>
         )}
@@ -77,8 +97,12 @@ export default function AudienceTabs() {
               <li>Kostnadsfritt att komma igång.</li>
             </ul>
             <div className="mt-3 flex gap-3">
-              <Link href="/hyra-ut" className="btn btn-primary">Hyra ut</Link>
-              <Link href="/register" className="btn btn-outline">Skapa konto</Link>
+              <Button as={Link} href="/hyra-ut" color="success">
+                Hyra ut
+              </Button>
+              <Button as={Link} href="/register" variant="bordered" color="success">
+                Skapa konto
+              </Button>
             </div>
           </article>
         )}
@@ -86,4 +110,3 @@ export default function AudienceTabs() {
     </section>
   );
 }
-

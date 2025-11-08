@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Button } from '@heroui/button';
 
 export default function LoginPage() {
   const { login, ready } = useAuth();
@@ -41,7 +42,15 @@ export default function LoginPage() {
             <label className="label">Lösenord</label>
             <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
           </div>
-          <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Loggar in…' : 'Logga in'}</button>
+          <Button
+            type="submit"
+            color="success"
+            className="mt-2 font-semibold"
+            isDisabled={loading}
+            isLoading={loading}
+          >
+            {loading ? "Loggar in…" : "Logga in"}
+          </Button>
         </form>
         {err && <p className="subtle" style={{ color: 'crimson', marginTop: 12 }}>{err}</p>}
       </section>

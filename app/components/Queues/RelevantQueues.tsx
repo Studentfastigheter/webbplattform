@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSchool } from '@/context/SchoolContext';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@heroui/button';
 
 type Row = { companyId:number; companyName:string; userQueueDays?: number | null; listingsCount: number };
 
@@ -34,10 +35,11 @@ export default function RelevantQueues() {
       <h3 className="h2">Relevanta köer för {school.name}</h3>
       {user && (
         <div>
-          <button
-            className="btn btn-primary"
-            disabled={posting}
-            onClick={async () => {
+          <Button
+            color="success"
+            isDisabled={posting}
+            isLoading={posting}
+            onPress={async () => {
               if (!token) return;
               setPosting(true); setMsg(null);
               try {
@@ -55,7 +57,7 @@ export default function RelevantQueues() {
             }}
           >
             {posting ? 'Lägger till…' : 'Gå med i alla köer nära skolan'}
-          </button>
+          </Button>
           {msg && <div className="text-sm text-brand mt-2">{msg}</div>}
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@heroui/button";
 
 export default function SearchBar() {
   const router = useRouter();
@@ -31,8 +32,13 @@ export default function SearchBar() {
         value={city}
         onChange={(e) => setCity(e.target.value)}
       />
-      <button className="btn btn-primary" type="submit">Sök bostäder</button>
+      <Button
+        type="submit"
+        color="success"
+        className="w-full font-semibold sm:w-auto"
+      >
+        Sök bostäder
+      </Button>
     </form>
   );
 }
-

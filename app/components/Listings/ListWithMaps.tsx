@@ -7,6 +7,8 @@ import type { Listing } from "../MapFunctionality/MapView";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useSchool } from "@/context/SchoolContext";
+import Link from "next/link";
+import { Button } from "@heroui/button";
 
 const MapView = dynamic(() => import("../MapFunctionality/MapView"), { ssr: false });
 
@@ -94,11 +96,29 @@ export default function ListWithMap() {
 function Pager({ params, page, totalPages }:{params:URLSearchParams; page:number; totalPages:number}) {
   const prevHref = buildPageHref(params, page - 1);
   const nextHref = buildPageHref(params, page + 1);
+  const prevDisabled = page <= 0;
+  const nextDisabled = page + 1 >= totalPages;
   return (
     <div className="flex items-center justify-between">
-      {page <= 0 ? <span className="btn opacity-50">← Föregående</span> : <a className="btn" href={prevHref}>← Föregående</a>}
+      <Button
+        as={prevDisabled ? "span" : Link}
+        href={prevDisabled ? undefined : prevHref}
+        variant="bordered"
+        color="success"
+        isDisabled={prevDisabled}
+      >
+        ← Föregående
+      </Button>
       <div className="text-sm text-muted">Sida {page + 1} / {Math.max(1, totalPages)}</div>
-      {page + 1 >= totalPages ? <span className="btn opacity-50">Nästa →</span> : <a className="btn" href={nextHref}>Nästa →</a>}
+      <Button
+        as={nextDisabled ? "span" : Link}
+        href={nextDisabled ? undefined : nextHref}
+        variant="bordered"
+        color="success"
+        isDisabled={nextDisabled}
+      >
+        Nästa →
+      </Button>
     </div>
   );
 }

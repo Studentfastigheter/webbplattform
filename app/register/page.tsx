@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { Button } from "@heroui/button";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ ssn: "", email: "", password: "" });
@@ -95,9 +96,15 @@ export default function RegisterPage() {
             />
           </div>
 
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <Button
+            type="submit"
+            color="success"
+            className="mt-2 font-semibold"
+            isDisabled={loading}
+            isLoading={loading}
+          >
             {loading ? "Skapar..." : "Registrera"}
-          </button>
+          </Button>
 
           {error && (
             <p className="subtle" style={{ color: 'crimson' }} role="alert">{error}</p>

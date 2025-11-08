@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import ListingCard from "@/app/components/Listings/ListingCard";
+import { Button } from "@heroui/button";
 
 type Company = { id: number; name: string };
 type Listing = {
@@ -91,9 +92,14 @@ export default function QueueDetailPage() {
         <div className="flex items-center justify-between">
           <h1 className="h1">{company.name}</h1>
           {user && (
-            <button className="btn btn-primary" onClick={join} disabled={joining}>
+            <Button
+              color="success"
+              isDisabled={joining}
+              isLoading={joining}
+              onPress={join}
+            >
               {joining ? "Lägger till…" : "Gå med i kön"}
-            </button>
+            </Button>
           )}
         </div>
         {joinMsg && <div className="text-brand">{joinMsg}</div>}

@@ -1,6 +1,7 @@
 "use client";
 
 import Reveal from "@/lib/reveal";
+import { Button } from "@heroui/button";
 
 const sellingPoints = [
   {
@@ -85,7 +86,9 @@ export default function ProductSpotlight() {
                 <p className="text-xs uppercase tracking-[0.35em] text-slate-500">{highlight.title}</p>
                 <p className="mt-3 text-lg font-semibold leading-tight">{highlight.line}</p>
                 <p className="mt-2 text-sm text-slate-500">{highlight.meta}</p>
-                <button className="btn btn-primary btn-pill mt-5 w-full">Skicka intresse</button>
+                <Button color="success" radius="full" className="mt-5 w-full justify-center">
+                  Skicka intresse
+                </Button>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
                 {heroStats.map((stat) => (

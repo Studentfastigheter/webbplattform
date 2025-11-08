@@ -13,7 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import Image, { ImageProps } from "next/image";
+import { SkeletonImage, SkeletonImageProps } from "@/components/ui/skeleton-image";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 
 interface CarouselProps {
@@ -259,8 +259,7 @@ export const Card = ({
         <BlurImage
           src={card.src}
           alt={card.title}
-          fill
-          className="absolute inset-0 z-10 object-cover"
+          className="absolute inset-0 z-10 h-full w-full object-cover"
         />
       </motion.button>
     </>
@@ -268,27 +267,32 @@ export const Card = ({
 };
 
 export const BlurImage = ({
-  src,
   className,
   alt,
   sizes,
+  onLoadingComplete,
+  fill,
   ...rest
-}: ImageProps) => {
+}: SkeletonImageProps) => {
   const [isLoading, setLoading] = useState(true);
+  const shouldFill = fill ?? true;
+
   return (
-    <Image
-      className={cn(
-        "object-cover transition duration-300",
-        isLoading ? "blur-sm" : "blur-0",
-        className,
-      )}
-      onLoadingComplete={() => setLoading(false)}
-      src={src}
+    <SkeletonImage
+      {...rest}
+      {...(shouldFill ? { fill: true } : {})}
       alt={alt ?? "Background of a beautiful view"}
       sizes={sizes ?? "(min-width: 768px) 384px, 224px"}
-      placeholder="empty"
-      {...rest}
+      skeletonClassName="absolute inset-0"
+      className={cn(
+        "absolute inset-0 object-cover transition duration-300",
+        isLoading ? "blur-sm scale-[1.02]" : "blur-0 scale-100",
+        className,
+      )}
+      onLoadingComplete={(result) => {
+        setLoading(false);
+        onLoadingComplete?.(result);
+      }}
     />
   );
 };
-

@@ -2,10 +2,11 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
 import { useSchool } from "@/context/SchoolContext";
+import { Button } from "@heroui/button";
+import { SkeletonImage } from "@/components/ui/skeleton-image";
 
 const ListingMap = dynamic(() => import("@/app/components/Listings/ListingMap"), {
   ssr: false,
@@ -186,7 +187,7 @@ export default function ListingDetailPage() {
               onClick={() => setLightboxOpen(true)}
               role="button"
             >
-              <Image
+              <SkeletonImage
                 key={activeImage}
                 src={activeImage}
                 alt={data.title}
@@ -198,28 +199,34 @@ export default function ListingDetailPage() {
               </div>
               {hasMultipleImages && (
                 <>
-                  <button
+                  <Button
                     type="button"
-                    className="btn btn-ghost absolute top-1/2 left-3 -translate-y-1/2 bg-white/80 hover:bg-white"
-                    onClick={e => {
-                      e.stopPropagation();
+                    isIconOnly
+                    variant="light"
+                    radius="full"
+                    className="absolute top-1/2 left-3 -translate-y-1/2 bg-white/80 text-slate-900 hover:bg-white"
+                    onClick={event => {
+                      event.stopPropagation();
                       go(-1);
                     }}
                     aria-label="Föregående bild"
                   >
                     <span aria-hidden>‹</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="btn btn-ghost absolute top-1/2 right-3 -translate-y-1/2 bg-white/80 hover:bg-white"
-                    onClick={e => {
-                      e.stopPropagation();
+                    isIconOnly
+                    variant="light"
+                    radius="full"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 bg-white/80 text-slate-900 hover:bg-white"
+                    onClick={event => {
+                      event.stopPropagation();
                       go(1);
                     }}
                     aria-label="Nästa bild"
                   >
                     <span aria-hidden>›</span>
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -236,7 +243,13 @@ export default function ListingDetailPage() {
                     }}
                     className={`relative h-20 w-28 flex-shrink-0 rounded-lg overflow-hidden border ${i === idx ? "border-brand" : "border-transparent"} focus:outline-none focus:ring-2 focus:ring-brand/60`}
                   >
-                    <Image src={url} alt={`Bild ${i + 1}`} fill className="object-cover" sizes="112px" />
+                  <SkeletonImage
+                    src={url}
+                    alt={`Bild ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="112px"
+                  />
                   </button>
                 ))}
               </div>
@@ -359,7 +372,13 @@ export default function ListingDetailPage() {
           Stäng ×
         </button>
         <div className="relative w-full max-w-4xl h-[70vh]" onClick={e => e.stopPropagation()}>
-          <Image src={activeImage} alt={data.title} fill className="object-contain" priority />
+          <SkeletonImage
+            src={activeImage}
+            alt={data.title}
+            fill
+            priority
+            className="object-contain"
+          />
         </div>
         {hasMultipleImages && (
           <div className="flex gap-3 overflow-x-auto" onClick={e => e.stopPropagation()}>
@@ -370,7 +389,13 @@ export default function ListingDetailPage() {
                 onClick={() => setIdx(i)}
                 className={`relative h-16 w-24 flex-shrink-0 rounded-md overflow-hidden border ${i === idx ? "border-brand" : "border-transparent"}`}
               >
-                <Image src={url} alt={`Bild ${i + 1}`} fill className="object-cover" sizes="96px" />
+                <SkeletonImage
+                  src={url}
+                  alt={`Bild ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="96px"
+                />
               </button>
             ))}
           </div>
@@ -424,12 +449,23 @@ function Actions({ companyId, listingId, onMessage }: { companyId: number; listi
 
   return (
     <div className="card space-y-2">
-      <button className="btn btn-outline" onClick={join} disabled={joining}>
+      <Button
+        variant="bordered"
+        color="success"
+        isDisabled={joining}
+        isLoading={joining}
+        onPress={join}
+      >
         {joining ? "Lägger till…" : "Gå med i kön"}
-      </button>
-      <button className="btn btn-primary" onClick={interest} disabled={interested}>
+      </Button>
+      <Button
+        color="success"
+        isDisabled={interested}
+        isLoading={interested}
+        onPress={interest}
+      >
         {interested ? "Skickar…" : "Intresseanmälan"}
-      </button>
+      </Button>
     </div>
   );
 }

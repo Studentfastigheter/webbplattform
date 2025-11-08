@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSchool } from '@/context/SchoolContext';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@heroui/button';
 
 type School = { id: number; name: string; city?: string };
 
@@ -38,11 +39,18 @@ export default function SchoolSelector() {
       <div className="font-semibold mb-2">Välj skola</div>
       <div className="grid gap-2">
         <input className="input" placeholder="Sök skola (t.ex. KTH)" value={query} onChange={e=>setQuery(e.target.value)} />
-        <div className="grid sm:grid-cols-3 gap-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           {options.map(opt => (
-            <button key={opt.id} className={`btn ${school?.id===opt.id? 'btn-primary':'btn-outline'}`} onClick={()=>setSchool(opt)}>
+            <Button
+              key={opt.id}
+              variant={school?.id === opt.id ? 'solid' : 'bordered'}
+              color="success"
+              className="w-full justify-center"
+              size="sm"
+              onPress={() => setSchool(opt)}
+            >
               {opt.name}
-            </button>
+            </Button>
           ))}
         </div>
         {school && <div className="text-sm text-muted">Vald skola: <b>{school.name}</b></div>}

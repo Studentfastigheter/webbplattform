@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SkeletonImg } from '@/components/ui/skeleton-image';
 import './LogoLoop.css';
 
 export type LogoItem =
@@ -252,7 +253,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
           {item.node}
         </span>
       ) : (
-        <img
+        <SkeletonImg
           src={item.src}
           srcSet={item.srcSet}
           sizes={item.sizes}
@@ -263,6 +264,8 @@ export const LogoLoop = React.memo<LogoLoopProps>(
           loading="lazy"
           decoding="async"
           draggable={false}
+          className="h-full w-full object-contain"
+          skeletonClassName="h-full w-full rounded-full"
         />
       );
 
