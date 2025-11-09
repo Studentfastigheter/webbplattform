@@ -12,29 +12,63 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CampusLyan – Gratis studentbostäder samlade på ett ställe",
+  // Viktigt för korrekta absoluta URL:er i OG/Twitter
+  metadataBase: new URL("https://www.campuslyan.se"),
+  title: {
+    default: "CampusLyan – Gratis studentbostäder samlade på ett ställe",
+    template: "%s | CampusLyan"
+  },
   description:
-    "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag. Skapad av studenter – för studenter.",
+    "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag.",
   keywords: [
-    "studentbostad",
-    "studentlägenhet",
-    "studentboende",
-    "bostad student",
-    "hyra rum student",
-    "CampusLyan",
-    "andrahand student",
-    "gratis bostadsplattform"
+    "studentbostad", "studentlägenhet", "studentboende",
+    "bostad student", "hyra rum student", "CampusLyan",
+    "andrahand student", "gratis bostadsplattform", "StudentLyan",
   ],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "CampusLyan",
     title: "CampusLyan – Gratis plattform för studentbostäder",
     description:
       "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
-    url: "https://www.campuslyan.se",
-    siteName: "CampusLyan",
-    images: [{ url: "/campuslyan-og.png" }],
-    type: "website",
+    images: [
+      { url: "/campuslyan-og.png", width: 1200, height: 630, alt: "CampusLyan" },
+    ],
+    locale: "sv_SE",
   },
-  icons: { icon: "/campuslyan-logo.svg" },
+  twitter: {
+    card: "summary_large_image",
+    site: "@campuslyan",           // ta bort/ändra om du inte har X-konto
+    title: "CampusLyan – Gratis plattform för studentbostäder",
+    description:
+      "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
+    images: ["/campuslyan-og.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large" },
+  },
+  // Favicon + app-ikoner
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    shortcut: ["/favicon.ico"],
+  },
+  manifest: "/site.webmanifest",
+  themeColor: "#ffffff",
+  verification: {
+    // Google Search Console
+    google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes"
+  },
 };
 
 

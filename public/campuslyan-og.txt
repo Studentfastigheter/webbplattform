@@ -1,0 +1,29 @@
+Fixa en Open Graph bild - 1200x630
+Används för:
+
+När någon delar campuslyan.se på:
+
+Facebook
+
+Messenger
+
+LinkedIn
+
+Twitter/X
+
+Discord
+
+Slack
+
+Krav:
+
+Storlek: 1200×630 px
+
+Format: PNG eller JPEG
+
+Innehåll:
+✅ logotyp
+✅ tagline
+✅ bakgrundsbild eller clean gradient
+✅ centrering
+✅ inte för mycket text
