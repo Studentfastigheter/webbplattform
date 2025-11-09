@@ -11,9 +11,9 @@ export default function ScrollShowcase() {
       titleComponent={
         <div className="space-y-4">
           <p className="eyebrow text-brand">Snart lanseras CampusLyan</p>
-          <h1 className="hero-title text-gradient mb-12">
-            Lyor för studenter i
-            <span className="inline-flex">
+          <h1 className="hero-title text-gradient mb-12 flex flex-col items-center gap-y-3 text-center leading-tight md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-x-4">
+            <span className="flex-shrink-0">Lyor för studenter i</span>
+            <span className="inline-flex justify-center">
               <FlipWords
                 words={["Göteborg", "Stockholm", "Lund", "Uppsala"]}
                 duration={2500}
