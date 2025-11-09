@@ -11,10 +11,31 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CampusLyan",
-  description: "En ny plattform för studenter att hitta sitt nästa boende – skapad av studenter, för studenter.",
+  title: "CampusLyan – Gratis studentbostäder samlade på ett ställe",
+  description:
+    "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag. Skapad av studenter – för studenter.",
+  keywords: [
+    "studentbostad",
+    "studentlägenhet",
+    "studentboende",
+    "bostad student",
+    "hyra rum student",
+    "CampusLyan",
+    "andrahand student",
+    "gratis bostadsplattform"
+  ],
+  openGraph: {
+    title: "CampusLyan – Gratis plattform för studentbostäder",
+    description:
+      "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
+    url: "https://www.campuslyan.se",
+    siteName: "CampusLyan",
+    images: [{ url: "/campuslyan-og.png" }],
+    type: "website",
+  },
   icons: { icon: "/campuslyan-logo.svg" },
 };
+
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
