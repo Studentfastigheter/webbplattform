@@ -3,15 +3,26 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "www.dropbox.com" },
+      { protocol: "https", hostname: "cdn2.hubspot.net" },
       {
         protocol: "https",
-        hostname: "www.dropbox.com",
-      },
-      {
-        protocol: "https",
-        hostname: "cdn2.hubspot.net",
+        hostname: "sgs-fastighet.momentum.se",
+        pathname: "/Prod/sgs/PmApi/**",
       },
     ],
+  },
+  async rewrites() {
+    return [
+      { source: "/api/:path*", destination: "http://localhost:8080/api/:path*" },
+    ];
+  },
+  async redirects() {
+    return [
+      { source: "/our-queues", destination: "/alla-koer", permanent: true },
+      { source: "/our-queues/:path*", destination: "/alla-koer/:path*", permanent: true },
+    ];
   },
 };
 
