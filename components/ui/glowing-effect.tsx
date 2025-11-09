@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { memo, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -144,17 +144,17 @@ const GlowingEffect = memo(
                   var(--black),
                   var(--black) calc(25% / var(--repeating-conic-gradient-times))
                 )`
-                  : `radial-gradient(circle, #dd7bbb 10%, #dd7bbb00 20%),
-                radial-gradient(circle at 40% 40%, #d79f1e 5%, #d79f1e00 15%),
-                radial-gradient(circle at 60% 60%, #5a922c 10%, #5a922c00 20%), 
-                radial-gradient(circle at 40% 60%, #4c7894 10%, #4c789400 20%),
+                  : `radial-gradient(circle, #d4ffcf 10%, #d4ffcf00 20%),
+                radial-gradient(circle at 40% 40%, #a0f7a0 5%, #a0f7a000 15%),
+                radial-gradient(circle at 60% 60%, #5ed38a 10%, #5ed38a00 20%), 
+                radial-gradient(circle at 40% 60%, #1f8d5c 10%, #1f8d5c00 20%),
                 repeating-conic-gradient(
                   from 236.84deg at 50% 50%,
-                  #dd7bbb 0%,
-                  #d79f1e calc(25% / var(--repeating-conic-gradient-times)),
-                  #5a922c calc(50% / var(--repeating-conic-gradient-times)), 
-                  #4c7894 calc(75% / var(--repeating-conic-gradient-times)),
-                  #dd7bbb calc(100% / var(--repeating-conic-gradient-times))
+                  #d4ffcf 0%,
+                  #a0f7a0 calc(25% / var(--repeating-conic-gradient-times)),
+                  #5ed38a calc(50% / var(--repeating-conic-gradient-times)), 
+                  #1f8d5c calc(75% / var(--repeating-conic-gradient-times)),
+                  #d4ffcf calc(100% / var(--repeating-conic-gradient-times))
                 )`,
             } as React.CSSProperties
           }
@@ -188,4 +188,5 @@ const GlowingEffect = memo(
 GlowingEffect.displayName = "GlowingEffect";
 
 export { GlowingEffect };
+
 
