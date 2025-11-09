@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SpeedInsights /> 
         <AuthProvider>
           <SchoolProvider>
-            {/*<SiteHeader />*/}
+            <SiteHeader />
             <main className="pt-32">{children}</main>
             <SiteFooter />
           </SchoolProvider>
