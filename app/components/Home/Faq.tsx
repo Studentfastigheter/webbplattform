@@ -3,22 +3,39 @@ import { Button } from "@heroui/button";
 
 const faqs = [
   {
-    q: "Är CampusLyan gratis?",
-    a: "Ja. Plattformen är helt kostnadsfri för studenter att använda.",
+    q: "Är CampusLyan gratis för studenter?",
+    a: "Ja. Att skapa konto, hitta bostäder, följa annonser, ställa sig i köer och skicka intresse är helt kostnadsfritt.",
   },
   {
-    q: "Hur funkar köer och intresse?",
-    a: "När du är inloggad kan du ställa dig i köer för företag och skicka intresse direkt från annonsen.",
+    q: "Behöver jag Bank-ID?",
+    a: "Ja. Du loggar in med Bank-ID för att vi ska kunna verifiera att du är student och matcha dig mot relevanta bostäder och köer.",
   },
   {
-    q: "Hur väljer jag skola?",
-    a: "Välj din skola på startsidan (inloggad) så visas avstånd i km till varje annons och relevanta köer.",
+    q: "Hur fungerar bostadsköerna?",
+    a: "CampusLyan samlar köer från olika aktörer. Du kan ställa dig i kö direkt i appen och se villkor, krav och din status för varje kö.",
   },
   {
-    q: "Varför ser jag inte adressen?",
-    a: "Detaljerad information som adress visas när du är inloggad.",
+    q: "Kan jag hyra ut min lägenhet via CampusLyan?",
+    a: "Ja. Studenter kan hyra ut tryggt när de ska åka på utbyte, sommarjobba eller vara borta längre perioder. Avtal och kontakt sker i plattformen.",
+  },
+  {
+    q: "Hur fungerar trygg uthyrning för privatpersoner?",
+    a: "Du får endast kontakt med verifierade studenter. Vi guidar dig genom hela processen – från första meddelande till signerat avtal.",
+  },
+  {
+    q: "Varför visas inte adressen på annonser?",
+    a: "Exakta adresser visas när du är inloggad. Detta ökar tryggheten för både uthyrare och studenter.",
+  },
+  {
+    q: "Kan företag lägga upp sina bostäder?",
+    a: "Ja. Bostadsbolag kan publicera via portal eller API. Vi kan även hantera bostadskön om så önskas. Ta kontakt med oss, så hjälper vi er att komma igång.",
+  },
+  {
+    q: "Visar ni studentrabatter och spartips?",
+    a: "Ja. Vi samlar relevanta erbjudanden, ekonomi-guider och tips för vardagsekonomi som hjälper dig som student.",
   },
 ];
+
 
 export default function Faq() {
   return (
@@ -40,9 +57,8 @@ export default function Faq() {
           <Button
             as={Link}
             href="/faq"
-            variant="bordered"
-            color="success"
-            className="border-slate-300 text-slate-900 hover:bg-white/60 dark:border-white/40 dark:text-white"
+            color="success" variant="solid" radius="full"
+            className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90"
           >
             Läs fler frågor
           </Button>

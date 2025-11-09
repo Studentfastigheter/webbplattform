@@ -4,18 +4,19 @@ import Reveal from "@/lib/reveal";
 
 const steps = [
   {
-    title: "Skapa konto",
-    desc: "Registrera dig gratis, välj skola och lås upp kartvyer, köer och rekommenderade annonser.",
+    title: "Registrera med Bank-ID",
+    desc: "Skapa ett studentkonto på några sekunder. Välj skola/stad så anpassar vi köer, områden och rekommenderade bostäder efter dig.",
   },
   {
-    title: "Utforska och följ",
-    desc: "Filtrera, följ favoriter och ställ dig i köer från samma dashboard.",
+    title: "Utforska köer & bostäder",
+    desc: "Se bostäder nära campus, filtrera på pris, storlek och inflytt. Hitta relevanta bostadsköer och följ de bostäder du gillar.",
   },
   {
-    title: "Få svar & flytta in",
-    desc: "Samla alla svar och intresseanmälningar i ett flöde – boka visning och skriv kontrakt utan krångel.",
+    title: "Ansök tryggt & flytta in",
+    desc: "Skicka intresse, chatta med verifierade uthyrare och signera avtal digitalt. Håll koll på svar, visningar och nästa steg – allt säkert.",
   },
 ];
+
 
 export default function StepsTimeline() {
   return (

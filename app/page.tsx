@@ -29,7 +29,7 @@ export default function HomePage() {
           <Features />
           <StepsTimeline />
           <TestimonialsMarquee />
-          <CityCarousel />
+          {/*<CityCarousel />*/}
           <Faq />
         </>
       )}

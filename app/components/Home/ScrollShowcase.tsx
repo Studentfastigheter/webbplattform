@@ -51,21 +51,31 @@ export default function ScrollShowcase() {
               <p className="text-lg font-semibold text-slate-900">1:a Vasastan, 25 m²</p>
               <p className="text-sm text-slate-700">6 200 kr • Inflytt 1 juni</p>
             </div>
+            
             <div className="flex flex-col gap-2 rounded-xl bg-black/5 p-3">
               <p className="text-sm text-slate-700">8 min till Handelshögskolan</p>
               <p className="text-sm text-slate-700">Husdjur tillåtet • Kallhyra</p>
             </div>
+            <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-[0.35em] text-slate-700">Uthyrare</p>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+                    Verifierad uthyrarprofil
+                  </span>
+                </div>
             <div className="flex flex-col gap-3 text-sm text-slate-700">
               <div className="flex items-center justify-between">
                 <span>SGS Studentbostäder</span>
-                <span className="font-semibold text-slate-900">87 dagar</span>
+                <span className="font-semibold text-slate-900">68 dagar</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Chalmers Studentbostäder</span>
-                <span className="font-semibold text-slate-900">34 dagar</span>
+              <div className="rounded-lg bg-white p-1 text-center ring-1 ring-slate-200">
+                <p className="text-[11px] text-slate-500">Betyg</p>
+                <p className="text-sm font-semibold flex items-center justify-center gap-0.5 text-amber-500">
+                  ★★★★★
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1">4.8 av 5</p>
               </div>
             </div>
-            <Button color="success" variant="solid" radius="full" className="mt-5 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90">
+            <Button color="success" variant="solid" radius="full" className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90">
               Skicka intresse
             </Button>
           </div>
