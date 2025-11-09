@@ -6,6 +6,7 @@ import SiteFooter from "./components/SiteFooter/SiteFooter";
 import { AuthProvider } from "@/context/AuthContext";
 import { SchoolProvider } from "@/context/SchoolContext";
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from '@vercel/analytics/next';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="sv">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans bg-background text-foreground`}>
         <SpeedInsights /> 
+        <Analytics />
         <AuthProvider>
           <SchoolProvider>
             {/*<SiteHeader />*/}
