@@ -11,10 +11,11 @@ const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 const FOOTER_LINKS = [
   { href: "/om", label: "Om CampusLyan" },
   { href: "/partners", label: "Samarbetspartners" },
+  /*{
   { href: "/for-foretag", label: "För företag" },
   { href: "/hyra-ut", label: "Hyra ut" },
   { href: "/kundservice", label: "Kundservice & kontakt" },
-  { href: "/privacy", label: "Integritet" },
+  { href: "/privacy", label: "Integritet" }, }*/
   
 ];
 
@@ -25,7 +26,7 @@ const LINK_SECTIONS = [
 
 const SOCIAL_LINKS = [
   { href: "https://www.linkedin.com/company/campuslyan", label: "LinkedIn", icon: <FaLinkedin /> },
-  { href: "https://www.instagram.com/campuslyan", label: "Instagram", icon: <FaInstagram /> },
+  { href: "https://www.instagram.com/campuslyanse", label: "Instagram", icon: <FaInstagram /> },
   { href: "https://www.facebook.com/campuslyan", label: "Facebook", icon: <FaFacebook /> },
   { href: "https://www.tiktok.com/@campuslyan", label: "TikTok", icon: <FaTiktok /> },
   { href: "https://www.threads.net/@campuslyan", label: "Threads", icon: <SiThreads /> },
@@ -35,16 +36,16 @@ export default function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative mt-16 w-full overflow-hidden border-t border-slate-100 bg-gradient-to-b from-white via-slate-50 to-slate-100 text-slate-700">
+    <footer className="relative mt-16 w-full overflow-hidden border-t border-slate-100 bg-gradient-to-b  text-slate-700">
       <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute left-[-15%] top-[-10%] h-72 w-72 rounded-full bg-sky-200/60 blur-[140px]" />
-        <div className="absolute right-[-10%] bottom-[-15%] h-72 w-72 rounded-full bg-rose-200/50 blur-[140px]" />
+        <div className="absolute left-[-15%] top-[-10%] h-72 w-72 rounded-full  blur-[140px]" />
+        <div className="absolute right-[-10%] bottom-[-15%] h-72 w-72 rounded-full blur-[140px]" />
       </div>
 
       <div className="mx-auto w-full max-w-7xl px-6 py-16 sm:px-8">
         <div className="grid grid-cols-1 gap-10 border-b border-slate-200 pb-10 md:grid-cols-2">
           <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
               <Image
                 src="/campuslyan-logo.svg"
                 alt="CampusLyan logotyp"

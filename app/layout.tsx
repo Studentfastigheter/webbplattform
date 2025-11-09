@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans bg-background text-foreground`}>
         <AuthProvider>
           <SchoolProvider>
-            <SiteHeader />
+            {/*<SiteHeader />*/}
             <main className="pt-32">{children}</main>
             <SiteFooter />
           </SchoolProvider>

@@ -23,12 +23,12 @@ export default function HomePage() {
       {!user && (
         <>
           <ScrollShowcase />
-          <CompaniesMarquee />
-          <StatsBar />
+          {/*<CompaniesMarquee />*/}
+          {/*<StatsBar />*/}
           <ProductSpotlight />
           <Features />
           <StepsTimeline />
-          <TestimonialsMarquee />
+          {/*<TestimonialsMarquee />*/}
           {/*<CityCarousel />*/}
           <Faq />
         </>

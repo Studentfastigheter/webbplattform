@@ -10,7 +10,7 @@ export default function ScrollShowcase() {
     <ContainerScroll
       titleComponent={
         <div className="space-y-4">
-          <p className="eyebrow text-brand">CampusLyan</p>
+          <p className="eyebrow text-brand">Snart lanseras CampusLyan</p>
           <h1 className="hero-title text-gradient mb-12">
             Lyor för studenter i
             <span className="inline-flex">
