@@ -53,7 +53,7 @@ const gridItems: GridItemProps[] = [
 
 const GridItem = ({ area, icon, title, description }: GridItemProps) => {
   return (
-    <li className={`list-none ${area}`}>  {/* <-- tog bort min-h */}
+    <li className={`list-none w-full ${area}`}>
       <div className="group relative h-full rounded-2xl border border-black/5 p-2 shadow-sm dark:border-white/10 md:rounded-3xl md:p-3">
         <GlowingEffect
           blur={0}
@@ -96,16 +96,7 @@ export default function Features() {
       </div>
 
       {/* Låt griden auto-anpassa höjd – inga auto-rows som låser korten */}
-      <ul
-        className="
-          container-page mt-8
-          grid grid-cols-1 gap-3 text-slate-900 dark:text-white
-          md:grid-cols-12 md:gap-3
-          lg:gap-4
-          xl:grid-rows-2    /* ok att ha 2 rader; de växer efter innehåll */
-          grid-flow-dense
-        "
-      >
+      <ul className="container-page mt-8 grid grid-cols-1 gap-4 text-slate-900 dark:text-white md:grid md:grid-cols-12 md:gap-3 md:grid-flow-dense lg:gap-4 xl:grid-rows-2">
         {gridItems.map((item) => (
           <GridItem key={item.title} {...item} />
         ))}

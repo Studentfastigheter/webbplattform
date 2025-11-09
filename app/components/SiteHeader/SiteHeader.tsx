@@ -39,7 +39,6 @@ export default function SiteHeader() {
             <span className="text-base">CampusLyan</span>
           </div>
         </Link>
-
         <NavItems items={navItems} />
 
         <div className="hidden items-center gap-3 lg:flex">
