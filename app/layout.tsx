@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "./components/SiteHeader/SiteHeader";
@@ -10,6 +10,10 @@ import { Analytics } from '@vercel/analytics/next';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+};
 
 export const metadata: Metadata = {
   // Viktigt för korrekta absoluta URL:er i OG/Twitter
@@ -64,7 +68,6 @@ export const metadata: Metadata = {
     shortcut: ["/favicon.ico"],
   },
   manifest: "/site.webmanifest",
-  themeColor: "#ffffff",
   verification: {
     // Google Search Console
     google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes"
@@ -80,7 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <AuthProvider>
           <SchoolProvider>
-            {/* <SiteHeader /> */}
+            {/*<SiteHeader />*/}
             <main className="pt-32">{children}</main>
             <SiteFooter />
           </SchoolProvider>
