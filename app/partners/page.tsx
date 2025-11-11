@@ -27,6 +27,14 @@ const PARTNER_COMPANIES: Company[] = [
     logoUrl: "/logos/sgs-logo.svg",
     description: "",
   },
+  {
+    id: 2,
+    name: "Guldhedens Studiehem",
+    city: "Göteborg",
+    website: "https://www.guldheden.com",
+    logoUrl: "/logos/guldhedens_studiehem.png",
+    description: "",
+  },
 ];
 
 const STUDENT_UNIONS: Union[] = [
