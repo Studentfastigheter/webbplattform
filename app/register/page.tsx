@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ ssn: "", email: "", password: "" });
+  const [form, setForm] = useState({ ssn: "", type:"student", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
