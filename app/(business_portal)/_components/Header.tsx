@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, Divide, MessageCircle, Settings } from "lucide-react";
+import { ArrowLeft, ChevronDown, MessageCircle, Settings } from "lucide-react";
 import Link from "next/link";
 import { Message } from "../_statics/types";
 
@@ -51,7 +51,7 @@ function Profile() {
 export function Header() {
   return (
     <header
-      className="flex h-16 items-center justify-between border-b border-slate-100 shadow bg-white px-4 md:px-6"
+      className="flex h-16 items-center fixed top-0 right-0 left-64 z-50 justify-between border-b border-slate-100 shadow bg-white px-4 md:px-6"
       role="banner"
     >
       <Link href={"/"} className="flex gap-2 text-sm">

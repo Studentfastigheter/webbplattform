@@ -83,13 +83,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <AuthProvider>
           <SchoolProvider>
-<<<<<<< Updated upstream
-            <SiteHeader />
-            <main className="pt-32">{children}</main>
-=======
-            {/*<SiteHeader />*/}
+            {/* <SiteHeader /> */}
             <main>{children}</main>
->>>>>>> Stashed changes
             <SiteFooter />
           </SchoolProvider>
         </AuthProvider>

@@ -6,7 +6,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/app/(business_portal)/_components/chart"
+} from "@/components/ui/Chart"
 import Container from "./Container"
 import React from "react"
 
@@ -45,7 +45,7 @@ export default function ChartPieLabel({
 
   return (
     <Container columnSpan={columnSpan}>
-      <h2 className="text-xl font-semibold text-slate-900 mb-4">Betalda fakturor förra månaden</h2>
+      <h2 className="text-xl font-semibold text-slate-900 mb-4">Förra månadens fakturor</h2>
       <ChartContainer
           config={chartConfig}
           className="mx-auto aspect-square max-h-[250px]"

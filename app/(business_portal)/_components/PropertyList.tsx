@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ChevronDown, ExternalLink } from "lucide-react"
 import Container from "./Container"
 import Link from "next/link";
+import NormalButton from "./NormalButton";
+import FilterButton from "./FilterButton";
 
 const properties = [
   {
@@ -38,8 +40,6 @@ export default function PropertyList({
   columnSpan: number,
 }) {
 
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOption, setSortOption] = useState(sortOptions[0].value);
 
   return (
     <Container columnSpan={columnSpan}>
@@ -47,22 +47,8 @@ export default function PropertyList({
         <h2 className="text-xl font-semibold text-slate-900">Dina bostäder</h2>
         <div className="flex gap-8 flex-1">
           <p className="text-sm text-slate-600">Visar 3 av 400</p>
-          <Link href="" className="text-sm text-gray-800 font-semibold hover:underline flex gap-2 items-center">Se alla bostäder <ExternalLink size={16} /></Link>
         </div>
-        <div className="relative">
-          <button onClick={() => setFilterOpen(prev => !prev)} className={`bg-gray-800 text-white text-sm font-semibold rounded-sm ${filterOpen ? "rounded-b-none" : "rounded-b-sm"} px-2.5 py-1 flex gap-1 cursor-pointer`}>
-            {sortOptions.find(option => option.value === sortOption)?.label} 
-            <ChevronDown size={16} />
-          </button>
-          <ul className="absolute text-sm top-7 right-0 left-0 border border-slate-200 bg-white rounded-b-sm shadow-md z-10 px-1 pb-0.5" style={{display: filterOpen ? "block" : "none"}}>
-            {sortOptions.map(option => {
-              if (option.value === sortOption) return null;
-              return (
-                <li key={option.value} className="border-b border-slate-200 last:border-none"><button className="w-full py-2.5 cursor-pointer" onClick={() => {setSortOption(option.value); setFilterOpen(false)}}>{option.label}</button></li>
-              )
-            })}
-          </ul>
-        </div>
+        <FilterButton options={sortOptions} />
       </div>
 
 
@@ -84,11 +70,12 @@ export default function PropertyList({
               <td className="pr-12 py-4">{property.rent} kr</td>
               <td className="pr-12 py-4">2024-05-01</td>
               <td className="pr-12 py-4"><div className="w-6 h-6 bg-green-600 rounded-full"></div></td>
-              <td className="pr-12 py-4"><button className="bg-gray-800 text-white text-sm font-semibold rounded-full px-2.5 py-1 flex gap-1">Redigera</button></td>
+              <td className="pr-12 py-4"><NormalButton text="Redigera" /></td>
             </tr>
           ))}
         </tbody>
       </table>
+      <Link href="" className="mt-8 text-sm text-gray-900 font-semibold hover:underline flex gap-2 items-center">Se alla bostäder <ExternalLink size={16} /></Link>
     </Container>
   )
 }
