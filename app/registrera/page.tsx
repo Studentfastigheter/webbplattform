@@ -5,8 +5,18 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 
+type AccountType = "student" | "landlord" | "company";
+
+type RegisterForm = { type: AccountType; ssn: string; email: string; password: string };
+
+const accountTypeOptions: { value: AccountType; title: string; description: string }[] = [
+  { value: "student", title: "Student", description: "Få tillgång till bostäder och köer riktade mot studenter." },
+  { value: "landlord", title: "Uthyrare", description: "Publicera privata annonser och hantera intresseanmälningar." },
+  { value: "company", title: "Företag", description: "Hantera företagsbostäder och administrera flera annonser." },
+];
+
 export default function RegisterPage() {
-  const [form, setForm] = useState({type:"student", ssn: "", email: "", password: "" });
+  const [form, setForm] = useState<RegisterForm>({type:"student", ssn: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
@@ -60,6 +70,32 @@ export default function RegisterPage() {
         <h1 className="h1 mb-4">Skapa konto</h1>
 
         <form onSubmit={onSubmit} className="form card shadow-soft">
+          <div className="fieldset">
+            <label className="label">Kontotyp</label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {accountTypeOptions.map((option) => {
+                const isSelected = form.type === option.value;
+                const baseClasses =
+                  "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600";
+                const stateClasses = isSelected
+                  ? "border-[#004225] bg-green-50 shadow-sm"
+                  : "border-neutral-200 hover:border-[#004225]/60";
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, type: option.value }))}
+                    className={`${baseClasses} ${stateClasses}`}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="block text-sm font-semibold text-neutral-800">{option.title}</span>
+                    <span className="mt-1 block text-xs text-neutral-500">{option.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="fieldset">
             <label className="label">Personnummer (SSN)</label>
             <input
