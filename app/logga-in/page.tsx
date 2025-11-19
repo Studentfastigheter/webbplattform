@@ -21,7 +21,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push('/listings');
+      router.push('/');
     } catch (e: any) {
       setErr(e.message || 'Login failed');
     } finally {

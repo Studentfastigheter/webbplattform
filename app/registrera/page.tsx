@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ ssn: "", type:"student", email: "", password: "" });
+  const [form, setForm] = useState({type:"student", ssn: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
@@ -46,7 +46,7 @@ export default function RegisterPage() {
 
       // Logga in direkt efter lyckad registrering
       await login(form.email, form.password);
-      router.push("/listings");
+      router.push("/");
     } catch (err: any) {
       setError(err.message ?? "Något gick fel.");
     } finally {
