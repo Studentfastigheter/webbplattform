@@ -3,32 +3,60 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/button";
 
 import { useAuth } from "@/context/AuthContext";
-import { LoginForm } from "@/components/ui/LoginForm";
-import { Form, FormError, FormField, FormHelper } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
+import { AuthCard } from "@/components/ui/AuthCard";
+import { Button } from "@heroui/button";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 type AccountType = "student" | "landlord" | "company";
 
-type RegisterForm = { type: AccountType; ssn: string; email: string; password: string };
+type RegisterForm = {
+  type: AccountType;
+  ssn: string;
+  email: string;
+  password: string;
+};
 
-const accountTypeOptions: { value: AccountType; title: string; description: string }[] = [
-  { value: "student", title: "Student", description: "Få tillgång till bostäder och köer riktade mot studenter." },
-  { value: "landlord", title: "Uthyrare", description: "Publicera privata annonser och hantera intresseanmälningar." },
-  { value: "company", title: "Företag", description: "Hantera företagsbostäder och administrera flera annonser." },
+const accountTypeOptions: {
+  value: AccountType;
+  title: string;
+}[] = [
+  {
+    value: "student",
+    title: "Student",
+  },
+  {
+    value: "landlord",
+    title: "Uthyrare",
+  },
+  {
+    value: "company",
+    title: "Företag",
+  },
 ];
 
 export default function RegisterPage() {
-  const [form, setForm] = useState<RegisterForm>({ type: "student", ssn: "", email: "", password: "" });
+  const [form, setForm] = useState<RegisterForm>({
+    type: "student",
+    ssn: "",
+    email: "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
   const router = useRouter();
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(null);
 
     if (!form.ssn || !form.email || !form.password) {
@@ -49,128 +77,129 @@ export default function RegisterPage() {
       });
 
       if (!res.ok) {
-        // Prefer the `reason` field from the response body if provided
         const data = await res.json().catch(() => ({}));
         const msg =
           (data as any)?.reason ||
           (data as any)?.error ||
           (data as any)?.message ||
-          (res.status === 409 ? "E-post eller personnummer används redan." : "Kunde inte registrera användaren.");
+          (res.status === 409
+            ? "E-post eller personnummer används redan."
+            : "Kunde inte registrera användaren.");
         throw new Error(msg);
       }
 
-      // Logga in direkt efter lyckad registrering
       await login(form.email, form.password);
       router.push("/");
     } catch (err: any) {
-      setError(err.message ?? "Något gick fel.");
+      setError(err?.message ?? "Något gick fel.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <LoginForm
-      title="Skapa ett konto"
-      subtitle="Välj kontotyp och få tillgång till de funktioner som passar just dig."
-      badge="CampusLyan konto"
-      sloganTitle="Redo att komma igång?"
-      sloganDescription="Det tar under två minuter att bli redo för att söka, hyra ut eller administrera bostäder."
-      switchTitle="Redan medlem?"
-      switchDescription="Logga in och fortsätt där du slutade."
-      switchButtonLabel="Logga in"
-      switchLinkHref="/logga-in"
-      footer={
-        <>
-          Har du redan ett konto?{" "}
-          <Link href="/logga-in" className="font-semibold text-[#004225]">
-            Logga in här
-          </Link>
-        </>
-      }
-    >
-      <Form onSubmit={onSubmit} className="space-y-5">
-        <FormField>
-          <Label>Kontotyp</Label>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {accountTypeOptions.map((option) => {
-              const isSelected = form.type === option.value;
-              const baseClasses =
-                "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600";
-              const stateClasses = isSelected
-                ? "border-[#004225] bg-green-50 shadow-sm"
-                : "border-neutral-200 hover:border-[#004225]/60";
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, type: option.value }))}
-                  className={`${baseClasses} ${stateClasses}`}
-                  aria-pressed={isSelected}
-                >
-                  <span className="block text-sm font-semibold text-neutral-800">{option.title}</span>
-                  <span className="mt-1 block text-xs text-neutral-500">{option.description}</span>
-                </button>
-              );
-            })}
-          </div>
-        </FormField>
-
-        <FormField>
-          <Label htmlFor="ssn">Personnummer (SSN)</Label>
-          <input
-            id="ssn"
-            className="input"
-            type="text"
-            placeholder="ÅÅMMDDXXXX"
-            value={form.ssn}
-            onChange={(e) => setForm({ ...form, ssn: e.target.value.trim() })}
-            required
-            autoComplete="off"
-          />
-        </FormField>
-
-        <FormField>
-          <Label htmlFor="email">E‑post</Label>
-          <input
-            id="email"
-            className="input"
-            type="email"
-            placeholder="namn@example.com"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
-            autoComplete="email"
-          />
-        </FormField>
-
-        <FormField>
-          <Label htmlFor="password">Lösenord</Label>
-          <input
-            id="password"
-            className="input"
-            type="password"
-            placeholder="Minst 6 tecken"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
-            autoComplete="new-password"
-          />
-          <FormHelper>Du kan alltid byta lösenord senare under kontoinställningar.</FormHelper>
-        </FormField>
-
-        <Button
-          type="submit"
-          color="success"
-          className="mt-2 w-full font-semibold"
-          isDisabled={loading}
-          isLoading={loading}
+    <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-sm md:max-w-4xl">
+        <AuthCard
+          title="Skapa ett konto"
+          subtitle="Välj kontotyp och få tillgång till de funktioner som passar just dig."
+          footer={
+            <FieldDescription className="text-center">
+              Har du redan ett konto?{" "}
+              <Link href="/logga-in">Logga in här</Link>
+            </FieldDescription>
+          }
         >
-          {loading ? "Skapar..." : "Registrera"}
-        </Button>
+          <form className="space-y-6" onSubmit={onSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>Kontotyp</FieldLabel>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {accountTypeOptions.map((option) => {
+                    const isSelected = form.type === option.value;
+                    const baseClasses =
+                      "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600";
+                    const stateClasses = isSelected
+                      ? "border-[#004225] bg-green-50 shadow-sm"
+                      : "border-neutral-200 hover:border-[#004225]/60";
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({ ...prev, type: option.value }))
+                        }
+                        className={`${baseClasses} ${stateClasses}`}
+                        aria-pressed={isSelected}
+                      >
+                        <span className="block text-sm font-semibold text-neutral-800">
+                          {option.title}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
 
-        {error && <FormError>{error}</FormError>}
-      </Form>
-    </LoginForm>
+              <Field>
+                <FieldLabel htmlFor="ssn">Personnummer (SSN)</FieldLabel>
+                <Input
+                  id="ssn"
+                  type="text"
+                  placeholder="ÅÅMMDDXXXX"
+                  value={form.ssn}
+                  onChange={(event) =>
+                    setForm({ ...form, ssn: event.target.value.trim() })
+                  }
+                  autoComplete="off"
+                  required
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="email">E-postadress</FieldLabel>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="namn@example.com"
+                  value={form.email}
+                  onChange={(event) =>
+                    setForm({ ...form, email: event.target.value })
+                  }
+                  autoComplete="email"
+                  required
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="password">Lösenord</FieldLabel>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Minst 6 tecken"
+                  value={form.password}
+                  onChange={(event) =>
+                    setForm({ ...form, password: event.target.value })
+                  }
+                  autoComplete="new-password"
+                  required
+                />
+                <FieldDescription>
+                  Du kan alltid byta lösenord senare under kontoinställningar.
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <Button type="submit" color="success" variant="solid" radius="full" className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90" disabled={loading}>
+                  {loading ? "Skapar..." : "Registrera"}
+                </Button>
+              </Field>
+
+              {error && <FieldError>{error}</FieldError>}
+            </FieldGroup>
+          </form>
+        </AuthCard>
+      </div>
+    </div>
   );
 }
