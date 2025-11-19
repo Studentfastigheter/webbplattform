@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
+
+import { useAuth } from "@/context/AuthContext";
+import { LoginForm } from "@/components/ui/LoginForm";
+import { Form, FormError, FormField, FormHelper } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 
 type AccountType = "student" | "landlord" | "company";
 
@@ -16,7 +21,7 @@ const accountTypeOptions: { value: AccountType; title: string; description: stri
 ];
 
 export default function RegisterPage() {
-  const [form, setForm] = useState<RegisterForm>({type:"student", ssn: "", email: "", password: "" });
+  const [form, setForm] = useState<RegisterForm>({ type: "student", ssn: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
@@ -65,88 +70,107 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="container-page">
-      <section className="section" style={{ maxWidth: 520, margin: '0 auto' }}>
-        <h1 className="h1 mb-4">Skapa konto</h1>
-
-        <form onSubmit={onSubmit} className="form card shadow-soft">
-          <div className="fieldset">
-            <label className="label">Kontotyp</label>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {accountTypeOptions.map((option) => {
-                const isSelected = form.type === option.value;
-                const baseClasses =
-                  "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600";
-                const stateClasses = isSelected
-                  ? "border-[#004225] bg-green-50 shadow-sm"
-                  : "border-neutral-200 hover:border-[#004225]/60";
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, type: option.value }))}
-                    className={`${baseClasses} ${stateClasses}`}
-                    aria-pressed={isSelected}
-                  >
-                    <span className="block text-sm font-semibold text-neutral-800">{option.title}</span>
-                    <span className="mt-1 block text-xs text-neutral-500">{option.description}</span>
-                  </button>
-                );
-              })}
-            </div>
+    <LoginForm
+      title="Skapa ett konto"
+      subtitle="Välj kontotyp och få tillgång till de funktioner som passar just dig."
+      badge="CampusLyan konto"
+      sloganTitle="Redo att komma igång?"
+      sloganDescription="Det tar under två minuter att bli redo för att söka, hyra ut eller administrera bostäder."
+      switchTitle="Redan medlem?"
+      switchDescription="Logga in och fortsätt där du slutade."
+      switchButtonLabel="Logga in"
+      switchLinkHref="/logga-in"
+      footer={
+        <>
+          Har du redan ett konto?{" "}
+          <Link href="/logga-in" className="font-semibold text-[#004225]">
+            Logga in här
+          </Link>
+        </>
+      }
+    >
+      <Form onSubmit={onSubmit} className="space-y-5">
+        <FormField>
+          <Label>Kontotyp</Label>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {accountTypeOptions.map((option) => {
+              const isSelected = form.type === option.value;
+              const baseClasses =
+                "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600";
+              const stateClasses = isSelected
+                ? "border-[#004225] bg-green-50 shadow-sm"
+                : "border-neutral-200 hover:border-[#004225]/60";
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, type: option.value }))}
+                  className={`${baseClasses} ${stateClasses}`}
+                  aria-pressed={isSelected}
+                >
+                  <span className="block text-sm font-semibold text-neutral-800">{option.title}</span>
+                  <span className="mt-1 block text-xs text-neutral-500">{option.description}</span>
+                </button>
+              );
+            })}
           </div>
+        </FormField>
 
-          <div className="fieldset">
-            <label className="label">Personnummer (SSN)</label>
-            <input
-              className="input"
-              type="text"
-              placeholder="ÅÅMMDDXXXX"
-              value={form.ssn}
-              onChange={(e) => setForm({ ...form, ssn: e.target.value.trim() })}
-              required
-            />
-          </div>
+        <FormField>
+          <Label htmlFor="ssn">Personnummer (SSN)</Label>
+          <input
+            id="ssn"
+            className="input"
+            type="text"
+            placeholder="ÅÅMMDDXXXX"
+            value={form.ssn}
+            onChange={(e) => setForm({ ...form, ssn: e.target.value.trim() })}
+            required
+            autoComplete="off"
+          />
+        </FormField>
 
-          <div className="fieldset">
-            <label className="label">E‑post</label>
-            <input
-              className="input"
-              type="email"
-              placeholder="namn@example.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-            />
-          </div>
+        <FormField>
+          <Label htmlFor="email">E‑post</Label>
+          <input
+            id="email"
+            className="input"
+            type="email"
+            placeholder="namn@example.com"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            required
+            autoComplete="email"
+          />
+        </FormField>
 
-          <div className="fieldset">
-            <label className="label">Lösenord</label>
-            <input
-              className="input"
-              type="password"
-              placeholder="Minst 6 tecken"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
-          </div>
+        <FormField>
+          <Label htmlFor="password">Lösenord</Label>
+          <input
+            id="password"
+            className="input"
+            type="password"
+            placeholder="Minst 6 tecken"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            required
+            autoComplete="new-password"
+          />
+          <FormHelper>Du kan alltid byta lösenord senare under kontoinställningar.</FormHelper>
+        </FormField>
 
-          <Button
-            type="submit"
-            color="success"
-            className="mt-2 font-semibold"
-            isDisabled={loading}
-            isLoading={loading}
-          >
-            {loading ? "Skapar..." : "Registrera"}
-          </Button>
+        <Button
+          type="submit"
+          color="success"
+          className="mt-2 w-full font-semibold"
+          isDisabled={loading}
+          isLoading={loading}
+        >
+          {loading ? "Skapar..." : "Registrera"}
+        </Button>
 
-          {error && (
-            <p className="subtle" style={{ color: 'crimson' }} role="alert">{error}</p>
-          )}
-        </form>
-      </section>
-    </main>
+        {error && <FormError>{error}</FormError>}
+      </Form>
+    </LoginForm>
   );
 }

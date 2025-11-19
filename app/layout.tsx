@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { SchoolProvider } from "@/context/SchoolContext";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/next';
+import { Theme } from "@radix-ui/themes";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -83,9 +84,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <AuthProvider>
           <SchoolProvider>
+            <Theme>
             <SiteHeader />
             <main className="pt-32">{children}</main>
             <SiteFooter />
+            </Theme>
           </SchoolProvider>
         </AuthProvider>
       </body>
