@@ -1,19 +1,24 @@
 import Search from "../_components/Search"
+import CTAButton from "../_components/CTAButton"
+import AnnonsTable from "../_components/AnnonsTable"
+
+
+
+
+
+
 
 
 export default function Annonser() {
   return (
-    <div className="bg-gray-50 min-h-full">
-
-      <div className="mx-2 pt-3 mb-1 flex">
+    <>
+      <div className="mb-1 flex items-center gap-3 justify-between">
         <Search />
+        <CTAButton text="Skapa annons" href="portal/annonser/ny" />
       </div>
 
-      <div className="grid grid-cols-12">
-        
-        
-        
-      </div>
-    </div>
+      <AnnonsTable />
+      
+    </>      
   )
 }

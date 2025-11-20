@@ -16,7 +16,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           className="flex-1 overflow-y-auto py-16"
           role="main"
         >
-          {children}
+          <div className="bg-gray-50 min-h-full p-4">
+            {children}
+          </div>
         </main>
       </div>
     </div>

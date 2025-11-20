@@ -15,8 +15,8 @@ const filterOptions = [
 
 export default function Home() {
   return (
-    <div className="bg-gray-50 min-h-full">
-      <div className="mx-2 pt-3 mb-1 flex">
+    <>
+      <div className="mb-1 flex">
         <FilterButton options={filterOptions} />
       </div>
 
@@ -33,6 +33,6 @@ export default function Home() {
         <QuickActions columnSpan={2} />
 
       </div>
-    </div>
+    </>
   )
 }
