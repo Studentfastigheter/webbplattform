@@ -102,7 +102,6 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm md:max-w-4xl">
         <AuthCard
           title="Skapa ett konto"
-          subtitle="Välj kontotyp och få tillgång till de funktioner som passar just dig."
           footer={
             <FieldDescription className="text-center">
               Har du redan ett konto?{" "}
@@ -142,11 +141,11 @@ export default function RegisterPage() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="ssn">Personnummer (SSN)</FieldLabel>
+                <FieldLabel htmlFor="ssn">Personnummer</FieldLabel>
                 <Input
                   id="ssn"
                   type="text"
-                  placeholder="ÅÅMMDDXXXX"
+                  placeholder="ÅÅMMDD-XXXX"
                   value={form.ssn}
                   onChange={(event) =>
                     setForm({ ...form, ssn: event.target.value.trim() })
@@ -184,9 +183,6 @@ export default function RegisterPage() {
                   autoComplete="new-password"
                   required
                 />
-                <FieldDescription>
-                  Du kan alltid byta lösenord senare under kontoinställningar.
-                </FieldDescription>
               </Field>
 
               <Field>
