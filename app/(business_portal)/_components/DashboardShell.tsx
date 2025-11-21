@@ -10,13 +10,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
       <Sidebar />
 
-      <div className="flex flex-col pl-64">
+      <div className="flex flex-col pl-56">
         <Header />
         <main
           className="flex-1 overflow-y-auto py-16"
           role="main"
         >
-          <div className="bg-gray-50 min-h-full p-4">
+          <div className="bg-white min-h-full p-4">
             {children}
           </div>
         </main>

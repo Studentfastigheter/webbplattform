@@ -1,39 +1,78 @@
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, TrendingDown, TrendingUp, Users } from "lucide-react";
 import Container from "./Container";
 import Link from "next/link";
+
+function getChangeDirectionColor(changeInPercent: number, increaseDirection: "up" | "down") {
+    if (changeInPercent > 0 && increaseDirection === "up") {
+        return "text-green-600";
+    }
+    else if (changeInPercent < 0 && increaseDirection === "up") {
+        return "text-red-600";
+    }
+    else if (changeInPercent > 0 && increaseDirection === "down") {
+        return "text-red-600";
+    }
+    else {
+        return "text-green-600";
+    }
+}
 
 export default function Statistic({
     columnSpan,
     icon,
     data,
     label,
-    unit,
-    background
+    changeInPercent,
+    increaseDirection = "up",
   }: {
     columnSpan: number,
     icon: React.ReactElement,
     data: string,
     label: string,
-    unit?: string,
-    background: string
+    background: string,
+    changeInPercent: number,
+    increaseDirection?: "up" | "down",
   }) {
+
+
+    function getChangeDirectionColor() {
+      if (changeInPercent > 0 && increaseDirection === "up") {
+          return "text-green-600";
+      }
+      else if (changeInPercent < 0 && increaseDirection === "up") {
+          return "text-red-600";
+      }
+      else if (changeInPercent > 0 && increaseDirection === "down") {
+          return "text-red-600";
+      }
+      else {
+          return "text-green-600";
+      }
+  }
+
+  const changeColorClass = getChangeDirectionColor();
+
+
   return (
-    <Container columnSpan={columnSpan}>
-      <div className="flex gap-4 items-center">
-        <div className="p-4 rounded-full" style={{"backgroundColor": background}}>
-            {icon}
-        </div>
-        <div>
-            <p className="text-3xl font-bold">{data}
-            {unit ? <span className="text-lg font-medium ml-0.5 relative bottom-2   ">{unit}</span> : <></>}
-            </p>
-            <p className="text-sm text-neutral-700">{label}</p>
+    <Container columnSpan={columnSpan} padding={"sm"}>
+      <div className="flex gap-2 text-sm text-neutral-400 mb-2">
+        {icon}
+        <p className="tracking-wide">{label}</p>
+      </div>
+      <div className="flex gap-2">
+        <p className="text-brand text-2xl/[24px] font-bold">
+          {Number(data).toLocaleString("sv-SE")}
+        </p>
+        <div className={`flex gap-1 items-end ${changeColorClass}`}>
+          {changeInPercent > 0 && (
+            <TrendingUp size={20} color="currentColor" />
+          ) || (
+            <TrendingDown size={20} color="currentColor" />
+          )}
+
+          <p className="text-xs font-medium">{changeInPercent.toString().replace(".", ",")} %</p>
         </div>
       </div>
-
-      <Link className="absolute top-2 right-3" href="">
-          <Ellipsis />
-      </Link>
     </Container>
   )
 }
