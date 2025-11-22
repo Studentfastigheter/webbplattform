@@ -1,16 +1,10 @@
-import Explore from "../components/Listings/Explore";
-
-export const dynamic = "force-dynamic";
-
-export default function ListingsPage() {
-  return (
-    <div className="container-page">
-      <section className="section">
-        <h1 className="h1 mb-2">Hitta bostad</h1>
-        <p className="text-slate-900 mb-6">Sök, filtrera och hitta din nästa studentlya.</p>
-
-        <Explore />
-      </section>
-    </div>
-  );
-}
+export default function Page() {
+    return (
+      <main className="p-6">
+        <h1 className="text-2xl font-semibold">[Sidan ska implementeras]</h1>
+        <p className="mt-2 text-sm text-gray-600">
+          Innehåll kommer senare.
+        </p>
+      </main>
+    );
+  }
