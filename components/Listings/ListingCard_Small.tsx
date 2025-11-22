@@ -1,4 +1,5 @@
 import React from "react";
+import Tag from "../ui/Tag";
 
 export type ListingCardSmallProps = {
   title: string;        
@@ -76,17 +77,16 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
             <p className="text-sm text-[#6b6b6b]">{landlordType}</p>
           </div>
         </div>
-
-        {/* OBS! Ändra Tagg och återanvänd komponent istället */}
+        
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2">
             {tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-[#f5f5f5] px-3 py-1 text-xs font-medium uppercase tracking-wide text-[#444]"
-              >
-                {tag}
-              </span>
+              <Tag 
+              key={tag} 
+              text={tag}
+              bgColor="lightgray"
+              textColor="black"
+              />
             ))}
           </div>
         )}
