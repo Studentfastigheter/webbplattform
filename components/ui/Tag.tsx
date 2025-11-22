@@ -21,10 +21,10 @@ export default function Tag({
 
   return (
     <div
-      className={[
+      className={[ 
         "inline-flex items-center justify-center whitespace-nowrap",
         "shadow-[0px_3px_4px_rgba(0,0,0,0.25)]",
-        className,
+        className, 
       ].join(" ")}
       style={{
         background: bgColor,
