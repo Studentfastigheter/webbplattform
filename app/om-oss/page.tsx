@@ -1,4 +1,4 @@
-import { ArrowUpRight, Compass, ShieldCheck, Users2 } from "lucide-react";
+import {Compass, ShieldCheck } from "lucide-react";
 
 export const dynamic = "force-static";
 
