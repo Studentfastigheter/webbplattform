@@ -7,6 +7,7 @@ import Features from "../components/Landingpage/Features";
 import StepsTimeline from "../components/Landingpage/StepsTimeline";
 import Faq from "../components/Landingpage/Faq";
 import ListingCard_Small from "@/components/Listings/ListingCard_Small";
+import Que_ListingCard from "@/components/Listings/Que_ListingCard";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -16,33 +17,26 @@ export default function HomePage() {
       {!user && (
         <>
           <ScrollShowcase />
-          {/*<CompaniesMarquee />*/}
-          {/*<StatsBar />*/}
           <ProductSpotlight />
           <Features />
           <StepsTimeline />
-          {/*<TestimonialsMarquee />*/}
-          {/*<CityCarousel />*/}
           <Faq />
         </>
       )}
 
       {user && (
         <>
-          <div className="min-h-screen bg-gray-100 p-10">
-            <ListingCard_Small
-              title="1:a Vasagatan 19"
+          <div className="min-h-screen bg-gray-100 p-10">         
+            <Que_ListingCard
+              name="SGS Studentbostäder"
               area="Innerstan"
               city="Göteborg"
-              dwellingType="Lägenhet"
-              rooms={3}
-              sizeM2={42}
-              rent={3800}
-              landlordType="Privat värd"
-              isVerified={false}
-              imageUrl="/appartment.jpg"
-              tags={["Möblerat", "Poängfri", "Diskmaskin"]}
-              onClick={() => alert("Klick!")}
+              totalUnits={900}
+              isVerified
+              logoUrl="/logos/sgs-logo.svg"
+              tags={["Kristet", "Korridorer", "Lägenheter"]}
+              onViewListings={() => console.log("Visa bostäder")}
+              onReadMore={() => console.log("Läs mer")}
             />
           </div>
         </>
