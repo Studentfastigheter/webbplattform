@@ -6,6 +6,7 @@ type TagProps = {
   textColor?: string;
   height?: number;
   horizontalPadding?: number;
+  width?: number | string;
   className?: string;
 };
 
@@ -15,15 +16,16 @@ export default function Tag({
   textColor = "#FFFFFF",
   height = 25,
   horizontalPadding = 16,
+  width,
   className = "",
 }: TagProps) {
   const radius = height / 3;
 
   return (
     <div
-      className={[ 
+      className={[
         "inline-flex items-center justify-center whitespace-nowrap",
-        className, 
+        className,
       ].join(" ")}
       style={{
         background: bgColor,
@@ -35,6 +37,7 @@ export default function Tag({
         fontFamily: "Arimo, sans-serif",
         fontSize: 14,
         lineHeight: "16px",
+        width,
       }}
     >
       <span
