@@ -36,7 +36,7 @@ export default function HomePage() {
               sizeM2={42}
               rent={3800}
               landlordType="Privat värd"
-              isVerified={false}
+              isVerified={true}
               imageUrl="/appartment.jpg"
               tags={["Möblerat", "Poängfri", "Diskmaskin"]}
               onClick={() => alert("Klick!")}
@@ -47,7 +47,7 @@ export default function HomePage() {
               area="Innerstan"
               city="Göteborg"
               totalUnits={900}
-              isVerified
+              isVerified={true}
               logoUrl="/logos/sgs-logo.svg"
               tags={["Kristet", "Korridorer", "Lägenheter"]}
               onViewListings={() => console.log("Visa bostäder")}

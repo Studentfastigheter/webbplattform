@@ -11,19 +11,18 @@ type TagProps = {
 
 export default function Tag({
   text,
-  bgColor = "#004323",
+  bgColor = "#F0F0F0",
   textColor = "#FFFFFF",
   height = 25,
   horizontalPadding = 16,
   className = "",
 }: TagProps) {
-  const radius = height / 2;
+  const radius = height / 3;
 
   return (
     <div
       className={[ 
         "inline-flex items-center justify-center whitespace-nowrap",
-        "shadow-[0px_3px_4px_rgba(0,0,0,0.25)]",
         className, 
       ].join(" ")}
       style={{

@@ -1,5 +1,6 @@
 import React from "react";
 import Tag from "../ui/Tag";
+import VerifiedTag from "../ui/VerifiedTag";
 
 export type ListingCardSmallProps = {
   title: string;        
@@ -33,7 +34,7 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
   return (
     <div
       onClick={onClick}
-      className="flex w-full max-w-[480px] flex-col gap-4 rounded-[32px] bg-white p-4 shadow-[0px_10px_25px_rgba(15,0,50,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0px_15px_30px_rgba(15,0,50,0.12)] cursor-pointer"
+      className="flex w-full max-w-[480px] flex-col gap-4 rounded-[32px] bg-white p-4 shadow-md cursor-pointer"
     >
       {/* IMAGE */}
       <div className="relative w-full overflow-hidden rounded-[28px]">
@@ -53,9 +54,7 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
           <h3 className="text-[18px] font-bold">{title}</h3>
 
           {isVerified && (
-            <div className="rounded-full bg-[#0F4D0F] px-3 py-1 text-xs font-medium text-white">
-              Verifierad hyresvärd
-            </div>
+            <VerifiedTag />
           )}
         </div>
 
@@ -79,12 +78,12 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
         </div>
         
         {tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-0">
             {tags.map((tag) => (
               <Tag 
               key={tag} 
               text={tag}
-              bgColor="lightgray"
+              bgColor="#F0F0F0"
               textColor="black"
               />
             ))}
