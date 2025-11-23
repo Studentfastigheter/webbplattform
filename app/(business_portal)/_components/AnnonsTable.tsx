@@ -1,10 +1,10 @@
 "use client";
 
-import { Delete, Edit, SquareCheckBig, SquareIcon } from "lucide-react"
+import { ChevronDown, Delete, Edit, ExternalLink, Link2, SquareCheck, SquareCheckBig, SquareIcon } from "lucide-react"
 import React, { useState } from "react"
 import { twMerge } from "tailwind-merge"
 
-const keys = ["ID", "Adress", "Antal rum", "Hyra", "Status", "Publicerad", "Åtgärder"]
+const keys = ["Adress", "Status", "Antal rum", "Hyra", "Publicerad", "ID", "Åtgärder"]
 const nonExistingStates = {
   address: "Ingen adress angiven",
   rooms: "N/A",
@@ -33,8 +33,8 @@ function SelectionBox({
   return (
     
     isSelected ? 
-    <SquareCheckBig 
-      className="cursor-pointer" 
+    <SquareCheck 
+      className="cursor-pointer"
       onClick={onClick}
     /> : 
     <SquareIcon 
@@ -60,7 +60,7 @@ export default function AnnonsTable() {
       index?: number
      }) {
     return (
-      <div className={twMerge("px-4 py-2 flex h-full items-center", className, index !== undefined ? (index % 2 === 0 ? "bg-gray-100" : "bg-white") : "")}>
+      <div className={twMerge("px-6 py-4 flex h-full items-center", className, index !== undefined ? (index % 2 === 0 ? "bg-gray-100" : "bg-white") : "")}>
         {children}
       </div>
     )
@@ -94,7 +94,7 @@ export default function AnnonsTable() {
         </ItemWrapper>
 
         {keys.map((key) => (
-          <ItemWrapper key={key} className="ml-1 font-semibold">
+          <ItemWrapper key={key} className="font-semibold">
             <p>{key}</p>
           </ItemWrapper>
         ))}
@@ -107,11 +107,13 @@ export default function AnnonsTable() {
             <ItemWrapper index={index}>
               <SelectionBox isSelected={selectedItems.has(index)} onClick={() => handleSelectItem(index)} />
             </ItemWrapper>
-            <ItemWrapper index={index}>
-              {annons.id}
+            <ItemWrapper index={index} className="relative">
+              {annons.address || nonExistingStates.address}
             </ItemWrapper>
             <ItemWrapper index={index}>
-              {annons.address || nonExistingStates.address}
+              <div className={twMerge(annons.status === "Ledig" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800", "px-2 py-1 rounded-full text-sm font-medium")}>
+                {annons.status}
+              </div>
             </ItemWrapper>
             <ItemWrapper index={index}>
               {annons.rooms || nonExistingStates.rooms}
@@ -120,17 +122,16 @@ export default function AnnonsTable() {
               {annons.rent} kr/mån
             </ItemWrapper>
             <ItemWrapper index={index}>
-              <div className={twMerge(annons.status === "Ledig" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800", "px-2 py-1 rounded-full text-sm font-medium")}>
-                {annons.status}
-              </div>
+              {annons.published}
             </ItemWrapper>
             <ItemWrapper index={index}>
-              {annons.published}
+              {annons.id}
             </ItemWrapper>
             <ItemWrapper className="gap-2" index={index}>
               <Edit size={18} className="cursor-pointer" />
               <Delete size={18} className="cursor-pointer" />
             </ItemWrapper>
+
           </React.Fragment>
         ))}
         

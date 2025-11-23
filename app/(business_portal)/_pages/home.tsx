@@ -1,13 +1,19 @@
-import { Box, CopyPlus, House, ScrollText, Users } from "lucide-react";
+import { Box, Building2, Calendar, Clock, CopyPlus, House, ScrollText, Users } from "lucide-react";
 import Statistic from "../_components/Statistic";
 import PropertyList from "../_components/PropertyList";
 import InvoiceChart from "../_components/InvoiceChart";
 import QuickActions from "../_components/QuickActions";
 import BarChart from "../_components/BarChart";
 import FilterButton from "../_components/FilterButton";
-import Container from "../_components/Container";
-import Link from "next/link";
 import AddStatistic from "../_components/AddStatistic";
+
+const timeOptions = [
+  { value: "1y", label: "1 år" },
+  { value: "3y", label: "3 år" },
+  { value: "6m", label: "6 mån" },
+  { value: "3m", label: "3 mån" },
+  { value: "1m", label: "1 mån" },
+]
 
 const filterOptions = [
   { value: "alla", label: "Alla städer" },
@@ -19,9 +25,18 @@ const filterOptions = [
 export default function Home() {
   return (
     <>
-      <div className="m-2 flex justify-between items-center">
+      <div className="p-2 flex justify-between items-center">
         <h1 className="text-brand text-2xl font-bold">Dashboard</h1>
-        <FilterButton options={filterOptions} />
+        <div className="flex gap-4">
+          <FilterButton 
+            options={timeOptions} 
+            icon={<Calendar size={16} className="mr-0.5"/>} 
+          />
+          <FilterButton 
+            options={filterOptions} 
+            icon={<Building2 size={16} className="mr-0.5"/>} 
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-12">

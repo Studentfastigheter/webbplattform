@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Building2, ChevronDown } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 
 type OptionType = {
     label: string;
@@ -9,8 +9,10 @@ type OptionType = {
 
 export default function FilterButton({ 
   options,
+  icon
 }: {
   options: OptionType[];
+  icon?: React.ReactNode;
 }) {
   
   const [filterOpen, setFilterOpen] = useState(false);
@@ -19,7 +21,7 @@ export default function FilterButton({
   return(
     <div className="relative">
       <button onClick={() => setFilterOpen(prev => !prev)} className={`bg-slate-100 hover:text-neutral-800 text-sm font-semibold rounded-sm ${filterOpen ? "rounded-b-none text-neutral-800" : "rounded-b-sm text-neutral-500"} px-4 py-2 flex gap-2 cursor-pointer`}>
-        <Building2 size={16} className="mr-0.5"/>
+        {icon}
         {options.find(option => option.value === sortOption)?.label} 
         <ChevronDown size={16} />
       </button>
@@ -27,7 +29,15 @@ export default function FilterButton({
         {options.map(option => {
           if (option.value === sortOption) return null;
           return (
-            <li key={option.value} className="border-b border-slate-200 last:border-none"><button className="w-full py-2.5 cursor-pointer" onClick={() => {setSortOption(option.value); setFilterOpen(false)}}>{option.label}</button></li>
+            <li key={option.value} className="border-b border-slate-200 last:border-none">
+              <button 
+              className="w-full py-2.5 cursor-pointer" 
+              onClick={() => {
+                setSortOption(option.value); 
+                setFilterOpen(false)
+              }}>
+              {option.label}
+            </button></li>
           )
         })}
       </ul>

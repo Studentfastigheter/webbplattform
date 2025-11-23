@@ -1,11 +1,8 @@
 import Search from "../_components/Search"
-import CTAButton from "../_components/CTAButton"
-import AnnonsTable from "../_components/AnnonsTable"
 import { dashboardRelPath } from "../_statics/variables"
-
-
-
-
+import NormalButton from "../_components/CTAButton"
+import { DataTable } from "../_components/TanStackTable"
+import Container from "../_components/Container"
 
 
 
@@ -13,12 +10,15 @@ import { dashboardRelPath } from "../_statics/variables"
 export default function Annonser() {
   return (
     <>
-      <div className="mb-1 flex items-center gap-3 justify-between">
+      <div className="mb-4 m-2 flex items-center gap-3 justify-between">
         <Search />
-        <CTAButton text="Skapa annons" href={`${dashboardRelPath}/ny`} />
+        <NormalButton text="Lägg till objekt" href={`${dashboardRelPath}/annonser/ny`} />
       </div>
 
-      <AnnonsTable />
+      <Container>
+        <DataTable />
+      </Container>
+
       
     </>      
   )

@@ -52,7 +52,7 @@ export default function Sidebar() {
                 .sort((a, b) => (a.group?.order ?? 0) - (b.group?.order ?? 0))
                 .map((group) => (
                     <div key={group.group.name} className="mb-12">
-                        <h4 className="text-neutral-400 mb-2 uppercase text-xs">{group.group.name}</h4>
+                        <h4 className="text-neutral-400 mb-2 uppercase text-[11px] font-medium tracking-wider">{group.group.name}</h4>
                         <ul className="space-y-1">
                             {group.links.map((link) => {
                                 const isActive = pathname === link.href;
