@@ -1,4 +1,4 @@
-import Tag from "./Tag"
+import Tag from "./Tag";
 
 export default function VerifiedTag() {
   return (
@@ -7,8 +7,10 @@ export default function VerifiedTag() {
       textColor="#FFFFFF"
       bgColor="#0F4D0F"
       className="inline-flex items-center"
-      height={20}
+      height={16}
       horizontalPadding={8}
+      fontSize={10}
+      lineHeight={12}
     />
-  )
+  );
 }

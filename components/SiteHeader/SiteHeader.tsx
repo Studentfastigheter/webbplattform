@@ -34,15 +34,15 @@ export default function SiteHeader() {
   if (!user) {
     // Utloggad
     navItems = [
-      { name: "Startsida", link: "/" },
-      { name: "Bostadssök", link: "/bostader" },
-      { name: "Hyr ut", link: "/hyr-ut" },
+      { name: "Bostäder", link: "/bostader" },
+      { name: "Köer", link: "/alla-koer" },
+      { name: "Kom igång", link: "/" },
     ];
   } else if (userType === "student") {
     navItems = [
-      { name: "Bostadssök", link: "/bostader" },
-      { name: "Mina annonser", link: "/sparade" },
-      { name: "Mina ansökningar", link: "/ansokningar" },
+      { name: "Bostäder", link: "/bostader" },
+      { name: "Köer", link: "/alla-koer" },
+      { name: "Meddelanden", link: "/meddelanden" },
     ];
   } else if (userType === "landlord") {
     navItems = [

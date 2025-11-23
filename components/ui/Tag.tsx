@@ -6,6 +6,8 @@ type TagProps = {
   textColor?: string;
   height?: number;
   horizontalPadding?: number;
+  fontSize?: number;
+  lineHeight?: number;
   className?: string;
 };
 
@@ -15,6 +17,8 @@ export default function Tag({
   textColor = "#FFFFFF",
   height = 25,
   horizontalPadding = 16,
+  fontSize = 14,
+  lineHeight,
   className = "",
 }: TagProps) {
   const radius = height / 3;
@@ -33,8 +37,8 @@ export default function Tag({
         paddingRight: horizontalPadding,
         borderRadius: radius,
         fontFamily: "Arimo, sans-serif",
-        fontSize: 14,
-        lineHeight: "16px",
+        fontSize,
+        lineHeight: lineHeight ? `${lineHeight}px` : "16px",
       }}
     >
       <span
