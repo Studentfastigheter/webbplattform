@@ -3,22 +3,16 @@ import clsx from "clsx";
 import type { ListFrameRow } from "../layout/ListFrame";
 import Tag from "../ui/Tag";
 import { Button } from "@heroui/button";
-
-type QueueStatus = "active" | "processing";
+import StatusTag, { type Status } from "../ui/statusTag";
 
 type QueueRowProps = {
   id: string | number;
   name: string;
   logoUrl: string;
   cities: string[];
-  status: QueueStatus;
+  status: Status;          // ⬅️ samma typ som StatusTag
   days: number;
   onManage?: () => void;
-};
-
-const STATUS_STYLES: Record<QueueStatus, { bg: string; text: string; label: string }> = {
-  active: { bg: "#0F4D0F", text: "#FFFFFF", label: "Aktiv" },
-  processing: { bg: "#FFD32C", text: "#7A5D00", label: "Bearbetas" },
 };
 
 const NameCell: React.FC<Pick<QueueRowProps, "name" | "logoUrl">> = ({ name, logoUrl }) => (
@@ -46,21 +40,12 @@ const CitiesCell: React.FC<{ cities: string[] }> = ({ cities }) => (
   </div>
 );
 
-const StatusCell: React.FC<{ status: QueueStatus }> = ({ status }) => {
-  const config = STATUS_STYLES[status];
-  return (
-    <div className="flex justify-center">
-      <Tag
-        text={config.label}
-        bgColor={config.bg}
-        textColor={config.text}
-        height={22}
-        horizontalPadding={14}
-        className="text-[12px] font-semibold leading-[14px]"
-      />
-    </div>
-  );
-};
+// 🔹 Tar emot status-strängen och skickar den rakt in i StatusTag
+const StatusCell: React.FC<{ status: Status }> = ({ status }) => (
+  <div className="flex justify-center">
+    <StatusTag status={status} />
+  </div>
+);
 
 const DaysCell: React.FC<{ days: number }> = ({ days }) => (
   <div className="text-sm text-left text-black">{days} dagar</div>

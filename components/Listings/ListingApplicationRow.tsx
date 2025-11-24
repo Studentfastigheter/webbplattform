@@ -4,8 +4,7 @@ import { Heart, Share2, Home, MapPin, Building2 } from "lucide-react";
 import Tag from "../ui/Tag";
 import type { ListFrameRow } from "../layout/ListFrame";
 import { Button } from "@heroui/button";
-
-type StatusTone = "pending" | "approved" | "rejected" | "info";
+import StatusTag, { type Status } from "../ui/statusTag";
 
 type ListingApplicationRowProps = {
   id: string | number;
@@ -20,19 +19,11 @@ type ListingApplicationRowProps = {
   imageUrl: string;
   isVerified?: boolean;
   tags?: string[];
-  statusTone?: StatusTone;
-  statusLabel?: string;
+  status: Status;              // ⬅️ direkt status till StatusTag
   applicationDate: string;
   onManage?: () => void;
   onFavorite?: () => void;
   onShare?: () => void;
-};
-
-const STATUS_STYLES: Record<StatusTone, { bg: string; text: string; label: string }> = {
-  pending: { bg: "#FFD32C", text: "#7A5D00", label: "Under granskning" },
-  approved: { bg: "#09A80D", text: "#FFFFFF", label: "Antagen" },
-  rejected: { bg: "#EB4A4A", text: "#FFFFFF", label: "Nekad" },
-  info: { bg: "#E0E7FF", text: "#1F2A54", label: "Information" },
 };
 
 const formatCurrency = (value: number) =>
@@ -108,14 +99,11 @@ const TagsCell: React.FC<{ tags?: string[] }> = ({ tags = [] }) => (
   </div>
 );
 
-const StatusCell: React.FC<{ tone?: StatusTone; customLabel?: string }> = ({ tone = "pending", customLabel }) => {
-  const config = STATUS_STYLES[tone];
+// 🔹 Enkel StatusCell som bara skickar vidare status till StatusTag
+const StatusCell: React.FC<{ status: Status }> = ({ status }) => {
   return (
-    <div
-      className="inline-flex h-[20px] min-w-[128px] items-center justify-center rounded-[8px] px-3 text-[12px] font-semibold"
-      style={{ background: config.bg, color: config.text }}
-    >
-      {customLabel ?? config.label}
+    <div className="flex justify-center">
+      <StatusTag status={status} />
     </div>
   );
 };
@@ -148,7 +136,6 @@ const ActionsCell: React.FC<
       type="button"
       onClick={onManage}
       className={clsx(
-        // Match combined width of the two icon buttons (2 * 36px) plus their 12px gap
         "h-9 w-[84px] rounded-full bg-[#D9D9D9] text-[12px] font-medium text-black",
         "transition hover:bg-[#cfcfcf]"
       )}
@@ -159,14 +146,14 @@ const ActionsCell: React.FC<
 );
 
 export const buildListingApplicationRow = (props: ListingApplicationRowProps): ListFrameRow => {
-  const { id, tags, statusTone, statusLabel, applicationDate, ...adProps } = props;
+  const { id, tags, status, applicationDate, ...adProps } = props;
 
   return {
     id,
     cells: [
       <AdCell key={`${id}-ad`} {...adProps} />,
       <TagsCell key={`${id}-tags`} tags={tags} />,
-      <StatusCell key={`${id}-status`} tone={statusTone} customLabel={statusLabel} />,
+      <StatusCell key={`${id}-status`} status={status} />,
       <DateCell key={`${id}-date`} date={applicationDate} />,
       <ActionsCell key={`${id}-actions`} {...props} />,
     ],

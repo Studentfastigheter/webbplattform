@@ -16,7 +16,7 @@ export default function Page() {
       name: "SGS Studentbostader",
       logoUrl: "/logos/sgs-logo.svg",
       cities: ["Göteborg", "Borås"],
-      status: "active",
+      status: "Aktiv",
       days: 213,
     }),
     buildQueueRow({
@@ -24,7 +24,7 @@ export default function Page() {
       name: "SGS Studentbostader",
       logoUrl: "/logos/sgs-logo.svg",
       cities: ["Göteborg", "Borås"],
-      status: "processing",
+      status: "Bearbetas",
       days: 213,
     }),
   ];

@@ -24,8 +24,7 @@ export default function Page() {
       imageUrl: "/appartment.jpg",
       isVerified: true,
       tags: ["Möblerat", "Poängfri", "Korridor"],
-      statusTone: "pending",
-      statusLabel: "Under granskning",
+      status: "Aktiv",
       applicationDate: "2025-06-03",
     }),
     buildListingApplicationRow({
@@ -41,8 +40,7 @@ export default function Page() {
       imageUrl: "/appartment.jpg",
       isVerified: true,
       tags: ["Möblerat", "Poängfri", "Korridor"],
-      statusTone: "pending",
-      statusLabel: "Under granskning",
+      status: "Under granskning",
       applicationDate: "2025-06-03",
     }),
   ];
