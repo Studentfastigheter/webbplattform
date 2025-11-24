@@ -8,6 +8,7 @@ import {
   Navbar,
   NavBody,
   NavItems,
+  type NavbarItem,
   MobileNav,
   NavbarButton,
   MobileNavHeader,
@@ -15,10 +16,7 @@ import {
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 
-type NavItem = {
-  name: string;
-  link: string;
-};
+type NavItem = NavbarItem & { link: string };
 
 export default function SiteHeader() {
   const { user, logout } = useAuth();
@@ -34,26 +32,75 @@ export default function SiteHeader() {
   if (!user) {
     // Utloggad
     navItems = [
-      { name: "Bostäder", link: "/bostader" },
-      { name: "Köer", link: "/alla-koer" },
+      {
+        name: "Bostäder",
+        link: "/bostader",
+      },
+      {
+        name: "Alla köer",
+        link: "/alla-koer",
+      },
       { name: "Kom igång", link: "/" },
     ];
   } else if (userType === "student") {
     navItems = [
-      { name: "Bostäder", link: "/bostader" },
-      { name: "Köer", link: "/alla-koer" },
+      {
+        name: "Bostäder",
+        link: "/bostader",
+        dropdown: [
+          { name: "Sök bostäder", link: "/bostader" },
+          { name: "Mina ansökningar", link: "/ansokningar" },
+          { name: "Sparade", link: "/sparade" },
+        ],
+      },
+      {
+        name: "Alla köer",
+        link: "/alla-koer",
+        dropdown: [
+          { name: "Lägg till köer", link: "/alla-koer" },
+          { name: "Mina köer", link: "/koer" },
+          { name: "Sparade köer", link: "/sparade-koer" },
+        ],
+      },
       { name: "Meddelanden", link: "/meddelanden" },
     ];
   } else if (userType === "landlord") {
     navItems = [
-      { name: "Skapa ny annons", link: "/konto/annons/ny" },
-      { name: "Mina annonser", link: "/konto/mina-annonser" },
-      { name: "Ansökningar", link: "/konto/annonser/ansokningar" },
+      {
+        name: "Skapa ny annons",
+        link: "/konto/annons/ny",
+      },
+      {
+        name: "Mina annonser",
+        link: "/konto/mina-annonser",
+        dropdown: [
+          { name: "Alla annonser", link: "/konto/mina-annonser" },
+          { name: "Publicerade", link: "/konto/mina-annonser?filter=active" },
+          { name: "Arkiverade", link: "/konto/mina-annonser?filter=archived" },
+        ],
+      },
+      {
+        name: "Ansökningar",
+        link: "/konto/annonser/ansokningar",
+      },
     ];
   } else if (userType === "company") {
     navItems = [
-      { name: "Dashboard", link: "/konto/foretag/dashboard" },
-      { name: "Mina annonser", link: "/konto/foretag/annonser" },
+      {
+        name: "Dashboard",
+        link: "/konto/foretag/dashboard",
+      },
+      {
+        name: "Mina annonser",
+        link: "/konto/foretag/annonser",
+        dropdown: [
+          { name: "Alla annonser", link: "/konto/foretag/annonser" },
+          {
+            name: "Kommande kampanjer",
+            link: "/konto/foretag/annonser?view=campaigns",
+          },
+        ],
+      },
       { name: "Ansökningshantering", link: "/konto/foretag/ansokningar" },
     ];
   } else {
@@ -120,6 +167,7 @@ export default function SiteHeader() {
           </div>
         </Link>
 
+        {/* Desktop-nav med hover-dropdown */}
         <NavItems items={navItems} />
 
         <div className="hidden items-center gap-3 lg:flex">
@@ -203,8 +251,8 @@ export default function SiteHeader() {
         >
           {navItems.map((item) => (
             <Link
-              key={item.link}
-              href={item.link}
+              key={item.link ?? item.name}
+              href={item.link ?? "#"}
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-base text-neutral-700"
             >
