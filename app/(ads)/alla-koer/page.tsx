@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import Que_ListingCard from "@/components/Listings/Que_ListingCard";
 import QueueFilterButton from "@/components/Listings/Search/QueueFilterButton";
-import SearchFilter3Fields from "@/components/Listings/Search/SearchFilter-3field";
+import OneFieldSearch from "@/components/Listings/Search/SearchFilter-1field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
@@ -119,9 +119,9 @@ export default function Page() {
         <div className="flex w-full max-w-[1200px] flex-col gap-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="min-w-[280px] flex-1">
-              <SearchFilter3Fields
+              <OneFieldSearch
                 className="w-full"
-                field1={{
+                field={{
                   id: "var",
                   label: "Var",
                   placeholder: "Sok studentstad",
@@ -129,26 +129,6 @@ export default function Page() {
                     { label: "Goteborg", value: "goteborg" },
                     { label: "Stockholm", value: "stockholm" },
                     { label: "Uppsala", value: "uppsala" },
-                  ],
-                }}
-                field2={{
-                  id: "hyresvard",
-                  label: "Hyresvard",
-                  placeholder: "Valj hyresvard",
-                  options: [
-                    { label: "SGS", value: "sgs" },
-                    { label: "Svenska Studenthus", value: "svenska-studenthus" },
-                    { label: "AF Bostader", value: "af-bostader" },
-                  ],
-                }}
-                field3={{
-                  id: "pris",
-                  label: "Pris",
-                  placeholder: "Valj prisintervall",
-                  options: [
-                    { label: "0 - 4000", value: "0-4000" },
-                    { label: "4000 - 8000", value: "4000-8000" },
-                    { label: "8000+", value: "8000+" },
                   ],
                 }}
                 onSubmit={(values) => {
