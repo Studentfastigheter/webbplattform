@@ -17,9 +17,11 @@ export type ListingCardSmallProps = {
   onClick?: () => void;
 };
 
-const BASE_WIDTH = 480;
-const MIN_SCALE = 0.75;
-const MAX_SCALE = 1.3;
+const BASE_WIDTH = 380;
+const MIN_SCALE = 0.55;
+const MAX_SCALE = 1;
+const BADGE_MIN_SCALE = 0.8;
+const BADGE_MAX_SCALE = 1;
 
 const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
   title,
@@ -70,6 +72,10 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
     fontSize: 14 * scale,
     lineHeight: 20 * scale,
   };
+  const badgeScale = Math.min(
+  Math.max(scale, BADGE_MIN_SCALE),
+  BADGE_MAX_SCALE
+);
 
   return (
     <div
@@ -120,7 +126,16 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
             {title}
           </h3>
 
-          {isVerified && <VerifiedTag />}
+          {isVerified && (
+            <div
+              style={{
+                transform: `scale(${badgeScale})`,
+                transformOrigin: "top right",
+              }}
+            >
+              <VerifiedTag />
+            </div>
+          )}
         </div>
 
         {/* Location + Size */}
