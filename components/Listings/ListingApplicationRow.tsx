@@ -103,7 +103,7 @@ const TagsCell: React.FC<{ tags?: string[] }> = ({ tags = [] }) => (
 const StatusCell: React.FC<{ status: Status }> = ({ status }) => {
   return (
     <div className="flex justify-center">
-      <StatusTag status={status} />
+      <StatusTag status={status}/>
     </div>
   );
 };

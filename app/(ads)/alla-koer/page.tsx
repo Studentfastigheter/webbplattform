@@ -3,57 +3,82 @@
 import { type ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import ListingCardSmall from "@/components/Listings/ListingCard_Small";
-import ListingsFilterButton from "@/components/Listings/Search/ListingsFilterButton";
+import Que_ListingCard from "@/components/Listings/Que_ListingCard";
+import QueueFilterButton from "@/components/Listings/Search/QueueFilterButton";
 import SearchFilter3Fields from "@/components/Listings/Search/SearchFilter-3field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
-type ListingItem = {
+type QueueItem = {
   id: string;
-  title: string;
+  name: string;
   area: string;
   city: string;
-  dwellingType: string;
-  rooms: number;
-  sizeM2: number;
-  rent: number;
-  landlordType: string;
+  totalUnits?: number;
+  unitsLabel?: string;
   isVerified?: boolean;
-  imageUrl: string;
+  logoUrl: string;
   tags?: string[];
 };
 
-const listings: ListingItem[] = Array.from({ length: 12 }).map((_, idx) => ({
-  id: `listing-${idx + 1}`,
-  title: "1:a Vasagatan 19",
-  area: "Innerstan",
-  city: "Goteborg",
-  dwellingType: "Lagenhet",
-  rooms: 3,
-  sizeM2: 42,
-  rent: 3800,
-  landlordType: "Privat hyresvard",
-  isVerified: true,
-  imageUrl: "/appartment.jpg",
-  tags: ["Moblerat", "Poangfri", "Korridor"],
-}));
+const queues: QueueItem[] = [
+  {
+    id: "sgs-studentbostader",
+    name: "SGS Studentbostader",
+    area: "Innerstan",
+    city: "Goteborg",
+    totalUnits: 1200,
+    isVerified: true,
+    logoUrl: "/logos/sgs-logo.svg",
+    tags: ["Korridorer", "Lagenheter", "Moblerat"],
+  },
+  {
+    id: "guldhedens-studiehem",
+    name: "Guldhedens Studiehem",
+    area: "Guldheden",
+    city: "Goteborg",
+    totalUnits: 180,
+    logoUrl: "/logos/guldhedens_studiehem.png",
+    tags: ["Kristet", "Korridorer"],
+  },
+  {
+    id: "sssb",
+    name: "SSSB",
+    area: "Tekniska Hogskolan",
+    city: "Stockholm",
+    totalUnits: 800,
+    isVerified: true,
+    logoUrl: "/logos/campuslyan-logo.svg",
+    tags: ["Student", "Stockholm"],
+  },
+  {
+    id: "af-bostader",
+    name: "AF Bostader",
+    area: "Lund Centrum",
+    city: "Lund",
+    unitsLabel: "2500 bostader",
+    logoUrl: "/logos/campuslyan-logo.svg",
+    tags: ["Poangfri", "Lagenhet"],
+  }
+];
 
 export default function Page() {
   const router = useRouter();
   const [view, setView] = useState<SwitchSelectValue>("lista");
   const isMapView = view === "karta";
-  const totalListings = listings.length;
+  const totalQueues = queues.length;
 
-  const listingGridClasses = isMapView
+  const queueGridClasses = isMapView
     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center"
     : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
 
-  const renderListingCard = (listing: ListingItem) => (
-    <div key={listing.id} className="flex w-full justify-center">
-      <ListingCardSmall
-        {...listing}
-        onClick={() => router.push(`/bostader/${listing.id}`)}
+  const renderQueueCard = (queue: QueueItem) => (
+    <div key={queue.id} className="flex w-full justify-center">
+      <Que_ListingCard
+        {...queue}
+        logoAlt={`${queue.name} logotyp`}
+        onViewListings={() => router.push(`/alla-koer/${queue.id}`)}
+        onReadMore={() => router.push(`/alla-koer/${queue.id}`)}
       />
     </div>
   );
@@ -64,7 +89,7 @@ export default function Page() {
     let rowIndex = 1;
     let i = 0;
 
-    while (i < listings.length) {
+    while (i < queues.length) {
       if (rowIndex % 3 === 0) {
         nodes.push(
           <div key={`ad-row-${rowIndex}`} className="col-span-full">
@@ -78,9 +103,9 @@ export default function Page() {
         continue;
       }
 
-      const rowListings = listings.slice(i, i + itemsPerRow);
-      nodes.push(...rowListings.map(renderListingCard));
-      i += rowListings.length;
+      const rowQueues = queues.slice(i, i + itemsPerRow);
+      nodes.push(...rowQueues.map(renderQueueCard));
+      i += rowQueues.length;
       rowIndex += 1;
     }
 
@@ -131,24 +156,32 @@ export default function Page() {
                 }}
               />
             </div>
-            <ListingsFilterButton
-              amenities={[
-                { id: "gym", label: "Gym" },
-                { id: "tvatt", label: "Tvattmaskin" },
-                { id: "disk", label: "Diskmaskin" },
+            <QueueFilterButton
+              cities={["Goteborg", "Stockholm", "Lund", "Malmo", "Umea"]}
+              cityCounts={{
+                Goteborg: 5,
+                Stockholm: 2,
+                Lund: 1,
+                Malmo: 1,
+                Umea: 1,
+              }}
+              landlords={[
+                "SGS",
+                "AF Bostader",
+                "SSSB",
+                "Guldhedens Studiehem",
+                "Hembo",
               ]}
-              propertyTypes={[
-                { id: "rum", label: "Rum" },
-                { id: "lagenhet", label: "Lagenhet" },
-                { id: "korridor", label: "Korridor" },
-              ]}
-              priceHistogram={[
-                1, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5,
-                8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3,
-                21, 3, 5, 8, 5, 3, 2,
-              ]}
-              priceBounds={{ min: 0, max: 12000 }}
-              className="self-start"
+              landlordCounts={{
+                SGS: 2,
+                "AF Bostader": 1,
+                SSSB: 1,
+                "Guldhedens Studiehem": 1,
+                Hembo: 1,
+              }}
+              onApply={(state) => {
+                console.log("queue filters", state);
+              }}
             />
           </div>
         </div>
@@ -162,35 +195,27 @@ export default function Page() {
               id="bostader-heading"
               className="text-base font-semibold text-black"
             >
-              Över {totalListings.toLocaleString("sv-SE")} boenden
+              Over {totalQueues.toLocaleString("sv-SE")} koer
             </h2>
             <SwitchSelect value={view} onChange={setView} />
           </div>
         </div>
       </section>
 
-      {/* Sektion 3: annonser + plats for reklam som gar kant-till-kant */}
+      {/* Sektion 3: annonser (annonsytor hanteras i layouten) */}
       <section className="w-full">
-        {isMapView ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6 mx-4">
-            <FieldSet className="w-full" aria-labelledby="bostader-heading">
-              <div className={listingGridClasses}>{renderMapListings()}</div>
-            </FieldSet>
-            <div className="min-h-[520px] rounded-2xl bg-blue-500" aria-hidden />
-          </div>
-        ) : (
-          <div className="grid grid-cols-[minmax(120px,15vw)_minmax(0,1fr)_minmax(120px,15vw)] items-start gap-6">
-            <div className="h-full min-h-[520px] rounded-2xl bg-red-500" aria-hidden />
-
-            <FieldSet className="w-full" aria-labelledby="bostader-heading">
-              <div className={listingGridClasses}>
-                {listings.map((listing) => renderListingCard(listing))}
-              </div>
-            </FieldSet>
-
-            <div className="h-full min-h-[520px] rounded-2xl bg-red-500" aria-hidden />
-          </div>
-        )}
+        <FieldSet className="w-full" aria-labelledby="bostader-heading">
+          {isMapView ? (
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
+              <div className={queueGridClasses}>{renderMapListings()}</div>
+              <div className="min-h-[520px] rounded-2xl bg-blue-500" aria-hidden />
+            </div>
+          ) : (
+            <div className={queueGridClasses}>
+              {queues.map((queue) => renderQueueCard(queue))}
+            </div>
+          )}
+        </FieldSet>
       </section>
     </main>
   );
