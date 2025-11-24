@@ -148,7 +148,6 @@ export default function Page() {
                 21, 3, 5, 8, 5, 3, 2,
               ]}
               priceBounds={{ min: 0, max: 12000 }}
-              className="self-start"
             />
           </div>
         </div>
