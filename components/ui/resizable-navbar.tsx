@@ -10,6 +10,7 @@ import {
 import { Button } from "@heroui/button";
 import React, { useRef, useState } from "react";
 import { SkeletonImage } from "@/components/ui/skeleton-image";
+import Link from "next/link";
 
 
 interface NavbarProps {
@@ -139,10 +140,10 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
           className="relative flex items-center"
           onMouseEnter={() => setHovered(idx)}
         >
-          {/* Huvudlänken */}
-          <a
-            onClick={onItemClick}
+          {/* Huvudlänk */}
+          <Link
             href={item.link ?? "#"}
+            onClick={onItemClick}
             className="relative px-4 py-2 text-neutral-600 dark:text-neutral-300"
           >
             {hovered === idx && (
@@ -152,22 +153,21 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
               />
             )}
             <span className="relative z-20">{item.name}</span>
-          </a>
+          </Link>
 
-          {/* Dropdownen – visas bara om item.dropdown finns */}
+          {/* Dropdown – visas bara om item.dropdown finns */}
           {item.dropdown && item.dropdown.length > 0 && hovered === idx && (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
-              // INGEN mt-2 → ingen "lucka" mellan knapp och meny
               className="absolute left-1/2 top-full z-50 -translate-x-1/2"
             >
               <div className="min-w-[190px] overflow-hidden rounded-2xl border border-neutral-200 bg-white/95 shadow-lg shadow-black/5 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/95">
                 <ul className="flex flex-col py-1">
                   {item.dropdown.map((subItem, subIdx) => (
                     <li key={subItem.link}>
-                      <a
+                      <Link
                         href={subItem.link}
                         onClick={onItemClick}
                         className={cn(
@@ -177,7 +177,7 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
                         )}
                       >
                         {subItem.name}
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>

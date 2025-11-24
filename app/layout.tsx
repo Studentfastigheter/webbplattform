@@ -79,7 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="sv">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans bg-background text-foreground`}>
-        <SpeedInsights /> 
+        <SpeedInsights />
         <Analytics />
         <AuthProvider>
             <Theme>

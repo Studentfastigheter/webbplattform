@@ -19,7 +19,7 @@ import {
 type NavItem = NavbarItem & { link: string };
 
 export default function SiteHeader() {
-  const { user, logout } = useAuth();
+  const { user, logout, ready } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 

@@ -32,14 +32,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const t = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (!t) { setReady(true); return; }
+    if (typeof window === "undefined") return;
+
+    const t = localStorage.getItem("auth_token");
+    if (!t) {
+      setReady(true);
+      return;
+    }
+
     setToken(t);
-    apiFetch<User>('/api/auth/me', {}, t)
-      .then(u => setUser(u))
-      .catch(() => { localStorage.removeItem('auth_token'); setToken(null); setUser(null); })
+    apiFetch<User>("/api/auth/me", {}, t)
+      .then((u) => setUser(u))
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        setToken(null);
+        setUser(null);
+      })
       .finally(() => setReady(true));
   }, []);
+
 
   const login = async (email: string, password: string) => {
     const res = await apiFetch<LoginResp>(
