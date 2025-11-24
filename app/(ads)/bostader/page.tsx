@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { type ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -46,7 +46,7 @@ export default function Page() {
   const totalListings = listings.length;
 
   const listingGridClasses = isMapView
-    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center"
+    ? "grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 justify-items-center"
     : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
 
   const renderListingCard = (listing: ListingItem) => (
@@ -156,16 +156,11 @@ export default function Page() {
 
       {/* Sektion 2: rubrik + vyval for bostaderna */}
       <section className="w-full">
-        <div className="grid grid-cols-[minmax(120px,15vw)_minmax(0,1fr)_minmax(120px,15vw)] items-center gap-6">
-          <div className="col-start-2 flex items-center justify-between gap-4">
-            <h2
-              id="bostader-heading"
-              className="text-base font-semibold text-black"
-            >
-              Över {totalListings.toLocaleString("sv-SE")} boenden
-            </h2>
-            <SwitchSelect value={view} onChange={setView} />
-          </div>
+        <div className="flex w-full flex-wrap items-center justify-between gap-4">
+          <h2 id="bostader-heading" className="text-base font-semibold text-black">
+            Over {totalListings.toLocaleString("sv-SE")} boenden
+          </h2>
+          <SwitchSelect value={view} onChange={setView} />
         </div>
       </section>
 
@@ -187,3 +182,4 @@ export default function Page() {
     </main>
   );
 }
+
