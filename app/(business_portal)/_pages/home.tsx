@@ -39,7 +39,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid grid-cols-12">
+      <div className="grid grid-cols-12 md:grid-cols-9">
         <Statistic background="#C7D8EB" columnSpan={2} icon={<Box size={14} className="text-neutral-400" />} label="Antal objekt" data="40" changeInPercent={3.4} />
         <Statistic background="#F4D8E4" columnSpan={2} icon={<House size={14} className="text-neutral-400" />} label="Lediga bostäder" data="12" changeInPercent={-3.5} increaseDirection="down" />
         <Statistic background="#C9D9C2" columnSpan={2} icon={<Users size={14} className="text-neutral-400" />} label="Antal hyresgäster" data="1325" changeInPercent={-2.5}/>

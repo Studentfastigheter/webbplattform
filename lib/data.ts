@@ -1,4 +1,13 @@
 import { faker } from "@faker-js/faker";
+import {
+  Box,
+  Users,
+  Home,
+  Megaphone,
+  AlertTriangle,
+  Eye,
+  type LucideIcon,
+} from "lucide-react";
 
 export type Ad = {
   id: number;
@@ -23,3 +32,66 @@ export const createAds = (numberOfAds: number) => {
   }
   return ads;
 }
+
+
+
+
+type StatisticConfig = {
+  id: string;
+  label: string;
+  data: number;
+  change: number;
+  positive_rate_of_change: "up" | "down";
+  icon: LucideIcon;
+};
+
+export const ORGANISATION_DASHBOARD_STATISTICS: StatisticConfig[] = [
+  {
+    ["id"]: "objects",
+    ["label"]: "Antal objekt",
+    ["data"]: 40,
+    ["change"]: 0.034,
+    ["positive_rate_of_change"]: "up",
+    icon: Box,
+  },
+  {
+    ["id"]: "renters",
+    ["label"]: "Hyresgäster",
+    ["data"]: 234,
+    ["change"]: -0.07,
+    ["positive_rate_of_change"]: "up",
+    icon: Users,
+  },
+  {
+    ["id"]: "available_objects",
+    ["label"]: "Lediga bostäder",
+    ["data"]: 12,
+    ["change"]: -0.035,
+    ["positive_rate_of_change"]: "down",
+    icon: Home,
+  },
+  {
+    ["id"]: "active_ads",
+    ["label"]: "Aktiva annonser",
+    ["data"]: 4,
+    ["change"]: 2.4,
+    ["positive_rate_of_change"]: "up",
+    icon: Megaphone,
+  },
+  {
+    ["id"]: "complaint",
+    ["label"]: "Felanmälningar",
+    ["data"]: 6,
+    ["change"]: -2.4,
+    ["positive_rate_of_change"]: "down",
+    icon: AlertTriangle,
+  },
+  {
+    ["id"]: "views",
+    ["label"]: "Visningar idag",
+    ["data"]: 1352,
+    ["change"]: 2.4,
+    ["positive_rate_of_change"]: "up",
+    icon: Eye,
+  },
+]
