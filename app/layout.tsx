@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   // Viktigt för korrekta absoluta URL:er i OG/Twitter
   metadataBase: new URL("https://www.campuslyan.se"),
   title: {
-    default: "CampusLyan – Gratis studentbostäder samlade på ett ställe",
+    default: "CampusLyan - Gratis studentbostäder samlade på ett ställe",
     template: "%s | CampusLyan"
   },
   description:
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     type: "website",
     url: "/",
     siteName: "CampusLyan",
-    title: "CampusLyan – Gratis plattform för studentbostäder",
+    title: "CampusLyan - Gratis plattform för studentbostäder",
     description:
       "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
     images: [
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     site: "@campuslyan",           // ta bort/ändra om du inte har X-konto
-    title: "CampusLyan – Gratis plattform för studentbostäder",
+    title: "CampusLyan - Gratis plattform för studentbostäder",
     description:
       "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
     images: ["/campuslyan-og.png"],
