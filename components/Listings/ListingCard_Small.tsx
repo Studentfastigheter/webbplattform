@@ -15,6 +15,8 @@ export type ListingCardSmallProps = {
   imageUrl: string;
   tags?: string[];
   onClick?: () => void;
+  onHoverChange?: (hovering: boolean) => void;
+  variant?: "default" | "compact";
 };
 
 const BASE_WIDTH = 380;
@@ -36,9 +38,14 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
   imageUrl,
   tags = [],
   onClick,
+  onHoverChange,
+  variant = "default",
 }) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
+  const baseWidth = variant === "compact" ? 320 : BASE_WIDTH;
+  const maxWidth = variant === "compact" ? 360 : 480;
+  const aspectClass = variant === "compact" ? "aspect-[3/2]" : "aspect-[4/3]";
 
   useEffect(() => {
     const node = cardRef.current;
@@ -46,7 +53,7 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
 
     const updateScale = (width: number) => {
       const nextScale = Math.min(
-        Math.max(width / BASE_WIDTH, MIN_SCALE),
+        Math.max(width / baseWidth, MIN_SCALE),
         MAX_SCALE
       );
       setScale(Number(nextScale.toFixed(3)));
@@ -63,7 +70,7 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, []);
+  }, [baseWidth]);
 
   const scaleValue = (value: number) => `${(value * scale).toFixed(2)}px`;
   const tagSize = {
@@ -81,8 +88,11 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
     <div
       ref={cardRef}
       onClick={onClick}
-      className="flex w-full max-w-[480px] flex-col bg-white shadow-md cursor-pointer"
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
+      className="flex w-full flex-col bg-white shadow-md cursor-pointer"
       style={{
+        maxWidth,
         gap: scaleValue(16),
         padding: scaleValue(16),
         borderRadius: scaleValue(32),
@@ -93,7 +103,7 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
         className="relative w-full overflow-hidden"
         style={{ borderRadius: scaleValue(28) }}
       >
-        <div className="aspect-[4/3] w-full">
+        <div className={`${aspectClass} w-full`}>
           <img
             src={imageUrl}
             alt={title}

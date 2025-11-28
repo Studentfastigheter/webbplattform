@@ -215,22 +215,32 @@ img, svg, video, canvas {
 /* ─────────────────────────────────────────────
    Leaflet
 ────────────────────────────────────────────── */
-/* Leaflet popup styling */
+/* Popup-wrapper: låt vårt kort styra bakgrund & kant */
 .leaflet-popup-content-wrapper {
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  padding: 6px;
+  padding: 0;
+  border-radius: 22px;
+  background: transparent;
+  border: none;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
+}
+
+/* Ta bort default-marginal, så kortet kan gå kant-till-kant */
+.leaflet-popup-content {
+  margin: 0;
 }
 
 .leaflet-popup-tip {
-  display: none; /* renare look */
+  display: none; /* ingen triangel, renare look */
 }
 
 .leaflet-container {
   background: #f9fafb;
 }
 
-.leaflet-top, .leaflet-bottom { z-index: 500; } /* keep controls below header */
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 500; /* keep controls below header */
+}
 
 .map-shell {
   border: 1px solid var(--border);

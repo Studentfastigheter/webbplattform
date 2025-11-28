@@ -154,17 +154,20 @@ export default function SiteHeader() {
       <NavBody>
         <Link
           href="/"
-          className="flex items-center gap-2 px-2 py-1 text-sm font-medium"
+          className="flex items-center gap-2 px-2 py-1 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225] rounded-md hover:opacity-90 transition"
+          aria-label="Gå till startsidan"
         >
           <Image
             src="/campuslyan-logo.svg"
             alt="CampusLyan"
             width={30}
             height={30}
+            priority
           />
-          <div className="leading-tight">
-            <span className="text-base">CampusLyan</span>
-          </div>
+
+          <span className="text-base leading-tight">
+            CampusLyan
+          </span>
         </Link>
 
         {/* Desktop-nav med hover-dropdown */}

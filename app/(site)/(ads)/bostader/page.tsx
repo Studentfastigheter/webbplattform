@@ -351,17 +351,23 @@ export default function Page() {
     ? "grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 justify-items-center"
     : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
 
-  const renderListingCard = (listing: ListingItem) => (
+  const renderListingCard = (
+    listing: ListingItem,
+    variant: "default" | "compact" = "default"
+  ) => (
     <div key={listing.id} className="flex w-full justify-center">
       <ListingCardSmall
         {...listing}
         onClick={() => router.push(`/bostader/${listing.id}`)}
+        variant={variant}
       />
     </div>
   );
 
   const renderMapListings = () => {
-    return filteredListings.map((listing) => renderListingCard(listing));
+    return filteredListings.map((listing) =>
+      renderListingCard(listing, "compact")
+    );
   };
 
   return (

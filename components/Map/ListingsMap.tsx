@@ -1,6 +1,11 @@
 "use client";
 
-import BaseMap, { type BaseMarker } from "./BaseMap";
+import { useMemo } from "react";
+import BaseMap, {
+  type BaseMarker,
+  type PopupRenderer,
+} from "./BaseMap";
+import ListingMapPopup from "./ListingsMapPopup";
 
 type ListingItem = {
   id: string;
@@ -10,34 +15,55 @@ type ListingItem = {
   lat: number;
   lng: number;
   rent?: number;
+  imageUrl?: string;
 };
 
 type ListingsMapProps = {
   listings: ListingItem[];
+  className?: string;
+  activeListingId?: string;
+  onOpenListing?: (id: string) => void;
 };
 
-const ListingsMap: React.FC<ListingsMapProps> = ({ listings }) => {
-  const markers: BaseMarker[] = listings.map((l) => ({
-    id: l.id,
-    position: [l.lat, l.lng],
-    popup: (
-      <div className="text-sm space-y-1">
-        <div className="font-semibold">{l.title}</div>
-        <div>{l.city}</div>
-        {l.address && <div className="text-xs text-gray-500">{l.address}</div>}
-        {typeof l.rent === "number" && (
-          <div className="text-xs font-medium">
-            {new Intl.NumberFormat("sv-SE", {
-              maximumFractionDigits: 0,
-            }).format(l.rent)}{" "}
-            kr/mån
-          </div>
-        )}
-      </div>
-    ),
-  }));
+/**
+ * Wrapper runt ListingMapPopup så den matchar BaseMaps PopupRenderer-signatur.
+ * Vi ignorerar zoom/isActive här för att få exakt samma ruta oavsett.
+ */
+const createListingPopupRenderer =
+  (listing: ListingItem, onOpenListing?: (id: string) => void): PopupRenderer =>
+  () =>
+    (
+      <ListingMapPopup
+        listing={listing}
+        onOpen={onOpenListing}
+      />
+    );
 
-  return <BaseMap markers={markers} zoom={6} />;
+const ListingsMap: React.FC<ListingsMapProps> = ({
+  listings,
+  className,
+  activeListingId,
+  onOpenListing,
+}) => {
+  const markers: BaseMarker[] = useMemo(
+    () =>
+      listings.map((l) => ({
+        id: l.id,
+        position: [l.lat, l.lng] as [number, number],
+        popup: createListingPopupRenderer(l, onOpenListing),
+      })),
+    [listings, onOpenListing],
+  );
+
+  return (
+    <BaseMap
+      markers={markers}
+      zoom={6}
+      center={[59, 15]}
+      className={className}
+      activeMarkerId={activeListingId}
+    />
+  );
 };
 
 export default ListingsMap;
