@@ -1,4 +1,9 @@
-export const API_BASE = ""; // using Next.js rewrites to /api
+// In the browser we rely on Next.js rewrites for /api -> backend.
+// On the server (SSR/Server Components) fetch needs an absolute URL.
+export const API_BASE =
+  typeof window === "undefined"
+    ? process.env.API_BASE ?? process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080"
+    : "";
 
 const STATUS_MESSAGES: Record<number, string> = {
   400: "Ogiltig förfrågan. Kontrollera fälten och försök igen.",
