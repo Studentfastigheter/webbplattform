@@ -1,11 +1,13 @@
-﻿"use client";
+"use client";
 
-import { type ReactNode, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
-import ListingsFilterButton from "@/components/Listings/Search/ListingsFilterButton";
+import ListingsFilterButton, {
+  type ListingsFilterState,
+} from "@/components/Listings/Search/ListingsFilterButton";
 import SearchFilter3Fields from "@/components/Listings/Search/SearchFilter-3field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
@@ -16,6 +18,28 @@ const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
     <div className="min-h-[520px] rounded-2xl bg-gray-100" aria-hidden />
   ),
 });
+
+const priceBounds = { min: 0, max: 12000 };
+
+const propertyTypeOptions = [
+  { id: "Rum", label: "Rum" },
+  { id: "Lagenhet", label: "Lagenhet" },
+  { id: "Korridor", label: "Korridor" },
+];
+
+const amenityOptions = [
+  { id: "Moblerat", label: "Moblerat" },
+  { id: "Poangfri", label: "Poangfri" },
+  { id: "Balkong", label: "Balkong" },
+  { id: "Student", label: "Student" },
+  { id: "Tunnelbana", label: "Tunnelbana" },
+];
+
+const defaultListingsFilterState: ListingsFilterState = {
+  amenities: [],
+  propertyType: null,
+  priceRange: priceBounds,
+};
 
 type ListingItem = {
   id: string;
@@ -100,7 +124,7 @@ const listings: ListingItem[] = [
     rent: 4700,
     landlordType: "Stiftelse",
     imageUrl: "/appartment.jpg",
-    tags: ["Moblerat", "Nara campus"],
+    tags: ["Moblerat", "Student"],
   },
   {
     id: "kista-centrum",
@@ -233,11 +257,95 @@ const listings: ListingItem[] = [
   },
 ];
 
+const parseSearchPriceRange = (
+  raw: string | string[] | null
+): { min: number; max: number } | null => {
+  if (typeof raw !== "string") return null;
+  const normalized = raw.replace(/\s/g, "");
+
+  if (!normalized) return null;
+  if (normalized.endsWith("+")) {
+    const min = parseInt(normalized.replace("+", ""), 10);
+    if (Number.isNaN(min)) return null;
+    return { min, max: Number.POSITIVE_INFINITY };
+  }
+
+  const [minStr, maxStr] = normalized.split("-");
+  const min = parseInt(minStr ?? "", 10);
+  const max = parseInt(maxStr ?? "", 10);
+  if (Number.isNaN(min) || Number.isNaN(max)) return null;
+
+  return { min, max };
+};
+
 export default function Page() {
   const router = useRouter();
   const [view, setView] = useState<SwitchSelectValue>("lista");
+  const [searchValues, setSearchValues] = useState<
+    Record<string, string | string[] | null>
+  >({});
+  const [filters, setFilters] = useState<ListingsFilterState>(
+    defaultListingsFilterState
+  );
+
   const isMapView = view === "karta";
-  const totalListings = listings.length;
+
+  const filteredListings = useMemo(() => {
+    const searchCity =
+      typeof searchValues.var === "string"
+        ? searchValues.var.trim().toLowerCase()
+        : "";
+    const searchLandlord =
+      typeof searchValues.hyresvard === "string"
+        ? searchValues.hyresvard.trim().toLowerCase()
+        : "";
+    const searchPriceRange = parseSearchPriceRange(searchValues.pris);
+
+    return listings.filter((listing) => {
+      const matchesCity =
+        !searchCity ||
+        listing.city.toLowerCase().includes(searchCity) ||
+        listing.area.toLowerCase().includes(searchCity);
+
+      const matchesLandlord =
+        !searchLandlord ||
+        listing.landlordType.toLowerCase().includes(searchLandlord);
+
+      const matchesSearchPrice =
+        !searchPriceRange ||
+        (listing.rent >= searchPriceRange.min &&
+          (searchPriceRange.max === Number.POSITIVE_INFINITY ||
+            listing.rent <= searchPriceRange.max));
+
+      const matchesPropertyType =
+        !filters.propertyType ||
+        listing.dwellingType.toLowerCase() ===
+          filters.propertyType.toLowerCase();
+
+      const matchesAmenities =
+        filters.amenities.length === 0 ||
+        filters.amenities.every((amenity) =>
+          (listing.tags ?? [])
+            .map((tag) => tag.toLowerCase())
+            .includes(amenity.toLowerCase())
+        );
+
+      const matchesPriceRange =
+        listing.rent >= filters.priceRange.min &&
+        listing.rent <= filters.priceRange.max;
+
+      return (
+        matchesCity &&
+        matchesLandlord &&
+        matchesSearchPrice &&
+        matchesPropertyType &&
+        matchesAmenities &&
+        matchesPriceRange
+      );
+    });
+  }, [filters, searchValues]);
+
+  const totalListings = filteredListings.length;
 
   const listingGridClasses = isMapView
     ? "grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 justify-items-center"
@@ -253,7 +361,7 @@ export default function Page() {
   );
 
   const renderMapListings = () => {
-    return listings.map((listing) => renderListingCard(listing));
+    return filteredListings.map((listing) => renderListingCard(listing));
   };
 
   return (
@@ -269,19 +377,24 @@ export default function Page() {
                   id: "var",
                   label: "Var",
                   placeholder: "Sok studentstad",
+                  searchable: true,
                   options: [
                     { label: "Goteborg", value: "goteborg" },
                     { label: "Stockholm", value: "stockholm" },
                     { label: "Uppsala", value: "uppsala" },
+                    { label: "Lund", value: "lund" },
+                    { label: "Malmo", value: "malmo" },
                   ],
                 }}
                 field2={{
                   id: "hyresvard",
                   label: "Hyresvard",
                   placeholder: "Valj hyresvard",
+                  searchable: true,
                   options: [
-                    { label: "SGS", value: "sgs" },
-                    { label: "Svenska Studenthus", value: "svenska-studenthus" },
+                    { label: "Privat hyresvard", value: "privat" },
+                    { label: "Kommunal", value: "kommunal" },
+                    { label: "Stiftelse", value: "stiftelse" },
                     { label: "AF Bostader", value: "af-bostader" },
                   ],
                 }}
@@ -295,28 +408,21 @@ export default function Page() {
                     { label: "8000+", value: "8000+" },
                   ],
                 }}
-                onSubmit={(values) => {
-                  console.log("search submit", values);
-                }}
+                onSubmit={(values) => setSearchValues(values)}
               />
             </div>
             <ListingsFilterButton
-              amenities={[
-                { id: "gym", label: "Gym" },
-                { id: "tvatt", label: "Tvattmaskin" },
-                { id: "disk", label: "Diskmaskin" },
-              ]}
-              propertyTypes={[
-                { id: "rum", label: "Rum" },
-                { id: "lagenhet", label: "Lagenhet" },
-                { id: "korridor", label: "Korridor" },
-              ]}
+              amenities={amenityOptions}
+              propertyTypes={propertyTypeOptions}
               priceHistogram={[
                 1, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5,
                 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3,
                 21, 3, 5, 8, 5, 3, 2,
               ]}
-              priceBounds={{ min: 0, max: 12000 }}
+              priceBounds={priceBounds}
+              initialState={defaultListingsFilterState}
+              onApply={(state) => setFilters(state)}
+              onClear={() => setFilters(defaultListingsFilterState)}
             />
           </div>
         </div>
@@ -326,7 +432,7 @@ export default function Page() {
       <section className="w-full">
         <div className="flex w-full flex-wrap items-center justify-between gap-4">
           <h2 id="bostader-heading" className="text-base font-semibold text-black">
-            Över {totalListings.toLocaleString("sv-SE")} boenden
+            Over {totalListings.toLocaleString("sv-SE")} boenden
           </h2>
           <SwitchSelect value={view} onChange={setView} />
         </div>
@@ -342,12 +448,12 @@ export default function Page() {
                 className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
                 style={{ minHeight: 600, height: "min(72vh, 760px)" }}
               >
-                <ListingsMap listings={listings} />
+                <ListingsMap listings={filteredListings} />
               </div>
             </div>
           ) : (
             <div className={listingGridClasses}>
-              {listings.map((listing) => renderListingCard(listing))}
+              {filteredListings.map((listing) => renderListingCard(listing))}
             </div>
           )}
         </FieldSet>

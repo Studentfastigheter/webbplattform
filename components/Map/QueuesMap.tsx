@@ -17,7 +17,7 @@ type QueuesMapProps = {
 const QueuesMap: React.FC<QueuesMapProps> = ({ queues }) => {
   const markers: BaseMarker[] = queues.map((q) => ({
     id: q.id,
-    position: [q.lat, q.lng],
+    position: [q.lat, q.lng] as [number, number],
     popup: (
       <div className="text-sm">
         <div className="font-semibold">{q.name}</div>
@@ -25,6 +25,7 @@ const QueuesMap: React.FC<QueuesMapProps> = ({ queues }) => {
       </div>
     ),
   }));
+
 
   return <BaseMap markers={markers} />;
 };

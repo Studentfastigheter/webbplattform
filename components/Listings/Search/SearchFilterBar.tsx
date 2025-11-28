@@ -1,12 +1,7 @@
 "use client";
 
-import { Autocomplete, AutocompleteItem, Button } from "@heroui/react";
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Button } from "@heroui/react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 export type Option = {
   label: string;
@@ -15,7 +10,7 @@ export type Option = {
 
 type FieldBase = {
   id: string;
-  label: string;       // "Var", "Hyresvärd", "Pris"
+  label: string; // "Var", "Hyresvärd", "Pris"
   placeholder: string; // "Sök studentstad", "Välj hyresvärd", ...
 };
 
@@ -85,10 +80,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   // Stäng dropdown vid klick utanför
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        rootRef.current &&
-        !rootRef.current.contains(event.target as Node)
-      ) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setOpenFieldId(null);
         setSearchTerm("");
         setIsFiltering(false);
@@ -118,16 +110,12 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
     if (!activeField) return [];
 
     const baseOptions =
-      activeField.type === "select"
-        ? activeField.options
-        : activeField.options ?? [];
+      activeField.type === "select" ? activeField.options : activeField.options ?? [];
 
     if (!isFiltering || !searchTerm.trim()) return baseOptions;
 
     const term = searchTerm.toLowerCase();
-    return baseOptions.filter((o) =>
-      o.label.toLowerCase().includes(term)
-    );
+    return baseOptions.filter((o) => o.label.toLowerCase().includes(term));
   }, [activeField, isFiltering, searchTerm]);
 
   const handleSubmit = () => {
@@ -135,10 +123,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   };
 
   return (
-    <div
-      ref={rootRef}
-      className={`relative w-full ${className}`}
-    >
+    <div ref={rootRef} className={`relative w-full ${className}`}>
       <div
         className="
           relative
@@ -165,67 +150,6 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
                   ? [rawValue]
                   : []
                 : [];
-
-            // === SPECIALFALL: single-select + searchable => använd HeroUI Autocomplete ===
-            if (
-              !isSingleFieldMode &&
-              field.type === "select" &&
-              field.searchable &&
-              !field.multiple
-            ) {
-              const selectedLabel =
-                typeof rawValue === "string" ? rawValue : "";
-              const selectedKey =
-                field.options.find((o) => o.label === selectedLabel)?.value ??
-                undefined;
-
-              return (
-                <div
-                  key={field.id}
-                  className={`
-                    relative flex flex-1 items-center justify-center
-                    ${showDivider ? "border-l border-[rgba(30,30,30,0.15)] pl-5" : ""}
-                  `}
-                >
-                  <div className="w-full">
-                    <Autocomplete
-                      className="w-full"
-                      defaultItems={field.options}
-                      selectedKey={selectedKey}
-                      onSelectionChange={(key) => {
-                        const found = field.options.find(
-                          (o) => o.value === key
-                        );
-                        setValue(field.id, found?.label ?? null);
-                      }}
-                      label={field.label}
-                      placeholder={field.placeholder}
-                      variant="bordered"
-                      size="sm"
-                      radius="lg"
-                      classNames={{
-                        base: "w-full text-[12.6px]",
-                        listbox: "text-[12.6px]",
-                        listboxWrapper: "max-h-64",
-                        popoverContent:
-                          "rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.15)]",
-                        selectorButton: "text-[12.6px]",
-                        clearButton: "text-[12.6px]",
-                      }}
-                    >
-                      {(item) => (
-                        <AutocompleteItem
-                          key={item.value}
-                          className="text-[12.6px]"
-                        >
-                          {item.label}
-                        </AutocompleteItem>
-                      )}
-                    </Autocomplete>
-                  </div>
-                </div>
-              );
-            }
 
             // SINGLE FIELD MODE: search-input
             if (isSingleFieldMode && field.type === "search") {
@@ -401,40 +325,37 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
                             key={opt.value}
                             type="button"
                             onClick={() => {
-  if (field.type === "select") {
-    if (field.multiple) {
-      // MULTI-SELECT: toggla label i array
-      let next: string[];
-      if (isSelected) {
-        next = selectedLabels.filter((l) => l !== opt.label);
-      } else {
-        next = [...selectedLabels, opt.label];
-      }
+                              if (field.type === "select") {
+                                if (field.multiple) {
+                                  // MULTI-SELECT: toggla label i array
+                                  let next: string[];
+                                  if (isSelected) {
+                                    next = selectedLabels.filter((l) => l !== opt.label);
+                                  } else {
+                                    next = [...selectedLabels, opt.label];
+                                  }
 
-      setValue(field.id, next);
+                                  setValue(field.id, next);
 
-      if (field.searchable) {
-        const newDisplay = getDisplayValue(field, next);
-        setSearchTerm(newDisplay);
-        setIsFiltering(false);
-      }
-
-
-    } else {
-      // SINGLE-SELECT
-      setValue(field.id, opt.label);
-      setOpenFieldId(null);
-      setSearchTerm("");
-      setIsFiltering(false);
-    }
-  } else {
-    setValue(field.id, opt.label);
-    setOpenFieldId(null);
-    setSearchTerm("");
-    setIsFiltering(false);
-  }
-}}
-
+                                  if (field.searchable) {
+                                    const newDisplay = getDisplayValue(field, next);
+                                    setSearchTerm(newDisplay);
+                                    setIsFiltering(false);
+                                  }
+                                } else {
+                                  // SINGLE-SELECT
+                                  setValue(field.id, opt.label);
+                                  setOpenFieldId(null);
+                                  setSearchTerm("");
+                                  setIsFiltering(false);
+                                }
+                              } else {
+                                setValue(field.id, opt.label);
+                                setOpenFieldId(null);
+                                setSearchTerm("");
+                                setIsFiltering(false);
+                              }
+                            }}
                             className={`
                               flex w-full items-center justify-between
                               rounded-2xl px-3 py-1.5 text-left text-[12.6px]
@@ -444,9 +365,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
                           >
                             <span>{opt.label}</span>
                             {isSelected && (
-                              <span className="text-xs text-[#004323]">
-                                ✓
-                              </span>
+                              <span className="text-xs text-[#004323]">•</span>
                             )}
                           </button>
                         );
