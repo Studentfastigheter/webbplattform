@@ -2,6 +2,7 @@
 
 import { type ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 import ListingsFilterButton from "@/components/Listings/Search/ListingsFilterButton";
@@ -9,11 +10,21 @@ import SearchFilter3Fields from "@/components/Listings/Search/SearchFilter-3fiel
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
+const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-[520px] rounded-2xl bg-gray-100" aria-hidden />
+  ),
+});
+
 type ListingItem = {
   id: string;
   title: string;
   area: string;
   city: string;
+  address?: string;
+  lat: number;
+  lng: number;
   dwellingType: string;
   rooms: number;
   sizeM2: number;
@@ -24,20 +35,203 @@ type ListingItem = {
   tags?: string[];
 };
 
-const listings: ListingItem[] = Array.from({ length: 12 }).map((_, idx) => ({
-  id: `listing-${idx + 1}`,
-  title: "1:a Vasagatan 19",
-  area: "Innerstan",
-  city: "Goteborg",
-  dwellingType: "Lagenhet",
-  rooms: 3,
-  sizeM2: 42,
-  rent: 3800,
-  landlordType: "Privat hyresvard",
-  isVerified: true,
-  imageUrl: "/appartment.jpg",
-  tags: ["Moblerat", "Poangfri", "Korridor"],
-}));
+const listings: ListingItem[] = [
+  {
+    id: "vasagatan-19",
+    title: "1:a Vasagatan 19",
+    area: "Innerstan",
+    city: "Goteborg",
+    address: "Vasagatan 19",
+    lat: 57.7089,
+    lng: 11.9746,
+    dwellingType: "Lagenhet",
+    rooms: 1,
+    sizeM2: 28,
+    rent: 3800,
+    landlordType: "Privat hyresvard",
+    isVerified: true,
+    imageUrl: "/appartment.jpg",
+    tags: ["Moblerat", "Poangfri", "Korridor"],
+  },
+  {
+    id: "linnestaden-6",
+    title: "1:a Linnegatan 6",
+    area: "Linnestaden",
+    city: "Goteborg",
+    address: "Linnegatan 6",
+    lat: 57.6935,
+    lng: 11.9503,
+    dwellingType: "Rum",
+    rooms: 1,
+    sizeM2: 22,
+    rent: 3600,
+    landlordType: "Privat hyresvard",
+    imageUrl: "/appartment.jpg",
+    tags: ["Moblerat", "Studentrum"],
+  },
+  {
+    id: "kungshojd-11",
+    title: "2:a Kungshojd 11",
+    area: "Kungshojd",
+    city: "Goteborg",
+    address: "Kungshojdsgatan 11",
+    lat: 57.7038,
+    lng: 11.959,
+    dwellingType: "Lagenhet",
+    rooms: 2,
+    sizeM2: 44,
+    rent: 5200,
+    landlordType: "Kommunal",
+    isVerified: true,
+    imageUrl: "/appartment.jpg",
+    tags: ["Poangfri", "Balkong"],
+  },
+  {
+    id: "karlaplan-5",
+    title: "1:a Karlaplan 5",
+    area: "Ostermalm",
+    city: "Stockholm",
+    address: "Karlaplan 5",
+    lat: 59.3388,
+    lng: 18.0934,
+    dwellingType: "Rum",
+    rooms: 1,
+    sizeM2: 20,
+    rent: 4700,
+    landlordType: "Stiftelse",
+    imageUrl: "/appartment.jpg",
+    tags: ["Moblerat", "Nara campus"],
+  },
+  {
+    id: "kista-centrum",
+    title: "1,5:a Kista Centrum",
+    area: "Kista",
+    city: "Stockholm",
+    address: "Borgarfjordsgatan 18",
+    lat: 59.4035,
+    lng: 17.9442,
+    dwellingType: "Lagenhet",
+    rooms: 1,
+    sizeM2: 32,
+    rent: 5100,
+    landlordType: "Privat hyresvard",
+    imageUrl: "/appartment.jpg",
+    tags: ["Tunnelbana", "Student"],
+  },
+  {
+    id: "uppsala-norr",
+    title: "1:a Studentstaden",
+    area: "Studentstaden",
+    city: "Uppsala",
+    address: "Studentvagen 12",
+    lat: 59.8586,
+    lng: 17.6389,
+    dwellingType: "Rum",
+    rooms: 1,
+    sizeM2: 18,
+    rent: 3400,
+    landlordType: "Kommunal",
+    imageUrl: "/appartment.jpg",
+    tags: ["Moblerat", "Korridor"],
+  },
+  {
+    id: "lund-centrum",
+    title: "2:a Lund Centrum",
+    area: "Centrum",
+    city: "Lund",
+    address: "Bredgatan 4",
+    lat: 55.7047,
+    lng: 13.191,
+    dwellingType: "Lagenhet",
+    rooms: 2,
+    sizeM2: 46,
+    rent: 5400,
+    landlordType: "AF Bostader",
+    isVerified: true,
+    imageUrl: "/appartment.jpg",
+    tags: ["Poangfri", "Student"],
+  },
+  {
+    id: "malmo-vaster",
+    title: "1:a Malmo Vaster",
+    area: "Vaster",
+    city: "Malmo",
+    address: "Lernacken 2",
+    lat: 55.605,
+    lng: 13.0038,
+    dwellingType: "Rum",
+    rooms: 1,
+    sizeM2: 24,
+    rent: 4100,
+    landlordType: "Privat hyresvard",
+    imageUrl: "/appartment.jpg",
+    tags: ["Moblerat"],
+  },
+  {
+    id: "umea-campus",
+    title: "1:a Umea Campus",
+    area: "Campus",
+    city: "Umea",
+    address: "Universitetsomradet 3",
+    lat: 63.8258,
+    lng: 20.263,
+    dwellingType: "Rum",
+    rooms: 1,
+    sizeM2: 21,
+    rent: 3200,
+    landlordType: "Kommunal",
+    imageUrl: "/appartment.jpg",
+    tags: ["Student", "Nara campus"],
+  },
+  {
+    id: "orebro-sodra",
+    title: "1,5:a Orebro Sodra",
+    area: "Sodra",
+    city: "Orebro",
+    address: "Sodra Grev Rosengatan 7",
+    lat: 59.2741,
+    lng: 15.2066,
+    dwellingType: "Lagenhet",
+    rooms: 1,
+    sizeM2: 30,
+    rent: 4300,
+    landlordType: "Kommunal",
+    imageUrl: "/appartment.jpg",
+    tags: ["Student", "Balkong"],
+  },
+  {
+    id: "linkoping-valla",
+    title: "2:a Linkoping Valla",
+    area: "Valla",
+    city: "Linkoping",
+    address: "Vallavagen 16",
+    lat: 58.4108,
+    lng: 15.6214,
+    dwellingType: "Lagenhet",
+    rooms: 2,
+    sizeM2: 50,
+    rent: 5500,
+    landlordType: "Privat hyresvard",
+    imageUrl: "/appartment.jpg",
+    tags: ["Student", "Moblerat"],
+  },
+  {
+    id: "sundsvall-norra",
+    title: "1:a Sundsvall Norra",
+    area: "Norra",
+    city: "Sundsvall",
+    address: "Skonsberg 8",
+    lat: 62.3908,
+    lng: 17.3069,
+    dwellingType: "Rum",
+    rooms: 1,
+    sizeM2: 23,
+    rent: 3500,
+    landlordType: "Kommunal",
+    imageUrl: "/appartment.jpg",
+    tags: ["Moblerat"],
+  },
+];
 
 export default function Page() {
   const router = useRouter();
@@ -59,36 +253,11 @@ export default function Page() {
   );
 
   const renderMapListings = () => {
-    const nodes: ReactNode[] = [];
-    const itemsPerRow = 3;
-    let rowIndex = 1;
-    let i = 0;
-
-    while (i < listings.length) {
-      if (rowIndex % 3 === 0) {
-        nodes.push(
-          <div key={`ad-row-${rowIndex}`} className="col-span-full">
-            <div
-              className="h-36 w-full rounded-2xl bg-red-500"
-              aria-label="Annonsutrymme"
-            />
-          </div>
-        );
-        rowIndex += 1;
-        continue;
-      }
-
-      const rowListings = listings.slice(i, i + itemsPerRow);
-      nodes.push(...rowListings.map(renderListingCard));
-      i += rowListings.length;
-      rowIndex += 1;
-    }
-
-    return nodes;
+    return listings.map((listing) => renderListingCard(listing));
   };
 
   return (
-    <main className="flex flex-col gap-10 px-4 pb-16 pt-5">
+    <main className="flex flex-col gap-8 px-4 pb-12 pt-4">
       {/* Sektion 1: filter */}
       <section className="flex justify-center">
         <div className="flex w-full max-w-[1200px] flex-col gap-4">
@@ -157,7 +326,7 @@ export default function Page() {
       <section className="w-full">
         <div className="flex w-full flex-wrap items-center justify-between gap-4">
           <h2 id="bostader-heading" className="text-base font-semibold text-black">
-            Over {totalListings.toLocaleString("sv-SE")} boenden
+            Över {totalListings.toLocaleString("sv-SE")} boenden
           </h2>
           <SwitchSelect value={view} onChange={setView} />
         </div>
@@ -169,7 +338,12 @@ export default function Page() {
           {isMapView ? (
             <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
               <div className={listingGridClasses}>{renderMapListings()}</div>
-              <div className="min-h-[520px] rounded-2xl bg-blue-500" aria-hidden />
+              <div
+                className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
+                style={{ minHeight: 600, height: "min(72vh, 760px)" }}
+              >
+                <ListingsMap listings={listings} />
+              </div>
             </div>
           ) : (
             <div className={listingGridClasses}>
@@ -181,4 +355,3 @@ export default function Page() {
     </main>
   );
 }
-

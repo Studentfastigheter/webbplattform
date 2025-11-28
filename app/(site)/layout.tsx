@@ -6,7 +6,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   return (
     <>
       <SiteHeader />
-      <main className="pt-32">
+      <main className="pt-20">
         {children}
       </main>
       <SiteFooter />

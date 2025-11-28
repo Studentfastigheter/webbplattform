@@ -8,12 +8,23 @@ import QueueFilterButton from "@/components/Listings/Search/QueueFilterButton";
 import OneFieldSearch from "@/components/Listings/Search/SearchFilter-1field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
+import dynamic from "next/dynamic";
+
+const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-[520px] rounded-2xl bg-gray-100" aria-hidden />
+  ),
+});
+
 
 type QueueItem = {
   id: string;
   name: string;
   area: string;
   city: string;
+  lat: number;
+  lng: number;
   totalUnits?: number;
   unitsLabel?: string;
   isVerified?: boolean;
@@ -21,12 +32,15 @@ type QueueItem = {
   tags?: string[];
 };
 
+
 const queues: QueueItem[] = [
   {
     id: "sgs-studentbostader",
     name: "SGS Studentbostader",
     area: "Innerstan",
     city: "Goteborg",
+    lat: 57.7089,
+    lng: 11.9746,
     totalUnits: 1200,
     isVerified: true,
     logoUrl: "/logos/sgs-logo.svg",
@@ -37,6 +51,8 @@ const queues: QueueItem[] = [
     name: "Guldhedens Studiehem",
     area: "Guldheden",
     city: "Goteborg",
+    lat: 57.6898,
+    lng: 11.9856,
     totalUnits: 180,
     logoUrl: "/logos/guldhedens_studiehem.png",
     tags: ["Kristet", "Korridorer"],
@@ -46,6 +62,8 @@ const queues: QueueItem[] = [
     name: "SSSB",
     area: "Tekniska Hogskolan",
     city: "Stockholm",
+    lat: 59.3471,
+    lng: 18.0730,
     totalUnits: 800,
     isVerified: true,
     logoUrl: "/logos/campuslyan-logo.svg",
@@ -56,11 +74,47 @@ const queues: QueueItem[] = [
     name: "AF Bostader",
     area: "Lund Centrum",
     city: "Lund",
+    lat: 55.7047,
+    lng: 13.1910,
     unitsLabel: "2500 bostader",
     logoUrl: "/logos/campuslyan-logo.svg",
     tags: ["Poangfri", "Lagenhet"],
-  }
+  },
+  {
+    id: "af-bostader1",
+    name: "AF Bostader",
+    area: "Lund Centrum",
+    city: "Lund",
+    lat: 55.7047,
+    lng: 13.1910,
+    unitsLabel: "2500 bostader",
+    logoUrl: "/logos/campuslyan-logo.svg",
+    tags: ["Poangfri", "Lagenhet"],
+  },
+  {
+    id: "af-bostader2",
+    name: "AF Bostader",
+    area: "Lund Centrum",
+    city: "Lund",
+    lat: 55.7047,
+    lng: 13.1910,
+    unitsLabel: "2500 bostader",
+    logoUrl: "/logos/campuslyan-logo.svg",
+    tags: ["Poangfri", "Lagenhet"],
+  },
+  {
+    id: "af-bostader3",
+    name: "AF Bostader",
+    area: "Lund Centrum",
+    city: "Lund",
+    lat: 55.7047,
+    lng: 13.1910,
+    unitsLabel: "2500 bostader",
+    logoUrl: "/logos/campuslyan-logo.svg",
+    tags: ["Poangfri", "Lagenhet"],
+  },
 ];
+
 
 export default function Page() {
   const router = useRouter();
@@ -84,36 +138,11 @@ export default function Page() {
   );
 
   const renderMapListings = () => {
-    const nodes: ReactNode[] = [];
-    const itemsPerRow = 3;
-    let rowIndex = 1;
-    let i = 0;
-
-    while (i < queues.length) {
-      if (rowIndex % 3 === 0) {
-        nodes.push(
-          <div key={`ad-row-${rowIndex}`} className="col-span-full">
-            <div
-              className="h-36 w-full rounded-2xl bg-red-500"
-              aria-label="Annonsutrymme"
-            />
-          </div>
-        );
-        rowIndex += 1;
-        continue;
-      }
-
-      const rowQueues = queues.slice(i, i + itemsPerRow);
-      nodes.push(...rowQueues.map(renderQueueCard));
-      i += rowQueues.length;
-      rowIndex += 1;
-    }
-
-    return nodes;
+    return queues.map(renderQueueCard);
   };
 
   return (
-    <main className="flex flex-col gap-10 px-4 pb-16 pt-5">
+    <main className="flex flex-col gap-8 px-4 pb-12 pt-4">
       {/* Sektion 1: filter */}
       <section className="flex justify-center">
         <div className="flex w-full max-w-[1200px] flex-col gap-4">
@@ -183,13 +212,19 @@ export default function Page() {
           {isMapView ? (
             <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
               <div className={queueGridClasses}>{renderMapListings()}</div>
-              <div className="min-h-[520px] rounded-2xl bg-blue-500" aria-hidden />
+              <div
+                className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
+                style={{ minHeight: 600, height: "min(72vh, 760px)" }}
+              >
+                <QueuesMap queues={queues} />
+              </div>
             </div>
           ) : (
             <div className={queueGridClasses}>
               {queues.map((queue) => renderQueueCard(queue))}
             </div>
           )}
+
         </FieldSet>
       </section>
     </main>
