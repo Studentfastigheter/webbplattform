@@ -273,18 +273,21 @@ export default function Page() {
       <section className="w-full">
         <FieldSet className="w-full" aria-labelledby="bostader-heading">
           {isMapView ? (
-            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
-              <div className={queueGridClasses}>{renderMapListings()}</div>
-              <div
-                className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
-                style={{ minHeight: 600, height: "min(72vh, 760px)" }}
-              >
-                <QueuesMap queues={filteredQueues} />
+              <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
+                <div className={queueGridClasses}>{renderMapListings()}</div>
+                <div
+                  className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
+                  style={{ minHeight: 600, height: "min(72vh, 760px)" }}
+                >
+                <QueuesMap
+                  queues={filteredQueues}
+                  onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
+                />
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className={queueGridClasses}>
-              {filteredQueues.map((queue) => renderQueueCard(queue))}
+            ) : (
+              <div className={queueGridClasses}>
+                {filteredQueues.map((queue) => renderQueueCard(queue))}
             </div>
           )}
         </FieldSet>

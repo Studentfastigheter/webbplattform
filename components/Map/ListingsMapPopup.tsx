@@ -29,8 +29,22 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
 }) => {
   const formattedRent = formatRent(listing.rent);
 
+  const handleOpen = () => onOpen?.(listing.id);
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleOpen();
+    }
+  };
+
   return (
-    <div className="w-[240px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleOpen}
+      onKeyDown={handleKeyDown}
+      className="w-[240px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+    >
       {/* Bild med overlay */}
       {listing.imageUrl && (
         <div className="relative h-[140px] w-full">
@@ -78,7 +92,10 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
           )}
           <button
             type="button"
-            onClick={() => onOpen?.(listing.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleOpen();
+            }}
             className="inline-flex items-center justify-center rounded-full bg-gray-900 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-black"
           >
             Visa boende

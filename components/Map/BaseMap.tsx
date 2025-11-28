@@ -329,6 +329,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
           >
             {popupContent && (
               <Popup
+                className="map-popup"
                 eventHandlers={{
                   remove: () => {
                     if (manualPopupRef.current && activePopupId === marker.id) {

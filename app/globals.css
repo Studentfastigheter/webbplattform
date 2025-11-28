@@ -215,24 +215,44 @@ img, svg, video, canvas {
 /* ─────────────────────────────────────────────
    Leaflet
 ────────────────────────────────────────────── */
-/* Popup-wrapper: låt vårt kort styra bakgrund & kant */
-.leaflet-popup-content-wrapper {
-  padding: 0;
-  border-radius: 22px;
+/* Popup-wrapper: l?t kortet styra bakgrund och kant */
+.map-popup.leaflet-popup {
   background: transparent;
   border: none;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
+  box-shadow: none;
 }
 
-/* Ta bort default-marginal, så kortet kan gå kant-till-kant */
-.leaflet-popup-content {
+.map-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Ta bort default-marginal s? kortet kan g? kant-till-kant */
+.map-popup .leaflet-popup-content {
   margin: 0;
 }
 
-.leaflet-popup-tip {
+.map-popup .leaflet-popup-tip-container,
+.map-popup .leaflet-popup-tip {
   display: none; /* ingen triangel, renare look */
 }
 
+.map-popup .leaflet-popup-close-button {
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  line-height: 28px;
+  text-align: center;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 9999px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+}
 .leaflet-container {
   background: #f9fafb;
 }

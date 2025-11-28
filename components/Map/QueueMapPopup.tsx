@@ -39,8 +39,22 @@ const QueueMapPopup: React.FC<QueueMapPopupProps> = ({ queue, onOpen }) => {
   const unitsText = formatUnits(queue.totalUnits, queue.unitsLabel);
   const statusText = statusLabel(queue.status);
 
+  const handleOpen = () => onOpen?.(queue.id);
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleOpen();
+    }
+  };
+
   return (
-    <div className="w-[260px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleOpen}
+      onKeyDown={handleKeyDown}
+      className="w-[260px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+    >
       {/* Header med logo + namn + plats */}
       <div className="flex items-start gap-3 px-4 pt-3.5 pb-2.5">
         <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
@@ -107,12 +121,13 @@ const QueueMapPopup: React.FC<QueueMapPopupProps> = ({ queue, onOpen }) => {
 
       {/* CTA-rad */}
       <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
-        <p className="text-[11px] text-gray-400">
-          Se köregler & bostäder
-        </p>
+        <p className="text-[11px] text-gray-400">Se köregler & bostäder</p>
         <button
           type="button"
-          onClick={() => onOpen?.(queue.id)}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleOpen();
+          }}
           className="inline-flex items-center justify-center rounded-full bg-gray-900 px-3.5 py-1.5 text-[11px] font-medium text-white shadow-sm transition hover:bg-black"
         >
           Visa kö
