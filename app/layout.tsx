@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SiteHeader from "@/components/SiteHeader/SiteHeader";
-import SiteFooter from "@/components/SiteFooter/SiteFooter";
 import { AuthProvider } from "@/context/AuthContext";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/next';
@@ -83,9 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <AuthProvider>
             <Theme>
-            <SiteHeader />
             <main>{children}</main>
-            <SiteFooter />
             </Theme>
         </AuthProvider>
       </body>
