@@ -1,118 +1,83 @@
-import { Button } from "@heroui/button";
-import { Heart, Share2, Home, MapPin, Building2 } from "lucide-react";
+"use client";
 
 import React from "react";
+import { Button } from "@heroui/button";
+import { Heart, Share2 } from "lucide-react";
 
 type HousingInfoBoxProps = {
-  rentText: number;
-  moveInDate: string;
-  lastApplyDate: string;
-
+  rent: number;           // 3800
+  moveInDate: string;     // "2026-07-03"
+  lastApplyDate: string;  // "2026-05-24"
 
   width?: number | string;
   height?: number | string;
-
   className?: string;
-  style?: React.CSSProperties;
 
-  // layer styling
-  rentClassName?: string;
-  rentStyle?: React.CSSProperties;
-
-  moveInClassName?: string;
-  moveInStyle?: React.CSSProperties;
-
-  lastApplyClassName?: string;
-  lastApplyStyle?: React.CSSProperties;
-
-  // button layer
-  buttonClassName?: string;
-  buttonStyle?: React.CSSProperties;
-  buttonText?: string;
-  buttonTextClassName?: string;
-  onButtonClick?: () => void;
-
-  // text styling
-  rentTextClassName?: string;
-  moveInTextClassName?: string;
-  lastApplyTextClassName?: string;
+  onApplyClick?: () => void;
 };
 
 export default function HousingInfoBox({
-  rentText,
+  rent,
   moveInDate,
   lastApplyDate,
-
   width,
   height,
-
   className = "",
-  style,
-
-  rentClassName = "",
-  rentStyle,
-
-  moveInClassName = "",
-  moveInStyle,
-
-  lastApplyClassName = "",
-  lastApplyStyle,
-
-  buttonClassName = "",
-  buttonStyle,
-  buttonText = "Intresseanmälan",
-  buttonTextClassName = "",
-  onButtonClick,
-
-  rentTextClassName = "",
-  moveInTextClassName = "",
-  lastApplyTextClassName = "",
+  onApplyClick,
 }: HousingInfoBoxProps) {
   return (
     <div
-      className={`flex flex-col overflow-hidden ${className}`}
-      style={{ width, height, ...style }}
+      className={`
+        inline-flex flex-col
+        rounded-[40px]
+        bg-white
+        border border-black/5
+        shadow-[0_3px_4px_rgba(0,0,0,0.25)]
+        overflow-hidden
+        ${className}
+      `}
+      style={{ width: width ?? 280, height }}
     >
-      {/* Layer 1 */}
-    <div className={`flex-1 flex items-center justify-between ${rentClassName}`} style={rentStyle}>
-    
-    {/* Hyra-text */}
-    <span className={rentTextClassName}>
-    {rentText.toLocaleString("sv-SE")} kr/månad
-    </span>
+      {/* Rad 1: Hyra + ikoner */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-2">
+        <span className="text-[21px] leading-[24px] font-semibold text-gray-900">
+          {rent.toLocaleString("sv-SE")} kr/månad
+        </span>
 
-    {/* Ikoner */}
-    <div className="flex items-center gap-4 pr-2">
-        <Heart size={24} />
-        <Share2 size={24} />
-    </div>
-    </div>
+        <div className="flex items-center gap-3">
+          <Heart className="w-5 h-5" />
+          <Share2 className="w-5 h-5" />
+        </div>
+      </div>
 
-      
-      {/* Layer 2 */}
-      <div className={`flex-1 flex items-center ${moveInClassName}`} style={moveInStyle}>
-        <span className={moveInTextClassName}>
+      {/* Rad 2: Inflyttningsdatum */}
+      <div className="px-5 py-1">
+        <span className="text-[12px] leading-[14px] text-[#666666]">
           Inflyttningsdatum: {moveInDate}
         </span>
       </div>
 
-      {/* Layer 3 */}
-      <div className={`flex-1 flex items-center ${lastApplyClassName}`} style={lastApplyStyle}>
-        <span className={lastApplyTextClassName}>
+      {/* Rad 3: Sista anmälningsdag */}
+      <div className="px-5 pb-2 pt-1">
+        <span className="text-[12px] leading-[14px] text-[#666666]">
           Sista anmälningsdag: {lastApplyDate}
         </span>
       </div>
 
-      {/* Layer 4: Button */}
-      <div
-        className={`flex justify-center items-center ${buttonClassName}`}
-        style={buttonStyle}
-        >
+      {/* Rad 4: Knapp */}
+      <div className="px-5 pb-4 pt-1">
         <Button
-            onClick={onButtonClick}
-            className={`bg-[#004323] text-white rounded-full px-18 py-2 ${buttonTextClassName}`}
+          onClick={onApplyClick}
+          className={`
+            w-full h-[31px]
+            rounded-full
+            bg-[#004323] text-white
+            text-[14px] leading-[16px]
+            normal-case
+            shadow-[0_3px_4px_rgba(0,0,0,0.25)]
+          `}
         >
-            {buttonText}
+          Intresseanmälan
         </Button>
       </div>
     </div>
