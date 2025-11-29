@@ -1,4 +1,4 @@
-import { Button } from "@radix-ui/themes";
+import { Button } from "@heroui/button";
 import { Heart, Share2, Home, MapPin, Building2 } from "lucide-react";
 
 import React from "react";
@@ -108,16 +108,13 @@ export default function HousingInfoBox({
         className={`flex justify-center items-center ${buttonClassName}`}
         style={buttonStyle}
         >
-        <button
+        <Button
             onClick={onButtonClick}
             className={`bg-[#004323] text-white rounded-full px-18 py-2 ${buttonTextClassName}`}
         >
             {buttonText}
-        </button>
+        </Button>
       </div>
-
-    
-
     </div>
   );
 }
