@@ -66,7 +66,7 @@ export default function BostadAbout({ listing }: Props) {
           buttonWrapClassName="pb-4"
           moreLabel="Läs mer"
           lessLabel="Visa mindre"
-          scrollOffset={160}
+          scrollOffset={400}
         />
       </div>
 
