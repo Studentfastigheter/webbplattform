@@ -54,33 +54,6 @@ const queueContent: Record<string, QueueDetail> = {
           "När du får ett erbjudande har du 1–2 dagar att tacka ja, annars går bostaden vidare i kön.",
       },
     ],
-    steps: [
-      {
-        title: "Registrera konto",
-        description:
-          "Skapa ett konto med studentmejl och aktivera notifieringar för dina områden.",
-      },
-      {
-        title: "Verifiera studier",
-        description:
-          "Ladda upp antagningsbesked eller studieintyg så att köplatsen blir aktiv.",
-      },
-      {
-        title: "Välj bostadstyper",
-        description:
-          "Prioritera korridor, ettor eller familjebostäder – olika kötider per kategori.",
-      },
-      {
-        title: "Sök och svara",
-        description:
-          "Intresseanmäl dig på lediga objekt och svara på erbjudanden inom tiden i portalen.",
-      },
-    ],
-    documents: [
-      "Antagningsbesked eller studieintyg",
-      "ID-handling (pass eller nationellt ID)",
-      "Eventuellt anställningsintyg för doktorander",
-    ],
     contactEmail: "kundtjanst@sgs.se",
     contactPhone: "031-333-6300",
     website: "https://www.sgs.se/",
@@ -131,25 +104,6 @@ const queueContent: Record<string, QueueDetail> = {
         description:
           "Internomflyttning kräver fullgjord uppsägningstid och sköts i samma portal.",
       },
-    ],
-    steps: [
-      {
-        title: "Skapa konto och betala avgift",
-        description: "Registrera dig, betala serviceavgiften och få din köplats aktiverad.",
-      },
-      {
-        title: "Lägg bevakningar",
-        description: "Välj områden och bostadstyper så att utskick prioriteras rätt.",
-      },
-      {
-        title: "Ansök på lediga objekt",
-        description: "Använd dina köpoäng för att söka. Svara på erbjudanden i tid för att behålla platsen.",
-      },
-    ],
-    documents: [
-      "Registreringsintyg från Ladok",
-      "ID-handling (pass eller nationellt ID)",
-      "Kvittens på betald serviceavgift",
     ],
     contactEmail: "info@afbostader.se",
     contactPhone: "046-19 15 00",

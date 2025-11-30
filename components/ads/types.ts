@@ -58,8 +58,6 @@ export type QueueDetail = {
   images?: string[];
   stats: QueueStats;
   rules: QueueRule[];
-  steps: QueueStep[];
-  documents: string[];
   contactEmail?: string;
   contactPhone?: string;
   website?: string;
