@@ -19,45 +19,65 @@ export const metadata: Metadata = {
   // Viktigt för korrekta absoluta URL:er i OG/Twitter
   metadataBase: new URL("https://www.campuslyan.se"),
   title: {
-    default: "CampusLyan – Gratis studentbostäder samlade på ett ställe",
-    template: "%s | CampusLyan"
+    default: "CampusLyan – Studentbostäder på ett ställe med gratis plattform",
+    template: "%s – CampusLyan",
   },
   description:
-    "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag.",
+    "CampusLyan är en kostnadsfri plattform där studenter hittar studentbostäder, rum, korridorer och andrahandslägenheter från både privatpersoner och studentbostadsbolag – samlat på ett ställe.",
   keywords: [
-    "studentbostad", "studentlägenhet", "studentboende",
-    "bostad student", "hyra rum student", "CampusLyan",
-    "andrahand student", "gratis bostadsplattform", "StudentLyan",
+    "studentbostad",
+    "studentbostäder",
+    "studentlägenhet",
+    "studentboende",
+    "bostad student",
+    "hyra rum student",
+    "andrahand student",
+    "studentkorridor",
+    "studentlägenhet Göteborg",
+    "studentbostad Stockholm",
+    "studentbostad Lund",
+    "studentbostad Uppsala",
+    "gratis bostadsplattform",
+    "CampusLyan",
   ],
   alternates: {
-    canonical: "/",
+    canonical: "https://www.campuslyan.se",
   },
   openGraph: {
     type: "website",
-    url: "/",
+    url: "https://www.campuslyan.se",
     siteName: "CampusLyan",
     title: "CampusLyan – Gratis plattform för studentbostäder",
     description:
-      "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
+      "CampusLyan är en kostnadsfri plattform som samlar studentbostäder, rum och lägenheter från både privatpersoner och etablerade bostadsbolag på ett ställe.",
     images: [
-      { url: "/campuslyan-og.png", width: 1200, height: 630, alt: "CampusLyan" },
+      {
+        url: "/campuslyan-og.png",
+        width: 1200,
+        height: 630,
+        alt: "CampusLyan – Gratis plattform för studentbostäder",
+      },
     ],
     locale: "sv_SE",
   },
   twitter: {
     card: "summary_large_image",
-    site: "@campuslyan",           // ta bort/ändra om du inte har X-konto
+    site: "@campuslyan", // ta bort/ändra om du inte har X-konto
     title: "CampusLyan – Gratis plattform för studentbostäder",
     description:
-      "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
+      "CampusLyan är en kostnadsfri plattform där studenter hittar studentbostäder, rum och lägenheter från både privatpersoner och bostadsbolag – allt samlat på ett ställe.",
     images: ["/campuslyan-og.png"],
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large" },
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+    },
   },
-  // Favicon + app-ikoner
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -70,9 +90,10 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   verification: {
     // Google Search Console
-    google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes"
+    google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes",
   },
 };
+
 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
