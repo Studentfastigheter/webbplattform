@@ -25,3 +25,42 @@ export type ListingDetail = {
   images: string[];
   landlord: LandlordInfo;
 };
+
+export type QueueStats = {
+  status: "open" | "queue";
+  approximateWait: string;
+  model: string;
+  totalUnits?: string;
+  feeInfo?: string;
+  updatedAt?: string;
+};
+
+export type QueueRule = {
+  title: string;
+  description: string;
+};
+
+export type QueueStep = {
+  title: string;
+  description: string;
+};
+
+export type QueueDetail = {
+  id: string;
+  name: string;
+  area: string;
+  city: string;
+  landlord: LandlordInfo;
+  bannerImage?: string;
+  logo?: string;
+  description: string;
+  tags: string[];
+  images?: string[];
+  stats: QueueStats;
+  rules: QueueRule[];
+  steps: QueueStep[];
+  documents: string[];
+  contactEmail?: string;
+  contactPhone?: string;
+  website?: string;
+};

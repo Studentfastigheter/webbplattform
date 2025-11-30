@@ -213,9 +213,9 @@ export default function Page() {
                 field={{
                   id: "var",
                   label: "Var",
-                  placeholder: "Sok studentstad",
+                  placeholder: "Sök studentstad",
                   options: [
-                    { label: "Goteborg", value: "goteborg" },
+                    { label: "Göteborg", value: "göteborg" },
                     { label: "Stockholm", value: "stockholm" },
                     { label: "Uppsala", value: "uppsala" },
                   ],
@@ -224,7 +224,7 @@ export default function Page() {
               />
             </div>
             <QueueFilterButton
-              cities={["Goteborg", "Stockholm", "Lund", "Malmo", "Umea"]}
+              cities={["Göteborg", "Stockholm", "Lund", "Malmö", "Umeå"]}
               cityCounts={{
                 Goteborg: 5,
                 Stockholm: 2,
@@ -263,7 +263,7 @@ export default function Page() {
       <section className="w-full">
         <div className="flex w-full flex-wrap items-center justify-between gap-4">
           <h2 id="bostader-heading" className="text-base font-semibold text-black">
-            Over {totalQueues.toLocaleString("sv-SE")} koer
+            Över {totalQueues.toLocaleString("sv-SE")} köer
           </h2>
           <SwitchSelect value={view} onChange={setView} />
         </div>
