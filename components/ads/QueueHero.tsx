@@ -125,7 +125,7 @@ export default function QueueHero({ queue }: { queue: QueueDetail }) {
 
             {/* Snabbfakta-kort */}
             {infoItems.length > 0 && (
-              <aside className="w-full rounded-2xl border border-gray-100 bg-gray-50/70 px-4 py-4 sm:px-5 sm:py-5">
+              <aside className="w-full rounded-2xl border border-gray-100 bg-white/70 px-4 py-4 sm:px-5 sm:py-5">
                 <div className="mb-2 flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-green-900" />
                   <div>
