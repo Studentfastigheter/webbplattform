@@ -56,13 +56,16 @@ export function SwitchSelect({
       <motion.div
         aria-hidden
         className={[
-          "absolute inset-y-1 left-1 w-[calc(50%-0.25rem)]",
+          // fyll hela höjden och halva bredden
+          "absolute top-0 bottom-0 left-0 w-1/2",
           "rounded-full bg-[#E9E9E9]",
           "shadow-[0_6px_14px_rgba(0,0,0,0.22)]",
         ].join(" ")}
         animate={{ x: `${selectedIndex * 100}%` }}
         transition={{ duration: 0.22, ease: "easeInOut" }}
       />
+
+
 
       {options.map((opt) => {
         const active = opt.key === currentValue;
