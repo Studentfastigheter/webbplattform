@@ -70,6 +70,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const payload = {
+        type: form.type,
         ssn: form.ssn.trim(),
         email: form.email.trim(),
         password: form.password,
