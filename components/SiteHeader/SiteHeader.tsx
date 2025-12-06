@@ -59,7 +59,6 @@ export default function SiteHeader() {
         dropdown: [
           { name: "Lägg till köer", link: "/alla-koer" },
           { name: "Mina köer", link: "/koer" },
-          { name: "Sparade köer", link: "/sparade-koer" },
         ],
       },
       { name: "Meddelanden", link: "/meddelanden" },
