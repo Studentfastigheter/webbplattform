@@ -112,22 +112,23 @@ export default function SiteHeader() {
 
   if (userType === "student") {
     accountMenuItems = [
-      { name: "Mitt konto", link: "/konto" },
-      { name: "Inställningar", link: "/konto/installningar" },
-      { name: "Meddelanden", link: "/konto/meddelanden" },
+      { name: "Mitt konto", link: "/profil" },
+      { name: "Inställningar", link: "/installningar" },
+      { name: "Kom igång", link: "/" },
+      { name: "Hjälp", link: "/faq" },
     ];
   } else if (userType === "private_landlord") {
     accountMenuItems = [
-      { name: "Mitt konto", link: "/konto" },
-      { name: "Inställningar", link: "/konto/installningar" },
-      { name: "Fakturering", link: "/konto/fakturering" },
+      { name: "Mitt konto", link: "/profil" },
+      { name: "Inställningar", link: "/installningar" },
+      { name: "Fakturering", link: "/fakturering" },
     ];
   } else if (userType === "company") {
     accountMenuItems = [
-      { name: "Företagsdashboard", link: "/konto/foretag/dashboard" },
-      { name: "Hantera abonnemang", link: "/konto/foretag/abonnemang" },
-      { name: "Fakturering", link: "/konto/foretag/fakturering" },
-      { name: "Hantera profil", link: "/konto/foretag/profil" },
+      { name: "Företagsdashboard", link: "/foretag/dashboard" },
+      { name: "Hantera abonnemang", link: "/foretag/abonnemang" },
+      { name: "Fakturering", link: "/foretag/fakturering" },
+      { name: "Hantera profil", link: "/foretag/profil" },
     ];
   } else if (user) {
     accountMenuItems = [{ name: "Mitt konto", link: "/konto" }];
