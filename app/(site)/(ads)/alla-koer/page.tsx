@@ -11,6 +11,12 @@ import QueueFilterButton, {
 import OneFieldSearch from "@/components/Listings/Search/SearchFilter-1field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
+import {
+  type AdvertiserSummary,
+  type HousingQueue,
+  type QueueStatus,
+  type Coordinates,
+} from "@/types";
 
 const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ssr: false,
@@ -19,52 +25,68 @@ const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ),
 });
 
-type QueueItem = {
-  id: string;
-  name: string;
-  area: string;
-  city: string;
-  lat: number;
-  lng: number;
-  totalUnits?: number;
-  unitsLabel?: string;
-  isVerified?: boolean;
-  landlord: string;
-  status?: "open" | "queue";
-  logoUrl: string;
-  tags?: string[];
+type QueueWithUI = HousingQueue &
+  Coordinates & {
+    advertiser: AdvertiserSummary;
+    logoUrl?: string | null;
+    unitsLabel?: string | null;
+    isVerified?: boolean;
+    status: QueueStatus;
+  };
+
+const defaultQueueMeta = {
+  createdAt: "2024-01-01T00:00:00Z",
+  updatedAt: "2024-01-01T00:00:00Z",
 };
 
-const queues: QueueItem[] = [
+const queues: QueueWithUI[] = [
   {
-    id: "sgs-studentbostader",
-    name: "SGS Studentbostader",
+    ...defaultQueueMeta,
+    queueId: "sgs-studentbostader",
+    companyId: 1001,
+    name: "SGS Studentbostäder",
     area: "Innerstan",
-    city: "Goteborg",
+    city: "Göteborg",
     lat: 57.7089,
     lng: 11.9746,
     totalUnits: 1200,
     isVerified: true,
-    landlord: "SGS",
+    advertiser: {
+      userId: 1001,
+      type: "company",
+      displayName: "SGS Studentbostäder",
+      logoUrl: "/logos/sgs-logo.svg",
+      subtitle: "Studentbostäder",
+    },
     status: "open",
     logoUrl: "/logos/sgs-logo.svg",
-    tags: ["Korridorer", "Lagenheter", "Moblerat"],
+    tags: ["Korridorer", "Lägenheter", "Möblerat"],
   },
   {
-    id: "guldhedens-studiehem",
+    ...defaultQueueMeta,
+    queueId: "guldhedens-studiehem",
+    companyId: 1002,
     name: "Guldhedens Studiehem",
     area: "Guldheden",
-    city: "Goteborg",
+    city: "Göteborg",
     lat: 57.6898,
     lng: 11.9856,
     totalUnits: 180,
-    landlord: "Guldhedens Studiehem",
-    status: "queue",
+    advertiser: {
+      userId: 1002,
+      type: "company",
+      displayName: "Guldhedens Studiehem",
+      logoUrl: "/logos/guldhedens_studiehem.png",
+      subtitle: "Studentbostäder",
+    },
+    status: "open",
     logoUrl: "/logos/guldhedens_studiehem.png",
     tags: ["Kristet", "Korridorer"],
   },
   {
-    id: "sssb",
+    ...defaultQueueMeta,
+    queueId: "sssb",
+    companyId: 1003,
     name: "SSSB",
     area: "Tekniska Hogskolan",
     city: "Stockholm",
@@ -72,62 +94,100 @@ const queues: QueueItem[] = [
     lng: 18.073,
     totalUnits: 800,
     isVerified: true,
-    landlord: "SSSB",
-    status: "queue",
+    advertiser: {
+      userId: 1003,
+      type: "company",
+      displayName: "SSSB",
+      logoUrl: "/logos/campuslyan-logo.svg",
+      subtitle: "Studentbostäder",
+    },
+    status: "open",
     logoUrl: "/logos/campuslyan-logo.svg",
     tags: ["Student", "Stockholm"],
   },
   {
-    id: "af-bostader",
-    name: "AF Bostader",
+    ...defaultQueueMeta,
+    queueId: "af-bostader",
+    companyId: 1004,
+    name: "AF Bostäder",
     area: "Lund Centrum",
     city: "Lund",
     lat: 55.7047,
     lng: 13.191,
     unitsLabel: "2500 bostader",
-    landlord: "AF Bostader",
+    advertiser: {
+      userId: 1004,
+      type: "company",
+      displayName: "AF Bostäder",
+      logoUrl: "/logos/campuslyan-logo.svg",
+      subtitle: "Studentbostäder",
+    },
     status: "open",
     logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poangfri", "Lagenhet"],
+    tags: ["Poängfri", "Lägenhet"],
   },
   {
-    id: "af-bostader1",
-    name: "AF Bostader",
+    ...defaultQueueMeta,
+    queueId: "af-bostader1",
+    companyId: 1005,
+    name: "AF Bostäder",
     area: "Lund Centrum",
     city: "Lund",
     lat: 55.7047,
     lng: 13.191,
     unitsLabel: "2500 bostader",
-    landlord: "AF Bostader",
+    advertiser: {
+      userId: 1005,
+      type: "company",
+      displayName: "AF Bostäder",
+      logoUrl: "/logos/campuslyan-logo.svg",
+      subtitle: "Studentbostäder",
+    },
     status: "open",
     logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poangfri", "Lagenhet"],
+    tags: ["Poängfri", "Lägenhet"],
   },
   {
-    id: "af-bostader2",
-    name: "AF Bostader",
+    ...defaultQueueMeta,
+    queueId: "af-bostader2",
+    companyId: 1006,
+    name: "AF Bostäder",
     area: "Lund Centrum",
     city: "Lund",
     lat: 55.7047,
     lng: 13.191,
     unitsLabel: "2500 bostader",
-    landlord: "AF Bostader",
-    status: "queue",
+    advertiser: {
+      userId: 1006,
+      type: "company",
+      displayName: "AF Bostäder",
+      logoUrl: "/logos/campuslyan-logo.svg",
+      subtitle: "Studentbostäder",
+    },
+    status: "open",
     logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poangfri", "Lagenhet"],
+    tags: ["Poängfri", "Lägenhet"],
   },
   {
-    id: "af-bostader3",
-    name: "AF Bostader",
+    ...defaultQueueMeta,
+    queueId: "af-bostader3",
+    companyId: 1007,
+    name: "AF Bostäder",
     area: "Lund Centrum",
     city: "Lund",
     lat: 55.7047,
     lng: 13.191,
     unitsLabel: "2500 bostader",
-    landlord: "AF Bostader",
-    status: "queue",
+    advertiser: {
+      userId: 1007,
+      type: "company",
+      displayName: "AF Bostäder",
+      logoUrl: "/logos/campuslyan-logo.svg",
+      subtitle: "Studentbostäder",
+    },
+    status: "open",
     logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poangfri", "Lagenhet"],
+    tags: ["Poängfri", "Lägenhet"],
   },
 ];
 
@@ -168,7 +228,7 @@ export default function Page() {
         queueFilters.landlords.length === 0 ||
         queueFilters.landlords.some(
           (landlord) =>
-            queue.landlord.toLowerCase() === landlord.toLowerCase()
+            queue.advertiser.displayName.toLowerCase() === landlord.toLowerCase()
         );
 
       const matchesStatus =
@@ -186,16 +246,31 @@ export default function Page() {
     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 justify-items-center"
     : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
 
-  const renderQueueCard = (queue: QueueItem) => (
-    <div key={queue.id} className="flex w-full justify-center">
+  const renderQueueCard = (queue: QueueWithUI) => {
+    const { advertiser: _advertiser, lat: _lat, lng: _lng, ...rest } = queue;
+    const queueCardProps = {
+      ...rest,
+      logoAlt: `${queue.name} logotyp`,
+    };
+
+    return (
+    <div key={queue.queueId} className="flex w-full justify-center">
       <Que_ListingCard
-        {...queue}
-        logoAlt={`${queue.name} logotyp`}
-        onViewListings={() => router.push(`/alla-koer/${queue.id}`)}
-        onReadMore={() => router.push(`/alla-koer/${queue.id}`)}
+        name={queueCardProps.name}
+        area={queueCardProps.area}
+        city={queueCardProps.city}
+        totalUnits={queueCardProps.totalUnits}
+        unitsLabel={queueCardProps.unitsLabel}
+        isVerified={queueCardProps.isVerified}
+        logoUrl={queueCardProps.logoUrl}
+        logoAlt={queueCardProps.logoAlt}
+        tags={queueCardProps.tags}
+        onViewListings={() => router.push(`/alla-koer/${queue.queueId}`)}
+        onReadMore={() => router.push(`/alla-koer/${queue.queueId}`)}
       />
     </div>
-  );
+    );
+  };
 
   const renderMapListings = () => {
     return filteredQueues.map(renderQueueCard);
@@ -232,20 +307,17 @@ export default function Page() {
                 Malmo: 1,
                 Umea: 1,
               }}
-              landlords={[
-                "SGS",
-                "AF Bostader",
-                "SSSB",
-                "Guldhedens Studiehem",
-                "Hembo",
-              ]}
-              landlordCounts={{
-                SGS: 2,
-                "AF Bostader": 4,
-                SSSB: 1,
-                "Guldhedens Studiehem": 1,
-                Hembo: 1,
-              }}
+              landlords={Array.from(
+                new Set(queues.map((queue) => queue.advertiser.displayName)),
+              )}
+              landlordCounts={queues.reduce<Record<string, number>>(
+                (acc, queue) => {
+                  const key = queue.advertiser.displayName;
+                  acc[key] = (acc[key] ?? 0) + 1;
+                  return acc;
+                },
+                {},
+              )}
               onApply={(state) => setQueueFilters(state)}
               onClear={() =>
                 setQueueFilters({

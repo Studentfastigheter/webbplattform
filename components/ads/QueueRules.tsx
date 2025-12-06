@@ -1,5 +1,9 @@
-import type { QueueRule } from "@/components/ads/types";
 import { ListChecks } from "lucide-react";
+
+type QueueRule = {
+  title: string;
+  description: string;
+};
 
 type Props = {
   rules: QueueRule[];

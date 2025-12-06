@@ -1,7 +1,7 @@
 import HousingInfoBox from "@/components/ui/housingInfoBox";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import Tag from "@/components/ui/Tag";
-import type { ListingDetail } from "@/components/ads/types";
+import type { ListingWithRelations } from "@/types";
 import { Home, MapPin } from "lucide-react";
 import React from "react";
 
@@ -15,7 +15,7 @@ function InfoRow({ icon, label }: { icon: React.ReactNode; label: string }) {
 }
 
 type Props = {
-  listing: ListingDetail;
+  listing: ListingWithRelations;
 };
 
 export default function BostadAbout({ listing }: Props) {
@@ -33,19 +33,21 @@ export default function BostadAbout({ listing }: Props) {
           </h1>
 
           {/* Två rader med ikon + text, ingen chip-bakgrund */}
-          <InfoRow
-            icon={<MapPin className="h-4 w-4" />}
-            label={`${listing.area}, ${listing.city}`}
-          />
+          {listing.area && listing.city && (
+            <InfoRow
+              icon={<MapPin className="h-4 w-4" />}
+              label={`${listing.area}, ${listing.city}`}
+            />
+          )}
           <InfoRow
             icon={<Home className="h-4 w-4" />}
-            label={`${listing.dwellingType} / ${listing.rooms} / ${listing.size}`}
+            label={`${listing.dwellingType} / ${listing.rooms} rum / ${listing.sizeM2} m²`}
           />
         </div>
 
         {/* Taggar som chips under raderna */}
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          {listing.tags.map((tag) => (
+          {(listing.tags ?? []).map((tag) => (
             <Tag
               key={tag}
               text={tag}
@@ -74,8 +76,8 @@ export default function BostadAbout({ listing }: Props) {
       <div className="lg:justify-self-end">
         <HousingInfoBox
           rent={listing.rent}
-          moveInDate={listing.moveIn}
-          lastApplyDate={listing.applyBy}
+          moveInDate={listing.moveIn ?? undefined}
+          lastApplyDate={listing.applyBy ?? undefined}
           className="w-full max-w-[280px]"
         />
       </div>

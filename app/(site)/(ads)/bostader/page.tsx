@@ -11,6 +11,11 @@ import ListingsFilterButton, {
 import SearchFilter3Fields from "@/components/Listings/Search/SearchFilter-3field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
+import {
+  type AdvertiserSummary,
+  type ListingWithRelations,
+  type ListingImage,
+} from "@/types";
 
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ssr: false,
@@ -41,27 +46,99 @@ const defaultListingsFilterState: ListingsFilterState = {
   priceRange: priceBounds,
 };
 
-type ListingItem = {
-  id: string;
-  title: string;
-  area: string;
-  city: string;
-  address?: string;
-  lat: number;
-  lng: number;
-  dwellingType: string;
-  rooms: number;
-  sizeM2: number;
-  rent: number;
-  landlordType: string;
-  isVerified?: boolean;
+type UIListing = ListingWithRelations & {
   imageUrl: string;
-  tags?: string[];
+  thumbnailUrl?: string;
+  landlordType?: string;
+  isVerified?: boolean;
 };
 
-const listings: ListingItem[] = [
-  {
-    id: "vasagatan-19",
+const baseDescription =
+  "Modern studentbostad med närhet till campus, kollektivtrafik och service. Perfekt balans mellan studiero och stadspuls.";
+
+const buildAdvertiser = (
+  id: number,
+  displayName: string,
+  type: AdvertiserSummary["type"],
+  overrides?: Partial<AdvertiserSummary>,
+): AdvertiserSummary => ({
+  id,
+  displayName,
+  type,
+  ...overrides,
+});
+
+const defaultAdvertiser = buildAdvertiser(
+  2000,
+  "CampusLyan Partner",
+  "company",
+  { subtitle: "Hyresvärd", logoUrl: "/logos/campuslyan-logo.svg" },
+);
+
+let imageIdCounter = 1;
+
+const createListing = (
+  listing: Omit<
+    UIListing,
+    | "description"
+    | "images"
+    | "thumbnailUrl"
+    | "advertiser"
+    | "moveIn"
+    | "status"
+    | "listingId"
+    | "listingType"
+    | "createdAt"
+    | "updatedAt"
+    | "companyId"
+    | "landlordId"
+  > & {
+    listingId: string;
+    listingType?: "company" | "private";
+    companyId?: number;
+    landlordId?: number;
+    description?: string;
+    images?: (ListingImage | { imageUrl: string })[];
+    thumbnailUrl?: string;
+    advertiser?: AdvertiserSummary;
+    moveIn?: string;
+    status?: ListingWithRelations["status"];
+  },
+): UIListing => ({
+  listingType: listing.listingType ?? "company",
+  companyId: listing.companyId ?? 1,
+  landlordId: listing.landlordId,
+  listingId: listing.listingId,
+  status: listing.status ?? "available",
+  createdAt: listing.createdAt ?? "2024-01-01T00:00:00Z",
+  updatedAt: listing.updatedAt ?? "2024-01-01T00:00:00Z",
+  description: listing.description ?? baseDescription,
+  images:
+    listing.images?.map((img) =>
+      "imageId" in img
+        ? img
+        : {
+            imageId: imageIdCounter++,
+            listingId: listing.listingId,
+            imageUrl: img.imageUrl,
+          },
+    ) ?? [
+      {
+        imageId: imageIdCounter++,
+        listingId: listing.listingId,
+        imageUrl: listing.imageUrl,
+      },
+    ],
+  thumbnailUrl: listing.thumbnailUrl ?? listing.imageUrl,
+  advertiser: listing.advertiser ?? defaultAdvertiser,
+  moveIn: listing.moveIn ?? "2025-09-01",
+  status: listing.status ?? "available",
+  ...listing,
+});
+
+const listings: UIListing[] = [
+  createListing({
+    listingId: "vasagatan-19",
     title: "1:a Vasagatan 19",
     area: "Innerstan",
     city: "Goteborg",
@@ -76,9 +153,9 @@ const listings: ListingItem[] = [
     isVerified: true,
     imageUrl: "/appartment.jpg",
     tags: ["Moblerat", "Poangfri", "Korridor"],
-  },
-  {
-    id: "linnestaden-6",
+  }),
+  createListing({
+    listingId: "linnestaden-6",
     title: "1:a Linnegatan 6",
     area: "Linnestaden",
     city: "Goteborg",
@@ -92,9 +169,9 @@ const listings: ListingItem[] = [
     landlordType: "Privat hyresvard",
     imageUrl: "/appartment.jpg",
     tags: ["Moblerat", "Studentrum"],
-  },
-  {
-    id: "kungshojd-11",
+  }),
+  createListing({
+    listingId: "kungshojd-11",
     title: "2:a Kungshojd 11",
     area: "Kungshojd",
     city: "Goteborg",
@@ -109,9 +186,9 @@ const listings: ListingItem[] = [
     isVerified: true,
     imageUrl: "/appartment.jpg",
     tags: ["Poangfri", "Balkong"],
-  },
-  {
-    id: "karlaplan-5",
+  }),
+  createListing({
+    listingId: "karlaplan-5",
     title: "1:a Karlaplan 5",
     area: "Ostermalm",
     city: "Stockholm",
@@ -125,9 +202,9 @@ const listings: ListingItem[] = [
     landlordType: "Stiftelse",
     imageUrl: "/appartment.jpg",
     tags: ["Moblerat", "Student"],
-  },
-  {
-    id: "kista-centrum",
+  }),
+  createListing({
+    listingId: "kista-centrum",
     title: "1,5:a Kista Centrum",
     area: "Kista",
     city: "Stockholm",
@@ -141,9 +218,9 @@ const listings: ListingItem[] = [
     landlordType: "Privat hyresvard",
     imageUrl: "/appartment.jpg",
     tags: ["Tunnelbana", "Student"],
-  },
-  {
-    id: "uppsala-norr",
+  }),
+  createListing({
+    listingId: "uppsala-norr",
     title: "1:a Studentstaden",
     area: "Studentstaden",
     city: "Uppsala",
@@ -157,9 +234,9 @@ const listings: ListingItem[] = [
     landlordType: "Kommunal",
     imageUrl: "/appartment.jpg",
     tags: ["Moblerat", "Korridor"],
-  },
-  {
-    id: "lund-centrum",
+  }),
+  createListing({
+    listingId: "lund-centrum",
     title: "2:a Lund Centrum",
     area: "Centrum",
     city: "Lund",
@@ -174,9 +251,15 @@ const listings: ListingItem[] = [
     isVerified: true,
     imageUrl: "/appartment.jpg",
     tags: ["Poangfri", "Student"],
-  },
-  {
-    id: "malmo-vaster",
+    advertiser: buildAdvertiser(
+      2001,
+      "AF Bostader",
+      "company",
+      { logoUrl: "/logos/campuslyan-logo.svg" },
+    ),
+  }),
+  createListing({
+    listingId: "malmo-vaster",
     title: "1:a Malmo Vaster",
     area: "Vaster",
     city: "Malmo",
@@ -190,9 +273,9 @@ const listings: ListingItem[] = [
     landlordType: "Privat hyresvard",
     imageUrl: "/appartment.jpg",
     tags: ["Moblerat"],
-  },
-  {
-    id: "umea-campus",
+  }),
+  createListing({
+    listingId: "umea-campus",
     title: "1:a Umea Campus",
     area: "Campus",
     city: "Umea",
@@ -206,9 +289,9 @@ const listings: ListingItem[] = [
     landlordType: "Kommunal",
     imageUrl: "/appartment.jpg",
     tags: ["Student", "Nara campus"],
-  },
-  {
-    id: "orebro-sodra",
+  }),
+  createListing({
+    listingId: "orebro-sodra",
     title: "1,5:a Orebro Sodra",
     area: "Sodra",
     city: "Orebro",
@@ -222,9 +305,9 @@ const listings: ListingItem[] = [
     landlordType: "Kommunal",
     imageUrl: "/appartment.jpg",
     tags: ["Student", "Balkong"],
-  },
-  {
-    id: "linkoping-valla",
+  }),
+  createListing({
+    listingId: "linkoping-valla",
     title: "2:a Linkoping Valla",
     area: "Valla",
     city: "Linkoping",
@@ -238,9 +321,9 @@ const listings: ListingItem[] = [
     landlordType: "Privat hyresvard",
     imageUrl: "/appartment.jpg",
     tags: ["Student", "Moblerat"],
-  },
-  {
-    id: "sundsvall-norra",
+  }),
+  createListing({
+    listingId: "sundsvall-norra",
     title: "1:a Sundsvall Norra",
     area: "Norra",
     city: "Sundsvall",
@@ -254,7 +337,7 @@ const listings: ListingItem[] = [
     landlordType: "Kommunal",
     imageUrl: "/appartment.jpg",
     tags: ["Moblerat"],
-  },
+  }),
 ];
 
 const parseSearchPriceRange = (
@@ -352,13 +435,23 @@ export default function Page() {
     : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
 
   const renderListingCard = (
-    listing: ListingItem,
+    listing: UIListing,
     variant: "default" | "compact" = "default"
   ) => (
-    <div key={listing.id} className="flex w-full justify-center">
+    <div key={listing.listingId} className="flex w-full justify-center">
       <ListingCardSmall
-        {...listing}
-        onClick={() => router.push(`/bostader/${listing.id}`)}
+        title={listing.title}
+        area={listing.area}
+        city={listing.city}
+        dwellingType={listing.dwellingType}
+        rooms={listing.rooms}
+        sizeM2={listing.sizeM2}
+        rent={listing.rent}
+        landlordType={listing.landlordType ?? listing.advertiser.displayName}
+        isVerified={listing.isVerified}
+        imageUrl={listing.imageUrl}
+        tags={listing.tags}
+        onClick={() => router.push(`/bostader/${listing.listingId}`)}
         variant={variant}
       />
     </div>

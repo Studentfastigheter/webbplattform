@@ -64,7 +64,7 @@ export default function SiteHeader() {
       },
       { name: "Meddelanden", link: "/meddelanden" },
     ];
-  } else if (userType === "landlord") {
+  } else if (userType === "private_landlord") {
     navItems = [
       {
         name: "Skapa ny annons",
@@ -117,7 +117,7 @@ export default function SiteHeader() {
       { name: "Inställningar", link: "/konto/installningar" },
       { name: "Meddelanden", link: "/konto/meddelanden" },
     ];
-  } else if (userType === "landlord") {
+  } else if (userType === "private_landlord") {
     accountMenuItems = [
       { name: "Mitt konto", link: "/konto" },
       { name: "Inställningar", link: "/konto/installningar" },
@@ -139,7 +139,7 @@ export default function SiteHeader() {
       ? "Företag"
       : userType === "student"
       ? "Student"
-      : userType === "landlord"
+      : userType === "private_landlord"
       ? "Privat uthyrare"
       : null;
 

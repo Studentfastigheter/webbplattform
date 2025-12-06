@@ -15,18 +15,17 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-
-type AccountType = "student" | "landlord" | "company";
+import { type UserType } from "@/types";
 
 type RegisterForm = {
-  type: AccountType;
+  type: UserType;
   ssn: string;
   email: string;
   password: string;
 };
 
 const accountTypeOptions: {
-  value: AccountType;
+  value: UserType;
   title: string;
 }[] = [
   {
@@ -34,7 +33,7 @@ const accountTypeOptions: {
     title: "Student",
   },
   {
-    value: "landlord",
+    value: "private_landlord",
     title: "Uthyrare",
   },
   {
@@ -70,10 +69,15 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
+      const payload = {
+        ssn: form.ssn.trim(),
+        email: form.email.trim(),
+        password: form.password,
+      };
       const res = await fetch("/api/users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -82,7 +86,7 @@ export default function RegisterPage() {
           (data as any)?.reason ||
           (data as any)?.error ||
           (data as any)?.message ||
-          (res.status === 409
+          (res.status === 409 || res.status === 402
             ? "E-post eller personnummer används redan."
             : "Kunde inte registrera användaren.");
         throw new Error(msg);

@@ -1,18 +1,10 @@
 "use client";
 
-import React from "react";
-
-export type ListingPopupData = {
-  id: string;
-  title: string;
-  city: string;
-  address?: string;
-  rent?: number;
-  imageUrl?: string;
-};
+import React, { useMemo } from "react";
+import { type ListingWithRelations } from "@/types";
 
 type ListingMapPopupProps = {
-  listing: ListingPopupData;
+  listing: ListingWithRelations & { thumbnailUrl?: string | null };
   onOpen?: (id: string) => void;
 };
 
@@ -27,9 +19,18 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
   listing,
   onOpen,
 }) => {
-  const formattedRent = formatRent(listing.rent);
+  const formattedRent = formatRent(listing.rent ?? undefined);
 
-  const handleOpen = () => onOpen?.(listing.id);
+  const thumbnailUrl = useMemo(
+    () =>
+      listing.thumbnailUrl ??
+      (typeof listing.images?.[0] === "string"
+        ? (listing.images?.[0] as string)
+        : listing.images?.[0]?.imageUrl),
+    [listing.images, listing.thumbnailUrl],
+  );
+
+  const handleOpen = () => onOpen?.(listing.listingId);
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -46,10 +47,10 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
       className="w-[240px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
     >
       {/* Bild med overlay */}
-      {listing.imageUrl && (
+      {thumbnailUrl && (
         <div className="relative h-[140px] w-full">
           <img
-            src={listing.imageUrl}
+            src={thumbnailUrl}
             alt={listing.title}
             className="h-full w-full object-cover"
             loading="lazy"
@@ -73,7 +74,7 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
 
       {/* Info-del */}
       <div className="space-y-2 px-4 pb-4 pt-3 text-sm">
-        {!listing.imageUrl && (
+        {!thumbnailUrl && (
           <>
             <div className="font-semibold text-gray-900">{listing.title}</div>
             <div className="text-xs text-gray-700">{listing.city}</div>

@@ -1,4 +1,4 @@
-import { Ad } from "@/lib/data";
+import { type TableAd } from "@/lib/data";
 import { HeaderContext } from "@tanstack/react-table";
 import { FaSortAlphaDown, FaSortAlphaUp } from "react-icons/fa";
 import {
@@ -10,7 +10,7 @@ import {
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
 
 interface HeaderButtonProps<T> {
-  info: HeaderContext<Ad, T>;
+  info: HeaderContext<TableAd, T>;
   name: string;
 }
 

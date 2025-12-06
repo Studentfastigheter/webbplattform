@@ -1,23 +1,27 @@
 "use client";
 
 import React from "react";
+import {
+  type AdvertiserSummary,
+  type QueueStatus,
+} from "@/types";
 
-export type QueuePopupData = {
-  id: string;
+type QueueMapPopupData = {
+  queueId: string;
   name: string;
   city: string;
-  area?: string;
-  landlord: string;
-  logoUrl?: string;
-  totalUnits?: number;
-  unitsLabel?: string;
+  area?: string | null;
+  advertiser: AdvertiserSummary;
+  logoUrl?: string | null;
+  totalUnits?: number | null;
+  unitsLabel?: string | null;
   isVerified?: boolean;
-  status?: "open" | "queue";
-  tags?: string[];
+  status?: QueueStatus;
+  tags?: string[] | null;
 };
 
 type QueueMapPopupProps = {
-  queue: QueuePopupData;
+  queue: QueueMapPopupData;
   onOpen?: (id: string) => void;
 };
 
@@ -29,9 +33,10 @@ const formatUnits = (totalUnits?: number, unitsLabel?: string) => {
   return null;
 };
 
-const statusLabel = (status?: "open" | "queue") => {
+const statusLabel = (status?: QueueStatus) => {
   if (status === "open") return "Öppen kö";
-  if (status === "queue") return "Kö krävs";
+  if (status === "paused") return "Pausad";
+  if (status === "closed") return "Stängd";
   return null;
 };
 
@@ -39,7 +44,7 @@ const QueueMapPopup: React.FC<QueueMapPopupProps> = ({ queue, onOpen }) => {
   const unitsText = formatUnits(queue.totalUnits, queue.unitsLabel);
   const statusText = statusLabel(queue.status);
 
-  const handleOpen = () => onOpen?.(queue.id);
+  const handleOpen = () => onOpen?.(queue.queueId);
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -86,7 +91,9 @@ const QueueMapPopup: React.FC<QueueMapPopupProps> = ({ queue, onOpen }) => {
           <p className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-gray-500">
             {queue.area ? `${queue.area}, ${queue.city}` : queue.city}
           </p>
-          <p className="mt-0.5 text-[11px] text-gray-500">{queue.landlord}</p>
+          <p className="mt-0.5 text-[11px] text-gray-500">
+            {queue.advertiser.displayName}
+          </p>
         </div>
       </div>
 

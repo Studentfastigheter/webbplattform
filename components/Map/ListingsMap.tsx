@@ -5,21 +5,11 @@ import BaseMap, {
   type BaseMarker,
   type PopupRenderer,
 } from "./BaseMap";
+import { type ListingWithRelations } from "@/types";
 import ListingMapPopup from "./ListingsMapPopup";
 
-type ListingItem = {
-  id: string;
-  title: string;
-  address?: string;
-  city: string;
-  lat: number;
-  lng: number;
-  rent?: number;
-  imageUrl?: string;
-};
-
 type ListingsMapProps = {
-  listings: ListingItem[];
+  listings: ListingWithRelations[];
   className?: string;
   activeListingId?: string;
   onOpenListing?: (id: string) => void;
@@ -30,7 +20,10 @@ type ListingsMapProps = {
  * Vi ignorerar zoom/isActive här för att få exakt samma ruta oavsett.
  */
 const createListingPopupRenderer =
-  (listing: ListingItem, onOpenListing?: (id: string) => void): PopupRenderer =>
+  (
+    listing: ListingWithRelations,
+    onOpenListing?: (id: string) => void,
+  ): PopupRenderer =>
   () =>
     (
       <ListingMapPopup
@@ -47,11 +40,13 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
 }) => {
   const markers: BaseMarker[] = useMemo(
     () =>
-      listings.map((l) => ({
-        id: l.id,
-        position: [l.lat, l.lng] as [number, number],
-        popup: createListingPopupRenderer(l, onOpenListing),
-      })),
+      listings
+        .filter((l) => typeof l.lat === "number" && typeof l.lng === "number")
+        .map((l) => ({
+          id: l.listingId,
+          position: [l.lat as number, l.lng as number],
+          popup: createListingPopupRenderer(l, onOpenListing),
+        })),
     [listings, onOpenListing],
   );
 

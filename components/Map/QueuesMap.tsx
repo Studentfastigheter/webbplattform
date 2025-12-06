@@ -5,27 +5,25 @@ import BaseMap, {
   type BaseMarker,
   type PopupRenderer,
 } from "./BaseMap";
+import {
+  type AdvertiserSummary,
+  type HousingQueue,
+  type QueueStatus,
+} from "@/types";
+import QueueMapPopup from "./QueueMapPopup";
 
-import QueueMapPopup, { type QueuePopupData } from "./QueueMapPopup";
-
-export type QueueItem = {
-  id: string;
-  name: string;
-  area: string;
-  city: string;
+type QueueWithCoordinates = HousingQueue & {
+  advertiser: AdvertiserSummary;
   lat: number;
   lng: number;
-  totalUnits?: number;
-  unitsLabel?: string;
+  logoUrl?: string | null;
+  unitsLabel?: string | null;
   isVerified?: boolean;
-  landlord: string;
-  status?: "open" | "queue";
-  logoUrl: string;
-  tags?: string[];
+  status?: QueueStatus;
 };
 
 type QueuesMapProps = {
-  queues: QueueItem[];
+  queues: QueueWithCoordinates[];
   className?: string;
   activeQueueId?: string;
   onOpenQueue?: (id: string) => void;
@@ -36,20 +34,22 @@ type QueuesMapProps = {
  * Vi ignorerar zoom/isActive här för att alltid visa samma kortdesign.
  */
 const createQueuePopupRenderer =
-  (queue: QueueItem, onOpenQueue?: (id: string) => void): PopupRenderer =>
+  (queue: QueueWithCoordinates, onOpenQueue?: (id: string) => void): PopupRenderer =>
   () => {
-    const popupData: QueuePopupData = {
-      id: queue.id,
+    const popupData = {
+      queueId: queue.queueId,
       name: queue.name,
-      city: queue.city,
-      area: queue.area,
-      landlord: queue.landlord,
+      city: queue.city ?? "",
+      area: queue.area ?? "",
+      advertiser: queue.advertiser,
       logoUrl: queue.logoUrl,
       totalUnits: queue.totalUnits,
       unitsLabel: queue.unitsLabel,
-      isVerified: queue.isVerified,
+      isVerified: queue.isVerified ?? false,
       status: queue.status,
       tags: queue.tags,
+      lat: queue.lat,
+      lng: queue.lng,
     };
 
     return <QueueMapPopup queue={popupData} onOpen={onOpenQueue} />;
@@ -66,7 +66,7 @@ const QueuesMap: React.FC<QueuesMapProps> = ({
   // Bygg markers från de *filtrerade* köerna
   const markers = useMemo<BaseMarker[]>(() => {
     return queues.map((queue) => ({
-      id: queue.id,
+      id: queue.queueId,
       position: [queue.lat, queue.lng] as [number, number],
       popup: createQueuePopupRenderer(queue, onOpenQueue),
     }));

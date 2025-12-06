@@ -1,22 +1,44 @@
 import Image from "next/image";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
-import type { QueueDetail } from "@/components/ads/types";
+import { type AdvertiserSummary, type HousingQueue, type QueueStatus } from "@/types";
 import { MapPin, ShieldCheck } from "lucide-react";
 import QueueHeroActions from "./QueueHeroActions";
+
+type QueueStats = {
+  status: QueueStatus;
+  approximateWait?: string;
+  model?: string;
+  totalUnits?: string;
+  feeInfo?: string;
+  updatedAt?: string;
+};
+
+type QueueDetail = HousingQueue & {
+  advertiser: AdvertiserSummary & { reviewCount?: number; highlights?: string[] };
+  stats: QueueStats;
+  rules?: { title: string; description: string }[];
+  bannerImage?: string | null;
+  logo?: string | null;
+};
 
 type InfoItem = {
   label: string;
   value?: string;
 };
 
-const statusStyles = {
+const statusStyles: Record<QueueStatus, { label: string; className: string }> = {
   open: {
     label: "Öppen kö",
     className:
       "inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800",
   },
-  queue: {
-    label: "Kö krävs",
+  closed: {
+    label: "Stängd kö",
+    className:
+      "inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-800",
+  },
+  paused: {
+    label: "Pausad kö",
     className:
       "inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800",
   },
@@ -36,16 +58,17 @@ export default function QueueHero({ queue }: { queue: QueueDetail }) {
   const bannerImage =
     (queue as any).bannerImage ||
     queue.logo ||
+    queue.advertiser.bannerUrl ||
     "/images/queue-default-banner.jpg";
 
   // Profilbild / logo
   const logoImage =
     queue.logo ||
-    queue.landlord?.logo ||
+    queue.advertiser.logoUrl ||
     "/logos/default-landlord-logo.svg";
 
   const subtitle =
-    queue.landlord?.subtitle || "Studentbostäder och köinformation";
+    queue.advertiser.subtitle || "Studentbostäder och köinformation";
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-black/5 bg-white/80 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">

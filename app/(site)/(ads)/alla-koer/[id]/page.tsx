@@ -1,19 +1,48 @@
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
 import QueueRules from "@/components/ads/QueueRules";
-import type { QueueDetail } from "@/components/ads/types";
 import type { ListingCardSmallProps } from "@/components/Listings/ListingCard_Small";
+import {
+  type AdvertiserSummary,
+  type HousingQueue,
+  type QueueStatus,
+} from "@/types";
+
+type QueueStats = {
+  status: QueueStatus;
+  approximateWait?: string;
+  model?: string;
+  totalUnits?: string;
+  feeInfo?: string;
+  updatedAt?: string;
+};
+
+type QueueDetail = HousingQueue & {
+  advertiser: AdvertiserSummary & { reviewCount?: number; highlights?: string[] };
+  stats: QueueStats;
+  rules: { title: string; description: string }[];
+  bannerImage?: string | null;
+  logo?: string | null;
+};
 
 const queueContent: Record<string, QueueDetail> = {
   "sgs-studentbostader": {
-    id: "sgs-studentbostader",
+    queueId: "sgs-studentbostader",
+    companyId: 1001,
+    status: "open",
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
     name: "SGS Studentbostäder",
     area: "Innerstan",
     city: "Göteborg",
-    landlord: {
-      name: "SGS Studentbostäder",
+    advertiser: {
+      id: 1001,
+      type: "company",
+      displayName: "SGS Studentbostäder",
       subtitle: "Studentbostäder i Göteborg",
-      logo: "/logos/sgs-logo.svg",
+      logoUrl: "/logos/sgs-logo.svg",
+      bannerUrl:
+        "https://media.licdn.com/dms/image/v2/C4E1BAQHejE82dm4OCQ/company-background_10000/company-background_10000/0/1585342521467/sgs_studentbostder_cover?e=1765134000&v=beta&t=DTgoZND8XqmutdxACi5_xIHAFstruoYr_NoEyxwZkCI",
       rating: 4.8,
       reviewCount: 124,
       highlights: [
@@ -23,6 +52,7 @@ const queueContent: Record<string, QueueDetail> = {
         "Möjlighet att prenumerera på bostadsutskick för din studieort.",
       ],
       contactNote: "Frågor om specifika objekt hanteras via Mina sidor hos SGS.",
+      website: "https://www.sgs.se/",
     },
     logo: "/logos/sgs-logo.svg",
     bannerImage: "https://media.licdn.com/dms/image/v2/C4E1BAQHejE82dm4OCQ/company-background_10000/company-background_10000/0/1585342521467/sgs_studentbostder_cover?e=1765134000&v=beta&t=DTgoZND8XqmutdxACi5_xIHAFstruoYr_NoEyxwZkCI",
@@ -59,14 +89,20 @@ const queueContent: Record<string, QueueDetail> = {
     website: "https://www.sgs.se/",
   },
   "af-bostader": {
-    id: "af-bostader",
+    queueId: "af-bostader",
+    companyId: 1004,
+    status: "open",
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
     name: "AF Bostäder",
     area: "Lund Centrum",
     city: "Lund",
-    landlord: {
-      name: "AF Bostäder",
+    advertiser: {
+      id: 1004,
+      type: "company",
+      displayName: "AF Bostäder",
       subtitle: "Studentbostäder i Lund",
-      logo: "/logos/campuslyan-logo.svg",
+      logoUrl: "/logos/campuslyan-logo.svg",
       rating: 4.6,
       reviewCount: 98,
       highlights: [
@@ -74,14 +110,16 @@ const queueContent: Record<string, QueueDetail> = {
         "Eget underhållscentrum och jour vid akuta fel.",
         "Nyproduktionsprojekt kommuniceras i förväg i portalen.",
       ],
-      contactNote: "Kontakta AF Bostäder via Mina sidor för frågor om specifika objekt.",
+      contactNote:
+        "Kontakta AF Bostäder via Mina sidor för frågor om specifika objekt.",
+      website: "https://www.afbostader.se/",
     },
     logo: "/logos/campuslyan-logo.svg",
     description:
       "AF Bostäder erbjuder korridorer och lägenheter i flera områden runt campus i Lund. Kötiden varierar mycket mellan studentkvarteren och publiceras löpande i statistiken. Poäng delas ut per dag med aktiva studier och du kan pausa kön vid utbytesstudier.",
     tags: ["Student", "Poängbaserad", "Lund", "Korridor"],
     stats: {
-      status: "queue",
+      status: "paused",
       approximateWait: "6–18 månader beroende på område",
       model: "Poängbaserad kö",
       totalUnits: "2 500 bostäder",
