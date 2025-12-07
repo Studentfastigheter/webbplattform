@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import {
@@ -12,6 +13,7 @@ import { backendApi } from "@/lib/api";
 import { type CompanyId } from "@/types";
 
 export default function Page() {
+  const router = useRouter();
   const columns: ListFrameColumn[] = [
     { id: "annons", label: "Annons", width: "2.6fr" },
     { id: "etikett", label: "Etikett", width: "1.4fr" },
@@ -72,6 +74,7 @@ export default function Page() {
             : undefined,
           status: "Aktiv",
           applicationDate: interest.createdAt,
+          onOpen: () => router.push(`/bostader/${interest.listingId}`),
         }));
         setApplications(mapped);
       })

@@ -16,9 +16,11 @@ function InfoRow({ icon, label }: { icon: React.ReactNode; label: string }) {
 
 type Props = {
   listing: ListingWithRelations;
+  onApplyClick?: () => void;
+  applyDisabled?: boolean;
 };
 
-export default function BostadAbout({ listing }: Props) {
+export default function BostadAbout({ listing, onApplyClick, applyDisabled }: Props) {
   const dwellingLabel = [
     listing.dwellingType,
     listing.rooms ? `${listing.rooms} rum` : null,
@@ -87,6 +89,8 @@ export default function BostadAbout({ listing }: Props) {
           moveInDate={listing.moveIn}
           lastApplyDate={listing.applyBy}
           className="w-full max-w-[280px]"
+          onApplyClick={onApplyClick}
+          applyDisabled={applyDisabled}
         />
       </div>
     </section>

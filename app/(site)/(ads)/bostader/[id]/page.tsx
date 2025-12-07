@@ -1,21 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import BostadAbout from "@/components/ads/BostadAbout";
 import BostadGallery from "@/components/ads/BostadGallery";
 import BostadLandlord from "@/components/ads/BostadLandlord";
 import { backendApi } from "@/lib/api";
 import { type AdvertiserSummary, type ListingWithRelations } from "@/types";
 import { useParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 type ListingDetailPage = ListingWithRelations;
 
 export default function Page() {
   const params = useParams<{ id: string }>();
   const listingId = params?.id;
+  const { token } = useAuth();
   const [listing, setListing] = useState<ListingDetailPage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [applySuccess, setApplySuccess] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -42,6 +47,25 @@ export default function Page() {
       active = false;
     };
   }, [listingId]);
+
+  const handleApply = useCallback(() => {
+    if (!listingId) return;
+    if (!token) {
+      setApplyError("Du maste vara inloggad for att skicka intresse.");
+      setApplySuccess(null);
+      return;
+    }
+    setApplying(true);
+    setApplyError(null);
+    setApplySuccess(null);
+    backendApi.listings
+      .interest(listingId, token)
+      .then(() => setApplySuccess("Intresseanmalan skickad."))
+      .catch((err: any) => {
+        setApplyError(err?.message ?? "Kunde inte skicka intresse.");
+      })
+      .finally(() => setApplying(false));
+  }, [listingId, token]);
 
   const galleryImages = useMemo(() => {
     if (!listing?.images) return [];
@@ -107,12 +131,22 @@ export default function Page() {
 
     return (
       <>
+        {applySuccess && (
+          <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            {applySuccess}
+          </div>
+        )}
+        {applyError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {applyError}
+          </div>
+        )}
         <BostadGallery title={listing.title} images={galleryImages} />
-        <BostadAbout listing={listing} />
+        <BostadAbout listing={listing} onApplyClick={handleApply} applyDisabled={applying} />
         <BostadLandlord advertiser={advertiser} />
       </>
     );
-  }, [advertiser, error, galleryImages, listing, loading]);
+  }, [advertiser, applyError, applySuccess, applying, error, galleryImages, handleApply, listing, loading]);
 
   return (
     <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">

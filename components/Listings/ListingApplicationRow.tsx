@@ -32,6 +32,7 @@ export type ListingApplicationRowProps = ListingSummary & {
   onManage?: () => void;
   onFavorite?: () => void;
   onShare?: () => void;
+  onOpen?: () => void;
 };
 
 const formatCurrency = (value?: number | null) =>
@@ -39,7 +40,10 @@ const formatCurrency = (value?: number | null) =>
     ? new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(value)
     : null;
 
-const AdCell: React.FC<{ listing: ListingSummary }> = ({ listing }) => {
+const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
+  listing,
+  onOpen,
+}) => {
   const {
     title,
     rent,
@@ -61,7 +65,11 @@ const AdCell: React.FC<{ listing: ListingSummary }> = ({ listing }) => {
   const landlordLabel = landlordType ?? advertiser?.displayName ?? "Hyresvard";
 
   return (
-    <div className="flex items-start gap-4">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex items-start gap-4 text-left transition hover:opacity-95"
+    >
       <div className="h-[120px] w-[120px] flex-shrink-0 overflow-hidden rounded-[15px] bg-gray-100">
         {resolvedImage ? (
           <img src={resolvedImage} alt={title} className="h-full w-full object-cover" />
@@ -101,7 +109,7 @@ const AdCell: React.FC<{ listing: ListingSummary }> = ({ listing }) => {
           </span>
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -171,13 +179,21 @@ const ActionsCell: React.FC<
 );
 
 export const buildListingApplicationRow = (props: ListingApplicationRowProps): ListFrameRow => {
-  const { listingId, tags, status, applicationDate, onManage, onFavorite, onShare } =
-    props;
+  const {
+    listingId,
+    tags,
+    status,
+    applicationDate,
+    onManage,
+    onFavorite,
+    onShare,
+    onOpen,
+  } = props;
 
   return {
     id: listingId,
     cells: [
-      <AdCell key={`${listingId}-ad`} listing={props} />,
+      <AdCell key={`${listingId}-ad`} listing={props} onOpen={onOpen} />,
       <TagsCell key={`${listingId}-tags`} tags={tags} />,
       <StatusCell key={`${listingId}-status`} status={status} />,
       <DateCell key={`${listingId}-date`} date={applicationDate} />,

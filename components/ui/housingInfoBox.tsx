@@ -14,6 +14,7 @@ type HousingInfoBoxProps = {
   className?: string;
 
   onApplyClick?: () => void;
+  applyDisabled?: boolean;
 };
 
 export default function HousingInfoBox({
@@ -24,6 +25,7 @@ export default function HousingInfoBox({
   height,
   className = "",
   onApplyClick,
+  applyDisabled,
 }: HousingInfoBoxProps) {
   const formattedRent =
     typeof rent === "number"
@@ -75,6 +77,7 @@ export default function HousingInfoBox({
       <div className="px-5 pb-4 pt-1">
         <Button
           onClick={onApplyClick}
+          isDisabled={applyDisabled}
           className={`
             w-full h-[31px]
             rounded-full
