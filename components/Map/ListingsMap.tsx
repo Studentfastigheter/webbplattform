@@ -5,14 +5,17 @@ import BaseMap, {
   type BaseMarker,
   type PopupRenderer,
 } from "./BaseMap";
-import { type ListingWithRelations } from "@/types";
+import {
+  type ListingId,
+  type ListingWithRelations,
+} from "@/types";
 import ListingMapPopup from "./ListingsMapPopup";
 
 type ListingsMapProps = {
   listings: ListingWithRelations[];
   className?: string;
-  activeListingId?: string;
-  onOpenListing?: (id: string) => void;
+  activeListingId?: ListingId;
+  onOpenListing?: (id: ListingId) => void;
 };
 
 /**
@@ -22,7 +25,7 @@ type ListingsMapProps = {
 const createListingPopupRenderer =
   (
     listing: ListingWithRelations,
-    onOpenListing?: (id: string) => void,
+    onOpenListing?: (id: ListingId) => void,
   ): PopupRenderer =>
   () =>
     (

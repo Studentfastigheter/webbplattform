@@ -3,19 +3,27 @@
 import React, { useEffect, useRef, useState } from "react";
 import Tag from "../ui/Tag";
 import VerifiedTag from "../ui/VerifiedTag";
+import type { ListingWithRelations } from "@/types";
 
-export type ListingCardSmallProps = {
-  title: string;
-  area: string;
-  city: string;
-  dwellingType: string;
-  rooms: number;
-  sizeM2: number;
-  rent: number;
-  landlordType: string;
+type ListingCardListing = Pick<
+  ListingWithRelations,
+  | "title"
+  | "area"
+  | "city"
+  | "dwellingType"
+  | "rooms"
+  | "sizeM2"
+  | "rent"
+  | "tags"
+  | "images"
+  | "advertiser"
+> & {
+  imageUrl?: string;
+  landlordType?: string;
   isVerified?: boolean;
-  imageUrl: string;
-  tags?: string[];
+};
+
+export type ListingCardSmallProps = ListingCardListing & {
   onClick?: () => void;
   onHoverChange?: (hovering: boolean) => void;
   variant?: "default" | "compact";
@@ -27,22 +35,30 @@ const MAX_SCALE = 1;
 const BADGE_MIN_SCALE = 0.8;
 const BADGE_MAX_SCALE = 1;
 
-const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
-  title,
-  area,
-  city,
-  dwellingType,
-  rooms,
-  sizeM2,
-  rent,
-  landlordType,
-  isVerified = false,
-  imageUrl,
-  tags = [],
-  onClick,
-  onHoverChange,
-  variant = "default",
-}) => {
+const formatRent = (rent?: number | null) =>
+  typeof rent === "number"
+    ? `${rent.toLocaleString("sv-SE")} kr/manad`
+    : "-";
+
+const ListingCard_Small: React.FC<ListingCardSmallProps> = (props) => {
+  const {
+    title,
+    area,
+    city,
+    dwellingType,
+    rooms,
+    sizeM2,
+    rent,
+    landlordType,
+    isVerified = false,
+    imageUrl,
+    tags,
+    images,
+    advertiser,
+    onClick,
+    onHoverChange,
+    variant = "default",
+  } = props;
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
   const baseWidth = variant === "compact" ? 320 : BASE_WIDTH;
@@ -82,9 +98,17 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
     lineHeight: 20 * scale,
   };
   const badgeScale = Math.min(
-  Math.max(scale, BADGE_MIN_SCALE),
-  BADGE_MAX_SCALE
-);
+    Math.max(scale, BADGE_MIN_SCALE),
+    BADGE_MAX_SCALE
+  );
+
+  const resolvedImage =
+    imageUrl ??
+    (typeof images?.[0] === "string"
+      ? (images?.[0] as string)
+      : images?.[0]?.imageUrl);
+  const landlordLabel = landlordType ?? advertiser?.displayName ?? "";
+  const safeTags = tags ?? [];
 
   return (
     <div
@@ -106,11 +130,15 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
         style={{ borderRadius: scaleValue(28) }}
       >
         <div className={`${aspectClass} w-full`}>
-          <img
-            src={imageUrl}
-            alt={title}
-            className="h-full w-full object-cover"
-          />
+          {resolvedImage ? (
+            <img
+              src={resolvedImage}
+              alt={title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-gray-200" />
+          )}
         </div>
       </div>
 
@@ -164,10 +192,10 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
             }}
           >
             <p>
-              {area}, {city}
+              {[area, city].filter(Boolean).join(", ")}
             </p>
             <p>
-              {dwellingType} {"\u00b7"} {rooms} rum {"\u00b7"} {sizeM2} m{"\u00b2"}
+              {dwellingType ?? "-"} {"\u00b7"} {rooms ?? "-"} rum {"\u00b7"} {sizeM2 ?? "-"} m{"\u00b2"}
             </p>
           </div>
 
@@ -176,18 +204,18 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
               className="font-semibold"
               style={{ fontSize: scaleValue(18), lineHeight: scaleValue(22) }}
             >
-              {rent.toLocaleString("sv-SE")} kr/m{"\u00e5"}nad
+              {formatRent(rent)}
             </p>
             <p
               className="text-[#6b6b6b]"
               style={{ fontSize: scaleValue(14), lineHeight: scaleValue(18) }}
             >
-              {landlordType}
+              {landlordLabel}
             </p>
           </div>
         </div>
         
-        {tags.length > 0 && (
+        {safeTags.length > 0 && (
           <div
             className="flex flex-wrap pt-0"
             style={{
@@ -195,12 +223,12 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
               minHeight: scaleValue(30),
             }}
           >
-            {tags.map((tag) => (
+            {safeTags.map((tag) => (
               <Tag
                 key={tag}
                 text={tag}
                 bgColor="#F0F0F0"
-                textColor="black"
+                textColor="#000000"
                 height={tagSize.height}
                 horizontalPadding={tagSize.horizontalPadding}
                 fontSize={tagSize.fontSize}

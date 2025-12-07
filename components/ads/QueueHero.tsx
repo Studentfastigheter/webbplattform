@@ -1,25 +1,8 @@
 import Image from "next/image";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
-import { type AdvertiserSummary, type HousingQueue, type QueueStatus } from "@/types";
+import { type HousingQueueWithRelations, type QueueStatus } from "@/types";
 import { MapPin, ShieldCheck } from "lucide-react";
 import QueueHeroActions from "./QueueHeroActions";
-
-type QueueStats = {
-  status: QueueStatus;
-  approximateWait?: string;
-  model?: string;
-  totalUnits?: string;
-  feeInfo?: string;
-  updatedAt?: string;
-};
-
-type QueueDetail = HousingQueue & {
-  advertiser: AdvertiserSummary & { reviewCount?: number; highlights?: string[] };
-  stats: QueueStats;
-  rules?: { title: string; description: string }[];
-  bannerImage?: string | null;
-  logo?: string | null;
-};
 
 type InfoItem = {
   label: string;
@@ -28,47 +11,49 @@ type InfoItem = {
 
 const statusStyles: Record<QueueStatus, { label: string; className: string }> = {
   open: {
-    label: "Öppen kö",
+    label: "\u00d6ppen k\u00f6",
     className:
       "inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800",
   },
   closed: {
-    label: "Stängd kö",
+    label: "St\u00e4ngd k\u00f6",
     className:
       "inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-800",
   },
   paused: {
-    label: "Pausad kö",
+    label: "Pausad k\u00f6",
     className:
       "inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800",
   },
 };
 
-export default function QueueHero({ queue }: { queue: QueueDetail }) {
+export default function QueueHero({ queue }: { queue: HousingQueueWithRelations }) {
+  const approximateWait =
+    typeof queue.approximateWaitDays === "number"
+      ? `${queue.approximateWaitDays} dagar`
+      : undefined;
+
+  const totalUnits =
+    typeof queue.totalUnits === "number"
+      ? queue.totalUnits.toLocaleString("sv-SE")
+      : undefined;
+
   const infoItems: InfoItem[] = [
-    { label: "Status", value: statusStyles[queue.stats.status]?.label },
-    { label: "Kötid just nu", value: queue.stats.approximateWait },
-    { label: "Kömodell", value: queue.stats.model },
-    { label: "Bostadsbestånd", value: queue.stats.totalUnits },
-    { label: "Avgifter", value: queue.stats.feeInfo },
-    { label: "Senast uppdaterad", value: queue.stats.updatedAt },
+    { label: "Status", value: statusStyles[queue.status]?.label },
+    { label: "Kötid just nu", value: approximateWait },
+    { label: "Bostadsbestånd", value: totalUnits },
+    { label: "Avgifter", value: queue.feeInfo ?? undefined },
+    { label: "Senast uppdaterad", value: queue.updatedAt },
   ].filter((item): item is Required<InfoItem> => Boolean(item.value));
 
-  // Banner-bild (LinkedIn SGS-banner om du satt bannerImage, annars fallback)
-  const bannerImage =
-    (queue as any).bannerImage ||
-    queue.logo ||
-    queue.advertiser.bannerUrl ||
-    "/images/queue-default-banner.jpg";
-
-  // Profilbild / logo
-  const logoImage =
-    queue.logo ||
-    queue.advertiser.logoUrl ||
-    "/logos/default-landlord-logo.svg";
-
+  const bannerImage = queue.company?.bannerUrl || "/images/queue-default-banner.jpg";
+  const logoImage = queue.company?.logoUrl || "/logos/default-landlord-logo.svg";
   const subtitle =
-    queue.advertiser.subtitle || "Studentbostäder och köinformation";
+    queue.company?.subtitle || "Studentbost\u00e4der och k\u00f6information";
+  const location =
+    [queue.area, queue.city].filter(Boolean).join(", ") || "Plats saknas";
+  const description = queue.description ?? "";
+  const displayName = queue.company?.name ?? queue.name;
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-black/5 bg-white/80 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
@@ -87,13 +72,13 @@ export default function QueueHero({ queue }: { queue: QueueDetail }) {
 
       {/* Content */}
       <div className="relative z-10 px-6 pb-6 pt-0 sm:px-8">
-        {/* 2-kolumnslayout: vänster = info + beskrivning, höger = actions + snabbfakta */}
+        {/* 2-column layout: vanster = info + beskrivning, hoger = actions + snabbfakta */}
         <div className="mt-4 grid grid-cols-1 gap-8 lg:mt-6 lg:grid-cols-[1.6fr_1fr]">
-          {/* Vänster kolumn */}
+          {/* Vanster kolumn */}
           <div>
             {/* Logga + namnblock */}
             <div className="flex items-start gap-4">
-              {/* Profilbild / logga som överlappar bannern */}
+              {/* Profilbild / logga som overlappnar bannern */}
               <div className="relative -mt-10 h-28 w-28 sm:-mt-12 sm:h-32 sm:w-32 lg:-mt-14 lg:h-36 lg:w-36 overflow-hidden rounded-2xl border border-white bg-white shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
                 <Image
                   src={logoImage}
@@ -106,7 +91,7 @@ export default function QueueHero({ queue }: { queue: QueueDetail }) {
               {/* Namn, subtitle, plats */}
               <div className="mt-2 flex flex-col text-left">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                  {queue.name}
+                  {displayName}
                 </h1>
 
                 {subtitle && (
@@ -116,7 +101,7 @@ export default function QueueHero({ queue }: { queue: QueueDetail }) {
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-700">
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-4 w-4 text-green-900" />
-                    {queue.area}, {queue.city}
+                    {location}
                   </span>
                 </div>
               </div>
@@ -125,26 +110,26 @@ export default function QueueHero({ queue }: { queue: QueueDetail }) {
             {/* Beskrivning direkt under plats/status */}
             <div className="mt-4">
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-green-900">
-                Om bostadskön
+                Om bostadsk\u00f6n
               </p>
 
               <ReadMoreComponent
-                text={queue.description}
+                text={description}
                 variant="large"
                 className="mt-2"
                 textClassName="text-base leading-relaxed text-gray-800"
                 buttonWrapClassName="pb-4"
-                moreLabel="Läs mer"
+                moreLabel="L\u00e4s mer"
                 lessLabel="Visa mindre"
                 scrollOffset={400}
               />
             </div>
           </div>
 
-          {/* Höger kolumn: actions + snabbfakta */}
+          {/* Hoger kolumn: actions + snabbfakta */}
           <div className="flex flex-col gap-4">
             {/* Actionbar (Client Component) */}
-            <QueueHeroActions website={queue.website} />
+            <QueueHeroActions website={queue.website ?? undefined} />
 
             {/* Snabbfakta-kort */}
             {infoItems.length > 0 && (
@@ -153,10 +138,10 @@ export default function QueueHero({ queue }: { queue: QueueDetail }) {
                   <ShieldCheck className="h-4 w-4 text-green-900" />
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
-                      Snabbfakta om kön
+                      Snabbfakta om k\u00f6n
                     </p>
                     <p className="text-xs text-gray-700">
-                      Kötider och riktlinjer i korthet
+                      K\u00f6tider och riktlinjer i korthet
                     </p>
                   </div>
                 </div>

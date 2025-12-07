@@ -19,6 +19,14 @@ type Props = {
 };
 
 export default function BostadAbout({ listing }: Props) {
+  const dwellingLabel = [
+    listing.dwellingType,
+    listing.rooms ? `${listing.rooms} rum` : null,
+    listing.sizeM2 ? `${listing.sizeM2} m²` : null,
+  ]
+    .filter(Boolean)
+    .join(" / ") || "Information saknas";
+
   return (
     <section className="grid gap-8 rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)] lg:grid-cols-[1.75fr_0.95fr]">
       {/* Vänsterkolumn */}
@@ -41,7 +49,7 @@ export default function BostadAbout({ listing }: Props) {
           )}
           <InfoRow
             icon={<Home className="h-4 w-4" />}
-            label={`${listing.dwellingType} / ${listing.rooms} rum / ${listing.sizeM2} m²`}
+            label={dwellingLabel}
           />
         </div>
 
@@ -61,7 +69,7 @@ export default function BostadAbout({ listing }: Props) {
         </div>
 
         <ReadMoreComponent
-          text={listing.description}
+          text={listing.description ?? ""}
           variant="large"
           className="mt-2"
           textClassName="text-base leading-relaxed text-gray-800"
@@ -76,8 +84,8 @@ export default function BostadAbout({ listing }: Props) {
       <div className="lg:justify-self-end">
         <HousingInfoBox
           rent={listing.rent}
-          moveInDate={listing.moveIn ?? undefined}
-          lastApplyDate={listing.applyBy ?? undefined}
+          moveInDate={listing.moveIn}
+          lastApplyDate={listing.applyBy}
           className="w-full max-w-[280px]"
         />
       </div>

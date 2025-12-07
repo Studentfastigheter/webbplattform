@@ -3,29 +3,28 @@
 import React from "react";
 import {
   type AdvertiserSummary,
+  type HousingQueue,
+  type QueueId,
   type QueueStatus,
+  type UrlString,
 } from "@/types";
 
-type QueueMapPopupData = {
-  queueId: string;
-  name: string;
-  city: string;
-  area?: string | null;
+type QueueMapPopupData = Pick<
+  HousingQueue,
+  "queueId" | "name" | "city" | "area" | "totalUnits" | "status" | "tags"
+> & {
   advertiser: AdvertiserSummary;
-  logoUrl?: string | null;
-  totalUnits?: number | null;
+  logoUrl?: UrlString | null;
   unitsLabel?: string | null;
   isVerified?: boolean;
-  status?: QueueStatus;
-  tags?: string[] | null;
 };
 
 type QueueMapPopupProps = {
   queue: QueueMapPopupData;
-  onOpen?: (id: string) => void;
+  onOpen?: (id: QueueId) => void;
 };
 
-const formatUnits = (totalUnits?: number, unitsLabel?: string) => {
+const formatUnits = (totalUnits?: number | null, unitsLabel?: string | null) => {
   if (unitsLabel) return unitsLabel;
   if (typeof totalUnits === "number") {
     return `${totalUnits.toLocaleString("sv-SE")} bostäder`;

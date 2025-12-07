@@ -15,6 +15,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { registerUser } from "@/lib/api";
 import { type UserType } from "@/types";
 
 type RegisterForm = {
@@ -24,23 +25,11 @@ type RegisterForm = {
   password: string;
 };
 
-const accountTypeOptions: {
-  value: UserType;
-  title: string;
-}[] = [
-  {
-    value: "student",
-    title: "Student",
-  },
-  {
-    value: "private_landlord",
-    title: "Uthyrare",
-  },
-  {
-    value: "company",
-    title: "Företag",
-  },
-];
+const accountTypeOptions = [
+  { value: "student", title: "Student" },
+  { value: "private_landlord", title: "Uthyrare" },
+  { value: "company", title: "Foretag" },
+] satisfies ReadonlyArray<{ value: UserType; title: string }>;
 
 export default function RegisterPage() {
   const [form, setForm] = useState<RegisterForm>({
@@ -59,44 +48,26 @@ export default function RegisterPage() {
     setError(null);
 
     if (!form.ssn || !form.email || !form.password) {
-      setError("Fyll i alla fält.");
+      setError("Fyll i alla falt.");
       return;
     }
     if (form.password.length < 6) {
-      setError("Lösenord måste vara minst 6 tecken.");
+      setError("Losenord maste vara minst 6 tecken.");
       return;
     }
 
     setLoading(true);
     try {
-      const payload = {
+      await registerUser({
         type: form.type,
         ssn: form.ssn.trim(),
         email: form.email.trim(),
         password: form.password,
-      };
-      const res = await fetch("/api/users/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const msg =
-          (data as any)?.reason ||
-          (data as any)?.error ||
-          (data as any)?.message ||
-          (res.status === 409 || res.status === 402
-            ? "E-post eller personnummer används redan."
-            : "Kunde inte registrera användaren.");
-        throw new Error(msg);
-      }
-
       await login(form.email, form.password);
       router.push("/");
     } catch (err: any) {
-      setError(err?.message ?? "Något gick fel.");
+      setError(err?.message ?? "Nagot gick fel.");
     } finally {
       setLoading(false);
     }
@@ -110,7 +81,7 @@ export default function RegisterPage() {
           footer={
             <FieldDescription className="text-center">
               Har du redan ett konto?{" "}
-              <Link href="/logga-in">Logga in här</Link>
+              <Link href="/logga-in">Logga in har</Link>
             </FieldDescription>
           }
         >
@@ -150,7 +121,7 @@ export default function RegisterPage() {
                 <Input
                   id="ssn"
                   type="text"
-                  placeholder="ÅÅMMDD-XXXX"
+                  placeholder="AAMMDD-XXXX"
                   value={form.ssn}
                   onChange={(event) =>
                     setForm({ ...form, ssn: event.target.value.trim() })
@@ -176,7 +147,7 @@ export default function RegisterPage() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="password">Lösenord</FieldLabel>
+                <FieldLabel htmlFor="password">Losenord</FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -191,7 +162,14 @@ export default function RegisterPage() {
               </Field>
 
               <Field>
-                <Button type="submit" color="success" variant="solid" radius="full" className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90" disabled={loading}>
+                <Button
+                  type="submit"
+                  color="success"
+                  variant="solid"
+                  radius="full"
+                  className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90"
+                  disabled={loading}
+                >
                   {loading ? "Skapar..." : "Registrera"}
                 </Button>
               </Field>

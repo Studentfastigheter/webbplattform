@@ -1,21 +1,21 @@
-"use client";
+ "use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@heroui/button";
 import { MapPin, Building2 } from "lucide-react";
 import Tag from "../ui/Tag";
 import VerifiedTag from "../ui/VerifiedTag";
+import type { HousingQueueWithRelations, Tag as TagType } from "@/types";
 
-export type QueListingCardProps = {
-  name: string;
-  area: string;
-  city: string;
-  totalUnits?: number;
+type QueueSummary = Pick<HousingQueueWithRelations, "name" | "area" | "city" | "totalUnits"> & {
   unitsLabel?: string;
   isVerified?: boolean;
-  logoUrl: string;
+  logoUrl?: string | null;
   logoAlt?: string;
-  tags?: string[];
+  tags?: TagType[];
+};
+
+export type QueListingCardProps = QueueSummary & {
   onViewListings?: () => void;
   onReadMore?: () => void;
 };
@@ -27,21 +27,22 @@ const BADGE_MIN_SCALE = 0.8;
 const BADGE_MAX_SCALE = 1;
 const BUTTON_MIN_SCALE = 0.7;
 const BUTTON_MAX_SCALE = 0.95;
-const BADGE_BASE_HEIGHT = 26; // px, ungefär höjden på VerifiedTag
+const BADGE_BASE_HEIGHT = 26; // px, roughly matches VerifiedTag height
 
-const Que_ListingCard: React.FC<QueListingCardProps> = ({
-  name,
-  area,
-  city,
-  totalUnits,
-  unitsLabel,
-  isVerified = false,
-  logoUrl,
-  logoAlt,
-  tags = [],
-  onViewListings,
-  onReadMore,
-}) => {
+const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
+  const {
+    name,
+    area,
+    city,
+    totalUnits,
+    unitsLabel,
+    isVerified = false,
+    logoUrl,
+    logoAlt,
+    tags,
+    onViewListings,
+    onReadMore,
+  } = props;
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
 
@@ -69,8 +70,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const unitsText =
-    unitsLabel ?? (totalUnits ? `${totalUnits} bostäder` : undefined);
+  const unitsText = unitsLabel ?? (totalUnits ? `${totalUnits} bostader` : undefined);
 
   const scaleValue = (value: number) => `${(value * scale).toFixed(2)}px`;
 
@@ -95,6 +95,8 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
   };
 
   const badgeContainerHeight = BADGE_BASE_HEIGHT * badgeScale;
+  const safeTags = tags ?? [];
+  const locationLabel = [area, city].filter(Boolean).join(", ");
 
   return (
     <div
@@ -106,14 +108,14 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
         gap: scaleValue(16),
       }}
     >
-      {/* TOP: badge + namn + plats + logo */}
+      {/* TOP: badge + name + location + logo */}
       <div
         className="flex items-start justify-between"
         style={{ gap: scaleValue(16) }}
       >
-        {/* Vänsterkolumn */}
+        {/* Left column */}
         <div className="flex flex-col items-start min-w-0">
-          {/* FIX: reservera alltid plats för badgen */}
+          {/* Reserve space for badge */}
           <div
             style={{
               height: `${badgeContainerHeight}px`,
@@ -166,9 +168,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
                 strokeWidth={1.8}
                 className="shrink-0"
               />
-              <span className="truncate">
-                {area}, {city}
-              </span>
+              <span className="truncate">{locationLabel}</span>
             </div>
 
             {unitsText && (
@@ -187,24 +187,26 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
           </div>
         </div>
 
-        {/* Logo till höger */}
-        <div
-          className="flex items-center justify-center shrink-0"
-          style={{
-            width: scaleValue(96),
-            height: scaleValue(96),
-          }}
-        >
-          <img
-            src={logoUrl}
-            alt={logoAlt ?? name}
-            className="max-h-full max-w-full object-contain"
-          />
-        </div>
+        {/* Logo to the right */}
+        {logoUrl && (
+          <div
+            className="flex items-center justify-center shrink-0"
+            style={{
+              width: scaleValue(96),
+              height: scaleValue(96),
+            }}
+          >
+            <img
+              src={logoUrl}
+              alt={logoAlt ?? name}
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        )}
       </div>
 
-      {/* TAGGAR */}
-      {tags.length > 0 && (
+      {/* TAGS */}
+      {safeTags.length > 0 && (
         <div
           className="flex flex-wrap"
           style={{
@@ -213,7 +215,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
             minHeight: scaleValue(30),
           }}
         >
-          {tags.map((tag) => (
+          {safeTags.map((tag) => (
             <Tag
               key={tag}
               text={tag}
@@ -228,7 +230,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
         </div>
       )}
 
-      {/* KNAPPAR */}
+      {/* BUTTONS */}
       <div
         className="flex"
         style={{ gap: scaleValue(12), marginTop: scaleValue(6) }}
@@ -244,7 +246,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
             lineHeight: `${buttonFont + 4}px`,
           }}
         >
-          Visa bostäder
+          Visa bostader
         </Button>
 
         <Button
@@ -258,7 +260,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = ({
             lineHeight: `${buttonFont + 4}px`,
           }}
         >
-          Läs mer
+          Las mer
         </Button>
       </div>
     </div>

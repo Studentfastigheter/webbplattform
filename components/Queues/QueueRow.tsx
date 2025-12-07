@@ -5,7 +5,7 @@ import Tag from "../ui/Tag";
 import { Button } from "@heroui/button";
 import StatusTag, { type Status } from "../ui/statusTag";
 
-type QueueRowProps = {
+export type QueueRowProps = {
   id: string | number;
   name: string;
   logoUrl: string;

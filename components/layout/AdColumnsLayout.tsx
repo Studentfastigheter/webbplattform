@@ -1,12 +1,6 @@
 import { type ReactNode } from "react";
 
-import { apiFetch } from "@/lib/api";
-
-type RollingAd = {
-  id?: number | string;
-  company?: string;
-  data?: unknown;
-};
+import { fetchCurrentAds, type RollingAd } from "@/lib/api";
 
 type NormalizedAd = {
   id: string;
@@ -62,7 +56,7 @@ const extractImageFromData = (data: unknown): string | null => {
 
 async function getCurrentAds(): Promise<NormalizedAd[]> {
   try {
-    const ads = await apiFetch<RollingAd[]>("/api/ads/current");
+    const ads = await fetchCurrentAds();
     return ads
       .map((ad, idx) => {
         const src = extractImageFromData(ad.data);

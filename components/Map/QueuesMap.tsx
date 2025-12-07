@@ -7,26 +7,27 @@ import BaseMap, {
 } from "./BaseMap";
 import {
   type AdvertiserSummary,
+  type Coordinates,
   type HousingQueue,
-  type QueueStatus,
+  type QueueId,
+  type UrlString,
 } from "@/types";
 import QueueMapPopup from "./QueueMapPopup";
 
 type QueueWithCoordinates = HousingQueue & {
   advertiser: AdvertiserSummary;
-  lat: number;
-  lng: number;
-  logoUrl?: string | null;
+  lat: NonNullable<Coordinates["lat"]>;
+  lng: NonNullable<Coordinates["lng"]>;
+  logoUrl?: UrlString | null;
   unitsLabel?: string | null;
   isVerified?: boolean;
-  status?: QueueStatus;
 };
 
 type QueuesMapProps = {
   queues: QueueWithCoordinates[];
   className?: string;
-  activeQueueId?: string;
-  onOpenQueue?: (id: string) => void;
+  activeQueueId?: QueueId;
+  onOpenQueue?: (id: QueueId) => void;
 };
 
 /**
@@ -34,7 +35,7 @@ type QueuesMapProps = {
  * Vi ignorerar zoom/isActive här för att alltid visa samma kortdesign.
  */
 const createQueuePopupRenderer =
-  (queue: QueueWithCoordinates, onOpenQueue?: (id: string) => void): PopupRenderer =>
+  (queue: QueueWithCoordinates, onOpenQueue?: (id: QueueId) => void): PopupRenderer =>
   () => {
     const popupData = {
       queueId: queue.queueId,

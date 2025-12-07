@@ -2,7 +2,11 @@ import Image from "next/image";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import ProfileHeroActions from "./ProfileHeroActions";
 import { GraduationCap, MapPin, ShieldCheck } from "lucide-react";
-import { type StudentWithRelations } from "@/types";
+import {
+  type School,
+  type SchoolId,
+  type StudentWithRelations,
+} from "@/types";
 
 export type ProfileStats = {
   studyProgram?: string;
@@ -28,11 +32,19 @@ type InfoItem = {
   value?: string;
 };
 
-export default function ProfileHero({ student }: { student: StudentProfile }) {
+type ProfileHeroProps = {
+  student: StudentProfile;
+  schoolsById?: Record<SchoolId, Pick<School, "schoolName">>;
+};
+
+export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) {
   const fullName = `${student.firstName} ${student.surname}`.trim();
+  const schoolName =
+    student.school?.schoolName ??
+    (student.schoolId ? schoolsById?.[student.schoolId]?.schoolName : undefined);
   const subtitle =
     student.headline ??
-    student.school?.schoolName ??
+    schoolName ??
     "Studentprofil";
 
   const description =
@@ -112,10 +124,10 @@ export default function ProfileHero({ student }: { student: StudentProfile }) {
                     </span>
                   )}
 
-                  {student.school?.schoolName && (
+                  {schoolName && (
                     <span className="inline-flex items-center gap-1.5">
                       <GraduationCap className="h-4 w-4 text-green-900" />
-                      {student.school.schoolName}
+                      {schoolName}
                     </span>
                   )}
 

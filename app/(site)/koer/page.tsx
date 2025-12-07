@@ -1,5 +1,6 @@
 import ListFrame, { ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow } from "@/components/Queues/QueueRow";
+import { queueRowFixtures } from "@/lib/mockData";
 
 export default function Page() {
   const columns: ListFrameColumn[] = [
@@ -10,24 +11,7 @@ export default function Page() {
     { id: "hantera", label: " ", align: "center", width: "1.1fr" },
   ];
 
-  const rows = [
-    buildQueueRow({
-      id: "sgs-1",
-      name: "SGS Studentbostader",
-      logoUrl: "/logos/sgs-logo.svg",
-      cities: ["Göteborg", "Borås"],
-      status: "Aktiv",
-      days: 213,
-    }),
-    buildQueueRow({
-      id: "sgs-2",
-      name: "SGS Studentbostader",
-      logoUrl: "/logos/sgs-logo.svg",
-      cities: ["Göteborg", "Borås"],
-      status: "Bearbetas",
-      days: 213,
-    }),
-  ];
+  const rows = queueRowFixtures.map(buildQueueRow);
 
   return (
     <main className="flex justify-center p-6">

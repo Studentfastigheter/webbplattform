@@ -49,7 +49,6 @@ export type MessageId = number;
 
 export type UserType = "student" | "company" | "private_landlord";
 export type AdvertiserType = "company" | "private_landlord";
-export type AccountType = "student" | "company" | "landlord";
 export type ListingType = "company" | "private";
 export type ListingStatus = "available" | string;
 export type ListingApplicationStatus =
@@ -63,7 +62,7 @@ export type QueueApplicationStatus =
   | "left"
   | "offered"
   | "expired";
-export type MessageSenderType = "student" | "landlord";
+export type MessageSenderType = "student" | "private_landlord";
 
 // -------------------------
 // Core user accounts
@@ -152,7 +151,7 @@ export type LoginResponse = {
 
 export type Transaction = {
   transactionId: TransactionId;
-  accountType: AccountType;
+  accountType: UserType;
   accountId: AccountId;
   information?: JsonValue | null;
   createdAt: TimestampString;
@@ -160,7 +159,7 @@ export type Transaction = {
 
 export type UserNotification = {
   notificationId: NotificationId;
-  userId: StudentId | LandlordId;
+  userId: StudentId | LandlordId | CompanyId;
   title?: string | null;
   body?: string | null;
   opened: boolean;
@@ -187,6 +186,7 @@ export type BaseListing = Coordinates & {
   availableTo?: DateString | null;
   description?: string | null;
   tags?: Tag[] | null;
+  images?: ListingImage[];
   status: ListingStatus;
   createdAt: TimestampString;
   updatedAt: TimestampString;
@@ -320,7 +320,6 @@ export type AdvertiserSummary = {
 
 export type ListingWithRelations = Listing & {
   advertiser?: AdvertiserSummary;
-  images?: ListingImage[];
 };
 
 export type HousingQueueWithRelations = HousingQueue & {

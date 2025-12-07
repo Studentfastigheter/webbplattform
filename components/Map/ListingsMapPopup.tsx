@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { type ListingWithRelations } from "@/types";
+import {
+  type ListingId,
+  type ListingWithRelations,
+  type UrlString,
+} from "@/types";
 
 type ListingMapPopupProps = {
-  listing: ListingWithRelations & { thumbnailUrl?: string | null };
-  onOpen?: (id: string) => void;
+  listing: ListingWithRelations & { thumbnailUrl?: UrlString | null };
+  onOpen?: (id: ListingId) => void;
 };
 
 const formatRent = (rent?: number) =>

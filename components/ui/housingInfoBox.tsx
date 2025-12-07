@@ -5,9 +5,9 @@ import { Button } from "@heroui/button";
 import { Heart, Share2 } from "lucide-react";
 
 type HousingInfoBoxProps = {
-  rent: number;           // 3800
-  moveInDate: string;     // "2026-07-03"
-  lastApplyDate: string;  // "2026-05-24"
+  rent?: number | null;           // 3800
+  moveInDate?: string | null;     // "2026-07-03"
+  lastApplyDate?: string | null;  // "2026-05-24"
 
   width?: number | string;
   height?: number | string;
@@ -25,6 +25,13 @@ export default function HousingInfoBox({
   className = "",
   onApplyClick,
 }: HousingInfoBoxProps) {
+  const formattedRent =
+    typeof rent === "number"
+      ? `${rent.toLocaleString("sv-SE")} kr/månad`
+      : "Hyra ej angiven";
+  const formattedMoveIn = moveInDate ?? "Inte angivet";
+  const formattedApplyBy = lastApplyDate ?? "Inte angivet";
+
   return (
     <div
       className={`
@@ -41,7 +48,7 @@ export default function HousingInfoBox({
       {/* Rad 1: Hyra + ikoner */}
       <div className="flex items-center justify-between px-5 pt-5 pb-2">
         <span className="text-[21px] leading-[24px] font-semibold text-gray-900">
-          {rent.toLocaleString("sv-SE")} kr/månad
+          {formattedRent}
         </span>
 
         <div className="flex items-center gap-3">
@@ -53,14 +60,14 @@ export default function HousingInfoBox({
       {/* Rad 2: Inflyttningsdatum */}
       <div className="px-5 py-1">
         <span className="text-[12px] leading-[14px] text-[#666666]">
-          Inflyttningsdatum: {moveInDate}
+          Inflyttningsdatum: {formattedMoveIn}
         </span>
       </div>
 
       {/* Rad 3: Sista anmälningsdag */}
       <div className="px-5 pb-2 pt-1">
         <span className="text-[12px] leading-[14px] text-[#666666]">
-          Sista anmälningsdag: {lastApplyDate}
+          Sista anmälningsdag: {formattedApplyBy}
         </span>
       </div>
 

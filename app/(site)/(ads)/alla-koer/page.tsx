@@ -11,12 +11,7 @@ import QueueFilterButton, {
 import OneFieldSearch from "@/components/Listings/Search/SearchFilter-1field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
-import {
-  type AdvertiserSummary,
-  type HousingQueue,
-  type QueueStatus,
-  type Coordinates,
-} from "@/types";
+import { queueFixtures, type QueueFixture } from "@/lib/mockData";
 
 const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ssr: false,
@@ -25,171 +20,26 @@ const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ),
 });
 
-type QueueWithUI = HousingQueue &
-  Coordinates & {
-    advertiser: AdvertiserSummary;
-    logoUrl?: string | null;
-    unitsLabel?: string | null;
-    isVerified?: boolean;
-    status: QueueStatus;
-  };
+type QueueWithUI = QueueFixture;
 
-const defaultQueueMeta = {
-  createdAt: "2024-01-01T00:00:00Z",
-  updatedAt: "2024-01-01T00:00:00Z",
-};
+const queues: QueueWithUI[] = queueFixtures;
+const cityCounts = queues.reduce<Record<string, number>>((acc, queue) => {
+  const city = queue.city ?? "Okand";
+  acc[city] = (acc[city] ?? 0) + 1;
+  return acc;
+}, {});
+const landlordCounts = queues.reduce<Record<string, number>>((acc, queue) => {
+  const key = queue.advertiser.displayName;
+  acc[key] = (acc[key] ?? 0) + 1;
+  return acc;
+}, {});
 
-const queues: QueueWithUI[] = [
-  {
-    ...defaultQueueMeta,
-    queueId: "sgs-studentbostader",
-    companyId: 1001,
-    name: "SGS Studentbostäder",
-    area: "Innerstan",
-    city: "Göteborg",
-    lat: 57.7089,
-    lng: 11.9746,
-    totalUnits: 1200,
-    isVerified: true,
-    advertiser: {
-      userId: 1001,
-      type: "company",
-      displayName: "SGS Studentbostäder",
-      logoUrl: "/logos/sgs-logo.svg",
-      subtitle: "Studentbostäder",
-    },
-    status: "open",
-    logoUrl: "/logos/sgs-logo.svg",
-    tags: ["Korridorer", "Lägenheter", "Möblerat"],
-  },
-  {
-    ...defaultQueueMeta,
-    queueId: "guldhedens-studiehem",
-    companyId: 1002,
-    name: "Guldhedens Studiehem",
-    area: "Guldheden",
-    city: "Göteborg",
-    lat: 57.6898,
-    lng: 11.9856,
-    totalUnits: 180,
-    advertiser: {
-      userId: 1002,
-      type: "company",
-      displayName: "Guldhedens Studiehem",
-      logoUrl: "/logos/guldhedens_studiehem.png",
-      subtitle: "Studentbostäder",
-    },
-    status: "open",
-    logoUrl: "/logos/guldhedens_studiehem.png",
-    tags: ["Kristet", "Korridorer"],
-  },
-  {
-    ...defaultQueueMeta,
-    queueId: "sssb",
-    companyId: 1003,
-    name: "SSSB",
-    area: "Tekniska Hogskolan",
-    city: "Stockholm",
-    lat: 59.3471,
-    lng: 18.073,
-    totalUnits: 800,
-    isVerified: true,
-    advertiser: {
-      userId: 1003,
-      type: "company",
-      displayName: "SSSB",
-      logoUrl: "/logos/campuslyan-logo.svg",
-      subtitle: "Studentbostäder",
-    },
-    status: "open",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Student", "Stockholm"],
-  },
-  {
-    ...defaultQueueMeta,
-    queueId: "af-bostader",
-    companyId: 1004,
-    name: "AF Bostäder",
-    area: "Lund Centrum",
-    city: "Lund",
-    lat: 55.7047,
-    lng: 13.191,
-    unitsLabel: "2500 bostader",
-    advertiser: {
-      userId: 1004,
-      type: "company",
-      displayName: "AF Bostäder",
-      logoUrl: "/logos/campuslyan-logo.svg",
-      subtitle: "Studentbostäder",
-    },
-    status: "open",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poängfri", "Lägenhet"],
-  },
-  {
-    ...defaultQueueMeta,
-    queueId: "af-bostader1",
-    companyId: 1005,
-    name: "AF Bostäder",
-    area: "Lund Centrum",
-    city: "Lund",
-    lat: 55.7047,
-    lng: 13.191,
-    unitsLabel: "2500 bostader",
-    advertiser: {
-      userId: 1005,
-      type: "company",
-      displayName: "AF Bostäder",
-      logoUrl: "/logos/campuslyan-logo.svg",
-      subtitle: "Studentbostäder",
-    },
-    status: "open",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poängfri", "Lägenhet"],
-  },
-  {
-    ...defaultQueueMeta,
-    queueId: "af-bostader2",
-    companyId: 1006,
-    name: "AF Bostäder",
-    area: "Lund Centrum",
-    city: "Lund",
-    lat: 55.7047,
-    lng: 13.191,
-    unitsLabel: "2500 bostader",
-    advertiser: {
-      userId: 1006,
-      type: "company",
-      displayName: "AF Bostäder",
-      logoUrl: "/logos/campuslyan-logo.svg",
-      subtitle: "Studentbostäder",
-    },
-    status: "open",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poängfri", "Lägenhet"],
-  },
-  {
-    ...defaultQueueMeta,
-    queueId: "af-bostader3",
-    companyId: 1007,
-    name: "AF Bostäder",
-    area: "Lund Centrum",
-    city: "Lund",
-    lat: 55.7047,
-    lng: 13.191,
-    unitsLabel: "2500 bostader",
-    advertiser: {
-      userId: 1007,
-      type: "company",
-      displayName: "AF Bostäder",
-      logoUrl: "/logos/campuslyan-logo.svg",
-      subtitle: "Studentbostäder",
-    },
-    status: "open",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poängfri", "Lägenhet"],
-  },
-];
+const cityOptions = Array.from(new Set(queues.map((queue) => queue.city))).filter(
+  Boolean,
+) as string[];
+const landlordOptions = Array.from(
+  new Set(queues.map((queue) => queue.advertiser.displayName)),
+);
 
 export default function Page() {
   const router = useRouter();
@@ -215,13 +65,13 @@ export default function Page() {
       const matchesSearch =
         !searchTerm ||
         [queue.name, queue.city, queue.area].some((field) =>
-          field.toLowerCase().includes(searchTerm)
+          field?.toLowerCase().includes(searchTerm)
         );
 
       const matchesCity =
         queueFilters.cities.length === 0 ||
         queueFilters.cities.some(
-          (city) => city.toLowerCase() === queue.city.toLowerCase()
+          (city) => city.toLowerCase() === queue.city?.toLowerCase()
         );
 
       const matchesLandlord =
@@ -250,25 +100,31 @@ export default function Page() {
     const { advertiser: _advertiser, lat: _lat, lng: _lng, ...rest } = queue;
     const queueCardProps = {
       ...rest,
+      area: rest.area ?? "",
+      city: rest.city ?? "",
+      totalUnits: rest.totalUnits ?? undefined,
+      unitsLabel: rest.unitsLabel ?? undefined,
+      logoUrl: rest.logoUrl ?? queue.advertiser.logoUrl ?? "",
+      tags: rest.tags ?? [],
       logoAlt: `${queue.name} logotyp`,
     };
 
     return (
-    <div key={queue.queueId} className="flex w-full justify-center">
-      <Que_ListingCard
-        name={queueCardProps.name}
-        area={queueCardProps.area}
-        city={queueCardProps.city}
-        totalUnits={queueCardProps.totalUnits}
-        unitsLabel={queueCardProps.unitsLabel}
-        isVerified={queueCardProps.isVerified}
-        logoUrl={queueCardProps.logoUrl}
-        logoAlt={queueCardProps.logoAlt}
-        tags={queueCardProps.tags}
-        onViewListings={() => router.push(`/alla-koer/${queue.queueId}`)}
-        onReadMore={() => router.push(`/alla-koer/${queue.queueId}`)}
-      />
-    </div>
+      <div key={queue.queueId} className="flex w-full justify-center">
+        <Que_ListingCard
+          name={queueCardProps.name}
+          area={queueCardProps.area}
+          city={queueCardProps.city}
+          totalUnits={queueCardProps.totalUnits}
+          unitsLabel={queueCardProps.unitsLabel}
+          isVerified={queueCardProps.isVerified}
+          logoUrl={queueCardProps.logoUrl}
+          logoAlt={queueCardProps.logoAlt}
+          tags={queueCardProps.tags}
+          onViewListings={() => router.push(`/alla-koer/${queue.queueId}`)}
+          onReadMore={() => router.push(`/alla-koer/${queue.queueId}`)}
+        />
+      </div>
     );
   };
 
@@ -288,36 +144,17 @@ export default function Page() {
                 field={{
                   id: "var",
                   label: "Var",
-                  placeholder: "Sök studentstad",
-                  options: [
-                    { label: "Göteborg", value: "göteborg" },
-                    { label: "Stockholm", value: "stockholm" },
-                    { label: "Uppsala", value: "uppsala" },
-                  ],
+                  placeholder: "Sok studentstad",
+                  options: cityOptions.map((city) => ({ label: city, value: city })),
                 }}
                 onSubmit={(values) => setSearchValues(values)}
               />
             </div>
             <QueueFilterButton
-              cities={["Göteborg", "Stockholm", "Lund", "Malmö", "Umeå"]}
-              cityCounts={{
-                Goteborg: 5,
-                Stockholm: 2,
-                Lund: 1,
-                Malmo: 1,
-                Umea: 1,
-              }}
-              landlords={Array.from(
-                new Set(queues.map((queue) => queue.advertiser.displayName)),
-              )}
-              landlordCounts={queues.reduce<Record<string, number>>(
-                (acc, queue) => {
-                  const key = queue.advertiser.displayName;
-                  acc[key] = (acc[key] ?? 0) + 1;
-                  return acc;
-                },
-                {},
-              )}
+              cities={cityOptions}
+              cityCounts={cityCounts}
+              landlords={landlordOptions}
+              landlordCounts={landlordCounts}
               onApply={(state) => setQueueFilters(state)}
               onClear={() =>
                 setQueueFilters({
@@ -335,7 +172,7 @@ export default function Page() {
       <section className="w-full">
         <div className="flex w-full flex-wrap items-center justify-between gap-4">
           <h2 id="bostader-heading" className="text-base font-semibold text-black">
-            Över {totalQueues.toLocaleString("sv-SE")} köer
+            Over {totalQueues.toLocaleString("sv-SE")} kor
           </h2>
           <SwitchSelect value={view} onChange={setView} />
         </div>

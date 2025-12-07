@@ -1,6 +1,3 @@
-import Link from "next/link";
-import { Button } from "@heroui/button";
-
 const faqs = [
   {
     q: "Är CampusLyan gratis för studenter?",

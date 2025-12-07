@@ -114,7 +114,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
 
           <Field className="grid grid-cols-3 gap-4">
             <Button
-              variant="outline"
+              variant="bordered"
               type="button"
               disabled
               className="w-full justify-center"
@@ -132,7 +132,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               <span className="sr-only">Logga in med Apple</span>
             </Button>
             <Button
-              variant="outline"
+              variant="bordered"
               type="button"
               disabled
               className="w-full justify-center"
@@ -150,7 +150,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               <span className="sr-only">Logga in med Google</span>
             </Button>
             <Button
-              variant="outline"
+              variant="bordered"
               type="button"
               disabled
               className="w-full justify-center"

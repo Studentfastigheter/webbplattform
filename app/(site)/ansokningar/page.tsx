@@ -1,5 +1,6 @@
 import ListFrame, { ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildListingApplicationRow } from "@/components/Listings/ListingApplicationRow";
+import { listingApplicationFixtures } from "@/lib/mockData";
 
 export default function Page() {
   const columns: ListFrameColumn[] = [
@@ -10,40 +11,7 @@ export default function Page() {
     { id: "andra_anmalan", label: "Andra anmalan", align: "center", width: "1.1fr" },
   ];
 
-  const rows = [
-    buildListingApplicationRow({
-      id: "vasagatan-1a",
-      title: "1:a Vasagatan 19",
-      rent: 3800,
-      area: "Innerstan",
-      city: "Göteborg",
-      dwellingType: "Lägenhet",
-      rooms: 3,
-      sizeM2: 42,
-      landlordType: "Privat hyresvärd",
-      imageUrl: "/appartment.jpg",
-      isVerified: true,
-      tags: ["Möblerat", "Poängfri", "Korridor"],
-      status: "Aktiv",
-      applicationDate: "2025-06-03",
-    }),
-    buildListingApplicationRow({
-      id: "vasagatan-1a2",
-      title: "1:a Vasagatan 19",
-      rent: 3800,
-      area: "Innerstan",
-      city: "Göteborg",
-      dwellingType: "Lägenhet",
-      rooms: 3,
-      sizeM2: 42,
-      landlordType: "Privat hyresvärd",
-      imageUrl: "/appartment.jpg",
-      isVerified: true,
-      tags: ["Möblerat", "Poängfri", "Korridor"],
-      status: "Under granskning",
-      applicationDate: "2025-06-03",
-    }),
-  ];
+  const rows = listingApplicationFixtures.map(buildListingApplicationRow);
 
   return (
     <main className="flex justify-center p-6">
@@ -52,11 +20,10 @@ export default function Page() {
         rows={rows}
         emptyState={
           <div className="py-16 text-center text-sm text-gray-400">
-            Inga ansökningar att visa just nu
+            Inga ansokningar att visa just nu
           </div>
         }
       />
     </main>
   );
 }
-
