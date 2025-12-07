@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -11,7 +11,8 @@ import ListingsFilterButton, {
 import SearchFilter3Fields from "@/components/Listings/Search/SearchFilter-3field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
-import { listingFixtures, type ListingFixture } from "@/lib/mockData";
+import { backendApi } from "@/lib/api";
+import { type ListingWithRelations } from "@/types";
 
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ssr: false,
@@ -42,9 +43,7 @@ const defaultListingsFilterState: ListingsFilterState = {
   priceRange: priceBounds,
 };
 
-type UIListing = ListingFixture;
-
-const listings: UIListing[] = listingFixtures;
+type UIListing = ListingWithRelations;
 
 const parseSearchPriceRange = (
   raw: string | string[] | null
@@ -76,6 +75,31 @@ export default function Page() {
   const [filters, setFilters] = useState<ListingsFilterState>(
     defaultListingsFilterState
   );
+  const [listings, setListings] = useState<UIListing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    backendApi.listings
+      .list({ size: 100 })
+      .then((res) => {
+        if (!active) return;
+        setListings(res.items ?? []);
+      })
+      .catch((err: any) => {
+        if (!active) return;
+        setError(err?.message ?? "Kunde inte ladda bostader.");
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isMapView = view === "karta";
 
@@ -91,37 +115,42 @@ export default function Page() {
     const searchPriceRange = parseSearchPriceRange(searchValues.pris);
 
     return listings.filter((listing) => {
+      const city = (listing.city ?? "").toLowerCase();
+      const area = (listing.area ?? "").toLowerCase();
+      const landlordName = (listing.advertiser?.displayName ?? "").toLowerCase();
+      const rentValue = listing.rent ?? 0;
+
       const matchesCity =
         !searchCity ||
-        listing.city.toLowerCase().includes(searchCity) ||
-        listing.area.toLowerCase().includes(searchCity);
+        city.includes(searchCity) ||
+        area.includes(searchCity);
 
       const matchesLandlord =
-        !searchLandlord ||
-        listing.landlordType.toLowerCase().includes(searchLandlord);
+        !searchLandlord || landlordName.includes(searchLandlord);
 
       const matchesSearchPrice =
         !searchPriceRange ||
-        (listing.rent >= searchPriceRange.min &&
+        (rentValue >= searchPriceRange.min &&
           (searchPriceRange.max === Number.POSITIVE_INFINITY ||
-            listing.rent <= searchPriceRange.max));
+            rentValue <= searchPriceRange.max));
 
       const matchesPropertyType =
         !filters.propertyType ||
-        listing.dwellingType.toLowerCase() ===
+        (listing.dwellingType ?? "").toLowerCase() ===
           filters.propertyType.toLowerCase();
 
+      const normalizedTags = (listing.tags ?? []).map((tag) =>
+        tag.toLowerCase()
+      );
       const matchesAmenities =
         filters.amenities.length === 0 ||
         filters.amenities.every((amenity) =>
-          (listing.tags ?? [])
-            .map((tag) => tag.toLowerCase())
-            .includes(amenity.toLowerCase())
+          normalizedTags.includes(amenity.toLowerCase())
         );
 
       const matchesPriceRange =
-        listing.rent >= filters.priceRange.min &&
-        listing.rent <= filters.priceRange.max;
+        rentValue >= filters.priceRange.min &&
+        rentValue <= filters.priceRange.max;
 
       return (
         matchesCity &&
@@ -132,7 +161,7 @@ export default function Page() {
         matchesPriceRange
       );
     });
-  }, [filters, searchValues]);
+  }, [filters, listings, searchValues]);
 
   const totalListings = filteredListings.length;
 
@@ -143,25 +172,33 @@ export default function Page() {
   const renderListingCard = (
     listing: UIListing,
     variant: "default" | "compact" = "default"
-  ) => (
-    <div key={listing.listingId} className="flex w-full justify-center">
-      <ListingCardSmall
-        title={listing.title}
-        area={listing.area}
-        city={listing.city}
-        dwellingType={listing.dwellingType}
-        rooms={listing.rooms}
-        sizeM2={listing.sizeM2}
-        rent={listing.rent}
-        landlordType={listing.landlordType ?? listing.advertiser.displayName}
-        isVerified={listing.isVerified}
-        imageUrl={listing.imageUrl}
-        tags={listing.tags ?? undefined}
-        onClick={() => router.push(`/bostader/${listing.listingId}`)}
-        variant={variant}
-      />
-    </div>
-  );
+  ) => {
+    const primaryImage =
+      typeof listing.images?.[0] === "string"
+        ? (listing.images?.[0] as string)
+        : listing.images?.[0]?.imageUrl;
+
+    return (
+      <div key={listing.listingId} className="flex w-full justify-center">
+        <ListingCardSmall
+          title={listing.title}
+          area={listing.area ?? ""}
+          city={listing.city ?? ""}
+          dwellingType={listing.dwellingType ?? ""}
+          rooms={listing.rooms ?? undefined}
+          sizeM2={listing.sizeM2 ?? undefined}
+          rent={listing.rent ?? undefined}
+          landlordType={listing.advertiser?.displayName ?? "Hyresvard"}
+          isVerified={Boolean(listing.advertiser)}
+          imageUrl={primaryImage}
+          tags={listing.tags ?? undefined}
+          images={listing.images}
+          onClick={() => router.push(`/bostader/${listing.listingId}`)}
+          variant={variant}
+        />
+      </div>
+    );
+  };
 
   const renderMapListings = () => {
     return filteredListings.map((listing) =>
@@ -246,22 +283,35 @@ export default function Page() {
       {/* Sektion 3: annonser (annonsytor hanteras i layouten) */}
       <section className="w-full">
         <FieldSet className="w-full" aria-labelledby="bostader-heading">
-          {isMapView ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
-                <div className={listingGridClasses}>{renderMapListings()}</div>
-                <div
-                  className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
-                  style={{ minHeight: 600, height: "min(72vh, 760px)" }}
-                >
+          {error && (
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="py-12 text-center text-sm text-gray-500">
+              Laddar bostader...
+            </div>
+          ) : filteredListings.length === 0 ? (
+            <div className="py-12 text-center text-sm text-gray-500">
+              Inga bostader att visa just nu.
+            </div>
+          ) : isMapView ? (
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
+              <div className={listingGridClasses}>{renderMapListings()}</div>
+              <div
+                className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
+                style={{ minHeight: 600, height: "min(72vh, 760px)" }}
+              >
                 <ListingsMap
                   listings={filteredListings}
                   onOpenListing={(id) => router.push(`/bostader/${id}`)}
                 />
-                </div>
               </div>
-            ) : (
-              <div className={listingGridClasses}>
-                {filteredListings.map((listing) => renderListingCard(listing))}
+            </div>
+          ) : (
+            <div className={listingGridClasses}>
+              {filteredListings.map((listing) => renderListingCard(listing))}
             </div>
           )}
         </FieldSet>

@@ -240,6 +240,8 @@ export type HousingQueue = {
   name: string;
   area?: Area | null;
   city?: City | null;
+  lat?: number | null;
+  lng?: number | null;
   description?: string | null;
   status: QueueStatus;
   totalUnits?: number | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -11,7 +11,8 @@ import QueueFilterButton, {
 import OneFieldSearch from "@/components/Listings/Search/SearchFilter-1field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
-import { queueFixtures, type QueueFixture } from "@/lib/mockData";
+import { backendApi } from "@/lib/api";
+import { type AdvertiserSummary, type HousingQueueWithRelations } from "@/types";
 
 const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ssr: false,
@@ -20,26 +21,7 @@ const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ),
 });
 
-type QueueWithUI = QueueFixture;
-
-const queues: QueueWithUI[] = queueFixtures;
-const cityCounts = queues.reduce<Record<string, number>>((acc, queue) => {
-  const city = queue.city ?? "Okand";
-  acc[city] = (acc[city] ?? 0) + 1;
-  return acc;
-}, {});
-const landlordCounts = queues.reduce<Record<string, number>>((acc, queue) => {
-  const key = queue.advertiser.displayName;
-  acc[key] = (acc[key] ?? 0) + 1;
-  return acc;
-}, {});
-
-const cityOptions = Array.from(new Set(queues.map((queue) => queue.city))).filter(
-  Boolean,
-) as string[];
-const landlordOptions = Array.from(
-  new Set(queues.map((queue) => queue.advertiser.displayName)),
-);
+type QueueWithUI = HousingQueueWithRelations & { advertiser?: AdvertiserSummary };
 
 export default function Page() {
   const router = useRouter();
@@ -52,8 +34,92 @@ export default function Page() {
     landlords: [],
     status: null,
   });
+  const [queues, setQueues] = useState<QueueWithUI[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    backendApi.queues
+      .list()
+      .then((res) => {
+        if (!active) return;
+        const mapped = res.map((queue) => ({
+          ...queue,
+          advertiser: queue.company
+            ? {
+                type: "company" as const,
+                id: queue.company.companyId,
+                displayName: queue.company.name,
+                logoUrl: queue.company.logoUrl ?? undefined,
+                bannerUrl: queue.company.bannerUrl ?? undefined,
+                phone: queue.company.phone ?? null,
+                contactEmail: queue.company.contactEmail ?? null,
+                contactPhone: queue.company.contactPhone ?? null,
+                contactNote: queue.company.contactNote ?? null,
+                rating: queue.company.rating ?? null,
+                subtitle: queue.company.subtitle ?? null,
+                description: queue.company.description ?? null,
+                website: queue.company.website ?? null,
+                city: queue.company.city ?? null,
+              }
+            : undefined,
+        }));
+        setQueues(mapped);
+      })
+      .catch((err: any) => {
+        if (!active) return;
+        setError(err?.message ?? "Kunde inte ladda kor.");
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isMapView = view === "karta";
+
+  const cityOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(queues.map((queue) => queue.city).filter(Boolean))
+      ) as string[],
+    [queues]
+  );
+
+  const landlordOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          queues
+            .map((queue) => queue.advertiser?.displayName)
+            .filter(Boolean)
+        )
+      ) as string[],
+    [queues]
+  );
+
+  const cityCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    queues.forEach((queue) => {
+      const city = queue.city ?? "Okand";
+      acc[city] = (acc[city] ?? 0) + 1;
+    });
+    return acc;
+  }, [queues]);
+
+  const landlordCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    queues.forEach((queue) => {
+      const key = queue.advertiser?.displayName ?? "Okand";
+      acc[key] = (acc[key] ?? 0) + 1;
+    });
+    return acc;
+  }, [queues]);
 
   const filteredQueues = useMemo(() => {
     const searchTerm =
@@ -78,7 +144,7 @@ export default function Page() {
         queueFilters.landlords.length === 0 ||
         queueFilters.landlords.some(
           (landlord) =>
-            queue.advertiser.displayName.toLowerCase() === landlord.toLowerCase()
+            queue.advertiser?.displayName?.toLowerCase() === landlord.toLowerCase()
         );
 
       const matchesStatus =
@@ -88,7 +154,24 @@ export default function Page() {
 
       return matchesSearch && matchesCity && matchesLandlord && matchesStatus;
     });
-  }, [queueFilters, searchValues]);
+  }, [queueFilters, queues, searchValues]);
+
+  const mapQueues = useMemo(
+    () =>
+      filteredQueues.filter(
+        (
+          queue,
+        ): queue is QueueWithUI & {
+          lat: number;
+          lng: number;
+          advertiser: AdvertiserSummary;
+        } =>
+          typeof queue.lat === "number" &&
+          typeof queue.lng === "number" &&
+          Boolean(queue.advertiser)
+      ),
+    [filteredQueues]
+  );
 
   const totalQueues = filteredQueues.length;
 
@@ -97,15 +180,19 @@ export default function Page() {
     : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
 
   const renderQueueCard = (queue: QueueWithUI) => {
-    const { advertiser: _advertiser, lat: _lat, lng: _lng, ...rest } = queue;
+    const logoUrl =
+      queue.company?.logoUrl ??
+      queue.advertiser?.logoUrl ??
+      "/logos/campuslyan-logo.svg";
     const queueCardProps = {
-      ...rest,
-      area: rest.area ?? "",
-      city: rest.city ?? "",
-      totalUnits: rest.totalUnits ?? undefined,
-      unitsLabel: rest.unitsLabel ?? undefined,
-      logoUrl: rest.logoUrl ?? queue.advertiser.logoUrl ?? "",
-      tags: rest.tags ?? [],
+      ...queue,
+      area: queue.area ?? "",
+      city: queue.city ?? "",
+      totalUnits: queue.totalUnits ?? undefined,
+      unitsLabel: undefined,
+      isVerified: queue.company?.verified ?? queue.status === "open",
+      logoUrl,
+      tags: queue.tags ?? [],
       logoAlt: `${queue.name} logotyp`,
     };
 
@@ -181,22 +268,35 @@ export default function Page() {
       {/* Sektion 3: annonser (annonsytor hanteras i layouten) */}
       <section className="w-full">
         <FieldSet className="w-full" aria-labelledby="bostader-heading">
-          {isMapView ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
-                <div className={queueGridClasses}>{renderMapListings()}</div>
-                <div
-                  className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
-                  style={{ minHeight: 600, height: "min(72vh, 760px)" }}
-                >
+          {error && (
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="py-12 text-center text-sm text-gray-500">
+              Laddar kor...
+            </div>
+          ) : filteredQueues.length === 0 ? (
+            <div className="py-12 text-center text-sm text-gray-500">
+              Inga kor att visa just nu.
+            </div>
+          ) : isMapView ? (
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
+              <div className={queueGridClasses}>{renderMapListings()}</div>
+              <div
+                className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
+                style={{ minHeight: 600, height: "min(72vh, 760px)" }}
+              >
                 <QueuesMap
-                  queues={filteredQueues}
+                  queues={mapQueues}
                   onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
                 />
-                </div>
               </div>
-            ) : (
-              <div className={queueGridClasses}>
-                {filteredQueues.map((queue) => renderQueueCard(queue))}
+            </div>
+          ) : (
+            <div className={queueGridClasses}>
+              {filteredQueues.map((queue) => renderQueueCard(queue))}
             </div>
           )}
         </FieldSet>

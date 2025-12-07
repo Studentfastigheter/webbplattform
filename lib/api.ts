@@ -1,11 +1,13 @@
 import {
   type CompanyAccount,
   type CompanyId,
+  type HousingQueueWithRelations,
   type ListingImage,
   type ListingWithRelations,
   type LoginResponse,
   type PrivateLandlordAccount,
   type School,
+  type QueueStatus,
   type StudentAccount,
   type User,
   type UserType,
@@ -63,6 +65,7 @@ export type LoginPayload = { email: string; password: string };
 
 type ApiListingPublicDto = {
   id: string;
+  area?: string | null;
   title: string;
   city?: string | null;
   rent?: number | null;
@@ -74,7 +77,10 @@ type ApiListingPublicDto = {
   sizeM2?: number | null;
   rooms?: number | null;
   dwellingType?: string | null;
+  moveIn?: string | null;
+  applyBy?: string | null;
   availableFrom?: string | null;
+  tags?: string[] | null;
   images?: string[];
 };
 
@@ -83,6 +89,41 @@ type ApiListingPrivateDto = ApiListingPublicDto & {
   address?: string | null;
   companyId?: number | null;
   userQueueDays?: number | null;
+};
+
+type ApiQueueCompanyDto = {
+  id: number;
+  name: string;
+  city?: string | null;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  subtitle?: string | null;
+  description?: string | null;
+  website?: string | null;
+  rating?: number | null;
+  verified?: boolean | null;
+  tags?: string[] | null;
+};
+
+type ApiQueueDto = {
+  id: string;
+  companyId: number;
+  name: string;
+  area?: string | null;
+  city?: string | null;
+  description?: string | null;
+  status: string;
+  totalUnits?: number | null;
+  feeInfo?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  website?: string | null;
+  tags?: string[] | null;
+  approximateWaitDays?: number | null;
+  updatedAt?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  company?: ApiQueueCompanyDto | null;
 };
 
 type ApiListingSearchResponse<T> = {
@@ -355,7 +396,7 @@ const mapListingDto = (
     listingType: "company",
     companyId: (companyId || 0) as CompanyId,
     title: dto.title,
-    area: null,
+    area: dto.area ?? null,
     city: dto.city ?? null,
     address: "address" in dto ? dto.address ?? null : null,
     lat: dto.latitude ?? null,
@@ -364,12 +405,12 @@ const mapListingDto = (
     rooms: dto.rooms ?? null,
     sizeM2: dto.sizeM2 ?? null,
     rent: dto.rent ?? null,
-    moveIn: null,
-    applyBy: null,
+    moveIn: dto.moveIn ?? null,
+    applyBy: dto.applyBy ?? null,
     availableFrom: dto.availableFrom ?? null,
     availableTo: null,
     description: "description" in dto ? dto.description ?? null : null,
-    tags: [],
+    tags: dto.tags ?? [],
     images: toListingImages(dto),
     status: "available",
     createdAt: now,
@@ -396,6 +437,59 @@ const mapInterestDto = (dto: ApiInterestDto): UserInterest | null => {
     primaryImageUrl: dto.primaryImageUrl,
     companyName: dto.companyName,
     createdAt: dto.createdAt,
+  };
+};
+
+const mapQueueCompany = (company?: ApiQueueCompanyDto | null): CompanyAccount | undefined => {
+  if (!company) return undefined;
+  const now = new Date().toISOString();
+  return {
+    companyId: company.id,
+    type: "company",
+    email: "",
+    passwordHash: "",
+    createdAt: now,
+    phone: null,
+    logoUrl: company.logoUrl ?? null,
+    bannerUrl: company.bannerUrl ?? null,
+    tags: company.tags ?? null,
+    settings: null,
+    name: company.name,
+    orgNumber: null,
+    city: company.city ?? null,
+    website: company.website ?? null,
+    rating: company.rating ?? null,
+    subtitle: company.subtitle ?? null,
+    description: company.description ?? null,
+    contactEmail: null,
+    contactPhone: null,
+    contactNote: null,
+    verified: Boolean(company.verified),
+  };
+};
+
+const mapQueueDto = (dto: ApiQueueDto): HousingQueueWithRelations => {
+  const now = dto.updatedAt ?? new Date().toISOString();
+  return {
+    queueId: dto.id,
+    companyId: dto.companyId as CompanyId,
+    name: dto.name,
+    area: dto.area ?? null,
+    city: dto.city ?? null,
+    lat: dto.latitude ?? null,
+    lng: dto.longitude ?? null,
+    description: dto.description ?? null,
+    status: (dto.status as QueueStatus) ?? "open",
+    totalUnits: dto.totalUnits ?? null,
+    feeInfo: dto.feeInfo ?? null,
+    contactEmail: dto.contactEmail ?? null,
+    contactPhone: dto.contactPhone ?? null,
+    website: dto.website ?? null,
+    tags: dto.tags ?? [],
+    approximateWaitDays: dto.approximateWaitDays ?? null,
+    createdAt: now,
+    updatedAt: now,
+    company: mapQueueCompany(dto.company),
   };
 };
 
@@ -548,6 +642,16 @@ export async function fetchQueuesForSchool(
 
 // ---------- Queues ----------
 
+export async function fetchQueues(): Promise<HousingQueueWithRelations[]> {
+  const res = await apiFetch<ApiQueueDto[]>("/api/queues");
+  return res.map(mapQueueDto);
+}
+
+export async function fetchQueue(queueId: string): Promise<HousingQueueWithRelations> {
+  const res = await apiFetch<ApiQueueDto>(`/api/queues/${queueId}`);
+  return mapQueueDto(res);
+}
+
 export async function joinQueue(companyId: number, token: string): Promise<void> {
   await apiFetch<void>(
     `/api/queues/join${buildQuery({ companyId })}`,
@@ -620,6 +724,8 @@ export const backendApi = {
     queues: fetchQueuesForSchool,
   },
   queues: {
+    list: fetchQueues,
+    get: fetchQueue,
     join: joinQueue,
     joinAll: joinAllQueues,
     exit: exitQueue,
