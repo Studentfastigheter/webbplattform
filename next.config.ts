@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [
+    "localhost",
+    "192.168.1.126",
+    "*.localhost", // om du kör t.ex. app.localhost
+  ],
+
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
@@ -14,11 +20,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
   async rewrites() {
     return [
       { source: "/api/:path*", destination: "http://localhost:8080/api/:path*" },
     ];
   },
+
   async redirects() {
     return [
       { source: "/our-queues", destination: "/alla-koer", permanent: true },

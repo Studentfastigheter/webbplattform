@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 export function SecuritySection() {
   return (
     <div className="max-w-3xl">
@@ -13,9 +15,11 @@ export function SecuritySection() {
         <p className="text-sm text-muted-foreground">
           Uppdatera ditt lösenord regelbundet för bättre säkerhet.
         </p>
-        <button className="mt-3 text-sm font-medium hover:underline">
+        <Button 
+        size="sm"
+        className="mt-3 text-sm font-medium hover:underline">
           Byt lösenord
-        </button>
+        </Button>
       </div>
     </div>
   );

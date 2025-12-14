@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 export function PersonalInfoSection() {
   return (
     <div className="max-w-3xl">
@@ -36,7 +38,7 @@ function Row({
         <div className="text-sm font-medium">{title}</div>
         <div className="text-sm text-muted-foreground">{value}</div>
       </div>
-      <button className="text-sm font-medium hover:underline">{action}</button>
+      <Button variant="text" className="text-sm font-medium hover:underline">{action}</Button>
     </div>
   );
 }
