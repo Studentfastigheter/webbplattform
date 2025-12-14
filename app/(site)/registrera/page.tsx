@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
 import { AuthCard } from "@/components/ui/AuthCard";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
@@ -162,14 +162,7 @@ export default function RegisterPage() {
               </Field>
 
               <Field>
-                <Button
-                  type="submit"
-                  color="success"
-                  variant="solid"
-                  radius="full"
-                  className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90"
-                  disabled={loading}
-                >
+                <Button type="submit" fullWidth className="mt-1" disabled={loading}>
                   {loading ? "Skapar..." : "Registrera"}
                 </Button>
               </Field>

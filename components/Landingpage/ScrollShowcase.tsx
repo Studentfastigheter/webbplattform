@@ -2,7 +2,7 @@
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { FlipWords } from "@/components/ui/flip-words";
 import Image from "next/image";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 
 
 export default function ScrollShowcase() {
@@ -75,7 +75,7 @@ export default function ScrollShowcase() {
                 <p className="text-[11px] text-slate-500 mt-1">4.8 av 5</p>
               </div>
             </div>
-            <Button color="success" variant="solid" radius="full" className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90">
+            <Button fullWidth className="mt-1">
               Skicka intresse
             </Button>
           </div>
