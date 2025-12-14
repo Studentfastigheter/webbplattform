@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { Heart, Share2, Home, MapPin, Building2 } from "lucide-react";
 import Tag from "../ui/Tag";
 import type { ListFrameRow } from "../layout/ListFrame";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import StatusTag, { type Status } from "../ui/statusTag";
 import type { DateString, ListingWithRelations } from "@/types";
 

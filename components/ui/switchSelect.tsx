@@ -11,6 +11,7 @@ type Props = {
   labels?: { lista?: string; karta?: string };
   className?: string;
   disabled?: boolean;
+  fullWidth?: boolean;
 };
 
 export function SwitchSelect({
@@ -19,6 +20,7 @@ export function SwitchSelect({
   labels = { lista: "Lista", karta: "Karta" },
   className = "",
   disabled = false,
+  fullWidth = false,
 }: Props) {
   // internal state for uncontrolled usage
   const [internal, setInternal] = React.useState<SwitchSelectValue>("lista");
@@ -38,13 +40,16 @@ export function SwitchSelect({
     onChange?.(next);
   };
 
+  const widthClass = fullWidth ? "w-full" : "w-[120px] sm:w-[160px]";
+
   return (
     <div
       role="tablist"
       aria-disabled={disabled}
       className={[
         "relative inline-grid grid-cols-2 items-center",
-        "h-12 w-[120px] sm:w-[160px]",//Ändra storlek
+        "h-8",
+        widthClass,
         "rounded-full bg-white",
         "border border-black/10",
         "shadow-[0_7px_18px_rgba(0,0,0,0.12)]",
@@ -59,13 +64,11 @@ export function SwitchSelect({
           // fyll hela höjden och halva bredden
           "absolute top-0 bottom-0 left-0 w-1/2",
           "rounded-full bg-[#E9E9E9]",
-          "shadow-[0_6px_14px_rgba(0,0,0,0.22)]",
+          "shadow-[0_2px_10px_rgba(0,0,0,0.22)]",
         ].join(" ")}
         animate={{ x: `${selectedIndex * 100}%` }}
         transition={{ duration: 0.22, ease: "easeInOut" }}
       />
-
-
 
       {options.map((opt) => {
         const active = opt.key === currentValue;

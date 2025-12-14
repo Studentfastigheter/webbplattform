@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import { Mail, Share2, PencilLine } from "lucide-react";
 
 type Props = {

@@ -7,7 +7,7 @@ import {
   useScroll,
   useMotionValueEvent,
 } from "framer-motion";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import React, { useRef, useState } from "react";
 import { SkeletonImage } from "@/components/ui/skeleton-image";
 import Link from "next/link";

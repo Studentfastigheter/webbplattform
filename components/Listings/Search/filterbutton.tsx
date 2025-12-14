@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export type FilterButtonProps = {
   children?: React.ReactNode;
@@ -151,30 +152,24 @@ const FilterButton: React.FC<FilterButtonProps> = ({
             </div>
 
             <footer className="flex flex-col gap-3 border-t border-black/10 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
+              <Button
+                size="sm"
+                variant="text"
                 onClick={onClear}
-                className="
-                  text-sm font-semibold text-black underline-offset-2
-                  hover:underline
-                "
+                className="px-6 py-3 underline-offset-2 hover:underline"
               >
                 {clearLabel}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => {
                   onApply?.();
                   close();
                 }}
-                className="
-                  inline-flex w-full items-center justify-center rounded-full
-                  bg-black px-6 py-3 text-sm font-semibold text-white
-                  transition hover:bg-black/90 sm:w-auto
-                "
+                className="px-6 py-3"
               >
                 {showApplyLabel}
-              </button>
+              </Button>
             </footer>
           </div>
         </div>

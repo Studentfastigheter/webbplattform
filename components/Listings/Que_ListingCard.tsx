@@ -1,7 +1,7 @@
  "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import { MapPin, Building2 } from "lucide-react";
 import Tag from "../ui/Tag";
 import VerifiedTag from "../ui/VerifiedTag";

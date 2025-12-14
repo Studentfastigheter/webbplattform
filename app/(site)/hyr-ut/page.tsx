@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 
 export default function HyraUtPage() {
   return (
@@ -33,10 +33,10 @@ export default function HyraUtPage() {
         </div>
 
         <div className="flex gap-3">
-          <Button as={Link} href="/register" color="success">
+          <Button as={Link} href="/register">
             Skapa konto
           </Button>
-          <Button as={Link} href="/kundservice" variant="bordered" color="success">
+          <Button as={Link} href="/kundservice" variant="outline">
             Frågor? Kontakta oss
           </Button>
         </div>

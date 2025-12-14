@@ -7,7 +7,7 @@ import React, {
   useEffect,
 } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 
 type Variant = "small" | "large";
 

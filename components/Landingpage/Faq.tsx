@@ -52,12 +52,7 @@ export default function Faq() {
         </div>
         {/*
         <div className="mt-6">
-          <Button
-            as={Link}
-            href="/faq"
-            color="success" variant="solid" radius="full"
-            className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90"
-          >
+          <Button as={Link} href="/faq" fullWidth className="mt-1">
             Läs fler frågor
           </Button>
         </div>

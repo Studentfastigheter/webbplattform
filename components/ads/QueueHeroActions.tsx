@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import { ExternalLink, Share2, Heart } from "lucide-react";
 
 export default function QueueHeroActions({ website }: { website?: string }) {

@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Reveal from "@/lib/reveal";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 
 export default function ProductSpotlight() {
   return (
@@ -131,13 +131,7 @@ export default function ProductSpotlight() {
                   </li>
                 </ul>
 
-                <Button
-                  size="sm"
-                  color="success"
-                  variant="solid"
-                  radius="full"
-                  className="mt-3 w-full justify-center text-sm text-white bg-[#004225] hover:bg-[#004225]/90"
-                >
+                <Button size="sm" fullWidth className="mt-3">
                   Visa alla
                 </Button>
               </div>
