@@ -70,7 +70,12 @@ export default function Page() {
         setQueue(queueRes);
         const filtered =
           listingRes.items
-            ?.filter((l) => l.companyId === queueRes.companyId)
+            ?.filter(
+              (l): l is ListingWithRelations & { listingType: "company"; companyId: number } =>
+                l.listingType === "company" &&
+                typeof l.companyId === "number" &&
+                l.companyId === queueRes.companyId
+            )
             .map(toListingCard) ?? [];
         setListings(filtered);
       })

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   Navbar,
@@ -22,6 +22,7 @@ export default function SiteHeader() {
   const { user, logout, ready } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
   const userType = user?.type; // "student" | "company" | "landlord" | undefined
 
@@ -152,6 +153,17 @@ export default function SiteHeader() {
     setIsMobileMenuOpen(false);
   };
 
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isAccountMenuOpen]);
+
   return (
     <Navbar className="top-4">
       <NavBody>
@@ -189,7 +201,7 @@ export default function SiteHeader() {
           )}
 
           {user && (
-            <div className="relative flex items-center gap-3">
+            <div ref={accountMenuRef} className="relative flex items-center gap-3">
               <div className="flex flex-col items-end">
                 <span className="text-sm text-neutral-500">
                   {user.email}

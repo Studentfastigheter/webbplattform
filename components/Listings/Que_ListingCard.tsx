@@ -238,13 +238,8 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         <Button
           type="button"
           onClick={onViewListings}
-          size="sm"
-          className="flex-1 rounded-full bg-[#E0E0E0]"
-          style={{
-            paddingBlock: `${buttonPadding}px`,
-            fontSize: `${buttonFont}px`,
-            lineHeight: `${buttonFont + 4}px`,
-          }}
+          size="xs"
+          variant="secondary"
         >
           Visa bostader
         </Button>
@@ -252,15 +247,10 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         <Button
           type="button"
           onClick={onReadMore}
-          size="sm"
-          className="flex-1 rounded-full bg-[#0F4D0F] text-white"
-          style={{
-            paddingBlock: `${buttonPadding}px`,
-            fontSize: `${buttonFont}px`,
-            lineHeight: `${buttonFont + 4}px`,
-          }}
+          size="xs"
+          variant="default"
         >
-          Las mer
+          Läs mer
         </Button>
       </div>
     </div>

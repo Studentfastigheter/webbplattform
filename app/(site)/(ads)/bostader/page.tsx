@@ -290,11 +290,11 @@ export default function Page() {
           )}
           {loading ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Laddar bostader...
+              Laddar bostäder...
             </div>
           ) : filteredListings.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Inga bostader att visa just nu.
+              Inga bostäder att visa just nu.
             </div>
           ) : isMapView ? (
             <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">

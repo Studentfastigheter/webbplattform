@@ -16,7 +16,7 @@ type AppButtonVariant =
   | "link"
   | "text";
 
-type AppButtonSize = "sm" | "md" | "lg" | "icon" | "icon-sm" | "icon-lg";
+type AppButtonSize = | "xs" | "sm" | "md" | "lg" | "icon" | "icon-sm" | "icon-lg";
 
 export type ButtonProps = Omit<HeroButtonProps, "variant" | "size" | "color"> & {
   variant?: AppButtonVariant | HeroVariant;
@@ -86,9 +86,10 @@ const baseClasses =
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold disabled:pointer-events-none disabled:opacity-50";
 
 const sizeClasses: Record<AppButtonSize, string> = {
-  sm: "h-8 px-3",
-  md: "h-9 px-4",
-  lg: "h-10 px-6",
+  xs: "h-7 px-3 text-xs min-w-[120px]",
+  sm: "h-8 px-3 min-w-[130px]",
+  md: "h-9 px-4 min-w-[140px]",
+  lg: "h-10 px-6 min-w-[136px]",
   icon: "h-9 w-9 p-0",
   "icon-sm": "h-8 w-8 p-0",
   "icon-lg": "h-10 w-10 p-0",

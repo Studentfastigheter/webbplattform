@@ -127,14 +127,14 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
       <div
         className="
           relative
-          flex h-[58.5px] w-full items-center
+          flex h-[58.5px] w-full items-center gap-3
           rounded-[29.25px] border border-black/10
           bg-white shadow-[0_0.9px_3.6px_rgba(0,0,0,0.25)]
-          px-5 pr-[70px]
+          px-5 pr-[14px]
         "
       >
         {/* Vänstra delen – fälten */}
-        <div className="flex flex-1 items-stretch">
+        <div className="flex flex-1 items-stretch gap-3">
           {fields.map((field, index) => {
             const rawValue = values[field.id] ?? null;
             const displayValue = getDisplayValue(field, rawValue);
@@ -382,17 +382,12 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
         <Button
           type="button"
           onClick={handleSubmit}
-          className="
-            absolute right-[6px] top-1/2 -translate-y-1/2
-            flex h-[48px] w-[48px] items-center justify-center
-            rounded-full bg-[#0F4D0F]
-            shadow-[0_6px_14px_rgba(0,0,0,0.18)]
-            focus:outline-none
-          "
+          size="icon-lg"
+          variant="default"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-[34px] w-[34px] text-white"
+            className="h-[20px] w-[20px] text-white"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

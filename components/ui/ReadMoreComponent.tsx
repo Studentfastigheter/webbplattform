@@ -175,17 +175,8 @@ export default function ReadMoreComponent({
           <div className="max-w-prose mx-auto flex justify-center">
             <Button
               onClick={handleToggle}
-              className={`
-                flex 
-                items-center 
-                justify-center 
-                w-full h-[31px]
-                rounded-full
-                bg-[#004323] text-white
-                text-[14px] leading-[16px]
-                normal-case
-                shadow-[0_3px_4px_rgba(0,0,0,0.25)]
-              `}
+              variant="text"
+              size="sm"
             >
               <span>{expanded ? lessLabel : moreLabel}</span>
               <motion.span
