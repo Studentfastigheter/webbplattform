@@ -91,21 +91,14 @@ const FilterButton: React.FC<FilterButtonProps> = ({
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        size="lg"
+        variant="ghost"
         onClick={() => setIsOpen(true)}
-        className={`
-          flex items-center gap-2 rounded-[999px] border border-black/15
-          bg-white px-4 py-2 text-[13px] font-medium text-black shadow-[0_4px_8px_rgba(0,0,0,0.08)]
-          transition hover:shadow-[0_6px_14px_rgba(0,0,0,0.12)]
-          ${className}
-        `}
       >
-        <span className="rounded-full bg-black/5 p-1 text-black">
           <SliderIcon />
-        </span>
         {triggerLabel}
-      </button>
+      </Button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center px-4 py-10 sm:px-6">
@@ -156,17 +149,16 @@ const FilterButton: React.FC<FilterButtonProps> = ({
                 size="sm"
                 variant="text"
                 onClick={onClear}
-                className="px-6 py-3 underline-offset-2 hover:underline"
               >
                 {clearLabel}
               </Button>
               <Button
                 size="sm"
+                variant="default"
                 onClick={() => {
                   onApply?.();
                   close();
                 }}
-                className="px-6 py-3"
               >
                 {showApplyLabel}
               </Button>
