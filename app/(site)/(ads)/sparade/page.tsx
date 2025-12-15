@@ -51,7 +51,7 @@ export default function Page() {
   const isMapView = view === "karta";
 
   return (
-    <main className="flex justify-center pb-12 pt-6">
+    <main className="pb-12 pt-6">
       <div className="w-full space-y-2">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Sparade annonser</h1>

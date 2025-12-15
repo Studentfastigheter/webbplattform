@@ -121,7 +121,7 @@ export default function Page() {
   }, [error, listings, loading, queue]);
 
   return (
-    <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
+    <main className="py-6 pb-12 lg:py-10">
       <div className="flex w-full flex-col gap-10">{content}</div>
     </main>
   );

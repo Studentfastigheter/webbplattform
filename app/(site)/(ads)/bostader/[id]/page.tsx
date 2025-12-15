@@ -149,8 +149,8 @@ export default function Page() {
   }, [advertiser, applyError, applySuccess, applying, error, galleryImages, handleApply, listing, loading]);
 
   return (
-    <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">{content}</div>
+    <main className="pb-12 pt-6 lg:pt-10">
+      <div className="flex w-full flex-col gap-10">{content}</div>
     </main>
   );
 }

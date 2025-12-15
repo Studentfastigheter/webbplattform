@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 
 export function SecuritySection() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <div className="mb-6">
         <h2 className="text-lg font-semibold">Inloggning & säkerhet</h2>
         <p className="text-sm text-muted-foreground">

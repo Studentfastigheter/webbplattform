@@ -52,7 +52,7 @@ export default function Page() {
 
   if (!user || user.type !== "student") {
     return (
-      <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
+      <main className="pb-12 pt-6 lg:pt-10">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-800">
           {token
             ? "Denna vy ar for studentkonton."
@@ -65,7 +65,7 @@ export default function Page() {
   const profile = buildProfileFromUser(user);
 
   return (
-    <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
+    <main className="pb-12 pt-6 lg:pt-10">
       <div className="flex w-full flex-col gap-6">
         {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

@@ -21,8 +21,8 @@ export function SettingsLayout() {
 
           {/* Viktigt: flex-1 + min-w-0 så content kan växa och scrolla korrekt */}
           <SidebarInset className="min-w-0 flex-1 h-full">
-            <div className="h-full w-full overflow-auto p-6">
-              <div className="mx-auto w-full max-w-4xl">
+            <div className="h-full w-full overflow-auto py-6">
+              <div className="w-full">
                 <SettingsContent active={active} />
               </div>
             </div>

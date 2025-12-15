@@ -220,10 +220,10 @@ export default function Page() {
   };
 
   return (
-    <main className="flex flex-col gap-8 px-4 pb-12 pt-4">
+    <main className="flex flex-col gap-8 pb-12 pt-4">
       {/* Sektion 1: filter */}
-      <section className="flex justify-center">
-        <div className="flex w-full max-w-[1200px] flex-col gap-4">
+      <section className="w-full">
+        <div className="flex w-full flex-col gap-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="min-w-[280px] flex-1">
               <OneFieldSearch

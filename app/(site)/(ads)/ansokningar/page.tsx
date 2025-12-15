@@ -98,8 +98,8 @@ export default function Page() {
   );
 
   return (
-    <main className="flex justify-center p-6">
-      <div className="w-full max-w-6xl">
+    <main className="w-full py-6">
+      <div className="w-full">
         {!token && (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             Logga in for att se dina ansokningar.
