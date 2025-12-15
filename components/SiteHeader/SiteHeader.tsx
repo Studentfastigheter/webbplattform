@@ -62,6 +62,8 @@ export default function SiteHeader() {
         ],
       },
       { name: "Meddelanden", link: "/meddelanden" },
+      { name: "Notiser", link: "/notiser" },
+
     ];
   } else if (userType === "private_landlord") {
     navItems = [
@@ -82,6 +84,7 @@ export default function SiteHeader() {
         name: "Ansökningar",
         link: "/konto/annonser/ansokningar",
       },
+      { name: "Notiser", link: "/notiser" },
     ];
   } else if (userType === "company") {
     navItems = [
