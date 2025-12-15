@@ -1,4 +1,4 @@
-import { MessagesLayout } from "@/components/messages/messages-layout";
+import { NotificationsFeed } from "@/components/notifications/notification-feed";
 
 export default function Page() {
   return (
@@ -6,7 +6,7 @@ export default function Page() {
       <h1 className="text-2xl font-semibold">Notiser</h1>
 
       <div className="mt-4 h-[calc(80%)]">
-        /* Notiser komponenten ska implementeras här */
+        <NotificationsFeed />
       </div>
     </main>
   );
