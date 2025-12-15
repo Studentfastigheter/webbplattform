@@ -11,6 +11,8 @@
   --brand: #004225;
   --brand-600: #0a7a4a;
   --brand-50: #e8f1ed;
+  --brand-soft: color-mix(in oklab, var(--brand) 7%, white);
+  --brand-soft-strong: color-mix(in oklab, var(--brand) 11%, white);
   --border: oklch(0.922 0 0);
   --muted: oklch(0.97 0 0);
   --muted-bg: #ffffff;

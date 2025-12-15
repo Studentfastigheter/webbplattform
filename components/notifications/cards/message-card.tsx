@@ -18,13 +18,7 @@ export function MessageNotificationCard({ notification }: Props) {
     >
       <div className="flex flex-wrap items-center gap-2 text-foreground">
         <span className="text-sm font-semibold">{notification.sender}</span>
-        {notification.threadTitle && (
-          <Badge variant="secondary" className="rounded-full">
-            {notification.threadTitle}
-          </Badge>
-        )}
       </div>
-
       <p className="text-sm leading-relaxed text-foreground">{notification.body}</p>
     </NotificationCard>
   );

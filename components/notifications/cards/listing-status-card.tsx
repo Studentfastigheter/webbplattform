@@ -22,11 +22,7 @@ export function ListingStatusNotificationCard({ notification }: Props) {
     >
       <div className="flex flex-wrap items-center gap-2 text-foreground">
         <span className="text-sm font-semibold">{notification.listingTitle}</span>
-        <Badge variant="secondary" className="rounded-full capitalize">
-          {statusLabel}
-        </Badge>
       </div>
-
       <p className="text-sm leading-relaxed">{statusCopy}</p>
     </NotificationCard>
   );
