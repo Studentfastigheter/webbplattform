@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -22,6 +22,7 @@ const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
 });
 
 type QueueWithUI = HousingQueueWithRelations & { advertiser?: AdvertiserSummary };
+const PAGE_SIZE = 6;
 
 export default function Page() {
   const router = useRouter();
@@ -36,7 +37,11 @@ export default function Page() {
   });
   const [queues, setQueues] = useState<QueueWithUI[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -67,6 +72,7 @@ export default function Page() {
             : undefined,
         }));
         setQueues(mapped);
+        setVisibleCount(PAGE_SIZE);
       })
       .catch((err: any) => {
         if (!active) return;
@@ -156,9 +162,19 @@ export default function Page() {
     });
   }, [queueFilters, queues, searchValues]);
 
+  useEffect(() => {
+    setVisibleCount(Math.min(PAGE_SIZE, filteredQueues.length));
+  }, [filteredQueues.length]);
+
+  const hasMore = visibleCount < filteredQueues.length;
+  const visibleQueues = useMemo(
+    () => filteredQueues.slice(0, visibleCount),
+    [filteredQueues, visibleCount]
+  );
+
   const mapQueues = useMemo(
     () =>
-      filteredQueues.filter(
+      visibleQueues.filter(
         (
           queue,
         ): queue is QueueWithUI & {
@@ -170,7 +186,7 @@ export default function Page() {
           typeof queue.lng === "number" &&
           Boolean(queue.advertiser)
       ),
-    [filteredQueues]
+    [visibleQueues]
   );
 
   const totalQueues = filteredQueues.length;
@@ -216,8 +232,38 @@ export default function Page() {
   };
 
   const renderMapListings = () => {
-    return filteredQueues.map(renderQueueCard);
+    return visibleQueues.map(renderQueueCard);
   };
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore) return;
+    const target = loadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting && hasMore && !loadingMore) {
+          setLoadingMore(true);
+          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredQueues.length));
+          requestAnimationFrame(() => setLoadingMore(false));
+        }
+      },
+      { rootMargin: "320px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [filteredQueues.length, hasMore, loading, loadingMore]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 320);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <main className="flex flex-col gap-8 pb-12 pt-4">
@@ -296,11 +342,32 @@ export default function Page() {
             </div>
           ) : (
             <div className={queueGridClasses}>
-              {filteredQueues.map((queue) => renderQueueCard(queue))}
+              {visibleQueues.map((queue) => renderQueueCard(queue))}
+            </div>
+          )}
+          {(hasMore || loadingMore) && (
+            <div
+              ref={loadMoreRef}
+              className="flex w-full items-center justify-center py-4"
+              aria-hidden
+            >
+              {loadingMore && (
+                <span className="text-xs text-gray-500">Laddar fler kor...</span>
+              )}
             </div>
           )}
         </FieldSet>
       </section>
+      {showScrollTop && (
+        <button
+          type="button"
+          aria-label="Scrolla till toppen"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-20 rounded-full bg-black px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-black/90"
+        >
+          Till toppen
+        </button>
+      )}
     </main>
   );
 }

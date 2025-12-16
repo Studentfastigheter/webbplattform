@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -21,6 +21,7 @@ const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ),
 });
 
+const PAGE_SIZE = 6;
 const priceBounds = { min: 0, max: 12000 };
 
 const propertyTypeOptions = [
@@ -77,43 +78,129 @@ export default function Page() {
   );
   const [listings, setListings] = useState<UIListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const searchCityValue = useMemo(
+    () => (typeof searchValues.var === "string" ? searchValues.var.trim() : ""),
+    [searchValues]
+  );
+  const normalizedSearchCity = searchCityValue.toLowerCase();
+  const searchLandlordValue = useMemo(
+    () =>
+      typeof searchValues.hyresvard === "string"
+        ? searchValues.hyresvard.trim()
+        : "",
+    [searchValues]
+  );
+  const normalizedSearchLandlord = searchLandlordValue.toLowerCase();
+  const searchPriceRange = useMemo(
+    () => parseSearchPriceRange(searchValues.pris),
+    [searchValues]
+  );
+
+  const mergedPriceRange = useMemo(() => {
+    if (!searchPriceRange) {
+      return { min: filters.priceRange.min, max: filters.priceRange.max };
+    }
+    return {
+      min: Math.max(filters.priceRange.min, searchPriceRange.min),
+      max: Math.min(filters.priceRange.max, searchPriceRange.max),
+    };
+  }, [filters.priceRange.max, filters.priceRange.min, searchPriceRange]);
+
+  const apiQuery = useMemo(
+    () => ({
+      city: searchCityValue || undefined,
+      minRent: Number.isFinite(mergedPriceRange.min)
+        ? mergedPriceRange.min
+        : undefined,
+      maxRent:
+        Number.isFinite(mergedPriceRange.max) &&
+        mergedPriceRange.max !== Number.POSITIVE_INFINITY
+          ? mergedPriceRange.max
+          : undefined,
+    }),
+    [mergedPriceRange.max, mergedPriceRange.min, searchCityValue]
+  );
+
+  const loadListings = useCallback(
+    async (pageToLoad: number, replace = false) => {
+      setError(null);
+      if (pageToLoad === 0 && replace) {
+        setLoading(true);
+        setHasMore(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      try {
+        const res = await backendApi.listings.list({
+          page: pageToLoad,
+          size: PAGE_SIZE,
+          city: apiQuery.city,
+          minRent: apiQuery.minRent,
+          maxRent: apiQuery.maxRent,
+        });
+
+        setListings((prev) => (replace ? res.items ?? [] : [...prev, ...(res.items ?? [])]));
+        setPage(res.page);
+        setHasMore(res.page + 1 < res.totalPages);
+      } catch (err: any) {
+        setError(err?.message ?? "Kunde inte ladda bostader.");
+      } finally {
+        if (pageToLoad === 0 && replace) {
+          setLoading(false);
+        } else {
+          setLoadingMore(false);
+        }
+      }
+    },
+    [apiQuery.city, apiQuery.maxRent, apiQuery.minRent]
+  );
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    backendApi.listings
-      .list({ size: 100 })
-      .then((res) => {
-        if (!active) return;
-        setListings(res.items ?? []);
-      })
-      .catch((err: any) => {
-        if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda bostader.");
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
-    return () => {
-      active = false;
+    setListings([]);
+    setPage(0);
+    setHasMore(true);
+    loadListings(0, true);
+  }, [loadListings]);
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore) return;
+    const target = loadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting && hasMore && !loadingMore) {
+          loadListings(page + 1);
+        }
+      },
+      { rootMargin: "320px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, loadListings, loading, loadingMore, page]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 320);
     };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const isMapView = view === "karta";
 
   const filteredListings = useMemo(() => {
-    const searchCity =
-      typeof searchValues.var === "string"
-        ? searchValues.var.trim().toLowerCase()
-        : "";
-    const searchLandlord =
-      typeof searchValues.hyresvard === "string"
-        ? searchValues.hyresvard.trim().toLowerCase()
-        : "";
-    const searchPriceRange = parseSearchPriceRange(searchValues.pris);
-
     return listings.filter((listing) => {
       const city = (listing.city ?? "").toLowerCase();
       const area = (listing.area ?? "").toLowerCase();
@@ -121,12 +208,12 @@ export default function Page() {
       const rentValue = listing.rent ?? 0;
 
       const matchesCity =
-        !searchCity ||
-        city.includes(searchCity) ||
-        area.includes(searchCity);
+        !normalizedSearchCity ||
+        city.includes(normalizedSearchCity) ||
+        area.includes(normalizedSearchCity);
 
       const matchesLandlord =
-        !searchLandlord || landlordName.includes(searchLandlord);
+        !normalizedSearchLandlord || landlordName.includes(normalizedSearchLandlord);
 
       const matchesSearchPrice =
         !searchPriceRange ||
@@ -161,7 +248,7 @@ export default function Page() {
         matchesPriceRange
       );
     });
-  }, [filters, listings, searchValues]);
+  }, [filters, listings, normalizedSearchCity, normalizedSearchLandlord, searchPriceRange]);
 
   const totalListings = filteredListings.length;
 
@@ -314,8 +401,31 @@ export default function Page() {
               {filteredListings.map((listing) => renderListingCard(listing))}
             </div>
           )}
+          {(hasMore || loadingMore) && (
+            <div
+              ref={loadMoreRef}
+              className="flex w-full items-center justify-center py-4"
+              aria-hidden
+            >
+              {loadingMore && (
+                <span className="text-xs text-gray-500">
+                  Laddar fler bostäder...
+                </span>
+              )}
+            </div>
+          )}
         </FieldSet>
       </section>
+      {showScrollTop && (
+        <button
+          type="button"
+          aria-label="Scrolla till toppen"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-20 rounded-full bg-black px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-black/90"
+        >
+          Till toppen
+        </button>
+      )}
     </main>
   );
 }
