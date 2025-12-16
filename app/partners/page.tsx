@@ -198,7 +198,7 @@ export default function PartnersPage() {
                 <h3 className="text-2xl md:text-3xl font-semibold tracking-tight">Vill ni samarbeta med oss?</h3>
                 <p className="text-sm text-white/80">
                   Kontakta oss på{ " " }
-                  <a className="underline" href="mailto:partner@campuslyan.se">
+                  <a className="underline" href="mailto:alvin.stallgard@campuslyan.se">
                     alvin.stallgard@campuslyan.se
                   </a>{ " " }
                   så hör vi av oss med nästa steg.
