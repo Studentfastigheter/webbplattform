@@ -188,13 +188,7 @@ export default function ReadMoreComponent({
               `}
             >
               <span>{expanded ? lessLabel : moreLabel}</span>
-              <motion.span
-                className="inline-block"
-                animate={{ rotate: expanded ? 180 : 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                ▼
-              </motion.span>
+              
             </Button>
           </div>
         </div>

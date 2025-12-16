@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import ProfileHero, { type StudentProfile } from "@/components/profile/ProfileHero";
+import ProfileAbout from "@/components/profile/ProfileAbout";
 import { useAuth } from "@/context/AuthContext";
 import { backendApi } from "@/lib/api";
 import { type School, type StudentAccount } from "@/types";
@@ -24,9 +25,13 @@ const buildProfileFromUser = (user: StudentAccount): StudentProfile => {
   return {
     ...user,
     stats,
-    headline: user.city ?? "Studentprofil",
+    headline: user.city ?? "Student",
     bannerImage: user.bannerUrl ?? null,
     avatarUrl: user.logoUrl ?? null,
+
+    // ✅ make sure these exist on the built profile if your API returns them
+    preferenceText: (user as any).PREFERENCE_TEXT ?? (user as any).preferenceText ?? null,
+    aboutText: (user as any).ABOUT_TEXT ?? (user as any).aboutText ?? null,
   };
 };
 
@@ -41,9 +46,7 @@ export default function Page() {
       .then((schools) => {
         const map: SchoolsMap = {};
         schools.forEach((s) => {
-          if (s.schoolId) {
-            map[s.schoolId] = { schoolName: s.schoolName };
-          }
+          if (s.schoolId) map[s.schoolId] = { schoolName: s.schoolName };
         });
         setSchoolsById(map);
       })
@@ -54,15 +57,20 @@ export default function Page() {
     return (
       <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-800">
-          {token
-            ? "Denna vy ar for studentkonton."
-            : "Logga in for att se din profil."}
+          {token ? "Denna vy ar for studentkonton." : "Logga in for att se din profil."}
         </div>
       </main>
     );
   }
 
   const profile = buildProfileFromUser(user);
+
+  const schoolName =
+    profile.school?.schoolName ??
+    (profile.schoolId ? schoolsById?.[profile.schoolId]?.schoolName : undefined);
+
+  const aboutText =
+    profile.aboutText ?? "Ingen profiltext tillagd än.";
 
   return (
     <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
@@ -72,7 +80,23 @@ export default function Page() {
             {error}
           </div>
         )}
+
         <ProfileHero student={profile} schoolsById={schoolsById} />
+
+        <ProfileAbout
+          badges={["Rökfri", "Skötsam", "Inga betalningsanmärkningar"]}
+          aboutText={aboutText}
+          facts={[
+            { label: "Ålder", value: (profile as any).age ? `${(profile as any).age} år` : undefined },
+            { label: "Kön", value: (profile as any).gender ?? undefined },
+            { label: "Utbildning", value: profile.stats.studyProgram ?? undefined },
+            { label: "Skola", value: schoolName ?? undefined },
+          ]}
+          // ✅ THIS is the DB field you asked for
+          preferenceText={(profile as any).PREFERENCE_TEXT ?? profile.preferenceText ?? null}
+          interests={(profile as any).interests ?? ["Plugga", "Festa", "Paddelproffs"]}
+          languages={(profile as any).languages ?? ["Svenska", "Engelska", "Spanska"]}
+        />
       </div>
     </main>
   );
