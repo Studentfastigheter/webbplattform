@@ -199,14 +199,14 @@ export default function PartnersPage() {
                 <p className="text-sm text-white/80">
                   Kontakta oss på{ " " }
                   <a className="underline" href="mailto:partner@campuslyan.se">
-                    partner@campuslyan.se
+                    alvin.stallgard@campuslyan.se
                   </a>{ " " }
                   så hör vi av oss med nästa steg.
                 </p>
               </div>
               <a
                 className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand shadow-lg transition hover:-translate-y-0.5"
-                href="mailto:partner@campuslyan.se"
+                href="mailto:alvin.stallgard@campuslyan.se"
               >
                 Kontakta oss
                 <ArrowUpRight className="h-4 w-4" aria-hidden />
