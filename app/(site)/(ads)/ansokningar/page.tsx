@@ -8,94 +8,154 @@ import {
   buildListingApplicationRow,
   type ListingApplicationRowProps,
 } from "@/components/Listings/ListingApplicationRow";
+import {
+  buildStudentApplicationRow,
+  type StudentApplicationRowProps,
+} from "@/components/Applications/StudentApplicationRow";
 import { useAuth } from "@/context/AuthContext";
 import { backendApi } from "@/lib/api";
 import { type CompanyId } from "@/types";
 
+const STUDENT_COLUMNS: ListFrameColumn[] = [
+  { id: "annons", label: "Annons", width: "2.6fr" },
+  { id: "etikett", label: "Etikett", width: "1.4fr" },
+  { id: "status", label: "Status", align: "center", width: "1.1fr" },
+  { id: "ansokningsdag", label: "Ansokningsdag", align: "left", width: "1fr" },
+  { id: "andra_anmalan", label: "Andra anmalan", align: "center", width: "1.1fr" },
+];
+
+const LANDLORD_COLUMNS: ListFrameColumn[] = [
+  { id: "student", label: "Student", width: "2.6fr" },
+  { id: "annons", label: "Annons", width: "1.6fr" },
+  { id: "status", label: "Status", align: "center", width: "1.1fr" },
+  { id: "inkommen", label: "Inkommen", align: "left", width: "1fr" },
+  { id: "hantera", label: "Atgarder", align: "center", width: "1.1fr" },
+];
+
 export default function Page() {
   const router = useRouter();
-  const columns: ListFrameColumn[] = [
-    { id: "annons", label: "Annons", width: "2.6fr" },
-    { id: "etikett", label: "Etikett", width: "1.4fr" },
-    { id: "status", label: "Status", align: "center", width: "1.1fr" },
-    { id: "ansokningsdag", label: "Ansokningsdag", align: "left", width: "1fr" },
-    { id: "andra_anmalan", label: "Andra anmalan", align: "center", width: "1.1fr" },
-  ];
+  const { token, user } = useAuth();
 
-  const { token } = useAuth();
-  const [applications, setApplications] = useState<ListingApplicationRowProps[]>([]);
+  const [studentApplications, setStudentApplications] = useState<ListingApplicationRowProps[]>([]);
+  const [landlordApplications, setLandlordApplications] = useState<StudentApplicationRowProps[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isStudent = user?.type === "student";
+  const isPrivateLandlord = user?.type === "private_landlord";
+
   useEffect(() => {
+    setError(null);
+
     if (!token) {
-      setApplications([]);
+      setStudentApplications([]);
+      setLandlordApplications([]);
       return;
     }
 
     let active = true;
-    setLoading(true);
-    backendApi.interests
-      .mine(token)
-      .then((interests) => {
-        if (!active) return;
-        const mapped = interests.map((interest) => ({
-          listingId: interest.listingId,
-          title: interest.title ?? "Okand annons",
-          rent: interest.rent ?? undefined,
-          area: null,
-          city: interest.city ?? null,
-          dwellingType: null,
-          rooms: null,
-          sizeM2: null,
-          landlordType: interest.companyName ?? "Hyresvard",
-          imageUrl: interest.primaryImageUrl ?? undefined,
-          tags: [],
-          images: interest.primaryImageUrl
-            ? [{ imageId: 1, listingId: interest.listingId, imageUrl: interest.primaryImageUrl }]
-            : [],
-          advertiser: interest.companyName
-            ? {
-                type: "company" as const,
-                id: 0 as CompanyId,
-                displayName: interest.companyName,
-                logoUrl: null,
-                bannerUrl: null,
-                phone: null,
-                contactEmail: null,
-                contactPhone: null,
-                contactNote: null,
-                rating: null,
-                subtitle: null,
-                description: null,
-                website: null,
-                city: interest.city ?? null,
-              }
-            : undefined,
-          status: "Aktiv",
-          applicationDate: interest.createdAt,
-          onOpen: () => router.push(`/bostader/${interest.listingId}`),
-        }));
-        setApplications(mapped);
-      })
-      .catch((err: any) => {
-        if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda ansokningar.");
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
+
+    const loadStudentApplications = () => {
+      setLandlordApplications([]);
+      setLoading(true);
+      backendApi.interests
+        .mine(token)
+        .then((interests) => {
+          if (!active) return;
+          const mapped: ListingApplicationRowProps[] = interests.map(
+            (interest): ListingApplicationRowProps => ({
+              listingId: interest.listingId,
+              title: interest.title ?? "Okand annons",
+              rent: interest.rent ?? undefined,
+              area: null,
+              city: interest.city ?? null,
+              dwellingType: null,
+              rooms: null,
+              sizeM2: null,
+              landlordType: interest.companyName ?? "Hyresvard",
+              imageUrl: interest.primaryImageUrl ?? undefined,
+              tags: [],
+              images: interest.primaryImageUrl
+                ? [
+                    { imageId: 1, listingId: interest.listingId, imageUrl: interest.primaryImageUrl },
+                  ]
+                : [],
+              advertiser: interest.companyName
+                ? {
+                    type: "company",
+                    id: 0 as CompanyId,
+                    displayName: interest.companyName,
+                    logoUrl: null,
+                    bannerUrl: null,
+                    phone: null,
+                    contactEmail: null,
+                    contactPhone: null,
+                    contactNote: null,
+                    rating: null,
+                    subtitle: null,
+                    description: null,
+                    website: null,
+                    city: interest.city ?? null,
+                  }
+                : undefined,
+              status: "Aktiv",
+              applicationDate: interest.createdAt,
+              onOpen: () => router.push(`/bostader/${interest.listingId}`),
+            })
+          );
+          setStudentApplications(mapped);
+        })
+        .catch((err: any) => {
+          if (!active) return;
+          setError(err?.message ?? "Kunde inte ladda ansokningar.");
+        })
+        .finally(() => {
+          if (!active) return;
+          setLoading(false);
+        });
+    };
+
+    const loadLandlordApplications = () => {
+      // TODO: Koppla pa hyresvardens ansoknings-feed nar API finns.
+      setStudentApplications([]);
+      setLoading(false);
+      setLandlordApplications([]);
+    };
+
+    if (isStudent) {
+      loadStudentApplications();
+    } else if (isPrivateLandlord) {
+      loadLandlordApplications();
+    } else {
+      setStudentApplications([]);
+      setLandlordApplications([]);
+    }
 
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, isStudent, isPrivateLandlord, router]);
 
-  const rows = useMemo(
-    () => applications.map(buildListingApplicationRow),
-    [applications]
+  const studentRows = useMemo(
+    () => studentApplications.map(buildListingApplicationRow),
+    [studentApplications]
   );
+
+  const landlordRows = useMemo(
+    () => landlordApplications.map(buildStudentApplicationRow),
+    [landlordApplications]
+  );
+
+  const rows = isPrivateLandlord ? landlordRows : studentRows;
+  const columns = isPrivateLandlord ? LANDLORD_COLUMNS : STUDENT_COLUMNS;
+
+  const emptyMessage = (() => {
+    if (loading) return "Laddar ansokningar...";
+    if (!token) return "Du maste vara inloggad for att se dina ansokningar.";
+    if (isPrivateLandlord) return "Inga ansokningar till dina annonser an.";
+    if (isStudent) return "Inga ansokningar att visa just nu";
+    return "Denna vy stoder inte kontotypen an.";
+  })();
 
   return (
     <main className="w-full py-6">
@@ -115,11 +175,7 @@ export default function Page() {
           rows={rows}
           emptyState={
             <div className="py-16 text-center text-sm text-gray-400">
-              {loading
-                ? "Laddar ansokningar..."
-                : token
-                  ? "Inga ansokningar att visa just nu"
-                  : "Du maste vara inloggad for att se dina ansokningar."}
+              {emptyMessage}
             </div>
           }
         />

@@ -75,6 +75,7 @@ export type BaseAccount = {
   logoUrl?: UrlString | null;
   bannerUrl?: UrlString | null;
   tags?: Tag[] | null;
+  city?: City | null;
   settings?: JsonValue | null;
   createdAt: TimestampString;
 };
@@ -97,7 +98,6 @@ export type StudentAccount = BaseAccount & {
   aboutText?: string | null;
   gender?: string | null;
   preferenceText?: string | null;
-  city?: City | null;
   verifiedStudent: boolean;
 };
 
@@ -106,7 +106,6 @@ export type CompanyAccount = BaseAccount & {
   type: "company";
   name: string;
   orgNumber?: string | null;
-  city?: City | null;
   website?: UrlString | null;
   rating?: number | null;
   subtitle?: string | null;

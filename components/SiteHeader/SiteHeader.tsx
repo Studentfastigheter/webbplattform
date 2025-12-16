@@ -24,7 +24,7 @@ export default function SiteHeader() {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const userType = user?.type; // "student" | "company" | "landlord" | undefined
+  const userType = user?.type; // "student" | "landlord" | undefined
 
   // --- Huvudnavigation beroende på typ ---
 
@@ -69,44 +69,26 @@ export default function SiteHeader() {
   } else if (userType === "private_landlord") {
     navItems = [
       {
-        name: "Skapa ny annons",
-        link: "/konto/annons/ny",
+        name: "Bostäder",
+        link: "/bostader",
       },
       {
         name: "Mina annonser",
-        link: "/konto/mina-annonser",
+        link: "/mina-annonser",
         dropdown: [
-          { name: "Alla annonser", link: "/konto/mina-annonser" },
-          { name: "Publicerade", link: "/konto/mina-annonser?filter=active" },
-          { name: "Arkiverade", link: "/konto/mina-annonser?filter=archived" },
+          { name: "Skapa ny", link: "/mina-annonser/ny" },
+          { name: "Mina annonser", link: "/mina-annonser" },
+          { name: "Ansökningar", link: "/ansokningar" },
         ],
       },
       {
-        name: "Ansökningar",
-        link: "/konto/annonser/ansokningar",
+        name: "Meddelanden",
+        link: "/meddelanden",
       },
       { name: "Notiser", link: "/notiser" },
     ];
-  } else if (userType === "company") {
-    navItems = [
-      {
-        name: "Dashboard",
-        link: "/konto/foretag/dashboard",
-      },
-      {
-        name: "Mina annonser",
-        link: "/konto/foretag/annonser",
-        dropdown: [
-          { name: "Alla annonser", link: "/konto/foretag/annonser" },
-          {
-            name: "Kommande kampanjer",
-            link: "/konto/foretag/annonser?view=campaigns",
-          },
-        ],
-      },
-      { name: "Ansökningshantering", link: "/konto/foretag/ansokningar" },
-    ];
-  } else {
+  } 
+  else {
     navItems = [{ name: "Bostadssök", link: "/bostader" }];
   }
 
@@ -126,22 +108,16 @@ export default function SiteHeader() {
       { name: "Mitt konto", link: "/profil" },
       { name: "Inställningar", link: "/installningar" },
       { name: "Fakturering", link: "/fakturering" },
+      { name: "Kom igång", link: "/" },
+      { name: "Hjälp", link: "/faq" },
     ];
-  } else if (userType === "company") {
-    accountMenuItems = [
-      { name: "Företagsdashboard", link: "/foretag/dashboard" },
-      { name: "Hantera abonnemang", link: "/foretag/abonnemang" },
-      { name: "Fakturering", link: "/foretag/fakturering" },
-      { name: "Hantera profil", link: "/foretag/profil" },
-    ];
-  } else if (user) {
+  } 
+   else if (user) {
     accountMenuItems = [{ name: "Mitt konto", link: "/konto" }];
   }
 
   const roleLabel =
-    userType === "company"
-      ? "Företag"
-      : userType === "student"
+      userType === "student"
       ? "Student"
       : userType === "private_landlord"
       ? "Privat uthyrare"
