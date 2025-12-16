@@ -19,6 +19,11 @@ type ProfileAboutProps = {
   preferenceText?: string | null; // should be student.PREFERENCE_TEXT
   interests?: string[];
   languages?: string[];
+  seekingTitle?: string;
+  interestsLabel?: string;
+  languagesLabel?: string;
+  hideInterests?: boolean;
+  hideLanguages?: boolean;
   className?: string;
 };
 
@@ -58,6 +63,10 @@ export default function ProfileAbout({
   preferenceText,
   interests = [],
   languages = [],
+  interestsLabel = "Intressen",
+  languagesLabel = "Sprak",
+  hideInterests = false,
+  hideLanguages = false,
   className,
 }: ProfileAboutProps) {
   const safeAbout = aboutText?.trim()
@@ -68,8 +77,10 @@ export default function ProfileAbout({
     (f): f is { label: string; value: string } => Boolean(f.value?.trim())
   );
 
-  // ✅ the actual text shown (DB value wins)
+  // ƒo. the actual text shown (DB value wins)
   const shownPreferenceText = preferenceText?.trim() || "";
+  const showInterests = !hideInterests;
+  const showLanguages = !hideLanguages;
 
   return (
     <Card
@@ -132,41 +143,47 @@ export default function ProfileAbout({
               </div>
             </aside>
 
-            <div className="mt-10">
-              <div className="text-lg font-semibold text-gray-900">
-                Intressen
+            {showInterests && (
+              <div className="mt-10">
+                <div className="text-lg font-semibold text-gray-900">
+                  {interestsLabel}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {interests.length > 0 ? (
+                    interests.map((i) => (
+                      <Chip key={i} variant="gray" className="px-5 py-2">
+                        {i}
+                      </Chip>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">
+                      Inga intressen angivna.
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {interests.length > 0 ? (
-                  interests.map((i) => (
-                    <Chip key={i} variant="gray" className="px-5 py-2">
-                      {i}
-                    </Chip>
-                  ))
-                ) : (
-                  <span className="text-sm text-gray-500">
-                    Inga intressen angivna.
-                  </span>
-                )}
-              </div>
-            </div>
+            )}
 
-            <div className="mt-8">
-              <div className="text-lg font-semibold text-gray-900">Språk</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {languages.length > 0 ? (
-                  languages.map((l) => (
-                    <Chip key={l} variant="gray" className="px-5 py-2">
-                      {l}
-                    </Chip>
-                  ))
-                ) : (
-                  <span className="text-sm text-gray-500">
-                    Inga språk angivna.
-                  </span>
-                )}
+            {showLanguages && (
+              <div className="mt-8">
+                <div className="text-lg font-semibold text-gray-900">
+                  {languagesLabel}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {languages.length > 0 ? (
+                    languages.map((l) => (
+                      <Chip key={l} variant="gray" className="px-5 py-2">
+                        {l}
+                      </Chip>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">
+                      Inga språk angivna.
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </CardContent>

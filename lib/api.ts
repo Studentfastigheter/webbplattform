@@ -4,11 +4,13 @@ import {
   type HousingQueueWithRelations,
   type ListingImage,
   type ListingWithRelations,
+  type ListingType,
   type LoginResponse,
   type PrivateLandlordAccount,
   type School,
   type QueueStatus,
   type StudentAccount,
+  type LandlordId,
   type User,
   type UserType,
 } from "@/types";
@@ -88,6 +90,9 @@ type ApiListingPrivateDto = ApiListingPublicDto & {
   description?: string | null;
   address?: string | null;
   companyId?: number | null;
+  landlordId?: number | null;
+  landlordName?: string | null;
+  listingType?: ListingType | string;
   userQueueDays?: number | null;
 };
 
@@ -369,14 +374,55 @@ const mapListingDto = (
   dto: ApiListingPublicDto | ApiListingPrivateDto
 ): ListingWithRelations => {
   const now = new Date().toISOString();
+  const rawType =
+    (dto as ApiListingPrivateDto).listingType ?? (dto as any).listingType;
+  const listingType: ListingType =
+    rawType === "private"
+      ? "private"
+      : rawType === "company"
+      ? "company"
+      : (dto as ApiListingPrivateDto).landlordId
+      ? "private"
+      : "company";
+
+  const landlordId =
+    listingType === "private" && "landlordId" in dto
+      ? Number((dto as ApiListingPrivateDto).landlordId ?? 0)
+      : null;
+
   const companyId =
-    "companyId" in dto && dto.companyId ? Number(dto.companyId) : 0;
+    listingType === "company" && "companyId" in dto && dto.companyId
+      ? Number(dto.companyId)
+      : 0;
+
   const advertiser =
-    dto.companyName || companyId
+    listingType === "company"
+      ? dto.companyName || companyId
+        ? {
+            type: "company" as const,
+            id: (companyId || 0) as CompanyId,
+            displayName: dto.companyName ?? "Hyresvard",
+            logoUrl: null,
+            bannerUrl: null,
+            phone: null,
+            contactEmail: null,
+            contactPhone: null,
+            contactNote: null,
+            rating: null,
+            subtitle: null,
+            description: null,
+            website: null,
+            city: dto.city ?? null,
+          }
+        : undefined
+      : landlordId
       ? {
-          type: "company" as const,
-          id: (companyId || 0) as CompanyId,
-          displayName: dto.companyName ?? "Hyresvärd",
+          type: "private_landlord" as const,
+          id: (landlordId || 0) as LandlordId,
+          displayName:
+            (dto as ApiListingPrivateDto).landlordName ??
+            dto.companyName ??
+            "Hyresvard",
           logoUrl: null,
           bannerUrl: null,
           phone: null,
@@ -393,8 +439,11 @@ const mapListingDto = (
 
   return {
     listingId: dto.id,
-    listingType: "company",
+    listingType,
     companyId: (companyId || 0) as CompanyId,
+    ...(listingType === "private"
+      ? { landlordId: (landlordId || 0) as LandlordId }
+      : {}),
     title: dto.title,
     area: dto.area ?? null,
     city: dto.city ?? null,

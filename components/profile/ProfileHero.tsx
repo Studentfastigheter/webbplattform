@@ -12,12 +12,12 @@ import {
   type StudentWithRelations,
 } from "@/types";
 
-// ✅ same icon style as your footer
 import { FaLinkedin, FaInstagram, FaFacebook } from "react-icons/fa6";
 
 export type ProfileStats = {
   studyProgram?: string;
   studyPace?: string;
+  preferredArea?: string;
 };
 
 export type StudentProfile = StudentWithRelations & {
@@ -91,7 +91,6 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
     },
   ];
 
-  // ✅ footer-like structure (icon + link)
   const SOCIAL_VERIFICATIONS = [
     {
       label: "LinkedIn",
@@ -200,10 +199,7 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
               })}
               <div className="overflow-hidden rounded-full">
                 <ProfileHeroActions
-                  editHref="/profil/redigera"
-                  secondaryHref="/profil/ansokningar"
-                  secondaryLabel="Mina ansökningar"
-                  messageHref={`mailto:${student.email}`}
+                  editHref="/installningar"
                 />
               </div>
             </div>
