@@ -297,7 +297,7 @@ export default function Page() {
               Inga bostäder att visa just nu.
             </div>
           ) : isMapView ? (
-            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-6">
               <div className={listingGridClasses}>{renderMapListings()}</div>
               <div
                 className="rounded-2xl overflow-hidden lg:sticky lg:top-24"

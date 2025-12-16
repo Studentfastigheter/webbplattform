@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import Tag from "../ui/Tag";
@@ -30,6 +30,10 @@ export type ListingCardSmallProps = ListingCardListing & {
 };
 
 const BASE_WIDTH = 380;
+const CARD_MIN_WIDTH = 280;
+const COMPACT_CARD_MIN_WIDTH = 260;
+const IMAGE_BASE_HEIGHT = 220;
+const IMAGE_COMPACT_HEIGHT = 180;
 const MIN_SCALE = 0.55;
 const MAX_SCALE = 1;
 const BADGE_MIN_SCALE = 0.8;
@@ -37,7 +41,10 @@ const BADGE_MAX_SCALE = 1;
 
 const formatRent = (rent?: number | null) =>
   typeof rent === "number"
-    ? `${rent.toLocaleString("sv-SE")} kr/manad`
+    ? `${rent.toLocaleString("sv-SE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      })} kr/manad`
     : "-";
 
 const ListingCard_Small: React.FC<ListingCardSmallProps> = (props) => {
@@ -63,7 +70,8 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = (props) => {
   const [scale, setScale] = useState(1);
   const baseWidth = variant === "compact" ? 320 : BASE_WIDTH;
   const maxWidth = variant === "compact" ? 360 : 480;
-  const aspectClass = variant === "compact" ? "aspect-[3/2]" : "aspect-[4/3]";
+  const imageBaseHeight =
+    variant === "compact" ? IMAGE_COMPACT_HEIGHT : IMAGE_BASE_HEIGHT;
 
   useEffect(() => {
     const node = cardRef.current;
@@ -119,6 +127,7 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = (props) => {
       className="flex w-full flex-col bg-white shadow-md cursor-pointer"
       style={{
         maxWidth,
+        minWidth: variant === "compact" ? COMPACT_CARD_MIN_WIDTH : CARD_MIN_WIDTH,
         gap: scaleValue(16),
         padding: scaleValue(16),
         borderRadius: scaleValue(32),
@@ -127,9 +136,12 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = (props) => {
       {/* IMAGE */}
       <div
         className="relative w-full overflow-hidden"
-        style={{ borderRadius: scaleValue(28) }}
+        style={{
+          borderRadius: scaleValue(28),
+          height: scaleValue(imageBaseHeight),
+        }}
       >
-        <div className={`${aspectClass} w-full`}>
+        <div className="h-full w-full">
           {resolvedImage ? (
             <img
               src={resolvedImage}
@@ -161,6 +173,10 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = (props) => {
               fontSize: scaleValue(18),
               lineHeight: scaleValue(22),
               minHeight: scaleValue(44), // reserve two lines to keep cards aligned
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {title}
@@ -184,31 +200,46 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = (props) => {
           style={{ gap: scaleValue(16), fontSize: scaleValue(14) }}
         >
           <div
-            className="text-black"
+            className="min-w-0 text-black"
             style={{
               display: "grid",
               rowGap: scaleValue(4),
               minHeight: scaleValue(44),
             }}
           >
-            <p>
+            <p className="truncate" title={[area, city].filter(Boolean).join(", ")}>
               {[area, city].filter(Boolean).join(", ")}
             </p>
-            <p>
+            <p
+              className="truncate"
+              title={`${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`}
+            >
               {dwellingType ?? "-"} {"\u00b7"} {rooms ?? "-"} rum {"\u00b7"} {sizeM2 ?? "-"} m{"\u00b2"}
             </p>
           </div>
 
-          <div className="text-right text-black">
+          <div
+            className="flex min-w-[170px] max-w-[52%] flex-col items-end text-right text-black"
+            style={{ rowGap: scaleValue(4) }}
+          >
             <p
               className="font-semibold"
-              style={{ fontSize: scaleValue(18), lineHeight: scaleValue(22) }}
+              style={{
+                fontSize: scaleValue(18),
+                lineHeight: scaleValue(22),
+                whiteSpace: "nowrap",
+              }}
             >
               {formatRent(rent)}
             </p>
             <p
-              className="text-[#6b6b6b]"
-              style={{ fontSize: scaleValue(14), lineHeight: scaleValue(18) }}
+              className="truncate text-[#6b6b6b]"
+              style={{
+                fontSize: scaleValue(14),
+                lineHeight: scaleValue(18),
+                maxWidth: "100%",
+              }}
+              title={landlordLabel}
             >
               {landlordLabel}
             </p>
