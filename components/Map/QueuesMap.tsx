@@ -1,10 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import BaseMap, {
-  type BaseMarker,
-  type PopupRenderer,
-} from "./BaseMap";
+import BaseMap, { type BaseMarker, type PopupRenderer } from "./BaseMap";
 import {
   type AdvertiserSummary,
   type Coordinates,
@@ -43,12 +40,13 @@ const createQueuePopupRenderer =
       city: queue.city ?? "",
       area: queue.area ?? "",
       advertiser: queue.advertiser,
-      logoUrl: queue.logoUrl,
+      logoUrl: queue.logoUrl ?? queue.advertiser.logoUrl ?? null,
       totalUnits: queue.totalUnits,
       unitsLabel: queue.unitsLabel,
       isVerified: queue.isVerified ?? false,
       status: queue.status,
       tags: queue.tags,
+      approximateWaitDays: queue.approximateWaitDays,
       lat: queue.lat,
       lng: queue.lng,
     };
@@ -64,7 +62,7 @@ const QueuesMap: React.FC<QueuesMapProps> = ({
   activeQueueId,
   onOpenQueue,
 }) => {
-  // Bygg markers från de *filtrerade* köerna
+  // Bygg markers från de filtrerade köerna
   const markers = useMemo<BaseMarker[]>(() => {
     return queues.map((queue) => ({
       id: queue.queueId,

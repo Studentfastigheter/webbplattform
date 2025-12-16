@@ -5,18 +5,13 @@ import {
   type AdvertiserSummary,
   type HousingQueue,
   type QueueId,
-  type QueueStatus,
   type UrlString,
 } from "@/types";
 
-type QueueMapPopupData = Pick<
-  HousingQueue,
-  "queueId" | "name" | "city" | "area" | "totalUnits" | "status" | "tags"
-> & {
+type QueueMapPopupData = Pick<HousingQueue, "queueId" | "name" | "totalUnits"> & {
   advertiser: AdvertiserSummary;
   logoUrl?: UrlString | null;
   unitsLabel?: string | null;
-  isVerified?: boolean;
 };
 
 type QueueMapPopupProps = {
@@ -29,19 +24,12 @@ const formatUnits = (totalUnits?: number | null, unitsLabel?: string | null) => 
   if (typeof totalUnits === "number") {
     return `${totalUnits.toLocaleString("sv-SE")} bostäder`;
   }
-  return null;
-};
-
-const statusLabel = (status?: QueueStatus) => {
-  if (status === "open") return "Öppen kö";
-  if (status === "paused") return "Pausad";
-  if (status === "closed") return "Stängd";
-  return null;
+  return "–";
 };
 
 const QueueMapPopup: React.FC<QueueMapPopupProps> = ({ queue, onOpen }) => {
   const unitsText = formatUnits(queue.totalUnits, queue.unitsLabel);
-  const statusText = statusLabel(queue.status);
+  const logoSource = queue.logoUrl ?? queue.advertiser.logoUrl ?? null;
 
   const handleOpen = () => onOpen?.(queue.queueId);
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -57,87 +45,40 @@ const QueueMapPopup: React.FC<QueueMapPopupProps> = ({ queue, onOpen }) => {
       tabIndex={0}
       onClick={handleOpen}
       onKeyDown={handleKeyDown}
-      className="w-[260px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+      className="
+        w-[220px] cursor-pointer overflow-hidden rounded-2xl
+        border border-slate-200 bg-white shadow-lg ring-1 ring-black/5
+        transition hover:-translate-y-[2px]
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
+        focus-visible:ring-offset-2 focus-visible:ring-offset-white
+      "
     >
-      {/* Header med logo + namn + plats */}
-      <div className="flex items-start gap-3 px-4 pt-3.5 pb-2.5">
-        <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
-          {queue.logoUrl ? (
+      <div className="flex items-center gap-3 px-3.5 py-3">
+        {/* Logo */}
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-inner ring-1 ring-black/5">
+          {logoSource ? (
             <img
-              src={queue.logoUrl}
+              src={logoSource}
               alt={queue.name}
               className="h-full w-full object-contain"
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-gray-500">
-              {queue.name.charAt(0)}
-            </div>
-          )}
-        </div>
-
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="truncate text-sm font-semibold text-gray-900">
-              {queue.name}
-            </p>
-            {queue.isVerified && (
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                Verifierad
-              </span>
-            )}
-          </div>
-          <p className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-gray-500">
-            {queue.area ? `${queue.area}, ${queue.city}` : queue.city}
-          </p>
-          <p className="mt-0.5 text-[11px] text-gray-500">
-            {queue.advertiser.displayName}
-          </p>
-        </div>
-      </div>
-
-      {/* Status, tags, volym */}
-      <div className="space-y-2 px-4 pb-3 text-[11px]">
-        <div className="flex flex-wrap gap-1">
-          {statusText && (
-            <span
-              className={
-                queue.status === "open"
-                  ? "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700"
-                  : "inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700"
-              }
-            >
-              {statusText}
+            <span className="text-xs font-semibold text-slate-500">
+              {queue.name?.charAt(0) ?? "?"}
             </span>
           )}
-          {queue.tags?.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-600"
-            >
-              {tag}
-            </span>
-          ))}
         </div>
 
-        {unitsText && (
-          <p className="text-[11px] text-gray-500">{unitsText}</p>
-        )}
-      </div>
-
-      {/* CTA-rad */}
-      <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
-        <p className="text-[11px] text-gray-400">Se köregler & bostäder</p>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleOpen();
-          }}
-          className="inline-flex items-center justify-center rounded-full bg-gray-900 px-3.5 py-1.5 text-[11px] font-medium text-white shadow-sm transition hover:bg-black"
-        >
-          Visa kö
-        </button>
+        {/* Text */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900">
+            {queue.name}
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate-600">
+            {unitsText}
+          </p>
+        </div>
       </div>
     </div>
   );
