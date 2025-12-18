@@ -1,33 +1,27 @@
 import { Area, City, Coordinates, DateString, Tag, TimestampString, UrlString } from "./common";
-import { CompanyId, LandlordId, StudentId } from "./user";
+import { User } from "./user"; // Din nya User-typ
 
 // IDs
-export type ListingId = string; // uuid
+export type ListingId = string; // UUID från Java
 export type ListingImageId = number;
-export type ListingLikedId = string; // uuid
+export type ListingLikedId = string; // UUID
 export type ListingApplicationId = number;
 export type WatchlistId = number;
 
-// Enums
-export type ListingType = "company" | "private";
-export type ListingStatus = "available" | string;
-export type AdvertiserType = "company" | "private_landlord";
-export type ListingApplicationStatus =
-  | "submitted"
-  | "shortlisted"
-  | "rejected"
-  | "accepted";
+// Status
+export type ListingStatus = "available" | "rented" | "hidden";
+export type ListingApplicationStatus = "submitted" | "accepted" | "rejected";
 
-// Core Listing
+// Bilder
 export type ListingImage = {
-  imageId: ListingImageId;
-  listingId: ListingId;
+  id: ListingImageId;
   imageUrl: UrlString;
+  createdAt: TimestampString;
 };
 
-// Gemensamma fält för alla listings
-export type BaseListing = Coordinates & {
-  listingId: ListingId;
+// Base Listing (Matchar Java BaseListing MappedSuperclass)
+export interface BaseListing extends Coordinates {
+  id: ListingId;
   title: string;
   area?: Area | null;
   city?: City | null;
@@ -42,65 +36,41 @@ export type BaseListing = Coordinates & {
   availableTo?: DateString | null;
   description?: string | null;
   tags?: Tag[] | null;
-  images?: ListingImage[];
   status: ListingStatus;
   createdAt: TimestampString;
   updatedAt: TimestampString;
-  advertiser?: AdvertiserSummary;
-};
+  // Bilder hanteras ofta via separat endpoint eller inkluderat om du lade till det i DTO/Model
+  images?: ListingImage[]; 
+}
 
-// Specifika fält för företagsannonser
-export type CompanyListing = BaseListing & {
-  listingType: "company";
-  companyId: CompanyId;
-  // En företagsannons har INTE landlordId
-};
+// Company Listing (Matchar Java CompanyListing)
+export interface CompanyListing extends BaseListing {
+  company: User; // Backend skickar hela Company-objektet (som är en User)
+}
 
-// Specifika fält för privata annonser
-export type PrivateListing = BaseListing & {
-  listingType: "private";
-  landlordId: LandlordId;
+// Private Listing (Matchar Java PrivateListing)
+export interface PrivateListing extends BaseListing {
+  landlord: User; // Backend skickar hela PrivateLandlord-objektet
   applicationCount?: number | null;
-  // En privat annons har INTE companyId
-};
+}
 
-// Unionen
+// Union type
 export type Listing = CompanyListing | PrivateListing;
 
-// ListingWithRelations är samma som Listing i din nya struktur eftersom vi inkluderade 'advertiser' i BaseListing/Listing
-export type ListingWithRelations = Listing;
-
-// Relations & Summaries
-export type AdvertiserSummary = {
-  type: AdvertiserType;
-  id: CompanyId | LandlordId;
-  displayName: string;
-  logoUrl?: UrlString | null;
-  bannerUrl?: UrlString | null;
-  phone?: string | null;
-  contactEmail?: string | null;
-  contactPhone?: string | null;
-  contactNote?: string | null;
-  rating?: number | null;
-  subtitle?: string | null;
-  description?: string | null;
-  website?: UrlString | null;
-  city?: City | null;
-};
+// --- Interaktioner ---
 
 export type StudentLikedListing = {
-  listingLikedId: ListingLikedId;
-  listingType: ListingType;
-  listingId: ListingId;
-  studentId: StudentId;
+  id: ListingLikedId;
+  listing: Listing; // Om du expanderar relationen
+  studentId: number;
   createdAt: TimestampString;
 };
 
 export type ListingApplication = {
-  applicationId: ListingApplicationId;
-  studentId: StudentId;
-  listingId: ListingId;
-  listingType: ListingType;
+  id: ListingApplicationId;
+  studentId: number;
+  companyListing?: CompanyListing;
+  privateListing?: PrivateListing;
   applicationMessage?: string | null;
   status: ListingApplicationStatus;
   createdAt: TimestampString;
@@ -108,39 +78,13 @@ export type ListingApplication = {
 };
 
 export type StudentSearchWatchlist = {
-  watchlistId: WatchlistId;
-  studentId: StudentId;
+  id: WatchlistId;
+  studentId: number;
   city?: City | null;
-  listingType?: ListingType | null;
+  listingType?: "company" | "private" | null;
   minRent?: number | null;
   maxRent?: number | null;
   minRooms?: number | null;
   maxRooms?: number | null;
   createdAt: TimestampString;
-};
-
-// Activity & Interest
-export type ListingActivity = {
-  id: number;
-  name: string;
-  category: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  distanceKm?: number | null;
-};
-
-export type UserInterest = {
-  listingId: string;
-  title: string | null;
-  city: string | null;
-  rent: number | null;
-  primaryImageUrl: string | null;
-  companyName: string | null;
-  createdAt: string;
-};
-
-export type RollingAd = {
-  id?: number | string;
-  company?: string;
-  data?: unknown;
 };

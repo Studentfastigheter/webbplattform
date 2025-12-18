@@ -1,7 +1,6 @@
 import { MessageSquare } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { NotificationCard } from "../notification-card";
-import type { MessageNotification } from "../types";
+import type { MessageNotification } from "@/types"; // Uppdaterad import
 
 type Props = {
   notification: MessageNotification;
@@ -16,10 +15,17 @@ export function MessageNotificationCard({ notification }: Props) {
       opened={notification.opened}
       accent="success"
     >
-      <div className="flex flex-wrap items-center gap-2 text-foreground">
-        <span className="text-sm font-semibold">{notification.sender}</span>
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2 text-foreground">
+          <span className="text-sm font-semibold">{notification.sender}</span>
+          {notification.threadTitle && (
+            <span className="text-xs text-muted-foreground">• {notification.threadTitle}</span>
+          )}
+        </div>
+        <p className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
+          {notification.body}
+        </p>
       </div>
-      <p className="text-sm leading-relaxed text-foreground">{notification.body}</p>
     </NotificationCard>
   );
 }

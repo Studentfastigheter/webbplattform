@@ -22,18 +22,25 @@ export type ProfileStats = {
   preferredArea?: string;
 };
 
-// Vi exporterar denna så att Page.tsx kan använda den för att bygga profilen
-export type StudentProfile = StudentWithRelations & {
+// Vi utökar StudentWithRelations för att inkludera extra UI-specifika fält
+// som kanske beräknas eller hämtas separat
+export type StudentProfileExtended = StudentWithRelations & {
   headline?: string;
-  stats: ProfileStats;
+  stats?: ProfileStats;
   bannerImage?: string | null;
   avatarUrl?: string | null;
   cvUrl?: string | null;
-
-  // Dessa fält kanske inte finns på StudentAccount-typen än, så vi definierar dem här
-  verifiedLinkedIn?: boolean | null;
-  verifiedInstagram?: boolean | null;
-  verifiedFacebook?: boolean | null;
+  
+  // Extra sociala fält
+  linkedInUrl?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  
+  verifiedLinkedIn?: boolean;
+  verifiedInstagram?: boolean;
+  verifiedFacebook?: boolean;
+  
+  age?: number; // Om du vill visa ålder
 };
 
 type InfoItem = {
@@ -42,16 +49,16 @@ type InfoItem = {
 };
 
 type ProfileHeroProps = {
-  student: StudentProfile;
-  schoolsById?: Record<SchoolId, Pick<School, "schoolName">>;
+  student: StudentProfileExtended;
+  schoolsById?: Record<SchoolId, Pick<School, "name">>; // Notera: 'name' enligt nya School-typen
 };
 
 export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) {
-  const fullName = `${student.firstName} ${student.surname}`.trim();
+  const fullName = student.displayName || `${student.firstName} ${student.surname}`.trim();
 
-  const schoolName =
-    student.school?.schoolName ??
-    (student.schoolId ? schoolsById?.[student.schoolId]?.schoolName : undefined);
+  // schoolId kan vara undefined, hantera det säkert
+  const schoolName = student.schoolName ?? 
+    (student.schoolId && schoolsById ? schoolsById[student.schoolId]?.name : undefined);
 
   const bannerImage =
     student.bannerImage ?? student.bannerUrl ?? "/appartment.jpg";
@@ -76,8 +83,7 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
   const infoItems: InfoItem[] = [
     {
       label: "Ålder",
-      // Castar till any ifall 'age' inte finns i typdefinitionen än
-      value: (student as any).age ? `${(student as any).age} år` : "Ej angivet",
+      value: student.age ? `${student.age} år` : "Ej angivet",
     },
     {
       label: "Skola",
@@ -85,31 +91,31 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
     },
     {
       label: "Utbildning",
-      value: student.stats.studyProgram ?? "Ej angivet",
+      value: student.stats?.studyProgram ?? "Ej angivet",
     },
     {
       label: "Studietakt",
-      value: student.stats.studyPace ?? "Ej angivet",
+      value: student.stats?.studyPace ?? "Ej angivet",
     },
   ];
 
   const SOCIAL_VERIFICATIONS = [
     {
       label: "LinkedIn",
-      href: (student as any).linkedInUrl as string | undefined,
-      verified: Boolean((student as any).verifiedLinkedIn),
+      href: student.linkedInUrl,
+      verified: Boolean(student.verifiedLinkedIn),
       icon: <FaLinkedin />,
     },
     {
       label: "Instagram",
-      href: (student as any).instagramUrl as string | undefined,
-      verified: Boolean((student as any).verifiedInstagram),
+      href: student.instagramUrl,
+      verified: Boolean(student.verifiedInstagram),
       icon: <FaInstagram />,
     },
     {
       label: "Facebook",
-      href: (student as any).facebookUrl as string | undefined,
-      verified: Boolean((student as any).verifiedFacebook),
+      href: student.facebookUrl,
+      verified: Boolean(student.verifiedFacebook),
       icon: <FaFacebook />,
     },
   ] as const;
@@ -158,7 +164,8 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
                 {(student.city || student.stats?.preferredArea) && (
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-4 w-4 text-green-900" />
-                    {student.city ?? student.stats.preferredArea}
+                    {/* Hantera om city är ett objekt eller sträng */}
+                    {typeof student.city === 'string' ? student.city : student.stats?.preferredArea}
                   </span>
                 )}
               </div>

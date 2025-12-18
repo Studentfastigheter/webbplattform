@@ -1,64 +1,69 @@
 import { apiClient, buildQuery } from "@/lib/api-client";
 import {
-  ListingWithRelations,
-  ListingType,
+  Listing,
+  CompanyListing,
+  PrivateListing,
   ListingImage,
-  UserInterest,
-  ListingActivity,
-  RollingAd,
-  // Dessa importerades inte i din screenshot, vilket orsakade felet "Cannot find name..."
-  CompanyId,
-  LandlordId,
+  ListingStatus,
 } from "@/types";
 
-// --- DTOs ---
-export type ApiListingPublicDto = {
-  id: string;
-  area?: string | null;
+// --- Lokala typer (Dessa saknades i din listing.ts men behövs för funktionerna) ---
+export type ListingType = "company" | "private";
+
+export type ListingActivity = {
+  id: number;
+  name: string;
+  category: string;
+  distanceKm?: number | null;
+};
+
+export type RollingAd = {
+  id: number | string;
+  company?: string;
+  data?: unknown;
+};
+
+// --- DTOs (Data Transfer Objects från Backend) ---
+
+// VIKTIGT: Vi exporterar dessa så school-service.ts kan använda dem
+export type ApiBaseListingDto = {
+  id: string; // UUID
   title: string;
+  area?: string | null;
   city?: string | null;
-  rent?: number | null;
-  primaryImageUrl?: string | null;
-  latitude?: number | null;
+  address?: string | null;
+  latitude?: number | null; 
   longitude?: number | null;
-  companyName?: string | null;
-  distanceToSchoolKm?: number | null;
-  sizeM2?: number | null;
-  rooms?: number | null;
+  lat?: number | null; 
+  lng?: number | null;
   dwellingType?: string | null;
+  rooms?: number | null;
+  sizeM2?: number | null;
+  rent?: number | null;
   moveIn?: string | null;
   applyBy?: string | null;
   availableFrom?: string | null;
-  tags?: string[] | null;
-  images?: string[];
-};
-
-export type ApiListingPrivateDto = ApiListingPublicDto & {
+  availableTo?: string | null;
   description?: string | null;
-  address?: string | null;
-  companyId?: number | null;
-  landlordId?: number | null;
-  landlordName?: string | null;
-  listingType?: ListingType | string;
-  userQueueDays?: number | null;
-};
-
-type ApiListingSearchResponse<T> = {
-  items: T[];
-  page: number;
-  size: number;
-  total: number;
-  totalPages: number;
-};
-
-type ApiInterestDto = {
-  listingId: string | null;
-  title: string | null;
-  city: string | null;
-  rent: number | null;
-  primaryImageUrl: string | null;
-  companyName: string | null;
+  tags?: string[] | null;
+  status: string;
   createdAt: string;
+  updatedAt: string;
+  images?: string[] | { imageId: number; imageUrl: string }[]; 
+};
+
+export type ApiCompanyListingDto = ApiBaseListingDto & {
+  company: any; // Mappas till User
+};
+
+export type ApiPrivateListingDto = ApiBaseListingDto & {
+  landlord: any; // Mappas till User
+  applicationCount?: number | null;
+};
+
+type ApiListingResponse = {
+  company: ApiCompanyListingDto[];
+  private: ApiPrivateListingDto[];
 };
 
 type ApiActivityDto = {
@@ -70,84 +75,40 @@ type ApiActivityDto = {
   distanceKm?: number | null;
 };
 
-type RawAd = {
-  id?: number;
-  company?: string;
-  start?: string;
-  stop?: string;
-  data?: unknown;
-};
-
 // --- Mappers ---
-const toListingImages = (dto: {
-  id: string;
-  primaryImageUrl?: string | null;
-  images?: string[];
-}): ListingImage[] => {
-  const urls: string[] = [];
-  if (dto.primaryImageUrl) urls.push(dto.primaryImageUrl);
-  if (dto.images?.length) urls.push(...dto.images);
-  const unique = Array.from(new Set(urls));
-  return unique.map((imageUrl, idx) => ({
-    imageId: idx + 1,
-    listingId: dto.id,
-    imageUrl,
-  }));
+
+const mapImages = (dto: ApiBaseListingDto): ListingImage[] => {
+  if (!dto.images || dto.images.length === 0) return [];
+  
+  return dto.images.map((img, index) => {
+    if (typeof img === 'string') {
+      return {
+        id: index, // Temporärt ID
+        imageUrl: img,
+        createdAt: dto.createdAt
+      };
+    } else {
+      return {
+        id: img.imageId,
+        imageUrl: img.imageUrl,
+        createdAt: dto.createdAt
+      };
+    }
+  });
 };
 
 export const mapListingDto = (
-  dto: ApiListingPublicDto | ApiListingPrivateDto
-): ListingWithRelations => {
-  const now = new Date().toISOString();
-  
-  const rawType =
-    (dto as ApiListingPrivateDto).listingType ?? (dto as any).listingType;
-  
-  const isPrivate =
-    rawType === "private" ||
-    !!(dto as ApiListingPrivateDto).landlordId;
-
-  // Säkra konverteringar till nummer (0 som fallback om det saknas)
-  const landlordIdVal =
-    isPrivate && "landlordId" in dto
-      ? Number((dto as ApiListingPrivateDto).landlordId ?? 0)
-      : 0;
-
-  const companyIdVal =
-    !isPrivate && "companyId" in dto && dto.companyId
-      ? Number(dto.companyId)
-      : 0;
-
-  const advertiser =
-    !isPrivate
-      ? (dto.companyName || companyIdVal)
-        ? {
-            type: "company" as const,
-            id: companyIdVal as CompanyId,
-            displayName: dto.companyName ?? "Hyresvärd",
-            city: dto.city ?? null,
-          }
-        : undefined
-      : landlordIdVal
-      ? {
-          type: "private_landlord" as const,
-          id: landlordIdVal as LandlordId,
-          displayName:
-            (dto as ApiListingPrivateDto).landlordName ??
-            dto.companyName ??
-            "Hyresvärd",
-          city: dto.city ?? null,
-        }
-      : undefined;
-
+  dto: ApiCompanyListingDto | ApiPrivateListingDto
+): Listing => {
+  // Gemensamma fält
   const baseListing = {
-    listingId: dto.id,
+    id: dto.id,
     title: dto.title,
     area: dto.area ?? null,
     city: dto.city ?? null,
-    address: "address" in dto ? dto.address ?? null : null,
-    lat: dto.latitude ?? null,
-    lng: dto.longitude ?? null,
+    address: dto.address ?? null,
+    lat: dto.lat ?? dto.latitude ?? null,
+    lng: dto.lng ?? dto.longitude ?? null,
     dwellingType: dto.dwellingType ?? null,
     rooms: dto.rooms ?? null,
     sizeM2: dto.sizeM2 ?? null,
@@ -155,120 +116,110 @@ export const mapListingDto = (
     moveIn: dto.moveIn ?? null,
     applyBy: dto.applyBy ?? null,
     availableFrom: dto.availableFrom ?? null,
-    availableTo: null,
-    description: "description" in dto ? dto.description ?? null : null,
+    availableTo: dto.availableTo ?? null,
+    description: dto.description ?? null,
     tags: dto.tags ?? [],
-    images: toListingImages(dto),
-    status: "available",
-    createdAt: now,
-    updatedAt: now,
-    advertiser: advertiser as any,
+    status: dto.status as ListingStatus,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    images: mapImages(dto),
   };
 
-  if (isPrivate) {
+  if ("landlord" in dto) {
     return {
       ...baseListing,
-      listingType: "private",
-      landlordId: landlordIdVal as LandlordId, // Nu definierat tack vare importen
-    };
+      landlord: dto.landlord,
+      applicationCount: dto.applicationCount ?? 0,
+    } as PrivateListing;
   } else {
     return {
       ...baseListing,
-      listingType: "company",
-      companyId: companyIdVal as CompanyId, // Nu definierat
-    };
+      company: dto.company,
+    } as CompanyListing;
   }
 };
 
-const mapInterestDto = (dto: ApiInterestDto): UserInterest | null => {
-  if (!dto.listingId) return null;
-  return {
-    listingId: dto.listingId,
-    title: dto.title,
-    city: dto.city,
-    rent: dto.rent,
-    primaryImageUrl: dto.primaryImageUrl,
-    companyName: dto.companyName,
-    createdAt: dto.createdAt,
-  };
-};
+// --- Service ---
 
 export type ListListingsParams = {
   q?: string;
   city?: string;
   minRent?: number;
   maxRent?: number;
-  page?: number;
-  size?: number;
-  secure?: boolean;
 };
 
 export const listingService = {
-  list: async (
-    params?: ListListingsParams,
-    token?: string
-  ) => {
-    const secure = params?.secure ?? Boolean(token);
-    const endpoint = secure ? "/api/listings/secure" : "/api/listings";
-    const query = buildQuery({
-      q: params?.q,
-      city: params?.city,
-      minRent: params?.minRent,
-      maxRent: params?.maxRent,
-      page: params?.page,
-      size: params?.size,
-    });
+  // Hämta alla annonser
+  list: async (params?: ListListingsParams): Promise<Listing[]> => {
+    const res = await apiClient<ApiListingResponse>("/listings");
+    
+    const companyListings = (res.company || []).map(dto => mapListingDto(dto));
+    const privateListings = (res.private || []).map(dto => mapListingDto(dto));
 
-    const res = await apiClient<ApiListingSearchResponse<ApiListingPublicDto>>(
-      `${endpoint}${query}`,
-      {},
-      token
-    );
+    let allListings = [...companyListings, ...privateListings];
 
-    return {
-      ...res,
-      items: res.items.map(mapListingDto),
-    };
+    if (params?.city) {
+      allListings = allListings.filter(l => 
+        l.city?.toLowerCase() === params.city?.toLowerCase()
+      );
+    }
+
+    return allListings;
   },
 
-  get: async (listingId: string, options: { secure?: boolean; token?: string } = {}) => {
-    const secure = options.secure ?? Boolean(options.token);
-    const endpoint = secure
-      ? `/api/listings/${listingId}/secure`
-      : `/api/listings/${listingId}`;
-    const dto = await apiClient<ApiListingPublicDto | ApiListingPrivateDto>(
-      endpoint,
-      {},
-      options.token
-    );
+  // Hämta en specifik annons
+  get: async (id: string, type: ListingType): Promise<Listing> => {
+    const endpoint = type === "company" 
+      ? `/listings/company/${id}` 
+      : `/listings/private/${id}`;
+      
+    const dto = await apiClient<ApiCompanyListingDto | ApiPrivateListingDto>(endpoint);
     return mapListingDto(dto);
   },
 
-  registerInterest: async (listingId: string, token: string): Promise<void> => {
-    await apiClient<void>(
-      `/api/listings/${listingId}/interest`,
-      { method: "POST" },
-      token
-    );
+  // Ansök till en privat annons
+  apply: async (listingId: string, message: string): Promise<void> => {
+    await apiClient(`/applications/private/${listingId}`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
   },
 
+  // Intresseanmälningar
+  registerInterest: async (listingId: string): Promise<void> => {
+    await apiClient(`/listings/${listingId}/interest`, {
+      method: "POST",
+    });
+  },
+
+  // Aktiviteter
   getActivities: async (listingId: string, radiusKm = 1.5): Promise<ListingActivity[]> => {
-    return apiClient<ApiActivityDto[]>(
-      `/api/listings/${listingId}/activities${buildQuery({ radiusKm })}`
-    );
+    try {
+      const res = await apiClient<ApiActivityDto[]>(
+        `/listings/${listingId}/activities${buildQuery({ radiusKm })}`
+      );
+      return res.map(a => ({
+        id: a.id,
+        name: a.name,
+        category: a.category,
+        distanceKm: a.distanceKm
+      }));
+    } catch (e) {
+      return [];
+    }
   },
 
-  getMyInterests: async (token: string): Promise<UserInterest[]> => {
-    const res = await apiClient<ApiInterestDto[]>("/api/interests/me", {}, token);
-    return res.map(mapInterestDto).filter(Boolean) as UserInterest[];
-  },
-
-  getCurrentAds: async (token?: string): Promise<RollingAd[]> => {
-    const ads = await apiClient<RawAd[]>("/api/ads/current", {}, token);
-    return ads.map((ad) => ({
-      id: ad.id,
-      company: ad.company,
-      data: ad.data,
-    }));
+  // Rullande annonser
+  getCurrentAds: async (): Promise<RollingAd[]> => {
+    try {
+      const ads = await apiClient<any[]>("/ads/current");
+      return ads.map((ad) => ({
+        id: ad.id,
+        company: ad.company,
+        data: ad.data,
+      }));
+    } catch (e) {
+      return [];
+    }
   },
 };

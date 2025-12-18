@@ -15,22 +15,26 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-// ÄNDRING: Importera authService istället för registerUser från api
-import { authService } from "@/services/auth-service";
-import { type UserType } from "@/types";
+// OBS: Vi använder AccountType från dina nya typer
+import { type AccountType } from "@/types"; 
 
 type RegisterForm = {
-  type: UserType;
+  type: AccountType;
   ssn: string;
   email: string;
   password: string;
+  // Lägg till fält för namn om du vill samla in det direkt vid registrering
+  firstName?: string;
+  surname?: string;
+  fullName?: string;
+  companyName?: string;
 };
 
 const accountTypeOptions = [
   { value: "student", title: "Student" },
   { value: "private_landlord", title: "Uthyrare" },
   { value: "company", title: "Företag" },
-] satisfies ReadonlyArray<{ value: UserType; title: string }>;
+] satisfies ReadonlyArray<{ value: AccountType; title: string }>;
 
 export default function RegisterPage() {
   const [form, setForm] = useState<RegisterForm>({
@@ -41,7 +45,10 @@ export default function RegisterPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+  
+  // Använd register från context istället för att importera service direkt
+  // så att state uppdateras korrekt
+  const { register } = useAuth();
   const router = useRouter();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -59,19 +66,21 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      // ÄNDRING: Använd authService.register
-      await authService.register({
-        type: form.type,
+      // Skicka med accountType och ssn i rätt fält
+      await register({
+        accountType: form.type, // Viktigt: heter accountType i din DTO
         ssn: form.ssn.trim(),
         email: form.email.trim(),
         password: form.password,
+        // Om du lägger till namnfält i formuläret, skicka dem här:
+        // firstName: form.firstName, osv.
       });
       
-      // Logga in användaren direkt efter registrering
-      await login(form.email, form.password);
+      // useAuth.register() hanterar redan token-sparande och user-state
       router.push("/");
     } catch (err: any) {
-      setError(err?.message ?? "Något gick fel.");
+      // Visa felmeddelande från backend om det finns
+      setError(err?.message ?? "Kunde inte skapa konto. Kontrollera uppgifterna.");
     } finally {
       setLoading(false);
     }
@@ -121,11 +130,13 @@ export default function RegisterPage() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="ssn">Personnummer</FieldLabel>
+                <FieldLabel htmlFor="ssn">
+                  {form.type === "company" ? "Organisationsnummer" : "Personnummer"}
+                </FieldLabel>
                 <Input
                   id="ssn"
                   type="text"
-                  placeholder="ÅÅMMDD-XXXX"
+                  placeholder={form.type === "company" ? "556000-0000" : "ÅÅMMDD-XXXX"}
                   value={form.ssn}
                   onChange={(event) =>
                     setForm({ ...form, ssn: event.target.value.trim() })

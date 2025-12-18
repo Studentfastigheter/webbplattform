@@ -1,7 +1,6 @@
 import { Home } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { NotificationCard } from "../notification-card";
-import type { ListingStatusNotification } from "../types";
+import type { ListingStatusNotification } from "@/types"; // Uppdaterad import
 
 type Props = {
   notification: ListingStatusNotification;
@@ -9,7 +8,7 @@ type Props = {
 
 export function ListingStatusNotificationCard({ notification }: Props) {
   const statusCopy = notification.body ?? defaultStatusCopy(notification.status);
-  const statusLabel = statusLabels[notification.status] ?? notification.status;
+  // const statusLabel = statusLabels[notification.status] ?? notification.status; // Används ej i nuvarande design
   const accent = statusAccent(notification.status);
 
   return (
@@ -20,20 +19,22 @@ export function ListingStatusNotificationCard({ notification }: Props) {
       opened={notification.opened}
       accent={accent}
     >
-      <div className="flex flex-wrap items-center gap-2 text-foreground">
-        <span className="text-sm font-semibold">{notification.listingTitle}</span>
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2 text-foreground">
+          <span className="text-sm font-semibold">{notification.listingTitle}</span>
+        </div>
+        <p className="text-sm leading-relaxed text-muted-foreground">{statusCopy}</p>
       </div>
-      <p className="text-sm leading-relaxed">{statusCopy}</p>
     </NotificationCard>
   );
 }
 
-const statusLabels: Record<ListingStatusNotification["status"], string> = {
-  published: "Publicerad",
-  paused: "Pausad",
-  expiring: "Snart utgående",
-  archived: "Arkiverad",
-};
+// const statusLabels: Record<ListingStatusNotification["status"], string> = {
+//   published: "Publicerad",
+//   paused: "Pausad",
+//   expiring: "Snart utgående",
+//   archived: "Arkiverad",
+// };
 
 function statusAccent(
   status: ListingStatusNotification["status"]

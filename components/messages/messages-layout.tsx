@@ -1,110 +1,121 @@
 "use client";
 
 import * as React from "react";
+import { useAuth } from "@/context/AuthContext";
+import { messageService } from "@/services/message-service";
 import { ConversationsPanel } from "./panels/conversations-panel";
 import { ChatPanel } from "./panels/chat-panel";
 import type { Conversation, Message } from "@/types";
 
-// --- DEMO DATA (ersätt senare med API) ---
-const DEMO_CONVERSATIONS: Conversation[] = [
-  {
-    conversationId: "c1" as any,
-    studentId: "s1" as any,
-    privateLandlordId: null,
-    createdAt: "2025-12-14T10:00:00.000Z" as any,
-  },
-];
-
-const DEMO_MESSAGES: Record<string, Message[]> = {
-  c1: [
-    {
-      messageId: "m1" as any,
-      conversationId: "c1" as any,
-      senderType: "STUDENT" as any,
-      body: "Hej! Jag såg annonsen 😊",
-      createdAt: "2025-12-14T10:03:00.000Z" as any,
-    },
-    {
-      messageId: "m2" as any,
-      conversationId: "c1" as any,
-      senderType: "LANDLORD" as any,
-      body: "Hej! Kul att du hör av dig. Vad undrar du?",
-      createdAt: "2025-12-14T10:05:00.000Z" as any,
-    },
-  ],
-};
-
-
-function toKey(id: unknown) {
-  return String(id);
-}
-
 export function MessagesLayout() {
+  const { user } = useAuth();
+  
+  // State
+  const [conversations, setConversations] = React.useState<Conversation[]>([]);
+  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = React.useState<string | null>(null);
+  
   const [query, setQuery] = React.useState("");
   const [tab, setTab] = React.useState<"all" | "unread">("all");
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  const [selectedConversationId, setSelectedConversationId] = React.useState<string>(
-    toKey(DEMO_CONVERSATIONS[0]?.conversationId ?? "")
-  );
+  // 1. Hämta konversationer vid start
+  React.useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        setIsLoading(true);
+        const data = await messageService.getConversations();
+        setConversations(data);
+        
+        // Välj första konversationen automatiskt om ingen är vald
+        if (data.length > 0 && !selectedConversationId) {
+          setSelectedConversationId(String(data[0].conversationId));
+        }
+      } catch (error) {
+        console.error("Kunde inte hämta konversationer:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const [messagesByConversation, setMessagesByConversation] =
-    React.useState<Record<string, Message[]>>(DEMO_MESSAGES);
+    fetchConversations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
-  // TODO: när du har "name/lastMessage/unread" på riktigt, bygg view-model via join/API
+  // 2. Hämta meddelanden när vald konversation ändras
+  React.useEffect(() => {
+    if (!selectedConversationId) return;
+
+    const fetchMessages = async () => {
+      try {
+        const id = parseInt(selectedConversationId, 10);
+        const data = await messageService.getMessages(id);
+        setMessages(data);
+      } catch (error) {
+        console.error("Kunde inte hämta meddelanden:", error);
+        setMessages([]);
+      }
+    };
+
+    fetchMessages();
+  }, [selectedConversationId]);
+
+  // --- View Model för listan ---
   const conversationVM = React.useMemo(() => {
-    return DEMO_CONVERSATIONS.map((c) => {
-      const key = toKey(c.conversationId);
-      const msgs = messagesByConversation[key] ?? [];
-      const last = msgs[msgs.length - 1];
-
+    return conversations.map((c) => {
       return {
-        id: key,
-        title: `Konversation ${key}`, // ersätt med student/landlord-namn
-        lastMessage: last?.body ?? "—",
-        updatedAt: last?.createdAt ? formatTime(last.createdAt) : "—",
-        unreadCount: 0, // koppla när du har olästlogik
+        id: String(c.conversationId),
+        title: user?.accountType === "student" ? "Hyresvärd" : "Student", 
+        lastMessage: "Klicka för att läsa", 
+        updatedAt: formatTime(c.createdAt),
+        unreadCount: 0, 
       };
     })
-      .filter((c) => c.title.toLowerCase().includes(query.toLowerCase()))
-      .filter((c) => (tab === "unread" ? c.unreadCount > 0 : true));
-  }, [messagesByConversation, query, tab]);
+    .filter((c) => c.title.toLowerCase().includes(query.toLowerCase()))
+    .filter((c) => (tab === "unread" ? c.unreadCount > 0 : true));
+  }, [conversations, query, tab, user?.accountType]);
 
-  const selectedConversation = DEMO_CONVERSATIONS.find(
-    (c) => toKey(c.conversationId) === selectedConversationId
-  );
-
-  const selectedMessages = selectedConversation
-    ? messagesByConversation[toKey(selectedConversation.conversationId)] ?? []
-    : [];
+  // --- Handlers ---
 
   function handleSelect(id: string) {
     setSelectedConversationId(id);
   }
 
-  function handleSend(text: string) {
-    if (!selectedConversation) return;
+  async function handleSend(text: string) {
+    if (!selectedConversationId) return;
+    const conversationId = parseInt(selectedConversationId, 10);
 
-    const key = toKey(selectedConversation.conversationId);
+    try {
+      // Optimistisk uppdatering
+      const optimisticMsg: Message = {
+        messageId: Date.now(), 
+        conversationId,
+        senderType: user?.accountType === "student" ? "student" : "private_landlord",
+        body: text,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMsg]);
 
-    const next: Message = {
-      messageId: crypto.randomUUID() as any,
-      conversationId: selectedConversation.conversationId,
-      senderType: "STUDENT" as any, // byt till verklig senderType från auth/session
-      body: text,
-      createdAt: new Date().toISOString() as any,
-    };
-
-    setMessagesByConversation((prev) => {
-      const current = prev[key] ?? [];
-      return { ...prev, [key]: [...current, next] };
-    });
+      // Skicka till API
+      const newMessage = await messageService.sendMessage(conversationId, text);
+      
+      // Ersätt den optimistiska med den riktiga
+      setMessages((prev) => 
+        prev.map(m => m.messageId === optimisticMsg.messageId ? newMessage : m)
+      );
+      
+    } catch (error) {
+      console.error("Kunde inte skicka meddelande", error);
+    }
   }
 
+  const activeTitle = conversationVM.find((c) => c.id === selectedConversationId)?.title;
+
   return (
-    <div className="grid h-full grid-cols-1 overflow-hidden rounded-xl border bg-background md:grid-cols-[360px_1fr]">
+    <div className="grid h-full grid-cols-1 overflow-hidden rounded-xl border bg-background md:grid-cols-[320px_1fr] lg:grid-cols-[360px_1fr]">
       <ConversationsPanel
         conversations={conversationVM}
-        selectedId={selectedConversationId}
+        selectedId={selectedConversationId ?? ""} // Fix: Skicka tom sträng om null
         query={query}
         tab={tab}
         onQueryChange={setQuery}
@@ -112,11 +123,19 @@ export function MessagesLayout() {
         onSelect={handleSelect}
       />
 
-      <ChatPanel
-        title={conversationVM.find((c) => c.id === selectedConversationId)?.title}
-        messages={selectedMessages}
-        onSend={handleSend}
-      />
+      {selectedConversationId ? (
+        <ChatPanel
+          title={activeTitle}
+          messages={messages}
+          onSend={handleSend}
+          // Om ChatPanel inte har 'currentUserId' i sina props än, ta bort denna rad eller uppdatera ChatPanel
+          // currentUserId={user?.id ?? 0} 
+        />
+      ) : (
+        <div className="flex h-full items-center justify-center text-muted-foreground bg-muted/20">
+          Välj en konversation för att börja chatta
+        </div>
+      )}
     </div>
   );
 }
@@ -124,8 +143,8 @@ export function MessagesLayout() {
 function formatTime(iso: string) {
   try {
     const d = new Date(iso);
-    return d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString("sv-SE", { month: "short", day: "numeric" });
   } catch {
-    return "—";
+    return "";
   }
 }

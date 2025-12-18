@@ -3,16 +3,17 @@
 import React, { useMemo } from "react";
 import {
   type ListingId,
-  type ListingWithRelations,
+  type Listing, // <-- Använd Listing
   type UrlString,
 } from "@/types";
 
 type ListingMapPopupProps = {
-  listing: ListingWithRelations & { thumbnailUrl?: UrlString | null };
+  // Vi extenderar Listing med en valfri thumbnailUrl för flexibilitet
+  listing: Listing & { thumbnailUrl?: UrlString | null };
   onOpen?: (id: ListingId) => void;
 };
 
-const formatRent = (rent?: number) =>
+const formatRent = (rent?: number | null) =>
   typeof rent === "number"
     ? `${new Intl.NumberFormat("sv-SE", {
         maximumFractionDigits: 0,
@@ -23,18 +24,24 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
   listing,
   onOpen,
 }) => {
+  // rent kan vara null, så vi skickar undefined om det är det
   const formattedRent = formatRent(listing.rent ?? undefined);
 
   const thumbnailUrl = useMemo(
     () =>
       listing.thumbnailUrl ??
-      (typeof listing.images?.[0] === "string"
-        ? (listing.images?.[0] as string)
-        : listing.images?.[0]?.imageUrl),
+      // Hantera både strängar och objekt (beroende på vad API:t returnerar)
+      (listing.images?.[0] 
+        ? (typeof listing.images[0] === 'string' 
+            ? listing.images[0] 
+            : listing.images[0].imageUrl)
+        : null),
     [listing.images, listing.thumbnailUrl],
   );
 
-  const handleOpen = () => onOpen?.(listing.listingId);
+  // <-- VIKTIGT: Använd listing.id istället för listing.listingId
+  const handleOpen = () => onOpen?.(listing.id);
+  
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();

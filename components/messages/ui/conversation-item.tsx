@@ -30,27 +30,31 @@ export function ConversationItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full rounded-lg p-3 text-left transition hover:bg-muted",
-        selected && "bg-muted"
+        "w-full flex items-start gap-3 p-3 text-left transition-colors hover:bg-muted/50 rounded-md mx-1",
+        selected && "bg-muted hover:bg-muted"
       )}
     >
-      <div className="flex items-center gap-3">
-        <Avatar className="h-9 w-9">
-          <AvatarFallback>{initials || "?"}</AvatarFallback>
-        </Avatar>
+      <Avatar className="h-10 w-10 mt-0.5 border border-border/50">
+        <AvatarFallback>{initials || "?"}</AvatarFallback>
+      </Avatar>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div className={cn("truncate text-sm", unreadCount ? "font-semibold" : "font-medium")}>
-              {title}
-            </div>
-            <div className="shrink-0 text-xs text-muted-foreground">{updatedAt}</div>
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <div className="flex items-center justify-between gap-2 mb-0.5">
+          <div className={cn("truncate text-sm", unreadCount > 0 ? "font-semibold text-foreground" : "font-medium text-foreground/90")}>
+            {title}
           </div>
+          <div className="shrink-0 text-[11px] text-muted-foreground">{updatedAt}</div>
+        </div>
 
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <div className="truncate text-xs text-muted-foreground">{lastMessage}</div>
-            {unreadCount > 0 && <Badge className="shrink-0">{unreadCount}</Badge>}
+        <div className="flex items-center justify-between gap-2">
+          <div className={cn("truncate text-xs pr-2", unreadCount > 0 ? "text-foreground font-medium" : "text-muted-foreground")}>
+            {lastMessage}
           </div>
+          {unreadCount > 0 && (
+            <Badge variant="default" className="h-5 w-5 rounded-full p-0 flex items-center justify-center shrink-0 text-[10px]">
+              {unreadCount}
+            </Badge>
+          )}
         </div>
       </div>
     </button>

@@ -3,3 +3,5 @@ export * from "./user";
 export * from "./listing";
 export * from "./queue";
 export * from "./school";
+export * from "./notification";
+export * from "./message";

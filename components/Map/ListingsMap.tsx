@@ -7,12 +7,12 @@ import BaseMap, {
 } from "./BaseMap";
 import {
   type ListingId,
-  type ListingWithRelations,
+  type Listing, // <-- Använd Listing (som är unionen av Company/Private)
 } from "@/types";
 import ListingMapPopup from "./ListingsMapPopup";
 
 type ListingsMapProps = {
-  listings: ListingWithRelations[];
+  listings: Listing[];
   className?: string;
   activeListingId?: ListingId;
   onOpenListing?: (id: ListingId) => void;
@@ -24,7 +24,7 @@ type ListingsMapProps = {
  */
 const createListingPopupRenderer =
   (
-    listing: ListingWithRelations,
+    listing: Listing,
     onOpenListing?: (id: ListingId) => void,
   ): PopupRenderer =>
   () =>
@@ -46,7 +46,7 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
       listings
         .filter((l) => typeof l.lat === "number" && typeof l.lng === "number")
         .map((l) => ({
-          id: l.listingId,
+          id: l.id, // <-- VIKTIGT: Heter nu 'id', inte 'listingId'
           position: [l.lat as number, l.lng as number],
           popup: createListingPopupRenderer(l, onOpenListing),
         })),

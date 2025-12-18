@@ -5,55 +5,45 @@ import type { Message } from "@/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-export function MessageList({
-  messages,
-  autoScroll = false,
-}: {
+interface MessageListProps {
   messages: Message[];
   autoScroll?: boolean;
-}) {
-  const viewportRef = React.useRef<HTMLDivElement | null>(null);
+}
+
+export function MessageList({ messages, autoScroll = false }: MessageListProps) {
+  const bottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!autoScroll) return;
-
-    // Scrolla ENDAST i ScrollArea-viewporten (inte body)
-    const el = viewportRef.current;
-    if (!el) return;
-
-    // Vänta ett tick så layouten hinner sätta höjder
-    requestAnimationFrame(() => {
-      el.scrollTop = el.scrollHeight;
-    });
-  }, [messages.length, autoScroll]);
+    // Scrolla mjukt till botten när meddelanden ändras
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, autoScroll]);
 
   return (
-    <ScrollArea className="flex-1">
-      {/* shadcn ScrollArea har en inre viewport-div. Vi sätter ref via selector: */}
-      <ScrollViewportRef viewportRef={viewportRef} />
-
-      <div className="space-y-2 p-4">
+    <ScrollArea className="flex-1 h-full">
+      <div className="flex flex-col gap-4 p-4">
         {messages.map((m) => {
-          const isMe = String(m.senderType).toUpperCase() === "STUDENT";
+          // Kontrollera om det är "jag" (studenten) som skrivit
+          const isMe = String(m.senderType).toLowerCase() === "student";
 
           return (
             <div
-              key={String(m.messageId)}
-              className={cn("flex", isMe ? "justify-end" : "justify-start")}
+              key={m.messageId}
+              className={cn("flex w-full", isMe ? "justify-end" : "justify-start")}
             >
               <div
                 className={cn(
-                  "max-w-[78%] rounded-2xl px-3 py-2 text-sm",
+                  "max-w-[75%] rounded-2xl px-4 py-2 text-sm shadow-sm",
                   isMe
-                    ? "bg-brand text-primary-foreground"
-                    : "bg-muted text-foreground"
+                    ? "bg-primary text-primary-foreground rounded-br-none" 
+                    : "bg-muted text-foreground rounded-bl-none"
                 )}
               >
-                <div>{m.body}</div>
+                <div className="whitespace-pre-wrap break-words">{m.body}</div>
                 <div
                   className={cn(
-                    "mt-1 text-[10px] opacity-70",
-                    isMe ? "text-primary-foreground" : "text-muted-foreground"
+                    "mt-1 text-[10px] opacity-70 text-right",
+                    isMe ? "text-primary-foreground/80" : "text-muted-foreground"
                   )}
                 >
                   {formatTime(m.createdAt)}
@@ -62,39 +52,23 @@ export function MessageList({
             </div>
           );
         })}
+        
+        {/* Osynligt element som vi scrollar till */}
+        <div ref={bottomRef} className="h-1" />
       </div>
     </ScrollArea>
   );
 }
 
-function ScrollViewportRef({
-  viewportRef,
-}: {
-  viewportRef: React.MutableRefObject<HTMLDivElement | null>;
-}) {
-  const hostRef = React.useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    const host = hostRef.current?.closest("[data-radix-scroll-area-root]");
-    if (!host) return;
-
-    const viewport = host.querySelector(
-      "[data-radix-scroll-area-viewport]"
-    ) as HTMLDivElement | null;
-
-    viewportRef.current = viewport;
-    return () => {
-      viewportRef.current = null;
-    };
-  }, [viewportRef]);
-
-  return <div ref={hostRef} />;
-}
-
 function formatTime(iso: string) {
-  const d = new Date(iso);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString("sv-SE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
 }
-

@@ -1,63 +1,104 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-
-// ÄNDRING: Importera authService istället för funktioner från api
 import { authService } from "@/services/auth-service";
-import { type User } from "@/types";
+import { User, LoginRequest, RegisterRequest, UpdateUserRequest } from "@/types";
 
 type AuthCtx = {
   user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  isAuthenticated: boolean;
+  isLoading: boolean; // Ersätter 'ready' för tydlighet
+  login: (data: LoginRequest) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
-  ready: boolean;
+  refreshUser: () => Promise<void>; 
+  updateUser: (data: UpdateUserRequest) => Promise<void>; // För onboarding
 };
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // 1. Initiera vid start
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const initAuth = async () => {
+      // Vi kollar bara om token finns, api-client sköter headern
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
-    const t = localStorage.getItem("auth_token");
-    if (!t) {
-      setReady(true);
-      return;
-    }
-
-    setToken(t);
-    
-    // ÄNDRING: Använd authService.me
-    authService.me(t)
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem("auth_token");
-        setToken(null);
+      try {
+        const userData = await authService.me();
+        setUser(userData);
+      } catch (error) {
+        console.error("Token ogiltig", error);
+        localStorage.removeItem("token"); // Rensa om den är trasig
         setUser(null);
-      })
-      .finally(() => setReady(true));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    // ÄNDRING: Använd authService.login
-    const res = await authService.login({ email, password });
-    localStorage.setItem("auth_token", res.accessToken);
-    setToken(res.accessToken);
+  // 2. Login
+  const login = async (data: LoginRequest) => {
+    const res = await authService.login(data);
+    // Spara token så api-client hittar den nästa gång
+    localStorage.setItem("token", res.accessToken);
     setUser(res.user);
   };
 
-  const logout = () => {
-    if (typeof window !== "undefined") localStorage.removeItem("auth_token");
-    setToken(null);
-    setUser(null);
+  // 3. Register
+  const register = async (data: RegisterRequest) => {
+    const res = await authService.register(data);
+    localStorage.setItem("token", res.accessToken);
+    setUser(res.user);
   };
 
-  return <Ctx.Provider value={{ user, token, login, logout, ready }}>{children}</Ctx.Provider>;
+  // 4. Logout
+  const logout = () => {
+    authService.logout(); // Rensar localStorage
+    setUser(null);
+    // Valfritt: window.location.href = "/";
+  };
+
+  // 5. Refresh (Hämta om användaren från servern)
+  const refreshUser = async () => {
+    try {
+      const updatedUser = await authService.me();
+      setUser(updatedUser);
+    } catch (error) {
+      console.error("Kunde inte uppdatera användare", error);
+    }
+  };
+
+  // 6. Update (Skicka ny data till servern)
+  const updateUser = async (data: UpdateUserRequest) => {
+    const updatedUser = await authService.updateProfile(data);
+    setUser(updatedUser);
+  };
+
+  return (
+    <Ctx.Provider value={{ 
+      user, 
+      isAuthenticated: !!user, 
+      isLoading, 
+      login, 
+      register, 
+      logout, 
+      refreshUser,
+      updateUser 
+    }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useAuth() {

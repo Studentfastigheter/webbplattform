@@ -1,5 +1,5 @@
 export type TimestampString = string;
-export type DateString = string;
+export type DateString = string; // format: "YYYY-MM-DD"
 export type JsonValue =
   | string
   | number

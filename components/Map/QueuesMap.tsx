@@ -3,21 +3,16 @@
 import { useMemo } from "react";
 import BaseMap, { type BaseMarker, type PopupRenderer } from "./BaseMap";
 import {
-  type AdvertiserSummary,
-  type Coordinates,
   type HousingQueue,
   type QueueId,
-  type UrlString,
 } from "@/types";
 import QueueMapPopup from "./QueueMapPopup";
 
+// Vi definierar en typ som tvingar lat/lng att existera för kartan
+// även om de är valfria i grundtypen HousingQueue
 type QueueWithCoordinates = HousingQueue & {
-  advertiser: AdvertiserSummary;
-  lat: NonNullable<Coordinates["lat"]>;
-  lng: NonNullable<Coordinates["lng"]>;
-  logoUrl?: UrlString | null;
-  unitsLabel?: string | null;
-  isVerified?: boolean;
+  lat: number;
+  lng: number;
 };
 
 type QueuesMapProps = {
@@ -29,29 +24,12 @@ type QueuesMapProps = {
 
 /**
  * Wrapper runt QueueMapPopup så den matchar BaseMaps PopupRenderer-signatur.
- * Vi ignorerar zoom/isActive här för att alltid visa samma kortdesign.
  */
 const createQueuePopupRenderer =
   (queue: QueueWithCoordinates, onOpenQueue?: (id: QueueId) => void): PopupRenderer =>
   () => {
-    const popupData = {
-      queueId: queue.queueId,
-      name: queue.name,
-      city: queue.city ?? "",
-      area: queue.area ?? "",
-      advertiser: queue.advertiser,
-      logoUrl: queue.logoUrl ?? queue.advertiser.logoUrl ?? null,
-      totalUnits: queue.totalUnits,
-      unitsLabel: queue.unitsLabel,
-      isVerified: queue.isVerified ?? false,
-      status: queue.status,
-      tags: queue.tags,
-      approximateWaitDays: queue.approximateWaitDays,
-      lat: queue.lat,
-      lng: queue.lng,
-    };
-
-    return <QueueMapPopup queue={popupData} onOpen={onOpenQueue} />;
+    // Vi skickar hela queue-objektet eftersom QueueMapPopup nu hanterar HousingQueue-typen
+    return <QueueMapPopup queue={queue} onOpen={onOpenQueue} />;
   };
 
 // ---- Huvudkomponent ----
@@ -65,7 +43,7 @@ const QueuesMap: React.FC<QueuesMapProps> = ({
   // Bygg markers från de filtrerade köerna
   const markers = useMemo<BaseMarker[]>(() => {
     return queues.map((queue) => ({
-      id: queue.queueId,
+      id: queue.id, // Uppdaterat från queueId till id
       position: [queue.lat, queue.lng] as [number, number],
       popup: createQueuePopupRenderer(queue, onOpenQueue),
     }));
@@ -75,7 +53,7 @@ const QueuesMap: React.FC<QueuesMapProps> = ({
     <BaseMap
       markers={markers}
       className={className}
-      // center & zoom är bara initial, BaseMap auto-fittar till markers
+      // center & zoom är bara initial, BaseMap auto-fittar till markers om de finns
       center={[59, 15]}
       zoom={5}
       activeMarkerId={activeQueueId}

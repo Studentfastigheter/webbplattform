@@ -2,25 +2,16 @@
 
 import React from "react";
 import {
-  type AdvertiserSummary,
   type HousingQueue,
   type QueueId,
-  type UrlString,
 } from "@/types";
 
-type QueueMapPopupData = Pick<HousingQueue, "queueId" | "name" | "totalUnits"> & {
-  advertiser: AdvertiserSummary;
-  logoUrl?: UrlString | null;
-  unitsLabel?: string | null;
-};
-
 type QueueMapPopupProps = {
-  queue: QueueMapPopupData;
+  queue: HousingQueue;
   onOpen?: (id: QueueId) => void;
 };
 
-const formatUnits = (totalUnits?: number | null, unitsLabel?: string | null) => {
-  if (unitsLabel) return unitsLabel;
+const formatUnits = (totalUnits?: number | null) => {
   if (typeof totalUnits === "number") {
     return `${totalUnits.toLocaleString("sv-SE")} bostäder`;
   }
@@ -28,10 +19,14 @@ const formatUnits = (totalUnits?: number | null, unitsLabel?: string | null) => 
 };
 
 const QueueMapPopup: React.FC<QueueMapPopupProps> = ({ queue, onOpen }) => {
-  const unitsText = formatUnits(queue.totalUnits, queue.unitsLabel);
-  const logoSource = queue.logoUrl ?? queue.advertiser.logoUrl ?? null;
+  const unitsText = formatUnits(queue.totalUnits);
+  
+  // I din nya struktur ligger loggan på company-objektet
+  const logoSource = queue.company?.logoUrl ?? null;
 
-  const handleOpen = () => onOpen?.(queue.queueId);
+  // Använd 'id' (UUID) istället för 'queueId'
+  const handleOpen = () => onOpen?.(queue.id);
+  
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();

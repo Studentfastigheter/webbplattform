@@ -1,17 +1,11 @@
 import { City } from "./common";
-import { SchoolId } from "./user";
 
-export type School = {
-  schoolId: SchoolId;
-  schoolName: string;
+export type SchoolId = number;
+
+export interface School {
+  id: SchoolId;
+  name: string; // I Java: name (inte schoolName)
   city?: City | null;
   lat?: number | null;
   lng?: number | null;
-};
-
-export type SchoolQueueSummary = {
-  companyId: number;
-  companyName: string;
-  userQueueDays?: number | null;
-  listingsCount?: number | null;
-};
+}
