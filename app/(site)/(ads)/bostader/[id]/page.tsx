@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import BostadAbout from "@/components/ads/BostadAbout";
 import BostadGallery from "@/components/ads/BostadGallery";
 import BostadLandlord from "@/components/ads/BostadLandlord";
-import { backendApi } from "@/lib/api";
+import { listingService } from "@/services/listing-service";
 import { type AdvertiserSummary, type ListingWithRelations } from "@/types";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -27,7 +27,8 @@ export default function Page() {
     if (!listingId) return;
     setLoading(true);
     setError(null);
-    backendApi.listings
+    
+    listingService
       .get(listingId)
       .then((res) => {
         if (!active) return;
@@ -51,16 +52,17 @@ export default function Page() {
   const handleApply = useCallback(() => {
     if (!listingId) return;
     if (!token) {
-      setApplyError("Du maste vara inloggad for att skicka intresse.");
+      setApplyError("Du måste vara inloggad för att skicka intresse.");
       setApplySuccess(null);
       return;
     }
     setApplying(true);
     setApplyError(null);
     setApplySuccess(null);
-    backendApi.listings
-      .interest(listingId, token)
-      .then(() => setApplySuccess("Intresseanmalan skickad."))
+    
+    listingService
+      .registerInterest(listingId, token)
+      .then(() => setApplySuccess("Intresseanmälan skickad."))
       .catch((err: any) => {
         setApplyError(err?.message ?? "Kunde inte skicka intresse.");
       })
@@ -76,10 +78,11 @@ export default function Page() {
 
   const advertiser: AdvertiserSummary & { highlights?: string[]; reviewCount?: number } = useMemo(() => {
     if (!listing) {
+      // Returnera en tom platshållare om listing inte är laddad
       return {
         id: 0,
         type: "company",
-        displayName: "Hyresvard",
+        displayName: "Hyresvärd",
         logoUrl: null,
         bannerUrl: null,
         phone: null,
@@ -93,24 +96,32 @@ export default function Page() {
         city: null,
       };
     }
-    return (
-      listing.advertiser ?? {
-        id: listing.companyId,
-        type: "company" as const,
-        displayName: "Hyresvard",
-        logoUrl: null,
-        bannerUrl: null,
-        phone: null,
-        contactEmail: null,
-        contactPhone: null,
-        contactNote: null,
-        rating: null,
-        subtitle: null,
-        description: null,
-        website: null,
-        city: listing.city ?? null,
-      }
-    );
+
+    if (listing.advertiser) {
+      return listing.advertiser;
+    }
+
+    // Fallback: skapa advertiser-objekt baserat på listing data
+    // HÄR var felet: Vi måste kolla typen innan vi hämtar ID
+    const isCompany = listing.listingType === "company";
+    
+    return {
+      // TypeScript vet nu att om type är 'company' finns companyId, annars landlordId
+      id: isCompany ? listing.companyId : listing.landlordId,
+      type: isCompany ? "company" : "private_landlord",
+      displayName: "Hyresvärd",
+      logoUrl: null,
+      bannerUrl: null,
+      phone: null,
+      contactEmail: null,
+      contactPhone: null,
+      contactNote: null,
+      rating: null,
+      subtitle: null,
+      description: null,
+      website: null,
+      city: listing.city ?? null,
+    };
   }, [listing]);
 
   const content = useMemo(() => {

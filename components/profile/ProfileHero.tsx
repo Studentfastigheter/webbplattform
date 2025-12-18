@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import ProfileHeroActions from "./ProfileHeroActions";
 import {
@@ -20,6 +22,7 @@ export type ProfileStats = {
   preferredArea?: string;
 };
 
+// Vi exporterar denna så att Page.tsx kan använda den för att bygga profilen
 export type StudentProfile = StudentWithRelations & {
   headline?: string;
   stats: ProfileStats;
@@ -27,7 +30,7 @@ export type StudentProfile = StudentWithRelations & {
   avatarUrl?: string | null;
   cvUrl?: string | null;
 
-  // ✅ booleans from DB (TRUE when connected)
+  // Dessa fält kanske inte finns på StudentAccount-typen än, så vi definierar dem här
   verifiedLinkedIn?: boolean | null;
   verifiedInstagram?: boolean | null;
   verifiedFacebook?: boolean | null;
@@ -49,8 +52,6 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
   const schoolName =
     student.school?.schoolName ??
     (student.schoolId ? schoolsById?.[student.schoolId]?.schoolName : undefined);
-
-  const subtitle = student.headline ?? schoolName ?? "Studentprofil";
 
   const bannerImage =
     student.bannerImage ?? student.bannerUrl ?? "/appartment.jpg";
@@ -75,6 +76,7 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
   const infoItems: InfoItem[] = [
     {
       label: "Ålder",
+      // Castar till any ifall 'age' inte finns i typdefinitionen än
       value: (student as any).age ? `${(student as any).age} år` : "Ej angivet",
     },
     {
@@ -127,7 +129,7 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
 
       <div className="relative z-10 px-6 pb-6 pt-0 sm:px-8">
         <div className="mt-4 grid grid-cols-1 gap-8 lg:mt-6 lg:grid-cols-[1.6fr_1fr]">
-          {/* Vänster kolumn */}
+          {/* Vänster kolumn: Avatar och Info */}
           <div className="relative">
             <div className="relative -mt-20 ml-6 h-36 w-36 sm:-mt-24 sm:ml-8 sm:h-40 sm:w-40 lg:-mt-32 lg:ml-10 lg:h-44 lg:w-44">
               <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white bg-white shadow-[0_10px_28px_rgba(0,0,0,0.20)]">
@@ -156,17 +158,16 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
                 {(student.city || student.stats?.preferredArea) && (
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-4 w-4 text-green-900" />
-                    {student.city ?? (student.stats as any)?.preferredArea}
+                    {student.city ?? student.stats.preferredArea}
                   </span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Höger kolumn */}
+          {/* Höger kolumn: Sociala länkar och Snabbfakta */}
           <div className="flex flex-col gap-4">
-            {/* ✅ icons LEFT of the green "Uppdatera profil" button */}
-              <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-3">
               {SOCIAL_VERIFICATIONS.map((social) => {
                 const base =
                   "flex h-10 w-10 shrink-0 aspect-square items-center justify-center rounded-full border border-slate-200 bg-white text-lg leading-none transition";
@@ -198,12 +199,9 @@ export default function ProfileHero({ student, schoolsById }: ProfileHeroProps) 
                 );
               })}
               <div className="overflow-hidden rounded-full">
-                <ProfileHeroActions
-                  editHref="/installningar"
-                />
+                <ProfileHeroActions editHref="/installningar" />
               </div>
             </div>
-
 
             <aside className="w-full rounded-2xl border border-gray-100 bg-white/70 px-4 py-4 sm:px-5 sm:py-5">
               <div className="mb-2 flex items-center gap-2">

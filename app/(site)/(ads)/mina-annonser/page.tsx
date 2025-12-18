@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 import { useAuth } from "@/context/AuthContext";
-import { backendApi } from "@/lib/api";
+// ÄNDRING: Importera listingService istället för backendApi
+import { listingService } from "@/services/listing-service";
 import { type ListingWithRelations } from "@/types";
 
 export default function Page() {
@@ -27,11 +28,14 @@ export default function Page() {
 
     let active = true;
     setLoading(true);
-    backendApi.listings
+    
+    // ÄNDRING: Använd listingService.list
+    listingService
       .list({ size: 200, secure: true }, token)
       .then((res) => {
         if (!active) return;
         const items = res.items ?? [];
+        // Behåller din filtreringslogik för att säkerställa att vi bara visar rätt annonser
         const filtered = items.filter(
           (listing) =>
             landlordId &&
@@ -81,7 +85,7 @@ export default function Page() {
 
       {!token && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Logga in for att se dina annonser.
+          Logga in för att se dina annonser.
         </div>
       )}
 
@@ -93,7 +97,7 @@ export default function Page() {
 
       {!isPrivateLandlord && token && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Denna sida ar for hyresvardskonton.
+          Denna sida är för hyresvärdskonton.
         </div>
       )}
 
@@ -102,7 +106,7 @@ export default function Page() {
           <div className="py-12 text-center text-sm text-gray-500">Laddar annonser...</div>
         ) : gridListings.length === 0 ? (
           <div className="py-12 text-center text-sm text-gray-500">
-            {isPrivateLandlord ? "Du har inga annonser an." : "Ingen annons att visa just nu."}
+            {isPrivateLandlord ? "Du har inga annonser än." : "Ingen annons att visa just nu."}
           </div>
         ) : (
           <div className={listingGridClasses}>
@@ -122,7 +126,7 @@ export default function Page() {
                   rooms={listing.rooms ?? undefined}
                   sizeM2={listing.sizeM2 ?? undefined}
                   rent={listing.rent ?? undefined}
-                  landlordType={listing.advertiser?.displayName ?? "Hyresvard"}
+                  landlordType={listing.advertiser?.displayName ?? "Hyresvärd"}
                   isVerified={Boolean(listing.advertiser)}
                   imageUrl={primaryImage}
                   tags={listing.tags ?? undefined}

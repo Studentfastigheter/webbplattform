@@ -11,7 +11,9 @@ import QueueFilterButton, {
 import OneFieldSearch from "@/components/Listings/Search/SearchFilter-1field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
-import { backendApi } from "@/lib/api";
+
+// ÄNDRING: Importera queueService istället för backendApi
+import { queueService } from "@/services/queue-service";
 import { type AdvertiserSummary, type HousingQueueWithRelations } from "@/types";
 
 const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
@@ -46,10 +48,14 @@ export default function Page() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    backendApi.queues
+
+    // ÄNDRING: Använd queueService.list() direkt
+    queueService
       .list()
       .then((res) => {
         if (!active) return;
+        
+        // Mappar om HousingQueueWithRelations till UI-formatet med advertiser
         const mapped = res.map((queue) => ({
           ...queue,
           advertiser: queue.company
@@ -76,7 +82,7 @@ export default function Page() {
       })
       .catch((err: any) => {
         if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda kor.");
+        setError(err?.message ?? "Kunde inte ladda köer.");
       })
       .finally(() => {
         if (!active) return;
@@ -112,7 +118,7 @@ export default function Page() {
   const cityCounts = useMemo(() => {
     const acc: Record<string, number> = {};
     queues.forEach((queue) => {
-      const city = queue.city ?? "Okand";
+      const city = queue.city ?? "Okänd";
       acc[city] = (acc[city] ?? 0) + 1;
     });
     return acc;
@@ -121,7 +127,7 @@ export default function Page() {
   const landlordCounts = useMemo(() => {
     const acc: Record<string, number> = {};
     queues.forEach((queue) => {
-      const key = queue.advertiser?.displayName ?? "Okand";
+      const key = queue.advertiser?.displayName ?? "Okänd";
       acc[key] = (acc[key] ?? 0) + 1;
     });
     return acc;
@@ -277,7 +283,7 @@ export default function Page() {
                 field={{
                   id: "var",
                   label: "Var",
-                  placeholder: "Sok studentstad",
+                  placeholder: "Sök studentstad",
                   options: cityOptions.map((city) => ({ label: city, value: city })),
                 }}
                 onSubmit={(values) => setSearchValues(values)}
@@ -301,11 +307,11 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Sektion 2: rubrik + vyval for bostaderna */}
+      {/* Sektion 2: rubrik + vyval för bostäderna */}
       <section className="w-full">
         <div className="flex w-full flex-wrap items-center justify-between gap-4">
           <h2 id="bostader-heading" className="text-base font-semibold text-black">
-            Over {totalQueues.toLocaleString("sv-SE")} kor
+            Över {totalQueues.toLocaleString("sv-SE")} köer
           </h2>
           <SwitchSelect value={view} onChange={setView} />
         </div>
@@ -321,11 +327,11 @@ export default function Page() {
           )}
           {loading ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Laddar kor...
+              Laddar köer...
             </div>
           ) : filteredQueues.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Inga kor att visa just nu.
+              Inga köer att visa just nu.
             </div>
           ) : isMapView ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-6">
@@ -352,7 +358,7 @@ export default function Page() {
               aria-hidden
             >
               {loadingMore && (
-                <span className="text-xs text-gray-500">Laddar fler kor...</span>
+                <span className="text-xs text-gray-500">Laddar fler köer...</span>
               )}
             </div>
           )}

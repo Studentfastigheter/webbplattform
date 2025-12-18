@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import { fetchCurrentUser, loginUser } from "@/lib/api";
+// ÄNDRING: Importera authService istället för funktioner från api
+import { authService } from "@/services/auth-service";
 import { type User } from "@/types";
 
 type AuthCtx = {
@@ -30,7 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setToken(t);
-    fetchCurrentUser(t)
+    
+    // ÄNDRING: Använd authService.me
+    authService.me(t)
       .then(setUser)
       .catch(() => {
         localStorage.removeItem("auth_token");
@@ -41,7 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await loginUser({ email, password });
+    // ÄNDRING: Använd authService.login
+    const res = await authService.login({ email, password });
     localStorage.setItem("auth_token", res.accessToken);
     setToken(res.accessToken);
     setUser(res.user);

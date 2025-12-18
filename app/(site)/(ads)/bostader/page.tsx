@@ -11,7 +11,9 @@ import ListingsFilterButton, {
 import SearchFilter3Fields from "@/components/Listings/Search/SearchFilter-3field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
-import { backendApi } from "@/lib/api";
+
+// ÄNDRING: Importera listingService istället för backendApi
+import { listingService } from "@/services/listing-service";
 import { type ListingWithRelations } from "@/types";
 
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
@@ -26,13 +28,13 @@ const priceBounds = { min: 0, max: 12000 };
 
 const propertyTypeOptions = [
   { id: "Rum", label: "Rum" },
-  { id: "Lagenhet", label: "Lagenhet" },
+  { id: "Lagenhet", label: "Lägenhet" }, // Fixade stavfel
   { id: "Korridor", label: "Korridor" },
 ];
 
 const amenityOptions = [
-  { id: "Moblerat", label: "Moblerat" },
-  { id: "Poangfri", label: "Poangfri" },
+  { id: "Moblerat", label: "Möblerat" }, // Fixade stavfel
+  { id: "Poangfri", label: "Poängfri" }, // Fixade stavfel
   { id: "Balkong", label: "Balkong" },
   { id: "Student", label: "Student" },
   { id: "Tunnelbana", label: "Tunnelbana" },
@@ -139,7 +141,8 @@ export default function Page() {
       }
 
       try {
-        const res = await backendApi.listings.list({
+        // ÄNDRING: Anropa listingService.list() istället för backendApi.listings.list()
+        const res = await listingService.list({
           page: pageToLoad,
           size: PAGE_SIZE,
           city: apiQuery.city,
@@ -275,7 +278,7 @@ export default function Page() {
           rooms={listing.rooms ?? undefined}
           sizeM2={listing.sizeM2 ?? undefined}
           rent={listing.rent ?? undefined}
-          landlordType={listing.advertiser?.displayName ?? "Hyresvard"}
+          landlordType={listing.advertiser?.displayName ?? "Hyresvärd"}
           isVerified={Boolean(listing.advertiser)}
           imageUrl={primaryImage}
           tags={listing.tags ?? undefined}
@@ -305,32 +308,32 @@ export default function Page() {
                 field1={{
                   id: "var",
                   label: "Var",
-                  placeholder: "Sok studentstad",
+                  placeholder: "Sök studentstad",
                   searchable: true,
                   options: [
-                    { label: "Goteborg", value: "goteborg" },
+                    { label: "Göteborg", value: "goteborg" },
                     { label: "Stockholm", value: "stockholm" },
                     { label: "Uppsala", value: "uppsala" },
                     { label: "Lund", value: "lund" },
-                    { label: "Malmo", value: "malmo" },
+                    { label: "Malmö", value: "malmo" },
                   ],
                 }}
                 field2={{
                   id: "hyresvard",
-                  label: "Hyresvard",
-                  placeholder: "Valj hyresvard",
+                  label: "Hyresvärd",
+                  placeholder: "Välj hyresvärd",
                   searchable: true,
                   options: [
-                    { label: "Privat hyresvard", value: "privat" },
+                    { label: "Privat hyresvärd", value: "privat" },
                     { label: "Kommunal", value: "kommunal" },
                     { label: "Stiftelse", value: "stiftelse" },
-                    { label: "AF Bostader", value: "af-bostader" },
+                    { label: "AF Bostäder", value: "af-bostader" },
                   ],
                 }}
                 field3={{
                   id: "pris",
                   label: "Pris",
-                  placeholder: "Valj prisintervall",
+                  placeholder: "Välj prisintervall",
                   options: [
                     { label: "0 - 4000", value: "0-4000" },
                     { label: "4000 - 8000", value: "4000-8000" },
@@ -357,11 +360,11 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Sektion 2: rubrik + vyval for bostaderna */}
+      {/* Sektion 2: rubrik + vyval för bostäderna */}
       <section className="w-full">
         <div className="flex w-full flex-wrap items-center justify-between gap-4">
           <h2 id="bostader-heading" className="text-base font-semibold text-black">
-            Over {totalListings.toLocaleString("sv-SE")} boenden
+            Över {totalListings.toLocaleString("sv-SE")} boenden
           </h2>
           <SwitchSelect value={view} onChange={setView} />
         </div>

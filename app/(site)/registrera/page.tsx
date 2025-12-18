@@ -15,7 +15,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { registerUser } from "@/lib/api";
+// ÄNDRING: Importera authService istället för registerUser från api
+import { authService } from "@/services/auth-service";
 import { type UserType } from "@/types";
 
 type RegisterForm = {
@@ -28,7 +29,7 @@ type RegisterForm = {
 const accountTypeOptions = [
   { value: "student", title: "Student" },
   { value: "private_landlord", title: "Uthyrare" },
-  { value: "company", title: "Foretag" },
+  { value: "company", title: "Företag" },
 ] satisfies ReadonlyArray<{ value: UserType; title: string }>;
 
 export default function RegisterPage() {
@@ -48,26 +49,29 @@ export default function RegisterPage() {
     setError(null);
 
     if (!form.ssn || !form.email || !form.password) {
-      setError("Fyll i alla falt.");
+      setError("Fyll i alla fält.");
       return;
     }
     if (form.password.length < 6) {
-      setError("Losenord maste vara minst 6 tecken.");
+      setError("Lösenord måste vara minst 6 tecken.");
       return;
     }
 
     setLoading(true);
     try {
-      await registerUser({
+      // ÄNDRING: Använd authService.register
+      await authService.register({
         type: form.type,
         ssn: form.ssn.trim(),
         email: form.email.trim(),
         password: form.password,
       });
+      
+      // Logga in användaren direkt efter registrering
       await login(form.email, form.password);
       router.push("/");
     } catch (err: any) {
-      setError(err?.message ?? "Nagot gick fel.");
+      setError(err?.message ?? "Något gick fel.");
     } finally {
       setLoading(false);
     }
@@ -81,7 +85,7 @@ export default function RegisterPage() {
           footer={
             <FieldDescription className="text-center">
               Har du redan ett konto?{" "}
-              <Link href="/logga-in">Logga in har</Link>
+              <Link href="/logga-in">Logga in här</Link>
             </FieldDescription>
           }
         >
@@ -121,7 +125,7 @@ export default function RegisterPage() {
                 <Input
                   id="ssn"
                   type="text"
-                  placeholder="AAMMDD-XXXX"
+                  placeholder="ÅÅMMDD-XXXX"
                   value={form.ssn}
                   onChange={(event) =>
                     setForm({ ...form, ssn: event.target.value.trim() })
@@ -147,7 +151,7 @@ export default function RegisterPage() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="password">Losenord</FieldLabel>
+                <FieldLabel htmlFor="password">Lösenord</FieldLabel>
                 <Input
                   id="password"
                   type="password"

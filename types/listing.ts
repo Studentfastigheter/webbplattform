@@ -25,6 +25,7 @@ export type ListingImage = {
   imageUrl: UrlString;
 };
 
+// Gemensamma fält för alla listings
 export type BaseListing = Coordinates & {
   listingId: ListingId;
   title: string;
@@ -45,20 +46,29 @@ export type BaseListing = Coordinates & {
   status: ListingStatus;
   createdAt: TimestampString;
   updatedAt: TimestampString;
+  advertiser?: AdvertiserSummary;
 };
 
+// Specifika fält för företagsannonser
 export type CompanyListing = BaseListing & {
   listingType: "company";
   companyId: CompanyId;
+  // En företagsannons har INTE landlordId
 };
 
+// Specifika fält för privata annonser
 export type PrivateListing = BaseListing & {
   listingType: "private";
   landlordId: LandlordId;
   applicationCount?: number | null;
+  // En privat annons har INTE companyId
 };
 
+// Unionen
 export type Listing = CompanyListing | PrivateListing;
+
+// ListingWithRelations är samma som Listing i din nya struktur eftersom vi inkluderade 'advertiser' i BaseListing/Listing
+export type ListingWithRelations = Listing;
 
 // Relations & Summaries
 export type AdvertiserSummary = {
@@ -76,10 +86,6 @@ export type AdvertiserSummary = {
   description?: string | null;
   website?: UrlString | null;
   city?: City | null;
-};
-
-export type ListingWithRelations = Listing & {
-  advertiser?: AdvertiserSummary;
 };
 
 export type StudentLikedListing = {

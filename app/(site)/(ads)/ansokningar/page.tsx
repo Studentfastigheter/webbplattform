@@ -13,15 +13,16 @@ import {
   type StudentApplicationRowProps,
 } from "@/components/Applications/StudentApplicationRow";
 import { useAuth } from "@/context/AuthContext";
-import { backendApi } from "@/lib/api";
+// ÄNDRING: Importera listingService istället för backendApi
+import { listingService } from "@/services/listing-service";
 import { type CompanyId } from "@/types";
 
 const STUDENT_COLUMNS: ListFrameColumn[] = [
   { id: "annons", label: "Annons", width: "2.6fr" },
   { id: "etikett", label: "Etikett", width: "1.4fr" },
   { id: "status", label: "Status", align: "center", width: "1.1fr" },
-  { id: "ansokningsdag", label: "Ansokningsdag", align: "left", width: "1fr" },
-  { id: "andra_anmalan", label: "Andra anmalan", align: "center", width: "1.1fr" },
+  { id: "ansokningsdag", label: "Ansökningsdag", align: "left", width: "1fr" },
+  { id: "andra_anmalan", label: "Ändra anmälan", align: "center", width: "1.1fr" },
 ];
 
 const LANDLORD_COLUMNS: ListFrameColumn[] = [
@@ -29,7 +30,7 @@ const LANDLORD_COLUMNS: ListFrameColumn[] = [
   { id: "annons", label: "Annons", width: "1.6fr" },
   { id: "status", label: "Status", align: "center", width: "1.1fr" },
   { id: "inkommen", label: "Inkommen", align: "left", width: "1fr" },
-  { id: "hantera", label: "Atgarder", align: "center", width: "1.1fr" },
+  { id: "hantera", label: "Åtgärder", align: "center", width: "1.1fr" },
 ];
 
 export default function Page() {
@@ -58,21 +59,23 @@ export default function Page() {
     const loadStudentApplications = () => {
       setLandlordApplications([]);
       setLoading(true);
-      backendApi.interests
-        .mine(token)
+      
+      // ÄNDRING: Använd listingService.getMyInterests
+      listingService
+        .getMyInterests(token)
         .then((interests) => {
           if (!active) return;
           const mapped: ListingApplicationRowProps[] = interests.map(
             (interest): ListingApplicationRowProps => ({
               listingId: interest.listingId,
-              title: interest.title ?? "Okand annons",
+              title: interest.title ?? "Okänd annons",
               rent: interest.rent ?? undefined,
               area: null,
               city: interest.city ?? null,
               dwellingType: null,
               rooms: null,
               sizeM2: null,
-              landlordType: interest.companyName ?? "Hyresvard",
+              landlordType: interest.companyName ?? "Hyresvärd",
               imageUrl: interest.primaryImageUrl ?? undefined,
               tags: [],
               images: interest.primaryImageUrl
@@ -107,7 +110,7 @@ export default function Page() {
         })
         .catch((err: any) => {
           if (!active) return;
-          setError(err?.message ?? "Kunde inte ladda ansokningar.");
+          setError(err?.message ?? "Kunde inte ladda ansökningar.");
         })
         .finally(() => {
           if (!active) return;
@@ -116,7 +119,7 @@ export default function Page() {
     };
 
     const loadLandlordApplications = () => {
-      // TODO: Koppla pa hyresvardens ansoknings-feed nar API finns.
+      // TODO: Koppla på hyresvärdens ansöknings-feed när API finns.
       setStudentApplications([]);
       setLoading(false);
       setLandlordApplications([]);
@@ -150,11 +153,11 @@ export default function Page() {
   const columns = isPrivateLandlord ? LANDLORD_COLUMNS : STUDENT_COLUMNS;
 
   const emptyMessage = (() => {
-    if (loading) return "Laddar ansokningar...";
-    if (!token) return "Du maste vara inloggad for att se dina ansokningar.";
-    if (isPrivateLandlord) return "Inga ansokningar till dina annonser an.";
-    if (isStudent) return "Inga ansokningar att visa just nu";
-    return "Denna vy stoder inte kontotypen an.";
+    if (loading) return "Laddar ansökningar...";
+    if (!token) return "Du måste vara inloggad för att se dina ansökningar.";
+    if (isPrivateLandlord) return "Inga ansökningar till dina annonser än.";
+    if (isStudent) return "Inga ansökningar att visa just nu";
+    return "Denna vy stöder inte kontotypen än.";
   })();
 
   return (
@@ -162,7 +165,7 @@ export default function Page() {
       <div className="w-full">
         {!token && (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Logga in for att se dina ansokningar.
+            Logga in för att se dina ansökningar.
           </div>
         )}
         {error && (

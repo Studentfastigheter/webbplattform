@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
+// ÄNDRING: Importera StudentProfile från ProfileHero för att matcha typen exakt
 import ProfileHero, { type StudentProfile } from "@/components/profile/ProfileHero";
 import ProfileHeroActions from "@/components/profile/ProfileHeroActions";
 import ProfileAbout from "@/components/profile/ProfileAbout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { backendApi } from "@/lib/api";
+import { schoolService } from "@/services/school-service";
+import { listingService } from "@/services/listing-service";
 import {
   type School,
   type StudentAccount,
@@ -27,6 +29,7 @@ type LandlordHeroProps = {
   listingsCount: number;
 };
 
+// Helper för att mappa StudentAccount till StudentProfile (som ProfileHero förväntar sig)
 const buildProfileFromUser = (user: StudentAccount): StudentProfile => {
   const stats = {
     studyProgram: user.tags?.[0],
@@ -41,15 +44,29 @@ const buildProfileFromUser = (user: StudentAccount): StudentProfile => {
 
   return {
     ...user,
-    stats,
+    // Vi lägger till saknade relationer som tomma arrayer/null för att matcha typen
+    school: undefined,
+    likedListings: [],
+    listingApplications: [],
+    queueApplications: [],
+    searchWatchlist: [],
+    notifications: [],
+    
     headline: user.city ?? "Student",
+    stats,
     bannerImage: user.bannerUrl ?? null,
     avatarUrl: user.logoUrl ?? null,
+    cvUrl: null,
 
-    // ƒo. make sure these exist on the built profile if your API returns them
+    // Hantera fält som kanske inte finns på StudentAccount än
+    verifiedLinkedIn: (user as any).verifiedLinkedIn ?? null,
+    verifiedInstagram: (user as any).verifiedInstagram ?? null,
+    verifiedFacebook: (user as any).verifiedFacebook ?? null,
+    
+    // Mappa legacy-fält om de finns
     preferenceText: (user as any).PREFERENCE_TEXT ?? (user as any).preferenceText ?? null,
     aboutText: (user as any).ABOUT_TEXT ?? (user as any).aboutText ?? null,
-  };
+  } as StudentProfile;
 };
 
 function LandlordProfileHero({ landlord, listingsCount }: LandlordHeroProps) {
@@ -248,7 +265,7 @@ export default function Page() {
     let active = true;
     setError(null);
 
-    backendApi.schools
+    schoolService
       .list()
       .then((schools) => {
         if (!active) return;
@@ -278,14 +295,21 @@ export default function Page() {
     setLoadingListings(true);
     setError(null);
 
-    backendApi.listings
+    // I src/app/profil/page.tsx
+    listingService
       .list({ size: 200, secure: true }, token)
       .then((res) => {
         if (!active) return;
         const items = res.items ?? [];
-        const filtered = items.filter((listing) => listing.landlordId === landlordId);
+        
+        // Vi använder en Type Guard check här för att TypeScript ska fatta
+        const filtered = items.filter((listing) => 
+          listing.listingType === "private" && listing.landlordId === landlordId
+        );
+        
         setLandlordListings(filtered);
       })
+
       .catch((err: any) => {
         if (!active) return;
         setError(err?.message ?? "Kunde inte ladda dina annonser.");
@@ -304,7 +328,7 @@ export default function Page() {
     return (
       <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-800">
-          {token ? "Ingen profil att visa." : "Logga in for att se din profil."}
+          {token ? "Ingen profil att visa." : "Logga in för att se din profil."}
         </div>
       </main>
     );
@@ -318,7 +342,7 @@ export default function Page() {
       (profile.schoolId ? schoolsById?.[profile.schoolId]?.schoolName : undefined);
 
     const aboutText =
-      profile.aboutText ?? "Ingen profiltext tillagd ÇÏn.";
+      profile.aboutText ?? "Ingen profiltext tillagd än.";
 
     return (
       <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
@@ -332,15 +356,14 @@ export default function Page() {
           <ProfileHero student={profile} schoolsById={schoolsById} />
 
           <ProfileAbout
-            badges={["RÇôkfri", "SkÇôtsam", "Inga betalningsanmÇÏrkningar"]}
+            badges={["Rökfri", "Skötsam", "Inga betalningsanmärkningar"]}
             aboutText={aboutText}
             facts={[
-              { label: "Ç.lder", value: (profile as any).age ? `${(profile as any).age} Ç¾r` : undefined },
-              { label: "KÇôn", value: (profile as any).gender ?? undefined },
+              { label: "Ålder", value: (profile as any).age ? `${(profile as any).age} år` : undefined },
+              { label: "Kön", value: (profile as any).gender ?? undefined },
               { label: "Utbildning", value: profile.stats.studyProgram ?? undefined },
               { label: "Skola", value: schoolName ?? undefined },
             ]}
-            // ƒo. THIS is the DB field you asked for
             preferenceText={(profile as any).PREFERENCE_TEXT ?? profile.preferenceText ?? null}
             interests={(profile as any).interests ?? ["Plugga", "Festa", "Paddelproffs"]}
             languages={(profile as any).languages ?? ["Svenska", "Engelska", "Spanska"]}
@@ -352,10 +375,10 @@ export default function Page() {
 
   if (user.type === "private_landlord") {
     const landlord = user;
-    const aboutText = landlord.description ?? "Ingen profiltext tillagd an.";
+    const aboutText = landlord.description ?? "Ingen profiltext tillagd än.";
     const preferenceText =
       landlord.contactNote ??
-      "Beratta kort om dina boenden och vilka studenter du soker.";
+      "Berätta kort om dina boenden och vilka studenter du söker.";
 
     return (
       <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
@@ -392,7 +415,7 @@ export default function Page() {
               </div>
               <div className="flex items-center gap-2">
                 <Button as="a" href="/ansokningar" size="sm" variant="secondary">
-                  Ansokningar
+                  Ansökningar
                 </Button>
                 <Button as="a" href="/mina-annonser/ny" size="sm" variant="default">
                   Skapa annons
@@ -404,7 +427,7 @@ export default function Page() {
               <div className="py-8 text-sm text-gray-500">Laddar dina annonser...</div>
             ) : landlordListings.length === 0 ? (
               <div className="py-8 text-sm text-gray-500">
-                {token ? "Inga annonser kopplade till ditt konto an." : "Logga in for att se dina annonser."}
+                {token ? "Inga annonser kopplade till ditt konto än." : "Logga in för att se dina annonser."}
               </div>
             ) : (
               <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -424,7 +447,7 @@ export default function Page() {
                       rooms={listing.rooms ?? undefined}
                       sizeM2={listing.sizeM2 ?? undefined}
                       rent={listing.rent ?? undefined}
-                      landlordType={listing.advertiser?.displayName ?? "Hyresvard"}
+                      landlordType={listing.advertiser?.displayName ?? "Hyresvärd"}
                       isVerified={Boolean(landlord.verified)}
                       imageUrl={primaryImage}
                       tags={listing.tags ?? undefined}
@@ -445,7 +468,7 @@ export default function Page() {
   return (
     <main className="px-4 py-6 pb-12 lg:px-6 lg:py-10">
       <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-800">
-        Denna vy stoder inte kontotypen an.
+        Denna vy stöder inte kontotypen än.
       </div>
     </main>
   );

@@ -1,6 +1,8 @@
 import { type ReactNode } from "react";
 
-import { fetchCurrentAds, type RollingAd } from "@/lib/api";
+// ÄNDRING: Importera service och typer från den nya strukturen
+import { listingService } from "@/services/listing-service";
+import { type RollingAd } from "@/types";
 
 type NormalizedAd = {
   id: string;
@@ -56,7 +58,8 @@ const extractImageFromData = (data: unknown): string | null => {
 
 async function getCurrentAds(): Promise<NormalizedAd[]> {
   try {
-    const ads = await fetchCurrentAds();
+    // ÄNDRING: Använd listingService
+    const ads = await listingService.getCurrentAds();
     return ads
       .map((ad, idx) => {
         const src = extractImageFromData(ad.data);

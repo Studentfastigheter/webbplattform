@@ -1,11 +1,15 @@
 import { City, JsonValue, Tag, TimestampString, UrlString } from "./common";
+// Importera typerna som behövs för relationerna
+import { School } from "./school";
+import { StudentLikedListing, ListingApplication, StudentSearchWatchlist } from "./listing";
+import { StudentQueueApplication } from "./queue";
 
 // IDs
 export type StudentId = number;
 export type CompanyId = number;
 export type LandlordId = number;
 export type AccountId = StudentId | CompanyId | LandlordId;
-export type SchoolId = number; // Flyttad hit då den används i Student
+export type SchoolId = number;
 export type ConversationId = number;
 export type MessageId = number;
 export type NotificationId = number;
@@ -111,4 +115,14 @@ export type Transaction = {
   accountId: AccountId;
   information?: JsonValue | null;
   createdAt: TimestampString;
+};
+
+// HÄR ÄR DEN SAKNADE TYPEN
+export type StudentWithRelations = StudentAccount & {
+  school?: School | null;
+  likedListings?: StudentLikedListing[];
+  listingApplications?: ListingApplication[];
+  queueApplications?: StudentQueueApplication[];
+  searchWatchlist?: StudentSearchWatchlist[];
+  notifications?: UserNotification[];
 };

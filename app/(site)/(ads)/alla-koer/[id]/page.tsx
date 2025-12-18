@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
 import QueueRules from "@/components/ads/QueueRules";
-import { backendApi } from "@/lib/api";
+// ÄNDRING: Importera services istället för backendApi
+import { queueService } from "@/services/queue-service";
+import { listingService } from "@/services/listing-service";
 import { type ListingCardSmallProps } from "@/components/Listings/ListingCard_Small";
 import { type HousingQueueWithRelations, type ListingWithRelations } from "@/types";
 import { useParams } from "next/navigation";
@@ -14,7 +16,7 @@ type QueueDetail = HousingQueueWithRelations;
 const DEFAULT_RULES = [
   {
     title: "Studiekrav",
-    description: "Antagen pa minst 15 hp per termin.",
+    description: "Antagen på minst 15 hp per termin.",
   },
   {
     title: "Aktivt konto",
@@ -22,7 +24,7 @@ const DEFAULT_RULES = [
   },
   {
     title: "Svarstid",
-    description: "Svarstid 1-2 dagar pa erbjudanden.",
+    description: "Svarstid 1-2 dagar på erbjudanden.",
   },
 ];
 
@@ -39,7 +41,7 @@ const toListingCard = (listing: ListingWithRelations): ListingCardSmallProps => 
     rooms: listing.rooms ?? undefined,
     sizeM2: listing.sizeM2 ?? undefined,
     rent: listing.rent ?? undefined,
-    landlordType: listing.advertiser?.displayName ?? "Hyresvard",
+    landlordType: listing.advertiser?.displayName ?? "Hyresvärd",
     isVerified: Boolean(listing.advertiser),
     imageUrl: primaryImage,
     tags: listing.tags ?? undefined,
@@ -61,13 +63,16 @@ export default function Page() {
     if (!queueId) return;
     setLoading(true);
     setError(null);
+
+    // ÄNDRING: Använd services istället för backendApi
     Promise.all([
-      backendApi.queues.get(queueId),
-      backendApi.listings.list({ size: 100 }),
+      queueService.get(queueId),
+      listingService.list({ size: 100 }), // Hämtar många för att filtrera client-side (samma logik som förut)
     ])
       .then(([queueRes, listingRes]) => {
         if (!active) return;
         setQueue(queueRes);
+        
         const filtered =
           listingRes.items
             ?.filter(
@@ -81,7 +86,7 @@ export default function Page() {
       })
       .catch((err: any) => {
         if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda kçuppgifter.");
+        setError(err?.message ?? "Kunde inte ladda köuppgifter.");
         setQueue(null);
         setListings([]);
       })
@@ -99,14 +104,14 @@ export default function Page() {
     if (loading) {
       return (
         <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-700">
-          Laddar kç...
+          Laddar kö...
         </div>
       );
     }
     if (error || !queue) {
       return (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-800">
-          {error ?? "Kç kunde inte hittas."}
+          {error ?? "Kö kunde inte hittas."}
         </div>
       );
     }

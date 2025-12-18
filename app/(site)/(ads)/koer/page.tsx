@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/components/Queues/QueueRow";
 import { useAuth } from "@/context/AuthContext";
-import { backendApi } from "@/lib/api";
+// ÄNDRING: Importera queueService istället för backendApi
+import { queueService } from "@/services/queue-service";
 
 const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
   if (status === "open") return "Aktiv";
@@ -37,16 +38,22 @@ export default function Page() {
     let active = true;
     setLoading(true);
     setError(null);
-    Promise.all([backendApi.queues.mine(token), backendApi.queues.list()])
+
+    // ÄNDRING: Använd queueService.getMyQueues och queueService.list
+    Promise.all([queueService.getMyQueues(token), queueService.list()])
       .then(([userQueues, allQueues]) => {
         if (!active) return;
+        
+        // Skapa en Map för snabb uppslagning av kö-detaljer
         const queueById = new Map(allQueues.map((queue) => [queue.queueId, queue]));
+        
         const rows = userQueues.map((entry) => {
           const queue = queueById.get(entry.queueId);
           const company = queue?.company;
+          
           return {
             id: entry.queueId,
-            name: queue?.name ?? entry.queueName ?? "Okand ko",
+            name: queue?.name ?? entry.queueName ?? "Okänd kö",
             logoUrl: company?.logoUrl ?? company?.bannerUrl ?? "/logos/campuslyan-logo.svg",
             cities: queue?.city ? [queue.city] : [],
             status: statusToRowStatus(queue?.status),
@@ -58,7 +65,7 @@ export default function Page() {
       })
       .catch((err: any) => {
         if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda kor.");
+        setError(err?.message ?? "Kunde inte ladda köer.");
       })
       .finally(() => {
         if (!active) return;
@@ -77,7 +84,7 @@ export default function Page() {
       <div className="w-full">
         {!token && (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Logga in for att se dina kor.
+            Logga in för att se dina köer.
           </div>
         )}
         {error && (
@@ -91,10 +98,10 @@ export default function Page() {
           emptyState={
             <div className="py-16 text-center text-sm text-gray-400">
               {loading
-                ? "Laddar kor..."
+                ? "Laddar köer..."
                 : token
-                  ? "Inga kor att visa just nu"
-                  : "Du maste vara inloggad for att se dina kor."}
+                ? "Inga köer att visa just nu"
+                : "Du måste vara inloggad för att se dina köer."}
             </div>
           }
         />

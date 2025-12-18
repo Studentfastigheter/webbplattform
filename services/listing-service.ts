@@ -6,6 +6,7 @@ import {
   UserInterest,
   ListingActivity,
   RollingAd,
+  // Dessa importerades inte i din screenshot, vilket orsakade felet "Cannot find name..."
   CompanyId,
   LandlordId,
 } from "@/types";
@@ -94,13 +95,11 @@ const toListingImages = (dto: {
   }));
 };
 
-// Exporterar denna för användning i school-service
 export const mapListingDto = (
   dto: ApiListingPublicDto | ApiListingPrivateDto
 ): ListingWithRelations => {
   const now = new Date().toISOString();
   
-  // Bestäm typen först
   const rawType =
     (dto as ApiListingPrivateDto).listingType ?? (dto as any).listingType;
   
@@ -108,9 +107,7 @@ export const mapListingDto = (
     rawType === "private" ||
     !!(dto as ApiListingPrivateDto).landlordId;
 
-  const listingType: ListingType = isPrivate ? "private" : "company";
-
-  // Hämta IDs säkert
+  // Säkra konverteringar till nummer (0 som fallback om det saknas)
   const landlordIdVal =
     isPrivate && "landlordId" in dto
       ? Number((dto as ApiListingPrivateDto).landlordId ?? 0)
@@ -121,13 +118,12 @@ export const mapListingDto = (
       ? Number(dto.companyId)
       : 0;
 
-  // Bygg annonsörs-objektet
   const advertiser =
-    listingType === "company"
-      ? dto.companyName || companyIdVal
+    !isPrivate
+      ? (dto.companyName || companyIdVal)
         ? {
             type: "company" as const,
-            id: companyIdVal,
+            id: companyIdVal as CompanyId,
             displayName: dto.companyName ?? "Hyresvärd",
             city: dto.city ?? null,
           }
@@ -135,7 +131,7 @@ export const mapListingDto = (
       : landlordIdVal
       ? {
           type: "private_landlord" as const,
-          id: landlordIdVal,
+          id: landlordIdVal as LandlordId,
           displayName:
             (dto as ApiListingPrivateDto).landlordName ??
             dto.companyName ??
@@ -144,7 +140,7 @@ export const mapListingDto = (
         }
       : undefined;
 
-const baseListing = {
+  const baseListing = {
     listingId: dto.id,
     title: dto.title,
     area: dto.area ?? null,
@@ -169,17 +165,17 @@ const baseListing = {
     advertiser: advertiser as any,
   };
 
-  if (listingType === "private") {
+  if (isPrivate) {
     return {
       ...baseListing,
       listingType: "private",
-      landlordId: landlordIdVal as LandlordId, // Här vet vi att det är ett nummer
+      landlordId: landlordIdVal as LandlordId, // Nu definierat tack vare importen
     };
   } else {
     return {
       ...baseListing,
       listingType: "company",
-      companyId: companyIdVal as CompanyId,
+      companyId: companyIdVal as CompanyId, // Nu definierat
     };
   }
 };
@@ -197,7 +193,6 @@ const mapInterestDto = (dto: ApiInterestDto): UserInterest | null => {
   };
 };
 
-// --- Service Methods ---
 export type ListListingsParams = {
   q?: string;
   city?: string;
