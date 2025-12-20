@@ -3,7 +3,7 @@ import {
   ListingCardDTO,
   ListingDetailDTO,
   PageResponse,
-  StudentApplicationDTO, // <--- NY IMPORT
+  StudentApplicationDTO,
 } from "@/types/listing";
 
 // --- Lokala typer ---
@@ -26,10 +26,33 @@ export type RollingAd = {
 
 export const listingService = {
 
-  // 1. HÄMTA FLÖDET (Feed)
-  // Anropar: GET /api/listings?page=0&size=12
-  getAll: async (page = 0, size = 12): Promise<PageResponse<ListingCardDTO>> => {
-    const query = buildQuery({ page, size });
+  /**
+   * 1. HÄMTA FILTRERAT FLÖDE (Feed)
+   * Uppdaterad för att stödja backend-filtrering.
+   * Anropar: GET /api/listings?page=0&size=12&city=...&dwellingType=... etc.
+   */
+  getAll: async (
+    page = 0, 
+    size = 12, 
+    city?: string | null,
+    dwellingType?: string | null,
+    minRent?: number | null,
+    maxRent?: number | null,
+    hostType?: string | null
+  ): Promise<PageResponse<ListingCardDTO>> => {
+    // Bygg query-objektet med alla filter som skickas från ListingsPage
+    const queryParams: Record<string, any> = { 
+      page, 
+      size 
+    };
+
+    if (city) queryParams.city = city;
+    if (dwellingType) queryParams.dwellingType = dwellingType;
+    if (minRent !== null) queryParams.minRent = minRent;
+    if (maxRent !== null) queryParams.maxRent = maxRent;
+    if (hostType) queryParams.hostType = hostType;
+
+    const query = buildQuery(queryParams);
     return await apiClient<PageResponse<ListingCardDTO>>(`/listings${query}`);
   },
 
@@ -39,7 +62,7 @@ export const listingService = {
     return await apiClient<ListingDetailDTO>(`/listings/${id}`);
   },
 
-  // 3. HÄMTA MINA ANSÖKNINGAR (Ny metod!)
+  // 3. HÄMTA MINA ANSÖKNINGAR
   // Anropar: GET /api/applications/my
   getMyApplications: async (): Promise<StudentApplicationDTO[]> => {
     return await apiClient<StudentApplicationDTO[]>("/applications/my");
@@ -82,25 +105,18 @@ export const listingService = {
     }
   },
 
-  // Rullande annonser (Ads)
-  // I listing-service.ts
-
-/**
- * Hämtar rullande annonser som är aktiva just nu.
- * Anropar GET /api/ads/current i backend.
- */
+  /**
+   * Rullande annonser (Ads)
+   * Hämtar annonser som är aktiva just nu från backend.
+   */
   getCurrentAds: async (): Promise<RollingAd[]> => {
     try {
-      // Backend returnerar en lista av Ad-objekt
       const ads = await apiClient<any[]>("/ads/current");
       
       return ads.map((ad) => ({
-        // ID från databasen (Long i Java)
         id: ad.id,
-        // Fältet heter 'company' i Java-modellen
-        company: ad.company,
-        // 'data' innehåller JsonNode (vår JSONB-kolumn)
-        data: ad.data, 
+        company: ad.company, // Matchar 'company' i Java-modellen
+        data: ad.data,       // Innehåller JsonNode (JSONB)
       }));
     } catch (e) {
       console.error("Kunde inte hämta annonser:", e);

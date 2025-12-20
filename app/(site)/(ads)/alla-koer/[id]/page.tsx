@@ -27,7 +27,7 @@ const toListingCard = (listing: any): ListingCardSmallProps => ({
   rent: listing.rent ?? undefined,
   landlordType: listing.hostType,
   isVerified: true,
-  imageUrl: listing.listingImage ?? undefined, // Matchar din backend DTO
+  imageUrl: listing.listingImage ?? undefined,
   tags: [],
 });
 

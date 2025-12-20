@@ -4,6 +4,7 @@ import Image from "next/image";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import { type HousingQueueDTO } from "@/types/queue";
 import { MapPin, ShieldCheck, Loader2 } from "lucide-react";
+import { Button } from "../ui/button";
 
 type QueueHeroProps = {
   queue: HousingQueueDTO;
@@ -111,14 +112,11 @@ export default function QueueHero({ queue, onJoin, isJoining, isLoggedIn }: Queu
           {/* Höger kolumn */}
           <div className="flex flex-col gap-4">
             {/* Gå med knapp */}
-            <button
+            <Button
               onClick={onJoin}
               disabled={isJoining}
-              className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold transition active:scale-95 ${
-                isLoggedIn 
-                  ? "bg-black text-white hover:bg-gray-800" 
-                  : "bg-green-700 text-white hover:bg-green-800"
-              } disabled:opacity-50`}
+              variant="default"
+              size="sm"
             >
               {isJoining ? (
                 <>
@@ -128,7 +126,7 @@ export default function QueueHero({ queue, onJoin, isJoining, isLoggedIn }: Queu
               ) : (
                 isLoggedIn ? "Ställ dig i kön nu" : "Logga in och gå med"
               )}
-            </button>
+            </Button>
 
             {/* Snabbfakta */}
             <aside className="w-full rounded-2xl border border-gray-100 bg-white/70 p-5">
