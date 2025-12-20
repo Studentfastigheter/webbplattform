@@ -83,15 +83,27 @@ export const listingService = {
   },
 
   // Rullande annonser (Ads)
+  // I listing-service.ts
+
+/**
+ * Hämtar rullande annonser som är aktiva just nu.
+ * Anropar GET /api/ads/current i backend.
+ */
   getCurrentAds: async (): Promise<RollingAd[]> => {
     try {
+      // Backend returnerar en lista av Ad-objekt
       const ads = await apiClient<any[]>("/ads/current");
+      
       return ads.map((ad) => ({
+        // ID från databasen (Long i Java)
         id: ad.id,
+        // Fältet heter 'company' i Java-modellen
         company: ad.company,
-        data: ad.data,
+        // 'data' innehåller JsonNode (vår JSONB-kolumn)
+        data: ad.data, 
       }));
     } catch (e) {
+      console.error("Kunde inte hämta annonser:", e);
       return [];
     }
   },

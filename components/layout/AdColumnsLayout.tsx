@@ -1,8 +1,7 @@
-import { type ReactNode } from "react";
+"use client"; // Krävs för att useEffect ska fungera i Next.js App Router
 
-// ÄNDRING: Importera service och typer från den nya strukturen
+import { type ReactNode, useEffect, useState } from "react";
 import { listingService } from "@/services/listing-service";
-import { type RollingAd } from "@/types";
 
 type NormalizedAd = {
   id: string;
@@ -17,19 +16,14 @@ type AdColumnsLayoutProps = {
 const normalizeImageSource = (value: string): string | null => {
   const trimmed = value.trim();
   if (!trimmed) return null;
-
-  // Accept full data-URIs or remote URLs as-is, otherwise assume raw base64 data.
   if (/^(data:image\/|https?:\/\/)/i.test(trimmed)) return trimmed;
   return `data:image/png;base64,${trimmed}`;
 };
 
 const extractImageFromData = (data: unknown): string | null => {
   if (!data) return null;
-
-  // Plain string (base64, data-URI, URL)
   if (typeof data === "string") return normalizeImageSource(data);
 
-  // Array: pick the first usable entry
   if (Array.isArray(data)) {
     for (const item of data) {
       const normalized = extractImageFromData(item);
@@ -38,9 +32,9 @@ const extractImageFromData = (data: unknown): string | null => {
     return null;
   }
 
-  // Object: look for common keys or nested data
   if (typeof data === "object") {
-    const candidates = ["image", "src", "url", "data"] as const;
+    // FIX: Lade till "imageUrl" eftersom det är nyckeln som används i DataLoader.java
+    const candidates = ["imageUrl", "image", "src", "url", "data"] as const;
     for (const key of candidates) {
       const maybe = (data as Record<string, unknown>)[key];
       if (typeof maybe === "string") {
@@ -55,27 +49,6 @@ const extractImageFromData = (data: unknown): string | null => {
 
   return null;
 };
-
-async function getCurrentAds(): Promise<NormalizedAd[]> {
-  try {
-    // ÄNDRING: Använd listingService
-    const ads = await listingService.getCurrentAds();
-    return ads
-      .map((ad, idx) => {
-        const src = extractImageFromData(ad.data);
-        if (!src) return null;
-
-        return {
-          id: String(ad.id ?? idx),
-          src,
-          alt: ad.company ? `Annons från ${ad.company}` : "Annons",
-        } as NormalizedAd;
-      })
-      .filter(Boolean) as NormalizedAd[];
-  } catch {
-    return [];
-  }
-}
 
 const AdSlot = ({ ad, ariaLabel }: { ad?: NormalizedAd; ariaLabel: string }) => (
   <div className="relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm aspect-[2/5] min-h-[480px] max-h-[760px]">
@@ -97,8 +70,35 @@ const AdSlot = ({ ad, ariaLabel }: { ad?: NormalizedAd; ariaLabel: string }) => 
   </div>
 );
 
-const AdColumnsLayout = async ({ children }: AdColumnsLayoutProps) => {
-  const ads = await getCurrentAds();
+// Vi gör om denna till en vanlig funktion som använder state för att fungera i webbläsaren
+export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
+  const [ads, setAds] = useState<NormalizedAd[]>([]);
+
+  useEffect(() => {
+    async function loadAds() {
+      try {
+        const rawAds = await listingService.getCurrentAds();
+        const normalized = rawAds
+          .map((ad, idx) => {
+            const src = extractImageFromData(ad.data);
+            if (!src) return null;
+
+            return {
+              id: String(ad.id ?? idx),
+              src,
+              alt: ad.company ? `Annons från ${ad.company}` : "Annons",
+            } as NormalizedAd;
+          })
+          .filter((ad): ad is NormalizedAd => ad !== null);
+        
+        setAds(normalized);
+      } catch (error) {
+        console.error("Failed to load ads:", error);
+      }
+    }
+    loadAds();
+  }, []);
+
   const [leftAd, rightAd] = ads;
 
   return (
@@ -112,6 +112,4 @@ const AdColumnsLayout = async ({ children }: AdColumnsLayoutProps) => {
       </div>
     </div>
   );
-};
-
-export default AdColumnsLayout;
+}
