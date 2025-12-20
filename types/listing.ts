@@ -1,10 +1,94 @@
 import { Area, City, Coordinates, DateString, Tag, TimestampString, UrlString } from "./common";
-import { User } from "./user"; // Din nya User-typ
+import { User } from "./user";
+
+// ==========================================
+// NYTT: DTOs (Används för listan, detaljsidan och ansökningar)
+// ==========================================
+
+// 1. KORTET (Feed)
+export interface ListingCardDTO {
+  id: string;
+  imageUrl: string;
+  title: string;
+  location: string;
+  rent: number;
+  dwellingType: string;
+  rooms: number;
+  sizeM2: number;
+  tags: string[];
+  hostType: string;
+  verifiedHost: boolean;
+  lat?: number | null;
+  lng?: number | null;
+}
+
+// 2. DETALJVYN (Single Listing) - Matchar Java ListingDetailDTO
+export interface ListingDetailDTO {
+  id: string;
+  title: string;
+  location: string;
+  fullAddress?: string | null;
+  rent: number;
+  dwellingType: string;
+  rooms: number;
+  sizeM2: number;
+  description: string;
+  tags: string[];
+  imageUrls: string[]; 
+  
+  // Datum
+  moveIn?: DateString | null;
+  applyBy?: DateString | null;
+  availableFrom?: DateString | null;
+  availableTo?: DateString | null;
+
+  // Karta
+  lat?: number | null;
+  lng?: number | null;
+
+  // Värd
+  hostType: string;
+  hostName: string;
+  hostId: number;
+  verifiedHost: boolean;
+}
+
+// 3. MINA ANSÖKNINGAR (My Applications) - Matchar Java StudentApplicationDTO
+export interface StudentApplicationDTO {
+  applicationId: number;
+  status: string;        // "submitted", "accepted", etc.
+  appliedAt: string;     // ISO-datum (Instant från Java)
+  message?: string | null;
+  
+  // Bostadsinfo för kortet
+  listingId: string;
+  listingTitle: string;
+  listingImage: string;
+  rent: number;
+  city: string;
+  hostType: string;
+}
+
+// Generisk typ för Paginering från Spring Boot
+export interface PageResponse<T> {
+  content: T[];
+  page: {
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    number: number;
+  };
+}
+
+// ==========================================
+// GAMLA TYPER (Entity-modeller)
+// Behåll dessa om du använder dem i andra delar av appen (t.ex. Admin)
+// ==========================================
 
 // IDs
-export type ListingId = string; // UUID från Java
+export type ListingId = string;
 export type ListingImageId = number;
-export type ListingLikedId = string; // UUID
+export type ListingLikedId = string;
 export type ListingApplicationId = number;
 export type WatchlistId = number;
 
@@ -19,7 +103,7 @@ export type ListingImage = {
   createdAt: TimestampString;
 };
 
-// Base Listing (Matchar Java BaseListing MappedSuperclass)
+// Base Listing
 export interface BaseListing extends Coordinates {
   id: ListingId;
   title: string;
@@ -39,18 +123,17 @@ export interface BaseListing extends Coordinates {
   status: ListingStatus;
   createdAt: TimestampString;
   updatedAt: TimestampString;
-  // Bilder hanteras ofta via separat endpoint eller inkluderat om du lade till det i DTO/Model
   images?: ListingImage[]; 
 }
 
-// Company Listing (Matchar Java CompanyListing)
+// Company Listing
 export interface CompanyListing extends BaseListing {
-  company: User; // Backend skickar hela Company-objektet (som är en User)
+  company: User;
 }
 
-// Private Listing (Matchar Java PrivateListing)
+// Private Listing
 export interface PrivateListing extends BaseListing {
-  landlord: User; // Backend skickar hela PrivateLandlord-objektet
+  landlord: User;
   applicationCount?: number | null;
 }
 
@@ -61,7 +144,7 @@ export type Listing = CompanyListing | PrivateListing;
 
 export type StudentLikedListing = {
   id: ListingLikedId;
-  listing: Listing; // Om du expanderar relationen
+  listing: Listing;
   studentId: number;
   createdAt: TimestampString;
 };

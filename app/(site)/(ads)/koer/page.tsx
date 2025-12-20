@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/components/Queues/QueueRow";
 import { useAuth } from "@/context/AuthContext";
-// ÄNDRING: Importera queueService istället för backendApi
 import { queueService } from "@/services/queue-service";
+import { type HousingQueueDTO } from "@/types/queue";
 
 const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
+  // HousingQueueDTO använder oftast 'open' som standard
   if (status === "open") return "Aktiv";
-  if (status === "paused") return "Bearbetas";
   return "Inaktiv";
 };
 
@@ -23,13 +22,13 @@ export default function Page() {
     { id: "hantera", label: " ", align: "center", width: "1.1fr" },
   ];
 
-  const { token } = useAuth();
+  const { user } = useAuth(); // Använd user för att se om vi är inloggade
   const [queueRows, setQueueRows] = useState<QueueRowProps[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
+    if (!user) {
       setQueueRows([]);
       setLoading(false);
       return;
@@ -39,33 +38,38 @@ export default function Page() {
     setLoading(true);
     setError(null);
 
-    // ÄNDRING: Använd queueService.getMyQueues och queueService.list
-    Promise.all([queueService.getMyQueues(token), queueService.list()])
-      .then(([userQueues, allQueues]) => {
+    // Hämta både användarens specifika köansökningar och alla tillgängliga köer
+    Promise.all([queueService.getMyQueues(), queueService.list()])
+      .then(([userApplications, allQueues]) => {
         if (!active) return;
         
-        // Skapa en Map för snabb uppslagning av kö-detaljer
-        const queueById = new Map(allQueues.map((queue) => [queue.queueId, queue]));
+        // Skapa en Map för snabb uppslagning av kö-detaljer baserat på ID
+        const queueMap = new Map<string, HousingQueueDTO>(
+          allQueues.map((q) => [q.id, q])
+        );
         
-        const rows = userQueues.map((entry) => {
-          const queue = queueById.get(entry.queueId);
-          const company = queue?.company;
+        const rows = userApplications.map((app) => {
+          const queueInfo = queueMap.get(app.queueId);
           
           return {
-            id: entry.queueId,
-            name: queue?.name ?? entry.queueName ?? "Okänd kö",
-            logoUrl: company?.logoUrl ?? company?.bannerUrl ?? "/logos/campuslyan-logo.svg",
-            cities: queue?.city ? [queue.city] : [],
-            status: statusToRowStatus(queue?.status),
-            days: entry.queueDays ?? 0,
-            onManage: () => {},
+            id: app.queueId,
+            name: queueInfo?.name ?? "Okänd kö",
+            logoUrl: queueInfo?.logoUrl ?? "/logos/campuslyan-logo.svg",
+            cities: queueInfo?.city ? [queueInfo.city] : [],
+            status: statusToRowStatus("open"), // Du kan styra detta via app.status om det finns
+            days: app.daysInQueue ?? 0, // Mappa mot rätt fält från din backend-DTO
+            onManage: () => {
+              // Exempel: navigera till köns detaljsida
+              window.location.href = `/alla-koer/${app.queueId}`;
+            },
           };
         });
         setQueueRows(rows);
       })
       .catch((err: any) => {
         if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda köer.");
+        console.error(err);
+        setError("Kunde inte ladda dina köer.");
       })
       .finally(() => {
         if (!active) return;
@@ -75,14 +79,14 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [user]);
 
   const rows = useMemo(() => queueRows.map(buildQueueRow), [queueRows]);
 
   return (
     <main className="w-full py-6">
       <div className="w-full">
-        {!token && (
+        {!user && (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             Logga in för att se dina köer.
           </div>
@@ -98,9 +102,9 @@ export default function Page() {
           emptyState={
             <div className="py-16 text-center text-sm text-gray-400">
               {loading
-                ? "Laddar köer..."
-                : token
-                ? "Inga köer att visa just nu"
+                ? "Laddar dina köplatser..."
+                : user
+                ? "Du står inte i några bostadsköer än."
                 : "Du måste vara inloggad för att se dina köer."}
             </div>
           }

@@ -5,27 +5,24 @@ import BaseMap, {
   type BaseMarker,
   type PopupRenderer,
 } from "./BaseMap";
-import {
-  type ListingId,
-  type Listing, // <-- Använd Listing (som är unionen av Company/Private)
-} from "@/types";
+// VIKTIGT: Vi byter från 'Listing' till 'ListingCardDTO'
+import { ListingCardDTO } from "@/types/listing";
 import ListingMapPopup from "./ListingsMapPopup";
 
 type ListingsMapProps = {
-  listings: Listing[];
+  listings: ListingCardDTO[]; // <-- Uppdaterad typ
   className?: string;
-  activeListingId?: ListingId;
-  onOpenListing?: (id: ListingId) => void;
+  activeListingId?: string;
+  onOpenListing?: (id: string) => void;
 };
 
 /**
  * Wrapper runt ListingMapPopup så den matchar BaseMaps PopupRenderer-signatur.
- * Vi ignorerar zoom/isActive här för att få exakt samma ruta oavsett.
  */
 const createListingPopupRenderer =
   (
-    listing: Listing,
-    onOpenListing?: (id: ListingId) => void,
+    listing: ListingCardDTO, // <-- Uppdaterad typ
+    onOpenListing?: (id: string) => void,
   ): PopupRenderer =>
   () =>
     (
@@ -44,9 +41,10 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
   const markers: BaseMarker[] = useMemo(
     () =>
       listings
+        // Vi måste säkerställa att lat/lng inte är null/undefined
         .filter((l) => typeof l.lat === "number" && typeof l.lng === "number")
         .map((l) => ({
-          id: l.id, // <-- VIKTIGT: Heter nu 'id', inte 'listingId'
+          id: l.id,
           position: [l.lat as number, l.lng as number],
           popup: createListingPopupRenderer(l, onOpenListing),
         })),

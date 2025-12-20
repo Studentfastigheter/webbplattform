@@ -9,10 +9,12 @@ export function ChatPanel({
   title,
   messages,
   onSend,
+  currentUserRole, // Ta emot rollen här
 }: {
   title?: string;
   messages: Message[];
   onSend: (text: string) => void;
+  currentUserRole: "student" | "private_landlord"; // Definiera typen
 }) {
   if (!title) {
     return (
@@ -25,7 +27,8 @@ export function ChatPanel({
   return (
     <section className="flex h-full flex-col">
       <ChatHeader name={title} />
-      <MessageList messages={messages} />
+      {/* Skicka vidare rollen till listan */}
+      <MessageList messages={messages} currentUserRole={currentUserRole} /> 
       <MessageComposer onSend={onSend} />
     </section>
   );

@@ -1,15 +1,35 @@
+// ÄNDRING: Vi importerar AdvertiserSummary härifrån istället för att skapa en ny
 import { Area, City, Tag, TimestampString, UrlString } from "./common";
-import { User } from "./user"; // Importerar User (som Company är en variant av)
+import { User } from "./user"; 
 
 export type QueueId = string; // UUID
 export type QueueApplicationId = string; // UUID
 export type QueueStatus = "open" | "closed" | "paused";
 export type QueueApplicationStatus = "active" | "left" | "offered" | "expired";
 
-// Matchar Java HousingQueue
+// ==========================================================
+// DTO från Backend (Matchar Java HousingQueueDTO)
+// ==========================================================
+export interface HousingQueueDTO {
+  id: string;            
+  companyId: number;     
+  name: string;
+  city: string;
+  logoUrl: string;
+  description?: string;
+  tags?: string[];
+  totalUnits?: number;
+  waitDays?: number;     
+  activeListings: number;
+}
+
+// ==========================================================
+// GAMLA TYPER (Entity-modeller)
+// ==========================================================
+
 export interface HousingQueue {
   id: QueueId;
-  company: User; // Backend skickar Company-objektet
+  company: User; 
   name: string;
   area?: Area | null;
   city?: City | null;
@@ -26,10 +46,9 @@ export interface HousingQueue {
   updatedAt: TimestampString;
 }
 
-// Matchar Java StudentQueueApplication
 export interface StudentQueueApplication {
   id: QueueApplicationId;
-  studentId: number; // eller hela Student-objektet om backend skickar det
+  studentId: number; 
   queue: HousingQueue;
   joinedAt: TimestampString;
   status: QueueApplicationStatus;

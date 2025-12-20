@@ -12,9 +12,13 @@ import OneFieldSearch from "@/components/Listings/Search/SearchFilter-1field";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
-// ÄNDRING: Importera queueService istället för backendApi
+// ÄNDRING 1: Byt till queueService (den har metoden list() som matchar din backend)
 import { queueService } from "@/services/queue-service";
-import { type AdvertiserSummary, type HousingQueueWithRelations } from "@/types";
+
+// ÄNDRING 2: Importera typer från rätt filer
+import { type HousingQueueDTO } from "@/types/queue";
+import { type AdvertiserSummary } from "@/types/common";
+import { type CompanyId } from "@/types";
 
 const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ssr: false,
@@ -23,7 +27,12 @@ const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ),
 });
 
-type QueueWithUI = HousingQueueWithRelations & { advertiser?: AdvertiserSummary };
+// UI-typ
+type QueueWithUI = HousingQueueDTO & { 
+    advertiser?: AdvertiserSummary;
+    queueId: string;
+};
+
 const PAGE_SIZE = 6;
 
 export default function Page() {
@@ -37,6 +46,7 @@ export default function Page() {
     landlords: [],
     status: null,
   });
+  
   const [queues, setQueues] = useState<QueueWithUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -49,40 +59,41 @@ export default function Page() {
     let active = true;
     setLoading(true);
 
-    // ÄNDRING: Använd queueService.list() direkt
+    // ÄNDRING 3: Använd queueService.list()
     queueService
       .list()
       .then((res) => {
         if (!active) return;
         
-        // Mappar om HousingQueueWithRelations till UI-formatet med advertiser
-        const mapped = res.map((queue) => ({
-          ...queue,
-          advertiser: queue.company
-            ? {
-                type: "company" as const,
-                id: queue.company.companyId,
-                displayName: queue.company.name,
-                logoUrl: queue.company.logoUrl ?? undefined,
-                bannerUrl: queue.company.bannerUrl ?? undefined,
-                phone: queue.company.phone ?? null,
-                contactEmail: queue.company.contactEmail ?? null,
-                contactPhone: queue.company.contactPhone ?? null,
-                contactNote: queue.company.contactNote ?? null,
-                rating: queue.company.rating ?? null,
-                subtitle: queue.company.subtitle ?? null,
-                description: queue.company.description ?? null,
-                website: queue.company.website ?? null,
-                city: queue.company.city ?? null,
-              }
-            : undefined,
+        const mapped: QueueWithUI[] = res.map((dto) => ({
+          ...dto,
+          queueId: dto.id,
+          
+          advertiser: {
+                type: "company",
+                id: dto.companyId as unknown as CompanyId,
+                displayName: dto.name,
+                logoUrl: dto.logoUrl,
+                bannerUrl: undefined,
+                phone: null,
+                contactEmail: null,
+                contactPhone: null,
+                contactNote: null,
+                rating: null,
+                subtitle: null,
+                description: dto.description ?? null,
+                website: null,
+                city: dto.city,
+          },
         }));
+
         setQueues(mapped);
         setVisibleCount(PAGE_SIZE);
       })
       .catch((err: any) => {
         if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda köer.");
+        console.error(err);
+        setError("Kunde inte ladda köer.");
       })
       .finally(() => {
         if (!active) return;
@@ -142,7 +153,7 @@ export default function Page() {
     return queues.filter((queue) => {
       const matchesSearch =
         !searchTerm ||
-        [queue.name, queue.city, queue.area].some((field) =>
+        [queue.name, queue.city].some((field) =>
           field?.toLowerCase().includes(searchTerm)
         );
 
@@ -159,12 +170,7 @@ export default function Page() {
             queue.advertiser?.displayName?.toLowerCase() === landlord.toLowerCase()
         );
 
-      const matchesStatus =
-        !queueFilters.status ||
-        queueFilters.status === "all" ||
-        queue.status === queueFilters.status;
-
-      return matchesSearch && matchesCity && matchesLandlord && matchesStatus;
+      return matchesSearch && matchesCity && matchesLandlord;
     });
   }, [queueFilters, queues, searchValues]);
 
@@ -188,9 +194,9 @@ export default function Page() {
           lng: number;
           advertiser: AdvertiserSummary;
         } =>
-          typeof queue.lat === "number" &&
-          typeof queue.lng === "number" &&
-          Boolean(queue.advertiser)
+            (queue as any).lat !== undefined && 
+            (queue as any).lng !== undefined &&
+            Boolean(queue.advertiser)
       ),
     [visibleQueues]
   );
@@ -202,17 +208,15 @@ export default function Page() {
     : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
 
   const renderQueueCard = (queue: QueueWithUI) => {
-    const logoUrl =
-      queue.company?.logoUrl ??
-      queue.advertiser?.logoUrl ??
-      "/logos/campuslyan-logo.svg";
+    const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
+    
     const queueCardProps = {
       ...queue,
-      area: queue.area ?? "",
+      area: "", 
       city: queue.city ?? "",
       totalUnits: queue.totalUnits ?? undefined,
       unitsLabel: undefined,
-      isVerified: queue.company?.verified ?? queue.status === "open",
+      isVerified: true, 
       logoUrl,
       tags: queue.tags ?? [],
       logoAlt: `${queue.name} logotyp`,
@@ -230,8 +234,11 @@ export default function Page() {
           logoUrl={queueCardProps.logoUrl}
           logoAlt={queueCardProps.logoAlt}
           tags={queueCardProps.tags}
-          onViewListings={() => router.push(`/alla-koer/${queue.queueId}`)}
+          
+          // --- ÄNDRING 4: Navigera till dynamisk ID-sida ---
+          onViewListings={() => router.push(`/alla-koer/${queue.queueId}`)} 
           onReadMore={() => router.push(`/alla-koer/${queue.queueId}`)}
+          // ------------------------------------------------
         />
       </div>
     );
@@ -307,7 +314,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Sektion 2: rubrik + vyval för bostäderna */}
+      {/* Sektion 2: rubrik + vyval */}
       <section className="w-full">
         <div className="flex w-full flex-wrap items-center justify-between gap-4">
           <h2 id="bostader-heading" className="text-base font-semibold text-black">
@@ -317,7 +324,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Sektion 3: annonser (annonsytor hanteras i layouten) */}
+      {/* Sektion 3: annonser */}
       <section className="w-full">
         <FieldSet className="w-full" aria-labelledby="bostader-heading">
           {error && (
@@ -342,7 +349,9 @@ export default function Page() {
               >
                 <QueuesMap
                   queues={mapQueues}
+                  // --- ÄNDRING 5: Navigera med ID från kartan ---
                   onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
+                  // ----------------------------------------------
                 />
               </div>
             </div>

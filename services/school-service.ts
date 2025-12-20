@@ -1,9 +1,9 @@
 import { apiClient, buildQuery } from "@/lib/api-client";
-import { School, Listing } from "@/types";
-// Vi återanvänder mappern från listing-service för att hantera annons-objekten
-import { mapListingDto, ApiCompanyListingDto, ApiPrivateListingDto } from "./listing-service";
+import { School } from "@/types";
+// VIKTIGT: Vi importerar den nya DTO:n istället för den gamla Listing-typen
+import { ListingCardDTO } from "@/types/listing";
 
-// --- DTOs (Matchar Java-backendens respons exakt) ---
+// --- DTOs ---
 
 type ApiSchoolDto = {
   id: number;
@@ -20,11 +20,7 @@ type ApiSchoolQueueDto = {
   listingsCount?: number | null;
 };
 
-type ApiListingResponse = {
-  items: (ApiCompanyListingDto | ApiPrivateListingDto)[];
-};
-
-// Lokal typ om den saknas i @/types
+// Lokal typ för kö-summering
 export type SchoolQueueSummary = {
   companyId: number;
   companyName: string;
@@ -52,20 +48,22 @@ export const schoolService = {
   },
 
   // 2. Hitta annonser nära en skola
+  // Vi returnerar nu ListingCardDTO[] istället för den gamla Listing[]
   getListingsNear: async (
     schoolId: number,
     radiusKm = 10,
     size = 12
-  ): Promise<Listing[]> => {
+  ): Promise<ListingCardDTO[]> => {
     const query = buildQuery({ radiusKm, size });
     
-    // Backend returnerar { items: [...] }
-    const res = await apiClient<ApiListingResponse>(
+    // Vi antar att backend nu returnerar en lista av ListingCardDTO direkt
+    // (Om backend returnerar en PageResponse, ändra till <PageResponse<ListingCardDTO>> och returnera res.content)
+    const res = await apiClient<ListingCardDTO[]>(
       `/schools/${schoolId}/listings${query}`
     );
 
-    // Mappa om varje DTO till vår Listing-typ
-    return (res.items || []).map(mapListingDto);
+    // Ingen mappning behövs längre, DTO:n är redo för kortet!
+    return res;
   },
 
   // 3. Hitta bostadsköer relevanta för skolan
@@ -73,16 +71,15 @@ export const schoolService = {
     schoolId: number,
     radiusKm = 10
   ): Promise<SchoolQueueSummary[]> => {
-    // Backend returnerar en lista av summaries
     const res = await apiClient<ApiSchoolQueueDto[]>(
       `/schools/${schoolId}/queues${buildQuery({ radiusKm })}`
     );
 
-    return res.map(dto => ({
+    return res.map((dto) => ({
       companyId: dto.companyId,
       companyName: dto.companyName,
       userQueueDays: dto.userQueueDays ?? 0,
-      listingsCount: dto.listingsCount ?? 0
+      listingsCount: dto.listingsCount ?? 0,
     }));
   },
 };

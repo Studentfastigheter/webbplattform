@@ -8,14 +8,15 @@ import { cn } from "@/lib/utils";
 interface MessageListProps {
   messages: Message[];
   autoScroll?: boolean;
+  currentUserRole: "student" | "private_landlord"; // Ny prop för dynamisk höger/vänster
 }
 
-export function MessageList({ messages, autoScroll = false }: MessageListProps) {
+export function MessageList({ messages, autoScroll = true, currentUserRole }: MessageListProps) {
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
+  // Scrolla till botten vid nya meddelanden
   React.useEffect(() => {
     if (!autoScroll) return;
-    // Scrolla mjukt till botten när meddelanden ändras
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, autoScroll]);
 
@@ -23,8 +24,8 @@ export function MessageList({ messages, autoScroll = false }: MessageListProps) 
     <ScrollArea className="flex-1 h-full">
       <div className="flex flex-col gap-4 p-4">
         {messages.map((m) => {
-          // Kontrollera om det är "jag" (studenten) som skrivit
-          const isMe = String(m.senderType).toLowerCase() === "student";
+          // Jämför meddelandets avsändare med din egen roll istället för hårdkodad sträng
+          const isMe = m.senderType === currentUserRole;
 
           return (
             <div
@@ -53,8 +54,8 @@ export function MessageList({ messages, autoScroll = false }: MessageListProps) 
           );
         })}
         
-        {/* Osynligt element som vi scrollar till */}
-        <div ref={bottomRef} className="h-1" />
+        {/* Scroll-ankare */}
+        <div ref={bottomRef} className="h-0" />
       </div>
     </ScrollArea>
   );

@@ -40,21 +40,24 @@ export async function apiClient<T>(
   };
 
   // 1. Automatisk Token-hantering
-  // Om ingen token skickas med, försök hämta den från localStorage
   let authToken = token;
   if (!authToken && typeof window !== "undefined") {
     const stored = localStorage.getItem("token");
     if (stored) authToken = stored;
   }
 
-  if (authToken) {
+  // --- HÄR ÄR FIXEN ---
+  // Vi kollar så att authToken inte är strängen "null" eller "undefined"
+  if (authToken && authToken !== "null" && authToken !== "undefined") {
     defaultHeaders.Authorization = `Bearer ${authToken}`;
   }
+  // --------------------
 
-  // 2. URL-hantering
-  // Ta bort inledande slash för att undvika dubbla slashes
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   const url = `${API_BASE}/${cleanEndpoint}`;
+
+  // Debug: Se vad vi faktiskt skickar (kolla i webbläsarens konsol)
+  // console.log(`Fetching ${url} with token:`, defaultHeaders.Authorization || "No token");
 
   let res: Response;
   try {
@@ -67,8 +70,6 @@ export async function apiClient<T>(
     throw new Error((err as Error)?.message || "Kunde inte nå servern.");
   }
 
-  // 3. Hantera svar
-  // Om status är 204 (No Content), returnera tomt
   if (res.status === 204) {
     return {} as T;
   }
@@ -85,13 +86,11 @@ export async function apiClient<T>(
   }
 
   if (!res.ok) {
-    // 4. Hantera 401 (Token utgången)
+    // Om token var ogiltig (401), rensa den direkt så vi slipper problem vid nästa laddning
     if (res.status === 401 && typeof window !== "undefined") {
-      // Valfritt: Rensa token om den är ogiltig
-      // localStorage.removeItem("token"); 
+       localStorage.removeItem("token");
     }
 
-    // Prioritera felmeddelande från backend (Spring Boot skickar ofta "message")
     const message =
       parsed?.message || 
       parsed?.error || 

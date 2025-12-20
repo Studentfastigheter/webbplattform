@@ -1,7 +1,10 @@
+"use client";
+
 import HousingInfoBox from "@/components/ui/housingInfoBox";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import Tag from "@/components/ui/Tag";
-import type { ListingWithRelations } from "@/types";
+// VIKTIGT: Vi använder nu ListingDetailDTO
+import { ListingDetailDTO } from "@/types/listing"; 
 import { Home, MapPin } from "lucide-react";
 import React from "react";
 
@@ -15,12 +18,15 @@ function InfoRow({ icon, label }: { icon: React.ReactNode; label: string }) {
 }
 
 type Props = {
-  listing: ListingWithRelations;
+  // ÄNDRING: Uppdaterad typ
+  listing: ListingDetailDTO;
   onApplyClick?: () => void;
   applyDisabled?: boolean;
 };
 
 export default function BostadAbout({ listing, onApplyClick, applyDisabled }: Props) {
+  
+  // Bygg strängen för bostadstyp, rum och storlek
   const dwellingLabel = [
     listing.dwellingType,
     listing.rooms ? `${listing.rooms} rum` : null,
@@ -42,20 +48,21 @@ export default function BostadAbout({ listing, onApplyClick, applyDisabled }: Pr
             {listing.title}
           </h1>
 
-          {/* Två rader med ikon + text, ingen chip-bakgrund */}
-          {listing.area && listing.city && (
+          {/* Plats (Vi använder listing.location direkt nu) */}
+          {listing.location && (
             <InfoRow
               icon={<MapPin className="h-4 w-4" />}
-              label={`${listing.area}, ${listing.city}`}
+              label={listing.location}
             />
           )}
+          
           <InfoRow
             icon={<Home className="h-4 w-4" />}
             label={dwellingLabel}
           />
         </div>
 
-        {/* Taggar som chips under raderna */}
+        {/* Taggar */}
         <div className="mt-1 flex flex-wrap items-center gap-2">
           {(listing.tags ?? []).map((tag) => (
             <Tag
@@ -70,6 +77,7 @@ export default function BostadAbout({ listing, onApplyClick, applyDisabled }: Pr
           ))}
         </div>
 
+        {/* Beskrivning */}
         <ReadMoreComponent
           text={listing.description ?? ""}
           variant="large"

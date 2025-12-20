@@ -1,133 +1,152 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
 import QueueRules from "@/components/ads/QueueRules";
-// ÄNDRING: Importera services istället för backendApi
 import { queueService } from "@/services/queue-service";
 import { listingService } from "@/services/listing-service";
+import { useAuth } from "@/context/AuthContext";
 import { type ListingCardSmallProps } from "@/components/Listings/ListingCard_Small";
-import { type HousingQueueWithRelations, type ListingWithRelations } from "@/types";
-import { useParams } from "next/navigation";
-
-type QueueDetail = HousingQueueWithRelations;
+import { type HousingQueueDTO } from "@/types/queue";
 
 const DEFAULT_RULES = [
-  {
-    title: "Studiekrav",
-    description: "Antagen på minst 15 hp per termin.",
-  },
-  {
-    title: "Aktivt konto",
-    description: "Profil och kontaktuppgifter ska vara uppdaterade.",
-  },
-  {
-    title: "Svarstid",
-    description: "Svarstid 1-2 dagar på erbjudanden.",
-  },
+  { title: "Studiekrav", description: "Antagen på minst 15 hp per termin." },
+  { title: "Aktivt konto", description: "Profil och kontaktuppgifter ska vara uppdaterade." },
+  { title: "Svarstid", description: "Svarstid 1-2 dagar på erbjudanden." },
 ];
 
-const toListingCard = (listing: ListingWithRelations): ListingCardSmallProps => {
-  const primaryImage =
-    typeof listing.images?.[0] === "string"
-      ? (listing.images?.[0] as string)
-      : listing.images?.[0]?.imageUrl;
-  return {
-    title: listing.title,
-    area: listing.area ?? "",
-    city: listing.city ?? "",
-    dwellingType: listing.dwellingType ?? "",
-    rooms: listing.rooms ?? undefined,
-    sizeM2: listing.sizeM2 ?? undefined,
-    rent: listing.rent ?? undefined,
-    landlordType: listing.advertiser?.displayName ?? "Hyresvärd",
-    isVerified: Boolean(listing.advertiser),
-    imageUrl: primaryImage,
-    tags: listing.tags ?? undefined,
-    advertiser: listing.advertiser,
-    images: listing.images,
-  };
-};
+const toListingCard = (listing: any): ListingCardSmallProps => ({
+  title: listing.title,
+  area: "", 
+  city: listing.city || "Okänd ort",
+  dwellingType: "", 
+  rooms: listing.rooms ?? undefined,
+  sizeM2: listing.sizeM2 ?? undefined,
+  rent: listing.rent ?? undefined,
+  landlordType: listing.hostType,
+  isVerified: true,
+  imageUrl: listing.listingImage ?? undefined, // Matchar din backend DTO
+  tags: [],
+});
 
-export default function Page() {
+export default function QueueDetailPage() {
   const params = useParams<{ id: string }>();
   const queueId = params?.id;
-  const [queue, setQueue] = useState<QueueDetail | null>(null);
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const [queue, setQueue] = useState<HousingQueueDTO | null>(null);
   const [listings, setListings] = useState<ListingCardSmallProps[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
 
   useEffect(() => {
     let active = true;
     if (!queueId) return;
     setLoading(true);
-    setError(null);
 
-    // ÄNDRING: Använd services istället för backendApi
     Promise.all([
       queueService.get(queueId),
-      listingService.list({ size: 100 }), // Hämtar många för att filtrera client-side (samma logik som förut)
+      listingService.getAll(0, 100)
     ])
-      .then(([queueRes, listingRes]) => {
+      .then(([foundQueue, listingRes]) => {
         if (!active) return;
-        setQueue(queueRes);
         
-        const filtered =
-          listingRes.items
-            ?.filter(
-              (l): l is ListingWithRelations & { listingType: "company"; companyId: number } =>
-                l.listingType === "company" &&
-                typeof l.companyId === "number" &&
-                l.companyId === queueRes.companyId
-            )
-            .map(toListingCard) ?? [];
+        if (!foundQueue) {
+          setError("Kön hittades inte.");
+          return;
+        }
+        setQueue(foundQueue);
+
+        // Säker hantering av PageResponse oavsett om det är .content eller .items
+        const listingsArray = Array.isArray(listingRes) 
+          ? listingRes 
+          : (listingRes as any).content || (listingRes as any).items || [];
+        
+        // Filtrera annonser som tillhör just detta företag
+        const filtered = listingsArray
+          .filter((l: any) => 
+            l.hostType === "Företag" && 
+            l.companyId === foundQueue.companyId
+          )
+          .map(toListingCard);
+        
         setListings(filtered);
       })
-      .catch((err: any) => {
+      .catch((err) => {
         if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda köuppgifter.");
-        setQueue(null);
-        setListings([]);
+        console.error("Fetch error:", err);
+        setError("Kunde inte ladda köuppgifter.");
       })
       .finally(() => {
         if (!active) return;
         setLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [queueId]);
 
+  const handleJoinQueue = async () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (!queueId) return;
+
+    setJoining(true);
+    try {
+      await queueService.join(queueId);
+      alert(`Du står nu i kön för ${queue?.name}!`);
+    } catch (err: any) {
+      alert(err.message || "Kunde inte gå med i kön. Kanske står du redan i den?");
+    } finally {
+      setJoining(false);
+    }
+  };
+
   const content = useMemo(() => {
-    if (loading) {
-      return (
-        <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-700">
-          Laddar kö...
-        </div>
-      );
-    }
-    if (error || !queue) {
-      return (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-800">
-          {error ?? "Kö kunde inte hittas."}
-        </div>
-      );
-    }
+    if (loading) return <div className="py-20 text-center text-gray-500 italic">Hämtar information om kön...</div>;
+    if (error || !queue) return <div className="py-20 text-center text-red-500 font-medium">{error || "Kön hittades inte."}</div>;
 
     return (
-      <>
-        <QueueHero queue={queue} />
-        <QueueRules rules={DEFAULT_RULES} />
-        <QueueListings listings={listings} />
-      </>
+      <div className="space-y-12">
+        <QueueHero 
+          queue={queue} 
+          onJoin={handleJoinQueue} 
+          isJoining={joining} 
+          isLoggedIn={!!user}
+        />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="lg:col-span-2 space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">
+              Lediga bostäder hos {queue.name}
+            </h2>
+            {listings.length > 0 ? (
+              <QueueListings listings={listings} />
+            ) : (
+              <div className="bg-gray-50 rounded-xl p-8 text-center text-gray-500 border border-dashed border-gray-300">
+                Det finns inga lediga bostäder publicerade i denna kö just nu.
+              </div>
+            )}
+          </div>
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Köregler</h2>
+            <div className="bg-white rounded-xl shadow-sm border p-2">
+              <QueueRules rules={DEFAULT_RULES} />
+            </div>
+          </div>
+        </div>
+      </div>
     );
-  }, [error, listings, loading, queue]);
+  }, [error, listings, loading, queue, joining, user]);
 
   return (
-    <main className="py-6 pb-12 lg:py-10">
-      <div className="flex w-full flex-col gap-10">{content}</div>
+    <main className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
+      {content}
     </main>
   );
 }

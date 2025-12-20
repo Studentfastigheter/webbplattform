@@ -65,8 +65,9 @@ export function MessagesLayout() {
     return conversations.map((c) => {
       return {
         id: String(c.conversationId),
-        title: user?.accountType === "student" ? "Hyresvärd" : "Student", 
-        lastMessage: "Klicka för att läsa", 
+        // Använd 'otherPartyName' från din ConversationDTO istället för hårdkodad text
+        title: (c as any).otherPartyName || (user?.accountType === "student" ? "Hyresvärd" : "Student"), 
+        lastMessage: (c as any).lastMessage || "Klicka för att läsa", 
         updatedAt: formatTime(c.createdAt),
         unreadCount: 0, 
       };
@@ -81,16 +82,19 @@ export function MessagesLayout() {
     setSelectedConversationId(id);
   }
 
+  // Räkna ut din roll för att veta vilken sida meddelanden ska ligga på
+  const currentUserRole = user?.accountType === "student" ? "student" : "private_landlord";
+
   async function handleSend(text: string) {
     if (!selectedConversationId) return;
     const conversationId = parseInt(selectedConversationId, 10);
 
     try {
-      // Optimistisk uppdatering
+      // Optimistisk uppdatering med korrekt senderType
       const optimisticMsg: Message = {
         messageId: Date.now(), 
         conversationId,
-        senderType: user?.accountType === "student" ? "student" : "private_landlord",
+        senderType: currentUserRole,
         body: text,
         createdAt: new Date().toISOString(),
       };
@@ -106,6 +110,7 @@ export function MessagesLayout() {
       
     } catch (error) {
       console.error("Kunde inte skicka meddelande", error);
+      // Valfritt: Ta bort det optimistiska meddelandet vid fel
     }
   }
 
@@ -115,7 +120,7 @@ export function MessagesLayout() {
     <div className="grid h-full grid-cols-1 overflow-hidden rounded-xl border bg-background md:grid-cols-[320px_1fr] lg:grid-cols-[360px_1fr]">
       <ConversationsPanel
         conversations={conversationVM}
-        selectedId={selectedConversationId ?? ""} // Fix: Skicka tom sträng om null
+        selectedId={selectedConversationId ?? ""}
         query={query}
         tab={tab}
         onQueryChange={setQuery}
@@ -128,8 +133,8 @@ export function MessagesLayout() {
           title={activeTitle}
           messages={messages}
           onSend={handleSend}
-          // Om ChatPanel inte har 'currentUserId' i sina props än, ta bort denna rad eller uppdatera ChatPanel
-          // currentUserId={user?.id ?? 0} 
+          // Skicka ner din roll så ChatPanel kan avgöra höger/vänster sida
+          currentUserRole={currentUserRole}
         />
       ) : (
         <div className="flex h-full items-center justify-center text-muted-foreground bg-muted/20">

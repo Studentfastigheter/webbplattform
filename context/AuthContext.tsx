@@ -6,38 +6,41 @@ import { User, LoginRequest, RegisterRequest, UpdateUserRequest } from "@/types"
 
 type AuthCtx = {
   user: User | null;
+  token: string | null; // NYTT: Exponera token för att fixa TypeScript-fel
   isAuthenticated: boolean;
-  isLoading: boolean; // Ersätter 'ready' för tydlighet
+  isLoading: boolean;
   login: (data: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>; 
-  updateUser: (data: UpdateUserRequest) => Promise<void>; // För onboarding
+  updateUser: (data: UpdateUserRequest) => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null); // NYTT: State för att lagra token
   const [isLoading, setIsLoading] = useState(true);
 
   // 1. Initiera vid start
   useEffect(() => {
     const initAuth = async () => {
-      // Vi kollar bara om token finns, api-client sköter headern
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       
-      if (!token) {
+      if (!storedToken) {
         setIsLoading(false);
         return;
       }
 
       try {
+        setToken(storedToken); // Synka state med localStorage
         const userData = await authService.me();
         setUser(userData);
       } catch (error) {
         console.error("Token ogiltig", error);
-        localStorage.removeItem("token"); // Rensa om den är trasig
+        localStorage.removeItem("token");
+        setToken(null);
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -50,8 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 2. Login
   const login = async (data: LoginRequest) => {
     const res = await authService.login(data);
-    // Spara token så api-client hittar den nästa gång
     localStorage.setItem("token", res.accessToken);
+    setToken(res.accessToken); // Uppdatera token vid inloggning
     setUser(res.user);
   };
 
@@ -59,14 +62,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: RegisterRequest) => {
     const res = await authService.register(data);
     localStorage.setItem("token", res.accessToken);
+    setToken(res.accessToken); // Uppdatera token vid registrering
     setUser(res.user);
   };
 
   // 4. Logout
   const logout = () => {
-    authService.logout(); // Rensar localStorage
+    authService.logout();
+    setToken(null); // Rensa state vid utloggning
     setUser(null);
-    // Valfritt: window.location.href = "/";
   };
 
   // 5. Refresh (Hämta om användaren från servern)
@@ -88,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={{ 
       user, 
+      token, // Skickas nu med i context-värdet
       isAuthenticated: !!user, 
       isLoading, 
       login, 

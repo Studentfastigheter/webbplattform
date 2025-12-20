@@ -1,16 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
-import {
-  type ListingId,
-  type Listing, // <-- Använd Listing
-  type UrlString,
-} from "@/types";
+import React from "react";
+import { ListingCardDTO } from "@/types/listing";
 
 type ListingMapPopupProps = {
-  // Vi extenderar Listing med en valfri thumbnailUrl för flexibilitet
-  listing: Listing & { thumbnailUrl?: UrlString | null };
-  onOpen?: (id: ListingId) => void;
+  listing: ListingCardDTO;
+  onOpen?: (id: string) => void;
 };
 
 const formatRent = (rent?: number | null) =>
@@ -24,22 +19,14 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
   listing,
   onOpen,
 }) => {
-  // rent kan vara null, så vi skickar undefined om det är det
-  const formattedRent = formatRent(listing.rent ?? undefined);
+  const formattedRent = formatRent(listing.rent);
 
-  const thumbnailUrl = useMemo(
-    () =>
-      listing.thumbnailUrl ??
-      // Hantera både strängar och objekt (beroende på vad API:t returnerar)
-      (listing.images?.[0] 
-        ? (typeof listing.images[0] === 'string' 
-            ? listing.images[0] 
-            : listing.images[0].imageUrl)
-        : null),
-    [listing.images, listing.thumbnailUrl],
-  );
+  // I den nya DTO:n har vi URL:en direkt
+  const thumbnailUrl = listing.imageUrl;
 
-  // <-- VIKTIGT: Använd listing.id istället för listing.listingId
+  // location är typ "Innerstaden, Göteborg". Vi splittar för att bara visa staden i badgen om möjligt.
+  const cityDisplay = listing.location.split(",")[1]?.trim() || listing.location;
+
   const handleOpen = () => onOpen?.(listing.id);
   
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -69,14 +56,14 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-4 pt-8">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-900 shadow-sm backdrop-blur">
-              {listing.city}
+              {cityDisplay}
               {formattedRent && (
                 <span className="rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-bold text-white">
                   {formattedRent}
                 </span>
               )}
             </div>
-            <p className="mt-2 text-sm font-semibold text-white drop-shadow-sm">
+            <p className="mt-2 text-sm font-semibold text-white drop-shadow-sm truncate">
               {listing.title}
             </p>
           </div>
@@ -87,14 +74,15 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
       <div className="space-y-2 px-4 pb-4 pt-3 text-sm">
         {!thumbnailUrl && (
           <>
-            <div className="font-semibold text-gray-900">{listing.title}</div>
-            <div className="text-xs text-gray-700">{listing.city}</div>
+            <div className="font-semibold text-gray-900 truncate">{listing.title}</div>
+            <div className="text-xs text-gray-700">{listing.location}</div>
           </>
         )}
 
-        {listing.address && (
-          <div className="text-xs text-gray-500">{listing.address}</div>
-        )}
+        {/* Vi visar rum och typ istället för adress som saknas i DTO */}
+        <div className="text-xs text-gray-500">
+            {listing.dwellingType} • {listing.rooms} rum • {listing.sizeM2} m²
+        </div>
 
         <div className="pt-1 flex items-center justify-between">
           {formattedRent && (
@@ -110,7 +98,7 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
             }}
             className="inline-flex items-center justify-center rounded-full bg-gray-900 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-black"
           >
-            Visa boende
+            Visa
           </button>
         </div>
       </div>
