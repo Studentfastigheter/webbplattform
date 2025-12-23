@@ -14,36 +14,35 @@ export default function ProductSpotlight() {
               Allt du behöver för att hitta – eller lista – studentbostäder
             </h2>
             <p className="text-base text-slate-600 dark:text-slate-300">
-              CampusLyan samlar annonser, köer och intressehantering i ett och samma gränssnitt. Studenter får koll på sina chanser,
-              medan bostadsbolag och privatvärdar publicerar på minuter – tryggt och smidigt.
+              CampusLyan samlar studentbostäder från landets största bostadsbolag och kommunala köer i ett och samma flöde. Inom kort öppnar vi även upp för trygg privatuthyrning, så att du kan hitta ditt hem oavsett boendeform.
             </p>
 
             <div className="grid gap-3 sm:gap-4">
               <div className="rounded-2xl border border-black/5 bg-white/95 p-4 text-left shadow-soft dark:border-white/10 dark:bg-slate-900/80">
-                <div className="font-semibold text-slate-900 dark:text-white">Allt på ett ställe</div>
+                <div className="font-semibold text-slate-900 dark:text-white">Total marknadsöverblick</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Annonser, köer och intresseanmälningar i en vy – slipp hoppa mellan olika portaler.
+                  Sök bland alla bostadsbolag samtidigt. Vi gör grovjobbet och samlar alla lediga objekt åt dig.
                 </p>
               </div>
 
               <div className="rounded-2xl border border-black/5 bg-white/95 p-4 text-left shadow-soft dark:border-white/10 dark:bg-slate-900/80">
-                <div className="font-semibold text-slate-900 dark:text-white">Överblick i realtid</div>
+                <div className="font-semibold text-slate-900 dark:text-white">Smartare kö-koll</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Följ läget direkt: placering i kö, visningar och inkommande intressen.
+                  Håll koll på beräknade kötider och få notiser när nya objekt som matchar din profil publiceras.
                 </p>
               </div>
 
               <div className="rounded-2xl border border-black/5 bg-white/95 p-4 text-left shadow-soft dark:border-white/10 dark:bg-slate-900/80">
-                <div className="font-semibold text-slate-900 dark:text-white">All info i ett flöde</div>
+                <div className="font-semibold text-slate-900 dark:text-white">Allt för studentlivet</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Köregler, krav, avtal, guider, spartips och ekonomigenomgångar – lättillgängligt för alla.
+                  Vi guidar dig genom köregler, hyresavtal och spartips – allt för att din boenderesa ska bli så enkel som möjligt.
                 </p>
               </div>
 
               <div className="rounded-2xl border border-black/5 bg-white/95 p-4 text-left shadow-soft dark:border-white/10 dark:bg-slate-900/80">
-                <div className="font-semibold text-slate-900 dark:text-white">Smidigt även för privat</div>
+                <div className="font-semibold text-slate-900 dark:text-white">Kommande: Trygg andrahandsuthyrning</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  CampusLyan guidar genom hela uthyrningen – från annons till avtal – perfekt även för förstagångsuthyrare.
+                  Snart kan privatpersoner lista rum direkt på CampusLyan. Vi verifierar användare för att skapa en trygg första kontakt.
                 </p>
               </div>
             </div>
@@ -55,7 +54,6 @@ export default function ProductSpotlight() {
             <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest text-slate-900">
               <span className="rounded-full bg-black/5 px-3 py-1">Uthyrarvy</span>
               <span className="rounded-full bg-black/5 px-3 py-1">Företag</span>
-              <span className="rounded-full bg-black/5 px-3 py-1">Privat</span>
             </div>
 
             <div className="mt-6 space-y-4">
@@ -113,20 +111,20 @@ export default function ProductSpotlight() {
               <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                 <p className="text-xs uppercase tracking-[0.35em] text-slate-900">Intresserade studenter</p>
 
-                <ul className="mt-4 space-y-2 text-sm">
+                <ul className="mt-4 space-y-2 text-xs">
                   <li className="rounded-lg border border-slate-200 p-3">
                     <span>
-                      <strong>Elin</strong> • Civilingenjör • Inflytt 1 jun • Husdjur OK
+                      <strong>Elin</strong> • Civilingenjör • KTH • Inflytt 1 aug • Rökfri
                     </span>
                   </li>
                   <li className="rounded-lg border border-slate-200 p-3">
                     <span>
-                      <strong>Victor</strong> • Masterstudent • Garanterad inkomst • Rökfri
+                      <strong>Victor</strong> • Ekonomistudent • Handels • Söker boende 12 mån+
                     </span>
                   </li>
                   <li className="rounded-lg border border-slate-200 p-3">
                     <span>
-                      <strong>Linnea</strong> • Utbytesstudent • Önskar möblerat
+                      <strong>Linnea</strong> • Läkarstudent • GU • Tidigare boendereferenser finns
                     </span>
                   </li>
                 </ul>
@@ -138,7 +136,7 @@ export default function ProductSpotlight() {
                   radius="full"
                   className="mt-3 w-full justify-center text-sm text-white bg-[#004225] hover:bg-[#004225]/90"
                 >
-                  Visa alla
+                  Visa kontaktförfrågningar
                 </Button>
               </div>
             </div>

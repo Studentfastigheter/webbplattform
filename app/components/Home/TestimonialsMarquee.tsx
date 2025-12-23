@@ -1,27 +1,26 @@
 "use client";
 
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
-
 const testimonials = [
   {
-    quote: "Jag hittade ett rum nära min skola på två dagar. Köstatus och kartan hjälpte mig prioritera rätt bostäder.",
-    name: "Emma, student Göteborg",
-    title: "Civilingenjörsutbildning",
+    quote: "Det bästa är att slippa ha 15 flikar öppna. Här ser jag kötid till alla stora bolag och restiden till campus i samma vy.",
+    name: "Emma, Chalmers",
+    title: "Göteborg",
   },
   {
-    quote: "Som privatvärd publicerar jag ett rum på några minuter och samlar alla intressen på ett ställe.",
-    name: "Jonas, privatvärd",
-    title: "Hyresvärd i Stockholm",
+    quote: "Hittade äntligen en trygg privat uthyrare här. Det känns mycket säkrare än de skumma grupperna på Facebook.",
+    name: "Linnea, Malmö Universitet",
+    title: "Malmö",
   },
   {
-    quote: "Vi når studenterna där de faktiskt letar. CampusLyan har blivit en viktig kanal för våra projekt.",
-    name: "Sara, bostadsbolag",
-    title: "Marknadschef, StudentBo",
+    quote: "Jag fick notifieringar så fort en lya som matchade mina poäng dök upp. Sjukt smidigt när man har panik inför terminsstart.",
+    name: "Victor, Uppsala Universitet",
+    title: "Uppsala",
   },
   {
-    quote: "Notifieringarna är guld. Jag missar inte när nya annonser dyker upp i min stad.",
-    name: "Linnea, student Malmö",
-    title: "Designprogrammet",
+    quote: "Som student är det guld värt att allt är gratis. Äntligen en samlingsplats som faktiskt förstår hur vi letar boende.",
+    name: "Hanna, KTH",
+    title: "Stockholm",
   },
 ];
 

@@ -4,35 +4,35 @@ import { Button } from "@heroui/button";
 const faqs = [
   {
     q: "Är CampusLyan gratis för studenter?",
-    a: "Ja. Att skapa konto, hitta bostäder, följa annonser, ställa sig i köer och skicka intresse är helt kostnadsfritt.",
+    a: "Ja, 100%. Att skapa konto, söka bostäder, bevaka köer och ta kontakt med uthyrare är helt kostnadsfritt för dig som student.",
   },
   {
-    q: "Behöver jag Bank-ID?",
-    a: "Ja. Du loggar in med Bank-ID för att vi ska kunna verifiera att du är student och matcha dig mot relevanta bostäder och köer.",
+    q: "Varför behöver jag logga in med BankID?",
+    a: "Vi använder BankID för att verifiera att du är en riktig person. Det skapar en tryggare plattform för alla och gör att hyresvärdar prioriterar din ansökan.",
   },
   {
-    q: "Hur fungerar bostadsköerna?",
-    a: "CampusLyan samlar köer från olika aktörer. Du kan ställa dig i kö direkt i appen och se villkor, krav och din status för varje kö.",
+    q: "Hur fungerar bostadsköerna på sidan?",
+    a: "Vi samlar information och lediga objekt från både kommunala och privata bolag. Vi guidar dig till var du har störst chans att få en bostad och hur du ställer dig i respektive kö.",
   },
   {
-    q: "Kan jag hyra ut min lägenhet via CampusLyan?",
-    a: "Ja. Studenter kan hyra ut tryggt när de ska åka på utbyte, sommarjobba eller vara borta längre perioder. Avtal och kontakt sker i plattformen.",
+    q: "Kan jag hyra ut mitt rum om jag ska på utbyte?",
+    a: "Absolut! Inom kort kan du enkelt lägga upp en annons för att hitta en annan verifierad student som vill hyra ditt rum under tiden du är borta.",
   },
   {
-    q: "Hur fungerar trygg uthyrning för privatpersoner?",
-    a: "Du får endast kontakt med verifierade studenter. Vi guidar dig genom hela processen – från första meddelande till signerat avtal.",
+    q: "Hur fungerar matchningen för privatpersoner?",
+    a: "Vi verifierar alla användare för att eliminera bedrägerier. Du får kontakt med seriösa studenter och vi guidar er genom processen så att uthyrningen blir trygg för båda parter.",
   },
   {
-    q: "Varför visas inte adressen på annonser?",
-    a: "Exakta adresser visas när du är inloggad. Detta ökar tryggheten för både uthyrare och studenter.",
+    q: "Varför ser jag inte adressen direkt?",
+    a: "För att skydda både din och uthyrarens integritet visas exakt adress och kontaktuppgifter först när du är inloggad.",
   },
   {
-    q: "Kan företag lägga upp sina bostäder?",
-    a: "Ja. Bostadsbolag kan publicera via portal eller API. Vi kan även hantera bostadskön om så önskas. Ta kontakt med oss, så hjälper vi er att komma igång.",
+    q: "Kan jag se restid till mitt campus?",
+    a: "Ja! I kartvyn kan du filtrera bostäder baserat på hur lång tid det tar att ta sig till just din skola med cykel eller kollektivtrafik.",
   },
   {
-    q: "Visar ni studentrabatter och spartips?",
-    a: "Ja. Vi samlar relevanta erbjudanden, ekonomi-guider och tips för vardagsekonomi som hjälper dig som student.",
+    q: "Hjälper ni till med mer än bara boende?",
+    a: "Vi vill göra hela din bostadsresa enklare. Därför samlar vi även spartips, guider för studentekonomi och checklistor inför din första flytt.",
   },
 ];
 

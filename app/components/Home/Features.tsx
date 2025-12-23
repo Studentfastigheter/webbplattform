@@ -12,42 +12,41 @@ interface GridItemProps {
 }
 
 const gridItems: GridItemProps[] = [
+  {
+    area: "md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/5]",
+    icon: <Box className="h-4 w-4 text-black dark:text-neutral-400" />,
+    title: "Campusnära sökning med precision",
+    description:
+      "Hitta boenden baserat på restid till ditt campus, kollektivtrafik och studentområden. Filtrera på hyra, kötider och inflyttningsdatum för att hitta rätt direkt.",
+  },
 {
-  area: "md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/5]",
-  icon: <Box className="h-4 w-4 text-black dark:text-neutral-400" />,
-  title: "Kartvy som guidar din bostadsresa",
-  description:
-    "Se bostäder i relation till campus, restider, kollektivtrafik och studentaktiviteter. Filtrera på pris, köer och inflytt – och hitta rätt område direkt.",
-},
+    area: "md:[grid-area:1/7/2/13] xl:[grid-area:2/1/3/5]",
+    icon: <Settings className="h-4 w-4 text-black dark:text-neutral-400" />,
+    title: "En profil – alla möjligheter",
+    description:
+      "Skapa din studentprofil en gång. Snart kan du använda den för att snabbt presentera dig för privatvärdar och visa att du är en seriös hyresgäst.",
+  },
+  {
+    area: "md:[grid-area:2/1/3/7] xl:[grid-area:1/5/3/8]",
+    icon: <Search className="h-4 w-4 text-black dark:text-neutral-400" />,
+    title: "Vi har gjort research-jobbet",
+    description:
+      "Slipp ha 20 flikar öppna. Vi samlar köregler, inkomstkrav och spartips för studentlivet i ett flöde, så att du kan fokusera på tentorna istället.",
+  },
 {
-  area: "md:[grid-area:1/7/2/13] xl:[grid-area:2/1/3/5]",
-  icon: <Settings className="h-4 w-4 text-black dark:text-neutral-400" />,
-  title: "Publicera bostäder – för företag och privatvärdar",
-  description:
-    "Lägg upp annonser på minuter. Via portal eller API fyller du enkelt i regler, villkor och bilder. Smarta förslag hjälper dig till en komplett och trygg publicering.",
-},
+    area: "md:[grid-area:2/7/3/13] xl:[grid-area:1/8/2/13]",
+    icon: <Sparkles className="h-4 w-4 text-black dark:text-neutral-400" />,
+    title: "Maximera dina chanser",
+    description:
+      "Vi hjälper dig att förstå de krångliga köerna. Se var dina köpoäng faktiskt räcker till och få tips på hyresvärdar med kortast väntetid just nu.",
+  },
 {
-  area: "md:[grid-area:2/1/3/7] xl:[grid-area:1/5/3/8]",
-  icon: <Search className="h-4 w-4 text-black dark:text-neutral-400" />,
-  title: "All information du behöver – samlad i ett flöde",
-  description:
-    "Köregler, krav, avtal, guider, spartips och ekonomiöversikter. Vi samlar allt så både studenter och uthyrare snabbt får koll utan att leta själva.",
-},
-{
-  area: "md:[grid-area:2/7/3/13] xl:[grid-area:1/8/2/13]",
-  icon: <Sparkles className="h-4 w-4 text-black dark:text-neutral-400" />,
-  title: "Guidade flöden som gör köer enkla",
-  description:
-    "Vi förklarar hur studentbostadsköer fungerar, vilka krav som gäller och hur du maxar dina chanser. Perfekt för nya studenter som snabbt vill förstå processen.",
-},
-{
-  area: "md:[grid-area:3/1/4/13] xl:[grid-area:2/8/3/13]",
-  icon: <Lock className="h-4 w-4 text-black dark:text-neutral-400" />,
-  title: "Trygghet i varje uthyrning",
-  description:
-    "Verifierade profiler, digitala avtal och en transparent chatthistorik. Vi tar bort riskerna – inga fler otrygga Facebook-grupper eller osäkra uthyrningar.",
-},
-
+    area: "md:[grid-area:3/1/4/13] xl:[grid-area:2/8/3/13]",
+    icon: <Lock className="h-4 w-4 text-black dark:text-neutral-400" />,
+    title: "Slipp osäkra Facebook-grupper",
+    description:
+      "Trött på fejkprofiler och ockerhyror? Vi verifierar uthyrare och skapar en trygg mötesplats för studenter där du kan söka boende utan att bli lurad.",
+  },
 ];
 
 

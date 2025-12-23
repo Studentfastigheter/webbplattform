@@ -11,8 +11,8 @@ const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 const FOOTER_LINKS = [
   { href: "/om", label: "Om CampusLyan" },
   { href: "/partners", label: "Samarbetspartners" },
-  /*
-  { href: "/for-foretag", label: "För företag" },
+  
+  { href: "/for-foretag", label: "För företag" },/*
   { href: "/hyra-ut", label: "Hyra ut" },
   { href: "/kundservice", label: "Kundservice & kontakt" },
   { href: "/privacy", label: "Integritet" },

@@ -4,16 +4,16 @@ import Reveal from "@/lib/reveal";
 
 const steps = [
   {
-    title: "Registrera med Bank-ID",
-    desc: "Skapa ett studentkonto på några sekunder. Välj skola/stad så anpassar vi köer, områden och rekommenderade bostäder efter dig.",
+    title: "Skapa din studentprofil",
+    desc: "Kom igång på några sekunder. Välj din studieort så anpassar vi flödet med relevanta bostadsbolag, områden och lediga rum som matchar just din skola.",
   },
   {
-    title: "Utforska köer & bostäder",
-    desc: "Se bostäder nära campus, filtrera på pris, storlek och inflytt. Hitta relevanta bostadsköer och följ de bostäder du gillar.",
+    title: "Hitta rätt köer & lyor",
+    desc: "Utforska bostäder nära campus och se var dina köpoäng faktiskt räcker till. Vi samlar alla hyresvärdar på ett ställe så att du slipper leta på egen hand.",
   },
   {
-    title: "Ansök tryggt & flytta in",
-    desc: "Skicka intresse, chatta med verifierade uthyrare och signera avtal digitalt. Håll koll på svar, visningar och nästa steg – allt säkert.",
+    title: "Sök och ta kontakt",
+    desc: "Vi guidar dig direkt till rätt ansökan hos bostadsbolagen eller låter dig ta en trygg första kontakt med verifierade privatvärdar. Resten är bara inflytt!",
   },
 ];
 

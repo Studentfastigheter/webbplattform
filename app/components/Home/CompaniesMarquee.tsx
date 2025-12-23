@@ -9,22 +9,22 @@ type PartnerQuote = { quote: string; name: string; title: string };
 
 const FALLBACK_PARTNERS: PartnerQuote[] = [
   {
-    quote: "SGS publicerar alla sina studentbostäder direkt i CampusLyan så studenter ser sina ködagar i realtid.",
+    quote: "SGS Studentbostäder i Göteborg finns listade här så att du enkelt kan se lediga lyor och beräknade kötider.",
     name: "SGS Studentbostäder",
     title: "Göteborg",
   },
   {
-    quote: "SSSB når KTH-, SU- och KI-studenter i samma flöde och låter dem följa nya annonser steg för steg.",
+    quote: "Hitta ditt hem hos SSSB i Stockholm genom CampusLyan. Vi hjälper dig hålla koll på deras senaste släpp.",
     name: "SSSB",
     title: "Stockholm",
   },
   {
-    quote: "AF Bostäder kombinerar nationsboenden och nyproduktion – allt går via CampusLyan mot Lundastudenter.",
+    quote: "Vi samlar AF Bostäders utbud i Lund så att du får full koll på allt från korridorsrum till nyproduktion.",
     name: "AF Bostäder",
     title: "Lund",
   },
   {
-    quote: "StudentBo samlar privata och kommunala värdar så Uppsalastudenter får notifieringar direkt.",
+    quote: "StudentBo och Uppsalas övriga värdar finns tillgängliga i vårt flöde för att du ska hitta rätt direkt.",
     name: "StudentBo",
     title: "Uppsala",
   },

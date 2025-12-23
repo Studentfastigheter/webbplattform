@@ -5,41 +5,41 @@ import { Carousel, Card as AppleCarouselCard } from "@/components/ui/apple-cards
 const cityCards = [
   {
     title: "Göteborg",
-    category: "300+ studentlägenheter",
+    category: "Från SGS till dolda pärlor",
     src: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=1200&q=80",
     content: (
       <p className="text-slate-600 text-base">
-        SGS, privata värdar och nya projekt nära Chalmers och Handelshögskolan. Kartvyn hjälper dig hitta rätt stadsdel.
+        Hitta hem nära Chalmers, Handels eller GU. Vi samlar stadens största bolag och verifierade privatvärdar så att du kan bo tryggt i Majorna, Johanneberg eller Guldheden.
       </p>
     ),
   },
   {
     title: "Stockholm",
-    category: "450+ studentrum",
+    category: "Hela huvudstaden på ett ställe",
     src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80",
     content: (
       <p className="text-slate-600 text-base">
-        Följ SSSB, nya hyresvärdar och rumsannonser i Vasastan, Solna och Södermalm – notifieringar i samma flöde.
+        Oavsett om du pluggar på KTH, SU eller KI hjälper vi dig navigera mellan SSSB:s köer och lediga rum i Vasastan eller på Södermalm. Få notiser direkt när något dyker upp.
       </p>
     ),
   },
   {
     title: "Lund",
-    category: "200+ boenden",
+    category: "Studentlivets hjärta",
     src: "https://images.unsplash.com/photo-1504805572947-34fad45aed93?auto=format&fit=crop&w=1200&q=80",
     content: (
       <p className="text-slate-600 text-base">
-        AF-bostäder, nationer och privatvärdar i centrala Lund och Brunnshög. Spara köer och bevaka rum i samma dashboard.
+        Från AF Bostäder till nationernas korridorer. Vi guidar dig genom Lunds unika bostadsmarknad så att du hittar en plats nära din nation eller LTH.
       </p>
     ),
   },
   {
     title: "Uppsala",
-    category: "160+ listade objekt",
+    category: "Från nationer till nyproduktion",
     src: "https://images.unsplash.com/photo-1505764706515-aa95265c5abc?auto=format&fit=crop&w=1200&q=80",
     content: (
       <p className="text-slate-600 text-base">
-        Nationer, stiftelser och nya hyreshus nära Ultuna, Ekonomikum och centrum – allt filtrerat efter din skola.
+        Bevaka lediga objekt nära Ekonomikum, BMC och Ultuna. Vi samlar information från stiftelser, bolag och privatpersoner så att du maxar dina chanser i Sveriges äldsta studentstad.
       </p>
     ),
   },
@@ -49,10 +49,10 @@ export default function CityCarousel() {
   return (
     <section className="section">
       <div className="container-page text-center space-y-3">
-        <p className="eyebrow text-brand">Studentstäder</p>
-        <h2 className="h2">Exempel på städer där CampusLyan är aktivt</h2>
-        <p className="text-muted max-w-2xl mx-auto">
-          Öppna ett kort för att se vad som händer i respektive stad – köer, privata värdar och notifieringar.
+        <p className="eyebrow text-brand">Hitta ditt campus</p>
+        <h2 className="h2">Vi täcker Sveriges mest populära studentstäder</h2>
+        <p className="text-brand max-w-2xl mx-auto">
+          Oavsett var du har kommit in hjälper vi dig att samla köerna, bevaka områdena och hitta ditt nästa hem – helt anpassat efter din studieort.
         </p>
       </div>
       <div className="mt-10">

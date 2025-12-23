@@ -3,10 +3,10 @@
 import Reveal from "@/lib/reveal";
 
 const stats = [
-  { key: "hyresvardar", value: "25+", label: "Hyresvärdar" },
-  { key: "studentstader", value: "30+", label: "Studentstäder" },
-  { key: "kostnad", value: "0 kr", label: "Alltid gratis" },
-  { key: "tryggt", value: "GDPR", label: "Trygg integritet" },
+  { key: "hyresvardar", value: "50+", label: "Anslutna hyresvärdar" },
+  { key: "studentstader", value: "Hela Sverige", label: "Från Lund till Kiruna" },
+  { key: "kostnad", value: "100% Gratis", label: "För alla studenter" },
+  { key: "tryggt", value: "Verifierat", label: "Tryggt & Bluff-fritt" },
 ];
 
 export default function StatsBar() {
