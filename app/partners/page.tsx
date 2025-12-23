@@ -101,7 +101,6 @@ export default function PartnersPage() {
             primaryBtnText="Maila oss" // Ändrade texten så det är tydligt
             // HÄR ÄR MAGIN:
             primaryBtnLink="mailto:alvin.stallgard@campuslyan.se?subject=Förfrågan om samarbete"
-            rightImage={dashboardPreview}
        />
 
     </main>
