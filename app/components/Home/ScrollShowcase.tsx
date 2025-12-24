@@ -8,21 +8,31 @@ import { Button } from "@heroui/button";
 export default function ScrollShowcase() {
   return (
     <ContainerScroll
-      titleComponent={
-        <div className="space-y-4">
-          <p className="eyebrow text-brand">Snart lanseras CampusLyan</p>
-          <h1 className="hero-title text-gradient mb-12 flex flex-col items-center gap-y-3 text-center leading-tight md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-x-4">
-            <span className="flex-shrink-0">Lyor för studenter i</span>
-            <span className="inline-flex justify-center">
-              <FlipWords
-                words={["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping", "Karlstad", "Örebro", "Malmö", "Växjö", "Helsingborg", "Jönköping", "Umeå"]}
-                duration={2500}
-              />
-            </span>
-          </h1>
-        </div>
-      }
-    >
+        titleComponent={
+          <div className="flex flex-col items-center justify-center space-y-6 mb-10 lg:mb-20">
+            {/* Badge / Eyebrow - Matchar Hero stilen */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-bold tracking-wide uppercase">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              Snart lanseras CampusLyan
+            </div>
+
+            {/* Rubrik med FlipWords */}
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-slate-900 leading-[1.1] text-center max-w-4xl mx-auto">
+              Lyor för studenter i <br className="hidden md:block" />
+              <span className="inline-block mt-2 md:mt-0 text-emerald-600">
+                <FlipWords
+                  words={["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping", "Örebro", "Malmö", "Umeå"]}
+                  duration={2500}
+                  className="text-emerald-600"
+                />
+              </span>
+            </h1>
+          </div>
+        }
+      >
       <div className="flex h-full flex-col gap-6 rounded-2xl bg-white/5 p-6 text-slate-800">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2 text-xs uppercase tracking-widest text-slate-700">
