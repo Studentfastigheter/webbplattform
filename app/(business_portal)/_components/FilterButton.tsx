@@ -7,13 +7,15 @@ type OptionType = {
     value: string;
 }
 
+type FilterButtonProps = {
+    options: OptionType[];
+    icon?: React.ReactNode;
+}
+
 export default function FilterButton({ 
   options,
   icon
-}: {
-  options: OptionType[];
-  icon?: React.ReactNode;
-}) {
+}: FilterButtonProps) {
   
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOption, setSortOption] = useState(options[0].value);

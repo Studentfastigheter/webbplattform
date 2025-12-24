@@ -2,14 +2,20 @@
 
 import { CircleQuestionMark, Upload } from "lucide-react";
 import Container from "./Container";
+import { cn } from "@/lib/utils";
+
+
+
+type DragAndDropProps = React.HTMLAttributes<HTMLDivElement> & {
+  className?: string,
+};
 
 export default function DragAndDrop({
-  columnSpan,
-}: {
-  columnSpan: number;
-}) {
+  className,
+  ...props
+}: DragAndDropProps) {
   return (
-    <Container columnSpan={columnSpan} borderStyle="dashed" className="border-neutral-400" onClick={() => {}}>
+    <Container {...props} borderStyle="dashed" className={cn(`border-neutral-400`, className)} onClick={() => {}}>
       <div className="absolute top-3 right-4 p-2 group">
         <CircleQuestionMark size={24} className="group-hover:text-neutral-700 transition-all duration-75" onClick={() => {}} />
       </div>

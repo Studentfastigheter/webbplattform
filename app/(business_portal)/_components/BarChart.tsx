@@ -44,13 +44,16 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+
+type ChartBarMultipleProps = React.HTMLAttributes<HTMLDivElement> & {
+  
+};
+
 export default function ChartBarMultiple({
-  columnSpan,
-}: {
-  columnSpan: number,
-}) {
+  ...props
+}: ChartBarMultipleProps) {
   return (
-    <Container columnSpan={columnSpan}>
+    <Container {...props}>
       <h2 className="text-xl font-semibold text-slate-900 mb-4">Statistik senaste året</h2>
       <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
           <LineChart

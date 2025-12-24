@@ -33,29 +33,16 @@ function formatSegmentLabel(segment: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default function NavigationBreadcrumb({
-  className,
-}: NavigationBreadcrumbProps) {
+export default function NavigationBreadcrumb({ className }: NavigationBreadcrumbProps) {
   const pathname = usePathname() || ROOT_PATH;
 
-  // If we're outside /portal, just show root as current page
-  if (!pathname.startsWith(ROOT_PATH)) {
-    return (
-      <Breadcrumb className={className}>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbPage>{ROOT_LABEL}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-    );
+  const subPath = pathname.slice(ROOT_PATH.length); 
+  const segments = subPath.split("/").filter(Boolean);
+
+  if (segments.length === 0) {
+    return null;
   }
 
-  // Get all segments *after* /portal
-  const subPath = pathname.slice(ROOT_PATH.length); // remove "/portal"
-  const segments = subPath.split("/").filter(Boolean); // ["dashboard", "settings", "profile", ...]
-
-  // Build cumulative hrefs for each segment
   const segmentData = segments.map((segment, index) => {
     const href = ROOT_PATH + "/" + segments.slice(0, index + 1).join("/");
     return {
@@ -73,20 +60,16 @@ export default function NavigationBreadcrumb({
   return (
     <Breadcrumb className={className}>
       <BreadcrumbList>
-      
+        {/* Always show root when NOT at root */}
         <BreadcrumbItem>
-          {segments.length === 0 ? (
-            <BreadcrumbPage>{ROOT_LABEL}</BreadcrumbPage>
-          ) : (
-            <BreadcrumbLink asChild>
-              <Link href={ROOT_PATH}>{ROOT_LABEL}</Link>
-            </BreadcrumbLink>
-          )}
+          <BreadcrumbLink asChild>
+            <Link href={ROOT_PATH}>Portal</Link>
+          </BreadcrumbLink>
         </BreadcrumbItem>
 
-        {segments.length > 0 && <BreadcrumbSeparator />}
+        <BreadcrumbSeparator />
 
-
+        {/* Your existing logic remains identical */}
         {!hasEllipsis &&
           segmentData.map((seg, index) => {
             const isLast = index === segmentData.length - 1;
@@ -106,10 +89,8 @@ export default function NavigationBreadcrumb({
             );
           })}
 
-
         {hasEllipsis && firstAfterRoot && lastSegment && (
           <>
-          
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
                 <Link href={firstAfterRoot.href}>{firstAfterRoot.label}</Link>
@@ -117,7 +98,6 @@ export default function NavigationBreadcrumb({
             </BreadcrumbItem>
 
             <BreadcrumbSeparator />
-
 
             {middleSegments.length > 0 && (
               <>
@@ -140,7 +120,6 @@ export default function NavigationBreadcrumb({
                 <BreadcrumbSeparator />
               </>
             )}
-
 
             <BreadcrumbItem>
               <BreadcrumbPage>{lastSegment.label}</BreadcrumbPage>

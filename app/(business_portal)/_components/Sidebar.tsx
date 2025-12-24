@@ -18,17 +18,17 @@ const navItems = [
             { href: `${dashboardRelPath}/ansokningar`, label: "Ansökningar", Logo: Users },
         ]
     },
-    {
-        group: {
-            name: "Annat",
-            order: 2,
-        },
-        links: [
-          { href: `${dashboardRelPath}/andrahand`, label: "Andrahand", Logo: "" },
-          { href: `${dashboardRelPath}/kohantera`, label: "Köhantering", Logo: "" },
-          { href: `${dashboardRelPath}/rapporter`, label: "Rapporter", Logo: "" },
-        ]
-    },
+    // {
+    //     group: {
+    //         name: "Annat",
+    //         order: 2,
+    //     },
+    //     links: [
+    //       { href: `${dashboardRelPath}/andrahand`, label: "Andrahand", Logo: "" },
+    //       { href: `${dashboardRelPath}/kohantera`, label: "Köhantering", Logo: "" },
+    //       { href: `${dashboardRelPath}/rapporter`, label: "Rapporter", Logo: "" },
+    //     ]
+    // },
 ];
 
 export default function Sidebar() {

@@ -33,18 +33,21 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+
+type ChartPieLabelProps = React.HTMLAttributes<HTMLDivElement> & {
+  
+};
+
 export default function ChartPieLabel({
-  columnSpan,
-}: {
-  columnSpan: number,
-}) {
+  ...props
+}: ChartPieLabelProps) {
 
   const totalInvoices = React.useMemo(() => {
     return chartData.reduce((acc, curr) => acc + curr.invoices, 0)
   }, [])
 
   return (
-    <Container columnSpan={columnSpan}>
+    <Container {...props}>
       <h2 className="text-xl font-semibold text-slate-900 mb-4">Förra månadens fakturor</h2>
       <ChartContainer
           config={chartConfig}

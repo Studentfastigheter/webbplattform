@@ -9,11 +9,11 @@ export default function NyAnnons() {
   return (
     <div className="grid grid-cols-12">
 
-      <DragAndDrop columnSpan={4} />
+      <DragAndDrop className="col-span-3" />
 
       <div className="my-2 col-span-3 text-center flex items-center">
         <p className="text-sm mx-8">eller</p>
-        <Link href={dashboardRelPath + "/annonser/ny/onboarding"}>
+        <Link href={dashboardRelPath + "/annonser/ny/onboarding/1"}>
           <Button variant={"outline"} className="cursor-pointer">
             <HousePlus />
             Skapa annons

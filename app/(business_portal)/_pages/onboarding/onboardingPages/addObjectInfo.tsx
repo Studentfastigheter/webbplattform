@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
+import Divider from "@/components/ui/Divider"
+import { FormShell } from "@/components/Dashboard/Form"
 
 const formSchema = z.object({
     search: z.string().min(2, {
@@ -69,7 +71,7 @@ export default function AddObjectInfo() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto mt-12">
+        <FormShell>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-lg mx-auto">
                     <div>
@@ -91,7 +93,7 @@ export default function AddObjectInfo() {
                         )}
                     />
                     
-                    <div className="h-px w-full bg-neutral-100" />
+                    <Divider />
                     
                     <InputGroup>
                         <FormField
@@ -235,6 +237,6 @@ export default function AddObjectInfo() {
                     </InputGroup>
                 </form>
             </Form>
-        </div>
+        </FormShell>
     )
 }

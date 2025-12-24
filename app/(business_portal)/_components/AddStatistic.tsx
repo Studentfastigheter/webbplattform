@@ -5,35 +5,34 @@ import Container from "./Container";
 import { Button } from "@/components/ui/button"
 import { ORGANISATION_DASHBOARD_STATISTICS } from "@/lib/data";
 
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useState } from "react";
 
+
+
+type AddStatisticProps =  React.ComponentProps<typeof DropdownMenuPrimitive.Root> & {
+  shownStatistics?: string[];
+};
 
 export default function AddStatistic({
-  columnSpan,
-}: {
-  columnSpan: number;
-}) {
+  shownStatistics,
+  ...props
+}: AddStatisticProps) {
   
   return (
-    <DropdownMenu>
+    <DropdownMenu {...props}>
         <DropdownMenuTrigger>
-          <Container onClick={() => {}} columnSpan={columnSpan} padding="sm" borderStyle="dashed" className="hover:!border-solid hover:!shadow-xs transition-all duration-75">
+          <Container onClick={() => {}} padding="sm" borderStyle="dashed" className="hover:!border-solid hover:!shadow-xs transition-all duration-75">
             <CopyPlus size={24} className="text-neutral-400 mb-2 mx-auto" />
-            <p className="text-sm text-brand font-bold text-center tracking-wide">Add data</p>
+            <p className="text-sm text-brand font-bold text-center tracking-wide">Bifoga data</p>
           </Container>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="start">
@@ -42,18 +41,13 @@ export default function AddStatistic({
             {
               ORGANISATION_DASHBOARD_STATISTICS.map((item) =>
                 {
-                  const [hover, setHover] = useState(false)
-                  
-                  
-                  return <DropdownMenuItem key={item.id} className="cursor-pointer" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-                    <item.icon size={14} className="text-neutral-400" />
+                  if (!(shownStatistics && shownStatistics.includes(item.id))) {
+                    return null;
+                  }
+                  return <DropdownMenuItem key={item.id} className="cursor-pointer font-medium text-neutral-500 group-hover:text-black group">
+                    <item.icon size={14} className="text-neutral-400 group-hover:text-black" />
                     {item.label}
-                    {
-                      hover ?
-                      <CirclePlus className="ml-auto" />
-                      :
-                      <Plus className="ml-auto" />
-                    }
+                    <Plus className="ml-auto" />
                   </DropdownMenuItem>
                 }
               )
