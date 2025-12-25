@@ -122,15 +122,17 @@ export function FormSkeleton() {
 type FormShellProps = React.HTMLAttributes<HTMLDivElement> & {
     children: React.ReactNode;
     title?: string;
+    className?: string;
 };
 
 export function FormShell({ 
     children,
     title,
+    className,
     ...props
 }: FormShellProps) {
     return (
-        <div className="max-w-lg mx-auto mt-12" {...props}>
+        <div className={cn("max-w-lg mx-auto mt-12", className)} {...props}>
             {title && <p className="text-xl font-semibold mb-8">{title}</p>}
             {children}
         </div>

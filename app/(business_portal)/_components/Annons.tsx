@@ -39,13 +39,6 @@ export function AnnonsPreview({
             />
             <p className={cn(status.toLowerCase() == "aktiv" ? "text-white" : "text-white", `text-center absolute top-1/2 left-1/2 -translate-1/2 opacity-80 px-2 py-1 rounded text-6xl font-semibold -rotate-20 uppercase`)}>{status}</p>
         </div>
-        {/* <div className="flex mt-2">
-            {labels.map((label, index) => (
-                <div key={index} className={`px-2 py-[2px] rounded-[3px] text-[10px] font-medium border border-black`}>
-                    {label.text}
-                </div>
-            ))}
-        </div> */}
         <div className="px-2 pb-4 mt-2">
                 <p className="text-sm font-semibold">{address}</p>
             <div className="flex gap-2 items-center -mt-0.5">
@@ -61,4 +54,6 @@ export function AnnonsPreview({
     </Link>
   )
 }
+
+
 

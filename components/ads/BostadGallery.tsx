@@ -4,14 +4,20 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 type Props = {
   title: string;
   images: string[];
+  isEditable?: boolean;
 };
 
-export default function BostadGallery({ title, images }: Props) {
+export default function BostadGallery({ 
+  title, 
+  images, 
+  isEditable=false 
+}: Props) {
   const normalizedImages = useMemo(
     () => (images.length ? images : ["/appartment.jpg"]),
     [images],
@@ -142,8 +148,8 @@ export default function BostadGallery({ title, images }: Props) {
     <>
       <section className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
         <div
-          className="relative h-[260px] cursor-pointer overflow-hidden rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.08)] sm:h-[340px] lg:h-[420px]"
-          onClick={() => setLightboxIndex(0)}
+          className="group relative h-[260px] cursor-pointer overflow-hidden rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.08)] sm:h-[340px] lg:h-[420px]"
+          onClick={() => !isEditable && setLightboxIndex(0)}
         >
           <Image
             src={mainImage}
@@ -153,6 +159,18 @@ export default function BostadGallery({ title, images }: Props) {
             sizes="(min-width: 1024px) 800px, 100vw"
             className="object-cover"
           />
+          {isEditable && (
+            <div className="invisible group-hover:visible absolute top-4 right-4 hover:bg-neutral-100/30 rounded-full p-2">
+              <Tooltip disableHoverableContent>
+                <TooltipTrigger asChild>
+                  <Pencil className="text-neutral-800 w-6 h-6" />
+                </TooltipTrigger>
+                <TooltipContent className="pointer-events-none">
+                  <p>Redigera bild</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
         </div>
 
         <div className="grid h-[260px] grid-cols-2 grid-rows-2 gap-4 sm:h-[340px] lg:h-[420px]">
@@ -161,16 +179,30 @@ export default function BostadGallery({ title, images }: Props) {
             return (
               <div
                 key={`${src}-${idx}`}
-                className="relative cursor-pointer overflow-hidden rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.05)]"
-                onClick={() => setLightboxIndex(imgIndex)}
+                className="relative cursor-pointer overflow-hidden rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.05)] group"
+                onClick={() => !isEditable && setLightboxIndex(imgIndex)}
               >
                 <Image
                   src={src}
-                  alt={`${title} – bild ${idx + 2}`}
+                  alt={`${title} - bild ${idx + 2}`}
                   fill
                   sizes="(min-width: 1024px) 400px, 50vw"
                   className="object-cover"
                 />
+                {isEditable && (
+                  <div 
+                    className="invisible group-hover:visible absolute top-4 right-4 hover:bg-neutral-100/30 rounded-full p-2"
+                  >
+                    <Tooltip disableHoverableContent>
+                      <TooltipTrigger asChild>
+                        <Pencil className="text-neutral-800 w-6 h-6" />
+                      </TooltipTrigger>
+                      <TooltipContent className="pointer-events-none">
+                        <p>Redigera bild</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
               </div>
             );
           })}
