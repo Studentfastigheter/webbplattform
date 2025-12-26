@@ -30,14 +30,6 @@ const housingPartners: PartnerItem[] = [
     logoSrc: "guldhedens_studiehem.png",
     href: "https://www.guldheden.com/",
   },
-  {
-    id: 2,
-    name: "Guldhedens Studiehem",
-    city: "Göteborg",
-    website: "https://www.guldheden.com",
-    logoUrl: "/logos/guldhedens_studiehem.png",
-    description: "",
-  },
 ];
 
 const schoolPartners: PartnerItem[] = [

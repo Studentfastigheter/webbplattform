@@ -5,54 +5,56 @@ import { Box, Lock, Search, Settings, Sparkles } from "lucide-react";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 interface GridItemProps {
-  area: string;
   icon: ReactNode;
   title: string;
   description: string;
+  className?: string;
 }
 
+// Uppdaterad grid-struktur: Använder col-span istället för grid-area för bättre stabilitet
 const gridItems: GridItemProps[] = [
   {
-    area: "md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/5]",
-    icon: <Box className="h-4 w-4 text-black dark:text-neutral-400" />,
-    title: "Kartvy som guidar din bostadsresa",
+    className: "lg:col-span-2", // Det första kortet blir brett (Feature card)
+    icon: <Box className="h-6 w-6 text-emerald-600" />,
+    title: "Campusnära sökning med precision",
     description:
-      "Se bostäder i relation till campus, restider, kollektivtrafik och studentaktiviteter. Filtrera på pris, köer och inflytt – och hitta rätt område direkt.",
+      "Hitta boenden baserat på restid till ditt campus, kollektivtrafik och studentområden. Filtrera på hyra, kötider och inflyttningsdatum för att hitta rätt direkt.",
   },
   {
-    area: "md:[grid-area:1/7/2/13] xl:[grid-area:2/1/3/5]",
-    icon: <Settings className="h-4 w-4 text-black dark:text-neutral-400" />,
-    title: "Publicera bostäder – för företag och privatvärdar",
+    className: "lg:col-span-1",
+    icon: <Settings className="h-6 w-6 text-emerald-600" />,
+    title: "En profil – alla möjligheter",
     description:
-      "Lägg upp annonser på minuter. Via portal eller API fyller du enkelt i regler, villkor och bilder. Smarta förslag hjälper dig till en komplett och trygg publicering.",
+      "Skapa din studentprofil en gång. Använd den för att snabbt presentera dig för privatvärdar och visa seriositet.",
   },
   {
-    area: "md:[grid-area:2/1/3/7] xl:[grid-area:1/5/3/8]",
-    icon: <Search className="h-4 w-4 text-black dark:text-neutral-400" />,
-    title: "All information du behöver – samlad i ett flöde",
+    className: "lg:col-span-1",
+    icon: <Search className="h-6 w-6 text-emerald-600" />,
+    title: "Vi har gjort research-jobbet",
     description:
-      "Köregler, krav, avtal, guider, spartips och ekonomiöversikter. Vi samlar allt så både studenter och uthyrare snabbt får koll utan att leta själva.",
+      "Slipp 20 flikar. Vi samlar köregler, inkomstkrav och spartips i ett flöde så du kan fokusera på tentorna.",
   },
   {
-    area: "md:[grid-area:2/7/3/13] xl:[grid-area:1/8/2/13]",
-    icon: <Sparkles className="h-4 w-4 text-black dark:text-neutral-400" />,
-    title: "Guidade flöden som gör köer enkla",
+    className: "lg:col-span-1",
+    icon: <Sparkles className="h-6 w-6 text-emerald-600" />,
+    title: "Maximera dina chanser",
     description:
-      "Vi förklarar hur studentbostadsköer fungerar, vilka krav som gäller och hur du maxar dina chanser. Perfekt för nya studenter som snabbt vill förstå processen.",
+      "Förstå köerna. Se var dina poäng räcker och få tips på hyresvärdar med kortast väntetid just nu.",
   },
   {
-    area: "md:[grid-area:3/1/4/13] xl:[grid-area:2/8/3/13]",
-    icon: <Lock className="h-4 w-4 text-black dark:text-neutral-400" />,
-    title: "Trygghet i varje uthyrning",
+    className: "lg:col-span-1",
+    icon: <Lock className="h-6 w-6 text-emerald-600" />,
+    title: "Slipp osäkra grupper",
     description:
-      "Verifierade profiler, digitala avtal och en transparent chatthistorik. Vi tar bort riskerna – inga fler otrygga Facebook-grupper eller osäkra uthyrningar.",
+      "Vi verifierar uthyrare och skapar en trygg mötesplats för studenter där du kan söka boende utan att bli lurad.",
   },
 ];
 
-const GridItem = ({ area, icon, title, description }: GridItemProps) => {
+const GridItem = ({ icon, title, description, className }: GridItemProps) => {
   return (
-    <li className={`list-none w-full ${area}`}>
-      <div className="group relative h-full rounded-2xl border border-black/5 p-2 shadow-sm dark:border-white/10 md:rounded-3xl md:p-3">
+    <div className={`relative h-full w-full ${className}`}>
+      <div className="group relative h-full rounded-2xl border border-slate-200 bg-white p-2 shadow-sm transition-all hover:shadow-md md:rounded-3xl md:p-3">
+        {/* Glowing Effect - Behåller denna om du har komponenten installerad */}
         <GlowingEffect
           blur={0}
           borderWidth={3}
@@ -63,53 +65,67 @@ const GridItem = ({ area, icon, title, description }: GridItemProps) => {
           inactiveZone={0.01}
           className="opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         />
-        <div className="relative flex h-full flex-col justify-between gap-4 overflow-hidden rounded-xl bg-white p-5 dark:bg-neutral-900 dark:shadow-[0px_0px_27px_0px_#2D2D2D]">
-          <div className="flex flex-1 flex-col gap-3">
-            <div className="w-fit rounded-lg border border-gray-200 p-2 dark:border-neutral-700">
-              {icon}
+        
+        <div className="relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl bg-slate-50/50 p-6 md:p-8">
+          <div className="flex flex-col gap-4">
+            {/* Ikon med Emerald-tema */}
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 border border-emerald-200">
+                {icon}
             </div>
-            <div className="space-y-2">
-              <h3 className="font-sans text-lg font-semibold leading-tight text-balance text-black md:text-xl dark:text-white">
+            
+            <div className="space-y-3">
+              <h3 className="text-xl font-bold leading-tight text-slate-900 md:text-2xl">
                 {title}
               </h3>
-              <p className="font-sans text-sm leading-relaxed text-black/70 md:text-[15px] dark:text-neutral-400">
+              <p className="text-sm leading-relaxed text-slate-600 md:text-base">
                 {description}
               </p>
             </div>
           </div>
         </div>
       </div>
-    </li>
+    </div>
   );
 };
 
 export default function Features() {
   return (
-    <section
-      className="section bg-neutral-50 text-slate-900 dark:bg-black dark:text-white"
-      id="funktioner"
-    >
-      {/* HÄR: Container på rubriken */}
-      <div className="container mx-auto px-4 md:px-8 space-y-3 text-center">
-        <p className="eyebrow text-brand dark:text-brand">
-          Plattformens funktioner
-        </p>
-        <h2 className="h2 text-slate-900 dark:text-white">
-          Allt som behövs för att studenter och uthyrare ska mötas tryggt
-        </h2>
-        <p className="mx-auto max-w-3xl text-[15px] text-slate-600 dark:text-slate-300">
-          Upptäck funktionerna som hjälper studenter att hitta rätt boende – och
-          gör det enkelt för företag och privatvärdar att publicera tryggt och
-          effektivt.
-        </p>
+    <section className="relative overflow-hidden py-16 lg:py-24 bg-white" id="funktioner">
+      
+      {/* Bakgrundsdekorationer */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-emerald-50/50 rounded-[100%] blur-3xl opacity-60"></div>
       </div>
 
-      {/* HÄR: Container på gridden */}
-      <ul className="container mx-auto px-4 md:px-8 mt-8 grid grid-cols-1 gap-4 text-slate-900 dark:text-white md:grid md:grid-cols-12 md:gap-3 md:grid-flow-dense lg:gap-4 xl:grid-rows-2">
-        {gridItems.map((item) => (
-          <GridItem key={item.title} {...item} />
-        ))}
-      </ul>
+      <div className="container mx-auto px-4 sm:px-6 max-w-7xl relative z-10">
+        
+        {/* Header Section */}
+        <div className="flex flex-col items-center text-center space-y-6 mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-bold tracking-wide uppercase">
+             <span className="relative flex h-2 w-2">
+               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+             </span>
+             Plattformens funktioner
+          </div>
+          
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 max-w-4xl leading-[1.1]">
+            Allt som behövs för att studenter <br className="hidden md:block" /> och uthyrare ska <span className="text-emerald-600">mötas tryggt</span>
+          </h2>
+          
+          <p className="mx-auto max-w-2xl text-base sm:text-lg text-slate-600 leading-relaxed">
+            Upptäck funktionerna som hjälper studenter att hitta rätt boende – och gör det enkelt för företag och privatvärdar att publicera tryggt och effektivt.
+          </p>
+        </div>
+
+        {/* Grid Layout - Bento Style */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+          {gridItems.map((item, index) => (
+            <GridItem key={index} {...item} />
+          ))}
+        </div>
+
+      </div>
     </section>
   );
 }

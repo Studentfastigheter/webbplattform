@@ -8,19 +8,24 @@ import { SiThreads } from "react-icons/si";
 
 const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 
-const FOOTER_LINKS = [
-  { href: "/om", label: "Om CampusLyan" },
-  { href: "/partners", label: "Samarbetspartners" },
-  { href: "/for-foretag", label: "För företag" },
-  { href: "/anvandarvillkor", label: "Användarvillkor" },
-  { href: "/personuppgiftspolicy", label: "Personuppgiftspolicy" },
-  { href: "/cookiepolicy", label: "Cookiepolicy" },
-  
-];
-
+// Här styr du exakt vilka länkar som hamnar under vilken rubrik
 const LINK_SECTIONS = [
-  { title: "Resurser", items: FOOTER_LINKS.slice(0, 4) },
-  { title: "Support", items: FOOTER_LINKS.slice(4, 6) },
+  {
+    title: "Resurser",
+    items: [
+      { href: "/om-oss", label: "Om CampusLyan" },
+      { href: "/partners", label: "Samarbetspartners" },
+      { href: "/for-foretag", label: "För företag" },
+    ],
+  },
+  {
+    title: "Support",
+    items: [
+      { href: "/anvandarvillkor", label: "Användarvillkor" },
+      { href: "/personuppgiftspolicy", label: "Personuppgiftspolicy" },
+      { href: "/cookiepolicy", label: "Cookiepolicy" },
+    ],
+  },
 ];
 
 const SOCIAL_LINKS = [
@@ -35,9 +40,9 @@ export default function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative mt-16 w-full overflow-hidden border-t border-slate-100 bg-gradient-to-b  text-slate-700">
+    <footer className="relative mt-16 w-full overflow-hidden border-t border-slate-100 bg-gradient-to-b text-slate-700">
       <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute left-[-15%] top-[-10%] h-72 w-72 rounded-full  blur-[140px]" />
+        <div className="absolute left-[-15%] top-[-10%] h-72 w-72 rounded-full blur-[140px]" />
         <div className="absolute right-[-10%] bottom-[-15%] h-72 w-72 rounded-full blur-[140px]" />
       </div>
 

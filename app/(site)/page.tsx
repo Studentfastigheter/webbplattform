@@ -16,6 +16,5 @@ export default function HomePage() {
     <StepsTimeline />
     <Faq />
   </>
-
   );
 }
