@@ -33,30 +33,29 @@ const faqs = [
   },
 ];
 
-
 export default function Faq() {
   return (
     <section className="section text-slate-900 dark:bg-slate-950 dark:text-white">
-      <div className="container-page">
-        <h2 className="h2 mb-6 text-slate-900 dark:text-white">Vanliga frågor</h2>
+      {/* HÄR: Uppdaterad container för enhetliga marginaler */}
+      <div className="container mx-auto px-4 md:px-8">
+        <h2 className="h2 mb-6 text-slate-900 dark:text-white">
+          Vanliga frågor
+        </h2>
         <div className="grid gap-6 md:grid-cols-2">
           {faqs.map((f, i) => (
             <article
               key={i}
               className="rounded-2xl border border-black/5 p-5 shadow-soft dark:border-white/10 dark:bg-slate-900/80"
             >
-              <div className="mb-2 font-semibold text-slate-900 dark:text-white">{f.q}</div>
-              <p className="text-sm text-slate-600 dark:text-slate-300">{f.a}</p>
+              <div className="mb-2 font-semibold text-slate-900 dark:text-white">
+                {f.q}
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {f.a}
+              </p>
             </article>
           ))}
         </div>
-        {/*
-        <div className="mt-6">
-          <Button as={Link} href="/faq" fullWidth className="mt-1">
-            Läs fler frågor
-          </Button>
-        </div>
-        */}
       </div>
     </section>
   );
