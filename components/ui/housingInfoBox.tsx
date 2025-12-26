@@ -1,23 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Heart, Share2 } from "lucide-react";
+import { ShareDialog } from "@/components/ui/ShareDialog"; 
+import { listingService } from "@/services/listing-service"; // Importera din service
 
 type HousingInfoBoxProps = {
-  rent?: number | null;           // 3800
-  moveInDate?: string | null;     // "2026-07-03"
-  lastApplyDate?: string | null;  // "2026-05-24"
-
+  listingId: string;       // NY: Krävs för att veta vilken annons vi gillar
+  isFavorite?: boolean;    // NY: Startvärde (kommer från backend)
+  
+  rent?: number | null;
+  moveInDate?: string | null;
+  lastApplyDate?: string | null;
   width?: number | string;
   height?: number | string;
   className?: string;
-
   onApplyClick?: () => void;
   applyDisabled?: boolean;
 };
 
 export default function HousingInfoBox({
+  listingId,
+  isFavorite = false, // Default till false om det inte skickas med
   rent,
   moveInDate,
   lastApplyDate,
@@ -27,6 +32,42 @@ export default function HousingInfoBox({
   onApplyClick,
   applyDisabled,
 }: HousingInfoBoxProps) {
+  
+  // State för att hantera om annonsen är likad eller inte
+  const [isFav, setIsFav] = useState(isFavorite);
+  const [isLoadingFav, setIsLoadingFav] = useState(false);
+
+  // Hantera klick på hjärtat
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    // Stoppa eventuella klick på länkar om denna komponent ligger i ett kort
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isLoadingFav) return;
+
+    // 1. Optimistisk uppdatering (byt ikon direkt för snabb känsla)
+    const previousState = isFav;
+    const newState = !previousState;
+    setIsFav(newState);
+    setIsLoadingFav(true);
+
+    try {
+      if (newState) {
+        // Om den ska bli favorit -> Anropa addFavorite
+        await listingService.addFavorite(listingId);
+      } else {
+        // Om den ska tas bort -> Anropa removeFavorite
+        await listingService.removeFavorite(listingId);
+      }
+    } catch (error) {
+      console.error("Kunde inte ändra favoritstatus:", error);
+      // 2. Om det misslyckas, rulla tillbaka till föregående state
+      setIsFav(previousState);
+    } finally {
+      setIsLoadingFav(false);
+    }
+  };
+
   const formattedRent =
     typeof rent === "number"
       ? `${rent.toLocaleString("sv-SE")} kr/månad`
@@ -54,8 +95,32 @@ export default function HousingInfoBox({
         </span>
 
         <div className="flex items-center gap-3">
-          <Heart className="w-5 h-5" />
-          <Share2 className="w-5 h-5" />
+          {/* Hjärta-knapp */}
+          <button 
+            type="button"
+            onClick={handleToggleFavorite}
+            disabled={isLoadingFav}
+            className={`
+              transition-all duration-200 
+              hover:scale-110 active:scale-95
+              ${isFav ? "text-red-500" : "text-gray-500 hover:text-red-500"}
+            `}
+            aria-label={isFav ? "Ta bort från favoriter" : "Lägg till i favoriter"}
+          >
+            {/* fill-current gör att hjärtat fylls med färg om isFav är true */}
+            <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
+          </button>
+
+          {/* Dela-knapp inuti ShareDialog */}
+          <ShareDialog>
+            <button 
+              type="button" 
+              className="text-gray-500 hover:text-blue-600 transition-colors"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          </ShareDialog>
+
         </div>
       </div>
 
@@ -77,7 +142,7 @@ export default function HousingInfoBox({
       <div className="px-5 pb-4 pt-1">
         <Button
           onClick={onApplyClick}
-          isDisabled={applyDisabled}
+          disabled={applyDisabled}
           className={`
             w-full h-[31px]
             rounded-full
@@ -85,6 +150,7 @@ export default function HousingInfoBox({
             text-[14px] leading-[16px]
             normal-case
             shadow-[0_3px_4px_rgba(0,0,0,0.25)]
+            hover:bg-[#00331b]
           `}
         >
           Intresseanmälan

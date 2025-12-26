@@ -12,9 +12,9 @@ const FOOTER_LINKS = [
   { href: "/om", label: "Om CampusLyan" },
   { href: "/partners", label: "Samarbetspartners" },
   { href: "/for-foretag", label: "För företag" },
-  { href: "/hyra-ut", label: "Hyra ut" },
-  { href: "/kundservice", label: "Kundservice & kontakt" },
-  { href: "/privacy", label: "Integritet" },
+  { href: "/anvandarvillkor", label: "Användarvillkor" },
+  { href: "/personuppgiftspolicy", label: "Personuppgiftspolicy" },
+  { href: "/cookiepolicy", label: "Cookiepolicy" },
   
 ];
 

@@ -93,6 +93,7 @@ export default function BostadAbout({ listing, onApplyClick, applyDisabled }: Pr
       {/* Högerkolumn: prisbox */}
       <div className="lg:justify-self-end">
         <HousingInfoBox
+          listingId={listing.id}  // NY: Skicka med annons-ID
           rent={listing.rent}
           moveInDate={listing.moveIn}
           lastApplyDate={listing.applyBy}

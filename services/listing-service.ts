@@ -68,6 +68,32 @@ export const listingService = {
     return await apiClient<StudentApplicationDTO[]>("/applications/my");
   },
 
+// --- FAVORITER ---
+
+  /**
+   * Lägg till annons som favorit
+   * Anropar: POST /api/listings/{id}/favorite
+   */
+  addFavorite: async (listingId: string): Promise<void> => {
+    await apiClient(`/listings/${listingId}/favorite`, {
+      method: "POST",
+    });
+  },
+
+  /**
+   * Ta bort annons från favoriter
+   * Anropar: DELETE /api/listings/{id}/favorite
+   */
+  removeFavorite: async (listingId: string): Promise<void> => {
+    await apiClient(`/listings/${listingId}/favorite`, {
+      method: "DELETE",
+    });
+  },
+
+  getFavorites: async (): Promise<ListingCardDTO[]> => {
+    return await apiClient<ListingCardDTO[]>("/listings/favorites");
+  },
+
   // --- ÖVRIGA METODER ---
 
   // Ansök till en privat annons

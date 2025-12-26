@@ -1,172 +1,139 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
-import SavedListingRow, {
-  type SavedListingRowProps,
-} from "@/components/Listings/SavedListingRow";
+import SavedListingRow from "@/components/Listings/SavedListingRow"; // Den vi uppdaterade i steg 3
 import SwitchSelect, { type SwitchSelectValue } from "@/components/ui/switchSelect";
-import type { ListingWithRelations } from "@/types";
+import { ListingCardDTO } from "@/types/listing"; // Din DTO typ
+import { listingService } from "@/services/listing-service";
+import { Button } from "@/components/ui/button";
 
-const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), { ssr: false });
-
-const DEMO_LISTINGS: ListingWithRelations[] = [
-  makeListing({
-    listingId: "demo-vasagatan-1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
-    lat: 57.7079,
-    lng: 11.9667,
-  }),
-  makeListing({
-    listingId: "demo-vasagatan-2",
-    imageUrl:
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80",
-    lat: 57.7085,
-    lng: 11.978,
-  }),
-  makeListing({
-    listingId: "demo-vasagatan-3",
-    imageUrl:
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80",
-    lat: 57.7092,
-    lng: 11.958,
-  }),
-];
+// Dynamisk import av kartan
+const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), { 
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-2xl" />
+});
 
 export default function Page() {
   const router = useRouter();
   const [view, setView] = useState<SwitchSelectValue>("lista");
+  const [favorites, setFavorites] = useState<ListingCardDTO[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const savedRows = useMemo(
-    () =>
-      DEMO_LISTINGS.map((listing) =>
-        mapListingToRow(listing, () => router.push(`/bostader/${listing.listingId}`))
-      ),
-    [router]
-  );
+  // 1. Hämta favoriter vid sidladdning
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      try {
+        const data = await listingService.getFavorites();
+        // Backend returnerar en lista av ListingCardDTO
+        setFavorites(data);
+      } catch (error) {
+        console.error("Kunde inte hämta favoriter:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFavorites();
+  }, []);
+
+  // 2. Funktion för att ta bort från listan (skickas till SavedListingRow)
+  const removeListingFromView = (idToRemove: string) => {
+    setFavorites((prev) => prev.filter((item) => item.id.toString() !== idToRemove));
+  };
 
   const isMapView = view === "karta";
 
+  if (loading) {
+    return (
+      <main className="flex h-[50vh] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </main>
+    );
+  }
+
   return (
     <main className="pb-12 pt-6">
-      <div className="w-full space-y-2">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Sparade annonser</h1>
-        </div>
-        <div className="flex items-center justify-between pb-2">
-          <div className="text-sm text-muted-foreground">
-            {savedRows.length} sparade annonser
+      <div className="w-full space-y-4">
+        
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Sparade annonser</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {favorites.length} {favorites.length === 1 ? "sparad annons" : "sparade annonser"}
+            </p>
           </div>
           <SwitchSelect value={view} onChange={setView} />
         </div>
 
-        {savedRows.length === 0 ? (
-          <div className="rounded-2xl border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
-            Du har inga sparade annonser just nu.
+        {/* Content */}
+        {favorites.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed bg-gray-50/50 py-16 text-center">
+            <h3 className="text-lg font-medium text-gray-900">Inga sparade annonser</h3>
+            <p className="mt-1 text-sm text-gray-500 max-w-sm">
+              När du hjärtmarkerar annonser i flödet kommer de att dyka upp här så att du enkelt hittar tillbaka.
+            </p>
+            <Button 
+              variant="outline" 
+              className="mt-6"
+              onClick={() => router.push("/bostader")}
+            >
+              Hitta bostäder
+            </Button>
           </div>
         ) : isMapView ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="flex flex-col gap-3">
-              {savedRows.map((item) => (
-                <SavedListingRow key={item.listingId} {...item} />
+            <div className="flex flex-col gap-4">
+              {favorites.map((listing) => (
+                <SavedListingRow
+                  key={listing.id}
+                  listingId={listing.id.toString()}
+                  title={listing.title}
+                  rent={listing.rent}
+                  area={listing.location.split(",")[0]} // Enkel logik för area, justera vid behov
+                  city={listing.location.split(",")[1] || listing.location}
+                  dwellingType={listing.dwellingType}
+                  rooms={listing.rooms}
+                  sizeM2={listing.sizeM2}
+                  imageUrl={listing.imageUrl}
+                  onOpen={() => router.push(`/bostader/${listing.id}`)}
+                  onRemove={removeListingFromView}
+                />
               ))}
             </div>
-            <div className="min-h-[520px] overflow-hidden rounded-2xl border">
+            <div className="sticky top-6 h-[calc(100vh-100px)] overflow-hidden rounded-2xl border shadow-sm">
+               {/* Anpassa ListingsMap så den tar emot ListingCardDTO om den inte gör det redan */}
               <ListingsMap
-                listings={DEMO_LISTINGS}
+                listings={favorites as any} // Castas om typen skiljer sig något, eller mappa om
                 onOpenListing={(id) => router.push(`/bostader/${id}`)}
               />
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {savedRows.map((item) => (
-              <SavedListingRow key={item.listingId} {...item} />
+          <div className="flex flex-col gap-4 max-w-4xl">
+            {favorites.map((listing) => (
+              <SavedListingRow
+                key={listing.id}
+                listingId={listing.id.toString()}
+                title={listing.title}
+                rent={listing.rent}
+                area={listing.location.split(",")[0]}
+                city={listing.location.split(",")[1] || listing.location}
+                dwellingType={listing.dwellingType}
+                rooms={listing.rooms}
+                sizeM2={listing.sizeM2}
+                imageUrl={listing.imageUrl}
+                onOpen={() => router.push(`/bostader/${listing.id}`)}
+                onRemove={removeListingFromView}
+              />
             ))}
           </div>
         )}
       </div>
     </main>
   );
-}
-
-function mapListingToRow(
-  listing: ListingWithRelations,
-  onOpen: () => void
-): SavedListingRowProps {
-  const primaryImage =
-    typeof listing.images?.[0] === "string"
-      ? (listing.images?.[0] as string)
-      : listing.images?.[0]?.imageUrl ?? undefined;
-
-  return {
-    listingId: listing.listingId,
-    title: listing.title,
-    rent: listing.rent,
-    area: listing.area ?? null,
-    city: listing.city ?? null,
-    dwellingType: listing.dwellingType ?? null,
-    rooms: listing.rooms ?? null,
-    sizeM2: listing.sizeM2 ?? null,
-    tags: listing.tags ?? [],
-    landlordLabel: listing.advertiser?.displayName ?? "Hyresvard",
-    imageUrl: primaryImage,
-    verified: Boolean(listing.advertiser),
-    onOpen,
-  };
-}
-
-function makeListing(options: {
-  listingId: string;
-  imageUrl: string;
-  lat: number;
-  lng: number;
-}): ListingWithRelations {
-  const now = "2024-12-15T12:00:00.000Z";
-  return {
-    listingId: options.listingId,
-    listingType: "company",
-    companyId: 1,
-    title: "1:a Vasagatan 19",
-    area: "Innerstan",
-    city: "Goteborg",
-    address: "Vasagatan 19",
-    dwellingType: "Lagenhet",
-    rooms: 1,
-    sizeM2: 42,
-    rent: 3800,
-    moveIn: null,
-    applyBy: null,
-    availableFrom: null,
-    availableTo: null,
-    description: null,
-    tags: ["Moblerat", "Poangfri", "Korridor"],
-    images: [
-      { imageId: 1, listingId: options.listingId, imageUrl: options.imageUrl },
-    ],
-    status: "available",
-    createdAt: now,
-    updatedAt: now,
-    lat: options.lat,
-    lng: options.lng,
-    advertiser: {
-      type: "company",
-      id: 1,
-      displayName: "Privat hyresvard",
-      logoUrl: null,
-      bannerUrl: null,
-      phone: null,
-      contactEmail: null,
-      contactPhone: null,
-      contactNote: null,
-      rating: null,
-      subtitle: null,
-      description: null,
-      website: null,
-      city: "Goteborg",
-    },
-  };
 }
