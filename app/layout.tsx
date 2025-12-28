@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/next';
 import { Theme } from "@radix-ui/themes";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -81,7 +82,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <AuthProvider>
             <Theme>
-            <main>{children}</main>
+              <main>{children}</main>
+              <Toaster 
+                position="bottom-right" 
+                richColors 
+                toastOptions={{ 
+                  duration: 4000,
+                  classNames: {
+                    actionButton: "", // Ångra-knapp
+                  },
+                }}
+                theme="light"
+              />
             </Theme>
         </AuthProvider>
       </body>

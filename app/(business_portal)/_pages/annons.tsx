@@ -72,7 +72,7 @@ export default function Annons({
     id
 }: AnnonsPageProps) {
 
-    const [isEditing, setIsEditing] = useState<boolean>(false);
+    const [isEditing, setIsEditing] = useState<boolean>(true);
 
     
     const listing = listingContent[id] ?? listingContent["vasagatan-19"];
@@ -82,36 +82,8 @@ export default function Annons({
             <div className="m-2">
                 <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
                     <BostadGallery isEditable={isEditing} title={listing.title} images={listing.images} />
-                    {
-                        isEditing ? (
-                            <div>
-                                <FormShell title="Redigera annons" className="max-w-md">
-                                    <FormGroup title="Titel" gap="sm">
-                                        <InputField
-                                            value={listing.title}
-                                        />
-                                    </FormGroup>
-                                    <FormGroup title="Stad" gap="sm">
-                                        <div className="flex gap-4">
-                                            <InputField
-                                                value={listing.area}
-                                                placeholder="Area"
-                                            />
-                                            <InputField
-                                                value={listing.city}
-                                                placeholder="Stad"
-                                            />
-                                        </div>
-                                    </FormGroup>
-                                </FormShell>
-                            </div>
-                        ) : (
-                            <>
-                                <BostadAbout isEditable={isEditing} listing={listing} />
-                                <BostadLandlord landlord={listing.landlord} />
-                            </>
-                        )
-                    }
+                    <BostadAbout isEditable={isEditing} listing={listing} />
+                    <BostadLandlord landlord={listing.landlord} />
                 </div>
             </div>
             <div className="m-2 fixed -bottom-2 -right-2 left-54 px-4 py-4 bg-brand flex gap-4 items-center">

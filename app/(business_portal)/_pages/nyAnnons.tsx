@@ -9,7 +9,7 @@ export default function NyAnnons() {
   return (
     <div className="grid grid-cols-12">
 
-      <DragAndDrop className="col-span-3" />
+      <DragAndDrop className="col-span-3" title="Släpp din CSV-fil här!" description="Ladda upp flera objekt samtidigt." />
 
       <div className="my-2 col-span-3 text-center flex items-center">
         <p className="text-sm mx-8">eller</p>
