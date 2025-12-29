@@ -32,7 +32,7 @@ export default function AddStatistic({
         <DropdownMenuTrigger>
           <Container onClick={() => {}} padding="sm" borderStyle="dashed" className="hover:!border-solid hover:!shadow-xs transition-all duration-75">
             <CopyPlus size={24} className="text-neutral-400 mb-2 mx-auto" />
-            <p className="text-sm text-brand font-bold text-center tracking-wide">Bifoga data</p>
+            <p className="text-xs text-brand font-bold text-center tracking-wide">Bifoga data</p>
           </Container>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="start">

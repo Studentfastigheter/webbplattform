@@ -17,6 +17,9 @@ import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList } from "../ui/tabs"
 import { TabsTrigger } from "@radix-ui/react-tabs"
 import DragAndDrop from "@/app/(business_portal)/_components/DragAndDrop";
+import { Progress } from "../ui/progress";
+import { progress } from "framer-motion";
+import { File } from "lucide-react";
 
 
 
@@ -71,6 +74,40 @@ const imageIds = {
     },
 } as const;
 
+const imagesUploading = [
+    {
+        name: "minbild.jpg",
+        progress: 45
+    },
+    {
+        name: "andrabild.png",
+        progress: 80,
+        error: "Filen är för stor"
+    },
+    {
+        name: "tredjebild.jpeg",
+        progress: 100
+    },
+    {
+        name: "fjardebild.jpg",
+        progress: 20
+    },
+    {
+        name: "femtebild.png",
+        progress: 60
+    },
+    {
+        name: "sjattebild.jpeg",
+        progress: 100
+    },
+    {
+        name: "sjunde bild.jpg",
+        progress: 10
+    }
+];
+
+
+
 
 const MAX_SELECTED_IMAGES = 5;
 
@@ -120,8 +157,12 @@ export default function ImageUploadGallery({
         setSelectedImages(selectedImages.filter(id => id !== imageId));
     }
 
+    // States for image selection and dragging
     const [selectedImages, setSelectedImages] = useState<string[]>([]); // List of image ids
     const [isDragging, setIsDragging] = useState<string | null>(null);
+
+    // State for upload progress
+    const [progress, setProgress] = useState(0);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -202,21 +243,47 @@ export default function ImageUploadGallery({
                             </DialogDescription> */}
                         </DialogHeader>
 
-                        <div className="relative mt-4">
-                            <div className="grid py-4 grid-cols-5">
+                        <div className="relative mt-4 max-h-[300px]">
+                            <div className="flex py-4 gap-2 items-start">
                                     <DragAndDrop 
-                                    className="col-span-2"
-                                    title="Släpp dina bilder här!"
-                                    description="Ladda upp flera bilder samtidigt."
+                                        className="m-0 flex-2 sticky top-0"
+                                        title="Släpp dina bilder här!"
+                                        description="Ladda upp flera bilder samtidigt."
                                     />
-                                    <div className="col-span-3">
-                                        <div className="border border-gray-300 rounded p-2">
-                                            {/* Gör en bättre loading state */}
-                                            <p>minbild.jpg laddas upp...</p>
-                                            <div className="h-4 w-full border border-blue-500 rounded-lg overflow-hidden">
-                                                <div className="h-full w-1/2 bg-blue-500" />
-                                            </div>
-                                        </div>
+                                    <div className="flex-3 flex flex-col gap-2">
+                                        {
+                                            imagesUploading.map(({name, progress, error}, idx) => {
+
+                                                const isCompleted = progress === 100;
+
+                                                const successColor = "green-600";
+                                                const errorColor = "red-600";
+                                                const normalColor = "neutral-400";
+
+                                                const fileNameStyle = error ? `text-${errorColor}` : `text-${normalColor}`;
+                                                const actionStyle = error ? `text-${errorColor} hover:underline cursor-pointer` : isCompleted ? `text-${successColor}` : `text-${normalColor} hover:underline cursor-pointer`;
+                                                const progressStyle = error ? `[&>div]:bg-${errorColor}` : `[&>div]:bg-${successColor}`;
+                                                
+                                                return  (
+                                                    <div className="border border-neutral-400/10 rounded px-6 py-4 flex gap-4">
+                                                        <File />
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between">
+                                                                <p className={`${fileNameStyle} ${error ? "font-bold" : ""}`}>
+                                                                    {error ? error : `resume.jpg (${progress}%)`}
+                                                                </p>
+                                                                <button className={`${actionStyle} font-medium`}>{isCompleted ? "Klar" : "Avbryt"}</button>
+                                                            </div>
+                                                            <Progress 
+                                                                value={progress} 
+                                                                className={`mt-2 mb-1.5 bg-neutral-300 ${progressStyle}`}
+                                                                
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })
+                                        }
                                     </div>
                             </div>
                         </div>

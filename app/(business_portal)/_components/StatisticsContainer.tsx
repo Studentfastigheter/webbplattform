@@ -17,7 +17,7 @@ export default function StatisticsContainer({
     const [shownStatistics, setShownStatistics] = useState<string[]>([])
 
     return (
-        <div className="grid grid-cols-12 md:grid-cols-8">
+        <div className="grid grid-cols-12 md:grid-cols-9">
             <Statistic className="col-span-2" background="#C7D8EB" icon={<Box size={14} className="text-neutral-400" />} label="Antal objekt" data="40" changeInPercent={3.4} />
             <Statistic className="col-span-2" background="#F4D8E4" icon={<House size={14} className="text-neutral-400" />} label="Lediga bostäder" data="12" changeInPercent={-2.5} increaseDirection="down" />
             <Statistic className="col-span-2" background="#C9D9C2" icon={<Users size={14} className="text-neutral-400" />} label="Antal hyresgäster" data="1225" changeInPercent={-2.5}/>

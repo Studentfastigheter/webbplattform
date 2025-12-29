@@ -34,14 +34,16 @@ export default function ApplicationNotification({
                 {!isRead && <div className="absolute top-1/2 -translate-4 left-6 bg-brand w-1 h-1 rounded-full" />}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex items-center">
 
                 <Favorite />
                 
 
                 {!isRead && <Tooltip>
                     <TooltipTrigger asChild onClick={() => setIsRead(true)}>
-                        <Check width={16} className="cursor-pointer" />
+                        <div className="p-2 cursor-pointer">
+                            <Check width={16} height={16} />
+                        </div>
                     </TooltipTrigger>
                     <TooltipContent className="pointer-events-none">
                         <p>Markera som läst</p>

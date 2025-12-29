@@ -6,7 +6,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/Chart"
+} from "@/components/ui/chart"
 import Container from "./Container"
 import React from "react"
 

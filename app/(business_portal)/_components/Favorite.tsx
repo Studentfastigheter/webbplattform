@@ -2,7 +2,7 @@
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Star } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 
 
 type FavoriteProps = {
@@ -18,7 +18,9 @@ export default function Favorite({
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <Star fill={favorite ? "currentColor" : "none"} width={16} className={`cursor-pointer ${favorite ? "text-brand" : ""}`} onClick={() => setFavorite(!favorite)} />
+                <div className="cursor-pointer p-2">
+                    <Star fill={favorite ? "currentColor" : "none"} width={16} className={`${favorite ? "text-brand" : ""}`} onClick={() => setFavorite(!favorite)} />
+                </div>
             </TooltipTrigger>
             <TooltipContent className="pointer-events-none">
                 <p>{favorite ? "Ta bort favorit" : "Lägg till favorit"}</p>

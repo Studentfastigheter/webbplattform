@@ -9,7 +9,7 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/Chart"
+} from "@/components/ui/chart"
 import Container from "./Container"
 
 export const description = "A multiple bar chart"
