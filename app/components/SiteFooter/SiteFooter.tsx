@@ -18,21 +18,16 @@ const COLORS = {
   darkAccent: "#476E66", // Pond Newt (Sekundär bakgrund vid behov)
 };
 
-const SERVICE_LINKS = [
-  { href: "/sok-bostad", label: "Sök Bostad" },
+const PLATTFORM_LINKS = [
   { href: "/for-foretag", label: "För Företag" },
-  { href: "/hyra-ut", label: "Hyra ut" },
 ];
 
 const PARTNER_LINKS = [
   { href: "/partners", label: "Samarbetspartners" },
-  { href: "/annonsera", label: "Annonsera" },
 ];
 
 const COMPANY_LINKS = [
-  { href: "/om", label: "Om CampusLyan" },
-  { href: "/kundservice", label: "Kundservice & kontakt" },
-  { href: "/privacy", label: "Integritet & Cookies" },
+  { href: "/om", label: "Om Oss" },
 ];
 
 const SOCIAL_LINKS = [
@@ -70,23 +65,28 @@ export default function SiteFooter() {
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
           
           {/* VÄNSTER KOLUMN */}
+          {/* VÄNSTER KOLUMN */}
           <div className="flex flex-col gap-8 lg:col-span-5">
-            {/* Logo - Filter gör den helvit */}
-            <div className="relative h-10 w-40">
-               <Image
-                src="/campuslyan-logo.svg" 
-                alt="CampusLyan"
-                width={150}
-                height={40}
-                className="object-contain brightness-0 invert" 
-              />
-            </div>
+            
+            {/* --- NY LAYOUT: Flex-row lägger logga och text bredvid varandra --- */}
+            <div className="flex flex-row items-center gap-5">
+              
+              {/* Logo - Container med fast storlek (h-14 w-14) för att kontrollera storleken */}
+              <div className="relative h-14 w-14 shrink-0">
+                <Image
+                  src="/campuslyan-logo.svg"
+                  alt="CampusLyan"
+                  fill // Fyller containern på 14x14
+                  className="object-contain brightness-0 invert"
+                />
+              </div>
 
-            {/* Beskrivning - Textfärg: Wayward Wind, Border: Misty Moor */}
-            <div className="flex gap-4 border-l-2 pl-4" style={{ borderColor: COLORS.accent }}>
-              <Text className="max-w-md text-sm font-light leading-relaxed" style={{ color: COLORS.lightText }}>
-                Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.
-              </Text>
+              {/* Beskrivning - Border-l-2 skapar sträcket till höger om loggan */}
+              <div className="border-l-2 pl-5 py-1" style={{ borderColor: COLORS.accent }}>
+                <Text className="max-w-md text-sm font-light leading-relaxed" style={{ color: COLORS.lightText }}>
+                  Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.
+                </Text>
+              </div>
             </div>
 
             {/* Sociala Ikoner */}
@@ -105,8 +105,7 @@ export default function SiteFooter() {
               ))}
             </div>
 
-            {/* Nyhetsbrev Box (Avy-stil) */}
-            {/* Bakgrund: En mix av vit transparens eller Pond Newt. Här kör vi transparens för modern look. */}
+            {/* Nyhetsbrev Box 
             <div className="mt-4 w-full max-w-md rounded-2xl bg-white/5 p-8 backdrop-blur-sm border" style={{ borderColor: COLORS.accent }}>
               <Text variant="small" className="mb-2 font-bold uppercase tracking-wider" style={{ color: COLORS.white }}>
                 Håll dig uppdaterad
@@ -120,7 +119,7 @@ export default function SiteFooter() {
               >
                 Prenumerera
               </button>
-            </div>
+            </div>*/}
           </div>
 
           {/* HÖGER KOLUMN (Länkar) */}
@@ -129,7 +128,7 @@ export default function SiteFooter() {
               
               {/* Funktion för att rendera länk-listor */}
               {[
-                { title: "Tjänster", links: SERVICE_LINKS },
+                { title: "Plattform", links: PLATTFORM_LINKS },
                 { title: "Partners", links: PARTNER_LINKS },
                 { title: "CampusLyan", links: COMPANY_LINKS }
               ].map((section, idx) => (
