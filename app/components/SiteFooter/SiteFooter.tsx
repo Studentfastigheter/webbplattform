@@ -9,15 +9,6 @@ import { HiGlobeAlt } from "react-icons/hi";
 
 const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 
-// --- FÄRGPALETT FRÅN DIN BILD ---
-const COLORS = {
-  primary: "#004225",    // British Racing Green (Bakgrund)
-  white: "#FEFEFE",      // White as Heaven (Rubriker/Ikoner)
-  lightText: "#DFDFE2",  // Wayward Wind (Brödtext/Länkar)
-  accent: "#708A83",     // Misty Moor (Hover-effekter/Borders)
-  darkAccent: "#476E66", // Pond Newt (Sekundär bakgrund vid behov)
-};
-
 const PLATTFORM_LINKS = [
   { href: "/for-foretag", label: "För Företag" },
 ];
@@ -28,6 +19,7 @@ const PARTNER_LINKS = [
 
 const COMPANY_LINKS = [
   { href: "/om", label: "Om Oss" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 const SOCIAL_LINKS = [
@@ -42,48 +34,49 @@ export default function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    // Bakgrund: British Racing Green
-    <footer className="relative w-full mt-24" style={{ backgroundColor: COLORS.primary }}>
+    // BAKGRUND:
+    // Här använder vi en specifik färgkod (#004225) istället för variabler.
+    // Detta gör att footern ALLTID är mörkgrön, oavsett Dark/Light mode på resten av sidan.
+    <footer className="relative w-full mt-24 bg-[#004225] text-brand-beige-200">
       
-      {/* --- DECORATION (GoMore Style) --- */}
-      <div className="absolute top-0 left-0 right-0 w-full -translate-y-[98%] overflow-hidden leading-[0] z-10">
-        <div className="relative w-full h-[80px] sm:h-[120px] lg:h-[160px]">
-          {/* Se till att din SVG i public-mappen har fill="#004225" */}
+      {/* --- DECORATION --- */}
+      {/* Ligger precis ovanför footern. SVG:n bör ha samma färg (#004225) för att smälta ihop. */}
+      <div className="absolute top-0 left-0 right-0 w-full -translate-y-[99%] overflow-hidden leading-[0] z-10 pointer-events-none">
+        <div className="relative w-full h-[60px] sm:h-[100px] lg:h-[160px]">
           <Image
             src="/footer-decoration.svg" 
-            alt="CampusLyan illustration"
+            alt="Decoration"
             fill
-            className="absolute w-auto h-100 h-200-sm l-50% translate-x-negative-50%"
+            className="object-cover w-full h-full"
             priority
           />
         </div>
       </div>
 
-      {/* --- CONTENT (Avy Style) --- */}
+      {/* --- CONTENT --- */}
       <div className="mx-auto w-full max-w-[1400px] px-6 pb-16 pt-8 sm:px-10 lg:px-16 relative z-20">
         
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
           
           {/* VÄNSTER KOLUMN */}
-          {/* VÄNSTER KOLUMN */}
           <div className="flex flex-col gap-8 lg:col-span-5">
-            
-            {/* --- NY LAYOUT: Flex-row lägger logga och text bredvid varandra --- */}
             <div className="flex flex-row items-center gap-5">
               
-              {/* Logo - Container med fast storlek (h-14 w-14) för att kontrollera storleken */}
+              {/* Logo */}
               <div className="relative h-14 w-14 shrink-0">
                 <Image
                   src="/campuslyan-logo.svg"
                   alt="CampusLyan"
-                  fill // Fyller containern på 14x14
+                  fill 
+                  // Alltid vit logga
                   className="object-contain brightness-0 invert"
                 />
               </div>
 
-              {/* Beskrivning - Border-l-2 skapar sträcket till höger om loggan */}
-              <div className="border-l-2 pl-5 py-1" style={{ borderColor: COLORS.accent }}>
-                <Text className="max-w-md text-sm font-light leading-relaxed" style={{ color: COLORS.lightText }}>
+              {/* Beskrivning */}
+              {/* Alltid vit/transparent border */}
+              <div className="border-l-2 pl-5 py-1 border-white/20">
+                <Text className="max-w-md text-sm font-light leading-relaxed">
                   Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.
                 </Text>
               </div>
@@ -97,54 +90,37 @@ export default function SiteFooter() {
                   href={social.href} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="transition-colors hover:opacity-80"
-                  style={{ color: COLORS.white }}
+                  // Alltid vita ikoner
+                  className="transition-colors hover:opacity-80 "
                 >
                   {social.icon}
                 </a>
               ))}
             </div>
-
-            {/* Nyhetsbrev Box 
-            <div className="mt-4 w-full max-w-md rounded-2xl bg-white/5 p-8 backdrop-blur-sm border" style={{ borderColor: COLORS.accent }}>
-              <Text variant="small" className="mb-2 font-bold uppercase tracking-wider" style={{ color: COLORS.white }}>
-                Håll dig uppdaterad
-              </Text>
-              <Text className="mb-6 text-sm font-light" style={{ color: COLORS.lightText }}>
-                Få de senaste studentbostäderna och nyheterna direkt i din inkorg.
-              </Text>
-              <button 
-                className="rounded px-6 py-3 text-xs font-bold uppercase tracking-wide transition-colors hover:bg-gray-100"
-                style={{ backgroundColor: COLORS.white, color: COLORS.primary }}
-              >
-                Prenumerera
-              </button>
-            </div>*/}
           </div>
 
           {/* HÖGER KOLUMN (Länkar) */}
           <div className="flex flex-col gap-10 lg:col-span-7 lg:pl-10 pt-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
               
-              {/* Funktion för att rendera länk-listor */}
               {[
                 { title: "Plattform", links: PLATTFORM_LINKS },
                 { title: "Partners", links: PARTNER_LINKS },
                 { title: "CampusLyan", links: COMPANY_LINKS }
               ].map((section, idx) => (
                 <div key={idx}>
-                  <div className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest" style={{ color: COLORS.white }}>
-                    <span className="h-4 w-[2px]" style={{ backgroundColor: COLORS.accent }}></span>
+                  <div className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest ">
+                    <span className="h-4 w-[2px] bg-white/40"></span>
                     {section.title}
                   </div>
-                  <ul className="flex flex-col gap-3">
+                  
+                  <ul className="flex flex-col gap-3 group">
                     {section.links.map((link) => (
                       <li key={link.href}>
                         <a 
                           href={link.href} 
-                          className="text-xs font-bold uppercase tracking-wide transition-colors hover:underline hover:underline-offset-4"
-                          style={{ color: COLORS.lightText }}
-                          // Hover-färg sätts via klass eller style om man vill vara specifik, här kör vi standard hover effekt
+                          // Alltid ljus text (white/80) som blir helt vit vid hover
+                          className="text-xs font-bold uppercase tracking-wide transition-all hover:underline hover:underline-offset-4"
                         >
                           {link.label}
                         </a>
@@ -159,13 +135,13 @@ export default function SiteFooter() {
         </div>
 
         {/* BOTTOM BAR */}
-        <div className="mt-20 flex flex-col items-start justify-between border-t pt-6 text-xs font-medium sm:flex-row sm:items-center"
-             style={{ borderColor: COLORS.accent, color: COLORS.lightText }}>
+        {/* Alltid ljus border och text */}
+        <div className="mt-20 flex flex-col items-start justify-between border-t pt-6 text-xs font-medium sm:flex-row sm:items-center border-white/10">
           <div>
             Copyright © {year} CampusLyan. Alla rättigheter förbehållna.
           </div>
           
-          <div className="mt-4 flex items-center gap-2 cursor-pointer transition-colors hover:text-white sm:mt-0">
+          <div className="mt-4 flex items-center gap-2 cursor-pointer transition-colors sm:mt-0">
             <HiGlobeAlt className="text-lg" />
             <span className="uppercase tracking-wide">Svenska</span>
             <span className="text-[10px]">▼</span>

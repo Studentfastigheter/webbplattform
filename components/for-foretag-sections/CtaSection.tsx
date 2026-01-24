@@ -1,5 +1,6 @@
+"use client";
+
 import React from "react";
-// Vi behöver inte importera Link här längre för mail-funktionen
 import { Button } from "@heroui/button";
 
 interface CtaSectionProps {
@@ -16,29 +17,32 @@ export const CtaSection = ({
   primaryBtnLink,
 }: CtaSectionProps) => {
   return (
-    <section className="py-20 px-6 max-w-7xl mx-auto relative z-10">
-      <div className="bg-[#004225] rounded-[2rem] p-8 md:p-16 relative overflow-hidden shadow-xl">
-        
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-white/5 blur-[100px] rounded-full pointer-events-none mix-blend-overlay"></div>
-
-        <div className="grid md:grid-cols-2 gap-12 items-center relative z-10">
+    <section className="py-12 md:py-20 px-4 ">
+      <div className="container mx-auto max-w-6xl">
+        {/* Container: Samma stil som CtaBanner med bg-black/20 och kraftig rounding */}
+        <div className="bg-black/20 backdrop-blur-md border border-white/5 rounded-[3rem] p-10 md:p-20 relative overflow-hidden shadow-2xl">
           
-          <div className="space-y-6 text-left">
-            <div className="space-y-2">
-              <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight">
+          {/* Dekorativ Blob: Matchar den gröna tonen från din banner */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-brand-green-light opacity-10 rounded-full blur-[100px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+
+          <div className="relative z-10 max-w-3xl">
+            <div className="space-y-4 text-left">
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight text-brand-beige-100">
                 {title}
               </h2>
-              <p className="text-3xl md:text-5xl font-bold text-white/40 tracking-tight leading-tight">
+              
+              {/* Description med lägre opacity för hierarki, likt din tidigare banner */}
+              <p className="text-2xl md:text-4xl font-bold text-brand-beige-100/60 tracking-tight leading-tight">
                 {description}
               </p>
             </div>
 
-            <div className="pt-4">
-              {/* ÄNDRING HÄR: as="a" istället för as={Link} */}
+            <div className="pt-10">
               <Button
-                as="a" 
+                as="a"
                 href={primaryBtnLink}
-                className="bg-[#1A1A1A] text-white px-8 h-[56px] rounded-lg text-sm font-bold hover:bg-black transition-all shadow-lg tracking-wider uppercase"
+                // Styling för att matcha "Boka demo"-knappen i bannern
+                className="bg-white text-primary px-10 h-[60px] rounded-full text-base font-bold hover:scale-105 transition-all shadow-xl"
               >
                 {primaryBtnText}
               </Button>

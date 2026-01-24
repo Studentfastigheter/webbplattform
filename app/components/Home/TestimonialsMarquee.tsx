@@ -26,10 +26,10 @@ const testimonials = [
 
 export default function TestimonialsMarquee() {
   return (
-    <section className="section bg-neutral-50">
+    <section className="section bg-brand-beige-100">
       <div className="container-page space-y-6">
         <div className="text-center space-y-2">
-          <p className="eyebrow text-brand">Vad andra säger</p>
+          <p className="eyebrow text-pop font-bold uppercase tracking-wide">Vad andra säger</p>
           <h2 className="h2">Tusentals studenter och värdar använder CampusLyan</h2>
           <p className="text-muted max-w-2xl mx-auto">
             Scrolla igenom ett axplock av röster från både studenter och bostadsaktörer som redan använder plattformen.
@@ -40,4 +40,3 @@ export default function TestimonialsMarquee() {
     </section>
   );
 }
-
