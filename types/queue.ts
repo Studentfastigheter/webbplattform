@@ -1,5 +1,5 @@
 // ÄNDRING: Vi importerar AdvertiserSummary härifrån istället för att skapa en ny
-import { Area, City, Tag, TimestampString, UrlString } from "./common";
+import { Area, City, Tag, TimestampString, UrlString, AdvertiserSummary } from "./common";
 import { User } from "./user"; 
 
 export type QueueId = string; // UUID
@@ -21,7 +21,16 @@ export interface HousingQueueDTO {
   totalUnits?: number;
   waitDays?: number;     
   activeListings: number;
-}
+};
+
+export type AdvertisedHousingQueue = HousingQueueDTO & {
+  advertiser?: AdvertiserSummary;
+};
+
+export type QueueMapItem = AdvertisedHousingQueue & {
+  lng: number;
+  lat: number;
+};
 
 // ==========================================================
 // GAMLA TYPER (Entity-modeller)

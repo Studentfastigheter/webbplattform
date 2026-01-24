@@ -3,16 +3,9 @@
 import { useMemo } from "react";
 import BaseMap, { type BaseMarker, type PopupRenderer } from "./BaseMap";
 // VIKTIGT: Byt import till HousingQueueDTO
-import { type HousingQueueDTO } from "@/types/queue";
+import { type HousingQueueDTO, type QueueMapItem } from "@/types/queue";
 import { type AdvertiserSummary } from "@/types/common";
 import QueueMapPopup from "./QueueMapPopup";
-
-// Definiera en typ som kombinerar DTO med koordinater och advertiser
-type QueueMapItem = HousingQueueDTO & {
-  lat: number;
-  lng: number;
-  advertiser?: AdvertiserSummary;
-};
 
 type QueuesMapProps = {
   queues: QueueMapItem[]; // Uppdaterad prop-typ
