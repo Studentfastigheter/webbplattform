@@ -3,7 +3,8 @@ import { type Coordinates } from "@/types/common";
 export function getCityCoordinates(cityName: string) {
     const params = new URLSearchParams();
     params.append("format", "json");
-    params.append("q", cityName);
+    params.append("city", cityName);
+    params.append("country", "Sweden")
     return fetch(`https://nominatim.openstreetmap.org/search?${params}`)
         .then(result => result.json())
         .then(data => {
