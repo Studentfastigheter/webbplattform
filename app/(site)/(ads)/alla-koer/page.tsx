@@ -17,8 +17,10 @@ import { queueService } from "@/services/queue-service";
 
 // ÄNDRING 2: Importera typer från rätt filer
 import { type HousingQueueDTO, type QueueMapItem } from "@/types/queue";
-import { type AdvertiserSummary, uniqueOnly, removeEmpty, toSearchString, searchStringMatches } from "@/types/common";
+import { type AdvertiserSummary } from "@/types/common";
 import { type CompanyId } from "@/types";
+
+import { uniqueOnly, removeEmpty, toSearchString, searchStringMatches } from "@/lib/utils";
 
 const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ssr: false,
@@ -111,11 +113,9 @@ export default function Page() {
     );
 
     const filteredQueues = useMemo(() => {
-        const location = toSearchString(searchValues.location);
-        const queueName = toSearchString(searchValues.queue);
         return queues.filter((queue) =>
-            searchStringMatches(location, queue.city) &&
-            searchStringMatches(queueName, queue.name));
+            searchStringMatches(searchValues.location, queue.city) &&
+            searchStringMatches(searchValues.queue, queue.name));
     }, [queues, searchValues]);
 
     useEffect(() => {
@@ -156,7 +156,7 @@ export default function Page() {
         };
 
         return (
-        <div key={queue.queueId} className="flex w-full justify-center">
+        <div key={queue.id} className="flex w-full justify-center">
             <Que_ListingCard
             name={queueCardProps.name}
             area={queueCardProps.area}
@@ -169,8 +169,8 @@ export default function Page() {
             tags={queueCardProps.tags}
     
             // --- ÄNDRING 4: Navigera till dynamisk ID-sida ---
-            onViewListings={() => router.push(`/alla-koer/${queue.queueId}`)} 
-            onReadMore={() => router.push(`/alla-koer/${queue.queueId}`)}
+            onViewListings={() => router.push(`/alla-koer/${queue.id}`)} 
+            onReadMore={() => router.push(`/alla-koer/${queue.id}`)}
             // ------------------------------------------------
             />
         </div>);
