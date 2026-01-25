@@ -53,6 +53,58 @@ const defaultListingsFilterState: ListingsFilterState = {
   priceRange: priceBounds,
 };
 
+const MAX_POSSIBLE_RENT: number = 1_000_000_000_000;
+const MIN_PRICE_RANGE_STEP: number = 500;
+const TARGET_RANGE_COUNT: number = 3;
+
+function roundInteger(x: number, target: number) {
+  return Math.round(x / target) * target;
+}
+
+// Gets a list of price ranges based on the current pricing levels.
+function extractRelevantPriceRanges(listings: ListingCardDTO[]): string[] {
+  var min: number = MAX_POSSIBLE_RENT;
+  var max: number = 0;
+
+  // Get maximum and minimum rent
+  for (const listing of listings) {
+
+    if (listing.rent > MAX_POSSIBLE_RENT)
+      throw "Listing rent exceeds highest possible rent";
+
+    if (listing.rent < 0)
+      throw "Listing rent is not a positive integer";
+
+    if (listing.rent < min)
+      min = listing.rent;
+    if (listing.rent > max)
+      max = listing.rent;
+  }
+
+  // Round step size to the closest multiple of 500 that produces roughly TARGET_RANGE_COUNT number of ranges.
+  // Also ensure that the range step does not go any lower than MIN_PRICE_RANGE_STEP.
+  //
+  var stepSize = Math.max(
+      MIN_PRICE_RANGE_STEP,
+      roundInteger((max - min) / TARGET_RANGE_COUNT, 500.0));
+
+  // Get all price ranges in (min, max]
+  let results: string[] = [];
+  let prev = min;
+
+  // Add the low end range
+  results.push(`0 - ${min}`)
+  
+  // Add intermediate price ranges
+  for (let i = min + stepSize; i < max; i += stepSize) {
+    results.push(`${prev} - ${i}`);
+    prev = i;
+  }
+  // Add the max case
+  results.push(`${max}+`);
+  return results;
+}
+
 const parseSearchPriceRange = (raw: string): { min: number; max: number } | null => {
   const normalized = raw.replace(/\s/g, "");
   if (!normalized)
@@ -246,11 +298,9 @@ export default function ListingsPage() {
                   id: "price",
                   label: "Pris",
                   placeholder: "Välj prisintervall",
-                  options: [
-                    { label: "0 - 4000", value: "0-4000" },
-                    { label: "4000 - 8000", value: "4000-8000" },
-                    { label: "8000+", value: "8000+" },
-                  ],
+                  options: extractRelevantPriceRanges(listings)
+                          .map(priceRange =>
+                            ({ label: priceRange, value: priceRange } as Option))
                 }}
                 onSubmit={(values) => setSearchValues({
                   city: toSearchString(values.city),
