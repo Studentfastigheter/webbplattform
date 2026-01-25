@@ -233,12 +233,14 @@ export default function Page() {
                     id: "location",
                     label: "Var",
                     placeholder: "Sök studentstad",
+                    searchable: true,
                     options: cityOptions.map((city) => ({ label: city, value: city })),
                   }}
                   field2={{
                     id: "queueName",
                     label: "Bostadskö",
                     placeholder: "Sök specifik bostadskö",
+                    searchable: true,
                     options: queues.map((queue) => ({ label: queue.name, value: queue.name }))
                   }}
                   onSubmit={(values) => setSearchValues({
