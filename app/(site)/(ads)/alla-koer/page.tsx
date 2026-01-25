@@ -14,6 +14,7 @@ import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
 // ÄNDRING 1: Byt till queueService (den har metoden list() som matchar din backend)
 import { queueService } from "@/services/queue-service";
+import { getCityCoordinates } from "@/services/geolocator-service";
 
 // ÄNDRING 2: Importera typer från rätt filer
 import { type HousingQueueDTO, type QueueMapItem } from "@/types/queue";
@@ -63,31 +64,39 @@ export default function Page() {
         .then((res) => {
             if (!active)
                 return;
+            (async () => {
+                const mapped: AdvertisedHousingQueue[] = await Promise.all(res.map(async dto => {
+                    const base: AdvertisedHousingQueue = {
+                        ...dto,
+                        advertiser: {
+                            type: "company",
+                            id: dto.companyId as unknown as CompanyId,
+                            displayName: dto.name,
+                            logoUrl: dto.logoUrl,
+                            bannerUrl: undefined,
+                            phone: null,
+                            contactEmail: null,
+                            contactPhone: null,
+                            contactNote: null,
+                            rating: null,
+                            subtitle: null,
+                            description: dto.description ?? null,
+                            website: null,
+                            city: dto.city,
+                        }
+                    };
+                    const coord: Coordinates = await getCityCoordinates(dto.city);
+                    console.log(`Found coords of ${dto.city} at ${coord.lng}:${coord.lat}`)
+                    return coord.lng && coord.lat ? {
+                        ...base,
+                        lng: coord.lng,
+                        lat: coord.lat
+                    } as QueueMapItem : base;
+                }));
 
-            const mapped: QueueMapItem[] = res.map((dto) => ({
-                ...dto,
-                advertiser: {
-                    type: "company",
-                    id: dto.companyId as unknown as CompanyId,
-                    displayName: dto.name,
-                    logoUrl: dto.logoUrl,
-                    bannerUrl: undefined,
-                    phone: null,
-                    contactEmail: null,
-                    contactPhone: null,
-                    contactNote: null,
-                    rating: null,
-                    subtitle: null,
-                    description: dto.description ?? null,
-                    website: null,
-                    city: dto.city,
-                },
-                lng: 0, // TODO: Missing method for extracting longditude/latitude
-                lat: 0
-            }));
-
-          setQueues(mapped);
-          setVisibleCount(PAGE_SIZE);
+                setQueues(mapped);
+                setVisibleCount(PAGE_SIZE);
+            })();
         })
         .catch((err: any) => {
           if (!active)
@@ -129,8 +138,7 @@ export default function Page() {
     );
 
     const mapQueues = useMemo(() =>
-        visibleQueues.filter((queue) =>
-            Boolean(queue.advertiser)),
+        visibleQueues.filter((queue): queue is QueueMapItem => Boolean(queue.advertiser)),
       [visibleQueues]
     );
 
