@@ -46,11 +46,16 @@ export const listingService = {
       size 
     };
 
-    if (city) queryParams.city = city;
-    if (dwellingType) queryParams.dwellingType = dwellingType;
-    if (minRent !== null) queryParams.minRent = minRent;
-    if (maxRent !== null) queryParams.maxRent = maxRent;
-    if (hostType) queryParams.hostType = hostType;
+    if (city)
+      queryParams.city = city;
+    if (dwellingType)
+      queryParams.dwellingType = dwellingType;
+    if (minRent !== null)
+      queryParams.minRent = minRent;
+    if (maxRent !== null)
+      queryParams.maxRent = maxRent;
+    if (hostType)
+      queryParams.hostType = hostType;
 
     const query = buildQuery(queryParams);
     return await apiClient<PageResponse<ListingCardDTO>>(`/listings${query}`);

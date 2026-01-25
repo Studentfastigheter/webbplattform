@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
+import { toSearchString } from "@/lib/utils";
+
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 import ListingsFilterButton, {
   type ListingsFilterState,
@@ -14,6 +16,12 @@ import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
 import { listingService } from "@/services/listing-service";
 import { ListingCardDTO } from "@/types/listing";
+
+type SearchValues = {
+  city: string;
+  hosts: string;
+  price: string;
+};
 
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ssr: false,
@@ -45,12 +53,10 @@ const defaultListingsFilterState: ListingsFilterState = {
   priceRange: priceBounds,
 };
 
-const parseSearchPriceRange = (
-  raw: string | string[] | null
-): { min: number; max: number } | null => {
-  if (typeof raw !== "string") return null;
+const parseSearchPriceRange = (raw: string): { min: number; max: number } | null => {
   const normalized = raw.replace(/\s/g, "");
-  if (!normalized) return null;
+  if (!normalized)
+    return null;
   if (normalized.endsWith("+")) {
     const min = parseInt(normalized.replace("+", ""), 10);
     return Number.isNaN(min) ? null : { min, max: 200000 };
@@ -65,7 +71,11 @@ export default function ListingsPage() {
   const router = useRouter();
   
   const [view, setView] = useState<SwitchSelectValue>("lista");
-  const [searchValues, setSearchValues] = useState<Record<string, string | string[] | null>>({});
+  const [searchValues, setSearchValues] = useState<SearchValues>({
+    city: "",
+    hosts: "",
+    price: ""
+  } as SearchValues);
   const [filters, setFilters] = useState<ListingsFilterState>(defaultListingsFilterState);
   
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
@@ -80,10 +90,10 @@ export default function ListingsPage() {
 
   // Samla ihop alla filter till ett format som backend förstår
   const currentFilters = useMemo(() => {
-    const searchPrice = parseSearchPriceRange(searchValues.pris);
+    const searchPrice = parseSearchPriceRange(searchValues.price);
     return {
-      city: typeof searchValues.var === "string" ? searchValues.var.trim() : null,
-      hostType: typeof searchValues.hyresvard === "string" ? searchValues.hyresvard : null,
+      city: toSearchString(searchValues.city),
+      hostType: toSearchString(searchValues.hosts),
       dwellingType: filters.propertyType,
       minRent: filters.priceRange.min > 0 ? filters.priceRange.min : (searchPrice?.min ?? null),
       maxRent: filters.priceRange.max < priceBounds.max ? filters.priceRange.max : (searchPrice?.max ?? null),
@@ -91,46 +101,47 @@ export default function ListingsPage() {
   }, [searchValues, filters]);
 
   const loadListings = useCallback(
-  async (pageToLoad: number, replace = false) => {
-    setError(null);
-    
-    if (replace) {
-      setLoading(true);
-      // VIKTIGT: Töm listan direkt så att de gamla annonserna försvinner omedelbart
-      setListings([]); 
-    } else {
-      setLoadingMore(true);
-    }
+    async (pageToLoad: number, replace = false) => {
+      setError(null);
 
-    try {
-      const res = await listingService.getAll(
-        pageToLoad, 
-        PAGE_SIZE, 
-        currentFilters.city,
-        currentFilters.dwellingType,
-        currentFilters.minRent,
-        currentFilters.maxRent,
-        currentFilters.hostType
-      );
+      if (replace) {
+        setLoading(true);
+        // VIKTIGT: Töm listan direkt så att de gamla annonserna försvinner omedelbart
+        setListings([]); 
+      } else {
+        setLoadingMore(true);
+      }
 
-      // Spring Boot returnerar data i res.content
-      const newItems = res.content || [];
-      
-      setTotalPages((res as any).totalPages ?? (res as any).page?.totalPages ?? 0);
-      setPage((res as any).number ?? (res as any).page?.number ?? 0);
+      try {
+        console.log(`Filtering listings on ${JSON.stringify(currentFilters)}`)
+        const res = await listingService.getAll(
+          pageToLoad, 
+          PAGE_SIZE, 
+          currentFilters.city,
+          currentFilters.dwellingType,
+          currentFilters.minRent,
+          currentFilters.maxRent,
+          currentFilters.hostType
+        );
 
-      // Om replace är true, använd endast de nya objekten
-      setListings((prev) => (replace ? newItems : [...prev, ...newItems]));
-    } catch (err: any) {
-      console.error("Error loading listings:", err);
-      setError("Kunde inte ladda bostäder.");
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  },
-  [currentFilters] // Dependency array ser till att funktionen har rätt filtervärden
-);
+        // Spring Boot returnerar data i res.content
+        const newItems = res.content || [];
+ 
+        setTotalPages((res as any).totalPages ?? (res as any).page?.totalPages ?? 0);
+        setPage((res as any).number ?? (res as any).page?.number ?? 0);
+
+        // Om replace är true, använd endast de nya objekten
+        setListings((prev) => (replace ? newItems : [...prev, ...newItems]));
+      } catch (err: any) {
+        console.error("Error loading listings:", err);
+        setError("Kunde inte ladda bostäder.");
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [currentFilters] // Dependency array ser till att funktionen har rätt filtervärden
+  );
 
   // Åtgärd: Nollställ allt när filtren ändras
   useEffect(() => {
@@ -143,10 +154,12 @@ export default function ListingsPage() {
 
   useEffect(() => {
     const hasMore = page + 1 < totalPages;
-    if (!hasMore || loading || loadingMore) return;
-    
+    if (!hasMore || loading || loadingMore)
+      return;
+
     const target = loadMoreRef.current;
-    if (!target) return;
+    if (!target)
+      return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -206,7 +219,7 @@ export default function ListingsPage() {
               <SearchFilter3Fields
                 className="w-full"
                 field1={{
-                  id: "var",
+                  id: "location",
                   label: "Var",
                   placeholder: "Sök studentstad",
                   searchable: true,
@@ -219,17 +232,18 @@ export default function ListingsPage() {
                   ],
                 }}
                 field2={{
-                  id: "hyresvard",
+                  id: "hosts",
                   label: "Hyresvärd",
                   placeholder: "Välj hyresvärd",
-                  searchable: true,
+                  searchable: false,
                   options: [
-                    { label: "Privat hyresvärd", value: "Privat värd" },
+                    { label: "Alla", value: "Alla" },
+                    { label: "Privat hyresvärd", value: "Privat hyresvärd" },
                     { label: "Företag", value: "Företag" },
                   ],
                 }}
                 field3={{
-                  id: "pris",
+                  id: "price",
                   label: "Pris",
                   placeholder: "Välj prisintervall",
                   options: [
@@ -238,7 +252,15 @@ export default function ListingsPage() {
                     { label: "8000+", value: "8000+" },
                   ],
                 }}
-                onSubmit={(values) => setSearchValues(values)}
+                onSubmit={(values) => setSearchValues({
+                  city: toSearchString(values.city),
+                  hosts: ({
+                    ["Alla"]: "",
+                    ["Privat hyresvärd"]: "privat",
+                    ["Företag"]: "företag"
+                  })[values.hosts],
+                  price: toSearchString(values.price)
+                } as SearchValues)}
               />
             </div>
             <ListingsFilterButton
