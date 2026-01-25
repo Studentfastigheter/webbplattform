@@ -66,19 +66,32 @@ function extractRelevantPriceRanges(listings: ListingCardDTO[]): string[] {
   var min: number = MAX_POSSIBLE_RENT;
   var max: number = 0;
 
-  // Get maximum and minimum rent
+  // Ensure there is always a default
+  if (listings.length == 0) {
+    return ["0 - 8000", "8000+"];
+  }
+
+  // Only one listing, make that the only range (including the upper range).
+  if (listings.length == 1) {
+    return [ `0 - ${listings[0].rent}`, `${listings[0].rent}+` ];
+  }
+
+  // Get the minimum and maximum range
   for (const listing of listings) {
 
-    if (listing.rent > MAX_POSSIBLE_RENT)
+    if (listing.rent > MAX_POSSIBLE_RENT) {
       throw "Listing rent exceeds highest possible rent";
-
-    if (listing.rent < 0)
+    }
+    if (listing.rent < 0) {
       throw "Listing rent is not a positive integer";
+    }
 
-    if (listing.rent < min)
+    if (listing.rent < min) {
       min = listing.rent;
-    if (listing.rent > max)
+    }
+    if (listing.rent > max) {
       max = listing.rent;
+    }
   }
 
   // Round step size to the closest multiple of 500 that produces roughly TARGET_RANGE_COUNT number of ranges.
@@ -97,6 +110,10 @@ function extractRelevantPriceRanges(listings: ListingCardDTO[]): string[] {
   
   // Add intermediate price ranges
   for (let i = min + stepSize; i < max; i += stepSize) {
+    // Do not include if there are no listings in that range
+    if (!listings.some(listing => listing.rent >= prev && listing.rent <= i)) {
+      continue;
+    }
     results.push(`${prev} - ${i}`);
     prev = i;
   }
