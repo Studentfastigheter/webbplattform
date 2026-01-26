@@ -8,6 +8,8 @@ import FilterButton from "../_components/FilterButton";
 import AddStatistic from "../_components/AddStatistic";
 import StatisticsContainer from "../_components/StatisticsContainer";
 import NewApplications from "../_components/NewApplications";
+import ApplicantsDistributionChart from "../_components/ApplicantsDistributionChart";
+import TotalApplicantsChart from "../_components/TotalApplicantsChart";
 
 const timeOptions = [
   { value: "1y", label: "1 år" },
@@ -33,7 +35,7 @@ const applications = [
 export default function Home() {
   return (
     <>
-      <div className="p-2 flex justify-between items-center">
+      <div className="p-2 flex justify-between items-center mt-2">
         <h1 className="text-brand text-2xl font-bold">Dashboard</h1>
         <div className="flex gap-4">
           <FilterButton 
@@ -51,13 +53,15 @@ export default function Home() {
 
       <div className="grid grid-cols-12 md:grid-cols-9">
         
+        <TotalApplicantsChart className="col-span-3" />
+        <ApplicantsDistributionChart className="col-span-3" />
         <NewApplications className="col-span-3" applications={applications} />
       
-        <PropertyList className="col-span-6" />
+        {/* <PropertyList className="col-span-6" />
         <BarChart className="col-span-5" />
         <InvoiceChart className="col-span-3" />
         
-        <QuickActions className="col-span-2" />
+        <QuickActions className="col-span-2" /> */}
 
       </div>
     </>

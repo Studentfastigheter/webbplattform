@@ -1,6 +1,9 @@
+import AnnonsTable from "../_components/AnnonsTable";
 import ApplicantsDistributionChart from "../_components/ApplicantsDistributionChart";
+import ApplicantsTable from "../_components/ApplicantsTable";
 import NewApplications from "../_components/NewApplications";
 import StatisticsContainer from "../_components/StatisticsContainer";
+import { DataTable } from "../_components/TanStackTable";
 import TotalApplicantsChart from "../_components/TotalApplicantsChart";
 
 const applications = [
@@ -20,9 +23,7 @@ export default function Ansokningar() {
       <div className="grid grid-cols-12 md:grid-cols-9">
       
         {/* <NewApplications className="col-span-3" applications={applications} /> */}
-
-        <ApplicantsDistributionChart className="col-span-4" />
-        <TotalApplicantsChart className="col-span-5" />
+        <ApplicantsTable className="col-span-12" />
 
       </div>
         

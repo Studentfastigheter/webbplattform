@@ -21,17 +21,17 @@ import {
 export const description = "A line chart"
 
 const chartData = [
-  { month: "January", queuers: 186 },
-  { month: "February", queuers: 305 },
-  { month: "March", queuers: 237 },
+  { month: "Januari", queuers: 186 },
+  { month: "Februari", queuers: 305 },
+  { month: "Mars", queuers: 237 },
   { month: "April", queuers: 73 },
-  { month: "May", queuers: 209 },
-  { month: "June", queuers: 214 },
+  { month: "Maj", queuers: 209 },
+  { month: "Juni", queuers: 214 },
 ]
 
 const chartConfig = {
   queuers: {
-    label: "Antal köande",
+    label: "Köande",
     color: "var(--chart-1)",
   },
 } satisfies ChartConfig
@@ -49,7 +49,7 @@ export default function TotalApplicantsChart({
     <div className={className}>
         <Card className="m-2">
             <CardHeader>
-                <CardTitle>Antal personer i bostadskö</CardTitle>
+                <CardTitle>Nya ansökningar till bostadskö</CardTitle>
                 <CardDescription>January - June 2025</CardDescription>
             </CardHeader>
             <CardContent>
@@ -92,10 +92,10 @@ export default function TotalApplicantsChart({
             </CardContent>
             <CardFooter className="flex-col items-start gap-2 text-sm">
                 <div className="flex gap-2 leading-none font-medium">
-                Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+                Trendar uppåt med 5,2% denna månad <TrendingUp className="h-4 w-4" />
                 </div>
                 <div className="text-muted-foreground leading-none">
-                Showing total visitors for the last 6 months
+                Visar nya ansökningar för de senaste 6 månaderna
                 </div>
             </CardFooter>
         </Card>
