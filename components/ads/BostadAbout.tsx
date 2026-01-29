@@ -155,6 +155,7 @@ export default function BostadAbout({
           scrollOffset={400}
         />
       </div>
+      )}
 
       {/* Högerkolumn: prisbox */}
       <div className="lg:justify-self-end">

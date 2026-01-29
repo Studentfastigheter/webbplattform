@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button as HeroButton } from "@heroui/react";
@@ -27,6 +29,12 @@ export type ButtonProps = Omit<HeroButtonProps, "variant" | "size" | "color"> & 
    * Om du vill ha enhetlig laddningsstate i hela appen.
    */
   isLoading?: boolean;
+};
+
+type ButtonVariantsProps = {
+  variant?: AppButtonVariant | HeroVariant;
+  size?: AppButtonSize;
+  className?: string;
 };
 
 /**
@@ -81,6 +89,17 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
+
+export function buttonVariants({
+  variant = "default",
+  size,
+  className,
+}: ButtonVariantsProps = {}) {
+  const variantClass = variantClassMap[variant as AppButtonVariant] ?? "";
+  const resolvedSize = size ? sizeClasses[size] ?? "" : "";
+
+  return cn(baseClasses, resolvedSize, variantClass, className);
+}
 
 const baseClasses =
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold disabled:pointer-events-none disabled:opacity-50";

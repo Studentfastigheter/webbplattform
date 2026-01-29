@@ -76,6 +76,26 @@ export default function Annons({
 
     
     const listing = listingContent[id] ?? listingContent["vasagatan-19"];
+    const advertiser = listing.landlord
+        ? {
+            id: 0,
+            type: "company" as const,
+            displayName: listing.landlord.name,
+            logoUrl: listing.landlord.logo ?? null,
+            bannerUrl: null,
+            city: null,
+            rating: listing.landlord.rating ?? null,
+            website: null,
+            description: null,
+            phone: null,
+            contactEmail: null,
+            contactPhone: null,
+            contactNote: listing.landlord.contactNote ?? null,
+            subtitle: listing.landlord.subtitle ?? null,
+            highlights: listing.landlord.highlights,
+            reviewCount: listing.landlord.reviewCount,
+        }
+        : null;
 
     return (
         <>
@@ -83,7 +103,7 @@ export default function Annons({
                 <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
                     <BostadGallery isEditable={isEditing} title={listing.title} images={listing.images} />
                     <BostadAbout isEditable={isEditing} listing={listing} />
-                    <BostadLandlord landlord={listing.landlord} />
+                    {advertiser && <BostadLandlord advertiser={advertiser} />}
                 </div>
             </div>
             <div className="m-2 fixed -bottom-2 -right-2 left-54 px-4 py-4 bg-brand flex gap-4 items-center">
