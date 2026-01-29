@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { twMerge } from "tailwind-merge";
 
 enum PaddingOptions {
@@ -15,28 +16,28 @@ enum BorderStyles {
     dashed = "border-dashed",
 }
 
+
+type ContainerProps = React.HTMLAttributes<HTMLDivElement> & {
+    children: React.ReactNode,
+    padding?: keyof typeof PaddingOptions,
+    borderStyle?: keyof typeof BorderStyles,
+    className?: string,
+    onClick?: React.MouseEventHandler<HTMLDivElement>,
+}
+
 export default function Container(
     {
         children,
-        columnSpan = 3,
-        rowSpan = 1,
         padding = "normal",
         borderStyle = "solid",
         className,
         onClick,
-    }:
-    {
-        children: React.ReactNode,
-        columnSpan?: number,
-        rowSpan?: number,
-        padding?: keyof typeof PaddingOptions,
-        borderStyle?: keyof typeof BorderStyles,
-        className?: string,
-        onClick?: () => void,
-    }
+        ...props
+    }: ContainerProps
+    
 ) {
     return (
-        <div onClick={onClick} style={{"gridColumn": `span ${columnSpan}`, "gridRow": `span ${rowSpan}`}} className={twMerge(`bg-white m-2 relative rounded-lg border border-neutral-200 ${onClick ? "select-none cursor-pointer" : ""} ${borderStyle == "solid" ? "shadow-sm" : ""} ${PaddingOptions[padding]} ${BorderStyles[borderStyle]}`, className)}>
+        <div {...props} onClick={onClick} className={twMerge(`bg-white m-2 relative rounded-lg border border-neutral-200 ${onClick ? "select-none cursor-pointer" : ""} ${borderStyle == "solid" ? "shadow-sm" : ""} ${PaddingOptions[padding]} ${BorderStyles[borderStyle]}`, className)}>
             {children}
         </div>
     )

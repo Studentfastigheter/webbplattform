@@ -10,3 +10,12 @@ export type Property = {
   address: string;
   rent: number;
 }
+
+export type StatisticProps = React.HTMLAttributes<HTMLDivElement> & {
+  icon: React.ReactElement,
+  data: string,
+  label: string,
+  background: string,
+  changeInPercent: number,
+  increaseDirection?: "up" | "down",
+}

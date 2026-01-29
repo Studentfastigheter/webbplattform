@@ -4,14 +4,22 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import EditWrapper from "@/app/(business_portal)/_components/EditWrapper";
+import ImageUploadGallery from "../Dashboard/ImageUploadGallery";
 
 type Props = {
   title: string;
   images: string[];
+  isEditable?: boolean;
 };
 
-export default function BostadGallery({ title, images }: Props) {
+export default function BostadGallery({ 
+  title, 
+  images, 
+  isEditable=false 
+}: Props) {
   const normalizedImages = useMemo(
     () => (images.length ? images : ["/appartment.jpg"]),
     [images],
@@ -64,6 +72,19 @@ export default function BostadGallery({ title, images }: Props) {
       return (prev + 1) % normalizedImages.length;
     });
   }, [normalizedImages.length]);
+
+
+  const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
+
+  const handleImageClick = (index: number) => {
+    if (!isEditable) {
+      setLightboxIndex(index);
+      return;
+    }
+
+    setUploadGalleryVisible(true);
+  }
+
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -141,42 +162,49 @@ export default function BostadGallery({ title, images }: Props) {
   return (
     <>
       <section className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
-        <div
-          className="relative h-[260px] cursor-pointer overflow-hidden rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.08)] sm:h-[340px] lg:h-[420px]"
-          onClick={() => setLightboxIndex(0)}
+        <EditWrapper
+          onClick={() => handleImageClick(0)}
+          tooltip="Redigera bild"
+          isEditable={isEditable}
         >
-          <Image
-            src={mainImage}
-            alt={title}
-            fill
-            priority
-            sizes="(min-width: 1024px) 800px, 100vw"
-            className="object-cover"
-          />
-        </div>
+          <div className="h-[260px] cursor-pointer relative overflow-hidden rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.08)] sm:h-[340px] lg:h-[420px]">
+            <Image
+              src={mainImage}
+              alt={title}
+              fill
+              priority
+              sizes="(min-width: 1024px) 800px, 100vw"
+              className="object-cover"
+            />
+          </div>
+        </EditWrapper>
 
         <div className="grid h-[260px] grid-cols-2 grid-rows-2 gap-4 sm:h-[340px] lg:h-[420px]">
           {thumbs.map((src, idx) => {
             const imgIndex = idx + 1;
             return (
-              <div
-                key={`${src}-${idx}`}
-                className="relative cursor-pointer overflow-hidden rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.05)]"
-                onClick={() => setLightboxIndex(imgIndex)}
-              >
-                <Image
-                  src={src}
-                  alt={`${title} – bild ${idx + 2}`}
-                  fill
-                  sizes="(min-width: 1024px) 400px, 50vw"
-                  className="object-cover"
-                />
-              </div>
-            );
+                <EditWrapper
+                  key={`${src}-${idx}`}
+                  onClick={() => handleImageClick(imgIndex)}
+                  tooltip="Redigera bild"
+                  isEditable={isEditable}
+                >
+                  <div className="h-full relative cursor-pointer overflow-hidden rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.05)] group">
+                    <Image
+                      src={src}
+                      alt={`${title} - bild ${idx + 2}`}
+                      fill
+                      sizes="(min-width: 1024px) 400px, 50vw"
+                      className="object-cover"
+                    />
+                  </div>
+                </EditWrapper>
+              )
           })}
         </div>
       </section>
       {renderLightbox()}
+      <ImageUploadGallery open={uploadGalleryVisible} setOpen={setUploadGalleryVisible} />
     </>
   );
 }

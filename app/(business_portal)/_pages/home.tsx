@@ -6,6 +6,10 @@ import QuickActions from "../_components/QuickActions";
 import BarChart from "../_components/BarChart";
 import FilterButton from "../_components/FilterButton";
 import AddStatistic from "../_components/AddStatistic";
+import StatisticsContainer from "../_components/StatisticsContainer";
+import NewApplications from "../_components/NewApplications";
+import ApplicantsDistributionChart from "../_components/ApplicantsDistributionChart";
+import TotalApplicantsChart from "../_components/TotalApplicantsChart";
 
 const timeOptions = [
   { value: "1y", label: "1 år" },
@@ -22,10 +26,16 @@ const filterOptions = [
   { value: "malmo", label: "Malmö" },
 ]
 
+const applications = [
+    { name: "Karl Karlsson", age: 18, address: "Chalmers tvärgata 2" },
+    { name: "Johan Johansson", age: 18, address: "Chalmers tvärgata 3" },
+    { name: "Anna Andersson", age: 22, address: "Chalmers tvärgata 4" },
+];
+
 export default function Home() {
   return (
     <>
-      <div className="p-2 flex justify-between items-center">
+      <div className="p-2 flex justify-between items-center mt-2">
         <h1 className="text-brand text-2xl font-bold">Dashboard</h1>
         <div className="flex gap-4">
           <FilterButton 
@@ -39,18 +49,19 @@ export default function Home() {
         </div>
       </div>
 
+      <StatisticsContainer />
+
       <div className="grid grid-cols-12 md:grid-cols-9">
-        <Statistic background="#C7D8EB" columnSpan={2} icon={<Box size={14} className="text-neutral-400" />} label="Antal objekt" data="40" changeInPercent={3.4} />
-        <Statistic background="#F4D8E4" columnSpan={2} icon={<House size={14} className="text-neutral-400" />} label="Lediga bostäder" data="12" changeInPercent={-3.5} increaseDirection="down" />
-        <Statistic background="#C9D9C2" columnSpan={2} icon={<Users size={14} className="text-neutral-400" />} label="Antal hyresgäster" data="1325" changeInPercent={-2.5}/>
-        <Statistic background="#C7D8EB" columnSpan={2} icon={<ScrollText size={14} className="text-neutral-400" />} label="Aktiva annonser" data="4" changeInPercent={2.5} />
-        <AddStatistic columnSpan={1} />
-      
-        <PropertyList columnSpan={7} />
-        <BarChart columnSpan={5} />
-        <InvoiceChart columnSpan={3} />
         
-        <QuickActions columnSpan={2} />
+        <TotalApplicantsChart className="col-span-3" />
+        <ApplicantsDistributionChart className="col-span-3" />
+        <NewApplications className="col-span-3" applications={applications} />
+      
+        {/* <PropertyList className="col-span-6" />
+        <BarChart className="col-span-5" />
+        <InvoiceChart className="col-span-3" />
+        
+        <QuickActions className="col-span-2" /> */}
 
       </div>
     </>

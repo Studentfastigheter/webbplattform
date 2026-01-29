@@ -1,38 +1,15 @@
-import { Ellipsis, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import Container from "./Container";
-import Link from "next/link";
-
-function getChangeDirectionColor(changeInPercent: number, increaseDirection: "up" | "down") {
-    if (changeInPercent > 0 && increaseDirection === "up") {
-        return "text-green-600";
-    }
-    else if (changeInPercent < 0 && increaseDirection === "up") {
-        return "text-red-600";
-    }
-    else if (changeInPercent > 0 && increaseDirection === "down") {
-        return "text-red-600";
-    }
-    else {
-        return "text-green-600";
-    }
-}
+import { StatisticProps } from "../_statics/types";
 
 export default function Statistic({
-    columnSpan,
     icon,
     data,
     label,
     changeInPercent,
     increaseDirection = "up",
-  }: {
-    columnSpan: number,
-    icon: React.ReactElement,
-    data: string,
-    label: string,
-    background: string,
-    changeInPercent: number,
-    increaseDirection?: "up" | "down",
-  }) {
+    ...props
+  }: StatisticProps) {
 
 
     function getChangeDirectionColor() {
@@ -54,7 +31,7 @@ export default function Statistic({
 
 
   return (
-    <Container columnSpan={columnSpan} padding={"sm"}>
+    <Container padding={"sm"} {...props}>
       <div className="flex gap-2 text-sm text-neutral-400 mb-2">
         {icon}
         <p className="tracking-wide">{label}</p>

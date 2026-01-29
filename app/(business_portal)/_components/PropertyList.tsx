@@ -34,15 +34,17 @@ const sortOptions = [
   { value: "cheap", label: "Billigast" },
 ]
 
+type PropertyListProps = React.HTMLAttributes<HTMLDivElement> & {
+
+};
+
 export default function PropertyList({
-  columnSpan,
-}: {
-  columnSpan: number,
-}) {
+  ...props
+}: PropertyListProps) {
 
 
   return (
-    <Container columnSpan={columnSpan}>
+    <Container {...props}>
       <div className="flex gap-16 items-center">
         <h2 className="text-xl font-semibold text-slate-900">Dina bostäder</h2>
         <div className="flex gap-8 flex-1">
