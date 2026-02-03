@@ -1,7 +1,10 @@
 export type Message = {
-  id: number;
-  text: string;
-  read: boolean;
+  id: string
+  text: string
+  read: boolean
+  createdAt: string
+  kind?: "application" | "platform" | "insight"
+  href?: string
 }
 
 export type Property = {
