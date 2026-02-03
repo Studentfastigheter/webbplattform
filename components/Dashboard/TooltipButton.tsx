@@ -95,6 +95,8 @@ export type TooltipButtonProps = Omit<
     confirm?: TooltipButtonConfirm
     /** Tooltip content density */
     density?: "compact" | "normal"
+    /** If true, renders with no button styling (inherit from parent) */
+    unstyled?: boolean
   }
 
 function normalizeShortcuts(shortcuts?: TooltipButtonShortcut[]) {
@@ -153,6 +155,7 @@ export const TooltipButton = React.forwardRef<HTMLButtonElement, TooltipButtonPr
       onClick,
       className,
       children,
+      unstyled = false,
       ...buttonProps
     },
     ref
@@ -281,13 +284,13 @@ export const TooltipButton = React.forwardRef<HTMLButtonElement, TooltipButtonPr
       [armed, confirm, disabled, loading, onClick]
     )
 
-    const Comp = asChild ? Slot : Button
+    const Comp = unstyled || asChild ? Slot : Button
 
-    // Important: a disabled button won’t fire pointer events, so TooltipTrigger needs a wrapper.
+    // Important: a disabled button won't fire pointer events, so TooltipTrigger needs a wrapper.
     const trigger = (
       <Comp
         ref={ref as any}
-        className={cn(className)}
+        className={unstyled ? className : cn(className)}
         disabled={isActuallyDisabled}
         onClick={handleClick}
         aria-disabled={isActuallyDisabled}

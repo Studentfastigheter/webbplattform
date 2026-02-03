@@ -5,15 +5,15 @@ import Link from "next/link";
 import { MessageWidget } from "./MessageWidget";
 
 const messages = [
-  { id: 1, text: "Hello!", read: false },
-  { id: 2, text: "How are you?", read: true },
-  { id: 3, text: "Don't forget our meeting.", read: false },
+  { id: "1", text: "Hello!", read: false },
+  { id: "2", text: "How are you?", read: true },
+  { id: "3", text: "Don't forget our meeting.", read: false },
 ]
 
 function SettingsWidget() {
 
   return (
-    <Link href={""}>
+    <Link href={"/portal/installningar"}>
       <Settings width={20} height={20} />
     </Link>
   )

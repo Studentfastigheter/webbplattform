@@ -4,7 +4,11 @@ import { usePathname } from "next/navigation";
 
 import CampusLyanLogo from "@/public/campuslyan-logo.svg"
 import { dashboardRelPath } from "../_statics/variables";
-import { ChevronLeft, LayoutDashboard, NotebookTabs, Users } from "lucide-react";
+import { LayoutDashboard, NotebookTabs, PanelLeft, Users } from "lucide-react";
+
+const handleSidebarToggle = () => {
+    // Implement sidebar toggle functionality if needed
+}
 
 const navItems = [
     {
@@ -36,13 +40,15 @@ export default function Sidebar() {
 
     return (
     <aside className="bg-gray-100 h-screen w-56 fixed left-0 px-5 z-50">
-        <div className="relative">
-          <Link href={"/portal"} className="h-16 flex gap-2 items-center m-auto">
+        <div className="relative flex">
+          <Link href={"/portal"} className="h-16 flex gap-2 items-center self-baseline">
               <Image src={CampusLyanLogo} width={32} height={32} alt="CampusLyan"></Image>
-              <h3 className="font-semibold text-brand text-center">CampusLyan</h3>
+              <h3 className="font-semibold text-brand text-center pr-4">CampusLyan</h3>
           </Link>
-          <button className="absolute top-[50%] translate-y-[-50%] right-0 cursor-pointer">
-            <ChevronLeft size={16} />
+          <button 
+            className="absolute top-[50%] translate-y-[-50%] right-0 cursor-ew-resize p-1"
+            onClick={handleSidebarToggle}>
+                <PanelLeft size={16} />
           </button>
         </div>
 
@@ -61,9 +67,9 @@ export default function Sidebar() {
                                         <div className={`${isActive ? "block" : "hidden"} absolute w-1 left-0 top-1.5 bottom-1.5 rounded-r-full bg-gradient-to-r to-green-600 from-green-700`} />
                                         <Link
                                             href={link.href}
-                                            className={`flex items-center gap-2 py-2 pl-3 pr-2 rounded text-sm group-hover:text-black ${isActive ? "font-bold text-black" : "text-gray-500 font-medium"}`}
+                                            className={`flex items-center gap-2 py-2 pl-3 pr-2 rounded text-sm group-hover:text-black ${isActive ? "font-semibold text-black" : "text-neutral-600"}`}
                                         >
-                                            {link.Logo && <link.Logo width={16} height={16} fill={isActive ? "none" : "none"} color="currentColor" className={`${isActive ? "text-brand" : "text-gray-400 group-hover:text-black"}`} />}
+                                            {link.Logo && <link.Logo width={16} height={16} fill={isActive ? "none" : "none"} color="currentColor" className={`${isActive ? "text-brand" : "text-neutral-600 group-hover:text-black"}`} />}
                                             {link.label}
                                         </Link>
                                     </li>
