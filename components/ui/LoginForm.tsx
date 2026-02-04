@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import { AuthCard } from "@/components/ui/AuthCard";
 import {
   Field,
@@ -101,7 +101,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
           </Field>
 
           <Field>
-            <Button type="submit" color="success" variant="solid" radius="full" className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90" disabled={!ready || loading}>
+            <Button type="submit" color="success" variant="outline" className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90" disabled={!ready || loading}>
                   {loading ? "Loggar in…" : "Logga in"}
             </Button>
           </Field>

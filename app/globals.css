@@ -38,6 +38,8 @@
   --chart-2: oklch(66.481% 0.19297 146.305);
   --chart-3: oklch(78.417% 0.1591 165.543);
   --sidebar: oklch(0.985 0 0);
+
+  /* Sidebar */
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -339,7 +341,6 @@ img, svg, video, canvas {
 
 .card { transition: transform .25s ease, box-shadow .25s ease; }
 .card:hover { transform: translateY(-3px); box-shadow: 0 4px 14px rgba(0,0,0,.08), 0 10px 30px rgba(0,0,0,.06); }
-
 
 /* Infinite moving cards */
 .scroller {
