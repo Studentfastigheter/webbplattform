@@ -10,7 +10,6 @@ import {
 
 import { NavMain } from "./NavMain"
 import { NavUser } from "./NavUser"
-import { useMostSpecificActiveLink } from "./useIsActive"
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +24,8 @@ import Image from "next/image"
 import CampusLyanLogo from "@/public/campuslyan-logo.svg"
 import { dashboardRelPath } from "../../_statics/variables"
 import Link from "next/link"
+import { lowestCommonRoute, normalizeRoute } from "@/lib/utils"
+import { usePathname } from "next/navigation"
 
 const data = {
   user: {
@@ -71,6 +72,32 @@ const data = {
     ]},
 }
 
+function getAllUrls(obj: any): string[] {
+  const urls: string[] = [];
+
+  const walk = (node: any) => {
+    if (!node) return;
+
+    if (Array.isArray(node)) {
+      for (const x of node) walk(x);
+      return;
+    }
+
+    if (typeof node === "object") {
+      if (typeof node.url === "string") urls.push(node.url);
+
+      for (const key of Object.keys(node)) {
+        walk(node[key]);
+      }
+    }
+  };
+
+  walk(obj);
+
+  // dedupe + normalize
+  return Array.from(new Set(urls.map(normalizeRoute)));
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Combine all navigation items to determine single active link
   const allItems = [
@@ -78,7 +105,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ...data.documents.items,
     ...data.navSecondary.items,
   ]
-  const activeUrl = useMostSpecificActiveLink(allItems)
+
+  const pathname = usePathname();
+
+  const urls = getAllUrls(allItems)
+  const activeUrl = lowestCommonRoute(urls, pathname)
+
+
 
   return (
     <Sidebar collapsible="icon"  {...props}>

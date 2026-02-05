@@ -7,6 +7,8 @@ import FileForm from "../_components/FileCard/FloorplanForm";
 import RequirementProfileForm from "../_components/FileCard/RequirementProfileForm";
 import { FileCardServerItem } from "@/lib/definitions";
 import { submitFloorplan, submitRequirementProfile } from "@/lib/actions";
+import Link from "next/link";
+import { dashboardRelPath } from "../_statics/variables";
 
 
 type SettingsProps = {
@@ -21,7 +23,10 @@ export default function Bilagor({
 
     return (
         <div>
-            <FormShell title="Definiera dina bilagor här" description="Här kan du ladda upp och hantera dina planlösningar och kravprofiler. Redigera din annons för att koppla samman.">
+            <FormShell 
+                heading={<>Definiera dina bilagor här</>} 
+                description={<>Koppla samman annons med kravprofil eller planlösning genom att redigera din <Link className="font-bold hover:underline" href={`${dashboardRelPath}/annonser`}>annons</Link>.</>}
+            >
                 <FormGroup title="Planlösningar" gap="sm" className="mb-3">
                     <FileManager 
                         itemsPromise={floorplansPromise} 

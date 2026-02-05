@@ -242,7 +242,7 @@ export const TooltipButton = React.forwardRef<HTMLButtonElement, TooltipButtonPr
                   {s.label ? (
                     <span className="mr-1 opacity-80">{s.label}:</span>
                   ) : null}
-                  {s.keys.join(" ")}
+                  {s.keys.join("+")}
                 </span>
               ))}
             </div>

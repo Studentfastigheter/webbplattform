@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
+import { checkSameRoute } from "@/lib/utils"
 
 export function NavMain({
   items,
@@ -33,7 +34,7 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild tooltip={item.title}>
+              <SidebarMenuButton asChild tooltip={item.title} isActive={checkSameRoute(item.url, activeUrl || "")}>
                 <Link href={item.url}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>

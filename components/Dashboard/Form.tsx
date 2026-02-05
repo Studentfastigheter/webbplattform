@@ -6,6 +6,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { cn } from "@/lib/utils";
 import Container from "@/app/(business_portal)/_components/Container";
+import React from "react";
 
 
 type FormGroupProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -164,22 +165,22 @@ export function FormSkeleton() {
 
 type FormShellProps = React.HTMLAttributes<HTMLDivElement> & {
     children: React.ReactNode;
-    title?: string;
-    description?: string;
+    heading?: React.ReactNode;
+    description?: React.ReactNode;
     className?: string;
 };
 
 export function FormShell({ 
     children,
-    title,
+    heading,
     description,
     className,
     ...props
 }: FormShellProps) {
     return (
         <div className={cn("max-w-lg mx-auto mt-12", className)} {...props}>
-            {title && <p className="text-xl font-semibold mb-2">{title}</p>}
-            {description && <p className="text-sm text-neutral-600 mb-8">{description}</p>}
+            {heading && <p className="text-xl font-semibold mb-2">{heading}</p>}
+            {description && <p className="text-sm text-neutral-600 mb-8 max-w-96">{description}</p>}
             {children}
         </div>
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import { TooltipButton } from "@/components/Dashboard/TooltipButton";
 // import { ArrowLeft, ChevronDown, Settings } from "lucide-react";
 // import Link from "next/link";
 // import { MessageWidget } from "./MessageWidget";
@@ -61,24 +62,29 @@
 //   );
 // }
 
-import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export function Header() {
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
+        <TooltipButton 
+          tooltipTitle="Stäng sidomenyn"
+          unstyled
+          shortcuts={[{ keys: ["Ctrl", "b"], label: "Snabbkommando" }]}
+        >
+          <SidebarTrigger className="-ml-1" />
+        </TooltipButton>
         <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <Link href="/" className="text-sm flex items-center gap-1 group relative text-neutral-600 hover:text-black">
-          <ArrowLeft size={14} className="relative group-hover:-translate-x-1 transition-all duration-150" />
-          <p>Tillbaka till CampusLyan</p>
+          <p>Till CampusLyan</p>
+          <ArrowRight size={14} className="relative group-hover:translate-x-1 transition-all duration-150" />
         </Link>
       </div>
     </header>

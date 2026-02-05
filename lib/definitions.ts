@@ -35,3 +35,5 @@ export type SkeletonWrapperProps = {
     count: number;
     children: React.ReactNode;
 }
+
+export type AvailableStatistics = "applications" | "views" | "interactions" | "active_posts";

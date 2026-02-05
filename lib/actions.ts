@@ -1,4 +1,4 @@
-import { ServerFloorplan, ServerRequirementProfile } from "./definitions";
+import { AvailableStatistics, ServerFloorplan, ServerRequirementProfile } from "./definitions";
 
 export async function getFloorplans() {
     // Here you would normally fetch data from a database or an API
@@ -73,4 +73,30 @@ export async function submitRequirementProfile(
         success: true, 
         id: itemId
     };
+}
+
+
+type getStatisticsProps = {
+    statisticsToFetch: AvailableStatistics[];
+};
+
+export async function getStatistics({
+    statisticsToFetch,
+}: getStatisticsProps) {
+    // Simulate fetching statistics with delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const mockValues: Record<AvailableStatistics, [number, number]> = {
+        applications: [120, -0.052],
+        views: [1450, 0.10],
+        interactions: [86, 0.8],
+        active_posts: [12, 0],
+    };
+
+    return statisticsToFetch.reduce<Partial<Record<AvailableStatistics, [number, number]>>>(
+        (acc, statistic) => {
+            acc[statistic] = mockValues[statistic];
+            return acc;
+        },
+        {}
+    );
 }
