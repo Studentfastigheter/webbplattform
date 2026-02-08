@@ -238,12 +238,14 @@ export const TooltipButton = React.forwardRef<HTMLButtonElement, TooltipButtonPr
           {normalizedShortcuts.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {normalizedShortcuts.map((s, idx) => (
-                <span key={idx} className={kbdStyles}>
+                <React.Fragment key={idx}>
                   {s.label ? (
                     <span className="mr-1 opacity-80">{s.label}:</span>
                   ) : null}
-                  {s.keys.join("+")}
-                </span>
+                  <span className={kbdStyles}>
+                    {s.keys.join("+")}
+                  </span>
+                </React.Fragment>
               ))}
             </div>
           ) : null}
