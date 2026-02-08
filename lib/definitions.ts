@@ -37,3 +37,4 @@ export type SkeletonWrapperProps = {
 }
 
 export type AvailableStatistics = "applications" | "views" | "interactions" | "active_posts";
+

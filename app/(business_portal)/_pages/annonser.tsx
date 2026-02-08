@@ -1,8 +1,6 @@
 import Search from "../_components/Search"
 import { dashboardRelPath } from "../_statics/variables"
 import NormalButton from "../_components/CTAButton"
-import { DataTable } from "../_components/TanStackTable"
-import Container from "../_components/Container"
 import { AnnonsPreview } from "../_components/Annons"
 import FilterButton from "../_components/FilterButton"
 
@@ -87,6 +85,116 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="2 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
+        />
+        <AnnonsPreview 
+          id="6"
+          imageUrl="/appartment.jpg" 
+          address="Chalmers Tvärgata 10B"
+          apartmentNumber="1000" 
+          area="Johanneberg"
+          city="Göteborg" 
+          status="aktiv"
+          uploadedDatetime="6 månader sedan"
         />
         <AnnonsPreview 
           id="6"

@@ -86,10 +86,10 @@ export default function Annons({
                     <BostadLandlord landlord={listing.landlord} />
                 </div>
             </div>
-            <div className="m-2 fixed -bottom-2 -right-2 left-54 px-4 py-4 bg-brand flex gap-4 items-center">
+            {/* <div className="m-2 fixed px-4 py-4 bg-brand flex gap-4 items-center">
                 <p className="text-white text-sm">{modeText[isEditing ? "edit" : "preview"].text}</p>
                 <Button variant={"outline"} className="m-0!" onClick={() => setIsEditing(prev => !prev)}>{modeText[isEditing ? "edit" : "preview"].button}</Button>
-            </div>
+            </div> */}
         </>
     )
 }

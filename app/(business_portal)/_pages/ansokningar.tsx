@@ -1,29 +1,65 @@
-import AnnonsTable from "../_components/AnnonsTable";
-import ApplicantsDistributionChart from "../_components/ApplicantsDistributionChart";
-import ApplicantsTable from "../_components/ApplicantsTable";
-import NewApplications from "../_components/NewApplications";
-import StatisticsContainer from "../_components/StatisticsContainer";
-import { DataTable } from "../_components/TanStackTable";
-import TotalApplicantsChart from "../_components/TotalApplicantsChart";
+import { getStatistics } from "@/lib/actions";
+import ApplicantsTable, { Application } from "../_components/ApplicantsTable";
+import StatisticsContainer from "../_components/Statistics/StatisticsContainer";
+import { StatisticProps } from "../_statics/types";
+import { AvailableStatistics } from "@/lib/definitions";
 
-const applications = [
-    { name: "Karl Karlsson", age: 18, address: "Chalmers tvärgata 2" },
-    { name: "Johan Johansson", age: 18, address: "Chalmers tvärgata 3" },
-    { name: "Anna Andersson", age: 22, address: "Chalmers tvärgata 4" },
-];
+const applications: Application[] = [
+  {
+    id: "m5gr84i9",
+    name: "Bengt Svensson",
+    object: "Chalmers tvärgata lgh 1001",
+    status: "accepted",
+    email: "ken99@example.com",
+    createdAt: "2026-01-28T12:00:00Z",
+  },
+
+    {
+    id: "xj4lm9z2",
+    name: "Anna Karlsson",
+    object: "Chalmers tvärgata lgh 1002",
+    status: "pending",
+    email: "anna.karlsson@example.com",
+    createdAt: "2026-01-18T12:00:00Z",
+  },
+    {
+    id: "a8n3k2p0",
+    name: "Johan Eriksson",
+    object: "Chalmers tvärgata lgh 1003",
+    status: "reviewed",
+    email: "johan.eriksson@example.com",
+    createdAt: "2026-01-22T12:00:00Z",
+  },
+  {
+    id: "q7w5e1r4",
+    name: "Maria Nilsson",
+    object: "Bostadskö",
+    status: "rejected",
+    email: "maria.nilsson@example.com",
+    createdAt: "2026-01-30T12:00:00Z",
+  },
+
+
+]
+
 
 export default function Ansokningar() {
+
+  
+    const selectedStatistics: AvailableStatistics[] = ["applications", "views", "interactions", "active_posts"];
+    const statisticsPromise: Promise<StatisticProps[]> = getStatistics({ statisticsToFetch: selectedStatistics })
+
   return (
     <div>
       
-      <StatisticsContainer />
+      <StatisticsContainer statisticsPromise={statisticsPromise} />
 
         
         
       <div className="grid grid-cols-12 md:grid-cols-9">
       
         {/* <NewApplications className="col-span-3" applications={applications} /> */}
-        <ApplicantsTable className="col-span-12" />
+        <ApplicantsTable className="col-span-12" applications={applications} />
 
       </div>
         

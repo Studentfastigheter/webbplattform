@@ -66,6 +66,7 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Toggles from "./Toggles";
 
 export function Header() {
   return (
@@ -86,6 +87,17 @@ export function Header() {
           <p>Till CampusLyan</p>
           <ArrowRight size={14} className="relative group-hover:translate-x-1 transition-all duration-150" />
         </Link>
+        <div className="ml-auto">
+          <Toggles 
+            options={[
+              { value: "1w", ariaLabel: "1 vecka", label: "1 vecka" },
+              { value: "1m", ariaLabel: "1 månad", label: "1 mån" },
+              { value: "3m", ariaLabel: "3 månader", label: "3 mån" },
+              { value: "12m", ariaLabel: "12 månader", label: "12 mån" },
+            ]}
+            defaultValue="1w"
+          />
+        </div>
       </div>
     </header>
   )

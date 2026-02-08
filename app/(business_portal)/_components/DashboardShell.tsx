@@ -21,9 +21,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <SidebarInset>
           <Header />
           <div
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-hidden"
           >
-            <NavigationBreadcrumb className="pt-1 px-4 mx-2 mt-2 mb-4" />
+            <NavigationBreadcrumb className="pt-1 px-4 mx-2 my-4" />
             <div className="bg-white min-h-full pb-4 px-4 relative z-0">
               {children}
             </div>

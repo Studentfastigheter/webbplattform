@@ -75,44 +75,6 @@ const getStatusTranslation = (status: string | undefined) => {
     }
 }
 
-const data: Application[] = [
-  {
-    id: "m5gr84i9",
-    name: "Bengt Svensson",
-    object: "Chalmers tvärgata lgh 1001",
-    status: "accepted",
-    email: "ken99@example.com",
-    createdAt: "2026-01-28T12:00:00Z",
-  },
-
-    {
-    id: "xj4lm9z2",
-    name: "Anna Karlsson",
-    object: "Chalmers tvärgata lgh 1002",
-    status: "pending",
-    email: "anna.karlsson@example.com",
-    createdAt: "2026-01-18T12:00:00Z",
-  },
-    {
-    id: "a8n3k2p0",
-    name: "Johan Eriksson",
-    object: "Chalmers tvärgata lgh 1003",
-    status: "reviewed",
-    email: "johan.eriksson@example.com",
-    createdAt: "2026-01-22T12:00:00Z",
-  },
-  {
-    id: "q7w5e1r4",
-    name: "Maria Nilsson",
-    object: "Bostadskö",
-    status: "rejected",
-    email: "maria.nilsson@example.com",
-    createdAt: "2026-01-30T12:00:00Z",
-  }
-
-
-]
-
 export type Application = {
   id: string
   name: string
@@ -138,6 +100,7 @@ export const columns: ColumnDef<Application>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        onClick={(e) => e.stopPropagation()}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
@@ -203,10 +166,12 @@ function updateApplicationStatus(applicationIds: string[], status: string) {
 
 type Props = React.HTMLAttributes<HTMLDivElement> & {
   className?: string
+  applications: Application[]
 }
 
 export default function ApplicantsTable({
     className,
+    applications: data,
     ...props
 }: Props) {
   const [sorting, setSorting] = React.useState<SortingState>([
@@ -384,7 +349,10 @@ export default function ApplicantsTable({
                 <TableRow
                   data-state={row.getIsSelected() && "selected"}
                   className="cursor-pointer"
-                  onClick={() => row.toggleExpanded()}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    row.toggleExpanded()
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

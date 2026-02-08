@@ -92,14 +92,6 @@ export function NavUser({
                   Profil
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Länk 2
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Länk 3
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>

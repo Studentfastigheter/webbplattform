@@ -1,4 +1,6 @@
+import { StatisticProps } from "@/app/(business_portal)/_statics/types";
 import { AvailableStatistics, ServerFloorplan, ServerRequirementProfile } from "./definitions";
+import { Eye, FileUser, MousePointerClick, ScrollText } from "lucide-react";
 
 export async function getFloorplans() {
     // Here you would normally fetch data from a database or an API
@@ -85,18 +87,38 @@ export async function getStatistics({
 }: getStatisticsProps) {
     // Simulate fetching statistics with delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const mockValues: Record<AvailableStatistics, [number, number]> = {
-        applications: [120, -0.052],
-        views: [1450, 0.10],
-        interactions: [86, 0.8],
-        active_posts: [12, 0],
+    const mockValues: Record<string, StatisticProps> = {
+        applications: {
+            Icon: FileUser,
+            data: 120, 
+            changeInPercent: -5.7, 
+            label: "Ansökningar",
+            increaseDirection: "up",
+        },
+        views: {
+            Icon: Eye,
+            data: 3400,
+            changeInPercent: 1.5,
+            label: "Visningar",
+            increaseDirection: "up",
+        },
+        interactions: {
+            Icon: MousePointerClick,
+            data: 890,
+            changeInPercent: 3.2,
+            label: "Interaktioner",
+            increaseDirection: "up",
+        },
+        active_posts: {
+            Icon: ScrollText,
+            data: 12,
+            changeInPercent: 0.0,
+            label: "Aktiva annonser",
+            increaseDirection: "up",
+        },
     };
 
-    return statisticsToFetch.reduce<Partial<Record<AvailableStatistics, [number, number]>>>(
-        (acc, statistic) => {
-            acc[statistic] = mockValues[statistic];
-            return acc;
-        },
-        {}
-    );
+    const statistics: StatisticProps[] = statisticsToFetch.map(statKey => mockValues[statKey]);
+
+    return statistics;
 }
