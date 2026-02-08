@@ -68,7 +68,7 @@ const TEAM_CATEGORIES = [
       },
       {
         name: "Alvin Stallgård",
-        role: "CCO",
+        role: "Chief Commercial Officer",
         image: "/team/Profilbild-Alvin.png",
         linkedin: "https://www.linkedin.com/in/alvin-stallg%C3%A5rd-346abb290/",
         email: "alvin.stallgard@campuslyan.se",
@@ -77,11 +77,6 @@ const TEAM_CATEGORIES = [
         name: "Viktor Kristiansson",
         role: "Head of Backend & Security",
         // email: "viktor@campuslyan.se",
-      },
-      {
-        name: "Mehrdad Hashemi",
-        role: "CSO",
-        email: "mehrdad.hashemi@campuslyan.se",
       },
     ],
   },
@@ -92,6 +87,14 @@ const TEAM_CATEGORIES = [
       { name: "Mikael Överfjord", role: "Backend Engineer" },
       { name: "Lucas Ryefalk", role: "Frontend Engineer" },
       { name: "William Jaarma", role: "Frontend Engineer" },
+      { name: "Sumiya Sayeed", role: "Frontend Engineer" },
+    ],
+  },
+  {
+    title: "Kommersiellt & Marknad",
+    members: [
+      { name: "Alve Nilsson", role: "Commercial Associate" },
+      { name: "Malte Stål", role: "Commercial Associate" },
     ],
   },
 ];
