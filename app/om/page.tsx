@@ -76,6 +76,7 @@ const TEAM_CATEGORIES = [
       {
         name: "Viktor Kristiansson",
         role: "Head of Backend & Security",
+        image: "/team/Profilbild-Viktor.jpg",
         // email: "viktor@campuslyan.se",
       },
     ],
