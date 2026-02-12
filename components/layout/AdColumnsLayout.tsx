@@ -102,12 +102,12 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
   const [leftAd, rightAd] = ads;
 
   return (
-    <div className="grid w-full grid-cols-[minmax(120px,15vw)_minmax(0,1fr)_minmax(120px,15vw)] items-start gap-6">
-      <div className="sticky top-24 self-start">
+    <div className="flex w-full flex-col gap-6 lg:grid lg:grid-cols-[minmax(120px,15vw)_minmax(0,1fr)_minmax(120px,15vw)] lg:items-start">
+      <div className="hidden lg:block sticky top-24 self-start">
         <AdSlot ad={leftAd} ariaLabel="Vänster annonsyta" />
       </div>
-      <div className="min-w-0">{children}</div>
-      <div className="sticky top-24 self-start">
+      <div className="w-full min-w-0">{children}</div>
+      <div className="hidden lg:block sticky top-24 self-start">
         <AdSlot ad={rightAd} ariaLabel="Höger annonsyta" />
       </div>
     </div>

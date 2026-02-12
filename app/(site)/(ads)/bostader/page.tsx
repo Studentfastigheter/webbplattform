@@ -26,7 +26,7 @@ type SearchValues = {
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ssr: false,
   loading: () => (
-    <div className="min-h-[520px] rounded-2xl bg-gray-100" aria-hidden />
+    <div className="min-h-[300px] sm:min-h-[400px] lg:min-h-[520px] rounded-2xl bg-gray-100" aria-hidden />
   ),
 });
 
@@ -252,9 +252,10 @@ export default function ListingsPage() {
   const totalListingsCount = listings.length;
   const isMapView = view === "karta";
 
+  // Responsive grid classes with better breakpoint handling
   const listingGridClasses = isMapView
-    ? "grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 justify-items-center"
-    : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
+    ? "grid grid-cols-1 gap-3 justify-items-center"
+    : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-3 md:gap-6 justify-items-center";
 
   const renderListingCard = (listing: ListingCardDTO, variant: "default" | "compact" = "default") => {
     return (
@@ -280,134 +281,163 @@ export default function ListingsPage() {
   };
 
   return (
-    <main className="flex flex-col gap-8 pb-12 pt-4 container mx-auto px-4">
-      <section className="w-full">
-        <div className="flex w-full flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="min-w-[280px] flex-1">
-              <SearchFilter3Fields
-                className="w-full"
-                field1={{
-                  id: "location",
-                  label: "Var",
-                  placeholder: "Sök studentstad",
-                  searchable: true,
-                  options: [
-                    { label: "Göteborg", value: "Göteborg" },
-                    { label: "Stockholm", value: "Stockholm" },
-                    { label: "Uppsala", value: "Uppsala" },
-                    { label: "Lund", value: "Lund" },
-                    { label: "Malmö", value: "Malmö" },
-                  ],
-                }}
-                field2={{
-                  id: "hosts",
-                  label: "Hyresvärd",
-                  placeholder: "Välj hyresvärd",
-                  searchable: false,
-                  options: [
-                    { label: "Alla", value: "Alla" },
-                    { label: "Privat hyresvärd", value: "Privat hyresvärd" },
-                    { label: "Företag", value: "Företag" },
-                  ],
-                }}
-                field3={{
-                  id: "price",
-                  label: "Pris",
-                  placeholder: "Välj prisintervall",
-                  options: extractRelevantPriceRanges(listings)
-                          .map(priceRange =>
-                            ({ label: priceRange, value: priceRange } as Option))
-                }}
-                onSubmit={(values) => setSearchValues({
-                  city: toSearchString(values.city),
-                  hosts: ({
-                    ["Alla"]: "",
-                    ["Privat hyresvärd"]: "privat",
-                    ["Företag"]: "företag"
-                  })[values.hosts],
-                  price: toSearchString(values.price)
-                } as SearchValues)}
-              />
-            </div>
-            <ListingsFilterButton
-              amenities={amenityOptions}
-              propertyTypes={propertyTypeOptions}
-              priceHistogram={[1, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 2]}
-              priceBounds={priceBounds}
-              initialState={defaultListingsFilterState}
-              onApply={(state) => setFilters(state)}
-              onClear={() => setFilters(defaultListingsFilterState)}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="w-full">
-        <div className="flex w-full flex-wrap items-center justify-between gap-4">
-          <h2 id="bostader-heading" className="text-lg font-semibold text-black">
-             {loading && listings.length === 0 
-                ? "Laddar bostäder..." 
-                : `Visar ${totalListingsCount} bostäder`
-             }
-          </h2>
-          <SwitchSelect value={view} onChange={setView} />
-        </div>
-      </section>
-
-      <section className="w-full min-h-[400px]">
-        <FieldSet className="w-full" aria-labelledby="bostader-heading">
-          {error && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-              {error}
-            </div>
-          )}
-
-          {isMapView ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-6 h-[calc(100vh-200px)]">
-              <div className={`${listingGridClasses} overflow-y-auto h-full pr-2`}>
-                 {listings.map((listing) => renderListingCard(listing, "compact"))}
-                 <div ref={loadMoreRef} className="h-4 w-full" />
-              </div>
-              <div className="rounded-2xl overflow-hidden h-full sticky top-0">
-                <ListingsMap
-                  listings={listings} 
-                  onOpenListing={(id) => router.push(`/bostader/${id}`)}
+    <main className="flex flex-col gap-6 sm:gap-8 pb-12 pt-4 w-full h-auto">
+      {/* Responsive container with proper padding */}
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 h-auto">
+        
+        {/* Search and Filter Section */}
+        <section className="w-full">
+          <div className="flex w-full flex-col gap-3 sm:gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-start xl:items-center gap-3 sm:gap-4">
+              {/* Search Filter - Responsive width */}
+              <div className="w-full lg:flex-1 lg:min-w-[280px] lg:max-w-2xl">
+                <SearchFilter3Fields
+                  className="w-full"
+                  field1={{
+                    id: "location",
+                    label: "Var",
+                    placeholder: "Sök studentstad",
+                    searchable: true,
+                    options: [
+                      { label: "Göteborg", value: "Göteborg" },
+                      { label: "Stockholm", value: "Stockholm" },
+                      { label: "Uppsala", value: "Uppsala" },
+                      { label: "Lund", value: "Lund" },
+                      { label: "Malmö", value: "Malmö" },
+                    ],
+                  }}
+                  field2={{
+                    id: "hosts",
+                    label: "Hyresvärd",
+                    placeholder: "Välj hyresvärd",
+                    searchable: false,
+                    options: [
+                      { label: "Alla", value: "Alla" },
+                      { label: "Privat hyresvärd", value: "Privat hyresvärd" },
+                      { label: "Företag", value: "Företag" },
+                    ],
+                  }}
+                  field3={{
+                    id: "price",
+                    label: "Pris",
+                    placeholder: "Välj prisintervall",
+                    options: extractRelevantPriceRanges(listings)
+                            .map(priceRange =>
+                              ({ label: priceRange, value: priceRange } as Option))
+                  }}
+                  onSubmit={(values) => setSearchValues({
+                    city: toSearchString(values.city),
+                    hosts: ({
+                      ["Alla"]: "",
+                      ["Privat hyresvärd"]: "privat",
+                      ["Företag"]: "företag"
+                    })[values.hosts],
+                    price: toSearchString(values.price)
+                  } as SearchValues)}
                 />
               </div>
+              
+              {/* Filter Button - Sticks to right on desktop, full width on mobile */}
+              <div className="flex justify-stretch lg:justify-end w-full lg:w-auto">
+                 <ListingsFilterButton
+                   className="w-full lg:w-auto"
+                   amenities={amenityOptions}
+                   propertyTypes={propertyTypeOptions}
+                   priceHistogram={[1, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 2]}
+                   priceBounds={priceBounds}
+                   initialState={defaultListingsFilterState}
+                   onApply={(state) => setFilters(state)}
+                   onClear={() => setFilters(defaultListingsFilterState)}
+                 />
+              </div>
             </div>
-          ) : (
-            <>
-              {listings.length === 0 && !loading && (
-                 <div className="py-20 text-center text-gray-500">
-                    Inga bostäder matchade din sökning.
-                 </div>
-              )}
+          </div>
+        </section>
 
-              <div className={listingGridClasses}>
-                {listings.map((listing) => renderListingCard(listing))}
+        {/* Results Header and View Toggle */}
+        <section className="w-full mt-6 sm:mt-8">
+          <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <h2 id="bostader-heading" className="text-base sm:text-lg font-semibold text-black">
+               {loading && listings.length === 0 
+                  ? "Laddar bostäder..." 
+                  : `Visar ${totalListingsCount} ${totalListingsCount === 1 ? 'bostad' : 'bostäder'}`
+               }
+            </h2>
+            <div className="w-full sm:w-auto">
+              <SwitchSelect value={view} onChange={setView} />
+            </div>
+          </div>
+        </section>
+
+        {/* Main Content Area */}
+        <section className="w-full min-h-[400px] mt-4 sm:mt-6">
+          <FieldSet className="w-full" aria-labelledby="bostader-heading">
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 sm:px-4 py-3 text-xs sm:text-sm text-red-800">
+                {error}
               </div>
+            )}
 
-              <div ref={loadMoreRef} className="flex w-full items-center justify-center py-8 min-h-[60px]">
-                {(loadingMore || loading) && (
-                   <span className="text-sm text-gray-500 animate-pulse">
-                     Hämtar fler bostäder...
-                   </span>
+            {isMapView ? (
+              /* Map View Layout - Responsive stacking */
+              <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 lg:items-start gap-4 sm:gap-6">
+                {/* Lista - On mobile below map, scrollable on desktop */}
+                <div className={`${listingGridClasses} w-full`}>
+                   {(listings.length === 0 && !loading) ? (
+                     <div className="col-span-full py-12 sm:py-20 text-center text-sm sm:text-base text-gray-500">
+                        Inga bostäder matchade din sökning.
+                     </div>) :
+                     listings.map((listing) => renderListingCard(listing))
+                   }
+                   <div ref={loadMoreRef} className="h-4 w-full col-span-full" />
+                </div>
+                
+                {/* Map - On mobile at top, sticky on desktop */}
+                <div className="w-full h-[280px] sm:h-[350px] lg:h-[calc(100vh-120px)] rounded-xl lg:rounded-2xl overflow-hidden lg:sticky lg:top-24 z-10 shrink-0">
+                  <ListingsMap
+                    listings={listings} 
+                    onOpenListing={(id) => router.push(`/bostader/${id}`)}
+                  />
+                </div>
+              </div>
+            ) : (
+              /* List View Layout */
+              <>
+                {listings.length === 0 && !loading && (
+                   <div className="py-12 sm:py-20 text-center text-sm sm:text-base text-gray-500">
+                      Inga bostäder matchade din sökning.
+                   </div>
                 )}
-              </div>
-            </>
-          )}
-        </FieldSet>
-      </section>
 
+                <div className={listingGridClasses}>
+                  {listings.map((listing) => renderListingCard(listing))}
+                </div>
+
+                {/* Load More Indicator */}
+                <div ref={loadMoreRef} className="flex w-full items-center justify-center py-6 sm:py-8 min-h-[60px]">
+                  {(loadingMore || loading) && (
+                     <span className="text-xs sm:text-sm text-gray-500 animate-pulse">
+                       Hämtar fler bostäder...
+                     </span>
+                  )}
+                </div>
+              </>
+            )}
+          </FieldSet>
+        </section>
+      </div>
+
+      {/* Scroll to Top Button - Responsive positioning and sizing */}
       {showScrollTop && (
         <button
           type="button"
           aria-label="Scrolla till toppen"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-8 right-8 z-50 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white shadow-xl transition transform hover:-translate-y-1 hover:bg-gray-800"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8 z-50 rounded-full bg-black px-4 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-semibold text-white shadow-xl transition transform hover:-translate-y-1 hover:bg-gray-800 active:scale-95"
         >
-          Till toppen
+          <span className="hidden sm:inline">Till toppen</span>
+          <span className="sm:hidden">↑</span>
         </button>
       )}
     </main>
