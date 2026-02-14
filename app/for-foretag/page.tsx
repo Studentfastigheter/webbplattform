@@ -10,6 +10,7 @@ import {
   Server,
   AppWindow
 } from "lucide-react";
+import Script from "next/script";
 
 import { Hero } from "@/components/for-foretag-sections/Hero";
 import { CtaSection } from "@/components/for-foretag-sections/CtaSection";
@@ -245,9 +246,29 @@ export default function Page() {
       <Features />
       <Implementation />
       <Testimonials />
-      <CtaBanner />
 
-      {/* Global Styles & Keyframes */}
+      <section className="py-24">
+        <div className="px-6 max-w-7xl mx-auto mb-12">
+          <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
+            Nyfiken på mer räckvidd?
+          </h2>
+          <p className="text-muted-foreground text-lg mt-2">
+            Vi berättar gärna mer
+          </p>
+        </div>
+
+        <div
+          className="calendly-inline-widget w-full"
+          data-url="https://calendly.com/campuslyan/30min?text_color=000000&hide_gdpr_banner=1&primary_color=004225"
+          style={{ minWidth: "320px", height: "800px" }}
+        />
+
+        <Script
+          src="https://assets.calendly.com/assets/external/widget.js"
+          strategy="lazyOnload"
+        />
+      </section>
+
       <style jsx global>{`
         /* Animations Definitions */
         .animate-scan {
