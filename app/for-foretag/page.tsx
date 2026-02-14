@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/chart";
 
 import { Hero } from "@/components/for-foretag-sections/Hero";
-import { CtaSection } from "@/components/for-foretag-sections/CtaSection";
+import Script from "next/script";
 
 // OBS: Om du har FeatureRow i en separat fil, uppdatera den enligt komponenten längst ner i denna fil.
 // Jag har definierat den här lokalt för att visa hur flex-logiken fungerar.
@@ -103,7 +103,7 @@ export default function Page() {
         title={<span>Marknadsför till – <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-600">Sveriges studenter</span></span>}
         description="Anslut ditt fastighetssystem och nå hela marknaden automatiskt. Vi verifierar studenterna enligt din kravprofil, så att du kan fylla vakanserna helt utan administration."
         primaryCtaText="Kom igång"
-        primaryCtaLink="/om"
+        primaryCtaLink="#bokning"
       />
 
       {/* Ändrat py-32 till py-16 lg:py-32 för bättre mobilupplevelse */}
@@ -256,12 +256,27 @@ export default function Page() {
         </FeatureRow>
       </section>
 
-      <CtaSection 
-        title="Nyfiken på bättre räckvidd?"
-        description="Vi berättar gärna mer."
-        primaryBtnText="Boka möte"
-        primaryBtnLink="/for-foretag"
-      />
+      <section id="bokning" className="py-24 scroll-mt-24">
+        <div className="px-6 max-w-7xl mx-auto mb-12">
+          <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
+            Nyfiken på mer räckvidd?
+          </h2>
+          <p className="text-muted-foreground text-lg mt-2">
+            Vi berättar gärna mer
+          </p>
+        </div>
+
+        <div
+          className="calendly-inline-widget w-full"
+          data-url="https://calendly.com/campuslyan/30min?text_color=000000&hide_gdpr_banner=1&primary_color=004225"
+          style={{ minWidth: "320px", height: "800px" }}
+        />
+
+        <Script
+          src="https://assets.calendly.com/assets/external/widget.js"
+          strategy="lazyOnload"
+        />
+      </section>
 
       {/* Global Styles & Keyframes */}
       <style jsx global>{`

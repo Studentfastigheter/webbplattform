@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ChevronRight, TrendingUp } from "lucide-react";
-
+import Link from "next/link";
 interface HeroProps {
   badge?: string;
   title?: React.ReactNode;
@@ -50,18 +50,22 @@ export const Hero = ({
         {/* --- HÄR ÄR ÄNDRINGEN --- */}
         {/* Ändrat från flex-col till flex-row för att tvinga dem brevid varandra */}
         <div className="pt-2 flex flex-row gap-3 sm:gap-4">
-          <button 
+          {/* Primary CTA -> scrollar till #bokning */}
+          <Link
+            href={primaryCtaLink}
             className="flex-1 sm:flex-none bg-slate-900 text-white px-4 sm:px-8 h-12 sm:h-14 rounded-xl font-bold hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base whitespace-nowrap"
           >
             {primaryCtaText}
             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-           
-          <button 
+          </Link>
+
+          {/* Secondary CTA -> också till bokning (eller valfri länk) */}
+          <Link
+            href="#bokning"
             className="flex-1 sm:flex-none bg-white border-2 border-slate-200 text-slate-700 px-4 sm:px-8 h-12 sm:h-14 rounded-xl font-bold hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center text-sm sm:text-base whitespace-nowrap"
           >
             Läs mer
-          </button>
+          </Link>
         </div>
         {/* ------------------------- */}
 
