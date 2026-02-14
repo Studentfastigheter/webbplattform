@@ -257,7 +257,7 @@ export default function Page() {
       </section>
 
       <section id="bokning" className="py-24 scroll-mt-24">
-        <div className="px-6 max-w-7xl mx-auto mb-12">
+        <div className="px-6 max-w-7xl mx-auto mb-0">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
             Nyfiken på mer räckvidd?
           </h2>
