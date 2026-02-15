@@ -12,6 +12,7 @@ import {
   LucideIcon,
   Search
 } from "lucide-react";
+import { link } from "fs";
 
 // --- DATA ---
 
@@ -94,8 +95,18 @@ const TEAM_CATEGORIES = [
   {
     title: "Kommersiellt & Marknad",
     members: [
-      { name: "Alve Nilsson", role: "Commercial Associate" },
-      { name: "Malte Stål", role: "Commercial Associate" },
+      { name: "Alve Nilsson", 
+        role: "Commercial Associate",
+        image: "/team/Profilbild-Alve.jpeg",
+        linkedin: "https://www.linkedin.com/in/alve-nilsson-47710a226/",
+        email: "alve.nilsson@campuslyan.se",
+      },
+      { name: "Malte Stål", 
+        role: "Commercial Associate",
+        image: "/team/Profilbild-Malte.jpg",
+        linkedin: "https://www.linkedin.com/in/malte-stal/",
+        email: "malte.stal@campuslyan.se",
+      },
     ],
   },
 ];
