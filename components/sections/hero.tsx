@@ -55,7 +55,7 @@ export const Hero: React.FC<HeroProps> = ({
           ) : null}
           <div className="flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
             <Button as={Link} href={waitlistHref} variant="default" className="w-full rounded-full px-6 sm:w-auto">
-              Join the waitlist
+              Anmäl intresse
             </Button>
             <Button as={Link} href={businessHref} variant="secondary" className="w-full rounded-full px-6 sm:w-auto">
               För företag
