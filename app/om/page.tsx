@@ -83,16 +83,6 @@ const TEAM_CATEGORIES = [
     ],
   },
   {
-    title: "Produkt & Utveckling",
-    members: [
-      { name: "Marco Speziale", role: "Backend Engineer" },
-      { name: "Mikael Överfjord", role: "Backend Engineer" },
-      { name: "Lucas Ryefalk", role: "Frontend Engineer" },
-      { name: "William Jaarma", role: "Frontend Engineer" },
-      { name: "Sumiya Sayeed", role: "Frontend Engineer" },
-    ],
-  },
-  {
     title: "Kommersiellt & Marknad",
     members: [
       { name: "Alve Nilsson", 
@@ -109,6 +99,17 @@ const TEAM_CATEGORIES = [
       },
     ],
   },
+  {
+    title: "Produkt & Utveckling",
+    members: [
+      { name: "Marco Speziale", role: "Backend Engineer" },
+      { name: "Mikael Överfjord", role: "Backend Engineer" },
+      { name: "Lucas Ryefalk", role: "Frontend Engineer" },
+      { name: "William Jaarma", role: "Frontend Engineer" },
+      { name: "Sumiya Sayeed", role: "Frontend Engineer" },
+    ],
+  },
+  
 ];
 
 // --- KOMPONENTER ---
