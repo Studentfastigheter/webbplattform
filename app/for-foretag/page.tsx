@@ -27,6 +27,8 @@ import {
 
 import { Hero } from "@/components/for-foretag-sections/Hero";
 import Script from "next/script";
+import { Testimonials } from "@/components/for-foretag-sections/Testimonial";
+import { Implementation } from "@/components/for-foretag-sections/Implementation";
 
 // OBS: Om du har FeatureRow i en separat fil, uppdatera den enligt komponenten längst ner i denna fil.
 // Jag har definierat den här lokalt för att visa hur flex-logiken fungerar.
@@ -255,6 +257,9 @@ export default function Page() {
             </div>
         </FeatureRow>
       </section>
+      <Testimonials />
+      <Implementation />
+      
 
       <section id="bokning" className="py-24 scroll-mt-24">
         <div className="px-6 max-w-7xl mx-auto mb-0">
