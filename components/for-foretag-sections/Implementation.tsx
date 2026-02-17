@@ -27,7 +27,7 @@ export const Implementation = () => {
 ];
 
   return (
-    <section className="py-24 bg-[#004225]">
+    <section className="py-24 bg-primary">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="flex flex-col gap-16 lg:flex-row lg:gap-32">
           <div className="lg:w-5/12">
@@ -35,11 +35,11 @@ export const Implementation = () => {
               <div className="border-l-2 border-white/10 pl-8 md:pl-12">
                 <SectionBadge
                   text="Implementation"
-                  color="text-[#C5E5D8]"
+                  color="text-brand-green-light"
                   className="tracking-[0.12em]"
                 />
 
-                <h2 className="mb-8 text-4xl font-bold leading-[1.1] text-[#FAF9F6] md:text-5xl lg:text-6xl">
+                <h2 className="mb-8 text-4xl font-bold leading-[1.1] text-primary-foreground md:text-5xl lg:text-6xl">
                   Från dialog till full räckvidd
                 </h2>
 
@@ -52,10 +52,10 @@ export const Implementation = () => {
                     className="rounded-full border-2 border-transparent object-cover"
                   />
                   <div>
-                    <div className="mb-1 text-sm font-bold uppercase tracking-wide text-[#FAF9F6]">
+                    <div className="mb-1 text-sm font-bold uppercase tracking-wide text-primary-foreground">
                       Alvin Stallgård
                     </div>
-                    <div className="text-xs font-medium uppercase tracking-wide text-[#FAF9F6]/70">
+                    <div className="text-xs font-medium uppercase tracking-wide text-primary-foreground/70">
                       Chief Commercial Officer
                     </div>
                   </div>
@@ -69,15 +69,15 @@ export const Implementation = () => {
               {steps.map((step, index) => (
                 <div key={index}>
                   <div className="grid grid-cols-[min-content_1fr] gap-6 py-4 md:gap-10">
-                    <div className="text-[4rem] font-bold leading-none text-[#C5E5D8] md:text-[6.25rem]">
+                    <div className="text-[4rem] font-bold leading-none text-brand-green-light md:text-[6.25rem]">
                       {step.num}
                     </div>
 
                     <div className="max-w-[430px] pt-2 md:pt-4">
-                      <h3 className="mb-3 text-2xl font-bold text-[#FAF9F6] md:mb-4 md:text-3xl">
+                      <h3 className="mb-3 text-2xl font-bold text-primary-foreground md:mb-4 md:text-3xl">
                         {step.title}
                       </h3>
-                      <p className="text-base leading-relaxed text-[#FAF9F6]/90 md:text-lg">
+                      <p className="text-base leading-relaxed text-primary-foreground/90 md:text-lg">
                         {step.desc}
                       </p>
                     </div>

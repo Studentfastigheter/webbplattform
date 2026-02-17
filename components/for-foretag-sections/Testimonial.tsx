@@ -36,7 +36,6 @@ export const Testimonials = () => {
             </h2>
           </div>
 
-          {/* Desktop Navigation Arrows (Placerade uppe till höger precis som Avy) */}
           <div className="hidden md:flex gap-3">
             <button 
               onClick={prevSlide}
@@ -69,7 +68,7 @@ export const Testimonials = () => {
                     {/* Citat-symbol */}
                     <div className="mb-8">
                       <Quote
-                        className="h-10 w-10 md:h-12 md:w-12 text-[#004225]"
+                        className="h-10 w-10 md:h-12 md:w-12 text-primary"
                         strokeWidth={2.25}
                         aria-hidden="true"
                       />

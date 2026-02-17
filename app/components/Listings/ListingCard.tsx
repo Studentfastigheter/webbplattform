@@ -18,7 +18,7 @@ export default function ListingCard({
         onMouseEnter={() => onHover?.(l.id)}
         onMouseLeave={() => onLeave?.()}
       >
-        <div className="relative w-full h-48 rounded-md overflow-hidden mb-3 bg-gray-100">
+        <div className="relative w-full h-48 rounded-md overflow-hidden mb-3 bg-card">
           <SkeletonImage
             src={(l.images?.[0] ?? l.imageUrl) || "/placeholder.svg"}
             alt={l.title}
@@ -46,4 +46,3 @@ export default function ListingCard({
     </Link>
   );
 }
-

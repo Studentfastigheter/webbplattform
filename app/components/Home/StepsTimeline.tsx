@@ -24,57 +24,57 @@ export default function StepsTimeline({
   if (!steps || steps.length === 0) return null;
 
   return (
-    <section className="relative py-24 bg-background overflow-hidden">
-      <div className="container mx-auto px-4 sm:px-6 max-w-7xl relative z-10">
+    <section className="relative overflow-hidden bg-background py-16 sm:py-20 lg:py-24">
+      <div className="container relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
         
         {/* Header Section */}
         <Reveal variant="up">
-          <div className="flex flex-col items-center text-center space-y-6 mb-16 lg:mb-24">
+          <div className="mb-10 flex flex-col items-center space-y-4 text-center sm:mb-14 sm:space-y-6 lg:mb-24">
              {/* Vi använder din SectionBadge här för konsekvent stil */}
             <SectionBadge text={badge} />
             
             {heading ? (
-               <h2 className="text-4xl md:text-6xl font-bold text-foreground leading-[1.1]">
+               <h2 className="text-3xl font-bold leading-[1.1] text-foreground sm:text-4xl md:text-6xl">
                  {heading}
                </h2>
             ) : (
-              <h2 className="text-4xl md:text-6xl font-bold text-foreground leading-[1.1]">
-                Från registrering till <span className="text-pop">inflytt</span>.
+              <h2 className="text-3xl font-bold leading-[1.1] text-foreground sm:text-4xl md:text-6xl">
+                Från registrering till <span className="text-pop-contrast">inflytt</span>.
               </h2>
             )}
           </div>
         </Reveal>
 
         {/* Steps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-12 relative">
+        <div className="relative grid grid-cols-1 gap-8 sm:gap-10 md:grid-cols-3 lg:gap-12">
           
           {/* Connecting Line (Desktop only) - Ligger bakom korten */}
-          <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 border-t-2 border-dashed border-border -z-10 opacity-60"></div>
+          <div className="absolute left-[16%] right-[16%] top-10 -z-10 hidden h-0.5 border-t-2 border-dashed border-border opacity-60 md:block lg:top-12" />
 
           {steps.map((step, idx) => (
             <Reveal key={step.title} variant="up" delay={idx * 150}>
               <div className="relative flex flex-col items-center text-center group">
                 
                 {/* Number & Icon Circle */}
-                <div className="relative mb-8">
-                  <div className="w-24 h-24 rounded-full bg-card border border-border shadow-xl shadow-black/5 flex items-center justify-center relative z-10 group-hover:scale-105 group-hover:border-primary/30 transition-all duration-300">
+                <div className="relative mb-6 sm:mb-8">
+                  <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border border-border bg-card shadow-xl shadow-black/5 transition-all duration-300 group-hover:scale-105 group-hover:border-primary/30 sm:h-24 sm:w-24">
                     
                     {/* Nummerbadge */}
-                    <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-lg border-2 border-background">
+                    <div className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-primary text-xs font-bold text-primary-foreground shadow-lg sm:-right-2 sm:-top-2 sm:h-8 sm:w-8 sm:text-sm">
                       {idx + 1}
                     </div>
                     
                     {/* Ikon */}
-                    <step.icon size={32} className="text-primary opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-transform duration-300" />
+                    <step.icon className="h-7 w-7 text-primary opacity-80 transition-transform duration-300 group-hover:scale-110 group-hover:opacity-100 sm:h-8 sm:w-8" />
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="space-y-4 px-4">
-                  <h3 className="text-2xl font-bold text-foreground group-hover:text-pop transition-colors">
+                <div className="space-y-3 px-2 sm:space-y-4 sm:px-4">
+                  <h3 className="text-xl font-bold text-foreground transition-colors group-hover:text-foreground sm:text-2xl">
                     {step.title}
                   </h3>
-                  <p className="text-base text-muted-foreground leading-relaxed">
+                  <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
                     {step.desc}
                   </p>
                 </div>

@@ -1,3 +1,4 @@
+import { SectionBadge } from "@/components/ui/section-badge";
 export const dynamic = "force-static";
 
 const faqs = [
@@ -13,6 +14,7 @@ export default function FaqPage() {
   return (
     <main className="container-page">
       <section className="section">
+        <SectionBadge text="Hjälpcenter" />
         <h1 className="h1 mb-6">Vanliga frågor</h1>
         <div className="grid gap-4">
           {faqs.map((f, i) => (
@@ -26,4 +28,3 @@ export default function FaqPage() {
     </main>
   );
 }
-

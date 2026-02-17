@@ -30,20 +30,11 @@ export const Hero = ({
     <section className="relative z-10 pt-8 sm:pt-12 md:pt-16 pb-12 sm:pb-16 md:pb-20 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-20 items-center overflow-hidden">
       
       <div className="space-y-4 sm:space-y-6 md:space-y-8 relative z-20">
-        
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-bold tracking-wide uppercase">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          För Fastighetsbolag
-        </div>
-
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-slate-900 leading-[1.1]">
           {title || defaultTitle}
         </h1>
         
-        <p className="text-base sm:text-lg md:text-xl text-slate-600 leading-relaxed font-medium max-w-lg">
+        <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed font-medium max-w-lg">
           {description || defaultDescription}
         </p>
         
@@ -53,7 +44,7 @@ export const Hero = ({
           {/* Primary CTA -> scrollar till #bokning */}
           <Link
             href={primaryCtaLink}
-            className="flex-1 sm:flex-none bg-slate-900 text-white px-4 sm:px-8 h-12 sm:h-14 rounded-xl font-bold hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base whitespace-nowrap"
+            className="flex-1 sm:flex-none bg-primary text-white px-4 sm:px-8 h-12 sm:h-14 rounded-xl font-bold hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base whitespace-nowrap"
           >
             {primaryCtaText}
             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -87,7 +78,7 @@ export const Hero = ({
               <div className="bg-emerald-100 text-emerald-700 px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-xs font-bold flex items-center gap-1">
                 <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-emerald-500"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-pop-contrast"></span>
                 </span>
                 Live
               </div>
@@ -97,7 +88,7 @@ export const Hero = ({
               <div className="bg-slate-50 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-200">
                 <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">Visningar</div>
                 <div className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 mb-0.5 sm:mb-1">25.8k</div>
-                <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-emerald-600">
+                <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-pop-contrast">
                   <TrendingUp className="w-2 h-2 sm:w-3 sm:h-3" />
                   +74%
                 </div>
@@ -106,7 +97,7 @@ export const Hero = ({
               <div className="bg-slate-50 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-200">
                 <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">Klick</div>
                 <div className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 mb-0.5 sm:mb-1">6.4k</div>
-                <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-emerald-600">
+                <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-pop-contrast">
                   <TrendingUp className="w-2 h-2 sm:w-3 sm:h-3" />
                   +61%
                 </div>
@@ -115,7 +106,7 @@ export const Hero = ({
               <div className="bg-slate-50 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-200">
                 <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">Ansökn.</div>
                 <div className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 mb-0.5 sm:mb-1">852</div>
-                <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-emerald-600">
+                <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-pop-contrast">
                   <TrendingUp className="w-2 h-2 sm:w-3 sm:h-3" />
                   +38%
                 </div>
@@ -128,10 +119,10 @@ export const Hero = ({
                 {[25, 30, 45, 55, 65, 88, 100].map((height, i) => (
                   <div 
                     key={i}
-                    className="flex-1 bg-gradient-to-t from-emerald-400 to-emerald-300 rounded-t-lg relative overflow-hidden" 
+                    className="flex-1 bg-primary rounded-t-lg relative overflow-hidden" 
                     style={{height: `${height}%`}}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-t from-white/0 to-white/40"></div>
+                    <div className="absolute inset-0"></div>
                     {i === 6 && (
                       <>
                         <div className="absolute inset-0 shadow-lg shadow-emerald-500/30 rounded-t-lg"></div>

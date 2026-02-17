@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
+import { SectionBadge } from "@/components/ui/section-badge";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ ssn: "", email: "", password: "" });
@@ -56,7 +57,8 @@ export default function RegisterPage() {
 
   return (
     <main className="container-page">
-      <section className="section" style={{ maxWidth: 520, margin: '0 auto' }}>
+      <section className="section mx-auto max-w-[520px]">
+        <SectionBadge text="Kom igång" />
         <h1 className="h1 mb-4">Skapa konto</h1>
 
         <form onSubmit={onSubmit} className="form card shadow-soft">
@@ -107,7 +109,7 @@ export default function RegisterPage() {
           </Button>
 
           {error && (
-            <p className="subtle" style={{ color: 'crimson' }} role="alert">{error}</p>
+            <p className="text-sm text-destructive" role="alert">{error}</p>
           )}
         </form>
       </section>

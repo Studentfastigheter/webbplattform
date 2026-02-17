@@ -25,7 +25,7 @@ function svgIcon(color: string, size = 28, height = 42) {
   });
 }
 
-const markerIcon = svgIcon("#0a7a4a", 32, 48);
+const markerIcon = svgIcon("#476e66", 32, 48);
 
 export default function ListingMap({
   lat,

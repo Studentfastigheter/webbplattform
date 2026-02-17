@@ -12,8 +12,7 @@ const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 // --- FÄRGPALETT FRÅN DIN BILD ---
 const COLORS = {
   primary: "#004225",    // British Racing Green (Bakgrund)
-  white: "#FEFEFE",      // White as Heaven (Rubriker/Ikoner)
-  lightText: "#DFDFE2",  // Wayward Wind (Brödtext/Länkar)
+  lightestText: "#EFEFEF", // White Heaven (ljusaste textton)
   accent: "#708A83",     // Misty Moor (Hover-effekter/Borders)
   darkAccent: "#476E66", // Pond Newt (Sekundär bakgrund vid behov)
 };
@@ -83,7 +82,7 @@ export default function SiteFooter() {
 
               {/* Beskrivning - Border-l-2 skapar sträcket till höger om loggan */}
               <div className="border-l-2 pl-5 py-1" style={{ borderColor: COLORS.accent }}>
-                <Text className="max-w-md text-sm font-light leading-relaxed" style={{ color: COLORS.lightText }}>
+                <Text className="max-w-md text-sm font-light leading-relaxed" style={{ color: COLORS.lightestText }}>
                   Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.
                 </Text>
               </div>
@@ -98,7 +97,7 @@ export default function SiteFooter() {
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="transition-colors hover:opacity-80"
-                  style={{ color: COLORS.white }}
+                  style={{ color: COLORS.lightestText }}
                 >
                   {social.icon}
                 </a>
@@ -107,15 +106,15 @@ export default function SiteFooter() {
 
             {/* Nyhetsbrev Box 
             <div className="mt-4 w-full max-w-md rounded-2xl bg-white/5 p-8 backdrop-blur-sm border" style={{ borderColor: COLORS.accent }}>
-              <Text variant="small" className="mb-2 font-bold uppercase tracking-wider" style={{ color: COLORS.white }}>
+              <Text variant="small" className="mb-2 font-bold uppercase tracking-wider" style={{ color: COLORS.lightestText }}>
                 Håll dig uppdaterad
               </Text>
-              <Text className="mb-6 text-sm font-light" style={{ color: COLORS.lightText }}>
+              <Text className="mb-6 text-sm font-light" style={{ color: COLORS.lightestText }}>
                 Få de senaste studentbostäderna och nyheterna direkt i din inkorg.
               </Text>
               <button 
                 className="rounded px-6 py-3 text-xs font-bold uppercase tracking-wide transition-colors hover:bg-gray-100"
-                style={{ backgroundColor: COLORS.white, color: COLORS.primary }}
+                style={{ backgroundColor: COLORS.lightestText, color: COLORS.primary }}
               >
                 Prenumerera
               </button>
@@ -133,7 +132,7 @@ export default function SiteFooter() {
                 { title: "CampusLyan", links: COMPANY_LINKS }
               ].map((section, idx) => (
                 <div key={idx}>
-                  <div className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest" style={{ color: COLORS.white }}>
+                  <div className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest" style={{ color: COLORS.lightestText }}>
                     <span className="h-4 w-[2px]" style={{ backgroundColor: COLORS.accent }}></span>
                     {section.title}
                   </div>
@@ -143,7 +142,7 @@ export default function SiteFooter() {
                         <a 
                           href={link.href} 
                           className="text-xs font-bold uppercase tracking-wide transition-colors hover:underline hover:underline-offset-4"
-                          style={{ color: COLORS.lightText }}
+                          style={{ color: COLORS.lightestText }}
                           // Hover-färg sätts via klass eller style om man vill vara specifik, här kör vi standard hover effekt
                         >
                           {link.label}
@@ -160,12 +159,12 @@ export default function SiteFooter() {
 
         {/* BOTTOM BAR */}
         <div className="mt-20 flex flex-col items-start justify-between border-t pt-6 text-xs font-medium sm:flex-row sm:items-center"
-             style={{ borderColor: COLORS.accent, color: COLORS.lightText }}>
+             style={{ borderColor: COLORS.accent, color: COLORS.lightestText }}>
           <div>
             Copyright © {year} CampusLyan. Alla rättigheter förbehållna.
           </div>
           
-          <div className="mt-4 flex items-center gap-2 cursor-pointer transition-colors hover:text-white sm:mt-0">
+          <div className="mt-4 flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80 sm:mt-0">
             <HiGlobeAlt className="text-lg" />
             <span className="uppercase tracking-wide">Svenska</span>
             <span className="text-[10px]">▼</span>

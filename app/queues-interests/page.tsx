@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { SectionBadge } from "@/components/ui/section-badge";
 
 type QueueEntry = { companyId:number; companyName:string; joinedAt:string; queueDays:number };
 type Interest = { listingId:number; title:string; city:string; price:number; imageUrl?:string|null; companyName?:string|null; createdAt:string };
@@ -23,11 +24,12 @@ export default function QueuesAndInterestsPage() {
   }, [token, ready]);
 
   if (!ready) return <main className="container-page"><section className="section">Laddar…</section></main>;
-  if (err) return <main className="container-page"><section className="section" style={{color:'crimson'}}>{err}</section></main>;
+  if (err) return <main className="container-page"><section className="section text-destructive">{err}</section></main>;
 
   return (
     <main className="container-page">
       <section className="section">
+        <SectionBadge text="Min profil" />
         <h1 className="h1 mb-6">Köer & intressen</h1>
         <div className="grid gap-8 lg:grid-cols-2">
           <div>

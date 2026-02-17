@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@heroui/button';
+import { SectionBadge } from "@/components/ui/section-badge";
 
 export default function LoginPage() {
   const { login, ready } = useAuth();
@@ -31,7 +32,8 @@ export default function LoginPage() {
 
   return (
     <main className="container-page">
-      <section className="section" style={{ maxWidth: 520, margin: '0 auto' }}>
+      <section className="section mx-auto max-w-[520px]">
+        <SectionBadge text="Välkommen tillbaka" />
         <h1 className="h1 mb-4">Logga in</h1>
         <form onSubmit={onSubmit} className="form card shadow-soft">
           <div className="fieldset">
@@ -52,7 +54,7 @@ export default function LoginPage() {
             {loading ? "Loggar in…" : "Logga in"}
           </Button>
         </form>
-        {err && <p className="subtle" style={{ color: 'crimson', marginTop: 12 }}>{err}</p>}
+        {err && <p className="mt-3 text-sm text-destructive">{err}</p>}
       </section>
     </main>
   );

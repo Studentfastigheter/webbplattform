@@ -39,7 +39,7 @@ export default function Suggested() {
           {items.map((l) => (
             <Link key={l.id} href={`/listings/${l.id}`} className="block">
               <article className="card shadow-soft" style={{ width: 260 }}>
-                <div className="relative w-full h-40 rounded-md overflow-hidden mb-3 bg-gray-100">
+                <div className="relative w-full h-40 rounded-md overflow-hidden mb-3 bg-card">
                   <SkeletonImage
                     src={(l.images?.[0] ?? l.imageUrl) || '/placeholder.svg'}
                     alt={l.title}

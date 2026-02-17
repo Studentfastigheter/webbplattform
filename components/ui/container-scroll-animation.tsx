@@ -5,9 +5,11 @@ import { useScroll, useTransform, motion, MotionValue } from "framer-motion";
 export const ContainerScroll = ({
   titleComponent,
   children,
+  disableAnimation = false,
 }: {
   titleComponent: string | React.ReactNode;
   children: React.ReactNode;
+  disableAnimation?: boolean;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -45,9 +47,18 @@ export const ContainerScroll = ({
           perspective: "1000px",
         }}
       >
-        <Header translate={translate} titleComponent={titleComponent} />
+        <Header
+          translate={translate}
+          titleComponent={titleComponent}
+          disableAnimation={disableAnimation}
+        />
         {isLargeScreen && (
-          <Card rotate={rotate} translate={translate} scale={scale}>
+          <Card
+            rotate={rotate}
+            translate={translate}
+            scale={scale}
+            disableAnimation={disableAnimation}
+          >
             {children}
           </Card>
         )}
@@ -56,7 +67,19 @@ export const ContainerScroll = ({
   );
 };
 
-export const Header = ({ translate, titleComponent }: any) => {
+export const Header = ({
+  translate,
+  titleComponent,
+  disableAnimation = false,
+}: {
+  translate: MotionValue<number>;
+  titleComponent: string | React.ReactNode;
+  disableAnimation?: boolean;
+}) => {
+  if (disableAnimation) {
+    return <div className="div max-w-5xl mx-auto text-center">{titleComponent}</div>;
+  }
+
   return (
     <motion.div
       style={{
@@ -72,13 +95,25 @@ export const Header = ({ translate, titleComponent }: any) => {
 export const Card = ({
   rotate,
   scale,
+  disableAnimation = false,
   children,
 }: {
   rotate: MotionValue<number>;
   scale: MotionValue<number>;
   translate: MotionValue<number>;
+  disableAnimation?: boolean;
   children: React.ReactNode;
 }) => {
+  if (disableAnimation) {
+    return (
+      <div className="max-w-5xl md:-mt-12 mx-auto h-[40rem] w-full border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl">
+        <div className=" h-full w-full  overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-900 md:rounded-2xl md:p-4 ">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       style={{
@@ -95,4 +130,3 @@ export const Card = ({
     </motion.div>
   );
 };
-

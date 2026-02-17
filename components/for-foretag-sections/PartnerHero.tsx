@@ -1,18 +1,21 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { ArrowDown, ShieldCheck, TrendingUp, Users } from "lucide-react";
+import { ArrowDown } from "lucide-react";
+import { SectionBadge } from "@/components/ui/section-badge";
 
 export const TrustHero = () => {
   return (
-    <section className="relative bg-white border-b border-slate-100 overflow-hidden">
+    <section className="relative bg-background border-b border-border overflow-hidden">
       
       {/* --- Bakgrundseffekter (Subtil premium-känsla) --- */}
-      <div className="absolute inset-0  from-slate-50 via-white to-white"></div>
+      <div className="absolute inset-0"></div>
       <div className="absolute top-0 inset-x-0 h-px"></div>
 
       <div className="relative container mx-auto px-6 max-w-5xl pt-24 pb-20 lg:pt-32 lg:pb-24 text-center">
+        <div className="flex justify-center">
+          <SectionBadge text="Partnerskap" />
+        </div>
         
         {/* --- Top Badge --- 
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -26,15 +29,15 @@ export const TrustHero = () => {
         </div>
 */}
         {/* --- Huvudrubrik --- */}
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-8 text-balance">
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-8 text-balance">
           Vi skapar förtroende mellan <br className="hidden md:block"/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-600">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-pop-contrast">
              studenter och bostadsmarknad.
           </span>
         </h1>
 
         {/* --- Ingress --- */}
-        <p className="text-xl text-slate-500 leading-relaxed max-w-2xl mx-auto mb-12">
+        <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-12">
           En plattform byggd för studenter, av studenter – i nära samarbete med landets ledande bostadsaktörer.
         </p>
 
@@ -69,7 +72,7 @@ export const TrustHero = () => {
         </div>
 */}
         {/* --- Scroll Indicator --- */}
-        <div className="animate-bounce text-slate-300 flex justify-center">
+        <div className="animate-bounce text-muted-foreground/60 flex justify-center">
             <ArrowDown size={24} />
         </div>
 

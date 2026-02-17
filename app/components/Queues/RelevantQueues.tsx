@@ -58,7 +58,7 @@ export default function RelevantQueues() {
           >
             {posting ? 'Lägger till…' : 'Gå med i alla köer nära skolan'}
           </Button>
-          {msg && <div className="text-sm text-brand mt-2">{msg}</div>}
+          {msg && <div className="mt-2 text-sm text-primary">{msg}</div>}
         </div>
       )}
       <div className="grid gap-3 sm:grid-cols-2">

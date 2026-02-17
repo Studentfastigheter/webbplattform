@@ -24,7 +24,7 @@ export const LogoMarquee = ({
     <div className={`w-full max-w-7xl mx-auto px-4 py-6 ${className}`}>
       
       <div className="relative flex items-center justify-center mb-6">
-        <p className="text-sm text-gray-500 text-center font-medium">
+        <p className="text-sm text-muted-foreground text-center font-medium">
           Byggt av personer från
         </p>
       </div>

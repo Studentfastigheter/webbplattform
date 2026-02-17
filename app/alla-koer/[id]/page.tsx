@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import ListingCard from "@/app/components/Listings/ListingCard";
 import { Button } from "@heroui/button";
+import { SectionBadge } from "@/components/ui/section-badge";
 
 type Company = { id: number; name: string };
 type Listing = {
@@ -82,15 +83,18 @@ export default function QueueDetailPage() {
   };
 
   if (loading) return <main className="container-page"><section className="section">Laddar…</section></main>;
-  if (error) return <main className="container-page"><section className="section" style={{color:'crimson'}}>{error}</section></main>;
+  if (error) return <main className="container-page"><section className="section text-destructive">{error}</section></main>;
   if (!company) return <main className="container-page"><section className="section">Kön hittades inte.</section></main>;
 
   return (
     <main className="container-page">
       <section className="section space-y-3">
-        <Link href="/alla-koer" className="text-sm text-muted hover:text-brand">← Tillbaka till alla köer</Link>
+        <Link href="/alla-koer" className="text-sm text-muted hover:text-primary">← Tillbaka till alla köer</Link>
         <div className="flex items-center justify-between">
-          <h1 className="h1">{company.name}</h1>
+          <div>
+            <SectionBadge text="Bostadskö" />
+            <h1 className="h1">{company.name}</h1>
+          </div>
           {user && (
             <Button
               color="success"
@@ -102,7 +106,7 @@ export default function QueueDetailPage() {
             </Button>
           )}
         </div>
-        {joinMsg && <div className="text-brand">{joinMsg}</div>}
+        {joinMsg && <div className="text-primary">{joinMsg}</div>}
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-4">
             <h2 className="h2">Nuvarande annonser</h2>

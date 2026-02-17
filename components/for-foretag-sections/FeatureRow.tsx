@@ -19,10 +19,10 @@ export const FeatureRow = ({ tag, title, description, flipped = false, children 
       {/* Text Column */}
       <div className={`space-y-8 ${flipped ? 'lg:order-2' : 'lg:order-1'} order-2`}>
         <div>
-          <span className="text-emerald-600 font-bold uppercase tracking-wider text-xs mb-2 block">{tag}</span>
-          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">{title}</h2>
+          <span className="text-primary font-bold uppercase tracking-wider text-xs mb-2 block">{tag}</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight">{title}</h2>
         </div>
-        <p className="text-lg text-slate-600 leading-relaxed">
+        <p className="text-lg text-muted-foreground leading-relaxed">
           {description}
         </p>
       </div>

@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { Button } from "@heroui/button";
+import { SectionBadge } from "@/components/ui/section-badge";
 
 export default function HyraUtPage() {
   return (
     <main className="container-page">
       <section className="section space-y-4">
+        <SectionBadge text="För uthyrare" />
         <h1 className="h1">Hyra ut ett rum</h1>
         <p className="text-muted max-w-2xl">
           Har du ett extra rum eller en del av din bostad du vill hyra ut till en student? Publicera en annons på CampusLyan – det är enkelt och gratis att komma igång.

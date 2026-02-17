@@ -23,12 +23,11 @@ export default function MapSection() {
   return (
     <section className="mt-16 space-y-4">
       <h2 className="text-2xl sm:text-3xl font-bold">Karta — lediga lägenheter</h2>
-      <p className="text-gray-600">Zooma och klicka på markörerna för detaljer. {school ? `(avstånd till ${school.name})` : ''}</p>
+      <p className="text-muted">Zooma och klicka på markörerna för detaljer. {school ? `(avstånd till ${school.name})` : ''}</p>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-destructive">{error}</p>}
       {!data && !error && <p>Laddar karta…</p>}
       {data && <MapView listings={data} />}
     </section>
   );
 }
-

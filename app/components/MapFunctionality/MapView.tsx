@@ -41,7 +41,7 @@ function svgIcon(color: string, size = 28, height = 42) {
 }
 
 const iconDefault = svgIcon("#004225");           // CampusLyan-grön
-const iconHighlight = svgIcon("#0a7a4a", 32, 48); // större & ljusare vid hover/selekt
+const iconHighlight = svgIcon("#476e66", 32, 48); // större vid hover/selekt
 
 function priceIconHtml(price?: number) {
   const label = typeof price === 'number' ? `${price} kr/mån` : '—';

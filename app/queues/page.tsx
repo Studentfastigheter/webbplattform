@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { SectionBadge } from "@/components/ui/section-badge";
 
 type QueueEntry = {
   companyId: number;
@@ -36,7 +37,7 @@ export default function QueuesPage() {
   if (err)
     return (
       <main className="container-page">
-        <section className="section" style={{ color: "crimson" }}>
+        <section className="section text-destructive">
           {err}
         </section>
       </main>
@@ -45,6 +46,7 @@ export default function QueuesPage() {
   return (
     <main className="container-page">
       <section className="section">
+        <SectionBadge text="Min profil" />
         <h1 className="h1 mb-4">Mina köer</h1>
         {items.length === 0 ? (
           <p className="subtle">Du står inte i någon kö ännu.</p>

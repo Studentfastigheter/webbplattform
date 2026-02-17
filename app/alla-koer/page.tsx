@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import RelevantQueues from "@/app/components/Queues/RelevantQueues";
 import { Button } from "@heroui/button";
+import { SectionBadge } from "@/components/ui/section-badge";
 
 type Company = { id: number; name: string };
 
@@ -46,13 +47,14 @@ export default function AllQueuesPage() {
   return (
     <main className="container-page">
       <section className="section space-y-4">
+        <SectionBadge text="Bostadsköer" />
         <h1 className="h1">Våra köer</h1>
         <p className="text-muted max-w-2xl">
           Här hittar du alla bostadsköer vi erbjuder. Klicka in på en kö för att läsa mer och se aktuella annonser.
         </p>
 
         {loading && <div>Laddar…</div>}
-        {error && <div style={{ color: "crimson" }}>{error}</div>}
+        {error && <div className="text-destructive">{error}</div>}
 
         {!loading && !error && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -82,7 +84,7 @@ export default function AllQueuesPage() {
           </div>
         )}
 
-        {joinMsg && <div className="text-brand">{joinMsg}</div>}
+        {joinMsg && <div className="text-primary">{joinMsg}</div>}
       </section>
 
       <section className="section space-y-3">

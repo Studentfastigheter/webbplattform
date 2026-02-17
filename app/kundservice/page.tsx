@@ -1,9 +1,11 @@
+import { SectionBadge } from "@/components/ui/section-badge";
 export const dynamic = "force-static";
 
 export default function KundservicePage() {
   return (
     <main className="container-page">
       <section className="section">
+        <SectionBadge text="Support" />
         <h1 className="h1 mb-4">Kundservice & kontakt</h1>
         <p className="text-muted mb-6">Behöver du hjälp? Vi finns här för dig.</p>
 
@@ -35,4 +37,3 @@ export default function KundservicePage() {
     </main>
   );
 }
-

@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSchool } from "@/context/SchoolContext";
 import { Button } from "@heroui/button";
 import { SkeletonImage } from "@/components/ui/skeleton-image";
+import { SectionBadge } from "@/components/ui/section-badge";
 
 const ListingMap = dynamic(() => import("@/app/components/Listings/ListingMap"), {
   ssr: false,
@@ -156,7 +157,7 @@ export default function ListingDetailPage() {
 
   if (error) {
     return renderFallback(
-      <div className="card text-center text-red-600">{error}</div>,
+      <div className="card text-center text-destructive">{error}</div>,
     );
   }
 
@@ -183,7 +184,7 @@ export default function ListingDetailPage() {
         <section className="mx-auto max-w-5xl grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <div>
             <div
-              className="relative w-full h-72 rounded-3xl overflow-hidden bg-gray-100 mb-6 group cursor-zoom-in shadow-lg"
+              className="relative w-full h-72 rounded-3xl overflow-hidden bg-card mb-6 group cursor-zoom-in shadow-lg"
               onClick={() => setLightboxOpen(true)}
               role="button"
             >
@@ -204,7 +205,7 @@ export default function ListingDetailPage() {
                     isIconOnly
                     variant="light"
                     radius="full"
-                    className="absolute top-1/2 left-3 -translate-y-1/2 bg-white/80 text-slate-900 hover:bg-white"
+                    className="absolute top-1/2 left-3 -translate-y-1/2 bg-background/90 text-foreground hover:bg-background"
                     onClick={event => {
                       event.stopPropagation();
                       go(-1);
@@ -218,7 +219,7 @@ export default function ListingDetailPage() {
                     isIconOnly
                     variant="light"
                     radius="full"
-                    className="absolute top-1/2 right-3 -translate-y-1/2 bg-white/80 text-slate-900 hover:bg-white"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 bg-background/90 text-foreground hover:bg-background"
                     onClick={event => {
                       event.stopPropagation();
                       go(1);
@@ -255,6 +256,7 @@ export default function ListingDetailPage() {
               </div>
             )}
 
+            <SectionBadge text="Annons" />
             <h1 className="h1 mb-2">{data.title}</h1>
             <div className="text-muted mb-4">
               {data.city}
@@ -337,7 +339,7 @@ export default function ListingDetailPage() {
           {isPrivate && "companyId" in data && (data as ListingPrivate).companyId && (
             <Actions companyId={(data as ListingPrivate).companyId!} listingId={data.id} onMessage={setActionMsg} />
           )}
-          {actionMsg && <div className="text-brand">{actionMsg}</div>}
+          {actionMsg && <div className="text-primary">{actionMsg}</div>}
           <div className="card">
             <div className="font-semibold mb-1">Nära aktiviteter</div>
             {!activities && <div className="text-sm text-muted">Laddar…</div>}
