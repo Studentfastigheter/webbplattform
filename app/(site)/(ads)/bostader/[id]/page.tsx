@@ -157,8 +157,8 @@ export default function ListingDetailPage() {
   }, [loading, error, listing, advertiser, applySuccess, applyError, galleryImages, handleApply, applying]);
 
   return (
-    <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
-      <div className="flex w-full flex-col gap-8">{content}</div>
+    <main className="container mx-auto px-3 pb-8 pt-4 sm:px-4 sm:pb-12 sm:pt-6 md:px-6 lg:pt-10 max-w-6xl">
+      <div className="flex w-full flex-col gap-6 sm:gap-8">{content}</div>
     </main>
   );
 }

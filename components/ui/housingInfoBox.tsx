@@ -79,18 +79,18 @@ export default function HousingInfoBox({
     <div
       className={`
         inline-flex flex-col
-        rounded-[40px]
+        rounded-[28px] sm:rounded-[40px]
         bg-white
         border border-black/5
         shadow-[0_3px_4px_rgba(0,0,0,0.25)]
         overflow-hidden
         ${className}
       `}
-      style={{ width: width ?? 280, height }}
+      style={{ width: width ?? '100%', height }}
     >
       {/* Rad 1: Hyra + ikoner */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-2">
-        <span className="text-[21px] leading-[24px] font-semibold text-gray-900">
+      <div className="flex items-center justify-between px-4 pt-4 pb-2 sm:px-5 sm:pt-5">
+        <span className="text-lg leading-[22px] font-semibold text-gray-900 sm:text-[21px] sm:leading-[24px]">
           {formattedRent}
         </span>
 
@@ -125,21 +125,21 @@ export default function HousingInfoBox({
       </div>
 
       {/* Rad 2: Inflyttningsdatum */}
-      <div className="px-5 py-1">
-        <span className="text-[12px] leading-[14px] text-[#666666]">
+      <div className="px-4 py-1 sm:px-5">
+        <span className="text-[11px] leading-[13px] text-[#666666] sm:text-[12px] sm:leading-[14px]">
           Inflyttningsdatum: {formattedMoveIn}
         </span>
       </div>
 
       {/* Rad 3: Sista anmälningsdag */}
-      <div className="px-5 pb-2 pt-1">
-        <span className="text-[12px] leading-[14px] text-[#666666]">
+      <div className="px-4 pb-2 pt-1 sm:px-5">
+        <span className="text-[11px] leading-[13px] text-[#666666] sm:text-[12px] sm:leading-[14px]">
           Sista anmälningsdag: {formattedApplyBy}
         </span>
       </div>
 
       {/* Rad 4: Knapp */}
-      <div className="px-5 pb-4 pt-1">
+      <div className="px-4 pb-4 pt-1 sm:px-5">
         <Button
           onClick={onApplyClick}
           disabled={applyDisabled}
@@ -147,7 +147,7 @@ export default function HousingInfoBox({
             w-full h-[31px]
             rounded-full
             bg-[#004323] text-white
-            text-[14px] leading-[16px]
+            text-[13px] leading-[15px] sm:text-[14px] sm:leading-[16px]
             normal-case
             shadow-[0_3px_4px_rgba(0,0,0,0.25)]
             hover:bg-[#00331b]

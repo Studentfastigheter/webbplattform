@@ -161,25 +161,25 @@ export default function BostadGallery({
 
   return (
     <>
-      <section className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
+      <section className="grid gap-3 sm:gap-4 md:grid-cols-[1.5fr_1fr] lg:grid-cols-[1.7fr_1fr]">
         <EditWrapper
           onClick={() => handleImageClick(0)}
           tooltip="Redigera bild"
           isEditable={isEditable}
         >
-          <div className="h-[260px] cursor-pointer relative overflow-hidden rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.08)] sm:h-[340px] lg:h-[420px]">
+          <div className="h-[280px] cursor-pointer relative overflow-hidden rounded-2xl shadow-[0_15px_45px_rgba(0,0,0,0.08)] sm:h-[340px] md:h-[360px] lg:h-[420px] sm:rounded-3xl">
             <Image
               src={mainImage}
               alt={title}
               fill
               priority
-              sizes="(min-width: 1024px) 800px, 100vw"
+              sizes="(min-width: 1024px) 800px, (min-width: 768px) 60vw, 100vw"
               className="object-cover"
             />
           </div>
         </EditWrapper>
 
-        <div className="grid h-[260px] grid-cols-2 grid-rows-2 gap-4 sm:h-[340px] lg:h-[420px]">
+        <div className="grid h-[280px] grid-cols-2 grid-rows-2 gap-3 sm:gap-4 sm:h-[340px] md:h-[360px] lg:h-[420px]">
           {thumbs.map((src, idx) => {
             const imgIndex = idx + 1;
             return (
@@ -189,12 +189,12 @@ export default function BostadGallery({
                   tooltip="Redigera bild"
                   isEditable={isEditable}
                 >
-                  <div className="h-full relative cursor-pointer overflow-hidden rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.05)] group">
+                  <div className="h-full relative cursor-pointer overflow-hidden rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.05)] group sm:rounded-2xl">
                     <Image
                       src={src}
                       alt={`${title} - bild ${idx + 2}`}
                       fill
-                      sizes="(min-width: 1024px) 400px, 50vw"
+                      sizes="(min-width: 1024px) 400px, (min-width: 768px) 30vw, 50vw"
                       className="object-cover"
                     />
                   </div>

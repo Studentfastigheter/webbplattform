@@ -99,16 +99,16 @@ export default function Annons({
 
     return (
         <>
-            <div className="m-2">
-                <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
+            <div className="px-2 py-4 sm:px-4 sm:py-6 md:px-6 md:py-8">
+                <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 sm:gap-8 md:gap-10">
                     <BostadGallery isEditable={isEditing} title={listing.title} images={listing.images} />
                     <BostadAbout isEditable={isEditing} listing={listing} />
                     {advertiser && <BostadLandlord advertiser={advertiser} />}
                 </div>
             </div>
-            <div className="m-2 fixed -bottom-2 -right-2 left-54 px-4 py-4 bg-brand flex gap-4 items-center">
-                <p className="text-white text-sm">{modeText[isEditing ? "edit" : "preview"].text}</p>
-                <Button variant={"outline"} className="m-0!" onClick={() => setIsEditing(prev => !prev)}>{modeText[isEditing ? "edit" : "preview"].button}</Button>
+            <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-brand flex flex-wrap gap-3 items-center justify-center sm:gap-4 sm:py-4 md:left-auto md:bottom-2 md:right-2 md:rounded-lg">
+                <p className="text-white text-xs sm:text-sm">{modeText[isEditing ? "edit" : "preview"].text}</p>
+                <Button variant={"outline"} className="text-xs sm:text-sm" onClick={() => setIsEditing(prev => !prev)}>{modeText[isEditing ? "edit" : "preview"].button}</Button>
             </div>
         </>
     )
