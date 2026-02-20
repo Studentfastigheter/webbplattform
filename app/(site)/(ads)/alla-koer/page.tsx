@@ -51,7 +51,6 @@ export default function Page() {
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-    const [showScrollTop, setShowScrollTop] = useState(false);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -211,14 +210,6 @@ export default function Page() {
         return () => observer.disconnect();
     }, [filteredQueues.length, hasMore, loading, loadingMore]);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setShowScrollTop(window.scrollY > 320);
-        };
-        handleScroll();
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
 
     return (
       <main className="flex flex-col gap-8 pb-12 pt-4">
@@ -312,16 +303,6 @@ export default function Page() {
             )}
           </FieldSet>
         </section>
-        {showScrollTop && (
-          <button
-            type="button"
-            aria-label="Scrolla till toppen"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-6 right-6 z-20 rounded-full bg-black px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-black/90"
-          >
-            Till toppen
-          </button>
-        )}
       </main>
     );
 }

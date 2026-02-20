@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { listingService } from "@/services/listing-service";
+import { cn } from "@/lib/utils";
 
 type NormalizedAd = {
   id: string;
@@ -50,8 +51,21 @@ const extractImageFromData = (data: unknown): string | null => {
   return null;
 };
 
-const AdSlot = ({ ad, ariaLabel }: { ad?: NormalizedAd; ariaLabel: string }) => (
-  <div className="relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm aspect-[2/5] min-h-[480px] max-h-[760px]">
+const AdSlot = ({
+  ad,
+  ariaLabel,
+  className,
+}: {
+  ad?: NormalizedAd;
+  ariaLabel: string;
+  className?: string;
+}) => (
+  <div
+    className={cn(
+      "relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm",
+      className
+    )}
+  >
     {ad ? (
       <img
         src={ad.src}
@@ -90,7 +104,7 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
             } as NormalizedAd;
           })
           .filter((ad): ad is NormalizedAd => ad !== null);
-        
+
         setAds(normalized);
       } catch (error) {
         console.error("Failed to load ads:", error);
@@ -99,16 +113,49 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
     loadAds();
   }, []);
 
-  const [leftAd, rightAd] = ads;
+  const [firstAd, secondAd] = ads;
 
   return (
     <div className="flex w-full flex-col gap-6 lg:grid lg:grid-cols-[minmax(120px,15vw)_minmax(0,1fr)_minmax(120px,15vw)] lg:items-start">
-      <div className="hidden lg:block sticky top-24 self-start">
-        <AdSlot ad={leftAd} ariaLabel="Vänster annonsyta" />
+      {/* Mobile Top Ad */}
+      <div className="block lg:hidden w-full">
+        <AdSlot
+          ad={firstAd}
+          ariaLabel="Toppannons"
+          className="aspect-[4/1] min-h-[100px]"
+        />
       </div>
-      <div className="w-full min-w-0">{children}</div>
+
+      {/* Desktop Left Ad */}
       <div className="hidden lg:block sticky top-24 self-start">
-        <AdSlot ad={rightAd} ariaLabel="Höger annonsyta" />
+        <AdSlot
+          ad={firstAd}
+          ariaLabel="Vänster annonsyta"
+          className="aspect-[2/5] min-h-[480px] max-h-[760px]"
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="w-full min-w-0">
+        {children}
+
+        {/* Mobile Bottom Ad (inserted after content) */}
+        <div className="block lg:hidden w-full mt-8">
+          <AdSlot
+            ad={secondAd}
+            ariaLabel="Bottenannons"
+            className="aspect-[4/1] min-h-[100px]"
+          />
+        </div>
+      </div>
+
+      {/* Desktop Right Ad */}
+      <div className="hidden lg:block sticky top-24 self-start">
+        <AdSlot
+          ad={secondAd}
+          ariaLabel="Höger annonsyta"
+          className="aspect-[2/5] min-h-[480px] max-h-[760px]"
+        />
       </div>
     </div>
   );

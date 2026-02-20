@@ -36,6 +36,7 @@ export type SearchFilterBarProps = {
   values?: Record<string, FieldValue>;
   onChange?: (values: Record<string, FieldValue>) => void;
   onSubmit?: (values: Record<string, FieldValue>) => void;
+  renderFilter?: () => React.ReactNode;
   className?: string;
 };
 
@@ -65,6 +66,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   values: controlledValues,
   onChange,
   onSubmit,
+  renderFilter,
   className = "",
 }) => {
   const [internalValues, setInternalValues] = useState<Record<string, FieldValue>>({});
@@ -127,11 +129,11 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
       <div
         className="
           relative
-          flex w-full flex-col md:flex-row md:items-center gap-3
+          flex w-full flex-col md:flex-row md:items-center gap-2 md:gap-3
           rounded-3xl md:rounded-[29.25px] border border-black/10
           bg-white shadow-[0_0.9px_3.6px_rgba(0,0,0,0.25)]
           p-4 md:px-5 md:pr-[14px] md:h-[58.5px]
-        "
+        "  
       >
         {/* Vänstra delen – fälten */}
         <div className="flex flex-1 flex-col md:flex-row md:items-stretch gap-4 md:gap-3">
@@ -378,14 +380,19 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
           })}
         </div>
 
-        {/* Sök-knapp */}
-        <div className="mt-4 md:mt-0 w-full md:w-auto">
+        {/* Åtgärdsområde - Sök och Filter */}
+        <div className="mt-4 md:mt-0 w-full md:w-auto flex items-center gap-2">
+          {renderFilter && (
+            <div className="flex-shrink-0 border-r border-black/10 pr-2">
+              {renderFilter()}
+            </div>
+          )}
           <Button
             type="button"
             onClick={handleSubmit}
-            size="icon-lg"
+            size={renderFilter ? "md" : "icon-lg"}
             variant="default"
-            className="w-full md:w-[48px] md:h-[48px] flex items-center justify-center rounded-full"
+            className={renderFilter ? "flex-1 md:flex-none rounded-full h-[40px] md:h-[48px] px-6" : "w-full md:w-[48px] md:h-[48px] flex items-center justify-center rounded-full"}
           >
             <span className="md:hidden mr-2">Sök</span>
             <svg

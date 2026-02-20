@@ -153,7 +153,6 @@ export default function ListingsPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [showScrollTop, setShowScrollTop] = useState(false);
   
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -243,11 +242,6 @@ export default function ListingsPage() {
     return () => observer.disconnect();
   }, [page, totalPages, loading, loadingMore, loadListings]);
 
-  useEffect(() => {
-    const handleScroll = () => setShowScrollTop(window.scrollY > 320);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const totalListingsCount = listings.length;
   const isMapView = view === "karta";
@@ -289,8 +283,8 @@ export default function ListingsPage() {
         <section className="w-full">
           <div className="flex w-full flex-col gap-3 sm:gap-4">
             <div className="flex flex-col lg:flex-row lg:items-start xl:items-center gap-3 sm:gap-4">
-              {/* Search Filter - Responsive width */}
-              <div className="w-full lg:flex-1 lg:min-w-[280px] lg:max-w-2xl">
+              {/* Search Filter - Integrated with filter button */}
+              <div className="w-full lg:flex-1">
                 <SearchFilter3Fields
                   className="w-full"
                   field1={{
@@ -334,21 +328,15 @@ export default function ListingsPage() {
                     })[values.hosts],
                     price: toSearchString(values.price)
                   } as SearchValues)}
+                  // Pass filter props to integrated component
+                  amenities={amenityOptions}
+                  propertyTypes={propertyTypeOptions}
+                  priceHistogram={[1, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 2]}
+                  priceBounds={priceBounds}
+                  initialState={defaultListingsFilterState}
+                  onApply={(state) => setFilters(state)}
+                  onClear={() => setFilters(defaultListingsFilterState)}
                 />
-              </div>
-              
-              {/* Filter Button - Sticks to right on desktop, full width on mobile */}
-              <div className="flex justify-stretch lg:justify-end w-full lg:w-auto">
-                 <ListingsFilterButton
-                   className="w-full lg:w-auto"
-                   amenities={amenityOptions}
-                   propertyTypes={propertyTypeOptions}
-                   priceHistogram={[1, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 2]}
-                   priceBounds={priceBounds}
-                   initialState={defaultListingsFilterState}
-                   onApply={(state) => setFilters(state)}
-                   onClear={() => setFilters(defaultListingsFilterState)}
-                 />
               </div>
             </div>
           </div>
@@ -427,19 +415,6 @@ export default function ListingsPage() {
           </FieldSet>
         </section>
       </div>
-
-      {/* Scroll to Top Button - Responsive positioning and sizing */}
-      {showScrollTop && (
-        <button
-          type="button"
-          aria-label="Scrolla till toppen"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8 z-50 rounded-full bg-black px-4 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-semibold text-white shadow-xl transition transform hover:-translate-y-1 hover:bg-gray-800 active:scale-95"
-        >
-          <span className="hidden sm:inline">Till toppen</span>
-          <span className="sm:hidden">↑</span>
-        </button>
-      )}
     </main>
   );
 }

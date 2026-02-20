@@ -13,6 +13,8 @@ export type FilterButtonProps = {
   onApply?: () => void;
   onClear?: () => void;
   className?: string;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "text";
+  size?: "md" | "sm" | "lg" | "icon" | "icon-lg";
 };
 
 const SliderIcon = () => (
@@ -57,6 +59,8 @@ const FilterButton: React.FC<FilterButtonProps> = ({
   onApply,
   onClear,
   className = "",
+  variant = "ghost",
+  size = "lg",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -92,9 +96,10 @@ const FilterButton: React.FC<FilterButtonProps> = ({
   return (
     <>
       <Button
-        size="lg"
-        variant="ghost"
+        size={size}
+        variant={variant as any}
         onClick={() => setIsOpen(true)}
+        className={className}
       >
           <SliderIcon />
         {triggerLabel}
