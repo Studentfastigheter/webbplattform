@@ -51,6 +51,7 @@ import ConfirmButton from "./ConfirmButton"
 import Link from "next/link"
 import Image from "next/image"
 import { TooltipButton } from "../../../components/Dashboard/TooltipButton"
+import { Applicant, ApplicantsTableProps, Application } from "@/lib/definitions"
 
 const statusVals = {
   accepted: {text: "Accepterad", icon: <CheckCircle className="inline h-4 w-4 text-green-500 mb-0.5"/>},
@@ -75,17 +76,7 @@ const getStatusTranslation = (status: string | undefined) => {
     }
 }
 
-export type Application = {
-  id: string
-  name: string
-  email: string
-  object: string
-  status: "pending" | "reviewed" | "accepted" | "rejected"
-  applicationDateTime?: string
-  createdAt: string
-}
-
-export const columns: ColumnDef<Application>[] = [
+export const columns: ColumnDef<ApplicantsTableProps>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -110,9 +101,9 @@ export const columns: ColumnDef<Application>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "name",
+    accessorKey: "applicantName",
     header: "Namn",
-    cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,   
+    cell: ({ row }) => <div className="font-medium">{row.getValue("applicantName")}</div>,   
   },
   {
     accessorKey: "object",
@@ -130,12 +121,12 @@ export const columns: ColumnDef<Application>[] = [
     ),
   },
   {
-    accessorKey: "createdAt",
+    accessorKey: "appliedAt",
     header: "Ansökningsdatum",
     sortingFn: "datetime",
-    accessorFn: (row) => new Date(row.createdAt),
+    accessorFn: (row) => new Date(row.appliedAt),
     cell: ({ row }) => {
-        const date = new Date(row.getValue("createdAt"))
+        const date = new Date(row.getValue("appliedAt"))
         return (
             <span className="tabular-nums">
               {relativeSwedishDate(date, { maxDays: 7, fallbackFormat: "yyyy-MM-dd" })}
@@ -166,16 +157,24 @@ function updateApplicationStatus(applicationIds: string[], status: string) {
 
 type Props = React.HTMLAttributes<HTMLDivElement> & {
   className?: string
-  applications: Application[]
+  applicantsTableProps: Promise<ApplicantsTableProps[]>
 }
 
 export default function ApplicantsTable({
     className,
-    applications: data,
+    applicantsTableProps,
     ...props
 }: Props) {
+
+  const [data, setData] = React.useState<ApplicantsTableProps[]>([]);
+
+  React.useEffect(() => {
+    applicantsTableProps.then(setData);
+  }, [applicantsTableProps]);
+
+
   const [sorting, setSorting] = React.useState<SortingState>([
-    { id: "createdAt", desc: true },
+    { id: "appliedAt", desc: true },
   ])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -224,9 +223,9 @@ export default function ApplicantsTable({
       <div className="flex items-center py-4 gap-3">
         <Input
           placeholder="Sök ansökningar..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          value={(table.getColumn("applicantName")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
+            table.getColumn("applicantName")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -390,8 +389,8 @@ export default function ApplicantsTable({
                             height={48}
                           />
                           <div>
-                            <div className="mt-2 font-medium">{row.original.name}</div>
-                            <div className="text-sm text-muted-foreground">{row.original.email}</div>
+                            <div className="mt-2 font-medium">{row.original.applicantName}</div>
+                            <div className="text-sm text-muted-foreground">{row.original.applicantEmail}</div>
                           </div>
                         </div>
                       </div>

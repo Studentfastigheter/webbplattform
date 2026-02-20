@@ -28,8 +28,8 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
         />
 
         <MapPin 
-          fill="#202020"
-          className="opacity-90 h-16 w-16 z-1000 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[70%]" 
+          size={64}
+          className="opacity-90 z-1000 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[70%]" 
         />
 
     </div>

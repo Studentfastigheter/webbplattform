@@ -1,4 +1,4 @@
-import { Building2, Calendar } from "lucide-react";
+import { Building2 } from "lucide-react";
 import FilterButton from "../_components/FilterButton";
 import StatisticsContainer from "../_components/Statistics/StatisticsContainer";
 import NewApplications from "../_components/NewApplications";
@@ -29,11 +29,13 @@ const applications = [
     { name: "Anna Andersson", age: 22, address: "Chalmers tvärgata 4" },
 ];
 
+
+
 export default function Home() {
 
   const selectedStatistics: AvailableStatistics[] = ["applications", "views", "interactions", "active_posts"];
   const statisticsPromise: Promise<StatisticProps[]> = getStatistics({ statisticsToFetch: selectedStatistics })
-
+  // const applications = []
 
   return (
     <>

@@ -10,7 +10,7 @@ import React from "react";
 
 
 type FormGroupProps = React.HTMLAttributes<HTMLDivElement> & {
-    title?: string;
+    heading?: string;
     children: React.ReactNode;
     gap?: "sm" | "md" | "lg";
     optional?: boolean;
@@ -18,7 +18,7 @@ type FormGroupProps = React.HTMLAttributes<HTMLDivElement> & {
 };
 
 export function FormGroup({
-    title,
+    heading,
     children,
     gap = "lg",
     optional = false,
@@ -28,7 +28,7 @@ export function FormGroup({
     return (
         <div className="mb-8" {...props}>
             <div className={`flex items-center gap-2 align-middle  ${gap === "sm" ? "mb-1" : gap === "md" ? "mb-2" : "mb-4"}`}>
-                {title && <h2 className={`text-sm font-medium text-neutral-800`}>{title}</h2>}
+                {heading && <h2 className={`text-sm font-medium text-neutral-800`}>{heading}</h2>}
                 {optional && <p className="text-xs text-neutral-500">(valfritt)</p>}
             </div>
             <div className="flex flex-col gap-3">
@@ -107,14 +107,14 @@ export function InputField({
 
 type DragAndDropProps = React.HTMLAttributes<HTMLDivElement> & {
   className?: string,
-  title: string,
+  heading: string,
   maxSize: string,
   supportedFileTypes: string[],
 };
 
 export function ImageUploadField({
   className,
-  title,
+  heading,
   maxSize,
   supportedFileTypes,
   ...props
@@ -134,7 +134,7 @@ export function ImageUploadField({
             <div className="flex items-center justify-center flex-col gap-6 py-6">
                 <Upload size={48} />
                 <div>
-                    <p className="text-xl font-bold mb-1 text-center">{title}</p>
+                    <p className="text-xl font-bold mb-1 text-center">{heading}</p>
                     <p className="text-sm text-neutral-600 text-center">Maxstorlek: <span className="font-medium">{maxSize}</span></p>
                     <p className="text-sm text-neutral-600 text-center">Stödda filtyper: <span className="font-medium">{supportedFileTypes.join(", ")}</span></p>
                 </div>

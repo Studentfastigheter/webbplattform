@@ -38,3 +38,39 @@ export type SkeletonWrapperProps = {
 
 export type AvailableStatistics = "applications" | "views" | "interactions" | "active_posts";
 
+
+
+
+
+export type ApplicationStatus = "pending" | "reviewed" | "rejected" | "accepted";
+
+export type Applicant = {
+    id: string;
+    applicantName: string;
+    applicantAge: number;
+    applicantEmail: string;
+    applicantPhone: string;
+}
+
+export type Application = {
+    id: string;
+    objectId: string;
+    applicantId: string;
+    status: ApplicationStatus;
+    appliedAt: Date;
+}
+
+
+
+export type ObjectDetails = {
+    id: string;
+    title: string;
+    description: string;
+    location: string;
+    floorplanId?: string;
+    requirementProfileId?: string;
+}
+
+
+
+export type ApplicantsTableProps = Omit<Application & Applicant, "applicantId">;

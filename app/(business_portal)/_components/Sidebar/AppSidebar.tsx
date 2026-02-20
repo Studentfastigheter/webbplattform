@@ -55,11 +55,11 @@ const data = {
   navSecondary: {
     heading: null,
     items: [
-    {
-      title: "Inställningar",
-      url: `${dashboardRelPath}/installningar`,
-      icon: Settings,
-    },
+    // {
+    //   title: "Inställningar",
+    //   url: `${dashboardRelPath}/installningar`,
+    //   icon: Settings,
+    // },
   ],},
   documents: {
     heading: "Övrigt",
