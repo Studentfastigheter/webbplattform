@@ -1,10 +1,10 @@
-import { TrendingDown, TrendingUp } from "lucide-react";
-import Container from "./Container";
-import { StatisticProps } from "../_statics/types";
+import { MoveRight, TrendingDown, TrendingUp } from "lucide-react";
+import Container from "../Container";
+import { StatisticProps } from "../../_statics/types";
 
 export default function Statistic({
-    icon,
-    data,
+    Icon,
+    data,     
     label,
     changeInPercent,
     increaseDirection = "up",
@@ -22,8 +22,10 @@ export default function Statistic({
       else if (changeInPercent > 0 && increaseDirection === "down") {
           return "text-red-600";
       }
-      else {
+      else if (changeInPercent < 0 && increaseDirection === "down") {
           return "text-green-600";
+      } else {
+        return "text-neutral-600"
       }
   }
 
@@ -33,7 +35,7 @@ export default function Statistic({
   return (
     <Container padding={"sm"} {...props}>
       <div className="flex gap-2 text-sm text-neutral-400 mb-2">
-        {icon}
+        <Icon size={14} className="text-neutral-400" />
         <p className="tracking-wide">{label}</p>
       </div>
       <div className="flex gap-2">
@@ -43,8 +45,12 @@ export default function Statistic({
         <div className={`flex gap-1 items-end ${changeColorClass}`}>
           {changeInPercent > 0 && (
             <TrendingUp size={20} color="currentColor" />
-          ) || (
+          )} 
+          {(changeInPercent < 0) && (
             <TrendingDown size={20} color="currentColor" />
+          )}
+          {(changeInPercent === 0) && (
+            <MoveRight size={20} color="currentColor" />
           )}
 
           <p className="text-xs font-medium">{changeInPercent.toString().replace(".", ",")} %</p>

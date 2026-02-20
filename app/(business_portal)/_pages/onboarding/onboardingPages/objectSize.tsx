@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MultiselectButton, FormGroup, FormShell, FormSkeleton, InputField } from "@/components/Dashboard/Form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormGroup, FormShell, InputField } from "@/components/Dashboard/Form";
+import { SelectItem } from "@/components/ui/select";
 import { Dropdown } from "@/components/Dashboard/Dropdown";
 
 
@@ -24,9 +24,9 @@ export default function ObjectSize() {
 
 
     return (
-        <FormShell title="Hur stor är bostaden?">
+        <FormShell heading="Hur stor är bostaden?">
 
-            <FormGroup title="Storlek" gap="md">
+            <FormGroup heading="Storlek" gap="md">
                 <InputField
                     placeholder="Ange storlek"
                     type="number"
@@ -36,7 +36,11 @@ export default function ObjectSize() {
                 />
             </FormGroup>
 
-            <FormGroup title="Antal rum" gap="md">
+            <FormGroup 
+                heading="Antal rum" 
+                gap="md"
+                comment="Sovrum är inkluderade i antal rum"
+            >
                 <Dropdown placeholder="Antal rum">
                     {NumberOfRooms.map((room) => (
                         <SelectItem key={room.toString()} value={room.toString()}>
@@ -47,10 +51,9 @@ export default function ObjectSize() {
             </FormGroup>
 
             <FormGroup 
-                title="Antal sovrum" 
+                heading="Antal sovrum" 
                 gap="md" 
                 optional
-                comment="Sovrum är inkluderade i antal rum"
             >
                 <Dropdown placeholder="Antal sovrum">
                     {NumberOfBedrooms.map((bedroom) => (

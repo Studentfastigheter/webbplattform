@@ -1,13 +1,16 @@
 "use client";
 
+import { CircleQuestionMark, Upload } from "lucide-react";
 import { Checkbox } from "../ui/checkbox";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { cn } from "@/lib/utils";
+import Container from "@/app/(business_portal)/_components/Container";
+import React from "react";
 
 
 type FormGroupProps = React.HTMLAttributes<HTMLDivElement> & {
-    title?: string;
+    heading?: string;
     children: React.ReactNode;
     gap?: "sm" | "md" | "lg";
     optional?: boolean;
@@ -15,7 +18,7 @@ type FormGroupProps = React.HTMLAttributes<HTMLDivElement> & {
 };
 
 export function FormGroup({
-    title,
+    heading,
     children,
     gap = "lg",
     optional = false,
@@ -25,7 +28,7 @@ export function FormGroup({
     return (
         <div className="mb-8" {...props}>
             <div className={`flex items-center gap-2 align-middle  ${gap === "sm" ? "mb-1" : gap === "md" ? "mb-2" : "mb-4"}`}>
-                {title && <h2 className={`text-sm font-medium text-neutral-800`}>{title}</h2>}
+                {heading && <h2 className={`text-sm font-medium text-neutral-800`}>{heading}</h2>}
                 {optional && <p className="text-xs text-neutral-500">(valfritt)</p>}
             </div>
             <div className="flex flex-col gap-3">
@@ -102,6 +105,47 @@ export function InputField({
     )
 }
 
+type DragAndDropProps = React.HTMLAttributes<HTMLDivElement> & {
+  className?: string,
+  heading: string,
+  maxSize: string,
+  supportedFileTypes: string[],
+};
+
+export function ImageUploadField({
+  className,
+  heading,
+  maxSize,
+  supportedFileTypes,
+  ...props
+}: DragAndDropProps) {
+
+
+    function handleUploadClick(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
+        e.stopPropagation();
+    }
+
+
+    return (
+        <Container {...props} borderStyle="dashed" className={cn(`border-neutral-400`, className)} onClick={handleUploadClick}>
+            {/* <div className="absolute top-3 right-4 p-2 group">
+                <CircleQuestionMark onClick={handleUploadClick} size={24} className="group-hover:text-neutral-700 transition-all duration-75" />
+            </div> */}
+            <div className="flex items-center justify-center flex-col gap-6 py-6">
+                <Upload size={48} />
+                <div>
+                    <p className="text-xl font-bold mb-1 text-center">{heading}</p>
+                    <p className="text-sm text-neutral-600 text-center">Maxstorlek: <span className="font-medium">{maxSize}</span></p>
+                    <p className="text-sm text-neutral-600 text-center">Stödda filtyper: <span className="font-medium">{supportedFileTypes.join(", ")}</span></p>
+                </div>
+            </div>
+        </Container>
+    )
+}
+
+
+
+
 
 export function FormSkeleton() {
     return (
@@ -121,19 +165,22 @@ export function FormSkeleton() {
 
 type FormShellProps = React.HTMLAttributes<HTMLDivElement> & {
     children: React.ReactNode;
-    title?: string;
+    heading?: React.ReactNode;
+    description?: React.ReactNode;
     className?: string;
 };
 
 export function FormShell({ 
     children,
-    title,
+    heading,
+    description,
     className,
     ...props
 }: FormShellProps) {
     return (
         <div className={cn("max-w-lg mx-auto mt-12", className)} {...props}>
-            {title && <p className="text-xl font-semibold mb-8">{title}</p>}
+            {heading && <p className="text-xl font-semibold mb-2">{heading}</p>}
+            {description && <p className="text-sm text-neutral-600 mb-8 max-w-96">{description}</p>}
             {children}
         </div>
     );

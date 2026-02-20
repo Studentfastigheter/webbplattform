@@ -2,7 +2,7 @@ import Ansokningar from "../../_pages/ansokningar"
 
 
 
-export default function Portal() {
+export default function Applications() {
 
   return (
     <Ansokningar />

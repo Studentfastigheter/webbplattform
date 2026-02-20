@@ -53,7 +53,7 @@ export default function ObjectType2() {
     const [selectedLegalType, setSelectedLegalType] = useState<string | null>(null);
 
     return (
-        <FormShell title="Vilken typ av bostad är det?">
+        <FormShell heading="Vilken typ av bostad är det?">
 
             <FormGroup 
                 className="mb-8" 
@@ -75,7 +75,7 @@ export default function ObjectType2() {
                     />
                 ))}
             </FormGroup>
-            <FormGroup title="Bostadsform" className="mb-8">
+            <FormGroup heading="Bostadsform" className="mb-8">
                 {ObjectLegalTypes.map((type) => (
                     <MultiselectButton
                         key={type.id}

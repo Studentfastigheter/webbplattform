@@ -50,9 +50,9 @@ export default function ObjectType() {
 	
 
     return (
-        <FormShell title="Välj in- och utflyttningsdatum">
+        <FormShell heading="Välj in- och utflyttningsdatum">
 
-            <FormGroup title="Inflyttning" className="mb-8">
+            <FormGroup heading="Inflyttning" className="mb-8">
                 {MOVE_IN_OPTIONS.map((type) => (
                     <MultiselectButton
                         key={type.id}
@@ -95,7 +95,7 @@ export default function ObjectType() {
                 }
             </FormGroup>
             
-            <FormGroup title="Utflyttning">
+            <FormGroup heading="Utflyttning">
                 {MOVE_OUT_OPTIONS.map((option) => (
                     <MultiselectButton
                         key={option.id}

@@ -1,15 +1,45 @@
 "use client";
+
 import Onboarding from "@/app/(business_portal)/_pages/onboarding/onboarding";
-import { Button } from "@/components/ui/button";
-import { use, useState } from "react";
+import { use } from "react";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import NormalButton from "@/app/(business_portal)/_components/NormalButton";
-import { dashboardRelPath } from "@/app/(business_portal)/_statics/variables";
+import dynamic from "next/dynamic";
 
-const MAX_PAGE = 6;
-const path = dashboardRelPath + "/annonser/ny/onboarding/";
+import AddObjectInfo from "@/app/(business_portal)/_pages/onboarding/onboardingPages/addObjectInfo";
+import InfoCoverPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/infoCoverPage";
+import ObjectSize from "@/app/(business_portal)/_pages/onboarding/onboardingPages/objectSize";
+import ObjectTimespan from "@/app/(business_portal)/_pages/onboarding/onboardingPages/objectTimespan";
+import ObjectType from "@/app/(business_portal)/_pages/onboarding/onboardingPages/objectType";
+import ObjectType2 from "@/app/(business_portal)/_pages/onboarding/onboardingPages/objectType2";
 
+const MapPointer = dynamic(() => import("@/app/(business_portal)/_pages/onboarding/onboardingPages/mapPointer"), { ssr: false });
+
+
+const stepPagesList = [
+    [ // Stage 1
+        InfoCoverPage,
+        AddObjectInfo,
+        MapPointer,
+        ObjectType,
+        ObjectType2,
+        ObjectSize,
+        ObjectTimespan
+    ],
+    [ // Stage 2
+        InfoCoverPage,
+        InfoCoverPage,
+        InfoCoverPage,
+        InfoCoverPage,
+    ],
+    [ // Stage 3
+        InfoCoverPage,
+        InfoCoverPage,
+        InfoCoverPage,
+        InfoCoverPage,
+    ],
+]
+
+const MAX_PAGE = stepPagesList.reduce((total, stage) => total + stage.length, 0);
 
 
 function getStageNumber(stage: string): number {
@@ -22,9 +52,10 @@ function getStageNumber(stage: string): number {
     return stageNumber;
 }
 
-function isStageNumberValid(stage: number): boolean {
+export function isStageNumberValid(stage: number): boolean {
     return (stage >= 1 && stage <= MAX_PAGE);
 }
+
 
 
 
@@ -42,27 +73,13 @@ export default function OnboardingStage({
         return notFound();
     }
 
-    const nextPagePossible = isStageNumberValid(stageNumber + 1);
-    const previousPagePossible = isStageNumberValid(stageNumber - 1);
-
-
 
     return (
         <>
-            <Onboarding currentStep={stageNumber} />
-            <div className="fixed bottom-0 left-56 right-0 flex justify-between p-4 bg-white">
-                <NormalButton 
-                    text="Tillbaka"
-                    href={previousPagePossible ? path + (stageNumber - 1).toString() : "#"}
-                    disabled={!previousPagePossible}
-                />
-                <NormalButton 
-                    text="Nästa" 
-                    href={nextPagePossible ? path + (stageNumber + 1).toString() : "#"}
-                    variant="primary"
-                    disabled={!nextPagePossible}
-                />
-            </div>
+            <Onboarding 
+                currentStep={stageNumber} 
+                stepPagesList={stepPagesList}
+            />
         </>
     );
 }
