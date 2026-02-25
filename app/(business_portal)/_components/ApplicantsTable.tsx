@@ -12,15 +12,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -39,69 +36,47 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  getExpandedRowModel,
   type ColumnDef,
   type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
+  type ExpandedState,
 } from "@tanstack/react-table"
-import { Archive, ArrowUpDown, ChevronDown, MoreHorizontal, SquareArrowOutUpRight, Star } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { Archive, CheckCircle, ChevronDown, Clock, House, Search, SquareArrowOutUpRight, Star, X } from "lucide-react"
+import { cn, relativeSwedishDate } from "@/lib/utils"
+import { useEffect, useState } from "react"
 import { ButtonGroup } from "@heroui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import ConfirmButton from "./ConfirmButton"
 import Link from "next/link"
+import Image from "next/image"
+import { TooltipButton } from "../../../components/Dashboard/TooltipButton"
+import { Applicant, ApplicantsTableProps, Application } from "@/lib/definitions"
+
+const statusVals = {
+  accepted: {text: "Accepterad", icon: <CheckCircle className="inline h-4 w-4 text-green-500 mb-0.5"/>},
+  pending: {text: "Väntande", icon: <Clock className="inline h-4 w-4 text-yellow-500 mb-0.5"/>},
+  reviewed: {text: "Granskad", icon: <Search className="inline h-4 w-4 text-blue-500 mb-0.5"/>},
+  rejected: {text: "Avvisad", icon: <X className="inline h-4 w-4 text-red-500 mb-0.5"/>},
+}
+
+const statusWithIcon = (status: string | undefined) => {
+  console.log("Status:", status);
+    if (status && status in statusVals) {
+      return <div className="flex gap-2 items-center">
+        {statusVals[status as keyof typeof statusVals].icon}
+        <p className="capitalize">{statusVals[status as keyof typeof statusVals].text}</p>
+      </div>
+    }
+}
 
 const getStatusTranslation = (status: string | undefined) => {
-    const vals = {
-        pending: "Väntande",
-        reviewed: "Granskad",
-        accepted: "Accepterad",
-        rejected: "Avvisad",
-    }
-
-    if (status && status in vals) {
-        return vals[status as keyof typeof vals];
+    if (status && status in statusVals) {
+      return statusVals[status as keyof typeof statusVals].text;
     }
 }
 
-const data: Application[] = [
-  {
-    id: "m5gr84i9",
-    name: "Bengt Svensson",
-    object: "Chalmers tvärgata lgh 1001",
-    status: "accepted",
-    email: "ken99@example.com",
-  },
-
-    {
-    id: "xj4lm9z2",
-    name: "Anna Karlsson",
-    object: "Chalmers tvärgata lgh 1002",
-    status: "pending",
-    email: "anna.karlsson@example.com",
-  },
-    {
-    id: "a8n3k2p0",
-    name: "Johan Eriksson",
-    object: "Chalmers tvärgata lgh 1003",
-    status: "reviewed",
-    email: "johan.eriksson@example.com",
-  },
-
-
-]
-
-export type Application = {
-  id: string
-  name: string
-  email: string
-  object: string
-  status: "pending" | "reviewed" | "accepted" | "rejected"
-  applicationDateTime?: string
-}
-
-export const columns: ColumnDef<Application>[] = [
+export const columns: ColumnDef<ApplicantsTableProps>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -116,6 +91,7 @@ export const columns: ColumnDef<Application>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        onClick={(e) => e.stopPropagation()}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
@@ -125,21 +101,38 @@ export const columns: ColumnDef<Application>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "name",
+    accessorKey: "applicantName",
     header: "Namn",
-    cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,   
+    cell: ({ row }) => <div className="font-medium">{row.getValue("applicantName")}</div>,   
   },
   {
     accessorKey: "object",
     header: "Objekt",
-    cell: ({ row }) => <div>{row.getValue("object")}</div>,
+    cell: ({ row }) => <div className={cn("flex gap-1", row.getValue("object") == "Bostadskö" && "font-medium")}>
+      {row.getValue("object") == "Bostadskö" && <House size={14} />}
+      {row.getValue("object")}
+      </div>,
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <div className="capitalize">{getStatusTranslation(row.getValue("status"))}</div>
+      statusWithIcon(row.getValue("status"))
     ),
+  },
+  {
+    accessorKey: "appliedAt",
+    header: "Ansökningsdatum",
+    sortingFn: "datetime",
+    accessorFn: (row) => new Date(row.appliedAt),
+    cell: ({ row }) => {
+        const date = new Date(row.getValue("appliedAt"))
+        return (
+            <span className="tabular-nums">
+              {relativeSwedishDate(date, { maxDays: 7, fallbackFormat: "yyyy-MM-dd" })}
+            </span>
+        )
+    },
   },
   {
     id: "actions",
@@ -164,19 +157,32 @@ function updateApplicationStatus(applicationIds: string[], status: string) {
 
 type Props = React.HTMLAttributes<HTMLDivElement> & {
   className?: string
+  applicantsTableProps: Promise<ApplicantsTableProps[]>
 }
 
 export default function ApplicantsTable({
     className,
+    applicantsTableProps,
     ...props
 }: Props) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
+
+  const [data, setData] = React.useState<ApplicantsTableProps[]>([]);
+
+  React.useEffect(() => {
+    applicantsTableProps.then(setData);
+  }, [applicantsTableProps]);
+
+
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: "appliedAt", desc: true },
+  ])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [expanded, setExpanded] = React.useState<ExpandedState>({})
 
   const table = useReactTable({
     data,
@@ -189,11 +195,15 @@ export default function ApplicantsTable({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    getExpandedRowModel: getExpandedRowModel(),
+    onExpandedChange: setExpanded,
+    getRowCanExpand: () => true, // allow all rows to expand
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      expanded,
     },
   })
 
@@ -201,18 +211,38 @@ export default function ApplicantsTable({
     const [selectedStatus, setSelectedStatus] = useState<
     "pending" | "reviewed" | "accepted" | "rejected" | null
     >(null)
+    const [filterQueue, setFilterQueue] = useState(false)
+
+    useEffect(() => {
+      table.getColumn("object")?.setFilterValue(filterQueue ? "Bostadskö" : undefined)
+    }, [filterQueue, table])
+
 
   return (
     <div className={cn(className, "w-full")} {...props}>
       <div className="flex items-center py-4 gap-3">
         <Input
           placeholder="Sök ansökningar..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          value={(table.getColumn("applicantName")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
+            table.getColumn("applicantName")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
+        <TooltipButton
+          variant={filterQueue ? "default" : "outline"}
+          tooltip={
+            filterQueue ? 
+            "Sluta filtrera efter bostadskö." :
+            "Visa endast ansökningarna till bostadskö."
+          }
+          leftIcon={<House className="h-4 w-4" />}
+          onClick={() => setFilterQueue(val => !val)}
+        >
+          {
+            filterQueue ? "Filtrerar bostadskö" : "Filtrera bostadskö"
+          }
+        </TooltipButton>
         {/* Ändra status */}
         {
             table.getFilteredSelectedRowModel().rows.length > 0 && (
@@ -277,9 +307,9 @@ export default function ApplicantsTable({
                     <ConfirmButton 
                         actionLabel="arkivera"
                         selectedItems={table.getFilteredSelectedRowModel().rows.length}
-                        tooltipText="Arkivera markerade"
+                        tooltipText="Arkivera"
                         onConfirm={async () => {
-                            console.log("Arkiverar applikationer")
+                            console.log("Arkiverar ansökningar")
                         }}
                         variant={"outline"}
                     >
@@ -314,9 +344,14 @@ export default function ApplicantsTable({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
+                <React.Fragment key={row.id}>
                 <TableRow
-                  key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    row.toggleExpanded()
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -327,6 +362,42 @@ export default function ApplicantsTable({
                     </TableCell>
                   ))}
                 </TableRow>
+
+                {row.getIsExpanded() && (
+                  <TableRow>
+                    <TableCell colSpan={row.getVisibleCells().length} className="bg-muted/30">
+                      <div className="p-3 flex gap-2">
+                        <Image 
+                          src={"/appartment.jpg"}
+                          alt="Image of the apartment"
+                          width={148}
+                          height={148}
+                          className="rounded-md object-cover"
+                        />
+                        <div className="">
+                          <div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <div className="flex items-center gap-2">
+                          <Image 
+                            src={"/logo.png"} 
+                            alt="Profile picture" 
+                            width={48}
+                            height={48}
+                          />
+                          <div>
+                            <div className="mt-2 font-medium">{row.original.applicantName}</div>
+                            <div className="text-sm text-muted-foreground">{row.original.applicantEmail}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </React.Fragment>
               ))
             ) : (
               <TableRow>

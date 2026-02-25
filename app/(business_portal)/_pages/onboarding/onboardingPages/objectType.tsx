@@ -40,9 +40,9 @@ export default function ObjectType() {
 	const [selectedFurniture, setSelectedFurniture] = useState<string | null>(null);
 
     return (
-        <FormShell title="Vad vill du hyra ut?">
+        <FormShell heading="Vad vill du hyra ut?">
 
-            <FormGroup title="Välj lägenhet" className="mb-8">
+            <FormGroup heading="Välj lägenhet" className="mb-8">
                 {ObjectTypes.map((type) => (
                     <MultiselectButton
                         key={type.id}
@@ -61,7 +61,7 @@ export default function ObjectType() {
                 ))}
             </FormGroup>
             
-            <FormGroup title="Välj möblering">
+            <FormGroup heading="Välj möblering">
                 {WithFurnitureOptions.map((option) => (
                     <MultiselectButton
                         key={option.id}

@@ -2,7 +2,7 @@ import Annonser from "../../_pages/annonser"
 
 
 
-export default function Portal() {
+export default function Ads() {
 
   return (
     <Annonser />

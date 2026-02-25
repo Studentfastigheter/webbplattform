@@ -264,8 +264,8 @@ export default function ImageUploadGallery({
                                                 const actionStyle = error ? `text-${errorColor} hover:underline cursor-pointer` : isCompleted ? `text-${successColor}` : `text-${normalColor} hover:underline cursor-pointer`;
                                                 const progressStyle = error ? `[&>div]:bg-${errorColor}` : `[&>div]:bg-${successColor}`;
                                                 
-                                                return  (
-                                                    <div className="border border-neutral-400/10 rounded px-6 py-4 flex gap-4">
+                                                return (
+                                                    <div key={idx} className="border border-neutral-400/10 rounded px-6 py-4 flex gap-4">
                                                         <File />
                                                         <div className="flex-1">
                                                             <div className="flex justify-between">

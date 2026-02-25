@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { TooltipButton } from "@/components/Dashboard/TooltipButton"
+import { Archive } from "lucide-react"
 
 type ConfirmButtonProps = {
   /** Text som beskriver handlingen i beskrivningen, t.ex. "ta bort" / "uppdatera status för" */
@@ -100,12 +102,12 @@ export default function ConfirmButton({
   return (
     <>
       {tooltipText && !isDisabled ? (
-        <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent>
-            <p>{tooltipText}</p>
-          </TooltipContent>
-        </Tooltip>
+        <TooltipButton
+          variant="outline"
+          tooltip="Arkivera"
+          leftIcon={<Archive className="h-4 w-4" />}
+          onClick={() => console.log("archive")}
+        />
       ) : (
         button
       )}
