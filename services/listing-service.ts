@@ -80,7 +80,7 @@ export const listingService = {
    * Anropar: POST /api/listings/{id}/favorite
    */
   addFavorite: async (listingId: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/favorite`, {
+    await apiClient(`/listings/${listingId}/favorites`, {
       method: "POST",
     });
   },
@@ -90,7 +90,7 @@ export const listingService = {
    * Anropar: DELETE /api/listings/{id}/favorite
    */
   removeFavorite: async (listingId: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/favorite`, {
+    await apiClient(`/listings/${listingId}/favorites`, {
       method: "DELETE",
     });
   },

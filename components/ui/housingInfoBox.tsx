@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, Share2 } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog"; 
 import { listingService } from "@/services/listing-service"; // Importera din service
+import { authService } from "@/services/auth-service"
 
 type HousingInfoBoxProps = {
   listingId: string;       // NY: Krävs för att veta vilken annons vi gillar
@@ -45,12 +46,18 @@ export default function HousingInfoBox({
 
     if (isLoadingFav) return;
 
+    if (!authService.isLoggedIn()) {
+        // Uppmana användare att logga för att använda addFavorite
+        window.open("/logga-in", "_blank", "noopener,noreferrer");
+        return;
+    }
+      
     // 1. Optimistisk uppdatering (byt ikon direkt för snabb känsla)
     const previousState = isFav;
     const newState = !previousState;
     setIsFav(newState);
     setIsLoadingFav(true);
-
+      
     try {
       if (newState) {
         // Om den ska bli favorit -> Anropa addFavorite

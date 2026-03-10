@@ -13,6 +13,14 @@ export const authService = {
     return await apiClient<User>("/auth/me");
   },
 
+  // Testa om användaren är inloggad (endast klient)
+  isLoggedIn: (): boolean => {
+      if (typeof window === "undefined") {
+          return false;
+      }
+      return localStorage.getItem("token") !== null;
+  },
+  
   // Logga in
   login: async (payload: LoginRequest): Promise<AuthResponse> => {
     const res = await apiClient<AuthResponse>("/auth/login", {
