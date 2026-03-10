@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         hostname: "sgs-fastighet.momentum.se",
         pathname: "/Prod/sgs/PmApi/**",
       },
+      {
+        protocol: "https",
+        hostname: "image-cdn.mild.cloud",
+        pathname: "/sgs.se/**",
+      },
     ],
   },
 
