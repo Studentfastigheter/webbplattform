@@ -159,13 +159,15 @@ export default function ListingsPage() {
   // Samla ihop alla filter till ett format som backend förstår
   const currentFilters = useMemo(() => {
     const searchPrice = parseSearchPriceRange(searchValues.price);
-    return {
-      city: toSearchString(searchValues.city),
+    const ret = {
+      city: searchValues.city,
       hostType: toSearchString(searchValues.hosts),
       dwellingType: filters.propertyType,
       minRent: filters.priceRange.min > 0 ? filters.priceRange.min : (searchPrice?.min ?? null),
       maxRent: filters.priceRange.max < priceBounds.max ? filters.priceRange.max : (searchPrice?.max ?? null),
     };
+    console.log(`Update currentFilters to ${JSON.stringify(ret)}`);
+    return ret;
   }, [searchValues, filters]);
 
   const loadListings = useCallback(
@@ -288,7 +290,7 @@ export default function ListingsPage() {
                 <SearchFilter3Fields
                   className="w-full"
                   field1={{
-                    id: "location",
+                    id: "city",
                     label: "Var",
                     placeholder: "Sök studentstad",
                     searchable: true,
@@ -320,7 +322,7 @@ export default function ListingsPage() {
                               ({ label: priceRange, value: priceRange } as Option))
                   }}
                   onSubmit={(values) => setSearchValues({
-                    city: toSearchString(values.city),
+                    city: values.city,
                     hosts: ({
                       ["Alla"]: "",
                       ["Privat hyresvärd"]: "privat",
