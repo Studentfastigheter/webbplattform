@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, Share2 } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog"; 
 import { listingService } from "@/services/listing-service"; // Importera din service
-import { authService } from "@/services/auth-service"
+import { useAuth } from "@/context/AuthContext";
 
 type HousingInfoBoxProps = {
   listingId: string;       // NY: Krävs för att veta vilken annons vi gillar
@@ -37,7 +37,8 @@ export default function HousingInfoBox({
   // State för att hantera om annonsen är likad eller inte
   const [isFav, setIsFav] = useState(isFavorite);
   const [isLoadingFav, setIsLoadingFav] = useState(false);
-
+  const { user } = useAuth();
+    
   // Hantera klick på hjärtat
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     // Stoppa eventuella klick på länkar om denna komponent ligger i ett kort
@@ -46,8 +47,11 @@ export default function HousingInfoBox({
 
     if (isLoadingFav) return;
 
-    if (!authService.isLoggedIn()) {
-        // Uppmana användare att logga för att använda addFavorite
+    if (!user) {
+        // Redirect for now. We may want to change this to an error
+        // message eventually. Due to how the code is structured
+        // this is a bit difficult for the moment, so a redirect
+        // is a lot simpler, and still gets the point across. - WJ
         window.open("/logga-in", "_blank", "noopener,noreferrer");
         return;
     }
@@ -74,7 +78,7 @@ export default function HousingInfoBox({
       setIsLoadingFav(false);
     }
   };
-
+    
   const formattedRent =
     typeof rent === "number"
       ? `${rent.toLocaleString("sv-SE")} kr/månad`

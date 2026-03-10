@@ -49,3 +49,8 @@ target/
 
 # Maven wrapper
 !.mvn/wrapper/maven-wrapper.jar
+
+# Swap files
+*~
+\#*
+*\#
