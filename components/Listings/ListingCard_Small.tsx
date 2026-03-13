@@ -123,7 +123,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     >
       {/* IMAGE */}
       <div
-        className="w-full bg-gray-100"
+        className="w-full bg-gray-100 overflow-hidden relative"
         style={{
           borderRadius: scaleValue(28),
           height: scaleValue(imageBaseHeight),
