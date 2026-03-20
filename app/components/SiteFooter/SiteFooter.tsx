@@ -71,14 +71,14 @@ export default function SiteFooter() {
             <div className="flex flex-row items-center gap-5">
               
               {/* Logo - Container med fast storlek (h-14 w-14) för att kontrollera storleken */}
-              <div className="relative h-14 w-14 shrink-0">
+              <a href="/" className="relative h-14 w-14 shrink-0 block">
                 <Image
                   src="/campuslyan-logo.svg"
                   alt="CampusLyan"
                   fill // Fyller containern på 14x14
                   className="object-contain brightness-0 invert"
                 />
-              </div>
+              </a>
 
               {/* Beskrivning - Border-l-2 skapar sträcket till höger om loggan */}
               <div className="border-l-2 pl-5 py-1" style={{ borderColor: COLORS.accent }}>
