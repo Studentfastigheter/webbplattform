@@ -13,6 +13,7 @@ import {
   LucideIcon,
   Search
 } from "lucide-react";
+import { link } from "fs";
 
 // --- DATA ---
 
@@ -62,7 +63,7 @@ const TEAM_CATEGORIES = [
       {
         name: "Simon Carlén",
         role: "CEO & CTO",
-        image: "/team/Profilbild-Simon.jpg",
+        image: "/team/Profilbild-Simon.heic",
         linkedin: "https://www.linkedin.com/in/simon-carlén/",
         // Lägg till e-postadresserna här:
         email: "simon.carlen@campuslyan.se", 
@@ -70,14 +71,15 @@ const TEAM_CATEGORIES = [
       {
         name: "Alvin Stallgård",
         role: "Chief Commercial Officer",
-        image: "/team/Profilbild-Alvin.png",
+        image: "/team/Profilbild-Alvin.heic",
         linkedin: "https://www.linkedin.com/in/alvin-stallg%C3%A5rd-346abb290/",
         email: "alvin.stallgard@campuslyan.se",
       },
       {
         name: "Viktor Kristiansson",
         role: "Head of Backend & Security",
-        image: "/team/Profilbild-Viktor.jpg",
+        image: "/team/Profilbild-Viktor.heic",
+        linkedin: "https://www.linkedin.com/in/viktor-fazlagic/",
         // email: "viktor@campuslyan.se",
       },
     ],
@@ -102,11 +104,11 @@ const TEAM_CATEGORIES = [
   {
     title: "Produkt & Utveckling",
     members: [
-      { name: "Marco Speziale", role: "Backend Engineer" },
-      { name: "Mikael Överfjord", role: "Backend Engineer" },
-      { name: "Lucas Ryefalk", role: "Frontend Engineer" },
-      { name: "William Jaarma", role: "Frontend Engineer" },
-      { name: "Sumiya Sayeed", role: "Frontend Engineer" },
+      { name: "Marco Speziale", role: "Backend Engineer", linkedin: "https://www.linkedin.com/in/marco-speziale-1ba67a169/" },
+      { name: "Mikael Överfjord", role: "Backend Engineer", image: "/team/Profilbild-Mikael.heic", linkedin: "https://www.linkedin.com/in/mikael-överfjord-ba12663a0/" },
+      { name: "Lucas Ryefalk", role: "Frontend Engineer", linkedin: "https://www.linkedin.com/in/lucas-ryefalk-a85a37292/" },
+      { name: "William Jaarma", role: "Frontend Engineer", image: "/team/Profilbild-William.heic", linkedin: "https://www.linkedin.com/in/william-jaarma-8b864a245/" },
+      { name: "Sumiya Sayeed", role: "Frontend Engineer", linkedin: "https://www.linkedin.com/in/sumiya-sayeed-04a9319b/" },
     ],
   },
   
