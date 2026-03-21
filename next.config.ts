@@ -1,3 +1,4 @@
+import { image } from "motion/react-client";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -13,6 +14,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "www.dropbox.com" },
       { protocol: "https", hostname: "cdn2.hubspot.net" },
       { protocol: "https", hostname: "media.licdn.com" },
+      { protocol: "https", hostname: "image-cdn.mild.cloud" },
       {
         protocol: "https",
         hostname: "sgs-fastighet.momentum.se",
