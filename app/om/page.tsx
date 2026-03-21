@@ -280,19 +280,19 @@ export default function OmPage() {
       {/* 1. HERO & STORY */}
       <section className="py-24 px-6 bg-background">
         <div className="max-w-7xl mx-auto">
-          <div className="max-w-4xl mx-auto text-center mb-16">
-            <div className="flex justify-center">
+          <div className="max-w-4xl mx-auto text-center mb-16 flex flex-col">
+            <div className="order-1 flex justify-center">
               <SectionBadge text="Vår resa" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-8 leading-tight">
+            <h1 className="order-2 text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-8 leading-tight">
               Byggt på Chalmers <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-pop-contrast">för studenter i hela Sverige</span>
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed">
+            <p className="order-4 mt-8 text-xl text-muted-foreground leading-relaxed md:order-3 md:mt-0">
               Vi som grundade CampusLyan är själva studenter. Efter att ha upplevt hur krångligt och otryggt det kan vara att söka bostad, bestämde vi oss för att bygga lösningen vi själva saknade.
             </p>
 
-            <div className="relative mt-10 overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+            <div className="order-3 relative overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm md:order-4 md:mt-10">
               <Image
                 src="/team/group.jpg"
                 alt="CampusLyan-teamet"
