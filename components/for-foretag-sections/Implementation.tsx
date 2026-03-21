@@ -45,7 +45,7 @@ export const Implementation = () => {
 
                 <div className="mt-8 flex items-center gap-4">
                   <Image
-                    src="/team/Profilbild-Alvin.png"
+                    src="/team/Profilbild-Alvin.heic"
                     alt="Alvin"
                     width={64}
                     height={64}
