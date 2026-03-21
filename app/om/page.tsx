@@ -106,8 +106,8 @@ const TEAM_CATEGORIES = [
     members: [
       { name: "Marco Speziale", role: "Backend Engineer", linkedin: "https://www.linkedin.com/in/marco-speziale-1ba67a169/" },
       { name: "Mikael Överfjord", role: "Backend Engineer", image: "/team/Profilbild-Mikael.heic", linkedin: "https://www.linkedin.com/in/mikael-överfjord-ba12663a0/" },
-      { name: "Lucas Ryefalk", role: "Frontend Engineer", linkedin: "https://www.linkedin.com/in/lucas-ryefalk-a85a37292/" },
-      { name: "William Jaarma", role: "Frontend Engineer", image: "/team/Profilbild-William.heic", linkedin: "https://www.linkedin.com/in/william-jaarma-8b864a245/" },
+      { name: "Lucas Ryefalk", role: "Frontend Engineer", image: "/team/Profilbild-Lucas.heic", linkedin: "https://www.linkedin.com/in/lucas-ryefalk-a85a37292/" },
+      { name: "William Jaarma", role: "System Engineer", image: "/team/Profilbild-William.heic", linkedin: "https://www.linkedin.com/in/william-jaarma-8b864a245/" },
       { name: "Sumiya Sayeed", role: "Frontend Engineer", linkedin: "https://www.linkedin.com/in/sumiya-sayeed-04a9319b/" },
     ],
   },
