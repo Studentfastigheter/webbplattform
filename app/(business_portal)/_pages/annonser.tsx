@@ -27,27 +27,7 @@ export default function Annonser() {
               Skapa annons
             </Link>
           </TooltipButton>
-
-          <TooltipButton
-            leftIcon={<FolderDown size={16} />}
-            variant={"outline"}
-          >
-            <Link href={`${dashboardRelPath}/annonser/importera`}>
-              Importera från CSV
-            </Link>
-          </TooltipButton>
         </div>
-
-        {/* <Link href={`${dashboardRelPath}/annonser/ny`}>
-          <Button variant="outline" size="sm">
-            Importera annonser
-          </Button>
-        </Link>
-        <Link href={`${dashboardRelPath}/annonser/ny`}>
-          <Button variant="default" size="sm">
-            Skapa annons
-          </Button>
-        </Link> */}
       </div>
 
       <div className="mb-8 m-2 flex gap-4">
@@ -80,6 +60,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="Igår kl. 14:23"
+          data={{
+            views: 123,
+            applications: 12
+          }}
         />
         <AnnonsPreview 
           id="2"
@@ -90,6 +74,11 @@ export default function Annonser() {
           city="Göteborg" 
           status="inaktiv"
           uploadedDatetime="12 dagar sedan"
+          data={{
+            views: 45,
+            applications: 5
+          }}
+
         />
         <AnnonsPreview 
           id="3"
@@ -100,6 +89,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="30 dagar sedan"
+          data={{
+            views: 78,
+            applications: 8
+          }}
         />
         <AnnonsPreview 
           id="4"
@@ -110,6 +103,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="12 månader sedan"
+          data={{
+            views: 200,
+            applications: 20
+          }}
         />
         <AnnonsPreview 
           id="5"
@@ -120,6 +117,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="2 månader sedan"
+          data={{
+            views: 150,
+            applications: 15
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -130,6 +131,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -140,6 +145,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -150,6 +159,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -160,6 +173,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -170,6 +187,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -180,6 +201,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -190,6 +215,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -200,6 +229,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -210,6 +243,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -220,6 +257,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -230,6 +271,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
         <AnnonsPreview 
           id="6"
@@ -240,6 +285,10 @@ export default function Annonser() {
           city="Göteborg" 
           status="aktiv"
           uploadedDatetime="6 månader sedan"
+          data={{
+            views: 300,
+            applications: 30
+          }}
         />
 
 

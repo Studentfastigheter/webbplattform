@@ -11,6 +11,14 @@ import ObjectSize from "@/app/(business_portal)/_pages/onboarding/onboardingPage
 import ObjectTimespan from "@/app/(business_portal)/_pages/onboarding/onboardingPages/objectTimespan";
 import ObjectType from "@/app/(business_portal)/_pages/onboarding/onboardingPages/objectType";
 import ObjectType2 from "@/app/(business_portal)/_pages/onboarding/onboardingPages/objectType2";
+import StageTellUsPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/stageTellUsPage";
+import StageOptimizePage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/stageOptimizePage";
+import StagePublishPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/stagePublishPage";
+import ImagePublishPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/imagePublishPage";
+import DescriptionPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/descriptionPage";
+import AmenitiesPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/amenitiesPage";
+import TitlePage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/titlePage";
+import PricePage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/pricePage";
 
 const MapPointer = dynamic(() => import("@/app/(business_portal)/_pages/onboarding/onboardingPages/mapPointer"), { ssr: false });
 
@@ -18,6 +26,7 @@ const MapPointer = dynamic(() => import("@/app/(business_portal)/_pages/onboardi
 const stepPagesList = [
     [ // Stage 1
         InfoCoverPage,
+        StageTellUsPage,
         AddObjectInfo,
         MapPointer,
         ObjectType,
@@ -26,14 +35,15 @@ const stepPagesList = [
         ObjectTimespan
     ],
     [ // Stage 2
-        InfoCoverPage,
-        InfoCoverPage,
-        InfoCoverPage,
-        InfoCoverPage,
+        StageOptimizePage,
+        AmenitiesPage,
+        ImagePublishPage,
+        TitlePage,
+        DescriptionPage,
     ],
     [ // Stage 3
-        InfoCoverPage,
-        InfoCoverPage,
+        StagePublishPage,
+        PricePage,
         InfoCoverPage,
         InfoCoverPage,
     ],

@@ -111,7 +111,18 @@ export default function Onboarding(
     const setFooter = useDashboardFooter();
 
     useEffect(() => {
-        setFooter(<FooterContent stepPagesList={stepPagesList} stageNumber={currentStep} nextPagePossible={nextPagePossible} previousPagePossible={previousPagePossible} />);
+        setFooter(
+            <FooterContent
+                stepPagesList={stepPagesList}
+                stageNumber={currentStep}
+                nextPagePossible={nextPagePossible}
+                previousPagePossible={previousPagePossible}
+            />
+        );
+
+        return () => {
+            setFooter(null);
+        };
     }, [setFooter, currentStep, nextPagePossible, previousPagePossible]);
 
     const CurrentStepPage = flatPagesList[currentStep - 1];

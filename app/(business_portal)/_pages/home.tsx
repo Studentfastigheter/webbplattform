@@ -7,6 +7,7 @@ import TotalApplicantsChart from "../_components/TotalApplicantsChart";
 import { AvailableStatistics } from "@/lib/definitions";
 import { StatisticProps } from "../_statics/types";
 import { getStatistics } from "@/lib/actions";
+import VacancyGraph from "../_components/Graphs/VacancyGraph";
 
 const timeOptions = [
   { value: "1y", label: "1 år" },
@@ -59,6 +60,8 @@ export default function Home() {
       
 
       </div>
+
+      <VacancyGraph />
     </>
   )
 }

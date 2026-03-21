@@ -164,6 +164,7 @@ export async function getObject({
         title: `Objekt ${objectId}`,
         location: ["Stockholm", "Göteborg", "Malmö"].at(Math.floor(Math.random() * 3)) as string,
         description: `Detta är en beskrivning av objektet med ID ${objectId}.`,
+        applicationsCount: Math.floor(Math.random() * 100),
         floorplanId: "0",
         requirementProfileId: "0",
     };
@@ -224,4 +225,22 @@ export async function getApplicantsTableData({
     });
 
     return applicantsTableDataPromise;
+}
+
+export async function getMostAppliedObjects() {
+    // Simulate fetching data with delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const mostAppliedObjects: ObjectDetails[] = Array.from({ length: 5 }, (_, i) => ({
+        id: `obj-${i + 1}`,
+        title: `Objekt ${i + 1}`,
+        description: `Detta är en beskrivning av objektet med ID ${i + 1}.`,
+        location: ["Stockholm", "Göteborg", "Malmö"].at(Math.floor(Math.random() * 3)) as string,
+        applicationsCount: Math.floor(Math.random() * 100),
+        floorplanId: "0",
+        requirementProfileId: "0",
+    }));
+
+    return mostAppliedObjects;
+
 }

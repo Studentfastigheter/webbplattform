@@ -1,6 +1,6 @@
-import { MoveRight, TrendingDown, TrendingUp } from "lucide-react";
 import Container from "../Container";
 import { StatisticProps } from "../../_statics/types";
+import Trend from "../Trend";
 
 export default function Statistic({
     Icon,
@@ -10,27 +10,6 @@ export default function Statistic({
     increaseDirection = "up",
     ...props
   }: StatisticProps) {
-
-
-    function getChangeDirectionColor() {
-      if (changeInPercent > 0 && increaseDirection === "up") {
-          return "text-green-600";
-      }
-      else if (changeInPercent < 0 && increaseDirection === "up") {
-          return "text-red-600";
-      }
-      else if (changeInPercent > 0 && increaseDirection === "down") {
-          return "text-red-600";
-      }
-      else if (changeInPercent < 0 && increaseDirection === "down") {
-          return "text-green-600";
-      } else {
-        return "text-neutral-600"
-      }
-  }
-
-  const changeColorClass = getChangeDirectionColor();
-
 
   return (
     <Container padding={"sm"} {...props}>
@@ -42,19 +21,7 @@ export default function Statistic({
         <p className="text-brand text-2xl/[24px] font-bold">
           {Number(data).toLocaleString("sv-SE")}
         </p>
-        <div className={`flex gap-1 items-end ${changeColorClass}`}>
-          {changeInPercent > 0 && (
-            <TrendingUp size={20} color="currentColor" />
-          )} 
-          {(changeInPercent < 0) && (
-            <TrendingDown size={20} color="currentColor" />
-          )}
-          {(changeInPercent === 0) && (
-            <MoveRight size={20} color="currentColor" />
-          )}
-
-          <p className="text-xs font-medium">{changeInPercent.toString().replace(".", ",")} %</p>
-        </div>
+        <Trend changeInPercent={changeInPercent} increaseDirection={increaseDirection} />
       </div>
     </Container>
   )

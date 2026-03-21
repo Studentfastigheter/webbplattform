@@ -90,6 +90,45 @@ export function MultiselectButton({
     )
 }
 
+type MultiselectCardProps = React.HTMLAttributes<HTMLLabelElement> & {
+    id: string;
+    checked: boolean;
+    onCheckedChange: () => void;
+    defaultChecked?: boolean;
+    className?: string;
+    children?: React.ReactNode;
+};
+
+export function MultiSelectCard({
+        
+    id,
+    checked,
+    onCheckedChange,
+    defaultChecked,
+    className,
+    children,
+    ...props
+
+}: MultiselectCardProps) {
+    return (
+        <Label
+         {...props}
+         className={cn("hover:bg-accent/50 cursor-pointer flex items-start gap-2 justify-between rounded-lg border p-4 has-[[aria-checked=true]]:border-blue-600 has-[[aria-checked=true]]:bg-blue-50 dark:has-[[aria-checked=true]]:border-blue-900 dark:has-[[aria-checked=true]]:bg-blue-950", className)}>
+            <div>
+                {children}
+            </div>
+            <Checkbox
+                id={id}
+                checked={checked}
+                defaultChecked={defaultChecked}
+                onCheckedChange={() => onCheckedChange()}
+                className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+            />
+        </Label>
+    )
+}
+
+
 type InputFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
     suffix?: string;
 };
@@ -101,6 +140,19 @@ export function InputField({
         <div className="relative">
             <Input {...props} style={{paddingRight: "40px"}} />
             {props.suffix && <p className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500">{props.suffix}</p>}
+        </div>
+    )
+}
+
+export function TextAreaField({
+    ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+    return (
+        <div className="relative">
+            <textarea
+                {...props}
+                className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
         </div>
     )
 }
@@ -168,6 +220,7 @@ type FormShellProps = React.HTMLAttributes<HTMLDivElement> & {
     heading?: React.ReactNode;
     description?: React.ReactNode;
     className?: string;
+    mb?: "sm" | "md" | "lg";
 };
 
 export function FormShell({ 
@@ -175,12 +228,13 @@ export function FormShell({
     heading,
     description,
     className,
+    mb="md",
     ...props
 }: FormShellProps) {
     return (
         <div className={cn("max-w-lg mx-auto mt-12", className)} {...props}>
             {heading && <p className="text-xl font-semibold mb-2">{heading}</p>}
-            {description && <p className="text-sm text-neutral-600 mb-8 max-w-96">{description}</p>}
+            {description && <p className={cn("text-sm text-neutral-600 max-w-96", mb === "sm" ? "mb-2" : mb === "md" ? "mb-4" : "mb-8")}>{description}</p>}
             {children}
         </div>
     );

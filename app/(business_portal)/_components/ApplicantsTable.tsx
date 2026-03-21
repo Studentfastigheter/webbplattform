@@ -138,11 +138,11 @@ export const columns: ColumnDef<ApplicantsTableProps>[] = [
     id: "actions",
     header: "",
     cell: ({ row }) => {
-        return (
-            <Link href={`/portal/ansokningar/${row.original.id}`} className="cursor-pointer">
-                <SquareArrowOutUpRight className="h-4 w-4" />
-            </Link>
-        )
+        // return (
+        //     <Link href={`/portal/ansokningar/${row.original.id}`} className="cursor-pointer">
+        //         <SquareArrowOutUpRight className="h-4 w-4" />
+        //     </Link>
+        // )
     }
   }
 ]

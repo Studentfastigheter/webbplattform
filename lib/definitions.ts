@@ -67,6 +67,7 @@ export type ObjectDetails = {
     title: string;
     description: string;
     location: string;
+    applicationsCount: number;
     floorplanId?: string;
     requirementProfileId?: string;
 }
