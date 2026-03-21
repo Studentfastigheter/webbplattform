@@ -63,7 +63,7 @@ const TEAM_CATEGORIES = [
       {
         name: "Simon Carlén",
         role: "CEO & CTO",
-        image: "/team/Profilbild-Simon.heic",
+        image: "/team/Profilbild-Simon.jpeg",
         linkedin: "https://www.linkedin.com/in/simon-carlén/",
         // Lägg till e-postadresserna här:
         email: "simon.carlen@campuslyan.se", 
@@ -71,14 +71,14 @@ const TEAM_CATEGORIES = [
       {
         name: "Alvin Stallgård",
         role: "Chief Commercial Officer",
-        image: "/team/Profilbild-Alvin.heic",
+        image: "/team/Profilbild-Alvin.jpeg",
         linkedin: "https://www.linkedin.com/in/alvin-stallg%C3%A5rd-346abb290/",
         email: "alvin.stallgard@campuslyan.se",
       },
       {
         name: "Viktor Kristiansson",
         role: "Head of Backend & Security",
-        image: "/team/Profilbild-Viktor.heic",
+        image: "/team/Profilbild-Viktor.jpeg",
         linkedin: "https://www.linkedin.com/in/viktor-fazlagic/",
         // email: "viktor@campuslyan.se",
       },
@@ -105,9 +105,9 @@ const TEAM_CATEGORIES = [
     title: "Produkt & Utveckling",
     members: [
       { name: "Marco Speziale", role: "Backend Engineer", linkedin: "https://www.linkedin.com/in/marco-speziale-1ba67a169/" },
-      { name: "Mikael Överfjord", role: "Backend Engineer", image: "/team/Profilbild-Mikael.heic", linkedin: "https://www.linkedin.com/in/mikael-överfjord-ba12663a0/" },
-      { name: "Lucas Ryefalk", role: "Frontend Engineer", image: "/team/Profilbild-Lucas.heic", linkedin: "https://www.linkedin.com/in/lucas-ryefalk-a85a37292/" },
-      { name: "William Jaarma", role: "System Engineer", image: "/team/Profilbild-William.heic", linkedin: "https://www.linkedin.com/in/william-jaarma-8b864a245/" },
+      { name: "Mikael Överfjord", role: "Backend Engineer", image: "/team/Profilbild-Mikael.jpeg", linkedin: "https://www.linkedin.com/in/mikael-överfjord-ba12663a0/" },
+      { name: "Lucas Ryefalk", role: "Frontend Engineer", image: "/team/Profilbild-Lucas.jpeg", linkedin: "https://www.linkedin.com/in/lucas-ryefalk-a85a37292/" },
+      { name: "William Jaarma", role: "System Engineer", image: "/team/Profilbild-William.jpeg", linkedin: "https://www.linkedin.com/in/william-jaarma-8b864a245/" },
       { name: "Sumiya Sayeed", role: "Frontend Engineer", linkedin: "https://www.linkedin.com/in/sumiya-sayeed-04a9319b/" },
     ],
   },
