@@ -1,36 +1,64 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
-import ListingCardSmall from "@/components/Listings/ListingCard_Small";
-import ProfileHero, { type StudentProfileExtended } from "@/components/profile/ProfileHero";
-import ProfileHeroActions from "@/components/profile/ProfileHeroActions";
+import ProfileHero, {
+  type StudentProfileExtended,
+} from "@/components/profile/ProfileHero";
 import ProfileAbout from "@/components/profile/ProfileAbout";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { schoolService } from "@/services/school-service";
-import { listingService } from "@/services/listing-service";
-import {
-  type School,
-  type User,
-} from "@/types";
-import { MapPin } from "lucide-react";
+import { authService } from "@/services/auth-service";
+import { type User } from "@/types";
 
-/**
- * Mappar User (Backend) till StudentProfileExtended (UI)
- */
+const calculateAgeFromSsn = (ssn?: string): number | undefined => {
+  if (!ssn) return undefined;
+
+  const digits = ssn.replace(/\D/g, "");
+  let year: number;
+  let month: number;
+  let day: number;
+
+  if (digits.length >= 12) {
+    year = Number(digits.slice(0, 4));
+    month = Number(digits.slice(4, 6));
+    day = Number(digits.slice(6, 8));
+  } else if (digits.length >= 10) {
+    const shortYear = Number(digits.slice(0, 2));
+    const currentShortYear = new Date().getFullYear() % 100;
+    year = shortYear > currentShortYear ? 1900 + shortYear : 2000 + shortYear;
+    month = Number(digits.slice(2, 4));
+    day = Number(digits.slice(4, 6));
+  } else {
+    return undefined;
+  }
+
+  const birthDate = new Date(year, month - 1, day);
+  if (Number.isNaN(birthDate.getTime())) return undefined;
+
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const hasHadBirthday =
+    today.getMonth() > birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() &&
+      today.getDate() >= birthDate.getDate());
+
+  if (!hasHadBirthday) age -= 1;
+  return age >= 0 ? age : undefined;
+};
+
 const buildProfileFromUser = (user: User): StudentProfileExtended => {
-  const fullName = user.displayName || `${user.firstName || ""} ${user.surname || ""}`.trim() || user.email;
+  const fullName =
+    user.displayName ||
+    `${user.firstName || ""} ${user.surname || ""}`.trim() ||
+    user.email;
 
   return {
     ...user,
     displayName: fullName,
-    headline: user.city ?? "Student",
+    headline: user.schoolName ?? user.city ?? "Student",
     stats: {
       studyProgram: user.tags?.[0] || "Ej angivet",
-      studyPace: "100%",
+      studyPace: "Ej angivet",
       preferredArea: user.city ?? undefined,
     },
     bannerImage: user.bannerUrl ?? "/appartment.jpg",
@@ -39,115 +67,113 @@ const buildProfileFromUser = (user: User): StudentProfileExtended => {
     listingApplications: [],
     queueApplications: [],
     searchWatchlist: [],
-  } as unknown as StudentProfileExtended;
+    age: calculateAgeFromSsn(user.ssn),
+  } as StudentProfileExtended;
 };
 
-function LandlordProfileHero({ landlord, listingsCount }: { landlord: User; listingsCount: number }) {
-  const displayName = landlord.fullName || landlord.displayName || landlord.email;
-  return (
-    <section className="relative overflow-hidden rounded-3xl border border-black/5 bg-white/80 shadow-lg">
-      <div className="relative h-48 w-full bg-gray-100">
-        <Image src={landlord.bannerUrl ?? "/appartment.jpg"} alt={displayName} fill className="object-cover" priority />
-      </div>
-      <div className="relative z-10 px-6 pb-6 pt-0 sm:px-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between -mt-12">
-          <div className="flex items-end gap-4">
-            <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-white shadow-xl">
-              <Image src={landlord.logoUrl ?? "/logos/campuslyan-logo.svg"} alt={displayName} fill className="object-cover" />
-            </div>
-            <div className="pb-2">
-              <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
-              <p className="text-gray-600 flex items-center gap-1 mt-1">
-                <MapPin className="h-4 w-4" /> {landlord.city || "Sverige"}
-              </p>
-            </div>
-          </div>
-          <div className="pb-2">
-            <ProfileHeroActions editHref="/installningar" />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function Page() {
-  const router = useRouter();
-  const { user, token } = useAuth(); // Nu inkluderas token
-  const [landlordListings, setLandlordListings] = useState<any[]>([]);
-  const [loadingListings, setLoadingListings] = useState(false);
+  const { token, isLoading: authLoading } = useAuth();
+  const [student, setStudent] = useState<User | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Endast för hyresvärdar
-    if (!token || user?.accountType !== "private_landlord") return;
+    if (authLoading || !token) {
+      if (!token) {
+        setStudent(null);
+        setError(null);
+      }
+      return;
+    }
 
-    setLoadingListings(true);
-    
-    // FIX: Anropa med siffer-argument (page=0, size=100) för att matcha listingService.getAll
-    listingService.getAll(0, 100) 
-      .then((res) => {
-        // Spring Boot Page-objektet har datan i .content
-        const items = res.content || [];
-        // Filtrera fram annonser som tillhör den inloggade hyresvärden
-        setLandlordListings(items.filter((l: any) => l.landlordId === user.id));
-      })
-      .catch(err => console.error("Misslyckades att hämta annonser", err))
-      .finally(() => setLoadingListings(false));
-  }, [token, user]);
+    let cancelled = false;
 
-  if (!user) return <div className="p-10 text-center text-muted-foreground">Logga in för att se profil.</div>;
+    const loadStudentProfile = async () => {
+      setLoadingProfile(true);
+      setError(null);
 
-  if (user.accountType === "student") {
-    const profile = buildProfileFromUser(user);
+      try {
+        const currentUser = await authService.me();
+        if (!cancelled) setStudent(currentUser);
+      } catch (err) {
+        if (!cancelled) {
+          setStudent(null);
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Kunde inte hämta profilen från backend."
+          );
+        }
+      } finally {
+        if (!cancelled) setLoadingProfile(false);
+      }
+    };
+
+    loadStudentProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, token]);
+
+  if (authLoading || (token && loadingProfile && !student)) {
     return (
-      <main className="max-w-7xl mx-auto p-4 lg:p-10 space-y-8">
-        <ProfileHero student={profile} />
-        <ProfileAbout
-          aboutText={user.description || "Ingen beskrivning angiven."}
-          facts={[
-            { label: "Skola", value: user.schoolName || "Ej angivet" },
-            { label: "Stad", value: user.city || "Ej angivet" }
-          ]}
-        />
-      </main>
+      <div className="p-10 text-center text-muted-foreground">
+        Hämtar profil från backend...
+      </div>
     );
   }
 
-  if (user.accountType === "private_landlord") {
+  if (!token) {
     return (
-      <main className="max-w-7xl mx-auto p-4 lg:p-10 space-y-8">
-        <LandlordProfileHero landlord={user} listingsCount={landlordListings.length} />
-        <section className="bg-white/80 rounded-3xl p-6 border border-black/5 shadow-sm space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">Mina annonser</h2>
-            <Button onClick={() => router.push("/mina-annonser/ny")}>Skapa annons</Button>
-          </div>
-          {loadingListings ? (
-            <p>Laddar...</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {landlordListings.map(l => (
-                <ListingCardSmall 
-                  key={l.listingId} 
-                  title={l.title} 
-                  city={l.city || ""} 
-                  // FIX: Lägg till alla obligatoriska props som komponenten kräver
-                  area={l.area || "Ej angivet"}
-                  dwellingType={l.dwellingType || "Bostad"}
-                  rooms={l.rooms || 0}
-                  sizeM2={l.sizeM2 || 0}
-                  rent={l.rent || 0}
-                  imageUrl={l.imageUrl || (l.images && l.images[0]?.imageUrl)}
-                  landlordType="Privat värd"
-                  onClick={() => router.push(`/bostader/${l.listingId}`)} 
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
+      <div className="p-10 text-center text-muted-foreground">
+        Logga in för att se din profil.
+      </div>
     );
   }
 
-  return null;
+  if (error) {
+    return <div className="p-10 text-center text-destructive">{error}</div>;
+  }
+
+  if (!student) {
+    return (
+      <div className="p-10 text-center text-muted-foreground">
+        Ingen profil kunde laddas.
+      </div>
+    );
+  }
+
+  if (student.accountType !== "student") {
+    return (
+      <div className="p-10 text-center text-muted-foreground">
+        Den här profilsidan finns bara för studentkonton.
+      </div>
+    );
+  }
+
+  const profile = buildProfileFromUser(student);
+
+  return (
+    <main className="mx-auto max-w-7xl space-y-8 p-4 lg:p-10">
+      <ProfileHero student={profile} />
+      <ProfileAbout
+        badges={student.tags ?? []}
+        aboutText={student.description || "Ingen beskrivning angiven."}
+        facts={[
+          { label: "Skola", value: student.schoolName || "Ej angivet" },
+          { label: "Stad", value: student.city || "Ej angivet" },
+          { label: "Telefon", value: student.phone || "Ej angivet" },
+          { label: "E-post", value: student.email || "Ej angivet" },
+        ]}
+        preferenceText={
+          student.city
+            ? `Jag söker boende i eller nära ${student.city}.`
+            : "Jag söker boende nära min studieort."
+        }
+        hideInterests
+        hideLanguages
+      />
+    </main>
+  );
 }

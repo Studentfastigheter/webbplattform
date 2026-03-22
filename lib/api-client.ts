@@ -1,10 +1,16 @@
 // src/lib/api-client.ts
 
+const normalizeApiBase = (value: string): string => {
+  const trimmed = value.replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+};
+
 // Vi sätter bas-URL till .../api eftersom din backend använder den prefixen
-export const API_BASE =
+export const API_BASE = normalizeApiBase(
   typeof window === "undefined"
     ? process.env.API_BASE ?? "http://localhost:8080/api"
-    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
+    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api"
+);
 
 const STATUS_MESSAGES: Record<number, string> = {
   400: "Ogiltig förfrågan. Kontrollera fälten och försök igen.",
@@ -46,18 +52,13 @@ export async function apiClient<T>(
     if (stored) authToken = stored;
   }
 
-  // --- HÄR ÄR FIXEN ---
   // Vi kollar så att authToken inte är strängen "null" eller "undefined"
   if (authToken && authToken !== "null" && authToken !== "undefined") {
     defaultHeaders.Authorization = `Bearer ${authToken}`;
   }
-  // --------------------
 
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   const url = `${API_BASE}/${cleanEndpoint}`;
-
-  // Debug: Se vad vi faktiskt skickar (kolla i webbläsarens konsol)
-  // console.log(`Fetching ${url} with token:`, defaultHeaders.Authorization || "No token");
 
   let res: Response;
   try {
@@ -88,12 +89,12 @@ export async function apiClient<T>(
   if (!res.ok) {
     // Om token var ogiltig (401), rensa den direkt så vi slipper problem vid nästa laddning
     if (res.status === 401 && typeof window !== "undefined") {
-       localStorage.removeItem("token");
+      localStorage.removeItem("token");
     }
 
     const message =
-      parsed?.message || 
-      parsed?.error || 
+      parsed?.message ||
+      parsed?.error ||
       (typeof parsed === "string" ? parsed : null) ||
       STATUS_MESSAGES[res.status] ||
       res.statusText ||
