@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SiteHeader from "./components/SiteHeader/SiteHeader";
-import SiteFooter from "./components/SiteFooter/SiteFooter";
-import { AuthProvider } from "@/context/AuthContext";
-import { SchoolProvider } from "@/context/SchoolContext";
+import SiteFooter from "@/components/layout/SiteFooter";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/next';
 
@@ -102,13 +100,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans bg-background text-foreground`}>
         <SpeedInsights /> 
         <Analytics />
-        <AuthProvider>
-          <SchoolProvider>
-            <SiteHeader />
-            <main className="pt-32">{children}</main>
-            <SiteFooter />
-          </SchoolProvider>
-        </AuthProvider>
+        <SiteHeader />
+        <main className="pt-32">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   );
