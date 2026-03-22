@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { cn } from "@/lib/utils";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 import {
@@ -7,9 +7,8 @@ import {
   useScroll,
   useMotionValueEvent,
 } from "framer-motion";
-import { Button } from "@heroui/button";
+
 import React, { useRef, useState } from "react";
-import { SkeletonImage } from "@/components/ui/skeleton-image";
 
 
 interface NavbarProps {
@@ -92,7 +91,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         boxShadow: visible
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
-        width: visible ? "55%" : "100%",
+        width: visible ? "40%" : "100%",
         y: visible ? 20 : 0,
       }}
       transition={{
@@ -237,93 +236,53 @@ export const NavbarLogo = () => {
       href="#"
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
     >
-      <div className="relative h-8 w-8">
-        <SkeletonImage
-          src="https://assets.aceternity.com/logo-dark.png"
-          alt="logo"
-          fill
-          className="object-contain"
-        />
-      </div>
+      <img
+        src="https://assets.aceternity.com/logo-dark.png"
+        alt="logo"
+        width={30}
+        height={30}
+      />
       <span className="font-medium text-black dark:text-white">Startup</span>
     </a>
   );
 };
 
-type HeroButtonProps = React.ComponentProps<typeof Button>;
-
-type NavbarButtonProps = {
-  href?: string;
-  as?: React.ElementType;
-  className?: string;
-  children: React.ReactNode;
-  variant?: "primary" | "secondary" | "dark" | "gradient";
-} & Omit<HeroButtonProps, "children" | "variant" | "color">;
-
-const navbarVariantMap: Record<
-  NonNullable<NavbarButtonProps["variant"]>,
-  {
-    color?: HeroButtonProps["color"];
-    variant?: HeroButtonProps["variant"];
-    className?: string;
-  }
-> = {
-  primary: {
-    color: "success",
-    variant: "solid",
-    className:
-      "shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
-  },
-  secondary: {
-    color: "success",
-    variant: "light",
-    className: "shadow-none bg-transparent text-brand hover:bg-transparent",
-  },
-  dark: {
-    color: "default",
-    variant: "solid",
-    className:
-      "bg-black text-white shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
-  },
-  gradient: {
-    color: "success",
-    variant: "solid",
-    className:
-      "bg-gradient-to-b from-blue-500 to-blue-700 text-white shadow-[0px_2px_0px_0px_rgba(255,255,255,0.3)_inset]",
-  },
-};
-
 export const NavbarButton = ({
   href,
-  as,
+  as: Tag = "a",
   children,
   className,
   variant = "primary",
-  type: buttonType,
   ...props
-}: NavbarButtonProps) => {
-  const config = navbarVariantMap[variant] ?? navbarVariantMap.primary;
-  const Component = href ? as ?? "a" : as ?? "button";
-  const resolvedType =
-    Component === "button" ? (buttonType as HeroButtonProps["type"]) ?? "button" : undefined;
+}: {
+  href?: string;
+  as?: React.ElementType;
+  children: React.ReactNode;
+  className?: string;
+  variant?: "primary" | "secondary" | "dark" | "gradient";
+} & (
+  | React.ComponentPropsWithoutRef<"a">
+  | React.ComponentPropsWithoutRef<"button">
+)) => {
+  const baseStyles =
+    "px-4 py-2 rounded-md bg-white button bg-white text-black text-sm font-bold relative cursor-pointer hover:-translate-y-0.5 transition duration-200 inline-block text-center";
+
+  const variantStyles = {
+    primary:
+      "shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
+    secondary: "bg-transparent shadow-none dark:text-white",
+    dark: "bg-black text-white shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
+    gradient:
+      "bg-gradient-to-b from-blue-500 to-blue-700 text-white shadow-[0px_2px_0px_0px_rgba(255,255,255,0.3)_inset]",
+  };
 
   return (
-    <Button
-      {...(href ? { href } : {})}
-      as={Component as React.ElementType}
-      radius="full"
-      color={config.color}
-      variant={config.variant}
-      type={resolvedType}
-      className={cn(
-        "px-5 font-semibold tracking-tight transition-transform duration-200 hover:-translate-y-0.5",
-        config.className,
-        className,
-      )}
+    <Tag
+      href={href || undefined}
+      className={cn(baseStyles, variantStyles[variant], className)}
       {...props}
     >
       {children}
-    </Button>
+    </Tag>
   );
 };
-

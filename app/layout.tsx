@@ -104,7 +104,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <AuthProvider>
           <SchoolProvider>
-            {/*<SiteHeader />*/}
+            <SiteHeader />
             <main className="pt-32">{children}</main>
             <SiteFooter />
           </SchoolProvider>

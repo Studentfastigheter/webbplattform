@@ -3,63 +3,43 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
 import {
   Navbar,
   NavBody,
   NavItems,
   MobileNav,
-  NavbarButton,
   MobileNavHeader,
   MobileNavToggle,
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 
-const baseNavItems = [
-  { name: "Annonser", link: "/listings" },
-  { name: "Alla köer", link: "/alla-koer" },
+const navItems = [
+  { name: "Hem", link: "/" },
   { name: "För företag", link: "/for-foretag" },
-  { name: "Hyra ut", link: "/hyra-ut" },
+  { name: "Om oss", link: "/om" },
 ];
 
-export default function SiteHeader() {
-  const { user, logout } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+const waitlistHref = "/#register-waitlist";
 
-  const navItems = user
-    ? [...baseNavItems, { name: "Köer & intressen", link: "/queues-interests" }]
-    : baseNavItems;
+export default function SiteHeader() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <Navbar className="top-4">
       <NavBody>
-        <Link href="/" className="flex items-center gap-2 px-2 py-1 text-sm font-medium">
+        <Link href="/" className="relative z-20 flex items-center gap-2 px-2 py-1 text-sm font-medium">
           <Image src="/campuslyan-logo.svg" alt="CampusLyan" width={30} height={30} />
           <div className="leading-tight">
             <span className="text-base">CampusLyan</span>
           </div>
         </Link>
         <NavItems items={navItems} />
-
-        <div className="hidden items-center gap-3 lg:flex">
-          {user ? (
-            <>
-              <span className="text-sm text-neutral-500">{user.email}</span>
-              <NavbarButton variant="secondary" onClick={logout}>
-                Logga ut
-              </NavbarButton>
-            </>
-          ) : (
-            <>
-              <NavbarButton variant="secondary" href="/login">
-                Logga in
-              </NavbarButton>
-              <NavbarButton variant="primary" href="/register">
-                Skapa konto
-              </NavbarButton>
-            </>
-          )}
-        </div>
+        <Link
+          href={waitlistHref}
+          className="relative z-20 hidden rounded-full bg-[#004225] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00341d] lg:inline-flex"
+        >
+          {"Anmäl intresse"}
+        </Link>
       </NavBody>
 
       <MobileNav>
@@ -84,28 +64,13 @@ export default function SiteHeader() {
               {item.name}
             </Link>
           ))}
-          <div className="flex w-full flex-col gap-3 pt-2">
-            {user ? (
-              <NavbarButton
-                variant="secondary"
-                onClick={() => {
-                  logout();
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                Logga ut
-              </NavbarButton>
-            ) : (
-              <>
-                <NavbarButton variant="secondary" href="/login">
-                  Logga in
-                </NavbarButton>
-                <NavbarButton variant="primary" href="/register">
-                  Skapa konto
-                </NavbarButton>
-              </>
-            )}
-          </div>
+          <Link
+            href={waitlistHref}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-[#004225] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
+          >
+            {"Anmäl intresse"}
+          </Link>
         </MobileNavMenu>
       </MobileNav>
     </Navbar>
