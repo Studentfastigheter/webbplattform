@@ -8,15 +8,13 @@ import Que_ListingCard from "@/components/Listings/Que_ListingCard";
 import QueueFilterButton, {
   type QueueFilterState,
 } from "@/components/Listings/Search/QueueFilterButton";
-import TwoFieldSearch from "@/components/Listings/Search/SearchFilter-2field";
+import SearchFilterBar2 from "@/components/Listings/Search/SearchFilterBar2";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
-// ÄNDRING 1: Byt till queueService (den har metoden list() som matchar din backend)
 import { queueService } from "@/services/queue-service";
 import { getCityCoordinates } from "@/services/geolocator-service";
 
-// ÄNDRING 2: Importera typer från rätt filer
 import { type HousingQueueDTO, type QueueMapItem } from "@/types/queue";
 import { type AdvertiserSummary } from "@/types/common";
 import { type CompanyId } from "@/types";
@@ -36,8 +34,8 @@ type SearchValues = {
     // Entered city name
     location: string;
 
-    // Entered queue name
-    queueName: string;
+    // Id of selected queue
+    queueId: string;
 };
 
 const PAGE_SIZE = 6;
@@ -57,7 +55,6 @@ export default function Page() {
         let active = true;
         setLoading(true);
 
-        // ÄNDRING 3: Använd queueService.list()
         queueService
         .list()
         .then((res) => {
@@ -116,14 +113,28 @@ export default function Page() {
     const isMapView = view === "karta";
 
     const cityOptions = useMemo(
-      () => uniqueOnly(removeEmpty(queues.map((queue) => queue.city))),
+      () => {
+        const options = uniqueOnly(removeEmpty(queues.map((queue) => queue.city)));
+        const asRecord: Record<string, string> = {};
+        for (const option of options) {
+          asRecord[option] = option;
+        }
+        return asRecord;
+      },
       [queues]
     );
+    const queueOptions = useMemo(() => {
+      const results: Record<string, string> = {};
+      for (const queue of queues) {
+        results[queue.name] = queue.id;
+      }
+      return results;
+    }, [queues]);
 
     const filteredQueues = useMemo(() => {
         return queues.filter((queue) =>
             searchStringMatches(searchValues.location, queue.city) &&
-            searchStringMatches(searchValues.queue, queue.name));
+            searchStringMatches(searchValues.queueId, queue.id));
     }, [queues, searchValues]);
 
     useEffect(() => {
@@ -174,11 +185,8 @@ export default function Page() {
             logoUrl={queueCardProps.logoUrl}
             logoAlt={queueCardProps.logoAlt}
             tags={queueCardProps.tags}
-    
-            // --- ÄNDRING 4: Navigera till dynamisk ID-sida ---
             onViewListings={() => router.push(`/alla-koer/${queue.id}`)} 
             onReadMore={() => router.push(`/alla-koer/${queue.id}`)}
-            // ------------------------------------------------
             />
         </div>);
     };
@@ -210,7 +218,6 @@ export default function Page() {
         return () => observer.disconnect();
     }, [filteredQueues.length, hasMore, loading, loadingMore]);
 
-
     return (
       <main className="flex flex-col gap-8 pb-12 pt-4">
         {/* Sektion 1: filter */}
@@ -218,26 +225,29 @@ export default function Page() {
           <div className="flex w-full flex-col gap-4">
             <div className="flex flex-wrap items-center gap-4">
               <div className="min-w-[280px] flex-1">
-                <TwoFieldSearch
+                 <SearchFilterBar2
                   className="w-full"
-                  field1={{
-                    id: "location",
-                    label: "Var",
-                    placeholder: "Sök studentstad",
-                    searchable: true,
-                    options: cityOptions.map((city) => ({ label: city, value: city })),
+                  fields={[
+                    {
+                      id: "location",
+                      label: "Var",
+                      placeholder: "Sök studentstad",
+                      options: { "Överallt": "", ...cityOptions }
+                    },
+                    {
+                      id: "queueId",
+                      label: "Bostadskö",
+                      placeholder: "Sök specifik bostadskö",
+                      options: { "Alla": "", ...queueOptions }
+                    }
+                  ]}
+                  onSubmit={(values) => {
+                    console.log(`Search values are: location=${values.location}, queueName=${values.queueName}`);
+                    setSearchValues({
+                      location: values.location,
+                      queueId: values.queueId,
+                    });
                   }}
-                  field2={{
-                    id: "queueName",
-                    label: "Bostadskö",
-                    placeholder: "Sök specifik bostadskö",
-                    searchable: true,
-                    options: queues.map((queue) => ({ label: queue.name, value: queue.name }))
-                  }}
-                  onSubmit={(values) => setSearchValues({
-                    location: values.location,
-                    queueName: values.queueName
-                  })}
                 />
               </div>
            </div>
