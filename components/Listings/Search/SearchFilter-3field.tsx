@@ -64,7 +64,7 @@ const ThreeFieldSearch: React.FC<ThreeFieldSearchProps> = ({
         <ListingsFilterButton
           variant="outline"
           size="sm"
-          className="w-full md:w-auto md:border-none md:bg-transparent md:hover:bg-transparent flex items-center justify-center h-[44px] md:h-[48px] rounded-full gap-2 text-sm font-semibold md:p-0"
+          className="w-full md:w-auto md:min-w-0 md:border-none md:bg-transparent md:hover:bg-transparent flex items-center justify-center h-[44px] md:h-[48px] rounded-full gap-2 text-sm font-semibold md:p-0"
           triggerLabel={
             <>
               <span className="block md:hidden">Filtrera</span>
