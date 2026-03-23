@@ -185,8 +185,7 @@ export default function Page() {
             logoUrl={queueCardProps.logoUrl}
             logoAlt={queueCardProps.logoAlt}
             tags={queueCardProps.tags}
-            onViewListings={() => router.push(`/alla-koer/${queue.id}`)} 
-            onReadMore={() => router.push(`/alla-koer/${queue.id}`)}
+            onViewListings={() => router.push(`/alla-koer/${queue.id}`)}
             />
         </div>);
     };
