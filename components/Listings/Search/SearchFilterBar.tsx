@@ -381,7 +381,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
         </div>
 
         {/* Åtgärdsområde - Sök och Filter */}
-        <div className="mt-4 md:mt-0 w-full md:w-auto flex items-center gap-2">
+        <div className="mt-4 md:mt-0 w-full md:w-auto flex items-center justify-end gap-2">
           {renderFilter && (
             <div className="flex-shrink-0 border-r border-black/10 pr-2">
               {renderFilter()}
@@ -390,14 +390,14 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
           <Button
             type="button"
             onClick={handleSubmit}
-            size={renderFilter ? "md" : "icon-lg"}
+            size="icon-lg"
             variant="default"
-            className={renderFilter ? "flex-1 md:flex-none rounded-full h-[40px] md:h-[48px] px-6" : "w-full md:w-[48px] md:h-[48px] flex items-center justify-center rounded-full"}
+            className="w-[40px] h-[40px] md:w-[48px] md:h-[48px] flex items-center justify-center rounded-full flex-shrink-0"
           >
-            <span className="md:hidden mr-2">Sök</span>
+            <span className="sr-only">Sök</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-[20px] w-[20px] text-white"
+              className="h-[18px] w-[18px] md:h-[20px] md:w-[20px] text-white"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
