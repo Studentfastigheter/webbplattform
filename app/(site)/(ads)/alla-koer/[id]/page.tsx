@@ -178,7 +178,7 @@ export default function QueueDetailPage() {
 
   const handleJoinQueue = async () => {
     if (!user) {
-      router.push("/login");
+      router.push("/logga-in");
       return;
     }
     if (!queueId) return;
