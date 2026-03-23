@@ -1,17 +1,24 @@
-﻿"use client";
+"use client";
+
 import { cn } from "@/lib/utils";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 import {
-  motion,
   AnimatePresence,
-  useScroll,
+  motion,
   useMotionValueEvent,
+  useScroll,
 } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import React, { useRef, useState } from "react";
-import { SkeletonImage } from "@/components/ui/skeleton-image";
 import Link from "next/link";
+import React, { useRef, useState } from "react";
 
+export type NavbarItem = {
+  name: string;
+  link: string;
+  dropdown?: {
+    name: string;
+    link: string;
+  }[];
+};
 
 interface NavbarProps {
   children: React.ReactNode;
@@ -29,7 +36,6 @@ interface NavItemsProps {
   className?: string;
   onItemClick?: () => void;
 }
-
 
 interface MobileNavProps {
   children: React.ReactNode;
@@ -55,20 +61,15 @@ export const Navbar = ({ children, className }: NavbarProps) => {
     target: ref,
     offset: ["start start", "end start"],
   });
-  const [visible, setVisible] = useState<boolean>(false);
+  const [visible, setVisible] = useState(false);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    if (latest > 100) {
-      setVisible(true);
-    } else {
-      setVisible(false);
-    }
+    setVisible(latest > 100);
   });
 
   return (
     <motion.div
       ref={ref}
-      // IMPORTANT: Change this to class of `fixed` if you want the navbar to be fixed
       className={cn("fixed inset-x-0 top-20 z-40 w-full", className)}
     >
       {React.Children.map(children, (child) =>
@@ -83,16 +84,6 @@ export const Navbar = ({ children, className }: NavbarProps) => {
   );
 };
 
-export type NavbarItem = {
-  name: string;
-  link?: string;
-  dropdown?: {
-    name: string;
-    link: string;
-  }[];
-};
-
-
 export const NavBody = ({ children, className, visible }: NavBodyProps) => {
   return (
     <motion.div
@@ -101,7 +92,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         boxShadow: visible
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
-        width: visible ? "55%" : "100%",
+        width: visible ? "40%" : "100%",
         y: visible ? 20 : 0,
       }}
       transition={{
@@ -130,67 +121,60 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
     <motion.div
       onMouseLeave={() => setHovered(null)}
       className={cn(
-        "absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 flex-row items-center justify-center space-x-2 text-sm font-medium text-zinc-600 transition duration-200 hover:text-zinc-800 lg:flex lg:space-x-2",
+        "absolute left-1/2 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 flex-row items-center justify-center gap-1 text-sm font-medium text-zinc-600 transition duration-200 hover:text-zinc-800 lg:flex",
         className,
       )}
     >
       {items.map((item, idx) => (
         <div
           key={`link-${idx}`}
-          className="relative flex items-center"
+          className="relative"
           onMouseEnter={() => setHovered(idx)}
         >
-          {/* Huvudlänk */}
           <Link
-            href={item.link ?? "#"}
+            href={item.link}
             onClick={onItemClick}
-            className="relative px-4 py-2 text-neutral-600 dark:text-neutral-300"
+            className="relative block rounded-full px-4 py-2 text-neutral-600 transition-colors hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white"
           >
             {hovered === idx && (
               <motion.div
                 layoutId="hovered"
-                className="absolute inset-0 h-full w-full rounded-full bg-gray-100 shadow-[0_8px_16px_rgba(15,23,42,0.06)] dark:bg-neutral-800"
+                className="absolute inset-0 h-full w-full rounded-full bg-gray-100 shadow-[0_8px_20px_rgba(15,23,42,0.08)] dark:bg-neutral-800"
               />
             )}
-            <span className="relative z-20">{item.name}</span>
+            <span className="relative z-20 whitespace-nowrap">{item.name}</span>
           </Link>
 
-          {/* Dropdown – visas bara om item.dropdown finns */}
-          {item.dropdown && item.dropdown.length > 0 && hovered === idx && (
-            <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
-              className="absolute left-1/2 top-full z-50 -translate-x-1/2"
-            >
-              <div className="min-w-[190px] overflow-hidden rounded-2xl border border-neutral-200 bg-white/95 shadow-lg shadow-black/5 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/95">
-                <ul className="flex flex-col py-1">
-                  {item.dropdown.map((subItem, subIdx) => (
-                    <li key={subItem.link}>
-                      <Link
-                        href={subItem.link}
-                        onClick={onItemClick}
-                        className={cn(
-                          "block px-4 py-2.5 text-sm text-neutral-800 transition-colors hover:bg-neutral-50 hover:text-neutral-950 dark:text-neutral-100 dark:hover:bg-neutral-800",
-                          subIdx === 0 && "pt-3",
-                          subIdx === item.dropdown!.length - 1 && "pb-3",
-                        )}
-                      >
-                        {subItem.name}
-                      </Link>
-                    </li>
+          <AnimatePresence>
+            {item.dropdown && item.dropdown.length > 0 && hovered === idx && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.16, ease: "easeOut" }}
+                className="absolute left-1/2 top-[calc(100%+0.75rem)] z-50 w-60 -translate-x-1/2"
+              >
+                <div className="overflow-hidden rounded-3xl border border-neutral-200/80 bg-white/95 p-2 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+                  {item.dropdown.map((subItem) => (
+                    <Link
+                      key={subItem.link}
+                      href={subItem.link}
+                      onClick={onItemClick}
+                      className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-950"
+                    >
+                      <span>{subItem.name}</span>
+                      <span className="text-xs text-neutral-400">{">"}</span>
+                    </Link>
                   ))}
-                </ul>
-              </div>
-            </motion.div>
-          )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       ))}
     </motion.div>
   );
 };
-
-
 
 export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
   return (
@@ -242,7 +226,7 @@ export const MobileNavMenu = ({
   children,
   className,
   isOpen,
-  onClose,
+  onClose: _onClose,
 }: MobileNavMenuProps) => {
   return (
     <AnimatePresence>
@@ -270,10 +254,15 @@ export const MobileNavToggle = ({
   isOpen: boolean;
   onClick: () => void;
 }) => {
-  return isOpen ? (
-    <IconX className="text-black dark:text-white" onClick={onClick} />
-  ) : (
-    <IconMenu2 className="text-black dark:text-white" onClick={onClick} />
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={isOpen ? "Stang meny" : "Oppna meny"}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 bg-white text-black transition-colors hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+    >
+      {isOpen ? <IconX className="h-5 w-5" /> : <IconMenu2 className="h-5 w-5" />}
+    </button>
   );
 };
 
@@ -283,60 +272,15 @@ export const NavbarLogo = () => {
       href="#"
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
     >
-      <div className="relative h-8 w-8">
-        <SkeletonImage
-          src="https://assets.aceternity.com/logo-dark.png"
-          alt="logo"
-          fill
-          className="object-contain"
-        />
-      </div>
+      <img
+        src="https://assets.aceternity.com/logo-dark.png"
+        alt="logo"
+        width={30}
+        height={30}
+      />
       <span className="font-medium text-black dark:text-white">Startup</span>
     </a>
   );
-};
-
-type HeroButtonProps = React.ComponentProps<typeof Button>;
-
-type NavbarButtonProps = {
-  href?: string;
-  as?: React.ElementType;
-  className?: string;
-  children: React.ReactNode;
-  variant?: "primary" | "secondary" | "dark" | "gradient";
-} & Omit<HeroButtonProps, "children" | "variant" | "color">;
-
-const navbarVariantMap: Record<
-  NonNullable<NavbarButtonProps["variant"]>,
-  {
-    color?: HeroButtonProps["color"];
-    variant?: HeroButtonProps["variant"];
-    className?: string;
-  }
-> = {
-  primary: {
-    color: "success",
-    variant: "solid",
-    className:
-      "shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
-  },
-  secondary: {
-    color: "success",
-    variant: "light",
-    className: "shadow-none bg-transparent text-brand hover:bg-transparent",
-  },
-  dark: {
-    color: "default",
-    variant: "solid",
-    className:
-      "bg-black text-white shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
-  },
-  gradient: {
-    color: "success",
-    variant: "solid",
-    className:
-      "bg-gradient-to-b from-blue-500 to-blue-700 text-white shadow-[0px_2px_0px_0px_rgba(255,255,255,0.3)_inset]",
-  },
 };
 
 export const NavbarButton = ({
@@ -345,31 +289,40 @@ export const NavbarButton = ({
   children,
   className,
   variant = "primary",
-  type: buttonType,
   ...props
-}: NavbarButtonProps) => {
-  const config = navbarVariantMap[variant] ?? navbarVariantMap.primary;
-  const Component = href ? as ?? "a" : as ?? "button";
-  const resolvedType =
-    Component === "button" ? (buttonType as HeroButtonProps["type"]) ?? "button" : undefined;
+}: {
+  href?: string;
+  as?: React.ElementType;
+  children: React.ReactNode;
+  className?: string;
+  variant?: "primary" | "secondary" | "dark" | "gradient";
+} & (
+  | React.ComponentPropsWithoutRef<"a">
+  | React.ComponentPropsWithoutRef<"button">
+)) => {
+  const baseStyles =
+    "relative inline-flex cursor-pointer items-center justify-center rounded-md bg-white px-4 py-2 text-center text-sm font-bold text-black transition duration-200 hover:-translate-y-0.5";
+
+  const variantStyles = {
+    primary:
+      "shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
+    secondary: "bg-transparent shadow-none dark:text-white",
+    dark:
+      "bg-black text-white shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
+    gradient:
+      "bg-gradient-to-b from-blue-500 to-blue-700 text-white shadow-[0px_2px_0px_0px_rgba(255,255,255,0.3)_inset]",
+  };
+
+  const Tag = as ?? (href ? Link : "button");
 
   return (
-    <Button
+    <Tag
       {...(href ? { href } : {})}
-      as={Component as React.ElementType}
-      radius="full"
-      color={config.color}
-      variant={config.variant}
-      type={resolvedType}
-      className={cn(
-        "px-5 font-semibold tracking-tight transition-transform duration-200 hover:-translate-y-0.5",
-        config.className,
-        className,
-      )}
+      {...(!href && Tag === "button" ? { type: "button" } : {})}
+      className={cn(baseStyles, variantStyles[variant], className)}
       {...props}
     >
       {children}
-    </Button>
+    </Tag>
   );
 };
-

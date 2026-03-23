@@ -2,100 +2,100 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { IconChevronDown } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 import {
-  Navbar,
+  MobileNav,
+  MobileNavHeader,
+  MobileNavMenu,
+  MobileNavToggle,
   NavBody,
   NavItems,
+  Navbar,
   type NavbarItem,
-  MobileNav,
-  NavbarButton,
-  MobileNavHeader,
-  MobileNavToggle,
-  MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 
-// Vi definierar vår egen typ som extendar NavbarItem för att inkludera 'link' som obligatorisk om vi vill
-type NavItem = NavbarItem & { link?: string };
+type NavItem = NavbarItem;
+
+const publicNavItems: NavItem[] = [
+  { name: "Bostäder", link: "/bostader" },
+  { name: "Alla köer", link: "/alla-koer" },
+  { name: "Kom igång", link: "/" },
+];
+
+const studentNavItems: NavItem[] = [
+  {
+    name: "Bostäder",
+    link: "/bostader",
+    dropdown: [
+      { name: "Sök bostäder", link: "/bostader" },
+      { name: "Mina ansökningar", link: "/ansokningar" },
+      { name: "Sparade", link: "/sparade" },
+    ],
+  },
+  {
+    name: "Alla köer",
+    link: "/alla-koer",
+    dropdown: [
+      { name: "Lägg till köer", link: "/alla-koer" },
+      { name: "Mina köer", link: "/koer" },
+    ],
+  },
+  { name: "Meddelanden", link: "/meddelanden" },
+  { name: "Notiser", link: "/notiser" },
+];
+
+const landlordNavItems: NavItem[] = [
+  { name: "Bostäder", link: "/bostader" },
+  {
+    name: "Mina annonser",
+    link: "/mina-annonser",
+    dropdown: [
+      { name: "Skapa ny", link: "/mina-annonser/ny" },
+      { name: "Mina annonser", link: "/mina-annonser" },
+      { name: "Ansökningar", link: "/ansokningar" },
+    ],
+  },
+  { name: "Meddelanden", link: "/meddelanden" },
+  { name: "Notiser", link: "/notiser" },
+];
+
+const getRoleLabel = (accountType?: string | null) => {
+  if (accountType === "student") return "Student";
+  if (accountType === "private_landlord") return "Privat uthyrare";
+  if (accountType === "company") return "Företag";
+  return null;
+};
+
+const getDisplayName = (user: ReturnType<typeof useAuth>["user"]) => {
+  if (!user) return "";
+  return user.displayName || user.companyName || user.fullName || user.email;
+};
+
+const getInitial = (value: string) => value.trim().charAt(0).toUpperCase() || "C";
 
 export default function SiteHeader() {
-  // Använd 'isLoading' istället för 'ready' om du uppdaterade AuthContext enligt tidigare steg
-  const { user, logout, isLoading } = useAuth(); 
-  
+  const { user, logout, isLoading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // VIKTIGT: I dina typer heter fältet 'accountType', inte 'type'
-  const userType = user?.accountType; 
+  const userType = user?.accountType;
+  const roleLabel = getRoleLabel(userType);
+  const displayName = getDisplayName(user);
+  const accountInitial = getInitial(displayName || "CampusLyan");
 
-  // --- Huvudnavigation beroende på typ ---
+  let navItems = publicNavItems;
 
-  let navItems: NavItem[] = [];
-
-  if (!user) {
-    // Utloggad
-    navItems = [
-      {
-        name: "Bostäder",
-        link: "/bostader",
-      },
-      {
-        name: "Alla köer",
-        link: "/alla-koer",
-      },
-      { name: "Kom igång", link: "/" },
-    ];
-  } else if (userType === "student") {
-    navItems = [
-      {
-        name: "Bostäder",
-        link: "/bostader",
-        dropdown: [
-          { name: "Sök bostäder", link: "/bostader" },
-          { name: "Mina ansökningar", link: "/ansokningar" },
-          { name: "Sparade", link: "/sparade" },
-        ],
-      },
-      {
-        name: "Alla köer",
-        link: "/alla-koer",
-        dropdown: [
-          { name: "Lägg till köer", link: "/alla-koer" },
-          { name: "Mina köer", link: "/koer" },
-        ],
-      },
-      { name: "Meddelanden", link: "/meddelanden" },
-      { name: "Notiser", link: "/notiser" },
-    ];
+  if (userType === "student") {
+    navItems = studentNavItems;
   } else if (userType === "private_landlord" || userType === "company") {
-    navItems = [
-      {
-        name: "Bostäder",
-        link: "/bostader",
-      },
-      {
-        name: "Mina annonser",
-        link: "/mina-annonser",
-        dropdown: [
-          { name: "Skapa ny", link: "/mina-annonser/ny" },
-          { name: "Mina annonser", link: "/mina-annonser" },
-          { name: "Ansökningar", link: "/ansokningar" },
-        ],
-      },
-      {
-        name: "Meddelanden",
-        link: "/meddelanden",
-      },
-      { name: "Notiser", link: "/notiser" },
-    ];
-  } else {
-    // Fallback
+    navItems = landlordNavItems;
+  } else if (user) {
     navItems = [{ name: "Bostadssök", link: "/bostader" }];
   }
-
-  // Konto-menyn
 
   let accountMenuItems: NavItem[] = [];
 
@@ -116,41 +116,73 @@ export default function SiteHeader() {
     accountMenuItems = [{ name: "Mitt konto", link: "/profil" }];
   }
 
-  const roleLabel =
-    userType === "student"
-      ? "Student"
-      : userType === "private_landlord"
-      ? "Privat uthyrare"
-      : userType === "company"
-      ? "Företag"
-      : null;
+  const closeMenus = () => {
+    setIsMobileMenuOpen(false);
+    setIsAccountMenuOpen(false);
+  };
+
+  const handleMobileToggle = () => {
+    setIsAccountMenuOpen(false);
+    setIsMobileMenuOpen((prev) => !prev);
+  };
+
+  const handleAccountToggle = () => {
+    setIsMobileMenuOpen(false);
+    setIsAccountMenuOpen((prev) => !prev);
+  };
 
   const handleLogout = () => {
     logout();
-    setIsAccountMenuOpen(false);
-    setIsMobileMenuOpen(false);
+    closeMenus();
   };
 
-  // Stäng dropdown när man klickar utanför
   useEffect(() => {
     if (!isAccountMenuOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target as Node)
+      ) {
         setIsAccountMenuOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isAccountMenuOpen]);
 
-  // Om vi laddar auth, visa en placeholder eller inget alls för att undvika layout-shift
-  // Valfritt: Ta bort detta om du vill visa "Logga in" direkt och låta den bytas ut
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeMenus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isMobileMenuOpen]);
+
   if (isLoading) {
-      return (
-        <Navbar className="top-4 opacity-0"> {/* Osynlig men tar plats */}
-            <NavBody><div className="h-10"></div></NavBody>
-        </Navbar>
-      );
+    return (
+      <Navbar className="top-4 opacity-0">
+        <NavBody>
+          <div className="h-10" />
+        </NavBody>
+      </Navbar>
+    );
   }
 
   return (
@@ -158,7 +190,7 @@ export default function SiteHeader() {
       <NavBody>
         <Link
           href="/"
-          className="flex items-center gap-2 px-2 py-1 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225] rounded-md hover:opacity-90 transition"
+          className="relative z-20 flex items-center gap-2 px-2 py-1 text-sm font-medium"
           aria-label="Gå till startsidan"
         >
           <Image
@@ -168,85 +200,104 @@ export default function SiteHeader() {
             height={30}
             priority
           />
-          <span className="text-base leading-tight">
-            CampusLyan
-          </span>
+          <div className="leading-tight">
+            <span className="text-base">CampusLyan</span>
+          </div>
         </Link>
 
-        {/* Desktop-nav med hover-dropdown */}
-        <NavItems items={navItems} />
+        <NavItems items={navItems} onItemClick={() => setIsAccountMenuOpen(false)} />
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="relative z-20 hidden items-center gap-2 lg:flex">
           {!user ? (
             <>
-              <NavbarButton variant="secondary" href="/logga-in">
+              <Link
+                href="/logga-in"
+                className="inline-flex rounded-full px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
+              >
                 Logga in
-              </NavbarButton>
-              <NavbarButton variant="primary" href="/registrera">
+              </Link>
+              <Link
+                href="/registrera"
+                className="inline-flex rounded-full bg-[#004225] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00341d]"
+              >
                 Skapa konto
-              </NavbarButton>
+              </Link>
             </>
           ) : (
-            <div ref={accountMenuRef} className="relative flex items-center gap-3">
-              <div className="flex flex-col items-end">
-                <span className="text-sm font-medium text-neutral-700">
-                  {user.displayName || user.email}
-                </span>
-                {roleLabel && (
-                  <span className="text-xs text-neutral-500">
-                    {roleLabel}
-                  </span>
-                )}
-              </div>
-              
+            <div ref={accountMenuRef} className="relative">
               <button
                 type="button"
-                onClick={() => setIsAccountMenuOpen((prev) => !prev)}
-                className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-[#004225] focus:ring-offset-2"
+                onClick={handleAccountToggle}
+                className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
               >
-                {/* Avatar placeholder eller användarens bild */}
                 {user.logoUrl ? (
-                     <div className="h-6 w-6 rounded-full overflow-hidden relative">
-                        <Image src={user.logoUrl} alt="Avatar" fill className="object-cover" />
-                     </div>
+                  <img
+                    src={user.logoUrl}
+                    alt={displayName}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
                 ) : (
-                    <div className="h-6 w-6 rounded-full bg-neutral-100 flex items-center justify-center text-xs font-bold text-neutral-500">
-                        {user.email.charAt(0).toUpperCase()}
-                    </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600">
+                    {accountInitial}
+                  </div>
                 )}
-                <span className="hidden sm:inline">Konto</span>
-                <span className="text-xs">▼</span>
+                <div className="hidden max-w-32 sm:block">
+                  <p className="truncate text-left text-sm font-medium text-neutral-900">
+                    {displayName}
+                  </p>
+                </div>
+                <IconChevronDown
+                  className={cn(
+                    "h-4 w-4 text-neutral-400 transition-transform",
+                    isAccountMenuOpen && "rotate-180",
+                  )}
+                />
               </button>
 
               {isAccountMenuOpen && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-neutral-200 bg-white shadow-lg ring-1 ring-black ring-opacity-5 py-1 animate-in fade-in zoom-in-95 duration-100">
-                  <div className="px-4 py-3 border-b border-neutral-100">
-                    <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
-                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] animate-dropdown">
+                  <div className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-3">
+                    {user.logoUrl ? (
+                      <img
+                        src={user.logoUrl}
+                        alt={displayName}
+                        className="h-9 w-9 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-600">
+                        {accountInitial}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-neutral-950">
+                        {displayName}
+                      </p>
+                      <p className="truncate text-xs text-neutral-500">
+                        {roleLabel ?? user.email}
+                      </p>
+                    </div>
                   </div>
-                  
-                  <div className="py-1">
+
+                  <div className="mt-2 grid gap-1">
                     {accountMenuItems.map((item) => (
                       <Link
                         key={item.link}
-                        href={item.link || "#"}
+                        href={item.link}
                         onClick={() => setIsAccountMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 hover:text-neutral-950"
                       >
                         {item.name}
                       </Link>
                     ))}
                   </div>
-                  
-                  <div className="border-t border-neutral-100 py-1">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      Logga ut
-                    </button>
-                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="mt-2 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                  >
+                    Logga ut
+                  </button>
                 </div>
               )}
             </div>
@@ -256,7 +307,7 @@ export default function SiteHeader() {
 
       <MobileNav>
         <MobileNavHeader>
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2" aria-label="Gå till startsidan">
             <Image
               src="/campuslyan-logo.svg"
               alt="CampusLyan"
@@ -267,97 +318,100 @@ export default function SiteHeader() {
           </Link>
           <MobileNavToggle
             isOpen={isMobileMenuOpen}
-            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            onClick={handleMobileToggle}
           />
         </MobileNavHeader>
-        <MobileNavMenu
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-        >
-          <div className="space-y-1">
+
+        <MobileNavMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
+          <div className="flex w-full flex-col gap-3">
             {navItems.map((item) => (
               <div key={item.name}>
-                  {item.dropdown ? (
-                      <div className="py-2">
-                          <span className="block px-2 text-sm font-semibold text-neutral-900 mb-2">{item.name}</span>
-                          <div className="pl-4 space-y-2 border-l-2 border-neutral-100 ml-2">
-                             {item.dropdown.map(sub => (
-                                <Link 
-                                    key={sub.name}
-                                    href={sub.link}
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="block text-sm text-neutral-600 py-1"
-                                >
-                                    {sub.name}
-                                </Link>
-                             ))}
-                          </div>
-                      </div>
-                  ) : (
-                    <Link
-                        href={item.link || "#"}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block py-3 text-base font-medium text-neutral-900 border-b border-neutral-100 last:border-0"
-                    >
-                        {item.name}
-                    </Link>
-                  )}
-              </div>
-            ))}
-          </div>
+                <Link
+                  href={item.link}
+                  onClick={closeMenus}
+                  className="text-base text-neutral-700"
+                >
+                  {item.name}
+                </Link>
 
-          <div className="mt-6 pt-6 border-t border-neutral-200">
-            {!user ? (
-              <div className="flex flex-col gap-3">
-                <NavbarButton
-                  variant="secondary"
-                  href="/logga-in"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full justify-center"
-                >
-                  Logga in
-                </NavbarButton>
-                <NavbarButton
-                  variant="primary"
-                  href="/registrera"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full justify-center"
-                >
-                  Skapa konto
-                </NavbarButton>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 px-2">
-                    <div className="h-10 w-10 rounded-full bg-neutral-100 flex items-center justify-center text-sm font-bold text-neutral-500">
-                        {user.email.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium text-gray-900">{user.displayName}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                    </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                    {accountMenuItems.map((item) => (
+                {item.dropdown && item.dropdown.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-2 border-l-2 border-neutral-100 pl-4">
+                    {item.dropdown.map((subItem) => (
                       <Link
-                        key={item.link}
-                        href={item.link || "#"}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block rounded-md bg-neutral-50 px-3 py-2 text-center text-sm font-medium text-neutral-700"
+                        key={subItem.link}
+                        href={subItem.link}
+                        onClick={closeMenus}
+                        className="text-sm text-neutral-500"
                       >
-                        {item.name}
+                        {subItem.name}
                       </Link>
                     ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {!user ? (
+              <>
+                <Link
+                  href="/logga-in"
+                  onClick={closeMenus}
+                  className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-neutral-200 px-5 py-3 text-base font-medium text-neutral-700 transition hover:bg-neutral-50"
+                >
+                  Logga in
+                </Link>
+                <Link
+                  href="/registrera"
+                  onClick={closeMenus}
+                  className="inline-flex w-full items-center justify-center rounded-full bg-[#004225] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
+                >
+                  Skapa konto
+                </Link>
+              </>
+            ) : (
+              <div className="mt-2 w-full border-t border-neutral-200 pt-4">
+                <div className="mb-3 flex items-center gap-3 px-1">
+                  {user.logoUrl ? (
+                    <img
+                      src={user.logoUrl}
+                      alt={displayName}
+                      className="h-9 w-9 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-sm font-semibold text-neutral-600">
+                      {accountInitial}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-neutral-950">
+                      {displayName}
+                    </p>
+                    <p className="truncate text-xs text-neutral-500">
+                      {roleLabel ?? user.email}
+                    </p>
+                  </div>
                 </div>
-                
-                <NavbarButton 
-                    variant="secondary" 
-                    onClick={handleLogout}
-                    className="w-full justify-center text-red-600 border-red-200 hover:bg-red-50"
+
+                <div className="flex flex-col gap-1">
+                  {accountMenuItems.map((item) => (
+                    <Link
+                      key={item.link}
+                      href={item.link}
+                      onClick={closeMenus}
+                      className="rounded-xl px-3 py-2.5 text-sm text-neutral-700 transition hover:bg-neutral-50"
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="mt-1 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
                 >
                   Logga ut
-                </NavbarButton>
+                </button>
               </div>
             )}
           </div>
