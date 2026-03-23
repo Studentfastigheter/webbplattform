@@ -46,6 +46,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
   const [isHovering, setIsHovering] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
 
   useEffect(() => {
     const node = cardRef.current;
@@ -100,12 +101,20 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
   const locationLabel = [area, city].filter(Boolean).join(", ");
 
   return (
-    <button
+    <div
+      role="button"
       ref={cardRef}
+      onKeyDown={e => {
+        // Enable keyboard navigation
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onViewListings();
+        }
+      }}
       onClick={e => onViewListings()}
       onMouseEnter={e => setIsHovering(true)}
       onMouseLeave={e => setIsHovering(false)}
-      className="flex w-full max-w-[520px] flex-col bg-white shadow-md"
+      className={`flex w-full max-w-[520px] flex-col bg-white shadow-md${isSelected ? " shadow-green-500/50" : ""}`}
       style={{
         padding: scaleValue(20),
         borderRadius: scaleValue(28),
@@ -235,6 +244,21 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         </div>
       )}
 
+      <div className="flex"
+           style={{ gap: scaleValue(12), marginTop: scaleValue(6) }}>
+        <Button
+           type="button"
+           onClick={e => {
+             setIsSelected(!isSelected);
+             e.stopPropagation();
+           }}
+           size="xs"
+           variant="secondary"
+        >
+           {isSelected ? "Ta bort" : "Lägg till"}
+        </Button>
+      </div>
+
       {/*
       <div
         className="flex"
@@ -259,7 +283,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         </Button>
       </div>
       */}
-    </button>
+    </div>
   );
 };
 
