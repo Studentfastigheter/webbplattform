@@ -54,7 +54,7 @@ export const StickyCards = ({
                     <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">{card.text}</p>
                   </div>
                 </div>
-                <div className={`items-center justify-center overflow-hidden bg-brand-beige-100 p-4 sm:p-6 md:p-8 lg:w-1/2 ${card.img?.trim() ? "flex" : "hidden sm:flex"}`}>
+                <div className={`items-center justify-center overflow-hidden bg-card p-4 sm:p-6 md:p-8 lg:w-1/2 ${card.img?.trim() ? "flex" : "hidden sm:flex"}`}>
                   {card.img?.trim() ? (
                     <img 
                       src={card.img} 
@@ -62,9 +62,7 @@ export const StickyCards = ({
                       loading="lazy"
                       className="max-h-[260px] max-w-full object-contain transition-transform duration-700 hover:scale-105 sm:max-h-[320px] md:max-h-[400px]" 
                     />
-                  ) : (
-                    <div className="h-[180px] w-full rounded-2xl bg-gradient-to-br from-brand-beige-200 to-brand-beige-100 sm:h-[220px]" />
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
