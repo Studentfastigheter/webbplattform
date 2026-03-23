@@ -82,7 +82,6 @@ export default function Page() {
                         }
                     };
                     const coord: Coordinates = await getCityCoordinates(dto.city);
-                    console.log(`Found coords of ${dto.city} at ${coord.lng}:${coord.lat}`)
                     return coord.lng && coord.lat ? {
                         ...base,
                         lng: coord.lng,
