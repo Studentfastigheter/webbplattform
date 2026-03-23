@@ -150,7 +150,7 @@ export default function ReadMoreComponent({
         }}
         style={{ overflow: "hidden" }}
       >
-        <div className="relative max-w-prose mx-auto">
+        <div className="relative">
           <div
             ref={measureRef}
             className={`text-base leading-relaxed ${textClassName}`}
@@ -172,7 +172,7 @@ export default function ReadMoreComponent({
             mt-3 flex w-full items-center justify-center
           `}
         >
-          <div className="max-w-prose mx-auto flex justify-center">
+          <div className="flex justify-center">
             <Button
               onClick={handleToggle}
               variant="text"

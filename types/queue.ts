@@ -11,16 +11,24 @@ export type QueueApplicationStatus = "active" | "left" | "offered" | "expired";
 // DTO från Backend (Matchar Java HousingQueueDTO)
 // ==========================================================
 export interface HousingQueueDTO {
-  id: string;            
-  companyId: number;     
+  id: string;
+  companyId: number;
   name: string;
   city: string;
   logoUrl: string;
+  bannerUrl?: string;
   description?: string;
   tags?: string[];
   totalUnits?: number;
-  waitDays?: number;     
+  waitDays?: number;
   activeListings: number;
+  contactPhone?: string;
+  contactEmail?: string;
+  website?: string;
+  socialLinks?: {
+    facebook?: string;
+    linkedin?: string;
+  };
 };
 
 export type AdvertisedHousingQueue = HousingQueueDTO & {

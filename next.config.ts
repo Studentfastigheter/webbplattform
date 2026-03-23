@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn2.hubspot.net" },
       { protocol: "https", hostname: "media.licdn.com" },
       { protocol: "https", hostname: "image-cdn.mild.cloud" },
+      { protocol: "https", hostname: "img.meccdn.com" },
+      { protocol: "https", hostname: "sumfinity.com" },
       {
         protocol: "https",
         hostname: "sgs-fastighet.momentum.se",
