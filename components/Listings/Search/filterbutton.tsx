@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export type FilterButtonProps = {
   children?: React.ReactNode;
-  triggerLabel?: string;
+  triggerLabel?: React.ReactNode;
   title?: string;
   applyLabel?: string;
   clearLabel?: string;

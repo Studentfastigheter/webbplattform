@@ -381,33 +381,34 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
         </div>
 
         {/* Åtgärdsområde - Sök och Filter */}
-        <div className="mt-4 md:mt-0 w-full md:w-auto flex items-center justify-end gap-2">
+        <div className="mt-4 md:mt-0 w-full md:w-auto flex items-center gap-2">
           {renderFilter && (
-            <div className="flex-shrink-0 border-r border-black/10 pr-2">
+            <div className="flex-1 md:flex-none flex justify-center md:border-r md:border-black/10 md:pr-2">
               {renderFilter()}
             </div>
           )}
           <Button
             type="button"
             onClick={handleSubmit}
-            size="icon-lg"
             variant="default"
-            className="w-[40px] h-[40px] md:w-[48px] md:h-[48px] flex items-center justify-center rounded-full flex-shrink-0"
+            className="flex-1 md:flex-none w-full md:w-[48px] h-[44px] md:h-[48px] flex items-center justify-center rounded-full flex-shrink-0 gap-2"
           >
-            <span className="sr-only">Sök</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-[18px] w-[18px] md:h-[20px] md:w-[20px] text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="18" y1="18" x2="23.5" y2="23.5" />
-            </svg>
+            <span className="block md:hidden text-sm font-semibold">Sök</span>
+            <span className="sr-only md:not-sr-only">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-[18px] w-[18px] md:h-[20px] md:w-[20px] text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="18" y1="18" x2="23.5" y2="23.5" />
+              </svg>
+            </span>
           </Button>
         </div>
       </div>
