@@ -13,20 +13,33 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Copy, 
-  Check, 
-  Facebook, 
-  Linkedin, 
-  Mail, 
-  Twitter // Används ofta för X
+import {
+  Copy,
+  Check,
+  Facebook,
+  Linkedin,
+  Mail,
+  Twitter,
 } from "lucide-react";
 
-export function ShareDialog({ children }: { children: React.ReactNode }) {
+type ShareDialogProps = {
+  children: React.ReactNode;
+  title?: string;
+  description?: string;
+  mailSubject?: string;
+  mailBody?: string;
+};
+
+export function ShareDialog({
+  children,
+  title = "Dela bostad",
+  description = "Dela länken till denna sida via sociala medier eller kopiera länken direkt.",
+  mailSubject = "Kolla in den här sidan",
+  mailBody = "Hittade den här länken som jag trodde du skulle gilla:",
+}: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
   const [currentUrl, setCurrentUrl] = useState("");
 
-  // Hämta URL på klient-sidan för att undvika hydration mismatch
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCurrentUrl(window.location.href);
@@ -39,8 +52,10 @@ export function ShareDialog({ children }: { children: React.ReactNode }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Social Media Länkar
   const encodedUrl = encodeURIComponent(currentUrl);
+  const encodedMailSubject = encodeURIComponent(mailSubject);
+  const encodedMailBody = encodeURIComponent(`${mailBody} ${currentUrl}`);
+
   const socialLinks = [
     {
       name: "Facebook",
@@ -63,26 +78,20 @@ export function ShareDialog({ children }: { children: React.ReactNode }) {
     {
       name: "E-post",
       icon: <Mail className="w-5 h-5" />,
-      href: `mailto:?subject=Kolla in denna bostad&body=Hittade denna länk som jag trodde du skulle gilla: ${encodedUrl}`,
+      href: `mailto:?subject=${encodedMailSubject}&body=${encodedMailBody}`,
       color: "hover:bg-gray-600 hover:text-white",
     },
   ];
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        {/* Här renderas knappen du skickar in (Share2-ikonen) */}
-        {children}
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md bg-white rounded-xl">
         <DialogHeader>
-          <DialogTitle>Dela bostad</DialogTitle>
-          <DialogDescription>
-            Dela länken till denna bostad via sociala medier eller kopiera länken direkt.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        
-        {/* Sociala Medier Ikoner */}
+
         <div className="flex justify-center gap-4 py-4">
           {socialLinks.map((social) => (
             <a
@@ -113,9 +122,9 @@ export function ShareDialog({ children }: { children: React.ReactNode }) {
               className="h-9 bg-gray-50 border-gray-200"
             />
           </div>
-          <Button 
-            size="sm" 
-            className="px-3 bg-black text-white hover:bg-gray-800" 
+          <Button
+            size="sm"
+            className="px-3 bg-black text-white hover:bg-gray-800"
             onClick={handleCopy}
           >
             {copied ? (
