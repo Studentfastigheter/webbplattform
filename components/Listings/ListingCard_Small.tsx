@@ -134,7 +134,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             <img
               src={imageUrl}
               alt={title}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-500"
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center text-gray-400">
