@@ -8,6 +8,7 @@ import {
   Search,
   MapPin,
 } from "lucide-react";
+import { image } from "@heroui/theme";
 
 // --- DATA ---
 
@@ -130,6 +131,7 @@ const TEAM_CATEGORIES = [
       {
         name: "Sumiya Sayeed",
         role: "Frontend Engineer",
+        image: "/team/Profilbild-Sumiya.png",
         linkedin: "https://www.linkedin.com/in/sumiya-sayeed-04a9319b/",
       },
     ],
