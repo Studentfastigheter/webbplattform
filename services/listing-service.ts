@@ -22,6 +22,47 @@ export type RollingAd = {
   data?: unknown;
 };
 
+// --- Mock Coordinates Utility ---
+// En enkel fallback för att generera koordinater om backend inte levererar dem (t.ex. vid mock/demo-data).
+const addMockCoordinates = <T extends { lat?: number | null; lng?: number | null; title: string; location: string }>(dto: T): T => {
+  if (typeof dto.lat === "number" && typeof dto.lng === "number") return dto;
+
+  // Deterministisk offset baserad på titel/plats för att de inte ska alla ligga på exakt samma pixel (hash algorithm)
+  const titleLower = dto.title?.toLowerCase() || "";
+  const locLower = dto.location?.toLowerCase() || "";
+  
+  let hash = 0;
+  for (let i = 0; i < titleLower.length; i++) {
+    hash = ((hash << 5) - hash) + titleLower.charCodeAt(i);
+    hash |= 0;
+  }
+  const randomOffsetLat = (Math.abs(hash) % 100) * 0.0001 - 0.005;
+  const randomOffsetLng = (Math.abs(hash >> 2) % 100) * 0.0001 - 0.005;
+  
+  let lat = 57.708870; // Göteborg center
+  let lng = 11.974560;
+
+  if (titleLower.includes("pennygången")) {
+    lat = 57.6749 + randomOffsetLat;
+    lng = 11.9329 + randomOffsetLng;
+  } else if (titleLower.includes("högsbogatan")) {
+    lat = 57.6811 + randomOffsetLat;
+    lng = 11.9366 + randomOffsetLng;
+  } else if (titleLower.includes("långgatan")) {
+    lat = 57.6993 + randomOffsetLat;
+    lng = 11.9482 + randomOffsetLng;
+  } else if (locLower.includes("stockholm")) {
+    lat = 59.3293 + randomOffsetLat * 10;
+    lng = 18.0686 + randomOffsetLng * 10;
+  } else {
+    // Other Gothenburg locations spread further out
+    lat += randomOffsetLat * 5;
+    lng += randomOffsetLng * 5;
+  }
+
+  return { ...dto, lat, lng };
+};
+
 // --- Service ---
 
 export const listingService = {
@@ -58,13 +99,18 @@ export const listingService = {
       queryParams.hostType = hostType;
 
     const query = buildQuery(queryParams);
-    return await apiClient<PageResponse<ListingCardDTO>>(`/listings${query}`);
+    const res = await apiClient<PageResponse<ListingCardDTO>>(`/listings${query}`);
+    if (res && res.content) {
+      res.content = res.content.map(addMockCoordinates);
+    }
+    return res;
   },
 
   // 2. HÄMTA EN ANNONS (Detaljvy)
   // Anropar: GET /api/listings/{id}
   get: async (id: string): Promise<ListingDetailDTO> => {
-    return await apiClient<ListingDetailDTO>(`/listings/${id}`);
+    const detail = await apiClient<ListingDetailDTO>(`/listings/${id}`);
+    return detail ? addMockCoordinates(detail) : detail;
   },
 
   // 3. HÄMTA MINA ANSÖKNINGAR
@@ -96,7 +142,8 @@ export const listingService = {
   },
 
   getFavorites: async (): Promise<ListingCardDTO[]> => {
-    return await apiClient<ListingCardDTO[]>("/listings/favorites");
+    const res = await apiClient<ListingCardDTO[]>("/listings/favorites");
+    return res ? res.map(addMockCoordinates) : [];
   },
 
   // --- ÖVRIGA METODER ---

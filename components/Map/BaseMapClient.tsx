@@ -91,8 +91,27 @@ const BaseMap: React.FC<BaseMapProps> = ({
   const manualPopupRef = useRef(false);
 
   // Frys initial center/zoom så de inte hoppar om props ändras
-  const [initialCenter] = useState<[number, number]>(center);
-  const [initialZoom] = useState<number>(zoom);
+const [initialCenter] = useState<[number, number]>(() => {
+  if (markers.length === 0) return center;
+  if (markers.length === 1) return markers[0].position;
+  // Use median as a good starting center
+  const sorted = (arr: number[]) => [...arr].sort((a, b) => a - b);
+  const median = (arr: number[]) => {
+    const s = sorted(arr);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  };
+  return [
+    median(markers.map((m) => m.position[0])),
+    median(markers.map((m) => m.position[1])),
+  ] as [number, number];
+});
+
+const [initialZoom] = useState<number>(() => {
+  if (markers.length === 0) return zoom;
+  if (markers.length === 1) return 13;
+  return 12; // city-level starting point; applyFit refines it
+});
 
   const applyFit = useCallback(() => {
     const map = mapRef.current;
@@ -109,7 +128,30 @@ const BaseMap: React.FC<BaseMapProps> = ({
       return;
     }
 
-    const bounds = L.latLngBounds(markers.map((m) => m.position));
+    // Centrera mot det tätaste området (filtrera bort extrema outliers)
+    const getMedian = (arr: number[]) => {
+      const sorted = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    };
+
+    const lats = markers.map(m => m.position[0]);
+    const lngs = markers.map(m => m.position[1]);
+    const medianLat = getMedian(lats);
+    const medianLng = getMedian(lngs);
+
+    // Kärnområdet: Markörer som ligger inom ca 10 mil från medianen (1 grad)
+    const coreMarkers = markers.filter(m => 
+      Math.abs(m.position[0] - medianLat) < 0.15 && 
+      Math.abs(m.position[1] - medianLng) < 0.15
+    );
+
+    // Om kärnområdet är för litet, använd alla markörer för att inte tappa information
+    const markersToFit =
+      coreMarkers.length >= Math.min(3, markers.length * 0.3)
+        ? coreMarkers
+        : markers;  
+    const bounds = L.latLngBounds(markersToFit.map((m) => m.position));
     map.fitBounds(bounds, { padding: [32, 32], maxZoom: 15 });
   }, [markers, initialCenter, initialZoom]);
 
@@ -132,7 +174,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
     if (!mapRef.current || suppressAutoFit) return;
     mapRef.current.invalidateSize();
     applyFit();
-  }, [applyFit, markers.length, suppressAutoFit]);
+  }, [applyFit, suppressAutoFit]);
 
   // Refits på resize
   useEffect(() => {

@@ -227,16 +227,19 @@ img, svg, video, canvas {
 }
 
 .map-popup .leaflet-popup-content-wrapper {
-  padding: 0;
-  border-radius: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: none !important;
 }
 
-/* Ta bort default-marginal s? kortet kan g? kant-till-kant */
 .map-popup .leaflet-popup-content {
-  margin: 0;
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.leaflet-popup-content p {
+  margin: 0 !important;
 }
 
 .map-popup .leaflet-popup-tip-container,
