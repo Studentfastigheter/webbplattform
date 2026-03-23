@@ -108,6 +108,7 @@ const TEAM_CATEGORIES = [
       {
         name: "Marco Speziale",
         role: "Backend Engineer",
+        image: "/team/Profilbild-Marco.png",
         linkedin: "https://www.linkedin.com/in/marco-speziale-1ba67a169/",
       },
       {
