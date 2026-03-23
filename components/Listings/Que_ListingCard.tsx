@@ -17,7 +17,8 @@ type QueueSummary = Pick<HousingQueueWithRelations, "name" | "area" | "city" | "
 
 export type QueListingCardProps = QueueSummary & {
   onViewListings?: () => void;
-  onReadMore?: () => void;
+  onSelect?: () => void;
+  onDeselect?: () => void;
 };
 
 const BASE_WIDTH = 480;
@@ -42,11 +43,22 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     logoAlt,
     tags,
     onViewListings,
+    onSelect,
+    onDeselect,
   } = props;
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
   const [isHovering, setIsHovering] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
+
+  // Notify add/remove selection
+  useEffect(() => {
+     if (isSelected) {
+       onSelect?.();
+     } else {
+       onDeselect?.();
+     }
+  }, [isSelected]);
 
   useEffect(() => {
     const node = cardRef.current;

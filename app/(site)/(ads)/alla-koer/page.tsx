@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
+import { Button } from "@/components/ui/button";
 import Que_ListingCard from "@/components/Listings/Que_ListingCard";
 import QueueFilterButton, {
   type QueueFilterState,
@@ -49,6 +50,7 @@ export default function Page() {
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -185,6 +187,16 @@ export default function Page() {
             logoAlt={queueCardProps.logoAlt}
             tags={queueCardProps.tags}
             onViewListings={() => router.push(`/alla-koer/${queue.id}`)}
+            onSelect={() => {
+              const next = new Set(selectedQueues);
+              next.add(queue.id);
+              setSelectedQueues(next);
+            }}
+            onDeselect={() => {
+              const next = new Set(selectedQueues);
+              next.delete(queue.id);
+              setSelectedQueues(next);
+            }}
             />
         </div>);
     };
@@ -218,7 +230,7 @@ export default function Page() {
 
     return (
       <main className="flex flex-col gap-8 pb-12 pt-4">
-        {/* Sektion 1: filter */}
+        {/* Filters */}
         <section className="w-full">
           <div className="flex w-full flex-col gap-4">
             <div className="flex flex-wrap items-center gap-4">
@@ -252,7 +264,7 @@ export default function Page() {
           </div>
         </section>
 
-        {/* Sektion 2: rubrik + vyval */}
+        {/* Rubric */}
         <section className="w-full">
           <div className="flex w-full flex-wrap items-center justify-between gap-4">
             <h2 id="bostader-heading" className="text-base font-semibold text-black">
@@ -262,7 +274,7 @@ export default function Page() {
           </div>
         </section>
 
-        {/* Sektion 3: annonser */}
+        {/* Listings */}
         <section className="w-full">
           <FieldSet className="w-full" aria-labelledby="bostader-heading">
             {error && (
@@ -287,9 +299,7 @@ export default function Page() {
                 >
                   <QueuesMap
                     queues={mapQueues}
-                    // --- ÄNDRING 5: Navigera med ID från kartan ---
                     onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
-                    // ----------------------------------------------
                   />
                 </div>
               </div>
@@ -309,6 +319,12 @@ export default function Page() {
                 )}
               </div>
             )}
+            { /* Popup for queue checkout */
+              (selectedQueues.size > 0) &&
+              (<div className="flex justify-end" style={{ width: "100%" }}>
+                  <Button size="md">Ställ mig i kö</Button>
+              </div>)
+            }
           </FieldSet>
         </section>
       </main>
