@@ -379,6 +379,63 @@ img, svg, video, canvas {
   to { transform: translateX(-50%); }
 }
 
+/* Business page */
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  15%, 55% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  70%, 100% {
+    opacity: 0;
+    transform: translateY(-28px);
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+
+  15%,
+  85% {
+    opacity: 1;
+  }
+
+  50% {
+    top: calc(100% - 0.25rem);
+    opacity: 1;
+  }
+
+  100% {
+    top: calc(100% - 0.25rem);
+    opacity: 0;
+  }
+}
+
+@keyframes moveRight {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+
+  15%,
+  85% {
+    opacity: 1;
+  }
+
+  100% {
+    left: calc(100% - 0.5rem);
+    opacity: 0;
+  }
+}
+
 .eyebrow {
   font-size: .8rem;
   letter-spacing: .12em;
