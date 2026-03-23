@@ -157,7 +157,7 @@ export default function Page() {
 
     const queueGridClasses = isMapView
         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 justify-items-center"
-        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
+        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 justify-items-center";
 
     const renderQueueCard = (queue: QueueWithUI) => {
         const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
@@ -229,104 +229,107 @@ export default function Page() {
     }, [filteredQueues.length, hasMore, loading, loadingMore]);
 
     return (
-      <main className="flex flex-col gap-8 pb-12 pt-4">
-        {/* Filters */}
-        <section className="w-full">
-          <div className="flex w-full flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="min-w-[280px] flex-1">
-                 <SearchFilterBar2
-                  className="w-full"
-                  fields={[
-                    {
-                      id: "location",
-                      label: "Var",
-                      placeholder: "Sök studentstad",
-                      options: { "Överallt": "", ...cityOptions }
-                    },
-                    {
-                      id: "queueId",
-                      label: "Bostadskö",
-                      placeholder: "Sök specifik bostadskö",
-                      options: { "Alla": "", ...queueOptions }
-                    }
-                  ]}
-                  onSubmit={(values) => {
-                    console.log(`Search values are: location=${values.location}, queueName=${values.queueName}`);
-                    setSearchValues({
-                      location: values.location,
-                      queueId: values.queueId,
-                    });
-                  }}
-                />
-              </div>
-           </div>
-          </div>
-        </section>
-
-        {/* Rubric */}
-        <section className="w-full">
-          <div className="flex w-full flex-wrap items-center justify-between gap-4">
-            <h2 id="bostader-heading" className="text-base font-semibold text-black">
-              Över {totalQueues.toLocaleString("sv-SE")} köer
-            </h2>
-            <SwitchSelect value={view} onChange={setView} />
-          </div>
-        </section>
-
-        {/* Listings */}
-        <section className="w-full">
-          <FieldSet className="w-full" aria-labelledby="bostader-heading">
-            {error && (
-              <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
-            {loading ? (
-              <div className="py-12 text-center text-sm text-gray-500">
-                Laddar köer...
-              </div>
-            ) : filteredQueues.length === 0 ? (
-              <div className="py-12 text-center text-sm text-gray-500">
-                Inga köer att visa just nu.
-              </div>
-            ) : isMapView ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-6">
-                <div className={queueGridClasses}>{renderMapListings()}</div>
-                <div
-                  className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
-                  style={{ minHeight: 600, height: "min(72vh, 760px)" }}
-                >
-                  <QueuesMap
-                    queues={mapQueues}
-                    onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
+      <main className="flex flex-col gap-6 sm:gap-8 pb-12 pt-4 w-full h-auto">
+        {/* Same layout technique as in /bostader */}
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 h-auto">
+          {/* Filters */}
+          <section className="w-full">
+            <div className="flex w-full flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-start xl:items-center gap-3 sm:gap-4">
+                <div className="w-full lg:flex-1">
+                  <SearchFilterBar2
+                    className="w-full"
+                    fields={[
+                      {
+                        id: "location",
+                        label: "Var",
+                        placeholder: "Sök studentstad",
+                        options: { "Överallt": "", ...cityOptions }
+                      },
+                      {
+                        id: "queueId",
+                        label: "Bostadskö",
+                        placeholder: "Sök specifik bostadskö",
+                        options: { "Alla": "", ...queueOptions }
+                      }
+                    ]}
+                    onSubmit={(values) => {
+                      console.log(`Search values are: location=${values.location}, queueName=${values.queueName}`);
+                      setSearchValues({
+                        location: values.location,
+                        queueId: values.queueId,
+                      });
+                    }}
                   />
                 </div>
-              </div>
-            ) : (
-              <div className={queueGridClasses}>
-                {visibleQueues.map((queue) => renderQueueCard(queue))}
-              </div>
-            )}
-            {(hasMore || loadingMore) && (
-              <div
-                ref={loadMoreRef}
-                className="flex w-full items-center justify-center py-4"
-                aria-hidden
-              >
-                {loadingMore && (
-                  <span className="text-xs text-gray-500">Laddar fler köer...</span>
-                )}
-              </div>
-            )}
-            { /* Popup for queue checkout */
-              (selectedQueues.size > 0) &&
-              (<div className="flex justify-end" style={{ width: "100%" }}>
-                  <Button size="md">Ställ mig i kö</Button>
-              </div>)
-            }
-          </FieldSet>
-        </section>
+            </div>
+            </div>
+          </section>
+
+          {/* Rubric */}
+          <section className="w-full mt-6 sm:mt-8">
+            <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <h2 id="bostader-heading" className="text-base sm:text-lg font-semibold text-black">
+                Över {totalQueues.toLocaleString("sv-SE")} köer
+              </h2>
+              <SwitchSelect value={view} onChange={setView} />
+            </div>
+          </section>
+
+          {/* Listings */}
+          <section className="w-full min-h-[400px] mt-4 sm:mt-6">
+            <FieldSet className="w-full" aria-labelledby="bostader-heading">
+              {error && (
+                <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  {error}
+                </div>
+              )}
+              {loading ? (
+                <div className="py-12 text-center text-sm text-gray-500">
+                  Laddar köer...
+                </div>
+              ) : filteredQueues.length === 0 ? (
+                <div className="py-12 text-center text-sm text-gray-500">
+                  Inga köer att visa just nu.
+                </div>
+              ) : isMapView ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-6">
+                  <div className={queueGridClasses}>{renderMapListings()}</div>
+                  <div
+                    className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
+                    style={{ minHeight: 600, height: "min(72vh, 760px)" }}
+                  >
+                    <QueuesMap
+                      queues={mapQueues}
+                      onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className={queueGridClasses}>
+                  {visibleQueues.map((queue) => renderQueueCard(queue))}
+                </div>
+              )}
+              {(hasMore || loadingMore) && (
+                <div
+                  ref={loadMoreRef}
+                  className="flex w-full items-center justify-center py-6 sm:py-8 min-h-[60px]"
+                  aria-hidden
+                >
+                  {loadingMore && (
+                    <span className="text-xs text-gray-500">Laddar fler köer...</span>
+                  )}
+                </div>
+              )}
+              { /* Popup for queue checkout */
+                (selectedQueues.size > 0) &&
+                (<div className="flex justify-end" style={{ width: "100%" }}>
+                    <Button size="md">Ställ mig i kö</Button>
+                </div>)
+              }
+            </FieldSet>
+          </section>
+        </div>
       </main>
     );
 }
