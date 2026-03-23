@@ -1,5 +1,4 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
 import { SectionBadge } from '@/components/ui/section-badge';
 
 // 1. Definiera hur ett feature-objekt ser ut
@@ -55,13 +54,10 @@ export const Features = ({
           {features.map((f, i) => (
             <div key={`${f.title}-${i}`} className="group rounded-3xl border border-transparent bg-card p-5 transition-all duration-300 hover:border-border hover:shadow-2xl sm:rounded-[2rem] sm:p-7 md:p-10 lg:p-12">
               
-              <div className="mb-6 flex items-start justify-between sm:mb-8">
+              <div className="mb-6 sm:mb-8">
                 <span className={`${f.color} text-primary-foreground px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide`}>
                   {f.badge}
                 </span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-beige-100 transition-colors group-hover:bg-primary group-hover:text-primary-foreground sm:h-10 sm:w-10">
-                  <ArrowRight size={18} className="sm:h-5 sm:w-5" />
-                </div>
               </div>
               
               <h3 className="mb-4 min-h-0 text-xl font-bold text-foreground sm:mb-6 sm:text-2xl md:min-h-[5rem] md:text-3xl">{f.title}</h3>
@@ -73,19 +69,6 @@ export const Features = ({
                   </span>
                 ))}
                 <span className="px-3 py-1.5 text-xs font-bold text-muted-foreground sm:py-2 sm:text-sm">+ Fler</span>
-              </div>
-
-              <div className={`rounded-2xl overflow-hidden bg-brand-beige-100 border border-border ${f.img?.trim() ? "block" : "hidden sm:block"}`}>
-                {f.img?.trim() ? (
-                  <img 
-                    src={f.img} 
-                    alt={f.title} 
-                    loading="lazy"
-                    className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500" 
-                  />
-                ) : (
-                  <div className="h-40 w-full bg-gradient-to-br from-brand-beige-200 to-brand-beige-100 sm:h-52" />
-                )}
               </div>
             </div>
           ))}
