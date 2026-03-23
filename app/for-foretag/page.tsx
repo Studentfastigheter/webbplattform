@@ -54,7 +54,7 @@ export default function ForForetagPage() {
           </span>
         }
         description="Anslut ditt fastighetssystem och nå hela marknaden automatiskt. Vi verifierar studenterna enligt din kravprofil, så att du kan fylla vakanserna helt utan administration."
-        primaryCtaText="Kom igång"
+        primaryCtaText="Boka demo"
         primaryCtaLink="#bokning"
       />
 

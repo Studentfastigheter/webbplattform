@@ -133,13 +133,13 @@ export const Hero = ({
             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
 
-          {/* Secondary CTA -> också till bokning (eller valfri länk) */}
+          {/* Secondary CTA -> också till bokning (eller valfri länk) 
           <Link
             href="#bokning"
             className="flex-1 sm:flex-none bg-white border-2 border-slate-200 text-slate-700 px-4 sm:px-8 h-12 sm:h-14 rounded-xl font-bold hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center text-sm sm:text-base whitespace-nowrap"
           >
             Läs mer
-          </Link>
+          </Link>*/}
         </div>
         {/* ------------------------- */}
 
