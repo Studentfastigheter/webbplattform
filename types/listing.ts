@@ -17,6 +17,8 @@ export interface ListingCardDTO {
   sizeM2: number;
   tags: string[];
   hostType: string;
+  hostName?: string;
+  hostLogoUrl?: string;
   verifiedHost: boolean;
   lat?: number | null;
   lng?: number | null;
@@ -26,12 +28,13 @@ export interface ListingCardDTO {
 export interface ListingDetailDTO {
   id: string;
   title: string;
-  location: string;
+  city: string;
+  area: string;
   fullAddress?: string | null;
   rent: number;
   dwellingType: string;
   rooms: number;
-  sizeM2: number;
+  sizeM2: number | null;
   description: string;
   tags: string[];
   imageUrls: string[]; 
@@ -46,11 +49,13 @@ export interface ListingDetailDTO {
   lat?: number | null;
   lng?: number | null;
 
-  // Värd
-  hostType: string;
-  hostName: string;
-  hostId: number;
-  verifiedHost: boolean;
+  // Värd / Ägare
+  ownerType: string;
+  ownerName: string;
+  ownerLogoUrl?: string | null;
+  ownerId: number;
+  provider?: string | null;
+  verifiedOwner: boolean;
 }
 
 // 3. MINA ANSÖKNINGAR (My Applications) - Matchar Java StudentApplicationDTO

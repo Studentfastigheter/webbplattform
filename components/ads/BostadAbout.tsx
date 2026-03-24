@@ -62,10 +62,10 @@ export default function BostadAbout({
                 
 
                 {/* Två rader med ikon + text, ingen chip-bakgrund */}
-                {listing.location && (
+                {(listing.fullAddress || listing.area) && (
                   <InfoRow
                     icon={<MapPin className="h-4 w-4" />}
-                    label={listing.location}
+                    label={listing.fullAddress ? `${listing.fullAddress}, ${listing.city}` : [listing.area, listing.city].filter(Boolean).join(", ")}
                   />
                 )}
                 <InfoRow
@@ -102,59 +102,74 @@ export default function BostadAbout({
             </div>
           </BostadForm>
         </EditWrapper>
-      ): (
-        <div className="flex flex-col gap-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-green-900">
-            Om annonsen
-          </p>
-
-          <div className="flex flex-col gap-1 items-baseline">
-            <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl relative">
+      ) : (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2 relative">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl text-balance">
               {listing.title}
             </h1>
             
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 mt-2">
+              <span className="flex items-center gap-1.5 font-medium">
+                <MapPin className="h-4 w-4 text-green-700" />
+                {listing.fullAddress ? `${listing.fullAddress}, ${listing.city}` : [listing.area, listing.city].filter(Boolean).join(", ")}
+              </span>
+              <span className="flex items-center gap-1.5 font-medium">
+                <Home className="h-4 w-4 text-green-700" />
+                {dwellingLabel}
+              </span>
+            </div>
+          </div>
 
-          {/* Plats (Vi använder listing.location direkt nu) */}
-          {listing.location && (
-            <InfoRow
-              icon={<MapPin className="h-4 w-4" />}
-              label={listing.location}
-            />
+          {(listing.availableFrom || listing.availableTo) && (
+            <div className="flex flex-wrap gap-4 border-y border-gray-100 py-4">
+              {listing.availableFrom && (
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Tillgänglig från</span>
+                  <span className="text-sm font-medium text-gray-900 mt-1">{listing.availableFrom}</span>
+                </div>
+              )}
+              {listing.availableTo && (
+                <div className="flex flex-col border-l border-gray-200 pl-4">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Tillgänglig till</span>
+                  <span className="text-sm font-medium text-gray-900 mt-1">{listing.availableTo}</span>
+                </div>
+              )}
+            </div>
           )}
-          
-          <InfoRow
-            icon={<Home className="h-4 w-4" />}
-            label={dwellingLabel}
-          />
-        </div>
 
-        {/* Taggar */}
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {(listing.tags ?? []).map((tag) => (
-            <Tag
-              key={tag}
-              text={tag}
-              bgColor="#E9E9E9"
-              textColor="#111111"
-              height={28}
-              horizontalPadding={14}
-              fontSize={13}
+          {/* Taggar */}
+          {listing.tags && listing.tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {listing.tags.map((tag) => (
+                <Tag
+                  key={tag}
+                  text={tag}
+                  bgColor="#F3F4F6"
+                  textColor="#1F2937"
+                  height={28}
+                  horizontalPadding={14}
+                  fontSize={13}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Beskrivning */}
+          <div className="mt-2">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2 border-b border-gray-100 pb-2">Om boendet</h2>
+            <ReadMoreComponent
+              text={listing.description ?? ""}
+              variant="large"
+              className="mt-2"
+              textClassName="text-[15px] leading-relaxed text-gray-700"
+              buttonWrapClassName="pb-4"
+              moreLabel="Läs mer"
+              lessLabel="Visa mindre"
+              scrollOffset={400}
             />
-          ))}
+          </div>
         </div>
-
-        {/* Beskrivning */}
-        <ReadMoreComponent
-          text={listing.description ?? ""}
-          variant="large"
-          className="mt-2"
-          textClassName="text-base leading-relaxed text-gray-800"
-          buttonWrapClassName="pb-4"
-          moreLabel="Läs mer"
-          lessLabel="Visa mindre"
-          scrollOffset={400}
-        />
-      </div>
       )}
 
       {/* Högerkolumn: prisbox */}

@@ -264,6 +264,8 @@ export default function ListingsPage() {
           sizeM2={listing.sizeM2 || 0}
           rent={listing.rent || 0}
           landlordType={listing.hostType}
+          hostName={listing.hostName}
+          hostLogoUrl={listing.hostLogoUrl}
           isVerified={listing.verifiedHost}
           imageUrl={listing.imageUrl}
           tags={listing.tags}

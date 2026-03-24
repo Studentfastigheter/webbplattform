@@ -16,6 +16,8 @@ export type ListingCardSmallProps = {
   tags?: string[];
   imageUrl?: string;      // En enkel sträng nu (URL)
   landlordType?: string;  // Motsvarar hostType ("Privat värd" / "Företag")
+  hostName?: string;
+  hostLogoUrl?: string;
   isVerified?: boolean;
   
   // Funktioner & UI
@@ -52,6 +54,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     sizeM2,
     rent,
     landlordType,
+    hostName,
+    hostLogoUrl,
     isVerified = false,
     imageUrl,
     tags,
@@ -223,17 +227,29 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             >
               {formatRent(rent)}
             </p>
-            <p
-              className="truncate text-gray-500"
-              style={{
-                fontSize: scaleValue(14),
-                lineHeight: scaleValue(18),
-                maxWidth: "100%",
-              }}
-              title={landlordType}
-            >
-              {landlordType}
-            </p>
+            <div className="flex items-center justify-end w-full" style={{ gap: scaleValue(6) }}>
+              <img
+                src="/campuslyan-logo.svg"
+                alt="CampusLyan"
+                style={{
+                  width: scaleValue(16),
+                  height: scaleValue(16),
+                  borderRadius: "999px",
+                  objectFit: "cover"
+                }}
+              />
+              <p
+                className="truncate text-gray-500 font-medium"
+                style={{
+                  fontSize: scaleValue(14),
+                  lineHeight: scaleValue(18),
+                  maxWidth: "100%",
+                }}
+                title={hostName || landlordType}
+              >
+                {hostName ?? landlordType}
+              </p>
+            </div>
           </div>
         </div>
         
