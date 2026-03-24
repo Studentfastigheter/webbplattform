@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { Share2, Heart, Home, MapPin, Building2 } from "lucide-react";
 import Tag from "@/components/ui/Tag";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { ShareDialog } from "@/components/ui/ShareDialog"; // Importera din ShareDialog
 import { listingService } from "@/services/listing-service"; // Importera servicen
 
@@ -23,7 +22,6 @@ export type SavedListingRowProps = {
   verified?: boolean;
   onOpen?: () => void;
   onRemove?: (id: string) => void; // Ny prop: Callback när man tar bort
-  onExpressInterest?: () => void;
 };
 
 const formatCurrency = (value?: number | null) =>
@@ -46,7 +44,6 @@ export default function SavedListingRow({
   verified,
   onOpen,
   onRemove,
-  onExpressInterest,
 }: SavedListingRowProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -165,18 +162,6 @@ export default function SavedListingRow({
               </button>
             </div>
 
-            <Button
-              type="button"
-              size="sm"
-              variant="default"
-              className="h-8 text-xs rounded-full px-4"
-              onClick={(e) => {
-                e.stopPropagation();
-                onExpressInterest?.();
-              }}
-            >
-              Intresseanmäl
-            </Button>
           </div>
         </div>
 

@@ -9,6 +9,7 @@ import { Home, MapPin } from "lucide-react";
 import React from "react";
 import EditWrapper from "@/app/(business_portal)/_components/EditWrapper";
 import BostadForm from "./BostadForm";
+import { Button } from "@/components/ui/button";
 
 function InfoRow({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
@@ -62,7 +63,16 @@ export default function BostadAbout({
                     {listing.title}
                 </h1>
                 
-
+        <HousingInfoBox
+          listingId={listing.id}  // NY: Skicka med annons-ID
+          isFavorite={isFavorite}
+          rent={listing.rent}
+          moveInDate={listing.moveIn}
+          lastApplyDate={listing.applyBy}
+          className="w-full max-w-[280px]"
+          onApplyClick={onApplyClick}
+          applyDisabled={applyDisabled}
+        />
                 {/* Två rader med ikon + text, ingen chip-bakgrund */}
                 {(listing.fullAddress || listing.area) && (
                   <InfoRow
@@ -74,6 +84,20 @@ export default function BostadAbout({
                     icon={<Home className="h-4 w-4" />}
                     label={dwellingLabel}
                 />
+                </div>
+
+                <div className="flex flex-wrap gap-y-4 border-y border-gray-100 py-4 mt-2 mb-2">
+                  {[
+                    { label: "Tillgänglig från", value: listing.availableFrom || "Inte angivet" },
+                    { label: "Tillgänglig till", value: listing.availableTo || "Tillsvidare" },
+                    { label: "Inflyttning", value: listing.moveIn || "Inte angivet" },
+                    { label: "Sista ansökan", value: listing.applyBy || "Inte angivet" },
+                  ].map((item, index) => (
+                    <div key={item.label} className={`flex flex-col pr-4 ${index > 0 ? "border-l border-gray-200 pl-4" : ""}`}>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{item.label}</span>
+                      <span className="text-sm font-medium text-gray-900 mt-1">{item.value}</span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Taggar som chips under raderna */}
@@ -123,20 +147,20 @@ export default function BostadAbout({
             </div>
           </div>
 
-          {(listing.availableFrom || listing.availableTo) && (
-            <div className="flex flex-wrap gap-4 border-y border-gray-100 py-4">
-              {listing.availableFrom && (
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Tillgänglig från</span>
-                  <span className="text-sm font-medium text-gray-900 mt-1">{listing.availableFrom}</span>
-                </div>
-              )}
-              {listing.availableTo && (
-                <div className="flex flex-col border-l border-gray-200 pl-4">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Tillgänglig till</span>
-                  <span className="text-sm font-medium text-gray-900 mt-1">{listing.availableTo}</span>
-                </div>
-              )}
+          {(listing.availableFrom || listing.availableTo || listing.moveIn || listing.applyBy) && (
+            <div className="flex flex-wrap gap-y-4 border-y border-gray-100 py-4">
+              {[
+                { label: "Tillgänglig från", value: listing.availableFrom || "Inte angivet" },
+                { label: "Tillgänglig till", value: listing.availableTo || "Tillsvidare" },
+                { label: "Inflyttning", value: listing.moveIn || "Inte angivet" },
+                { label: "Sista ansökan", value: listing.applyBy || "Inte angivet" },
+              ]
+                .map((item, index) => (
+                  <div key={item.label} className={`flex flex-col pr-4 ${index > 0 ? "border-l border-gray-200 pl-4" : ""}`}>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{item.label}</span>
+                    <span className="text-sm font-medium text-gray-900 mt-1">{item.value}</span>
+                  </div>
+                ))}
             </div>
           )}
 
@@ -157,6 +181,8 @@ export default function BostadAbout({
             </div>
           )}
 
+
+
           {/* Beskrivning */}
           <div className="mt-2">
             <h2 className="text-lg font-semibold text-gray-900 mb-2 border-b border-gray-100 pb-2">Om boendet</h2>
@@ -174,19 +200,21 @@ export default function BostadAbout({
         </div>
       )}
 
-      {/* Högerkolumn: prisbox */}
-      <div className="lg:justify-self-end">
-        <HousingInfoBox
-          listingId={listing.id}  // NY: Skicka med annons-ID
-          isFavorite={isFavorite}
-          rent={listing.rent}
-          moveInDate={listing.moveIn}
-          lastApplyDate={listing.applyBy}
-          className="w-full max-w-[280px]"
-          onApplyClick={onApplyClick}
-          applyDisabled={applyDisabled}
-        />
-      </div>
+      {/* Högerkolumn: prisbox och ansökan för vanliga besökare */}
+      {!isEditable && (
+        <div className="lg:justify-self-end mt-6 lg:mt-0 flex flex-col gap-3">
+          <HousingInfoBox
+            listingId={listing.id}
+            isFavorite={isFavorite}
+            rent={listing.rent}
+            moveInDate={listing.moveIn}
+            lastApplyDate={listing.applyBy}
+            className="w-full max-w-[280px]"
+            onApplyClick={onApplyClick}
+            applyDisabled={applyDisabled}
+          />
+        </div>
+      )}
     </section>
   );
 }

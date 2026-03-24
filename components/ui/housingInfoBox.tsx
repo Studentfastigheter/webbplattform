@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Heart, Share2 } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog"; 
-import { listingService } from "@/services/listing-service"; // Importera din service
+import { listingService } from "@/services/listing-service"; 
 import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 
 type HousingInfoBoxProps = {
   listingId: string;       // NY: Krävs för att veta vilken annons vi gillar
@@ -76,48 +77,55 @@ export default function HousingInfoBox({
     }
   };
 
-  const formattedRent =
-    typeof rent === "number"
-      ? `${rent.toLocaleString("sv-SE")} kr/månad`
-      : "Hyra ej angiven";
-  const formattedMoveIn = moveInDate ?? "Inte angivet";
-  const formattedApplyBy = lastApplyDate ?? "Inte angivet";
+  const isRentNumber = typeof rent === "number";
+  const rentValue = isRentNumber ? rent.toLocaleString("sv-SE") : "Ej angiven";
 
   return (
     <div
-      className={`
-        inline-flex flex-col
-        rounded-[40px]
-        bg-white
-        border border-black/5
-        shadow-[0_3px_4px_rgba(0,0,0,0.25)]
-        overflow-hidden
-        ${className}
-      `}
-      style={{ width: width ?? 280, height }}
+      className={cn(
+        "flex flex-col gap-6",
+        "rounded-3xl",
+        "bg-white",
+        "border border-gray-100",
+        "shadow-[0_8px_30px_rgb(0,0,0,0.06)]",
+        "p-6",
+        className
+      )}
+      style={{ width: width ?? "100%", maxWidth: 320, height }}
     >
-      {/* Rad 1: Hyra + ikoner */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-2">
-        <span className="text-[21px] leading-[24px] font-semibold text-gray-900">
-          {formattedRent}
-        </span>
+      {/* Rad 1: Etikett, Pris & Ikoner */}
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+            Månadshyra
+          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-3xl font-bold tracking-tight text-gray-900">
+              {rentValue}
+            </span>
+            {isRentNumber && (
+              <span className="text-sm font-medium text-gray-500">kr</span>
+            )}
+          </div>
+        </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 mt-1">
           {/* Hjärta-knapp (Bara synlig om inloggad) */}
           {user && (
             <button 
               type="button"
               onClick={handleToggleFavorite}
               disabled={isLoadingFav}
-              className={`
-                transition-all duration-200 
-                hover:scale-110 active:scale-95
-                ${isFav ? "text-red-500" : "text-gray-500 hover:text-red-500"}
-              `}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",
+                isFav 
+                  ? "bg-red-50 text-red-500 hover:bg-red-100" 
+                  : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-red-500",
+                "active:scale-95"
+              )}
               aria-label={isFav ? "Ta bort från favoriter" : "Lägg till i favoriter"}
             >
-              {/* fill-current gör att hjärtat fylls med färg om isFav är true */}
-              <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
+              <Heart className={cn("w-[22px] h-[22px]", isFav && "fill-current")} />
             </button>
           )}
 
@@ -125,47 +133,30 @@ export default function HousingInfoBox({
           <ShareDialog>
             <button 
               type="button" 
-              className="text-gray-500 hover:text-blue-600 transition-colors"
+              aria-label="Dela bostad"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-500 transition-all duration-200 hover:bg-gray-100 hover:text-blue-600 active:scale-95"
             >
-              <Share2 className="w-5 h-5" />
+              <Share2 className="w-[20px] h-[20px]" />
             </button>
           </ShareDialog>
-
         </div>
       </div>
 
-      {/* Rad 2: Inflyttningsdatum */}
-      <div className="px-5 py-1">
-        <span className="text-[12px] leading-[14px] text-[#666666]">
-          Inflyttningsdatum: {formattedMoveIn}
-        </span>
-      </div>
-
-      {/* Rad 3: Sista anmälningsdag */}
-      <div className="px-5 pb-2 pt-1">
-        <span className="text-[12px] leading-[14px] text-[#666666]">
-          Sista anmälningsdag: {formattedApplyBy}
-        </span>
-      </div>
-
       {/* Rad 4: Knapp */}
-      <div className="px-5 pb-4 pt-1">
-        <Button
-          onClick={onApplyClick}
-          disabled={applyDisabled}
-          className={`
-            w-full h-[31px]
-            rounded-full
-            bg-[#004323] text-white
-            text-[14px] leading-[16px]
-            normal-case
-            shadow-[0_3px_4px_rgba(0,0,0,0.25)]
-            hover:bg-[#00331b]
-          `}
-        >
-          Intresseanmälan
-        </Button>
-      </div>
+      <Button
+        onClick={onApplyClick}
+        disabled={applyDisabled}
+        className={cn(
+          "w-full h-12 flex items-center justify-center gap-2",
+          "rounded-full",
+          "bg-[#004323] text-white",
+          "text-[15px] font-medium",
+          "shadow-md hover:shadow-lg transition-all",
+          "hover:bg-[#00331b] active:scale-[0.98]"
+        )}
+      >
+        {isFav ? "You’re interested" : "Show interest"} 
+      </Button>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import SavedListingRow from "@/components/Listings/SavedListingRow"; // Den vi uppdaterade i steg 3
-import SwitchSelect, { type SwitchSelectValue } from "@/components/ui/switchSelect";
 import { ListingCardDTO } from "@/types/listing"; // Din DTO typ
 import { listingService } from "@/services/listing-service";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,6 @@ const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
 
 export default function Page() {
   const router = useRouter();
-  const [view, setView] = useState<SwitchSelectValue>("lista");
   const [favorites, setFavorites] = useState<ListingCardDTO[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,8 +43,6 @@ export default function Page() {
     setFavorites((prev) => prev.filter((item) => item.id.toString() !== idToRemove));
   };
 
-  const isMapView = view === "karta";
-
   if (loading) {
     return (
       <main className="flex h-[50vh] w-full items-center justify-center">
@@ -67,7 +63,6 @@ export default function Page() {
               {favorites.length} {favorites.length === 1 ? "sparad annons" : "sparade annonser"}
             </p>
           </div>
-          <SwitchSelect value={view} onChange={setView} />
         </div>
 
         {/* Content */}
@@ -85,7 +80,7 @@ export default function Page() {
               Hitta bostäder
             </Button>
           </div>
-        ) : isMapView ? (
+        ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="flex flex-col gap-4">
               {favorites.map((listing) => (
@@ -112,25 +107,6 @@ export default function Page() {
                 onOpenListing={(id) => router.push(`/bostader/${id}`)}
               />
             </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 max-w-4xl">
-            {favorites.map((listing) => (
-              <SavedListingRow
-                key={listing.id}
-                listingId={listing.id.toString()}
-                title={listing.title}
-                rent={listing.rent}
-                area={listing.location.split(",")[0]}
-                city={listing.location.split(",")[1] || listing.location}
-                dwellingType={listing.dwellingType}
-                rooms={listing.rooms}
-                sizeM2={listing.sizeM2}
-                imageUrl={listing.imageUrl}
-                onOpen={() => router.push(`/bostader/${listing.id}`)}
-                onRemove={removeListingFromView}
-              />
-            ))}
           </div>
         )}
       </div>
