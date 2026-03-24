@@ -39,7 +39,7 @@ type SearchValues = {
     queueId: string;
 };
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 12;
 
 export default function Page() {
     const router = useRouter();
@@ -52,6 +52,7 @@ export default function Page() {
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
+    const [currentPageNumber, setCurrentPageNumber] = useState(1);
 
     const queuesById = useMemo(() => {
       const result: Record<string, QueueWithUI> = {};
@@ -66,7 +67,11 @@ export default function Page() {
         setLoading(true);
 
         queueService
-        .list()
+        .list({
+          pageSize: PAGE_SIZE,
+          pageCount: 1,
+          pageNumber: currentPageNumber,
+        })
         .then((res) => {
             if (!active)
                 return;
@@ -99,8 +104,9 @@ export default function Page() {
                     } as QueueMapItem : base;
                 }));
 
-                setQueues(mapped);
+                setQueues([...queues, ...mapped ]);
                 setVisibleCount(PAGE_SIZE);
+                setCurrentPageNumber(currentPageNumber + 1);
             })();
         })
         .catch((err: any) => {
