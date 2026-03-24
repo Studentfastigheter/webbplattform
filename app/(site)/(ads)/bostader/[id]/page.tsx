@@ -20,7 +20,7 @@ export default function ListingDetailPage() {
   
   // FIX: Vi tar inte ut 'token' här, eftersom AuthContext troligen inte exponerar den
   // och listingService använder apiClient som sköter headers automatiskt.
-  const { user } = useAuth(); 
+  const { user } = useAuth();
   
   const [listing, setListing] = useState<ListingDetailDTO | null>(null);
   const [error, setError] = useState<string | null>(null);

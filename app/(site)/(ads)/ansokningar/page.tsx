@@ -14,6 +14,7 @@ import {
 } from "@/components/Applications/StudentApplicationRow";
 import { useAuth } from "@/context/AuthContext";
 import { listingService } from "@/services/listing-service";
+import { queueService } from "@/services/queue-service";
 import { type CompanyId } from "@/types";
 
 const STUDENT_COLUMNS: ListFrameColumn[] = [
@@ -40,6 +41,7 @@ export default function MyApplicationsPage() {
 
   const [studentApplications, setStudentApplications] = useState<ListingApplicationRowProps[]>([]);
   const [landlordApplications, setLandlordApplications] = useState<StudentApplicationRowProps[]>([]);
+  const [myQueues, setMyQueues] = useState<{ queueId: string; queueName: string; queueDays: number; status: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,14 +65,28 @@ export default function MyApplicationsPage() {
     const loadStudentApplications = () => {
       setLandlordApplications([]);
       setLoading(true);
-      
+
+      queueService
+        .getMyQueues()
+        .then((queues) => {
+          if (!active) return;
+          setMyQueues(queues);
+        })
+        .catch((err: any) => {
+          if (!active) return;
+          console.error("Kunde inte hämta köer:", err);
+        });
+
       listingService
         .getMyApplications()
-        .then((apps) => {
+        .then((raw) => {
           if (!active) return;
 
+          const apps = Array.isArray(raw) ? raw : (raw as any)?.data ?? (raw as any)?.applications ?? [];
+          console.log("getMyApplications response:", raw);
+
           const mapped: ListingApplicationRowProps[] = apps.map(
-            (app): ListingApplicationRowProps => ({
+            (app: any): ListingApplicationRowProps => ({
               listingId: app.listingId,
               title: app.listingTitle,
               rent: app.rent,
