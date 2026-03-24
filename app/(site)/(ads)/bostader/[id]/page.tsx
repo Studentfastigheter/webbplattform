@@ -205,7 +205,6 @@ function ImagePreviewGrid({
         >
           <img src={shown[0]} alt="Bild 1" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition rounded-3xl flex items-center justify-center">
-            <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition drop-shadow-lg" />
           </div>
         </button>
       )}
@@ -216,7 +215,6 @@ function ImagePreviewGrid({
             <button key={i} className="relative w-full h-full group overflow-hidden rounded-2xl" onClick={() => onImageClick(i)}>
               <img src={src} alt={`Bild ${i + 1}`} className="h-full w-full object-cover transition group-hover:scale-105" />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
-                <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition drop-shadow-lg" />
               </div>
             </button>
           ))}
@@ -232,7 +230,6 @@ function ImagePreviewGrid({
           >
             <img src={shown[0]} alt="Bild 1" className="h-full w-full object-cover transition group-hover:scale-105" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
-              <ZoomIn className="h-7 w-7 text-white opacity-0 group-hover:opacity-100 transition drop-shadow-lg" />
             </div>
           </button>
 
@@ -247,12 +244,10 @@ function ImagePreviewGrid({
               >
                 <img src={src} alt={`Bild ${i + 2}`} className="h-full w-full object-cover transition group-hover:scale-105" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
-                  {isLast ? (
+                  {isLast && (
                     <span className="text-white font-semibold text-lg drop-shadow-lg bg-black/40 px-3 py-1 rounded-lg">
                       +{images.length - 4} fler
                     </span>
-                  ) : (
-                    <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition drop-shadow-lg" />
                   )}
                 </div>
               </button>
@@ -611,7 +606,7 @@ export default function ListingDetailPage() {
                       landlordType={nearby.hostType}
                       hostName={(nearby as any).ownerName}
                       hostLogoUrl={(nearby as any).ownerLogoUrl ?? undefined}
-                      isVerified={(nearby as any).verifiedOwner}
+                      // isVerified={(nearby as any).verifiedOwner}
                       isFavorite={favoriteIds.has(nearby.id)}
                       onFavoriteToggle={handleFavoriteToggle}
                       imageUrl={nearby.imageUrl}
