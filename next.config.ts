@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "media.licdn.com" },
       { protocol: "https", hostname: "image-cdn.mild.cloud" },
       { protocol: "https", hostname: "img.meccdn.com" },
-      { protocol: "https", hostname: "sumfinity.com" },
+      { protocol: "https", hostname: "www.familjebostader.se" },
       {
         protocol: "https",
         hostname: "sgs-fastighet.momentum.se",

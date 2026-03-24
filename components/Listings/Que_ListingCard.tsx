@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MapPin, Building2 } from "lucide-react";
+import { MapPin, Building2, Check } from "lucide-react";
 import Tag from "../ui/Tag";
 import VerifiedTag from "../ui/VerifiedTag";
 import type { HousingQueueWithRelations, Tag as TagType } from "@/types";
@@ -16,9 +16,9 @@ type QueueSummary = Pick<HousingQueueWithRelations, "name" | "area" | "city" | "
 };
 
 export type QueListingCardProps = QueueSummary & {
+  isSelected?: boolean;
   onViewListings?: () => void;
-  onSelect?: () => void;
-  onDeselect?: () => void;
+  onToggleSelect?: () => void;
 };
 
 const BASE_WIDTH = 480;
@@ -26,10 +26,6 @@ const MIN_SCALE = 0.75;
 const MAX_SCALE = 1;
 const BADGE_MIN_SCALE = 0.8;
 const BADGE_MAX_SCALE = 1;
-const BUTTON_MIN_SCALE = 0.7;
-const BUTTON_MAX_SCALE = 0.95;
-const BADGE_BASE_HEIGHT = 26; // px, roughly matches VerifiedTag height
-const HOVER_INTENSITY = 3;
 
 const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
   const {
@@ -42,23 +38,13 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     logoUrl,
     logoAlt,
     tags,
+    isSelected = false,
     onViewListings,
-    onSelect,
-    onDeselect,
+    onToggleSelect,
   } = props;
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
   const [isHovering, setIsHovering] = useState(false);
-  const [isSelected, setIsSelected] = useState(false);
-
-  // Notify add/remove selection
-  useEffect(() => {
-     if (isSelected) {
-       onSelect?.();
-     } else {
-       onDeselect?.();
-     }
-  }, [isSelected]);
 
   useEffect(() => {
     const node = cardRef.current;
@@ -93,14 +79,6 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     BADGE_MAX_SCALE
   );
 
-  const buttonScale = Math.min(
-    Math.max(scale, BUTTON_MIN_SCALE),
-    BUTTON_MAX_SCALE
-  );
-
-  const buttonFont = 13 * buttonScale;
-  const buttonPadding = 8 * buttonScale;
-
   const tagSize = {
     height: 26 * scale,
     horizontalPadding: 14 * scale,
@@ -108,7 +86,6 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     lineHeight: 20 * scale,
   };
 
-  const badgeContainerHeight = BADGE_BASE_HEIGHT * badgeScale;
   const safeTags = tags ?? [];
   const locationLabel = [area, city].filter(Boolean).join(", ");
 
@@ -126,109 +103,90 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
       onClick={e => onViewListings()}
       onMouseEnter={e => setIsHovering(true)}
       onMouseLeave={e => setIsHovering(false)}
-      className={`flex w-full max-w-[520px] flex-col bg-white shadow-md${isSelected ? " shadow-green-500/50" : ""}`}
+      className={`relative flex w-full max-w-[520px] flex-col cursor-pointer group
+        shadow-md hover:shadow-lg transition-all duration-200
+        ${isSelected ? "bg-green-50/60" : "bg-white"}`}
       style={{
         padding: scaleValue(20),
         borderRadius: scaleValue(28),
-        gap: scaleValue(16),
-        translate: isHovering ? `${scaleValue(HOVER_INTENSITY)} ${scaleValue(HOVER_INTENSITY)}` : scaleValue(0),
+        gap: scaleValue(14),
+        transform: isHovering ? "translateY(-2px)" : "translateY(0)",
       }}
     >
-      {/* TOP: badge + name + location + logo */}
+      {/* Logo — large, centered, hero element */}
       <div
-        className="flex items-start justify-between"
-        style={{ gap: scaleValue(16) }}
+        className="flex items-center justify-center shrink-0 rounded-2xl bg-gray-50 self-center"
+        style={{
+          width: scaleValue(100),
+          height: scaleValue(100),
+          padding: scaleValue(12),
+        }}
       >
-        {/* Left column */}
-        <div className="flex flex-col items-start min-w-0">
-          {/* Reserve space for badge */}
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={logoAlt ?? name}
+            className="max-h-full max-w-full object-contain"
+          />
+        ) : (
+          <Building2 size={36 * scale} className="text-gray-400" />
+        )}
+      </div>
+
+      {/* Text content — left-aligned */}
+      <div className="flex flex-col" style={{ gap: scaleValue(6) }}>
+        {/* Verified badge */}
+        {isVerified && (
           <div
             style={{
-              height: `${badgeContainerHeight}px`,
-              marginBottom: scaleValue(8),
-              display: "flex",
-              alignItems: "flex-start",
-            }}
-            aria-hidden={!isVerified}
-          >
-            {isVerified && (
-              <div
-                style={{
-                  transform: `scale(${badgeScale})`,
-                  transformOrigin: "top left",
-                }}
-              >
-                <VerifiedTag />
-              </div>
-            )}
-          </div>
-
-          <h3
-            className="font-semibold break-words"
-            style={{
-              fontSize: scaleValue(18),
-              lineHeight: scaleValue(22),
-              minHeight: scaleValue(44),
+              transform: `scale(${badgeScale})`,
+              transformOrigin: "left center",
             }}
           >
-            {name}
-          </h3>
-
-          {/* Location + units */}
-          <div
-            className="text-black"
-            style={{
-              marginTop: scaleValue(8),
-              display: "grid",
-              rowGap: scaleValue(4),
-              fontSize: scaleValue(14),
-              lineHeight: scaleValue(18),
-            }}
-          >
-            <div
-              className="flex items-center"
-              style={{ gap: scaleValue(8) }}
-            >
-              <MapPin
-                size={14 * scale}
-                strokeWidth={1.8}
-                className="shrink-0"
-              />
-              <span className="truncate">{locationLabel}</span>
-            </div>
-
-            {unitsText && (
-              <div
-                className="flex items-center"
-                style={{ gap: scaleValue(8) }}
-              >
-                <Building2
-                  size={14 * scale}
-                  strokeWidth={1.8}
-                  className="shrink-0"
-                />
-                <span className="truncate">{unitsText}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Logo to the right */}
-        {logoUrl && (
-          <div
-            className="flex items-center justify-center shrink-0"
-            style={{
-              width: scaleValue(96),
-              height: scaleValue(96),
-            }}
-          >
-            <img
-              src={logoUrl}
-              alt={logoAlt ?? name}
-              className="max-h-full max-w-full object-contain"
-            />
+            <VerifiedTag />
           </div>
         )}
+
+        {/* Name — left-aligned, clamp to 2 lines */}
+        <h3
+          className="font-bold text-gray-900"
+          style={{
+            fontSize: scaleValue(17),
+            lineHeight: scaleValue(22),
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {name}
+        </h3>
+
+        {/* Location + units on one row */}
+        <div
+          className="flex items-center flex-wrap text-gray-500"
+          style={{
+            gap: scaleValue(6),
+            fontSize: scaleValue(13),
+            lineHeight: scaleValue(18),
+          }}
+        >
+          {locationLabel && (
+            <div className="flex items-center" style={{ gap: scaleValue(4) }}>
+              <MapPin size={13 * scale} strokeWidth={1.8} className="shrink-0" />
+              <span>{locationLabel}</span>
+            </div>
+          )}
+          {locationLabel && unitsText && (
+            <span className="text-gray-300">{"\u00b7"}</span>
+          )}
+          {unitsText && (
+            <div className="flex items-center" style={{ gap: scaleValue(4) }}>
+              <Building2 size={13 * scale} strokeWidth={1.8} className="shrink-0" />
+              <span>{unitsText}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* TAGS */}
@@ -236,17 +194,16 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         <div
           className="flex flex-wrap"
           style={{
-            gap: scaleValue(8),
-            paddingTop: scaleValue(8),
-            minHeight: scaleValue(30),
+            gap: scaleValue(6),
+            minHeight: scaleValue(28),
           }}
         >
           {safeTags.map((tag) => (
             <Tag
               key={tag}
               text={tag}
-              bgColor="#F0F0F0"
-              textColor="black"
+              bgColor="#F3F4F6"
+              textColor="#374151"
               height={tagSize.height}
               horizontalPadding={tagSize.horizontalPadding}
               fontSize={tagSize.fontSize}
@@ -256,45 +213,35 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         </div>
       )}
 
-      <div className="flex"
-           style={{ gap: scaleValue(12), marginTop: scaleValue(6) }}>
+      {/* Select button */}
+      <div className="flex justify-center">
         <Button
-           type="button"
-           onClick={e => {
-             setIsSelected(!isSelected);
-             e.stopPropagation();
-           }}
-           size="xs"
-           variant="secondary"
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            onToggleSelect?.();
+          }}
+          size="xs"
+          variant={isSelected ? "default" : "secondary"}
+          className="transition-colors duration-150"
         >
-           {isSelected ? "Ta bort" : "Lägg till"}
+          {isSelected ? "Ta bort" : "Lägg till"}
         </Button>
       </div>
 
-      {/*
+      {/* Selection checkmark — top-left to avoid logo */}
       <div
-        className="flex"
-        style={{ gap: scaleValue(12), marginTop: scaleValue(6) }}
+        className={`absolute top-3 left-3 flex items-center justify-center rounded-full transition-all duration-200
+          ${isSelected
+            ? "bg-green-500 text-white scale-100 opacity-100"
+            : "bg-gray-100 text-transparent scale-75 opacity-0 group-hover:opacity-40 group-hover:scale-100"}`}
+        style={{
+          width: scaleValue(26),
+          height: scaleValue(26),
+        }}
       >
-        <Button
-          type="button"
-          onClick={onViewListings}
-          size="xs"
-          variant="secondary"
-        >
-          Visa bostader
-        </Button>
-
-        <Button
-          type="button"
-          onClick={onReadMore}
-          size="xs"
-          variant="default"
-        >
-          Läs mer
-        </Button>
+        <Check size={14 * scale} strokeWidth={2.5} />
       </div>
-      */}
     </div>
   );
 };

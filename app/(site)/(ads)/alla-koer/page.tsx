@@ -194,15 +194,15 @@ export default function Page() {
             logoUrl={queueCardProps.logoUrl}
             logoAlt={queueCardProps.logoAlt}
             tags={queueCardProps.tags}
+            isSelected={selectedQueues.has(queue.id)}
             onViewListings={() => router.push(`/alla-koer/${queue.companyId}`)}
-            onSelect={() => {
+            onToggleSelect={() => {
               const next = new Set(selectedQueues);
-              next.add(queue.id);
-              setSelectedQueues(next);
-            }}
-            onDeselect={() => {
-              const next = new Set(selectedQueues);
-              next.delete(queue.id);
+              if (next.has(queue.id)) {
+                next.delete(queue.id);
+              } else {
+                next.add(queue.id);
+              }
               setSelectedQueues(next);
             }}
             />
@@ -329,15 +329,36 @@ export default function Page() {
                   )}
                 </div>
               )}
-              { /* Popup for queue checkout */
-                (selectedQueues.size > 0) &&
-                (<div className="flex justify-end" style={{ width: "100%" }}>
-                    <Button size="md">Ställ mig i kö</Button>
-                </div>)
-              }
             </FieldSet>
           </section>
         </div>
+
+        {/* Sticky bottom bar for queue selection */}
+        {selectedQueues.size > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+            <div className="flex items-center gap-3 rounded-2xl bg-white px-5 py-3 shadow-xl ring-1 ring-black/5">
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                {selectedQueues.size} {selectedQueues.size === 1 ? "kö vald" : "köer valda"}
+              </span>
+              <div className="h-5 w-px bg-gray-200" />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setSelectedQueues(new Set())}
+              >
+                Rensa val
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+              >
+                Ställ mig i kö
+              </Button>
+            </div>
+          </div>
+        )}
       </main>
     );
 }
