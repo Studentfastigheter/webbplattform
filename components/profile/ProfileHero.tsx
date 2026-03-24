@@ -31,8 +31,6 @@ export type ProfileStats = {
 export type StudentProfileExtended = StudentWithRelations & {
   headline?: string;
   stats?: ProfileStats;
-  bannerImage?: string | null;
-  avatarUrl?: string | null;
   cvUrl?: string | null;
   linkedInUrl?: string;
   instagramUrl?: string;
@@ -74,10 +72,10 @@ export default function ProfileHero({
       : undefined);
 
   const bannerImage =
-    student.bannerImage ?? student.bannerUrl ?? "/appartment.jpg";
+    student.bannerUrl ?? "/appartment.jpg";
 
   const avatarImage =
-    student.avatarUrl ?? student.logoUrl ?? "/logos/campuslyan-logo.svg";
+    student.logoUrl ?? "/team/Profilbild-Simon.jpg";
 
   const verificationBadge = student.verifiedStudent
     ? {

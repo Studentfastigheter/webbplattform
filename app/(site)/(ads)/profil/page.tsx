@@ -8,10 +8,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import { authService } from "@/services/auth-service";
 import { type User } from "@/types";
-import {
-  DUMMY_PROFILE,
-  USE_DUMMY_PROFILE,
-} from "./profile.dummy";
 
 const calculateAgeFromSsn = (ssn?: string): number | undefined => {
   if (!ssn) return undefined;
@@ -72,14 +68,12 @@ const buildProfileFromUser = (user: User): StudentProfileExtended => {
 };
 
 export default function Page() {
-  const { token, user, isLoading: authLoading } = useAuth();
+  const { token, isLoading: authLoading } = useAuth();
   const [student, setStudent] = useState<User | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (USE_DUMMY_PROFILE) return;
-
     if (authLoading || !token) {
       if (!token) {
         setStudent(null);
@@ -117,28 +111,6 @@ export default function Page() {
       cancelled = true;
     };
   }, [authLoading, token]);
-
-  if (USE_DUMMY_PROFILE) {
-    if (authLoading) {
-      return (
-        <div className="p-10 text-center text-muted-foreground">
-          Hämtar profil...
-        </div>
-      );
-    }
-
-    const profileName = getUserDisplayName(user) || DUMMY_PROFILE.displayName;
-    const dummyProfile = {
-      ...DUMMY_PROFILE,
-      displayName: profileName,
-    } satisfies StudentProfileExtended;
-
-    return (
-      <main className="mx-4 min-h-screen bg-white pb-16 sm:mx-8 lg:mx-12">
-        <ProfileHero student={dummyProfile} />
-      </main>
-    );
-  }
 
   if (authLoading || (token && loadingProfile && !student)) {
     return (

@@ -17,8 +17,8 @@ import {
 import UserGeneral from '@/components/shadcn-studio/blocks/account-settings-01/account-settings-01'
 
 const tabs = [
-  { name: 'General', value: 'general' },
-  { name: 'Preferences', value: 'preferences' },
+  { name: 'Allmänt', value: 'general' },
+  { name: 'Inställningar', value: 'preferences' },
 ]
 
 function PlaceholderPanel({
