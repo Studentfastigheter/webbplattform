@@ -1,8 +1,12 @@
 "use client";
 
-import Image from "next/image";
+import type { ReactNode } from "react";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import { ShareDialog } from "@/components/ui/ShareDialog";
+import EntityHero, {
+  type EntityHeroActionLink,
+  type EntityHeroSection,
+} from "@/components/shared/EntityHero";
 import { type HousingQueueDTO } from "@/types/queue";
 import {
   Phone,
@@ -18,168 +22,130 @@ type QueueHeroProps = {
   queue: HousingQueueDTO;
 };
 
+type QueueContactRow = {
+  icon: ReactNode;
+  href: string;
+  label: string;
+  external?: boolean;
+};
+
 export default function QueueHero({ queue }: QueueHeroProps) {
   const bannerImage = queue.bannerUrl || "/images/queue-default-banner.jpg";
   const logoImage = queue.logoUrl || "/logos/default-landlord-logo.svg";
-  const description = queue.description ?? "";
+  const description = queue.description?.trim() ?? "";
 
   const contactRows = [
     queue.contactPhone && {
-      icon: Phone,
+      icon: (
+        <Phone className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-gray-600" />
+      ),
       href: `tel:${queue.contactPhone}`,
       label: queue.contactPhone,
     },
     queue.contactEmail && {
-      icon: Mail,
+      icon: (
+        <Mail className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-gray-600" />
+      ),
       href: `mailto:${queue.contactEmail}`,
       label: queue.contactEmail,
     },
     queue.website && {
-      icon: Globe,
+      icon: (
+        <Globe className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-gray-600" />
+      ),
       href: queue.website,
       label: queue.website.replace(/^https?:\/\//, ""),
       external: true,
     },
-  ].filter(Boolean) as {
-    icon: typeof Phone;
-    href: string;
-    label: string;
-    external?: boolean;
-  }[];
+  ].filter(Boolean) as QueueContactRow[];
 
   const socialItems = [
     queue.socialLinks?.facebook && {
-      icon: Facebook,
+      icon: <Facebook className="h-[18px] w-[18px]" />,
       href: queue.socialLinks.facebook,
       label: "Facebook",
+      external: true,
     },
     queue.socialLinks?.linkedin && {
-      icon: Linkedin,
+      icon: <Linkedin className="h-[18px] w-[18px]" />,
       href: queue.socialLinks.linkedin,
       label: "LinkedIn",
+      external: true,
     },
-  ].filter(Boolean) as {
-    icon: typeof Facebook;
-    href: string;
-    label: string;
-  }[];
+  ].filter(Boolean) as EntityHeroActionLink[];
+
+  const sections = [
+    description && {
+      id: "about",
+      title: "Om oss",
+      content: (
+        <ReadMoreComponent
+          text={description}
+          variant="large"
+          textClassName="text-base leading-relaxed text-gray-600"
+          moreLabel="Läs mer"
+          lessLabel="Visa mindre"
+        />
+      ),
+    },
+    contactRows.length > 0 && {
+      id: "contact",
+      title: "Kontakt",
+      content: (
+        <ul className="flex flex-wrap gap-x-6 gap-y-2">
+          {contactRows.map((item) => (
+            <li key={item.href}>
+              <a
+                href={item.href}
+                {...(item.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+                className="group inline-flex items-center gap-2 text-sm text-gray-600 transition-colors hover:text-gray-900"
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ),
+    },
+  ].filter(Boolean) as EntityHeroSection[];
 
   return (
-    <section className="w-full">
-      {/* Banner */}
-      <div className="relative w-full h-[220px] sm:h-[280px] md:h-[340px] bg-gray-200 overflow-hidden rounded-2xl">
-        <Image
-          src={bannerImage}
-          alt={queue.name}
-          fill
-          className="object-cover"
-          priority
-        />
-      </div>
-
-      {/* Content */}
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6">
-        {/* Logo overlapping banner */}
-        <div className="relative -mt-14 sm:-mt-24 mb-4">
-          <div className="h-28 w-28 sm:h-36 sm:w-36 shrink-0 overflow-hidden rounded-2xl border-4 border-white bg-white shadow-lg">
-            <Image
-              src={logoImage}
-              alt={queue.name}
-              width={112}
-              height={112}
-              className="h-full w-full object-contain p-2"
-              unoptimized
-            />
-          </div>
-        </div>
-
-        {/* Header: name, city, actions */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
-              {queue.name}
-            </h1>
-            {queue.city && (
-              <div className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
-                <MapPin className="h-3.5 w-3.5" />
-                <span>{queue.city}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Action icons */}
-          <div className="flex items-center gap-1.5 shrink-0 pt-1">
-            {socialItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                aria-label={item.label}
-                title={item.label}
-              >
-                <item.icon className="h-[18px] w-[18px]" />
-              </a>
-            ))}
-            {socialItems.length > 0 && (
-              <div className="h-5 w-px bg-gray-200 mx-0.5" />
-            )}
-            <ShareDialog>
-              <button
-                type="button"
-                className="inline-flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                aria-label="Dela"
-                title="Dela"
-              >
-                <Share2 className="h-[18px] w-[18px]" />
-              </button>
-            </ShareDialog>
-          </div>
-        </div>
-
-        {/* About section */}
-        {description && (
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              Om oss
-            </h2>
-            <ReadMoreComponent
-              text={description}
-              variant="large"
-              textClassName="text-base leading-relaxed text-gray-600"
-              moreLabel="Läs mer"
-              lessLabel="Visa mindre"
-            />
-          </div>
-        )}
-
-        {/* Contact */}
-        {contactRows.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
-              Kontakt
-            </h2>
-            <ul className="flex flex-wrap gap-x-6 gap-y-2">
-              {contactRows.map((item) => (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    {...(item.external
-                      ? { target: "_blank", rel: "noopener noreferrer" }
-                      : {})}
-                    className="group inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    <item.icon className="h-4 w-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                    <span>{item.label}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-      </div>
-    </section>
+    <EntityHero
+      title={queue.name}
+      bannerImage={bannerImage}
+      avatarImage={logoImage}
+      avatarShape="rounded"
+      avatarFit="contain"
+      meta={
+        queue.city ? (
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 text-gray-400" />
+            <span>{queue.city}</span>
+          </span>
+        ) : null
+      }
+      actionLinks={socialItems}
+      headerActions={
+        <ShareDialog
+          title="Dela kö"
+          description="Dela länken till den här bostadskön eller kopiera länken direkt."
+          mailSubject={`Kolla in ${queue.name}`}
+          mailBody="Jag hittade den här kön som kan vara intressant:"
+        >
+          <button
+            type="button"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            aria-label="Dela"
+            title="Dela"
+          >
+            <Share2 className="h-[18px] w-[18px]" />
+          </button>
+        </ShareDialog>
+      }
+      sections={sections}
+    />
   );
 }

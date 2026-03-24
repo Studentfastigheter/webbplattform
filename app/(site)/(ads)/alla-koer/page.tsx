@@ -4,19 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
+import { Button } from "@/components/ui/button";
 import Que_ListingCard from "@/components/Listings/Que_ListingCard";
 import QueueFilterButton, {
   type QueueFilterState,
 } from "@/components/Listings/Search/QueueFilterButton";
-import TwoFieldSearch from "@/components/Listings/Search/SearchFilter-2field";
+import SearchFilterBar2 from "@/components/Listings/Search/SearchFilterBar2";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
-// ÄNDRING 1: Byt till queueService (den har metoden list() som matchar din backend)
 import { queueService } from "@/services/queue-service";
 import { getCityCoordinates } from "@/services/geolocator-service";
 
-// ÄNDRING 2: Importera typer från rätt filer
 import { type HousingQueueDTO, type QueueMapItem } from "@/types/queue";
 import { type AdvertiserSummary } from "@/types/common";
 import { type CompanyId } from "@/types";
@@ -36,8 +35,8 @@ type SearchValues = {
     // Entered city name
     location: string;
 
-    // Entered queue name
-    queueName: string;
+    // Id of selected queue
+    queueId: string;
 };
 
 const PAGE_SIZE = 6;
@@ -51,13 +50,21 @@ export default function Page() {
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+    const queuesById = useMemo(() => {
+      const result: Record<string, QueueWithUI> = {};
+      for (const queue of queues) {
+        result[queue.id] = queue;
+      }
+      return result;
+    }, [queues]);
 
     useEffect(() => {
         let active = true;
         setLoading(true);
 
-        // ÄNDRING 3: Använd queueService.list()
         queueService
         .list()
         .then((res) => {
@@ -85,7 +92,6 @@ export default function Page() {
                         }
                     };
                     const coord: Coordinates = await getCityCoordinates(dto.city);
-                    console.log(`Found coords of ${dto.city} at ${coord.lng}:${coord.lat}`)
                     return coord.lng && coord.lat ? {
                         ...base,
                         lng: coord.lng,
@@ -116,14 +122,28 @@ export default function Page() {
     const isMapView = view === "karta";
 
     const cityOptions = useMemo(
-      () => uniqueOnly(removeEmpty(queues.map((queue) => queue.city))),
+      () => {
+        const options = uniqueOnly(removeEmpty(queues.map((queue) => queue.city)));
+        const asRecord: Record<string, string> = {};
+        for (const option of options) {
+          asRecord[option] = option;
+        }
+        return asRecord;
+      },
       [queues]
     );
+    const queueOptions = useMemo(() => {
+      const results: Record<string, string> = {};
+      for (const queue of queues) {
+        results[queue.name] = queue.id;
+      }
+      return results;
+    }, [queues]);
 
     const filteredQueues = useMemo(() => {
         return queues.filter((queue) =>
             searchStringMatches(searchValues.location, queue.city) &&
-            searchStringMatches(searchValues.queue, queue.name));
+            searchStringMatches(searchValues.queueId, queue.id));
     }, [queues, searchValues]);
 
     useEffect(() => {
@@ -145,7 +165,7 @@ export default function Page() {
 
     const queueGridClasses = isMapView
         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 justify-items-center"
-        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
+        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 justify-items-center";
 
     const renderQueueCard = (queue: QueueWithUI) => {
         const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
@@ -174,11 +194,17 @@ export default function Page() {
             logoUrl={queueCardProps.logoUrl}
             logoAlt={queueCardProps.logoAlt}
             tags={queueCardProps.tags}
-    
-            // --- ÄNDRING 4: Navigera till dynamisk ID-sida ---
-            onViewListings={() => router.push(`/alla-koer/${queue.id}`)} 
-            onReadMore={() => router.push(`/alla-koer/${queue.id}`)}
-            // ------------------------------------------------
+            onViewListings={() => router.push(`/alla-koer/${queue.companyId}`)}
+            onSelect={() => {
+              const next = new Set(selectedQueues);
+              next.add(queue.id);
+              setSelectedQueues(next);
+            }}
+            onDeselect={() => {
+              const next = new Set(selectedQueues);
+              next.delete(queue.id);
+              setSelectedQueues(next);
+            }}
             />
         </div>);
     };
@@ -210,99 +236,108 @@ export default function Page() {
         return () => observer.disconnect();
     }, [filteredQueues.length, hasMore, loading, loadingMore]);
 
-
     return (
-      <main className="flex flex-col gap-8 pb-12 pt-4">
-        {/* Sektion 1: filter */}
-        <section className="w-full">
-          <div className="flex w-full flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="min-w-[280px] flex-1">
-                <TwoFieldSearch
-                  className="w-full"
-                  field1={{
-                    id: "location",
-                    label: "Var",
-                    placeholder: "Sök studentstad",
-                    searchable: true,
-                    options: cityOptions.map((city) => ({ label: city, value: city })),
-                  }}
-                  field2={{
-                    id: "queueName",
-                    label: "Bostadskö",
-                    placeholder: "Sök specifik bostadskö",
-                    searchable: true,
-                    options: queues.map((queue) => ({ label: queue.name, value: queue.name }))
-                  }}
-                  onSubmit={(values) => setSearchValues({
-                    location: values.location,
-                    queueName: values.queueName
-                  })}
-                />
-              </div>
-           </div>
-          </div>
-        </section>
-
-        {/* Sektion 2: rubrik + vyval */}
-        <section className="w-full">
-          <div className="flex w-full flex-wrap items-center justify-between gap-4">
-            <h2 id="bostader-heading" className="text-base font-semibold text-black">
-              Över {totalQueues.toLocaleString("sv-SE")} köer
-            </h2>
-            <SwitchSelect value={view} onChange={setView} />
-          </div>
-        </section>
-
-        {/* Sektion 3: annonser */}
-        <section className="w-full">
-          <FieldSet className="w-full" aria-labelledby="bostader-heading">
-            {error && (
-              <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
-            {loading ? (
-              <div className="py-12 text-center text-sm text-gray-500">
-                Laddar köer...
-              </div>
-            ) : filteredQueues.length === 0 ? (
-              <div className="py-12 text-center text-sm text-gray-500">
-                Inga köer att visa just nu.
-              </div>
-            ) : isMapView ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-6">
-                <div className={queueGridClasses}>{renderMapListings()}</div>
-                <div
-                  className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
-                  style={{ minHeight: 600, height: "min(72vh, 760px)" }}
-                >
-                  <QueuesMap
-                    queues={mapQueues}
-                    // --- ÄNDRING 5: Navigera med ID från kartan ---
-                    onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
-                    // ----------------------------------------------
+      <main className="flex flex-col gap-6 sm:gap-8 pb-12 pt-4 w-full h-auto">
+        {/* Same layout technique as in /bostader */}
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 h-auto">
+          {/* Filters */}
+          <section className="w-full">
+            <div className="flex w-full flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-start xl:items-center gap-3 sm:gap-4">
+                <div className="w-full lg:flex-1">
+                  <SearchFilterBar2
+                    className="w-full"
+                    fields={[
+                      {
+                        id: "location",
+                        label: "Var",
+                        placeholder: "Sök studentstad",
+                        options: { "Överallt": "", ...cityOptions }
+                      },
+                      {
+                        id: "queueId",
+                        label: "Bostadskö",
+                        placeholder: "Sök specifik bostadskö",
+                        options: { "Alla": "", ...queueOptions }
+                      }
+                    ]}
+                    onSubmit={(values) => {
+                      console.log(`Search values are: location=${values.location}, queueName=${values.queueName}`);
+                      setSearchValues({
+                        location: values.location,
+                        queueId: values.queueId,
+                      });
+                    }}
                   />
                 </div>
-              </div>
-            ) : (
-              <div className={queueGridClasses}>
-                {visibleQueues.map((queue) => renderQueueCard(queue))}
-              </div>
-            )}
-            {(hasMore || loadingMore) && (
-              <div
-                ref={loadMoreRef}
-                className="flex w-full items-center justify-center py-4"
-                aria-hidden
-              >
-                {loadingMore && (
-                  <span className="text-xs text-gray-500">Laddar fler köer...</span>
-                )}
-              </div>
-            )}
-          </FieldSet>
-        </section>
+            </div>
+            </div>
+          </section>
+
+          {/* Rubric */}
+          <section className="w-full mt-6 sm:mt-8">
+            <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <h2 id="bostader-heading" className="text-base sm:text-lg font-semibold text-black">
+                Över {totalQueues.toLocaleString("sv-SE")} köer
+              </h2>
+              <SwitchSelect value={view} onChange={setView} />
+            </div>
+          </section>
+
+          {/* Listings */}
+          <section className="w-full min-h-[400px] mt-4 sm:mt-6">
+            <FieldSet className="w-full" aria-labelledby="bostader-heading">
+              {error && (
+                <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  {error}
+                </div>
+              )}
+              {loading ? (
+                <div className="py-12 text-center text-sm text-gray-500">
+                  Laddar köer...
+                </div>
+              ) : filteredQueues.length === 0 ? (
+                <div className="py-12 text-center text-sm text-gray-500">
+                  Inga köer att visa just nu.
+                </div>
+              ) : isMapView ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-6">
+                  <div className={queueGridClasses}>{renderMapListings()}</div>
+                  <div
+                    className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
+                    style={{ minHeight: 600, height: "min(72vh, 760px)" }}
+                  >
+                    <QueuesMap
+                      queues={mapQueues}
+                      onOpenQueue={(id) => router.push(`/alla-koer/${queuesById[id]}`)}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className={queueGridClasses}>
+                  {visibleQueues.map((queue) => renderQueueCard(queue))}
+                </div>
+              )}
+              {(hasMore || loadingMore) && (
+                <div
+                  ref={loadMoreRef}
+                  className="flex w-full items-center justify-center py-6 sm:py-8 min-h-[60px]"
+                  aria-hidden
+                >
+                  {loadingMore && (
+                    <span className="text-xs text-gray-500">Laddar fler köer...</span>
+                  )}
+                </div>
+              )}
+              { /* Popup for queue checkout */
+                (selectedQueues.size > 0) &&
+                (<div className="flex justify-end" style={{ width: "100%" }}>
+                    <Button size="md">Ställ mig i kö</Button>
+                </div>)
+              }
+            </FieldSet>
+          </section>
+        </div>
       </main>
     );
 }

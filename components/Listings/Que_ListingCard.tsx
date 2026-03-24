@@ -17,7 +17,8 @@ type QueueSummary = Pick<HousingQueueWithRelations, "name" | "area" | "city" | "
 
 export type QueListingCardProps = QueueSummary & {
   onViewListings?: () => void;
-  onReadMore?: () => void;
+  onSelect?: () => void;
+  onDeselect?: () => void;
 };
 
 const BASE_WIDTH = 480;
@@ -28,6 +29,7 @@ const BADGE_MAX_SCALE = 1;
 const BUTTON_MIN_SCALE = 0.7;
 const BUTTON_MAX_SCALE = 0.95;
 const BADGE_BASE_HEIGHT = 26; // px, roughly matches VerifiedTag height
+const HOVER_INTENSITY = 3;
 
 const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
   const {
@@ -41,10 +43,22 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     logoAlt,
     tags,
     onViewListings,
-    onReadMore,
+    onSelect,
+    onDeselect,
   } = props;
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
+  const [isHovering, setIsHovering] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
+
+  // Notify add/remove selection
+  useEffect(() => {
+     if (isSelected) {
+       onSelect?.();
+     } else {
+       onDeselect?.();
+     }
+  }, [isSelected]);
 
   useEffect(() => {
     const node = cardRef.current;
@@ -100,12 +114,24 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
 
   return (
     <div
+      role="button"
       ref={cardRef}
-      className="flex w-full max-w-[520px] flex-col bg-white shadow-md"
+      onKeyDown={e => {
+        // Enable keyboard navigation
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onViewListings();
+        }
+      }}
+      onClick={e => onViewListings()}
+      onMouseEnter={e => setIsHovering(true)}
+      onMouseLeave={e => setIsHovering(false)}
+      className={`flex w-full max-w-[520px] flex-col bg-white shadow-md${isSelected ? " shadow-green-500/50" : ""}`}
       style={{
         padding: scaleValue(20),
         borderRadius: scaleValue(28),
         gap: scaleValue(16),
+        translate: isHovering ? `${scaleValue(HOVER_INTENSITY)} ${scaleValue(HOVER_INTENSITY)}` : scaleValue(0),
       }}
     >
       {/* TOP: badge + name + location + logo */}
@@ -230,7 +256,22 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         </div>
       )}
 
-      {/* BUTTONS */}
+      <div className="flex"
+           style={{ gap: scaleValue(12), marginTop: scaleValue(6) }}>
+        <Button
+           type="button"
+           onClick={e => {
+             setIsSelected(!isSelected);
+             e.stopPropagation();
+           }}
+           size="xs"
+           variant="secondary"
+        >
+           {isSelected ? "Ta bort" : "Lägg till"}
+        </Button>
+      </div>
+
+      {/*
       <div
         className="flex"
         style={{ gap: scaleValue(12), marginTop: scaleValue(6) }}
@@ -253,6 +294,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           Läs mer
         </Button>
       </div>
+      */}
     </div>
   );
 };

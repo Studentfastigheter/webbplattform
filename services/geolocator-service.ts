@@ -12,7 +12,6 @@ export function getCityCoordinates(cityName: string) {
                 throw "Latitude not part of response from query";
             if (!data[0].lon)
                 throw "Longditude not part of response from query";
-            console.log(`Result from geolocate query: ${JSON.stringify(data)}`)
             return {
                 lat: data[0].lat as number,
                 lng: data[0].lon as number

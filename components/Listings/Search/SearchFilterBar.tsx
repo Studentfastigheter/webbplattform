@@ -1,11 +1,15 @@
 "use client";
 
+// FIXME: The `value` property in Option is assumed to be the same as `label` here.
+// This is either a bug, or redundant code. Either way it needs looking into.
+// Problem occurs in single-select mode. -- JaarmaCo@git
+
 import { Button } from "@/components/ui/button";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 export type Option = {
   label: string;
-  value: string;
+  value: string; // BUG: Possibly a bug or redundant code.
 };
 
 type FieldBase = {

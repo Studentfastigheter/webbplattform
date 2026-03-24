@@ -1,6 +1,18 @@
 import { apiClient } from "@/lib/api-client";
 import { HousingQueueDTO } from "@/types/queue";
 
+export interface CompanyDTO {
+  id: number;
+  name: string;
+  subtitle: string;
+  description: string;
+  website: string;
+  rating: number;
+  verified: boolean;
+  bannerUrl: string;
+  logoUrl: string;
+}
+
 export const queueService = {
   
   // 1. Hämta ALLA köer
@@ -29,5 +41,10 @@ export const queueService = {
   // Hämta inloggad students köer
   getMyQueues: async (): Promise<any[]> => {
     return await apiClient<any[]>("/queues/my");
+  },
+
+  // Hämta ett specifikt företag
+  getCompany: async (companyId: number): Promise<CompanyDTO> => {
+    return await apiClient<CompanyDTO>(`/companies/${companyId}`);
   },
 };

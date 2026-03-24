@@ -5,6 +5,8 @@ import Link from "next/link";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { DEFAULT_PROFILE_IMAGE } from "@/lib/user-avatar";
+import { getUserDisplayName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
 import {
   MobileNav,
@@ -69,12 +71,49 @@ const getRoleLabel = (accountType?: string | null) => {
   return null;
 };
 
-const getDisplayName = (user: ReturnType<typeof useAuth>["user"]) => {
-  if (!user) return "";
-  return user.displayName || user.companyName || user.fullName || user.email;
+const getInitial = (value: string) => value.trim().charAt(0).toUpperCase() || "C";
+
+type AccountAvatarProps = {
+  src?: string | null;
+  alt: string;
+  className: string;
+  fallbackClassName: string;
+  initial: string;
 };
 
-const getInitial = (value: string) => value.trim().charAt(0).toUpperCase() || "C";
+function AccountAvatar({
+  src,
+  alt,
+  className,
+  fallbackClassName,
+  initial,
+}: AccountAvatarProps) {
+  const [currentSrc, setCurrentSrc] = useState(src || DEFAULT_PROFILE_IMAGE);
+
+  useEffect(() => {
+    setCurrentSrc(src || DEFAULT_PROFILE_IMAGE);
+  }, [src]);
+
+  if (!currentSrc) {
+    return <div className={fallbackClassName}>{initial}</div>;
+  }
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      className={className}
+      onError={() => {
+        if (currentSrc !== DEFAULT_PROFILE_IMAGE) {
+          setCurrentSrc(DEFAULT_PROFILE_IMAGE);
+          return;
+        }
+
+        setCurrentSrc("");
+      }}
+    />
+  );
+}
 
 export default function SiteHeader() {
   const { user, logout, isLoading } = useAuth();
@@ -84,7 +123,7 @@ export default function SiteHeader() {
 
   const userType = user?.accountType;
   const roleLabel = getRoleLabel(userType);
-  const displayName = getDisplayName(user);
+  const displayName = getUserDisplayName(user);
   const accountInitial = getInitial(displayName || "CampusLyan");
 
   let navItems = publicNavItems;
@@ -230,17 +269,13 @@ export default function SiteHeader() {
                 onClick={handleAccountToggle}
                 className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
               >
-                {user.logoUrl ? (
-                  <img
-                    src={user.logoUrl}
-                    alt={displayName}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600">
-                    {accountInitial}
-                  </div>
-                )}
+                <AccountAvatar
+                  src={user.logoUrl}
+                  alt={displayName}
+                  className="h-8 w-8 rounded-full object-cover"
+                  fallbackClassName="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600"
+                  initial={accountInitial}
+                />
                 <div className="hidden max-w-32 sm:block">
                   <p className="truncate text-left text-sm font-medium text-neutral-900">
                     {displayName}
@@ -257,17 +292,13 @@ export default function SiteHeader() {
               {isAccountMenuOpen && (
                 <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] animate-dropdown">
                   <div className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-3">
-                    {user.logoUrl ? (
-                      <img
-                        src={user.logoUrl}
-                        alt={displayName}
-                        className="h-9 w-9 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-600">
-                        {accountInitial}
-                      </div>
-                    )}
+                    <AccountAvatar
+                      src={user.logoUrl}
+                      alt={displayName}
+                      className="h-9 w-9 rounded-full object-cover"
+                      fallbackClassName="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-600"
+                      initial={accountInitial}
+                    />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-neutral-950">
                         {displayName}
@@ -371,17 +402,13 @@ export default function SiteHeader() {
             ) : (
               <div className="mt-2 w-full border-t border-neutral-200 pt-4">
                 <div className="mb-3 flex items-center gap-3 px-1">
-                  {user.logoUrl ? (
-                    <img
-                      src={user.logoUrl}
-                      alt={displayName}
-                      className="h-9 w-9 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-sm font-semibold text-neutral-600">
-                      {accountInitial}
-                    </div>
-                  )}
+                  <AccountAvatar
+                    src={user.logoUrl}
+                    alt={displayName}
+                    className="h-9 w-9 rounded-full object-cover"
+                    fallbackClassName="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-sm font-semibold text-neutral-600"
+                    initial={accountInitial}
+                  />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-neutral-950">
                       {displayName}

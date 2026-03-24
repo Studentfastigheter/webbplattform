@@ -21,25 +21,15 @@ export default function ProfileHeroActions({
   primaryLabel = "Uppdatera profil",
 }: Props) {
   return (
-    <div className="flex w-full items-center justify-end gap-3 overflow-hidden">
+    <div className="flex flex-wrap items-center justify-end gap-3">
       {secondaryHref && (
-        <Button
-          as="a"
-          href={secondaryHref}
-          size="sm"
-          variant="secondary"
-        >
+        <Button as="a" href={secondaryHref} size="sm" variant="secondary">
           <span className="truncate">{secondaryLabel ?? "Visa mer"}</span>
         </Button>
       )}
 
       {messageHref && (
-        <Button
-          as="a"
-          href={messageHref}
-          size="sm"
-          variant="outline"
-        >
+        <Button as="a" href={messageHref} size="sm" variant="outline">
           <span className="truncate">{messageLabel ?? "Kontakta"}</span>
         </Button>
       )}
@@ -47,12 +37,9 @@ export default function ProfileHeroActions({
       <Button
         as={editHref ? "a" : undefined}
         href={editHref}
-        onPress={
-          editHref ? undefined : () => console.log("Redigera profil")
-        }
+        onPress={editHref ? undefined : () => console.log("Redigera profil")}
         size="sm"
         variant="default"
-
       >
         <PencilLine className="h-4 w-4" />
         <span className="truncate">{primaryLabel}</span>

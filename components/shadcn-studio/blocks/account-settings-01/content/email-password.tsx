@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 
 const requirements = [
   { regex: /.{12,}/, text: 'At least 12 characters' },
@@ -27,6 +28,7 @@ const requirements = [
 ]
 
 const EmailPass = () => {
+  const { user } = useAuth()
   const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] =
     useState(false)
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false)
@@ -61,9 +63,9 @@ const EmailPass = () => {
   return (
     <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
-        <h3 className='font-semibold'>Email & Password</h3>
+        <h3 className='font-semibold'>E-post & Lösenord</h3>
         <p className='text-muted-foreground text-sm'>
-          Manage your email and password settings.
+          Hantera din e-post och ditt lösenord.
         </p>
       </div>
 
@@ -77,9 +79,10 @@ const EmailPass = () => {
               <Input
                 id='email'
                 type='email'
-                placeholder='Email address'
+                placeholder='E-postadress'
+                defaultValue={user?.email ?? ''}
                 className='peer pr-9'
-                required
+                disabled
               />
               <div className='text-muted-foreground pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-3 peer-disabled:opacity-50'>
                 <MailIcon className='size-4' />
