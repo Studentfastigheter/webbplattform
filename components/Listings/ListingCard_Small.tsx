@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Tag from "../ui/Tag";
 import VerifiedTag from "../ui/VerifiedTag";
+import { Heart } from "lucide-react";
 
 // ÄNDRING: Vi definierar props manuellt istället för att ärva från gamla ListingWithRelations
 export type ListingCardSmallProps = {
@@ -19,6 +20,11 @@ export type ListingCardSmallProps = {
   hostName?: string;
   hostLogoUrl?: string;
   isVerified?: boolean;
+  
+  // NEW: Favoritfunktion (hjärta)
+  id?: string;
+  isFavorite?: boolean;
+  onFavoriteToggle?: (id: string, isFav: boolean) => void;
   
   // Funktioner & UI
   onClick?: () => void;
@@ -57,6 +63,9 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     hostName,
     hostLogoUrl,
     isVerified = false,
+    id,
+    isFavorite,
+    onFavoriteToggle,
     imageUrl,
     tags,
     onClick,
@@ -66,6 +75,23 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
+  const [isLiked, setIsLiked] = useState(isFavorite || false);
+  
+  useEffect(() => {
+    if (isFavorite !== undefined) {
+      setIsLiked(isFavorite);
+    }
+  }, [isFavorite]);
+  
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    if (id && onFavoriteToggle) {
+      onFavoriteToggle(id, newLikedState);
+    }
+  };
+
   const baseWidth = variant === "compact" ? 320 : BASE_WIDTH;
   const maxWidth = variant === "compact" ? 360 : 480;
   const imageBaseHeight =
@@ -120,19 +146,26 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
       style={{
         maxWidth,
         minWidth: variant === "compact" ? COMPACT_CARD_MIN_WIDTH : CARD_MIN_WIDTH,
-        gap: scaleValue(16),
-        padding: scaleValue(16),
         borderRadius: scaleValue(32),
+        overflow: "hidden"
       }}
     >
       {/* IMAGE */}
       <div
-        className="w-full bg-gray-100 overflow-hidden relative"
+        className="w-full bg-gray-100 overflow-hidden relative shrink-0 group/image"
         style={{
-          borderRadius: scaleValue(28),
           height: scaleValue(imageBaseHeight),
         }}
       >
+        <button
+          type="button"
+          onClick={handleFavoriteClick}
+          className="absolute top-3 right-3 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all shadow-sm"
+          aria-label={isLiked ? "Ta bort från sparade" : "Spara bostad"}
+        >
+          <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+        </button>
+
         <div className="h-full w-full">
           {imageUrl ? (
             <img
@@ -150,10 +183,10 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
       {/* CONTENT */}
       <div
-        className="px-1 pb-1"
+        className="flex flex-col"
         style={{
-          display: "grid",
-          rowGap: scaleValue(12),
+          padding: scaleValue(16),
+          gap: scaleValue(12),
         }}
       >
         {/* Title + Badge */}

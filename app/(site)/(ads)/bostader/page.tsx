@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useAuth } from "@/context/AuthContext";
 
 import { toSearchString } from "@/lib/utils";
 
@@ -138,6 +139,7 @@ const parseSearchPriceRange = (raw: string): { min: number; max: number } | null
 
 export default function ListingsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   
   const [view, setView] = useState<SwitchSelectValue>("lista");
   const [searchValues, setSearchValues] = useState<SearchValues>({
@@ -154,7 +156,50 @@ export default function ListingsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState<string | null>(null);
   
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  // Ladda favoriter om inloggad
+  useEffect(() => {
+    if (user) {
+      listingService.getFavorites()
+        .then(favs => {
+          setFavoriteIds(new Set(favs.map(f => f.id)));
+        })
+        .catch(console.error);
+    } else {
+      setFavoriteIds(new Set());
+    }
+  }, [user]);
+
+  const handleFavoriteToggle = useCallback((id: string, isFav: boolean) => {
+    if (!user) {
+      // Hantera oinloggad användare bäst det går (t.ex. modal), failar tyst för nu
+      alert("Du måste vara inloggad för att spara bostäder");
+      return;
+    }
+    
+    // Optimistic UI-uppdatering
+    setFavoriteIds(prev => {
+      const next = new Set(prev);
+      if (isFav) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+    const action = isFav ? listingService.addFavorite(id) : listingService.removeFavorite(id);
+    action.catch(err => {
+      console.error("Failed to toggle favorite:", err);
+      // Återställ om det misslyckas
+      setFavoriteIds(prev => {
+        const next = new Set(prev);
+        if (isFav) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    });
+  }, [user]);
 
   // Samla ihop alla filter till ett format som backend förstår
   const currentFilters = useMemo(() => {
@@ -255,6 +300,7 @@ export default function ListingsPage() {
     return (
       <div key={listing.id} className="flex w-full justify-center">
         <ListingCardSmall
+          id={listing.id}
           title={listing.title}
           // Åtgärd: Skicka med obligatoriska props
           area={listing.location?.split(",")[0] || "Ej angivet"} 
@@ -267,6 +313,8 @@ export default function ListingsPage() {
           hostName={listing.hostName}
           hostLogoUrl={listing.hostLogoUrl}
           isVerified={listing.verifiedHost}
+          isFavorite={favoriteIds.has(listing.id)}
+          onFavoriteToggle={handleFavoriteToggle}
           imageUrl={listing.imageUrl}
           tags={listing.tags}
           onClick={() => router.push(`/bostader/${listing.id}`)}
@@ -371,9 +419,9 @@ export default function ListingsPage() {
 
             {isMapView ? (
               /* Map View Layout - Responsive stacking */
-              <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 lg:items-start gap-4 sm:gap-6">
+              <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 2xl:grid-cols-3 lg:items-start gap-4 sm:gap-6">
                 {/* Lista - On mobile below map, scrollable on desktop */}
-                <div className={`${listingGridClasses} w-full`}>
+                <div className={`${listingGridClasses} w-full 2xl:col-span-1`}>
                    {(listings.length === 0 && !loading) ? (
                      <div className="col-span-full py-12 sm:py-20 text-center text-sm sm:text-base text-gray-500">
                         Inga bostäder matchade din sökning.
@@ -384,7 +432,7 @@ export default function ListingsPage() {
                 </div>
                 
                 {/* Map - On mobile at top, sticky on desktop */}
-                <div className="w-full h-[280px] sm:h-[350px] lg:h-[calc(100vh-120px)] rounded-xl lg:rounded-2xl overflow-hidden lg:sticky lg:top-24 z-10 shrink-0">
+                <div className="w-full h-[280px] sm:h-[350px] lg:h-[calc(100vh-120px)] rounded-xl lg:rounded-2xl overflow-hidden lg:sticky lg:top-24 z-10 shrink-0 2xl:col-span-2">
                   <ListingsMap
                     listings={listings} 
                     onOpenListing={(id) => router.push(`/bostader/${id}`)}

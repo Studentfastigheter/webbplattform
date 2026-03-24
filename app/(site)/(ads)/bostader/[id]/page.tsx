@@ -1,26 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 import BostadAbout from "@/components/ads/BostadAbout";
-import BostadGallery from "@/components/ads/BostadGallery";
 import BostadLandlord from "@/components/ads/BostadLandlord";
 
 import { listingService } from "@/services/listing-service";
 import { ListingDetailDTO, ListingCardDTO } from "@/types/listing";
-// Se till att AdvertiserSummary nu importeras korrekt från där du la den i Steg 1
-import { AdvertiserSummary } from "@/types"; 
+import { AdvertiserSummary } from "@/types";
 
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ssr: false,
   loading: () => (
-    <div className="min-h-[350px] lg:min-h-[450px] w-full rounded-3xl bg-gray-100 animate-pulse" aria-hidden />
+    <div className="min-h-[400px] w-full rounded-3xl bg-gray-100 animate-pulse" aria-hidden />
   ),
-}); 
+});
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 
@@ -87,24 +85,288 @@ const DUMMY_NEARBY_LISTINGS: ListingCardDTO[] = [
   } as unknown as ListingCardDTO
 ];
 
+// ─── Lightbox ────────────────────────────────────────────────────────────────
+function Lightbox({
+  images,
+  startIndex,
+  onClose,
+}: {
+  images: string[];
+  startIndex: number;
+  onClose: () => void;
+}) {
+  const [current, setCurrent] = useState(startIndex);
+
+  // Close on Escape, navigate with arrow keys
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") setCurrent((c) => (c + 1) % images.length);
+      if (e.key === "ArrowLeft") setCurrent((c) => (c - 1 + images.length) % images.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [images.length, onClose]);
+
+  // Prevent body scroll while open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+      onClick={onClose}
+    >
+      {/* Close */}
+      <button
+        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+        onClick={onClose}
+        aria-label="Stäng"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      {/* Counter */}
+      <span className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium">
+        {current + 1} / {images.length}
+      </span>
+
+      {/* Prev */}
+      {images.length > 1 && (
+        <button
+          className="absolute left-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+          onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c - 1 + images.length) % images.length); }}
+          aria-label="Föregående bild"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+      )}
+
+      {/* Image */}
+      <div className="max-h-[85vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={images[current]}
+          alt={`Bild ${current + 1}`}
+          className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+        />
+      </div>
+
+      {/* Next */}
+      {images.length > 1 && (
+        <button
+          className="absolute right-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+          onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c + 1) % images.length); }}
+          aria-label="Nästa bild"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+      )}
+
+      {/* Thumbnail strip */}
+      {images.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] px-2 pb-1">
+          {images.map((src, i) => (
+            <button
+              key={i}
+              onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
+              className={`shrink-0 h-14 w-20 overflow-hidden rounded-lg border-2 transition ${
+                i === current ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-75"
+              }`}
+            >
+              <img src={src} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Top 5-image preview grid ────────────────────────────────────────────────
+function ImagePreviewGrid({
+  images,
+  onImageClick,
+}: {
+  images: string[];
+  onImageClick: (index: number) => void;
+}) {
+  if (images.length === 0) return null;
+
+  const shown = images.slice(0, 5);
+
+  return (
+    <div className="w-full overflow-hidden rounded-3xl">
+      {shown.length === 1 && (
+        <button
+          className="relative w-full h-[420px] block group"
+          onClick={() => onImageClick(0)}
+        >
+          <img src={shown[0]} alt="Bild 1" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition rounded-3xl flex items-center justify-center">
+            <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition drop-shadow-lg" />
+          </div>
+        </button>
+      )}
+
+      {shown.length === 2 && (
+        <div className="grid grid-cols-2 gap-2 h-[420px]">
+          {shown.map((src, i) => (
+            <button key={i} className="relative w-full h-full group overflow-hidden rounded-2xl" onClick={() => onImageClick(i)}>
+              <img src={src} alt={`Bild ${i + 1}`} className="h-full w-full object-cover transition group-hover:scale-105" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
+                <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition drop-shadow-lg" />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {shown.length >= 3 && (
+        <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[460px]">
+          {/* Main big image — spans 2 cols & 2 rows */}
+          <button
+            className="relative col-span-2 row-span-2 group overflow-hidden rounded-2xl"
+            onClick={() => onImageClick(0)}
+          >
+            <img src={shown[0]} alt="Bild 1" className="h-full w-full object-cover transition group-hover:scale-105" />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
+              <ZoomIn className="h-7 w-7 text-white opacity-0 group-hover:opacity-100 transition drop-shadow-lg" />
+            </div>
+          </button>
+
+          {/* Thumbnails — up to 4 in the right 2 cols */}
+          {shown.slice(1, 5).map((src, i) => {
+            const isLast = i === 3 && images.length > 5;
+            return (
+              <button
+                key={i + 1}
+                className="relative group overflow-hidden rounded-2xl"
+                onClick={() => onImageClick(i + 1)}
+              >
+                <img src={src} alt={`Bild ${i + 2}`} className="h-full w-full object-cover transition group-hover:scale-105" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
+                  {isLast ? (
+                    <span className="text-white font-semibold text-lg drop-shadow-lg bg-black/40 px-3 py-1 rounded-lg">
+                      +{images.length - 4} fler
+                    </span>
+                  ) : (
+                    <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition drop-shadow-lg" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Full image slideshow ─────────────────────────────────────────────────────
+function ImageSlideshow({ images, title }: { images: string[]; title: string }) {
+  const [current, setCurrent] = useState(0);
+  const sliderRef = useRef<HTMLDivElement>(null);
+
+  if (images.length === 0) return null;
+
+  const scrollTo = (index: number) => {
+    setCurrent(index);
+    const el = sliderRef.current;
+    if (el) {
+      const child = el.children[index] as HTMLElement;
+      if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  };
+
+  return (
+    <section className="w-full">
+      <h2 className="text-2xl font-bold text-gray-900 mb-5 tracking-tight">Alla bilder</h2>
+
+      {/* Main display */}
+      <div className="relative w-full rounded-3xl overflow-hidden bg-gray-100 aspect-video mb-3">
+        <img
+          src={images[current]}
+          alt={`${title} – bild ${current + 1}`}
+          className="h-full w-full object-cover transition-all duration-300"
+        />
+        <span className="absolute bottom-4 right-4 bg-black/50 text-white text-sm font-medium px-3 py-1 rounded-full">
+          {current + 1} / {images.length}
+        </span>
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={() => scrollTo((current - 1 + images.length) % images.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 hover:bg-white shadow transition"
+              aria-label="Föregående"
+            >
+              <ChevronLeft className="h-5 w-5 text-gray-700" />
+            </button>
+            <button
+              onClick={() => scrollTo((current + 1) % images.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 hover:bg-white shadow transition"
+              aria-label="Nästa"
+            >
+              <ChevronRight className="h-5 w-5 text-gray-700" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Thumbnail strip */}
+      {images.length > 1 && (
+        <div
+          ref={sliderRef}
+          className="flex gap-2 overflow-x-auto pb-2"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {images.map((src, i) => (
+            <button
+              key={i}
+              onClick={() => scrollTo(i)}
+              className={`shrink-0 h-20 w-28 overflow-hidden rounded-xl border-2 transition ${
+                i === current
+                  ? "border-gray-900 opacity-100"
+                  : "border-transparent opacity-60 hover:opacity-90"
+              }`}
+            >
+              <img src={src} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function ListingDetailPage() {
-// ... The rest of the page setup ...
-// Note: We are using a simple search/replace trick below.
   const params = useParams<{ id: string }>();
   const listingId = params?.id;
   const router = useRouter();
-  
-  // FIX: Vi tar inte ut 'token' här, eftersom AuthContext troligen inte exponerar den
-  // och listingService använder apiClient som sköter headers automatiskt.
-  const { user } = useAuth(); 
-  
+  const { user } = useAuth();
+
   const [listing, setListing] = useState<ListingDetailDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
+
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = useCallback((index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    setLightboxOpen(false);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -115,66 +377,51 @@ export default function ListingDetailPage() {
 
     listingService
       .get(listingId)
-      .then((res) => {
-        if (!active) return;
-        setListing(res);
-      })
+      .then((res) => { if (active) setListing(res); })
       .catch((err: any) => {
         if (!active) return;
         console.error("Fetch error:", err);
         setError("Kunde inte ladda annonsen.");
         setListing(null);
       })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
+      .finally(() => { if (active) setLoading(false); });
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [listingId]);
 
   const handleApply = useCallback(() => {
     if (!listingId || !listing) return;
-    
-    // Om du vill tvinga inloggning:
     if (!user) {
-       setApplyError("Du måste vara inloggad för att skicka intresse.");
-       return;
+      setApplyError("Du måste vara inloggad för att skicka intresse.");
+      return;
     }
 
     setApplying(true);
     setApplyError(null);
     setApplySuccess(null);
 
-    // FIX: Tog bort 'token' som argument här.
-    const action = (listing.ownerType.toLowerCase() === "company" || listing.ownerType === "Företag")
-      ? listingService.registerInterest(listingId) 
-      : listingService.apply(listingId, "Hej! Jag är intresserad.");
+    const action =
+      listing.ownerType.toLowerCase() === "company" || listing.ownerType === "Företag"
+        ? listingService.registerInterest(listingId)
+        : listingService.apply(listingId, "Hej! Jag är intresserad.");
 
     action
       .then(() => setApplySuccess("Intresseanmälan skickad!"))
-      .catch((err: any) => {
-        setApplyError(err?.message ?? "Kunde inte skicka intresse.");
-      })
+      .catch((err: any) => setApplyError(err?.message ?? "Kunde inte skicka intresse."))
       .finally(() => setApplying(false));
-  }, [listingId, listing, user]); // Tog bort token från dependencies
+  }, [listingId, listing, user]);
 
-  const galleryImages = useMemo(() => {
-    return listing?.imageUrls || [];
-  }, [listing]);
+  const galleryImages = useMemo(() => listing?.imageUrls || [], [listing]);
 
   const advertiser: AdvertiserSummary | null = useMemo(() => {
     if (!listing) return null;
-
     return {
       id: listing.ownerId,
       type: listing.ownerType.toLowerCase() === "company" ? "company" : "private_landlord",
       displayName: listing.ownerName,
       logoUrl: listing.ownerLogoUrl || null,
       bannerUrl: null,
-      city: null, 
+      city: null,
       rating: null,
       website: null,
       description: null,
@@ -182,7 +429,7 @@ export default function ListingDetailPage() {
       contactEmail: null,
       contactPhone: null,
       contactNote: listing.provider ? `Förmedlas via ${listing.provider}` : null,
-      subtitle: listing.ownerType.toLowerCase() === "company" ? "Företag" : "Privat hyresvärd"
+      subtitle: listing.ownerType.toLowerCase() === "company" ? "Företag" : "Privat hyresvärd",
     };
   }, [listing]);
 
@@ -201,74 +448,91 @@ export default function ListingDetailPage() {
       hostType: listing.ownerType,
       verifiedHost: listing.verifiedOwner,
       lat: listing.lat,
-      lng: listing.lng
+      lng: listing.lng,
     }];
   }, [listing]);
 
-  const content = useMemo(() => {
-    if (loading) {
-      return (
+  if (loading) {
+    return (
+      <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
         <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-gray-500">
           Laddar annons...
         </div>
-      );
-    }
-    
-    if (error || !listing || !advertiser) {
-      return (
+      </main>
+    );
+  }
+
+  if (error || !listing || !advertiser) {
+    return (
+      <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center text-red-800">
           {error ?? "Annonsen kunde inte hittas."}
         </div>
-      );
-    }
-
-    return (
-      <div className="flex w-full flex-col gap-8">
-        {applySuccess && (
-          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-            {applySuccess}
-          </div>
-        )}
-        {applyError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            {applyError}
-          </div>
-        )}
-
-        <BostadAbout 
-            listing={listing} 
-            onApplyClick={handleApply} 
-            applyDisabled={applying} 
-        />
-
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          <div className="w-full">
-            <BostadGallery 
-                title={listing.title} 
-                images={galleryImages} 
-            />
-          </div>
-          <div className="w-full min-h-[350px] lg:min-h-[450px] rounded-3xl overflow-hidden border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-            <ListingsMap listings={mapListings} className="h-full w-full object-cover" />
-          </div>
-        </div>
-        
-        <BostadLandlord advertiser={advertiser} />
-      </div>
+      </main>
     );
-  }, [loading, error, listing, advertiser, applySuccess, applyError, galleryImages, handleApply, applying, mapListings]);
+  }
 
   return (
-    <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
-      {content}
+    <>
+      {/* Lightbox — rendered outside the scroll container, no z-index conflicts */}
+      {lightboxOpen && (
+        <Lightbox
+          images={galleryImages}
+          startIndex={lightboxIndex}
+          onClose={closeLightbox}
+        />
+      )}
 
-      {/* Nearby Listings Section */}
-      {!loading && !error && listing && (
-        <section className="mt-16 w-full pt-8 border-t border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Fler bostäder i närheten</h2>
-          <div className="relative group mx-auto">
-            {/* Vänster knapp */}
-            <button 
+      <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
+        <div className="flex w-full flex-col gap-10">
+
+          {/* Feedback messages */}
+          {applySuccess && (
+            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              {applySuccess}
+            </div>
+          )}
+          {applyError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {applyError}
+            </div>
+          )}
+
+          {/* 1. Top image preview grid */}
+          <ImagePreviewGrid images={galleryImages} onImageClick={openLightbox} />
+
+          {/* 2. About / listing info */}
+          <BostadAbout
+            listing={listing}
+            onApplyClick={handleApply}
+            applyDisabled={applying}
+          />
+
+          {/* 3. Map — own dedicated section */}
+          <section className="w-full">
+            <h2 className="text-2xl font-bold text-gray-900 mb-5 tracking-tight">Karta</h2>
+            <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+              <ListingsMap listings={mapListings} className="h-full w-full" />
+            </div>
+          </section>
+
+          {/* 4. Landlord info */}
+          <BostadLandlord advertiser={advertiser} />
+
+          {/* 5. Full image slideshow */}
+          {galleryImages.length > 0 && (
+            <div className="pt-4 border-t border-gray-100">
+              <ImageSlideshow images={galleryImages} title={listing.title} />
+            </div>
+          )}
+
+          {/* 6. Nearby listings */}
+          <section className="pt-8 border-t border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">
+              Fler bostäder i närheten
+            </h2>
+            <div className="relative group mx-auto">
+              <button
                 onClick={() => {
                   const el = document.getElementById("nearby-slider");
                   if (el) el.scrollBy({ left: -320, behavior: "smooth" });
@@ -277,10 +541,9 @@ export default function ListingDetailPage() {
                 aria-label="Scrolla vänster"
               >
                 <ChevronLeft className="h-6 w-6 text-gray-600" />
-            </button>
+              </button>
 
-            {/* Höger knapp */}
-            <button 
+              <button
                 onClick={() => {
                   const el = document.getElementById("nearby-slider");
                   if (el) el.scrollBy({ left: 320, behavior: "smooth" });
@@ -289,38 +552,40 @@ export default function ListingDetailPage() {
                 aria-label="Scrolla höger"
               >
                 <ChevronRight className="h-6 w-6 text-gray-600" />
-            </button>
+              </button>
 
-            <div 
-              id="nearby-slider"
-              className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory px-1" 
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {DUMMY_NEARBY_LISTINGS.map((nearby) => (
-                <div key={nearby.id} className="snap-start shrink-0">
-                  <ListingCardSmall
-                    title={nearby.title}
-                    area={(nearby as any).area}
-                    city={(nearby as any).city}
-                    dwellingType={nearby.dwellingType}
-                    rooms={nearby.rooms}
-                    sizeM2={nearby.sizeM2 || 0}
-                    rent={nearby.rent}
-                    landlordType={nearby.hostType}
-                    hostName={(nearby as any).ownerName}
-                    hostLogoUrl={(nearby as any).ownerLogoUrl ?? undefined}
-                    isVerified={(nearby as any).verifiedOwner}
-                    imageUrl={nearby.imageUrl}
-                    tags={nearby.tags}
-                    variant="compact"
-                    onClick={() => router.push(`/bostader/${nearby.id}`)}
-                  />
-                </div>
-              ))}
+              <div
+                id="nearby-slider"
+                className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory px-1"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {DUMMY_NEARBY_LISTINGS.map((nearby) => (
+                  <div key={nearby.id} className="snap-start shrink-0">
+                    <ListingCardSmall
+                      title={nearby.title}
+                      area={(nearby as any).area}
+                      city={(nearby as any).city}
+                      dwellingType={nearby.dwellingType}
+                      rooms={nearby.rooms}
+                      sizeM2={nearby.sizeM2 || 0}
+                      rent={nearby.rent}
+                      landlordType={nearby.hostType}
+                      hostName={(nearby as any).ownerName}
+                      hostLogoUrl={(nearby as any).ownerLogoUrl ?? undefined}
+                      // isVerified={(nearby as any).verifiedOwner}
+                      imageUrl={nearby.imageUrl}
+                      // tags={nearby.tags}
+                      variant="compact"
+                      onClick={() => router.push(`/bostader/${nearby.id}`)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
-      )}
-    </main>
+          </section>
+
+        </div>
+      </main>
+    </>
   );
 }

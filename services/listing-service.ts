@@ -126,17 +126,17 @@ export const listingService = {
    * Anropar: POST /api/listings/{id}/favorite
    */
   addFavorite: async (listingId: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/favorite`, {
+    await apiClient(`/listings/${listingId}/favorites`, {
       method: "POST",
     });
   },
 
   /**
    * Ta bort annons från favoriter
-   * Anropar: DELETE /api/listings/{id}/favorite
+   * Anropar: DELETE /api/listings/{id}/favorites
    */
   removeFavorite: async (listingId: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/favorite`, {
+    await apiClient(`/listings/${listingId}/favorites`, {
       method: "DELETE",
     });
   },
