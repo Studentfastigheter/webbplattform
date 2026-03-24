@@ -53,6 +53,14 @@ export default function Page() {
     const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+    const queuesById = useMemo(() => {
+      const result: Record<string, QueueWithUI> = {};
+      for (const queue of queues) {
+        result[queue.id] = queue;
+      }
+      return result;
+    }, [queues]);
+
     useEffect(() => {
         let active = true;
         setLoading(true);
@@ -186,7 +194,7 @@ export default function Page() {
             logoUrl={queueCardProps.logoUrl}
             logoAlt={queueCardProps.logoAlt}
             tags={queueCardProps.tags}
-            onViewListings={() => router.push(`/alla-koer/${queue.id}`)}
+            onViewListings={() => router.push(`/alla-koer/${queue.companyId}`)}
             onSelect={() => {
               const next = new Set(selectedQueues);
               next.add(queue.id);
@@ -301,7 +309,7 @@ export default function Page() {
                   >
                     <QueuesMap
                       queues={mapQueues}
-                      onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
+                      onOpenQueue={(id) => router.push(`/alla-koer/${queuesById[id]}`)}
                     />
                   </div>
                 </div>
