@@ -359,6 +359,44 @@ export default function ListingDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  // Ladda favoriter om inloggad
+  useEffect(() => {
+    if (user) {
+      listingService.getFavorites().then(favs => {
+        setFavoriteIds(new Set(favs.map(f => f.id)));
+      }).catch(console.error);
+    } else {
+      setFavoriteIds(new Set());
+    }
+  }, [user]);
+
+  const handleFavoriteToggle = useCallback((id: string, isFav: boolean) => {
+    if (!user) {
+      alert("Du måste vara inloggad för att spara bostäder");
+      return;
+    }
+    
+    setFavoriteIds(prev => {
+      const next = new Set(prev);
+      if (isFav) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+    const action = isFav ? listingService.addFavorite(id) : listingService.removeFavorite(id);
+    action.catch(err => {
+      console.error("Failed to toggle favorite:", err);
+      setFavoriteIds(prev => {
+        const next = new Set(prev);
+        if (isFav) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    });
+  }, [user]);
+
   const openLightbox = useCallback((index: number) => {
     setLightboxIndex(index);
     setLightboxOpen(true);
@@ -504,6 +542,7 @@ export default function ListingDetailPage() {
           {/* 2. About / listing info */}
           <BostadAbout
             listing={listing}
+            isFavorite={favoriteIds.has(listing.id)}
             onApplyClick={handleApply}
             applyDisabled={applying}
           />
@@ -572,7 +611,9 @@ export default function ListingDetailPage() {
                       landlordType={nearby.hostType}
                       hostName={(nearby as any).ownerName}
                       hostLogoUrl={(nearby as any).ownerLogoUrl ?? undefined}
-                      // isVerified={(nearby as any).verifiedOwner}
+                      isVerified={(nearby as any).verifiedOwner}
+                      isFavorite={favoriteIds.has(nearby.id)}
+                      onFavoriteToggle={handleFavoriteToggle}
                       imageUrl={nearby.imageUrl}
                       // tags={nearby.tags}
                       variant="compact"

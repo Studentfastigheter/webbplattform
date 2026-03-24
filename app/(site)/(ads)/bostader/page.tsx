@@ -435,6 +435,8 @@ export default function ListingsPage() {
                 <div className="w-full h-[280px] sm:h-[350px] lg:h-[calc(100vh-120px)] rounded-xl lg:rounded-2xl overflow-hidden lg:sticky lg:top-24 z-10 shrink-0 2xl:col-span-2">
                   <ListingsMap
                     listings={listings} 
+                    getIsFavorite={(id) => favoriteIds.has(id)}
+                    onFavoriteToggle={handleFavoriteToggle}
                     onOpenListing={(id) => router.push(`/bostader/${id}`)}
                   />
                 </div>

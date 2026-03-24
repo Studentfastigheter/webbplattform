@@ -6,11 +6,15 @@ import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 
 type ListingMapPopupProps = {
   listing: ListingCardDTO;
+  isFavorite?: boolean;
+  onFavoriteToggle?: (id: string, isFav: boolean) => void;
   onOpen?: (id: string) => void;
 };
 
 const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
   listing,
+  isFavorite,
+  onFavoriteToggle,
   onOpen,
 }) => {
   return (
@@ -27,6 +31,8 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
         hostName={listing.hostName}
         hostLogoUrl={listing.hostLogoUrl}
         isVerified={listing.verifiedHost}
+        isFavorite={isFavorite}
+        onFavoriteToggle={onFavoriteToggle}
         imageUrl={listing.imageUrl}
         tags={listing.tags}
         onClick={() => onOpen?.(listing.id)}

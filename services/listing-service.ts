@@ -142,8 +142,23 @@ export const listingService = {
   },
 
   getFavorites: async (): Promise<ListingCardDTO[]> => {
-    const res = await apiClient<ListingCardDTO[]>("/listings/favorites");
-    return res ? res.map(addMockCoordinates) : [];
+    const res = await apiClient<any>("/listings/favorites");
+    console.log("FETCHED FAVORITES RESPONSE:", res);
+    
+    // Check if it's returning a list of StudentLikedListing where the actual listing is embedded
+    if (Array.isArray(res)) {
+      if (res.length > 0 && res[0].listing) {
+        return res.map((r: any) => addMockCoordinates(r.listing));
+      }
+      return res.map((r: any) => addMockCoordinates(r));
+    }
+    
+    // Check if it's a page response
+    if (res && res.content) {
+      return res.content.map((r: any) => addMockCoordinates(r.listing ? r.listing : r));
+    }
+    
+    return [];
   },
 
   // --- ÖVRIGA METODER ---

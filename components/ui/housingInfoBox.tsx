@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, Share2 } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog"; 
 import { listingService } from "@/services/listing-service"; // Importera din service
+import { useAuth } from "@/context/AuthContext";
 
 type HousingInfoBoxProps = {
   listingId: string;       // NY: Krävs för att veta vilken annons vi gillar
@@ -36,6 +37,13 @@ export default function HousingInfoBox({
   // State för att hantera om annonsen är likad eller inte
   const [isFav, setIsFav] = useState(isFavorite);
   const [isLoadingFav, setIsLoadingFav] = useState(false);
+  const { user } = useAuth();
+
+  React.useEffect(() => {
+    if (isFavorite !== undefined) {
+      setIsFav(isFavorite);
+    }
+  }, [isFavorite]);
 
   // Hantera klick på hjärtat
   const handleToggleFavorite = async (e: React.MouseEvent) => {
@@ -95,21 +103,23 @@ export default function HousingInfoBox({
         </span>
 
         <div className="flex items-center gap-3">
-          {/* Hjärta-knapp */}
-          <button 
-            type="button"
-            onClick={handleToggleFavorite}
-            disabled={isLoadingFav}
-            className={`
-              transition-all duration-200 
-              hover:scale-110 active:scale-95
-              ${isFav ? "text-red-500" : "text-gray-500 hover:text-red-500"}
-            `}
-            aria-label={isFav ? "Ta bort från favoriter" : "Lägg till i favoriter"}
-          >
-            {/* fill-current gör att hjärtat fylls med färg om isFav är true */}
-            <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
-          </button>
+          {/* Hjärta-knapp (Bara synlig om inloggad) */}
+          {user && (
+            <button 
+              type="button"
+              onClick={handleToggleFavorite}
+              disabled={isLoadingFav}
+              className={`
+                transition-all duration-200 
+                hover:scale-110 active:scale-95
+                ${isFav ? "text-red-500" : "text-gray-500 hover:text-red-500"}
+              `}
+              aria-label={isFav ? "Ta bort från favoriter" : "Lägg till i favoriter"}
+            >
+              {/* fill-current gör att hjärtat fylls med färg om isFav är true */}
+              <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
+            </button>
+          )}
 
           {/* Dela-knapp inuti ShareDialog */}
           <ShareDialog>

@@ -24,6 +24,7 @@ type Props = {
   onApplyClick?: () => void;
   applyDisabled?: boolean;
   isEditable?: boolean;
+  isFavorite?: boolean;
 };
 
 export default function BostadAbout({
@@ -31,6 +32,7 @@ export default function BostadAbout({
   onApplyClick,
   applyDisabled,
   isEditable = false,
+  isFavorite,
 }: Props) {
   
   // Bygg strängen för bostadstyp, rum och storlek
@@ -176,6 +178,7 @@ export default function BostadAbout({
       <div className="lg:justify-self-end">
         <HousingInfoBox
           listingId={listing.id}  // NY: Skicka med annons-ID
+          isFavorite={isFavorite}
           rent={listing.rent}
           moveInDate={listing.moveIn}
           lastApplyDate={listing.applyBy}

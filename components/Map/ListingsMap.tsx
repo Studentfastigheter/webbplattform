@@ -13,6 +13,8 @@ type ListingsMapProps = {
   listings: ListingCardDTO[]; // <-- Uppdaterad typ
   className?: string;
   activeListingId?: string;
+  getIsFavorite?: (id: string) => boolean;
+  onFavoriteToggle?: (id: string, isFav: boolean) => void;
   onOpenListing?: (id: string) => void;
 };
 
@@ -22,12 +24,16 @@ type ListingsMapProps = {
 const createListingPopupRenderer =
   (
     listing: ListingCardDTO, // <-- Uppdaterad typ
+    isFavorite?: boolean,
+    onFavoriteToggle?: (id: string, isFav: boolean) => void,
     onOpenListing?: (id: string) => void,
   ): PopupRenderer =>
   () =>
     (
       <ListingMapPopup
         listing={listing}
+        isFavorite={isFavorite}
+        onFavoriteToggle={onFavoriteToggle}
         onOpen={onOpenListing}
       />
     );
@@ -36,6 +42,8 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
   listings,
   className,
   activeListingId,
+  getIsFavorite,
+  onFavoriteToggle,
   onOpenListing,
 }) => {
   const markers: BaseMarker[] = useMemo(
@@ -46,9 +54,9 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
         .map((l) => ({
           id: l.id,
           position: [l.lat as number, l.lng as number],
-          popup: createListingPopupRenderer(l, onOpenListing),
+          popup: createListingPopupRenderer(l, getIsFavorite?.(l.id), onFavoriteToggle, onOpenListing),
         })),
-    [listings, onOpenListing],
+    [listings, getIsFavorite, onFavoriteToggle, onOpenListing],
   );
 
   return (

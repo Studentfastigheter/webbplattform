@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Tag from "../ui/Tag";
 import VerifiedTag from "../ui/VerifiedTag";
 import { Heart } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 // ÄNDRING: Vi definierar props manuellt istället för att ärva från gamla ListingWithRelations
 export type ListingCardSmallProps = {
@@ -72,6 +73,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     onHoverChange,
     variant = "default",
   } = props;
+
+  const { user } = useAuth();
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
@@ -157,14 +160,17 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           height: scaleValue(imageBaseHeight),
         }}
       >
-        <button
-          type="button"
-          onClick={handleFavoriteClick}
-          className="absolute top-3 right-3 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all shadow-sm"
-          aria-label={isLiked ? "Ta bort från sparade" : "Spara bostad"}
-        >
-          <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-        </button>
+        {/* Favorite Button (Only visible if logged in) */}
+        {user && (
+          <button
+            type="button"
+            onClick={handleFavoriteClick}
+            className="absolute top-3 right-3 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all shadow-sm"
+            aria-label={isLiked ? "Ta bort från sparade" : "Spara bostad"}
+          >
+            <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+          </button>
+        )}
 
         <div className="h-full w-full">
           {imageUrl ? (
