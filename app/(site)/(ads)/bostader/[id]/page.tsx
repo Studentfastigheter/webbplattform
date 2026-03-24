@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 
 import BostadAbout from "@/components/ads/BostadAbout";
 import BostadLandlord from "@/components/ads/BostadLandlord";
@@ -196,65 +197,79 @@ function ImagePreviewGrid({
 
   const shown = images.slice(0, 5);
 
-  return (
-    <div className="w-full overflow-hidden rounded-3xl">
-      {shown.length === 1 && (
-        <button
-          className="relative w-full h-[420px] block group"
-          onClick={() => onImageClick(0)}
-        >
-          <img src={shown[0]} alt="Bild 1" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition rounded-3xl flex items-center justify-center">
-          </div>
-        </button>
-      )}
+  if (shown.length === 1) {
+    return (
+      <button
+        className="relative w-full h-[420px] overflow-hidden rounded-2xl"
+        onClick={() => onImageClick(0)}
+      >
+        <img src={shown[0]} alt="Bild 1" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
+      </button>
+    );
+  }
 
-      {shown.length === 2 && (
-        <div className="grid grid-cols-2 gap-2 h-[420px]">
-          {shown.map((src, i) => (
-            <button key={i} className="relative w-full h-full group overflow-hidden rounded-2xl" onClick={() => onImageClick(i)}>
-              <img src={src} alt={`Bild ${i + 1}`} className="h-full w-full object-cover transition group-hover:scale-105" />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
+  if (shown.length === 2) {
+    return (
+      <div className="grid grid-cols-2 gap-1.5 h-[420px]">
+        {shown.map((src, i) => (
+          <button
+            key={i}
+            className={cn(
+              "relative overflow-hidden",
+              i === 0 ? "rounded-l-2xl" : "rounded-r-2xl"
+            )}
+            onClick={() => onImageClick(i)}
+          >
+            <img src={src} alt={`Bild ${i + 1}`} className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // 3–5 images: main left + side thumbnails
+  const side = shown.slice(1);
+  return (
+    <div className="grid grid-cols-[1fr_0.5fr] gap-1.5 h-[460px]">
+      {/* Main image */}
+      <button
+        className="relative row-span-full overflow-hidden rounded-l-2xl"
+        onClick={() => onImageClick(0)}
+      >
+        <img src={shown[0]} alt="Bild 1" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
+      </button>
+
+      {/* Side thumbnails — evenly split the full height */}
+      <div className="grid grid-rows-subgrid row-span-full" style={{ gridTemplateRows: `repeat(${side.length}, 1fr)`, gap: "6px" }}>
+        {side.map((src, i) => {
+          const isLast = i === side.length - 1 && images.length > 5;
+          const isFirst = i === 0;
+          const isEnd = i === side.length - 1;
+          return (
+            <button
+              key={i + 1}
+              className={cn(
+                "relative overflow-hidden",
+                isFirst && "rounded-tr-2xl",
+                isEnd && "rounded-br-2xl"
+              )}
+              onClick={() => onImageClick(i + 1)}
+            >
+              <img src={src} alt={`Bild ${i + 2}`} className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition flex items-center justify-center">
+                {isLast && (
+                  <span className="text-white font-semibold text-lg drop-shadow-lg bg-black/40 px-3 py-1 rounded-lg">
+                    +{images.length - 5} fler
+                  </span>
+                )}
               </div>
             </button>
-          ))}
-        </div>
-      )}
-
-      {shown.length >= 3 && (
-        <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[460px]">
-          {/* Main big image — spans 2 cols & 2 rows */}
-          <button
-            className="relative col-span-2 row-span-2 group overflow-hidden rounded-2xl"
-            onClick={() => onImageClick(0)}
-          >
-            <img src={shown[0]} alt="Bild 1" className="h-full w-full object-cover transition group-hover:scale-105" />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
-            </div>
-          </button>
-
-          {/* Thumbnails — up to 4 in the right 2 cols */}
-          {shown.slice(1, 5).map((src, i) => {
-            const isLast = i === 3 && images.length > 5;
-            return (
-              <button
-                key={i + 1}
-                className="relative group overflow-hidden rounded-2xl"
-                onClick={() => onImageClick(i + 1)}
-              >
-                <img src={src} alt={`Bild ${i + 2}`} className="h-full w-full object-cover transition group-hover:scale-105" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition flex items-center justify-center">
-                  {isLast && (
-                    <span className="text-white font-semibold text-lg drop-shadow-lg bg-black/40 px-3 py-1 rounded-lg">
-                      +{images.length - 4} fler
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }

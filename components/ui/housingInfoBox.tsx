@@ -3,15 +3,15 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Heart, Share2 } from "lucide-react";
-import { ShareDialog } from "@/components/ui/ShareDialog"; 
-import { listingService } from "@/services/listing-service"; 
+import { ShareDialog } from "@/components/ui/ShareDialog";
+import { listingService } from "@/services/listing-service";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 type HousingInfoBoxProps = {
-  listingId: string;       // NY: Krävs för att veta vilken annons vi gillar
-  isFavorite?: boolean;    // NY: Startvärde (kommer från backend)
-  
+  listingId: string;
+  isFavorite?: boolean;
+
   rent?: number | null;
   moveInDate?: string | null;
   lastApplyDate?: string | null;
@@ -24,7 +24,7 @@ type HousingInfoBoxProps = {
 
 export default function HousingInfoBox({
   listingId,
-  isFavorite = false, // Default till false om det inte skickas med
+  isFavorite = false,
   rent,
   moveInDate,
   lastApplyDate,
@@ -34,8 +34,7 @@ export default function HousingInfoBox({
   onApplyClick,
   applyDisabled,
 }: HousingInfoBoxProps) {
-  
-  // State för att hantera om annonsen är likad eller inte
+
   const [isFav, setIsFav] = useState(isFavorite);
   const [isLoadingFav, setIsLoadingFav] = useState(false);
   const { user } = useAuth();
@@ -46,15 +45,12 @@ export default function HousingInfoBox({
     }
   }, [isFavorite]);
 
-  // Hantera klick på hjärtat
   const handleToggleFavorite = async (e: React.MouseEvent) => {
-    // Stoppa eventuella klick på länkar om denna komponent ligger i ett kort
     e.preventDefault();
     e.stopPropagation();
 
     if (isLoadingFav) return;
 
-    // 1. Optimistisk uppdatering (byt ikon direkt för snabb känsla)
     const previousState = isFav;
     const newState = !previousState;
     setIsFav(newState);
@@ -62,15 +58,12 @@ export default function HousingInfoBox({
 
     try {
       if (newState) {
-        // Om den ska bli favorit -> Anropa addFavorite
         await listingService.addFavorite(listingId);
       } else {
-        // Om den ska tas bort -> Anropa removeFavorite
         await listingService.removeFavorite(listingId);
       }
     } catch (error) {
       console.error("Kunde inte ändra favoritstatus:", error);
-      // 2. Om det misslyckas, rulla tillbaka till föregående state
       setIsFav(previousState);
     } finally {
       setIsLoadingFav(false);
@@ -83,80 +76,98 @@ export default function HousingInfoBox({
   return (
     <div
       className={cn(
-        "flex flex-col gap-6",
-        "rounded-3xl",
+        "flex flex-col gap-5",
+        "rounded-2xl",
         "bg-white",
-        "border border-gray-100",
-        "shadow-[0_8px_30px_rgb(0,0,0,0.06)]",
-        "p-6",
+        "border border-gray-200/80",
+        "shadow-[0_2px_12px_rgba(0,0,0,0.04)]",
+        "p-5",
         className
       )}
       style={{ width: width ?? "100%", maxWidth: 320, height }}
     >
-      {/* Rad 1: Etikett, Pris & Ikoner */}
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-            Månadshyra
+      {/* Pris */}
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs font-medium uppercase tracking-wider text-gray-400">
+          Månadshyra
+        </span>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-2xl font-bold tracking-tight text-gray-900">
+            {rentValue}
           </span>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-bold tracking-tight text-gray-900">
-              {rentValue}
-            </span>
-            {isRentNumber && (
-              <span className="text-sm font-medium text-gray-500">kr</span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 mt-1">
-          {/* Hjärta-knapp (Bara synlig om inloggad) */}
-          {user && (
-            <button 
-              type="button"
-              onClick={handleToggleFavorite}
-              disabled={isLoadingFav}
-              className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",
-                isFav 
-                  ? "bg-red-50 text-red-500 hover:bg-red-100" 
-                  : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-red-500",
-                "active:scale-95"
-              )}
-              aria-label={isFav ? "Ta bort från favoriter" : "Lägg till i favoriter"}
-            >
-              <Heart className={cn("w-[22px] h-[22px]", isFav && "fill-current")} />
-            </button>
+          {isRentNumber && (
+            <span className="text-sm font-medium text-gray-400">kr/mån</span>
           )}
-
-          {/* Dela-knapp inuti ShareDialog */}
-          <ShareDialog>
-            <button 
-              type="button" 
-              aria-label="Dela bostad"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-500 transition-all duration-200 hover:bg-gray-100 hover:text-blue-600 active:scale-95"
-            >
-              <Share2 className="w-[20px] h-[20px]" />
-            </button>
-          </ShareDialog>
         </div>
       </div>
 
-      {/* Rad 4: Knapp */}
+      {/* Datum-info */}
+      {(moveInDate || lastApplyDate) && (
+        <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">
+          {moveInDate && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Inflyttning</span>
+              <span className="font-medium text-gray-900">{moveInDate}</span>
+            </div>
+          )}
+          {lastApplyDate && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Sista ansökan</span>
+              <span className="font-medium text-gray-900">{lastApplyDate}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Ansök-knapp */}
       <Button
         onClick={onApplyClick}
         disabled={applyDisabled}
         className={cn(
-          "w-full h-12 flex items-center justify-center gap-2",
+          "w-full h-11 flex items-center justify-center gap-2",
           "rounded-full",
-          "bg-[#004323] text-white",
-          "text-[15px] font-medium",
-          "shadow-md hover:shadow-lg transition-all",
+          "bg-[#004225] text-white",
+          "text-[14px] font-medium",
+          "shadow-sm hover:shadow-md transition-all",
           "hover:bg-[#00331b] active:scale-[0.98]"
         )}
       >
-        {isFav ? "You’re interested" : "Show interest"} 
+        Visa intresse
       </Button>
+
+      {/* Åtgärdsknappar — samma stil som alla-koer */}
+      <div className="flex items-center justify-center gap-1 border-t border-gray-100 pt-4">
+        {user && (
+          <button
+            type="button"
+            onClick={handleToggleFavorite}
+            disabled={isLoadingFav}
+            className={cn(
+              "inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+              isFav
+                ? "text-red-500 hover:bg-red-50"
+                : "text-gray-400 hover:bg-gray-100 hover:text-red-500"
+            )}
+            aria-label={isFav ? "Ta bort från favoriter" : "Lägg till i favoriter"}
+          >
+            <Heart className={cn("h-[18px] w-[18px]", isFav && "fill-current")} />
+          </button>
+        )}
+
+        {user && (
+          <div className="mx-0.5 h-5 w-px bg-gray-200" />
+        )}
+
+        <ShareDialog>
+          <button
+            type="button"
+            aria-label="Dela bostad"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
+            <Share2 className="h-[18px] w-[18px]" />
+          </button>
+        </ShareDialog>
+      </div>
     </div>
   );
 }
