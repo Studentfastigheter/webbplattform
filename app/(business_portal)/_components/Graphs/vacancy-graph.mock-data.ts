@@ -213,4 +213,45 @@ export function createMetricSourceData(today: Date): Record<
   };
 }
 
+export function groupComparisonDataByMonth(rows: ChartRow[]): ChartRow[] {
+  const monthMap = new Map<
+    string,
+    { thisYear: number; lastYear: number; hasThisYear: boolean; hasLastYear: boolean }
+  >();
+
+  for (const row of rows) {
+    const date = parseISODateUTC(row.date);
+    const monthDate = `${date.getUTCFullYear()}-${String(
+      date.getUTCMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+    if (!monthMap.has(monthDate)) {
+      monthMap.set(monthDate, {
+        thisYear: 0,
+        lastYear: 0,
+        hasThisYear: false,
+        hasLastYear: false,
+      });
+    }
+
+    const month = monthMap.get(monthDate)!;
+
+    if (row.thisYear != null) {
+      month.thisYear += row.thisYear;
+      month.hasThisYear = true;
+    }
+
+    if (row.lastYear != null) {
+      month.lastYear += row.lastYear;
+      month.hasLastYear = true;
+    }
+  }
+
+  return Array.from(monthMap.entries()).map(([date, values]) => ({
+    date,
+    thisYear: values.hasThisYear ? values.thisYear : null,
+    lastYear: values.hasLastYear ? values.lastYear : null,
+  }));
+}
+
 export { parseISODateUTC };

@@ -70,8 +70,6 @@ import Toggles from "./Toggles";
 import { usePathname } from "next/navigation";
 
 export function Header() {
-  const pathname = usePathname();
-  const isOnboarding = pathname.includes("/portal/annonser/ny/onboarding");
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -91,19 +89,7 @@ export function Header() {
           <p>Till CampusLyan</p>
           <ArrowRight size={14} className="relative group-hover:translate-x-1 transition-all duration-150" />
         </Link>
-        {!isOnboarding && (
-          <div className="ml-auto">
-            <Toggles 
-              options={[
-                { value: "1w", ariaLabel: "1 vecka", label: "1 vecka" },
-                { value: "1m", ariaLabel: "1 månad", label: "1 mån" },
-                { value: "3m", ariaLabel: "3 månader", label: "3 mån" },
-                { value: "12m", ariaLabel: "12 månader", label: "12 mån" },
-              ]}
-              defaultValue="1w"
-            />
-          </div>
-        )}
+        
       </div>
     </header>
   )

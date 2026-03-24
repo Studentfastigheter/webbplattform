@@ -365,21 +365,7 @@ export default function ApplicantsTable({
 
                 {row.getIsExpanded() && (
                   <TableRow>
-                    <TableCell colSpan={row.getVisibleCells().length} className="bg-muted/30">
-                      <div className="p-3 flex gap-2">
-                        <Image 
-                          src={"/appartment.jpg"}
-                          alt="Image of the apartment"
-                          width={148}
-                          height={148}
-                          className="rounded-md object-cover"
-                        />
-                        <div className="">
-                          <div>
-                            
-                          </div>
-                        </div>
-                      </div>
+                    <TableCell colSpan={2} className="bg-muted/30">
                       <div className="p-3">
                         <div className="flex items-center gap-2">
                           <Image 
@@ -391,6 +377,32 @@ export default function ApplicantsTable({
                           <div>
                             <div className="mt-2 font-medium">{row.original.applicantName}</div>
                             <div className="text-sm text-muted-foreground">{row.original.applicantEmail}</div>
+                          </div>
+                        </div>
+                        <div className="mt-4 pl-2">
+                          <p className="text-sm text-neutral-700"><span className="font-bold text-black">234</span> ködagar</p>
+                          <p className="text-sm text-neutral-700"><span className="font-bold text-black">18</span> år gammal</p>
+                        </div>
+                    </div>
+                    </TableCell>
+                    <TableCell colSpan={row.getVisibleCells().length-2} className="bg-muted/30">
+                    
+                      <div className="p-3 flex gap-4">
+                        <Image 
+                          src={"/appartment.jpg"}
+                          alt="Image of the apartment"
+                          width={148}
+                          height={148}
+                          className="rounded-md object-cover"
+                        />
+                        <div className="">
+                          <div>
+                            <p className="font-bold text-base">Trea vid Olofshöjd</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-neutral-700">
+                              Gibraltargatan 8, Lgh 1001
+                            </p>
                           </div>
                         </div>
                       </div>

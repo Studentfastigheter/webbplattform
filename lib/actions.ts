@@ -1,6 +1,5 @@
 import { StatisticProps } from "@/app/(business_portal)/_statics/types";
 import { Applicant, ApplicantsTableProps, Application, AvailableStatistics, ObjectDetails, ServerFloorplan, ServerRequirementProfile } from "./definitions";
-import { Eye, FileUser, MousePointerClick, ScrollText } from "lucide-react";
 
 export async function getFloorplans() {
     // Here you would normally fetch data from a database or an API
@@ -28,8 +27,8 @@ export async function submitFloorplan(
         return { success: false };
     }
 
-    // Simulate upload with 5s delay
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Simulate upload with 1s delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Mock success
     return { 
@@ -40,7 +39,7 @@ export async function submitFloorplan(
 
 export async function getRequirementProfiles() {
     // Here you would normally fetch data from a database or an API
-    await new Promise((resolve) => setTimeout(resolve, 5000)); // Simulate async delay
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate async delay
     return [
         { 
             id: "seed-1", 
@@ -62,7 +61,7 @@ export async function submitRequirementProfile(
     const { name, description, minimumAge, maximumAge } = metadata;
 
     // Simulate API call with 3s delay
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Here you would make the actual API call:
     // const response = await apiFetch(`/api/requirement-profiles${itemId ? `/${itemId}` : ''}`, {
@@ -89,30 +88,70 @@ export async function getStatistics({
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const mockValues: Record<string, StatisticProps> = {
         applications: {
-            Icon: FileUser,
-            data: 120, 
-            changeInPercent: -5.7, 
+            iconKey: "applications",
+            data: {
+                "1w": 120,
+                "1m": 450,
+                "3m": 1300,
+                "12m": 5000,
+            }, 
+            changeInPercent: {
+                "1w": 5.0,
+                "1m": 10.0,
+                "3m": 15.0,
+                "12m": 20.0,
+            }, 
             label: "Ansökningar",
             increaseDirection: "up",
         },
         views: {
-            Icon: Eye,
-            data: 3400,
-            changeInPercent: 1.5,
+            iconKey: "views",
+            data: {
+                "1w": 1500,
+                "1m": 6000,
+                "3m": 18000,
+                "12m": 72000,
+            },
+            changeInPercent: {
+                "1w": 1.5,
+                "1m": 2.0,
+                "3m": 2.5,
+                "12m": 3.0,
+            },
             label: "Visningar",
             increaseDirection: "up",
         },
         interactions: {
-            Icon: MousePointerClick,
-            data: 890,
-            changeInPercent: 3.2,
+            iconKey: "interactions",
+            data: {
+                "1w": 890,
+                "1m": 3500,
+                "3m": 9000,
+                "12m": 40000,
+            },
+            changeInPercent: {
+                "1w": 3.2,
+                "1m": 3.5,
+                "3m": 4.0,
+                "12m": 4.5,
+            },
             label: "Interaktioner",
             increaseDirection: "up",
         },
         active_posts: {
-            Icon: ScrollText,
-            data: 12,
-            changeInPercent: 0.0,
+            iconKey: "active_posts",
+            data: {
+                "1w": 12,
+                "1m": 11,
+                "3m": 13,
+                "12m": 9,
+            },
+            changeInPercent: {
+                "1w": 0.0,
+                "1m": 10.0,
+                "3m": -5.0,
+                "12m": 2.3,
+            },
             label: "Aktiva annonser",
             increaseDirection: "up",
         },
@@ -133,7 +172,7 @@ export async function getRecentApplications({
     numberOfApplications = 10,
 }: getRecentApplicationsProps) {
     // Simulate fetching statistics with delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const mockApplications: Application[] = Array.from({ length: numberOfApplications }, (_, i) => ({
         id: `app-${i + 1}`,
@@ -181,7 +220,7 @@ export async function getApplicant({
     applicantId,
 }: getApplicantProps) {
     // Simulate fetching applicant details with delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const applicant: Applicant = {
         id: applicantId,

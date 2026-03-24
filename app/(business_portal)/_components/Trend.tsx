@@ -3,11 +3,13 @@ import { MoveRight, TrendingDown, TrendingUp } from "lucide-react";
 type TrendProps = {
     changeInPercent: number;
     increaseDirection?: "up" | "down";
+    showNumbers?: boolean;
 }
 
 export default function Trend({
     changeInPercent,
-    increaseDirection = "up"
+    increaseDirection = "up",
+    showNumbers = true,
 }: TrendProps) {
 
     function getChangeDirectionColor() {
@@ -41,7 +43,9 @@ export default function Trend({
             <MoveRight size={20} color="currentColor" />
           )}
 
-          <p className="text-xs font-medium">{changeInPercent.toString().replace(".", ",")} %</p>
+          {showNumbers && (
+            <p className="text-xs font-medium">{changeInPercent.toString().replace(".", ",")} %</p>
+          )}
         </div>
     )
 }

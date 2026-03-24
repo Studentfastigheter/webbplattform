@@ -1,37 +1,54 @@
 "use client";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useState } from "react";
 
-
 type OptionProps = {
-  value: string,
-  label: string,
-  ariaLabel?: string,
-}
+  value: string;
+  label: string;
+  ariaLabel?: string;
+};
 
+type TogglesProps = {
+  options: OptionProps[];
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
+};
 
 export default function Toggles({
   options,
   defaultValue,
-}: {
-  options: OptionProps[],
-  defaultValue?: string,
-}) {
-  const [value, setValue] = useState(defaultValue || options[0]?.value || "")
+  value: controlledValue,
+  onValueChange,
+}: TogglesProps) {
+  const [internalValue, setInternalValue] = useState(
+    defaultValue || options[0]?.value || ""
+  );
+
+  const isControlled = controlledValue !== undefined;
+  const value = isControlled ? controlledValue : internalValue;
+
+  const handleChange = (newValue: string) => {
+    if (!newValue) return;
+
+    if (!isControlled) {
+      setInternalValue(newValue);
+    }
+
+    onValueChange?.(newValue);
+  };
 
   return (
-    <ToggleGroup 
-      type="single" 
-      size="sm" 
+    <ToggleGroup
+      type="single"
+      size="sm"
       value={value}
-      onValueChange={(v) => {
-        if (v) setValue(v)
-      }}
+      onValueChange={handleChange}
       variant="outline"
     >
-
       {options.map((option) => (
-        <ToggleGroupItem 
+        <ToggleGroupItem
           key={option.value}
           value={option.value}
           aria-label={option.ariaLabel || option.label}
@@ -40,5 +57,5 @@ export default function Toggles({
         </ToggleGroupItem>
       ))}
     </ToggleGroup>
-  )
+  );
 }

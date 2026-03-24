@@ -1,6 +1,12 @@
 import Container from "../Container";
 import { StatisticProps } from "../../_statics/types";
 import Trend from "../Trend";
+import { LucideIcon } from "lucide-react";
+
+type StatisticViewProps = Omit<StatisticProps, "iconKey"> & {
+  Icon: LucideIcon;
+  timeFrame: string;
+};
 
 export default function Statistic({
     Icon,
@@ -8,8 +14,12 @@ export default function Statistic({
     label,
     changeInPercent,
     increaseDirection = "up",
+    timeFrame,
     ...props
-  }: StatisticProps) {
+  }: StatisticViewProps) {
+
+    const filteredData = data[timeFrame];
+    const filteredChangeInPercent = changeInPercent[timeFrame];
 
   return (
     <Container padding={"sm"} {...props}>
@@ -19,9 +29,9 @@ export default function Statistic({
       </div>
       <div className="flex gap-2">
         <p className="text-brand text-2xl/[24px] font-bold">
-          {Number(data).toLocaleString("sv-SE")}
+          {Number(filteredData).toLocaleString("sv-SE")}
         </p>
-        <Trend changeInPercent={changeInPercent} increaseDirection={increaseDirection} />
+        <Trend changeInPercent={filteredChangeInPercent} increaseDirection={increaseDirection} />
       </div>
     </Container>
   )

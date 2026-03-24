@@ -3,7 +3,9 @@
 import { FormGroup, FormShell, InputField } from "@/components/Dashboard/Form"
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
+import { UploadButton } from "../_components/UploadButton";
 
 const defaultName = "SGS Studentbostäder";
 const defaultEpost = "info@sgs.se";
@@ -25,9 +27,39 @@ export default function Profil() {
     return (
         <div>
 
-            <FormShell title="Profilinställningar">
+            <FormShell className="!max-w-3xl">
+
+                
+                <div className="relative mb-24">
+                    <Image 
+                        src="/logos/sgs-logo.svg" 
+                        alt="Företagslogga" 
+                        width={100} 
+                        height={100} 
+                        className="absolute bottom-0 translate-y-1/2 left-8 bg-white aspect-square p-2 rounded-lg shadow-md"
+                    />
+                    <Image 
+                        src="/appartment.jpg" 
+                        alt="Företagslogga"
+                        width={800}
+                        height={450}
+                        className="aspect-video rounded-lg"
+                    />
+                    <div className="flex gap-4 absolute right-0 bottom-0 translate-y-[150%]">
+                        <UploadButton variant={"outline"}>
+                            Ändra logga
+                        </UploadButton>
+                        <UploadButton variant={"outline"}>
+                            Ändra omslagsbild
+                        </UploadButton>
+                    </div>
+                </div>
+
+                </FormShell>
+                <FormShell heading="Profilinställningar">
+                    
             
-                    <FormGroup title="Profilnamn" gap="sm" className="mb-4">
+                    <FormGroup heading="Profilnamn" gap="sm" className="mb-4">
                         <InputField
                             placeholder="Ange profilnamn"
                             type="string"
@@ -35,7 +67,7 @@ export default function Profil() {
                             onChange={(e) => setProfilnamn(e.target.value)}
                         />
                     </FormGroup>
-                    <FormGroup title="E-post" gap="sm" className="mb-4">
+                    <FormGroup heading="E-post" gap="sm" className="mb-4">
                         <InputField
                             placeholder="Ange e-post"
                             type="string"
@@ -43,7 +75,7 @@ export default function Profil() {
                             onChange={(e) => setEpost(e.target.value)}
                         />
                     </FormGroup>
-                    <FormGroup title="Telefon" gap="sm">
+                    <FormGroup heading="Telefon" gap="sm">
                         <InputField
                             placeholder="Ange telefon"
                             type="string"
@@ -58,8 +90,8 @@ export default function Profil() {
                     
                 </FormShell>
 
-                <FormShell title="Offentlig profil">
-                    <FormGroup title="Rubrik" gap="sm" className="mb-4">
+                <FormShell heading="Offentlig profil">
+                    <FormGroup heading="Rubrik" gap="sm" className="mb-4">
                         <InputField
                             placeholder="Ange rubrik"
                             type="text"
@@ -67,7 +99,7 @@ export default function Profil() {
                             onChange={(e) => setRubrik(e.target.value)}
                         />
                     </FormGroup>
-                    <FormGroup title="Brödtext" gap="sm" className="mb-4">
+                    <FormGroup heading="Brödtext" gap="sm" className="mb-4">
                         <InputField
                             placeholder="Ange brödtext"
                             type="text"
@@ -75,7 +107,7 @@ export default function Profil() {
                             onChange={(e) => setBrodtext(e.target.value)}
                         />
                     </FormGroup>
-                    <FormGroup title="Policytext" gap="sm">
+                    <FormGroup heading="Policytext" gap="sm">
                         <InputField
                             placeholder="Ange policytext"
                             type="text"

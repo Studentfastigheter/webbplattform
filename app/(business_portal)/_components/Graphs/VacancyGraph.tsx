@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
   Card,
@@ -15,31 +15,22 @@ import {
   ChartConfig,
   ChartContainer,
   ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-import type { MetricKey } from "./vacancy-graph.types";
+import type { ChartRow, MetricKey } from "./vacancy-graph.types";
 import {
   MOCK_TODAY,
   buildComparisonData,
   createMetricSourceData,
   getDisplayTotals,
+  groupComparisonDataByMonth,
   parseISODateUTC,
 } from "./vacancy-graph.mock-data";
 import Trend from "../Trend";
 
-const chartConfig = {
-  thisYear: {
-    label: "I år",
-    color: "var(--chart-2)",
-  },
-  lastYear: {
-    label: "Förra året",
-    color: "var(--chart-4)",
-  },
-} satisfies ChartConfig;
+
 
 const metricMeta: Record<
   MetricKey,
@@ -75,6 +66,11 @@ const metricMeta: Record<
 };
 
 export default function VacancyGraph() {
+
+
+
+  const [activeGraph, setActiveGraph] = React.useState<"area" | "bar">("bar");
+
   const [activeMetric, setActiveMetric] = React.useState<MetricKey>("views");
 
   const today = MOCK_TODAY;
@@ -95,6 +91,10 @@ export default function VacancyGraph() {
     );
   }, [selected, currentYear]);
 
+  const comparisonDataByMonth = React.useMemo(() => {
+    return groupComparisonDataByMonth(comparisonData);
+  }, [comparisonData]);
+
   const comparisonTotals = React.useMemo(() => {
     return getDisplayTotals(comparisonData, today);
   }, [comparisonData, today]);
@@ -107,15 +107,50 @@ export default function VacancyGraph() {
     [selected]
   );
 
+
+
+  const chartConfig: ChartConfig = React.useMemo(
+    () => ({
+      thisYear: {
+        label: "I år",
+        color: "var(--chart-2)",
+      },
+      lastYear: {
+        label: "Förra året",
+        color: `var(--chart-${activeGraph === "area" ? "4" : "1"})`,
+      },
+    }),
+    [activeGraph]
+  );
+
+
+
   return (
     <Card className="m-2 py-0">
       <CardHeader className="flex flex-col items-stretch border-b !p-0 mb-0">
-        <div className="flex items-center justify-between gap-4 px-6 pt-4 pb-3">
-          <div className="grid gap-1">
-            <CardTitle className="text-2xl">{meta.title}</CardTitle>
-            <CardDescription className="text-sm">
-              {meta.description}
-            </CardDescription>
+        <div className="flex items-center justify-between gap-4 px-6 pb-3">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-baseline items-baseline">
+              <button
+                  data-active={activeGraph === "bar"}
+                  onClick={() => setActiveGraph(activeGraph === "area" ? "bar" : "area")}
+                  className="min-w-32 text-neutral-600 text-sm cursor-pointer relative z-30 rounded-l-md px-8 py-1.5 text-center transition-colors data-[active=true]:bg-muted/30 data-[active=true]:border"
+                >Månad
+              </button>
+              <button
+                  data-active={activeGraph === "area"}
+                  onClick={() => setActiveGraph(activeGraph === "area" ? "bar" : "area")}
+                  className="min-w-32 text-neutral-600 text-sm cursor-pointer relative z-30 rounded-r-md px-4 py-1.5 text-center transition-colors data-[active=true]:border data-[active=true]:bg-muted/30"
+                >Dag
+              </button>
+
+            </div>
+            <div className="grid gap-1">
+              <CardTitle className="text-2xl">{meta.title}</CardTitle>
+              <CardDescription className="text-sm">
+                {meta.description}
+              </CardDescription>
+            </div>
           </div>
 
           <div className="flex">
@@ -136,7 +171,7 @@ export default function VacancyGraph() {
                   key={metric}
                   data-active={activeMetric === metric}
                   onClick={() => setActiveMetric(metric)}
-                  className="cursor-pointer relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left transition-colors even:border-l data-[active=true]:bg-muted/50 sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                  className="min-w-42 cursor-pointer relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left transition-colors even:border-l data-[active=true]:bg-muted/50 sm:border-t-0 sm:border-l sm:px-8 sm:py-8"
                 >
                   <span className="text-xs text-muted-foreground">
                     {metricMetaItem.toggleLabel}
@@ -184,7 +219,7 @@ export default function VacancyGraph() {
                 {comparisonTotals.toDate.lastYear.toLocaleString("sv-SE")}
               </span>
               <span className="ml-3 text-xs text-muted-foreground">
-                ({fullYearTotals.lastYear.toLocaleString("sv-SE")})
+                ({fullYearTotals.lastYear.toLocaleString("sv-SE")} hela året)
               </span>
             </div>
           </div>
@@ -192,7 +227,28 @@ export default function VacancyGraph() {
       </CardHeader>
 
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
+        {activeGraph === "area" ? (
+          <AreaGraph comparisonData={comparisonData} chartConfig={chartConfig} />
+        ) : (
+          <BarGraph comparisonData={comparisonDataByMonth} chartConfig={chartConfig} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+function AreaGraph({
+  comparisonData,
+  chartConfig,
+}: {
+  comparisonData: ChartRow[];
+  chartConfig: ChartConfig;
+}) {
+  return (
+    <ChartContainer
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
@@ -256,19 +312,20 @@ export default function VacancyGraph() {
 
             <ChartTooltip
               cursor={false}
-              content={
-                <ChartTooltipContent
-                  indicator="dot"
-                  labelFormatter={(value) =>
-                    parseISODateUTC(String(value)).toLocaleDateString("sv-SE", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      timeZone: "UTC",
-                    })
-                  }
+              content={({ active, payload, label }) => (
+                <CustomTooltip
+                  active={active}
+                  payload={payload}
+                  label={label}
+                  chartConfig={chartConfig}
+                  dateStringFormat={{
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  }}
                 />
-              }
+              )}
             />
 
             <Area
@@ -289,10 +346,199 @@ export default function VacancyGraph() {
               connectNulls={false}
             />
 
-            <ChartLegend content={<ChartLegendContent />} />
+            <ChartLegend content={<CustomLegend chartConfig={chartConfig} />} />
           </AreaChart>
         </ChartContainer>
-      </CardContent>
-    </Card>
+  )
+}
+
+
+function BarGraph({
+  comparisonData,
+  chartConfig,
+}: {
+  comparisonData: ChartRow[];
+  chartConfig: ChartConfig;
+}) {
+  return (
+    <ChartContainer
+      config={chartConfig}
+      className="aspect-auto h-[250px] w-full"
+     >
+          <BarChart accessibilityLayer data={comparisonData}>
+            <defs>
+              <linearGradient id="fillThisYear" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-thisYear)"
+                  stopOpacity={0.85}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-thisYear)"
+                  stopOpacity={0.75}
+                />
+              </linearGradient>
+
+              <linearGradient id="fillLastYear" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-lastYear)"
+                  stopOpacity={0.85}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-lastYear)"
+                  stopOpacity={0.65}
+                />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              minTickGap={28}
+              tickFormatter={(value) => {
+                const date = parseISODateUTC(String(value));
+                return date.getUTCDate() === 1
+                  ? date.toLocaleDateString("sv-SE", {
+                      month: "short",
+                      timeZone: "UTC",
+                    })
+                  : "";
+              }}
+            />
+
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => Number(value).toLocaleString("sv-SE")}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={({ active, payload, label }) => (
+                <CustomTooltip
+                  active={active}
+                  payload={payload}
+                  label={label}
+                  chartConfig={chartConfig}
+                  dateStringFormat={{
+                    month: "short",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  }}
+                />
+              )}
+            />
+            <ChartLegend content={<CustomLegend chartConfig={chartConfig} />} />
+            <Bar
+              dataKey="lastYear"
+              type="monotone"
+              stackId="a"
+              fill="url(#fillLastYear)"
+              radius={[4, 4, 0, 0]}
+              
+            />
+            <Bar
+              dataKey="thisYear"
+              type="monotone"
+              stackId="b"
+              fill="url(#fillThisYear)"
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        </ChartContainer>
+  )
+}
+
+
+function CustomLegend({
+  chartConfig,
+}: {
+  chartConfig: ChartConfig;
+}) {
+  const entries = [
+    { key: "thisYear", label: chartConfig.thisYear?.label, color: chartConfig.thisYear?.color },
+    { key: "lastYear", label: chartConfig.lastYear?.label, color: chartConfig.lastYear?.color },
+  ];
+
+  return (
+    <div className="flex items-center justify-center gap-6 pt-4 pb-2">
+      {entries.map((entry) => (
+        <div key={entry.key} className="flex items-center gap-2">
+          <div
+            className="h-2.5 w-2.5 rounded-sm"
+            style={{ backgroundColor: entry.color as string }}
+          />
+          <span className="text-sm text-muted-foreground">
+            {entry.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+  chartConfig,
+  dateStringFormat,
+}: {
+  active?: boolean;
+  payload?: any[];
+  label?: string | number;
+  chartConfig: ChartConfig;
+  dateStringFormat?: Intl.DateTimeFormatOptions;
+}) {
+  if (!active || !payload?.length) return null;
+
+  const formattedLabel =
+    label != null
+      ? parseISODateUTC(String(label)).toLocaleDateString("sv-SE", dateStringFormat)
+      : "";
+
+  const entries = payload.filter(
+    (item) => item.dataKey === "thisYear" || item.dataKey === "lastYear"
+  );
+
+  return (
+    <div className="rounded-lg border bg-background px-3 py-2 shadow-sm">
+      <div className="mb-2 text-sm font-medium text-foreground">
+        {formattedLabel}
+      </div>
+
+      <div className="space-y-1">
+        {entries.map((item) => {
+          const key = item.dataKey as "thisYear" | "lastYear";
+          const configItem = chartConfig[key];
+
+          return (
+            <div key={key} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-1.5 w-1.5 rounded-sm"
+                  style={{ backgroundColor: configItem?.color as string }}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {configItem?.label}
+                </span>
+              </div>
+
+              <span className="text-xs font-medium text-foreground">
+                {typeof item.value === "number"
+                  ? item.value.toLocaleString("sv-SE")
+                  : "—"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

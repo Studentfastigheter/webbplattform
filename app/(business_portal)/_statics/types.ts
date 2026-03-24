@@ -1,4 +1,4 @@
-import { LucideIcon } from "lucide-react"
+import { AvailableStatistics } from "@/lib/definitions"
 
 export type Message = {
   id: string
@@ -17,9 +17,9 @@ export type Property = {
 }
 
 export type StatisticProps = React.HTMLAttributes<HTMLDivElement> & {
-  Icon: LucideIcon,
-  data: number,
+  iconKey: AvailableStatistics,
+  data: Record<string, number>,
   label: string,
-  changeInPercent: number,
+  changeInPercent: Record<string, number>,
   increaseDirection?: "up" | "down",
 }
