@@ -51,9 +51,9 @@ function getErrorMessage(json: object, status: number, statusText?: string): str
 }
 
 export async function makeCompanyRequest<T>(endpoint: string,
-																				    companyId: string,
-																				    { headers, ...customOptions }: RequestInit,
-																				    token?: string): Promise<T> {
+	                                          companyId: string,
+	                                          { headers, ...customOptions }: RequestInit,
+	                                          token?: string): Promise<T> {
 	const requestHeaders: Record<string, string> = {
 		"Content-Type": "application/json",
 		...(headers as Record<string, string>),
@@ -66,14 +66,14 @@ export async function makeCompanyRequest<T>(endpoint: string,
 
 	const requestUrl = `${COMPANY_URL_BASE}/${companyId}/${cleanPath(endpoint.trim('/'))}`;
 	const response: Response = await fetch(requestUrl,
-																				 {
-      																			...customOptions,
-      																			headers: defaultHeaders,
-      																			cache: customOptions.cache ?? "no-store",
-    																		 });
+	                                      {
+      																		...customOptions,
+      																		headers: defaultHeaders,
+      																	  cache: customOptions.cache ?? "no-store",
+    																		});
   // No content response.
   if (response.status === 204) {
-		return {} as T; 
+		return {} as T;
 	}
 
 	if (!response.ok) {
