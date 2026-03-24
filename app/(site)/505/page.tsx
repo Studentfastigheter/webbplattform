@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 
 export default function InternalServerError() {
   return (
@@ -18,16 +18,11 @@ export default function InternalServerError() {
         </p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button
-            as={Link}
-            href="/"
-            color="success"
-            className="w-full sm:w-auto"
-          >
+          <Button as={Link} href="/" className="w-full sm:w-auto">
             Till startsidan
           </Button>
           <Button
-            variant="bordered"
+            variant="outline"
             as={Link}
             href="/kontakt"
             className="w-full border-[#0a2d1d]/30 text-[#0a2d1d] sm:w-auto"

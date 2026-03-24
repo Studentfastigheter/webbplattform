@@ -9,6 +9,11 @@
 !.yarn/releases
 !.yarn/versions
 
+# Swap files (vim and Emacs)
+*~
+\#*
+*\#
+
 # testing
 /coverage
 

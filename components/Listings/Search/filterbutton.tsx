@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export type FilterButtonProps = {
   children?: React.ReactNode;
-  triggerLabel?: string;
+  triggerLabel?: React.ReactNode;
   title?: string;
   applyLabel?: string;
   clearLabel?: string;
@@ -12,6 +13,8 @@ export type FilterButtonProps = {
   onApply?: () => void;
   onClear?: () => void;
   className?: string;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "text";
+  size?: "md" | "sm" | "lg" | "icon" | "icon-lg";
 };
 
 const SliderIcon = () => (
@@ -56,6 +59,8 @@ const FilterButton: React.FC<FilterButtonProps> = ({
   onApply,
   onClear,
   className = "",
+  variant = "ghost",
+  size = "lg",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -90,21 +95,15 @@ const FilterButton: React.FC<FilterButtonProps> = ({
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        size={size}
+        variant={variant as any}
         onClick={() => setIsOpen(true)}
-        className={`
-          flex items-center gap-2 rounded-[999px] border border-black/15
-          bg-white px-4 py-2 text-[13px] font-medium text-black shadow-[0_4px_8px_rgba(0,0,0,0.08)]
-          transition hover:shadow-[0_6px_14px_rgba(0,0,0,0.12)]
-          ${className}
-        `}
+        className={className}
       >
-        <span className="rounded-full bg-black/5 p-1 text-black">
           <SliderIcon />
-        </span>
         {triggerLabel}
-      </button>
+      </Button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center px-4 py-10 sm:px-6">
@@ -151,30 +150,23 @@ const FilterButton: React.FC<FilterButtonProps> = ({
             </div>
 
             <footer className="flex flex-col gap-3 border-t border-black/10 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
+              <Button
+                size="sm"
+                variant="text"
                 onClick={onClear}
-                className="
-                  text-sm font-semibold text-black underline-offset-2
-                  hover:underline
-                "
               >
                 {clearLabel}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
                 onClick={() => {
                   onApply?.();
                   close();
                 }}
-                className="
-                  inline-flex w-full items-center justify-center rounded-full
-                  bg-black px-6 py-3 text-sm font-semibold text-white
-                  transition hover:bg-black/90 sm:w-auto
-                "
               >
                 {showApplyLabel}
-              </button>
+              </Button>
             </footer>
           </div>
         </div>

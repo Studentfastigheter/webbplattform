@@ -1,9 +1,12 @@
- "use client";
+"use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import Tag from "../ui/Tag";
 import VerifiedTag from "../ui/VerifiedTag";
+import { Heart } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
+// ÄNDRING: Vi definierar props manuellt istället för att ärva från gamla ListingWithRelations
 export type ListingCardSmallProps = {
   title: string;
   area: string;
@@ -12,42 +15,90 @@ export type ListingCardSmallProps = {
   rooms: number;
   sizeM2: number;
   rent: number;
-  landlordType: string;
-  isVerified?: boolean;
-  imageUrl: string;
   tags?: string[];
+  imageUrl?: string;      // En enkel sträng nu (URL)
+  landlordType?: string;  // Motsvarar hostType ("Privat värd" / "Företag")
+  hostName?: string;
+  hostLogoUrl?: string;
+  isVerified?: boolean;
+  
+  // NEW: Favoritfunktion (hjärta)
+  id?: string;
+  isFavorite?: boolean;
+  onFavoriteToggle?: (id: string, isFav: boolean) => void;
+  
+  // Funktioner & UI
   onClick?: () => void;
   onHoverChange?: (hovering: boolean) => void;
   variant?: "default" | "compact";
 };
 
 const BASE_WIDTH = 380;
+const CARD_MIN_WIDTH = 280;
+const COMPACT_CARD_MIN_WIDTH = 260;
+const IMAGE_BASE_HEIGHT = 220;
+const IMAGE_COMPACT_HEIGHT = 180;
 const MIN_SCALE = 0.55;
 const MAX_SCALE = 1;
 const BADGE_MIN_SCALE = 0.8;
 const BADGE_MAX_SCALE = 1;
 
-const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
-  title,
-  area,
-  city,
-  dwellingType,
-  rooms,
-  sizeM2,
-  rent,
-  landlordType,
-  isVerified = false,
-  imageUrl,
-  tags = [],
-  onClick,
-  onHoverChange,
-  variant = "default",
-}) => {
+const formatRent = (rent?: number | null) =>
+  typeof rent === "number"
+    ? `${rent.toLocaleString("sv-SE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      })} kr/mån`
+    : "-";
+
+const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
+  const {
+    title,
+    area,
+    city,
+    dwellingType,
+    rooms,
+    sizeM2,
+    rent,
+    landlordType,
+    hostName,
+    hostLogoUrl,
+    isVerified = false,
+    id,
+    isFavorite,
+    onFavoriteToggle,
+    imageUrl,
+    tags,
+    onClick,
+    onHoverChange,
+    variant = "default",
+  } = props;
+
+  const { user } = useAuth();
+
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
+  const [isLiked, setIsLiked] = useState(isFavorite || false);
+  
+  useEffect(() => {
+    if (isFavorite !== undefined) {
+      setIsLiked(isFavorite);
+    }
+  }, [isFavorite]);
+  
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    if (id && onFavoriteToggle) {
+      onFavoriteToggle(id, newLikedState);
+    }
+  };
+
   const baseWidth = variant === "compact" ? 320 : BASE_WIDTH;
   const maxWidth = variant === "compact" ? 360 : 480;
-  const aspectClass = variant === "compact" ? "aspect-[3/2]" : "aspect-[4/3]";
+  const imageBaseHeight =
+    variant === "compact" ? IMAGE_COMPACT_HEIGHT : IMAGE_BASE_HEIGHT;
 
   useEffect(() => {
     const node = cardRef.current;
@@ -82,9 +133,11 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
     lineHeight: 20 * scale,
   };
   const badgeScale = Math.min(
-  Math.max(scale, BADGE_MIN_SCALE),
-  BADGE_MAX_SCALE
-);
+    Math.max(scale, BADGE_MIN_SCALE),
+    BADGE_MAX_SCALE
+  );
+
+  const safeTags = tags ?? [];
 
   return (
     <div
@@ -92,34 +145,54 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
       onClick={onClick}
       onMouseEnter={() => onHoverChange?.(true)}
       onMouseLeave={() => onHoverChange?.(false)}
-      className="flex w-full flex-col bg-white shadow-md cursor-pointer"
+      className="flex w-full flex-col bg-white shadow-md cursor-pointer group hover:shadow-lg transition-shadow duration-200"
       style={{
         maxWidth,
-        gap: scaleValue(16),
-        padding: scaleValue(16),
+        minWidth: variant === "compact" ? COMPACT_CARD_MIN_WIDTH : CARD_MIN_WIDTH,
         borderRadius: scaleValue(32),
+        overflow: "hidden"
       }}
     >
       {/* IMAGE */}
       <div
-        className="relative w-full overflow-hidden"
-        style={{ borderRadius: scaleValue(28) }}
+        className="w-full bg-gray-100 overflow-hidden relative shrink-0 group/image"
+        style={{
+          height: scaleValue(imageBaseHeight),
+        }}
       >
-        <div className={`${aspectClass} w-full`}>
-          <img
-            src={imageUrl}
-            alt={title}
-            className="h-full w-full object-cover"
-          />
+        {/* Favorite Button (Only visible if logged in) */}
+        {user && (
+          <button
+            type="button"
+            onClick={handleFavoriteClick}
+            className="absolute top-3 right-3 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all shadow-sm"
+            aria-label={isLiked ? "Ta bort från sparade" : "Spara bostad"}
+          >
+            <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+          </button>
+        )}
+
+        <div className="h-full w-full">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={title}
+              className="h-full w-full object-cover transition-transform duration-500"
+            />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center text-gray-400">
+              <span style={{ fontSize: scaleValue(14) }}>Ingen bild</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* CONTENT */}
       <div
-        className="px-1 pb-1"
+        className="flex flex-col"
         style={{
-          display: "grid",
-          rowGap: scaleValue(12),
+          padding: scaleValue(16),
+          gap: scaleValue(12),
         }}
       >
         {/* Title + Badge */}
@@ -128,11 +201,15 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
           style={{ gap: scaleValue(16) }}
         >
           <h3
-            className="font-bold"
+            className="font-bold text-gray-900"
             style={{
               fontSize: scaleValue(18),
               lineHeight: scaleValue(22),
-              minHeight: scaleValue(44), // reserve two lines to keep cards aligned
+              minHeight: scaleValue(44), // reserve two lines
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {title}
@@ -143,6 +220,7 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
               style={{
                 transform: `scale(${badgeScale})`,
                 transformOrigin: "top right",
+                flexShrink: 0,
               }}
             >
               <VerifiedTag />
@@ -156,38 +234,65 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
           style={{ gap: scaleValue(16), fontSize: scaleValue(14) }}
         >
           <div
-            className="text-black"
+            className="min-w-0 text-gray-700"
             style={{
               display: "grid",
               rowGap: scaleValue(4),
               minHeight: scaleValue(44),
             }}
           >
-            <p>
-              {area}, {city}
+            <p className="truncate font-medium" title={[area, city].filter(Boolean).join(", ")}>
+              {[area, city].filter(Boolean).join(", ")}
             </p>
-            <p>
-              {dwellingType} {"\u00b7"} {rooms} rum {"\u00b7"} {sizeM2} m{"\u00b2"}
+            <p
+              className="truncate text-gray-500"
+              title={`${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`}
+            >
+              {dwellingType ?? "-"} {"\u00b7"} {rooms ?? "-"} rum {"\u00b7"} {sizeM2 ?? "-"} m{"\u00b2"}
             </p>
           </div>
 
-          <div className="text-right text-black">
+          <div
+            className="flex min-w-[170px] max-w-[52%] flex-col items-end text-right text-black"
+            style={{ rowGap: scaleValue(4) }}
+          >
             <p
-              className="font-semibold"
-              style={{ fontSize: scaleValue(18), lineHeight: scaleValue(22) }}
+              className="font-bold text-gray-900"
+              style={{
+                fontSize: scaleValue(18),
+                lineHeight: scaleValue(22),
+                whiteSpace: "nowrap",
+              }}
             >
-              {rent.toLocaleString("sv-SE")} kr/m{"\u00e5"}nad
+              {formatRent(rent)}
             </p>
-            <p
-              className="text-[#6b6b6b]"
-              style={{ fontSize: scaleValue(14), lineHeight: scaleValue(18) }}
-            >
-              {landlordType}
-            </p>
+            <div className="flex items-center justify-end w-full" style={{ gap: scaleValue(6) }}>
+              <img
+                src="/campuslyan-logo.svg"
+                alt="CampusLyan"
+                style={{
+                  width: scaleValue(16),
+                  height: scaleValue(16),
+                  borderRadius: "999px",
+                  objectFit: "cover"
+                }}
+              />
+              <p
+                className="truncate text-gray-500 font-medium"
+                style={{
+                  fontSize: scaleValue(14),
+                  lineHeight: scaleValue(18),
+                  maxWidth: "100%",
+                }}
+                title={hostName || landlordType}
+              >
+                {hostName ?? landlordType}
+              </p>
+            </div>
           </div>
         </div>
         
-        {tags.length > 0 && (
+        {safeTags.length > 0 && (
           <div
             className="flex flex-wrap pt-0"
             style={{
@@ -195,12 +300,12 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
               minHeight: scaleValue(30),
             }}
           >
-            {tags.map((tag) => (
+            {safeTags.slice(0, 3).map((tag) => (
               <Tag
                 key={tag}
                 text={tag}
-                bgColor="#F0F0F0"
-                textColor="black"
+                bgColor="#F3F4F6"
+                textColor="#374151"
                 height={tagSize.height}
                 horizontalPadding={tagSize.horizontalPadding}
                 fontSize={tagSize.fontSize}
@@ -214,4 +319,4 @@ const ListingCard_Small: React.FC<ListingCardSmallProps> = ({
   );
 };
 
-export default ListingCard_Small;
+export default ListingCardSmall;

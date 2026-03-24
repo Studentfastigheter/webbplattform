@@ -1,11 +1,15 @@
 "use client";
 
-import { Button } from "@heroui/react";
+// FIXME: The `value` property in Option is assumed to be the same as `label` here.
+// This is either a bug, or redundant code. Either way it needs looking into.
+// Problem occurs in single-select mode. -- JaarmaCo@git
+
+import { Button } from "@/components/ui/button";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 export type Option = {
   label: string;
-  value: string;
+  value: string; // BUG: Possibly a bug or redundant code.
 };
 
 type FieldBase = {
@@ -36,6 +40,7 @@ export type SearchFilterBarProps = {
   values?: Record<string, FieldValue>;
   onChange?: (values: Record<string, FieldValue>) => void;
   onSubmit?: (values: Record<string, FieldValue>) => void;
+  renderFilter?: () => React.ReactNode;
   className?: string;
 };
 
@@ -65,6 +70,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   values: controlledValues,
   onChange,
   onSubmit,
+  renderFilter,
   className = "",
 }) => {
   const [internalValues, setInternalValues] = useState<Record<string, FieldValue>>({});
@@ -127,14 +133,14 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
       <div
         className="
           relative
-          flex h-[58.5px] w-full items-center
-          rounded-[29.25px] border border-black/10
+          flex w-full flex-col md:flex-row md:items-center gap-2 md:gap-3
+          rounded-3xl md:rounded-[29.25px] border border-black/10
           bg-white shadow-[0_0.9px_3.6px_rgba(0,0,0,0.25)]
-          px-5 pr-[70px]
-        "
+          p-4 md:px-5 md:pr-[14px] md:h-[58.5px]
+        "  
       >
         {/* Vänstra delen – fälten */}
-        <div className="flex flex-1 items-stretch">
+        <div className="flex flex-1 flex-col md:flex-row md:items-stretch gap-4 md:gap-3">
           {fields.map((field, index) => {
             const rawValue = values[field.id] ?? null;
             const displayValue = getDisplayValue(field, rawValue);
@@ -158,15 +164,15 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
               return (
                 <div key={field.id} className="relative flex-1 flex items-center">
                   <div className="flex w-full flex-col justify-center">
-                    <label className="text-[12.6px] font-normal text-black">
+                    <label className="text-[12.6px] font-normal text-black mb-1 md:mb-0">
                       {field.label}
                     </label>
                     <input
                       type="text"
                       className="
-                        w-full border-none bg-transparent
+                        w-full border-b md:border-none border-gray-200 md:bg-transparent
                         text-[12.6px] text-black placeholder:text-black/50
-                        focus:outline-none
+                        focus:outline-none py-1 md:py-0
                       "
                       placeholder={field.placeholder}
                       value={displayValue}
@@ -237,14 +243,14 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
               <div
                 key={field.id}
                 className={`
-                  relative flex flex-1 items-center justify-center
-                  ${showDivider ? "border-l border-[rgba(30,30,30,0.15)] pl-5" : ""}
+                  relative flex flex-1 items-center md:justify-center
+                  ${showDivider ? "md:border-l md:border-[rgba(30,30,30,0.15)] md:pl-5 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100" : ""}
                 `}
               >
                 {/* Fall 1: searchable select – label + input i rutan (egen dropdown) */}
                 {field.type === "select" && field.searchable ? (
                   <div className="flex w-full flex-col justify-center">
-                    <span className="text-[12.6px] font-normal text-black">
+                    <span className="text-[12.6px] font-normal text-black mb-1 md:mb-0">
                       {field.label}
                     </span>
                     <input
@@ -293,10 +299,10 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
                       focus:outline-none
                     "
                   >
-                    <span className="text-[12.6px] font-normal text-black">
+                    <span className="text-[12.6px] font-normal text-black font-semibold md:font-normal">
                       {field.label}
                     </span>
-                    <span className="text-[12.6px] font-normal text-black/50">
+                    <span className="text-[12.6px] font-normal text-black/50 truncate">
                       {displayValue || field.placeholder}
                     </span>
                   </button>
@@ -310,7 +316,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
                       absolute left-0 top-full z-20 mt-2 w-full
                       rounded-3xl bg-white
                       shadow-[0_10px_25px_rgba(0,0,0,0.15)]
-                      p-3
+                      p-3 border border-gray-100 md:border-none
                     "
                   >
                     <div className="max-h-64 overflow-y-auto">
@@ -378,32 +384,37 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
           })}
         </div>
 
-        {/* Sök-knapp */}
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          className="
-            absolute right-[6px] top-1/2 -translate-y-1/2
-            flex h-[48px] w-[48px] items-center justify-center
-            rounded-full bg-[#0F4D0F]
-            shadow-[0_6px_14px_rgba(0,0,0,0.18)]
-            focus:outline-none
-          "
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-[34px] w-[34px] text-white"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={3}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {/* Åtgärdsområde - Sök och Filter */}
+        <div className="mt-4 md:mt-0 w-full md:w-auto flex items-center gap-2">
+          {renderFilter && (
+            <div className="flex-1 md:flex-none flex justify-center md:border-r md:border-black/10 md:pr-4">
+              {renderFilter()}
+            </div>
+          )}
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            variant="default"
+            className="flex-1 md:flex-none w-full h-[44px] md:w-[48px] md:h-[48px] md:min-w-0 md:p-0 flex items-center justify-center rounded-full flex-shrink-0 gap-2"
           >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="18" y1="18" x2="23.5" y2="23.5" />
-          </svg>
-        </Button>
+            <span className="block md:hidden text-sm font-semibold">Sök</span>
+            <span className="sr-only md:not-sr-only md:flex md:items-center md:justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-[18px] w-[18px] md:h-[20px] md:w-[20px] text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="18" y1="18" x2="23.5" y2="23.5" />
+              </svg>
+            </span>
+          </Button>
+        </div>
       </div>
     </div>
   );

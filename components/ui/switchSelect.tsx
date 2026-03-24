@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { List, Map } from "lucide-react";
 
 export type SwitchSelectValue = "lista" | "karta";
 
@@ -11,6 +12,7 @@ type Props = {
   labels?: { lista?: string; karta?: string };
   className?: string;
   disabled?: boolean;
+  fullWidth?: boolean;
 };
 
 export function SwitchSelect({
@@ -19,6 +21,7 @@ export function SwitchSelect({
   labels = { lista: "Lista", karta: "Karta" },
   className = "",
   disabled = false,
+  fullWidth = false,
 }: Props) {
   // internal state for uncontrolled usage
   const [internal, setInternal] = React.useState<SwitchSelectValue>("lista");
@@ -27,8 +30,8 @@ export function SwitchSelect({
   const currentValue = isControlled ? value! : internal;
 
   const options = [
-    { key: "lista" as const, label: labels.lista ?? "Lista" },
-    { key: "karta" as const, label: labels.karta ?? "Karta" },
+    { key: "lista" as const, label: labels.lista ?? "Lista", icon: <List className="w-[18px] h-[18px]" /> },
+    { key: "karta" as const, label: labels.karta ?? "Karta", icon: <Map className="w-[18px] h-[18px]" /> },
   ];
 
   const selectedIndex = currentValue === "karta" ? 1 : 0;
@@ -38,13 +41,16 @@ export function SwitchSelect({
     onChange?.(next);
   };
 
+  const widthClass = fullWidth ? "w-full" : "w-[160px] sm:w-[200px]";
+
   return (
     <div
       role="tablist"
       aria-disabled={disabled}
       className={[
         "relative inline-grid grid-cols-2 items-center",
-        "h-12 w-[120px] sm:w-[160px]",//Ändra storlek
+        "h-8",
+        widthClass,
         "rounded-full bg-white",
         "border border-black/10",
         "shadow-[0_7px_18px_rgba(0,0,0,0.12)]",
@@ -58,14 +64,12 @@ export function SwitchSelect({
         className={[
           // fyll hela höjden och halva bredden
           "absolute top-0 bottom-0 left-0 w-1/2",
-          "rounded-full bg-[#E9E9E9]",
-          "shadow-[0_6px_14px_rgba(0,0,0,0.22)]",
+          "rounded-full bg-[#004225]",
+          "shadow-[0_2px_10px_rgba(0,0,0,0.22)]",
         ].join(" ")}
         animate={{ x: `${selectedIndex * 100}%` }}
         transition={{ duration: 0.22, ease: "easeInOut" }}
       />
-
-
 
       {options.map((opt) => {
         const active = opt.key === currentValue;
@@ -77,12 +81,13 @@ export function SwitchSelect({
             aria-selected={active}
             onClick={() => setValue(opt.key)}
             className={[
-              "relative z-10 h-full w-full rounded-full",
+              "relative z-10 h-full w-full flex items-center justify-center gap-2 rounded-full",
               "text-sm font-medium tracking-tight",
               "transition-colors duration-200",
-              active ? "text-black" : "text-black/80",
+              active ? "text-white" : "text-black/80",
             ].join(" ")}
           >
+            {opt.icon}
             {opt.label}
           </button>
         );

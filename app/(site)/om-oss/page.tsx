@@ -1,79 +1,232 @@
-import {Compass, ShieldCheck } from "lucide-react";
+"use client";
 
-export const dynamic = "force-static";
+import React from "react";
+import Image from "next/image";
+import { 
+  ShieldCheck, 
+  MapPin, 
+  Users2, 
+  Lock, 
+  Linkedin,
+  Mail, // Ny import
+  LucideIcon,
+  Search
+} from "lucide-react";
+
+// --- DATA ---
 
 type Highlight = { label: string; value: string };
-type ValueCard = { title: string; description: string };
-type ContactLink = { label: string; href: string };
+type ValueCard = { title: string; description: string; icon: LucideIcon };
+type TeamMember = { 
+  name: string; 
+  role: string; 
+  image?: string; 
+  linkedin?: string;
+  email?: string; // Nytt fält för e-post
+};
 
 const STATS: Highlight[] = [
   { label: "Lansering", value: "2026" },
   { label: "Publicerade bostäder", value: "0" },
-  { label: "Studenter registrerade", value: "0" },
+  { label: "Registrerade studenter", value: "0" },
 ];
 
 const VALUE_CARDS: ValueCard[] = [
   {
-    title: "Trygga och verifierade studentbostäder",
-    description:
-      "Vi kvalitetssäkrar annonser och profiler. Följ dina ködagar i realtid, bevaka favoriter och hitta din nästa lya – utan avgifter.",
+    title: "Hela marknaden på ett ställe",
+    description: "Slipp leta på dussintals sajter. Vi samlar bostäder från alla bostadsföretag och bostadsköer i Sverige på en enda plattform.",
+    icon: Search,
   },
   {
-    title: "Smart karta för studentlivet",
-    description:
-      "Se avstånd till ditt campus, pendlingstid, kollektivtrafik och närservice i en och samma vy. Boende i rätt läge, från dag ett.",
+    title: "Designat för studentlivet",
+    description: "Hitta rätt direkt. Se resevägar till din skola och var närmaste studieaktiviteter finns. Vi hjälper dig bo där livet fungerar.",
+    icon: MapPin,
   },
   {
-    title: "Sömlösa verktyg för hyresvärdar",
-    description:
-      "Publicera bostäder, ta emot intresseanmälningar och välj rätt student snabbare. Allt skött direkt i CampusLyan.",
+    title: "Helt kostnadsfritt",
+    description: "Att hitta en lya ska inte kosta pengar. CampusLyan är helt gratis för studenter att använda – inga dolda avgifter, bara en enklare väg till bostad.",
+    icon: Users2,
   },
   {
-    title: "Integritet i första rummet",
-    description:
-      "Vi skyddar dina uppgifter och följer GDPR. Läs mer om hur vi arbetar med säker datadelning under Integritet och Dataskydd.",
+    title: "Alltid verifierade aktörer",
+    description: "Din trygghet är vår prioritet. Vi verifierar samtliga hyresvärdar och aktörer på plattformen så att du kan söka bostad tryggt och säkert utan risk för bedrägerier.",
+    icon: ShieldCheck,
   },
 ];
 
-const CONTACT_LINKS: ContactLink[] = [
-  { label: "Kundservice & kontakt", href: "/kundservice" },
-  { label: "Integritet & dataskydd", href: "/privacy" },
-  { label: "Partners & samarbeten", href: "/partners" },
+const TEAM_CATEGORIES = [
+  {
+    title: "Ledning",
+    members: [
+      {
+        name: "Simon Carlén",
+        role: "CEO & CTO",
+        image: "/team/Profilbild-Simon.jpg",
+        linkedin: "https://www.linkedin.com/in/simon-carlén/",
+        // Lägg till e-postadresserna här:
+        email: "simon.carlen@campuslyan.se", 
+      },
+      {
+        name: "Alvin Stallgård",
+        role: "CCO",
+        image: "/team/Profilbild-Alvin.png",
+        linkedin: "https://www.linkedin.com/in/alvin-stallg%C3%A5rd-346abb290/",
+        email: "alvin.stallgard@campuslyan.se",
+      },
+      {
+        name: "Viktor Kristiansson",
+        role: "Head of Backend & Security",
+        // email: "viktor@campuslyan.se",
+      },
+      {
+        name: "Mehrdad Hashemi",
+        role: "CSO",
+        email: "mehrdad.hashemi@campuslyan.se",
+      },
+    ],
+  },
+  {
+    title: "Produkt & Utveckling",
+    members: [
+      { name: "Marco Speziale", role: "Backend Engineer" },
+      { name: "Mikael Överfjord", role: "Backend Engineer" },
+      { name: "Lucas Ryefalk", role: "Frontend Engineer" },
+      { name: "William Jaarma", role: "Frontend Engineer" },
+    ],
+  },
 ];
 
-function SectionHeading({ title, eyebrow, description }: { title: string; eyebrow?: string; description?: string }) {
+// --- KOMPONENTER ---
+
+function Badge({ children }: { children: React.ReactNode }) {
   return (
-    <header className="space-y-3 mb-8">
-      {eyebrow && <p className="eyebrow text-brand">{eyebrow}</p>}
-      <h2 className="text-3xl font-semibold tracking-tight">{title}</h2>
-      {description && <p className="text-slate-900 max-w-2xl">{description}</p>}
-    </header>
+    <span className="inline-block px-3 py-1 mb-6 text-xs font-semibold tracking-widest text-emerald-700 uppercase bg-emerald-50 rounded-full">
+      {children}
+    </span>
+  );
+}
+
+function SectionHeading({ 
+  eyebrow, 
+  title, 
+  description,
+  center = false 
+}: { 
+  eyebrow?: string; 
+  title: string; 
+  description?: string;
+  center?: boolean;
+}) {
+  return (
+    <div className={`max-w-3xl mb-16 ${center ? "mx-auto text-center" : ""}`}>
+      {eyebrow && <Badge>{eyebrow}</Badge>}
+      <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
+        {title}
+      </h2>
+      {description && (
+        <p className="text-lg text-gray-600 leading-relaxed">
+          {description}
+        </p>
+      )}
+    </div>
   );
 }
 
 function MetricCard({ label, value }: Highlight) {
   return (
-    <div className="rounded-2xl border border-black/5 bg-white/80 px-4 py-6 text-center shadow-sm">
-      <p className="text-3xl font-bold text-brand">{value}</p>
-      <p className="text-sm text-slate-900">{label}</p>
+    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+      <p className="text-4xl font-bold text-emerald-600 mb-2">{value}</p>
+      <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">{label}</p>
     </div>
   );
 }
 
+function ValueCardItem({ item }: { item: ValueCard }) {
+  const Icon = item.icon;
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-8 flex flex-col h-full transition-all hover:shadow-lg hover:-translate-y-1 duration-300">
+      <div className="h-12 w-12 bg-emerald-50 rounded-lg flex items-center justify-center mb-6 text-emerald-600">
+        <Icon className="w-6 h-6" />
+      </div>
+      <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+      <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
+    </div>
+  );
+}
+
+function MemberCard({ member }: { member: TeamMember }) {
+  return (
+    <div className="group flex flex-col items-center text-center">
+      {/* Bild-container */}
+      <div className="relative mb-6">
+        <div className="h-40 w-40 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100 relative z-10">
+          {member.image ? (
+            <Image src={member.image} alt={member.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-gray-300">
+              <Users2 className="h-16 w-16" />
+            </div>
+          )}
+        </div>
+        {/* Dekorativ ring bakom */}
+        <div className="absolute inset-0 rounded-full border border-emerald-100 scale-110 -z-0 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+      </div>
+
+      {/* Text */}
+      <h3 className="text-lg font-bold text-gray-900 mb-1">{member.name}</h3>
+      <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3">{member.role}</p>
+      
+      {/* Kontaktikoner (LinkedIn & Email) */}
+      <div className="flex items-center gap-3 justify-center mt-1">
+        {member.linkedin && (
+          <a 
+            href={member.linkedin} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-[#0077b5] transition-colors p-1"
+            aria-label={`LinkedIn för ${member.name}`}
+          >
+            <Linkedin className="w-5 h-5" />
+          </a>
+        )}
+        
+        {member.email && (
+          <a 
+            href={`mailto:${member.email}`}
+            className="text-gray-400 hover:text-emerald-600 transition-colors p-1"
+            aria-label={`Maila ${member.name}`}
+          >
+            <Mail className="w-5 h-5" />
+          </a>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+// --- HUVUDSIDA ---
+
 export default function OmPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b ">
-      <section className="section">
-        <div className="container-page space-y-8 py-10 md:py-14">
-          <div className="max-w-3xl space-y-4">
-            <p className="eyebrow text-brand">Teamet bakom CampusLyan</p>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">Byggt av studenter – för studenter</h1>
-            <p className="text-base md:text-lg text-slate-900">
-              Vi som ligger bakom CampusLyan är studenter på Chalmers tekniska högskola. Vi bygger en gratis och trygg plattform som samlar studentbostäder, köinformation och smarta verktyg – så att det blir enklare för studenter att hitta hem och för värdar att nå rätt hyresgäst.
+    <main className="min-h-screen bg-white">
+      
+      {/* 1. HERO & STORY */}
+      <section className="py-24 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <Badge>Vår resa</Badge>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 mb-8 leading-tight">
+              Byggt på Chalmers <br className="hidden md:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-600">för studenter i hela Sverige</span>
+            </h1>
+            <p className="text-xl text-gray-600 leading-relaxed">
+              Vi som grundade CampusLyan är själva studenter. Efter att ha upplevt hur krångligt och otryggt det kan vara att söka bostad, bestämde vi oss för att bygga lösningen vi själva saknade.
             </p>
           </div>
 
-          <div className="grid gap-4 text-center sm:grid-cols-3">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {STATS.map((stat) => (
               <MetricCard key={stat.label} {...stat} />
             ))}
@@ -81,59 +234,55 @@ export default function OmPage() {
         </div>
       </section>
 
-      
-
-      <section className="section">
-        <div className="container-page">
+      {/* 2. VISION (Grå bakgrund) */}
+      <section className="py-24 px-6 border-y border-gray-100">
+        <div className="max-w-7xl mx-auto">
           <SectionHeading
-            eyebrow="Vad vi gör"
-            title="Från bostadsbevakningar till partnerplattform"
-            description="CampusLyan är både en guide för studenter och ett nav för studentbostadsföretag. Här är några av värdena du får hos oss – gratis och tryggt från start."
+            eyebrow="Vår vision"
+            title="Mer än bara en annonssida"
+            description="Från en enkel idé till en nationell samlingsplats. Vi är en guide som hjälper studenter att förstå marknaden och en trygg brygga för hyresvärdar."
+            center
           />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {VALUE_CARDS.map((value) => (
-              <article key={value.title} className="rounded-2xl p-5 shadow-sm">
-                <h3 className="text-lg font-semibold mb-2">{value.title}</h3>
-                <p className="text-sm text-slate-900 leading-relaxed">{value.description}</p>
-              </article>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {VALUE_CARDS.map((card, index) => (
+              <ValueCardItem key={index} item={card} />
             ))}
           </div>
         </div>
       </section>
 
-      <section className="section">
-        <div className="container-page">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <article className="rounded-3xl bg-white/90 p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <Compass className="h-10 w-10 rounded-full bg-brand/10 p-2 text-brand" />
-                <div>
-                  <p className="text-sm uppercase tracking-wide text-brand">Vårt löfte</p>
-                  <h3 className="text-xl font-semibold">Gratis från första klicket</h3>
-                </div>
-              </div>
-              <p className="text-slate-900">
-                Vi tycker inte att studenter ska behöva betala för att hitta någonstans att bo. Därför är CampusLyan helt gratis – från bevakningar och köinformation till annonser och kartvy. Vårt mål är enkelt: göra Sveriges bostadsmarknad mer rättvis för studenter.
-              </p>
-            </article>
+      {/* 3. TEAM */}
+      <section className="py-24 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <SectionHeading
+            title="Möt teamet"
+            description="Vi kombinerar våra erfarenheter från Chalmers med viljan att förbättra bostadsmarknaden för alla."
+          />
 
-            <article className="rounded-3xl bg-white/90 p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <ShieldCheck className="h-10 w-10 rounded-full bg-brand/10 p-2 text-brand" />
-                <div>
-                  <p className="text-sm uppercase tracking-wide text-brand">Trygghet & teknik</p>
-                  <h3 className="text-xl font-semibold">Byggt för att skydda dig</h3>
+          <div className="space-y-24">
+            {TEAM_CATEGORIES.map((category) => (
+              <div key={category.title}>
+                {/* Kategori-rubrik med linje */}
+                <div className="flex items-center mb-12">
+                  <h3 className="text-2xl font-bold text-gray-900 mr-6">
+                    {category.title}
+                  </h3>
+                  <div className="h-px bg-gray-100 flex-grow"></div>
+                </div>
+
+                {/* Grid av medlemmar */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
+                  {category.members.map((member) => (
+                    <MemberCard key={member.name} member={member} />
+                  ))}
                 </div>
               </div>
-              <p className="text-slate-900">
-                Alla profiler och annonser verifieras, och vi arbetar aktivt med att stoppa fejkannonser och oseriösa värdar. Med säker inloggning och krypterad databehandling kan du använda plattformen med full trygghet.
-              </p>
-            </article>
+            ))}
           </div>
         </div>
       </section>
+
     </main>
   );
 }
-

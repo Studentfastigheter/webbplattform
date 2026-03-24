@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type Ad = {
+export type TableAd = {
   id: number;
   address: string;
   rooms: number | null;
@@ -19,7 +19,7 @@ export type Ad = {
 };
 
 export const createAds = (numberOfAds: number) => {
-  const ads: Ad[] = []
+  const ads: TableAd[] = [];
   for (let i = 0; i < numberOfAds; i++) {
     ads.push({
       id: i,

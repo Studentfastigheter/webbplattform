@@ -21,25 +21,26 @@ type LoginFormProps = React.ComponentProps<"div">;
 
 export function LoginForm({ className, ...props }: LoginFormProps) {
   const router = useRouter();
-  const { login, ready } = useAuth();
+  // OBS: ready har bytt namn till isLoading i AuthContext
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!ready || loading) return;
+    if (isLoading || submitting) return;
 
     setError(null);
-    setLoading(true);
+    setSubmitting(true);
     try {
-      await login(email.trim(), password);
+      await login({ email: email.trim(), password });
       router.push("/");
     } catch (err: any) {
       setError(err?.message ?? "Något gick fel vid inloggning.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
@@ -48,7 +49,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
       title="Välkommen tillbaka"
       subtitle="Logga in för att hantera dina köplatser och sparade objekt."
       helper={
-        !ready && (
+        isLoading && (
           <p className="text-sm text-muted-foreground">
             Vi laddar dina inställningar …
           </p>
@@ -74,7 +75,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
               required
-              disabled={!ready || loading}
+              disabled={isLoading || submitting}
             />
           </Field>
 
@@ -96,13 +97,18 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="current-password"
               required
-              disabled={!ready || loading}
+              disabled={isLoading || submitting}
             />
           </Field>
 
           <Field>
-            <Button type="submit" color="success" variant="outline" className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90" disabled={!ready || loading}>
-                  {loading ? "Loggar in…" : "Logga in"}
+            <Button
+              type="submit"
+              fullWidth
+              className="mt-1"
+              disabled={isLoading || submitting}
+            >
+              {submitting ? "Loggar in…" : "Logga in"}
             </Button>
           </Field>
 
@@ -114,7 +120,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
 
           <Field className="grid grid-cols-3 gap-4">
             <Button
-              variant="outline"
+              variant="bordered"
               type="button"
               disabled
               className="w-full justify-center"
@@ -132,7 +138,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               <span className="sr-only">Logga in med Apple</span>
             </Button>
             <Button
-              variant="outline"
+              variant="bordered"
               type="button"
               disabled
               className="w-full justify-center"
@@ -150,7 +156,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               <span className="sr-only">Logga in med Google</span>
             </Button>
             <Button
-              variant="outline"
+              variant="bordered"
               type="button"
               disabled
               className="w-full justify-center"

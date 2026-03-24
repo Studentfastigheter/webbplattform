@@ -5,36 +5,35 @@ import BaseMap, {
   type BaseMarker,
   type PopupRenderer,
 } from "./BaseMap";
+// VIKTIGT: Vi byter från 'Listing' till 'ListingCardDTO'
+import { ListingCardDTO } from "@/types/listing";
 import ListingMapPopup from "./ListingsMapPopup";
 
-type ListingItem = {
-  id: string;
-  title: string;
-  address?: string;
-  city: string;
-  lat: number;
-  lng: number;
-  rent?: number;
-  imageUrl?: string;
-};
-
 type ListingsMapProps = {
-  listings: ListingItem[];
+  listings: ListingCardDTO[]; // <-- Uppdaterad typ
   className?: string;
   activeListingId?: string;
+  getIsFavorite?: (id: string) => boolean;
+  onFavoriteToggle?: (id: string, isFav: boolean) => void;
   onOpenListing?: (id: string) => void;
 };
 
 /**
  * Wrapper runt ListingMapPopup så den matchar BaseMaps PopupRenderer-signatur.
- * Vi ignorerar zoom/isActive här för att få exakt samma ruta oavsett.
  */
 const createListingPopupRenderer =
-  (listing: ListingItem, onOpenListing?: (id: string) => void): PopupRenderer =>
+  (
+    listing: ListingCardDTO, // <-- Uppdaterad typ
+    isFavorite?: boolean,
+    onFavoriteToggle?: (id: string, isFav: boolean) => void,
+    onOpenListing?: (id: string) => void,
+  ): PopupRenderer =>
   () =>
     (
       <ListingMapPopup
         listing={listing}
+        isFavorite={isFavorite}
+        onFavoriteToggle={onFavoriteToggle}
         onOpen={onOpenListing}
       />
     );
@@ -43,16 +42,21 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
   listings,
   className,
   activeListingId,
+  getIsFavorite,
+  onFavoriteToggle,
   onOpenListing,
 }) => {
   const markers: BaseMarker[] = useMemo(
     () =>
-      listings.map((l) => ({
-        id: l.id,
-        position: [l.lat, l.lng] as [number, number],
-        popup: createListingPopupRenderer(l, onOpenListing),
-      })),
-    [listings, onOpenListing],
+      listings
+        // Vi måste säkerställa att lat/lng inte är null/undefined
+        .filter((l) => typeof l.lat === "number" && typeof l.lng === "number")
+        .map((l) => ({
+          id: l.id,
+          position: [l.lat as number, l.lng as number],
+          popup: createListingPopupRenderer(l, getIsFavorite?.(l.id), onFavoriteToggle, onOpenListing),
+        })),
+    [listings, getIsFavorite, onFavoriteToggle, onOpenListing],
   );
 
   return (

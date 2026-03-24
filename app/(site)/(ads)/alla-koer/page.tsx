@@ -1,16 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
+import { Button } from "@/components/ui/button";
 import Que_ListingCard from "@/components/Listings/Que_ListingCard";
 import QueueFilterButton, {
   type QueueFilterState,
 } from "@/components/Listings/Search/QueueFilterButton";
-import OneFieldSearch from "@/components/Listings/Search/SearchFilter-1field";
+import SearchFilterBar2 from "@/components/Listings/Search/SearchFilterBar2";
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
+
+import { queueService } from "@/services/queue-service";
+import { getCityCoordinates } from "@/services/geolocator-service";
+
+import { type HousingQueueDTO, type QueueMapItem } from "@/types/queue";
+import { type AdvertiserSummary } from "@/types/common";
+import { type CompanyId } from "@/types";
+
+import { uniqueOnly, removeEmpty, toSearchString, searchStringMatches } from "@/lib/utils";
 
 const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ssr: false,
@@ -19,279 +29,336 @@ const QueuesMap = dynamic(() => import("@/components/Map/QueuesMap"), {
   ),
 });
 
-type QueueItem = {
-  id: string;
-  name: string;
-  area: string;
-  city: string;
-  lat: number;
-  lng: number;
-  totalUnits?: number;
-  unitsLabel?: string;
-  isVerified?: boolean;
-  landlord: string;
-  status?: "open" | "queue";
-  logoUrl: string;
-  tags?: string[];
+// User search entries
+type SearchValues = {
+
+    // Entered city name
+    location: string;
+
+    // Id of selected queue
+    queueId: string;
 };
 
-const queues: QueueItem[] = [
-  {
-    id: "sgs-studentbostader",
-    name: "SGS Studentbostader",
-    area: "Innerstan",
-    city: "Goteborg",
-    lat: 57.7089,
-    lng: 11.9746,
-    totalUnits: 1200,
-    isVerified: true,
-    landlord: "SGS",
-    status: "open",
-    logoUrl: "/logos/sgs-logo.svg",
-    tags: ["Korridorer", "Lagenheter", "Moblerat"],
-  },
-  {
-    id: "guldhedens-studiehem",
-    name: "Guldhedens Studiehem",
-    area: "Guldheden",
-    city: "Goteborg",
-    lat: 57.6898,
-    lng: 11.9856,
-    totalUnits: 180,
-    landlord: "Guldhedens Studiehem",
-    status: "queue",
-    logoUrl: "/logos/guldhedens_studiehem.png",
-    tags: ["Kristet", "Korridorer"],
-  },
-  {
-    id: "sssb",
-    name: "SSSB",
-    area: "Tekniska Hogskolan",
-    city: "Stockholm",
-    lat: 59.3471,
-    lng: 18.073,
-    totalUnits: 800,
-    isVerified: true,
-    landlord: "SSSB",
-    status: "queue",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Student", "Stockholm"],
-  },
-  {
-    id: "af-bostader",
-    name: "AF Bostader",
-    area: "Lund Centrum",
-    city: "Lund",
-    lat: 55.7047,
-    lng: 13.191,
-    unitsLabel: "2500 bostader",
-    landlord: "AF Bostader",
-    status: "open",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poangfri", "Lagenhet"],
-  },
-  {
-    id: "af-bostader1",
-    name: "AF Bostader",
-    area: "Lund Centrum",
-    city: "Lund",
-    lat: 55.7047,
-    lng: 13.191,
-    unitsLabel: "2500 bostader",
-    landlord: "AF Bostader",
-    status: "open",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poangfri", "Lagenhet"],
-  },
-  {
-    id: "af-bostader2",
-    name: "AF Bostader",
-    area: "Lund Centrum",
-    city: "Lund",
-    lat: 55.7047,
-    lng: 13.191,
-    unitsLabel: "2500 bostader",
-    landlord: "AF Bostader",
-    status: "queue",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poangfri", "Lagenhet"],
-  },
-  {
-    id: "af-bostader3",
-    name: "AF Bostader",
-    area: "Lund Centrum",
-    city: "Lund",
-    lat: 55.7047,
-    lng: 13.191,
-    unitsLabel: "2500 bostader",
-    landlord: "AF Bostader",
-    status: "queue",
-    logoUrl: "/logos/campuslyan-logo.svg",
-    tags: ["Poangfri", "Lagenhet"],
-  },
-];
+const PAGE_SIZE = 6;
 
 export default function Page() {
-  const router = useRouter();
-  const [view, setView] = useState<SwitchSelectValue>("lista");
-  const [searchValues, setSearchValues] = useState<
-    Record<string, string | string[] | null>
-  >({});
-  const [queueFilters, setQueueFilters] = useState<QueueFilterState>({
-    cities: [],
-    landlords: [],
-    status: null,
-  });
+    const router = useRouter();
+    const [view, setView] = useState<SwitchSelectValue>("lista");
+    const [searchValues, setSearchValues] = useState<SearchValues>({ location: "", queueName: "" });
+    const [queues, setQueues] = useState<QueueWithUI[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
+    const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const isMapView = view === "karta";
+    const queuesById = useMemo(() => {
+      const result: Record<string, QueueWithUI> = {};
+      for (const queue of queues) {
+        result[queue.id] = queue;
+      }
+      return result;
+    }, [queues]);
 
-  const filteredQueues = useMemo(() => {
-    const searchTerm =
-      typeof searchValues.var === "string"
-        ? searchValues.var.trim().toLowerCase()
-        : "";
+    useEffect(() => {
+        let active = true;
+        setLoading(true);
 
-    return queues.filter((queue) => {
-      const matchesSearch =
-        !searchTerm ||
-        [queue.name, queue.city, queue.area].some((field) =>
-          field.toLowerCase().includes(searchTerm)
-        );
+        queueService
+        .list()
+        .then((res) => {
+            if (!active)
+                return;
+            (async () => {
+                const mapped: AdvertisedHousingQueue[] = await Promise.all(res.map(async dto => {
+                    const base: AdvertisedHousingQueue = {
+                        ...dto,
+                        advertiser: {
+                            type: "company",
+                            id: dto.companyId as unknown as CompanyId,
+                            displayName: dto.name,
+                            logoUrl: dto.logoUrl,
+                            bannerUrl: undefined,
+                            phone: null,
+                            contactEmail: null,
+                            contactPhone: null,
+                            contactNote: null,
+                            rating: null,
+                            subtitle: null,
+                            description: dto.description ?? null,
+                            website: null,
+                            city: dto.city,
+                        }
+                    };
+                    const coord: Coordinates = await getCityCoordinates(dto.city);
+                    return coord.lng && coord.lat ? {
+                        ...base,
+                        lng: coord.lng,
+                        lat: coord.lat
+                    } as QueueMapItem : base;
+                }));
 
-      const matchesCity =
-        queueFilters.cities.length === 0 ||
-        queueFilters.cities.some(
-          (city) => city.toLowerCase() === queue.city.toLowerCase()
-        );
+                setQueues(mapped);
+                setVisibleCount(PAGE_SIZE);
+            })();
+        })
+        .catch((err: any) => {
+          if (!active)
+              return;
+          console.error(err);
+          setError("Kunde inte ladda köer.");
+        })
+        .finally(() => {
+          if (!active)
+              return;
+          setLoading(false);
+        });
+        return () => {
+            active = false;
+        };
+    }, []);
 
-      const matchesLandlord =
-        queueFilters.landlords.length === 0 ||
-        queueFilters.landlords.some(
-          (landlord) =>
-            queue.landlord.toLowerCase() === landlord.toLowerCase()
-        );
+    const isMapView = view === "karta";
 
-      const matchesStatus =
-        !queueFilters.status ||
-        queueFilters.status === "all" ||
-        queue.status === queueFilters.status;
+    const cityOptions = useMemo(
+      () => {
+        const options = uniqueOnly(removeEmpty(queues.map((queue) => queue.city)));
+        const asRecord: Record<string, string> = {};
+        for (const option of options) {
+          asRecord[option] = option;
+        }
+        return asRecord;
+      },
+      [queues]
+    );
+    const queueOptions = useMemo(() => {
+      const results: Record<string, string> = {};
+      for (const queue of queues) {
+        results[queue.name] = queue.id;
+      }
+      return results;
+    }, [queues]);
 
-      return matchesSearch && matchesCity && matchesLandlord && matchesStatus;
-    });
-  }, [queueFilters, searchValues]);
+    const filteredQueues = useMemo(() => {
+        return queues.filter((queue) =>
+            searchStringMatches(searchValues.location, queue.city) &&
+            searchStringMatches(searchValues.queueId, queue.id));
+    }, [queues, searchValues]);
 
-  const totalQueues = filteredQueues.length;
+    useEffect(() => {
+        setVisibleCount(Math.min(PAGE_SIZE, filteredQueues.length));
+    }, [filteredQueues.length]);
 
-  const queueGridClasses = isMapView
-    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 justify-items-center"
-    : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
+    const hasMore = visibleCount < filteredQueues.length;
+    const visibleQueues = useMemo(
+        () => filteredQueues.slice(0, visibleCount),
+        [filteredQueues, visibleCount]
+    );
 
-  const renderQueueCard = (queue: QueueItem) => (
-    <div key={queue.id} className="flex w-full justify-center">
-      <Que_ListingCard
-        {...queue}
-        logoAlt={`${queue.name} logotyp`}
-        onViewListings={() => router.push(`/alla-koer/${queue.id}`)}
-        onReadMore={() => router.push(`/alla-koer/${queue.id}`)}
-      />
-    </div>
-  );
+    const mapQueues = useMemo(() =>
+        visibleQueues.filter((queue): queue is QueueMapItem => Boolean(queue.advertiser)),
+      [visibleQueues]
+    );
 
-  const renderMapListings = () => {
-    return filteredQueues.map(renderQueueCard);
-  };
+    const totalQueues = filteredQueues.length;
 
-  return (
-    <main className="flex flex-col gap-8 px-4 pb-12 pt-4">
-      {/* Sektion 1: filter */}
-      <section className="flex justify-center">
-        <div className="flex w-full max-w-[1200px] flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="min-w-[280px] flex-1">
-              <OneFieldSearch
-                className="w-full"
-                field={{
-                  id: "var",
-                  label: "Var",
-                  placeholder: "Sök studentstad",
-                  options: [
-                    { label: "Göteborg", value: "göteborg" },
-                    { label: "Stockholm", value: "stockholm" },
-                    { label: "Uppsala", value: "uppsala" },
-                  ],
-                }}
-                onSubmit={(values) => setSearchValues(values)}
-              />
-            </div>
-            <QueueFilterButton
-              cities={["Göteborg", "Stockholm", "Lund", "Malmö", "Umeå"]}
-              cityCounts={{
-                Goteborg: 5,
-                Stockholm: 2,
-                Lund: 1,
-                Malmo: 1,
-                Umea: 1,
-              }}
-              landlords={[
-                "SGS",
-                "AF Bostader",
-                "SSSB",
-                "Guldhedens Studiehem",
-                "Hembo",
-              ]}
-              landlordCounts={{
-                SGS: 2,
-                "AF Bostader": 4,
-                SSSB: 1,
-                "Guldhedens Studiehem": 1,
-                Hembo: 1,
-              }}
-              onApply={(state) => setQueueFilters(state)}
-              onClear={() =>
-                setQueueFilters({
-                  cities: [],
-                  landlords: [],
-                  status: null,
-                })
+    const queueGridClasses = isMapView
+        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 justify-items-center"
+        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 justify-items-center";
+
+    const renderQueueCard = (queue: QueueWithUI) => {
+        const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
+
+        const queueCardProps = {
+            ...queue,
+            area: "", 
+            city: queue.city ?? "",
+            totalUnits: queue.totalUnits ?? undefined,
+            unitsLabel: undefined,
+            isVerified: true, 
+            logoUrl,
+            tags: queue.tags ?? [],
+            logoAlt: `${queue.name} logotyp`,
+        };
+
+        return (
+        <div key={queue.id} className="flex w-full justify-center">
+            <Que_ListingCard
+            name={queueCardProps.name}
+            area={queueCardProps.area}
+            city={queueCardProps.city}
+            totalUnits={queueCardProps.totalUnits}
+            unitsLabel={queueCardProps.unitsLabel}
+            isVerified={queueCardProps.isVerified}
+            logoUrl={queueCardProps.logoUrl}
+            logoAlt={queueCardProps.logoAlt}
+            tags={queueCardProps.tags}
+            isSelected={selectedQueues.has(queue.id)}
+            onViewListings={() => router.push(`/alla-koer/${queue.companyId}`)}
+            onToggleSelect={() => {
+              const next = new Set(selectedQueues);
+              if (next.has(queue.id)) {
+                next.delete(queue.id);
+              } else {
+                next.add(queue.id);
               }
+              setSelectedQueues(next);
+            }}
             />
-          </div>
-        </div>
-      </section>
+        </div>);
+    };
 
-      {/* Sektion 2: rubrik + vyval for bostaderna */}
-      <section className="w-full">
-        <div className="flex w-full flex-wrap items-center justify-between gap-4">
-          <h2 id="bostader-heading" className="text-base font-semibold text-black">
-            Över {totalQueues.toLocaleString("sv-SE")} köer
-          </h2>
-          <SwitchSelect value={view} onChange={setView} />
-        </div>
-      </section>
+    const renderMapListings = () => {
+        return visibleQueues.map(renderQueueCard);
+    };
 
-      {/* Sektion 3: annonser (annonsytor hanteras i layouten) */}
-      <section className="w-full">
-        <FieldSet className="w-full" aria-labelledby="bostader-heading">
-          {isMapView ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
-                <div className={queueGridClasses}>{renderMapListings()}</div>
-                <div
-                  className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
-                  style={{ minHeight: 600, height: "min(72vh, 760px)" }}
-                >
-                <QueuesMap
-                  queues={filteredQueues}
-                  onOpenQueue={(id) => router.push(`/alla-koer/${id}`)}
-                />
+    useEffect(() => {
+        if (!hasMore || loading || loadingMore)
+            return;
+        const target = loadMoreRef.current;
+        if (!target)
+            return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry?.isIntersecting && hasMore && !loadingMore) {
+                    setLoadingMore(true);
+                    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredQueues.length));
+                    requestAnimationFrame(() => setLoadingMore(false));
+                }
+            },
+            { rootMargin: "320px" }
+        );
+
+        observer.observe(target);
+        return () => observer.disconnect();
+    }, [filteredQueues.length, hasMore, loading, loadingMore]);
+
+    return (
+      <main className="flex flex-col gap-6 sm:gap-8 pb-12 pt-4 w-full h-auto">
+        {/* Same layout technique as in /bostader */}
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 h-auto">
+          {/* Filters */}
+          <section className="w-full">
+            <div className="flex w-full flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-start xl:items-center gap-3 sm:gap-4">
+                <div className="w-full lg:flex-1">
+                  <SearchFilterBar2
+                    className="w-full"
+                    fields={[
+                      {
+                        id: "location",
+                        label: "Var",
+                        placeholder: "Sök studentstad",
+                        options: { "Överallt": "", ...cityOptions }
+                      },
+                      {
+                        id: "queueId",
+                        label: "Bostadskö",
+                        placeholder: "Sök specifik bostadskö",
+                        options: { "Alla": "", ...queueOptions }
+                      }
+                    ]}
+                    onSubmit={(values) => {
+                      console.log(`Search values are: location=${values.location}, queueName=${values.queueName}`);
+                      setSearchValues({
+                        location: values.location,
+                        queueId: values.queueId,
+                      });
+                    }}
+                  />
                 </div>
-              </div>
-            ) : (
-              <div className={queueGridClasses}>
-                {filteredQueues.map((queue) => renderQueueCard(queue))}
             </div>
-          )}
-        </FieldSet>
-      </section>
-    </main>
-  );
+            </div>
+          </section>
+
+          {/* Rubric */}
+          <section className="w-full mt-6 sm:mt-8">
+            <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <h2 id="bostader-heading" className="text-base sm:text-lg font-semibold text-black">
+                Över {totalQueues.toLocaleString("sv-SE")} köer
+              </h2>
+              <SwitchSelect value={view} onChange={setView} />
+            </div>
+          </section>
+
+          {/* Listings */}
+          <section className="w-full min-h-[400px] mt-4 sm:mt-6">
+            <FieldSet className="w-full" aria-labelledby="bostader-heading">
+              {error && (
+                <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  {error}
+                </div>
+              )}
+              {loading ? (
+                <div className="py-12 text-center text-sm text-gray-500">
+                  Laddar köer...
+                </div>
+              ) : filteredQueues.length === 0 ? (
+                <div className="py-12 text-center text-sm text-gray-500">
+                  Inga köer att visa just nu.
+                </div>
+              ) : isMapView ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-6">
+                  <div className={queueGridClasses}>{renderMapListings()}</div>
+                  <div
+                    className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
+                    style={{ minHeight: 600, height: "min(72vh, 760px)" }}
+                  >
+                    <QueuesMap
+                      queues={mapQueues}
+                      onOpenQueue={(id) => router.push(`/alla-koer/${queuesById[id]}`)}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className={queueGridClasses}>
+                  {visibleQueues.map((queue) => renderQueueCard(queue))}
+                </div>
+              )}
+              {(hasMore || loadingMore) && (
+                <div
+                  ref={loadMoreRef}
+                  className="flex w-full items-center justify-center py-6 sm:py-8 min-h-[60px]"
+                  aria-hidden
+                >
+                  {loadingMore && (
+                    <span className="text-xs text-gray-500">Laddar fler köer...</span>
+                  )}
+                </div>
+              )}
+            </FieldSet>
+          </section>
+        </div>
+
+        {/* Sticky bottom bar for queue selection */}
+        {selectedQueues.size > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+            <div className="flex items-center gap-3 rounded-2xl bg-white px-5 py-3 shadow-xl ring-1 ring-black/5">
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                {selectedQueues.size} {selectedQueues.size === 1 ? "kö vald" : "köer valda"}
+              </span>
+              <div className="h-5 w-px bg-gray-200" />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setSelectedQueues(new Set())}
+              >
+                Rensa val
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+              >
+                Ställ mig i kö
+              </Button>
+            </div>
+          </div>
+        )}
+      </main>
+    );
 }

@@ -44,7 +44,7 @@ const ListFrame: React.FC<ListFrameProps> = ({
   return (
     <section
       className={clsx(
-        "w-full max-w-[1200px] rounded-2xl bg-white shadow-md",
+        "w-full rounded-2xl bg-white shadow-md",
         "border border-[#F0F0F0]",
         className
       )}

@@ -1,78 +1,113 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/api';
-
-type UserType = "student" | "company" | "landlord"; 
-
-type User = {
-  id: number;
-  type: UserType;
-  ssn: string;
-  email: string;
-  createdAt: string;
-  schoolId?: number | null;
-  schoolName?: string | null;
-};
-type LoginResp = { accessToken: string; user: User };
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { authService } from "@/services/auth-service";
+import { User, LoginRequest, RegisterRequest, UpdateUserRequest } from "@/types";
 
 type AuthCtx = {
   user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  token: string | null; // NYTT: Exponera token för att fixa TypeScript-fel
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (data: LoginRequest) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
-  ready: boolean;
+  refreshUser: () => Promise<void>; 
+  updateUser: (data: UpdateUserRequest) => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const [token, setToken] = useState<string | null>(null); // NYTT: State för att lagra token
+  const [isLoading, setIsLoading] = useState(true);
 
+  // 1. Initiera vid start
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const initAuth = async () => {
+      const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      
+      if (!storedToken) {
+        setIsLoading(false);
+        return;
+      }
 
-    const t = localStorage.getItem("auth_token");
-    if (!t) {
-      setReady(true);
-      return;
-    }
-
-    setToken(t);
-    apiFetch<User>("/api/auth/me", {}, t)
-      .then((u) => setUser(u))
-      .catch(() => {
-        localStorage.removeItem("auth_token");
+      try {
+        setToken(storedToken); // Synka state med localStorage
+        const userData = await authService.me();
+        setUser(userData);
+      } catch (error) {
+        console.error("Token ogiltig", error);
+        localStorage.removeItem("token");
         setToken(null);
         setUser(null);
-      })
-      .finally(() => setReady(true));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
   }, []);
 
-
-  const login = async (email: string, password: string) => {
-    const res = await apiFetch<LoginResp>(
-      '/api/auth/login',
-      { method: 'POST', body: JSON.stringify({ email, password }) }
-    );
-    localStorage.setItem('auth_token', res.accessToken);
-    setToken(res.accessToken);
+  // 2. Login
+  const login = async (data: LoginRequest) => {
+    const res = await authService.login(data);
+    localStorage.setItem("token", res.accessToken);
+    setToken(res.accessToken); // Uppdatera token vid inloggning
     setUser(res.user);
   };
 
+  // 3. Register
+  const register = async (data: RegisterRequest) => {
+    const res = await authService.register(data);
+    localStorage.setItem("token", res.accessToken);
+    setToken(res.accessToken); // Uppdatera token vid registrering
+    setUser(res.user);
+  };
+
+  // 4. Logout
   const logout = () => {
-    if (typeof window !== 'undefined') localStorage.removeItem('auth_token');
-    setToken(null);
+    authService.logout();
+    setToken(null); // Rensa state vid utloggning
     setUser(null);
   };
 
-  return <Ctx.Provider value={{ user, token, login, logout, ready }}>{children}</Ctx.Provider>;
+  // 5. Refresh (Hämta om användaren från servern)
+  const refreshUser = async () => {
+    try {
+      const updatedUser = await authService.me();
+      setUser(updatedUser);
+    } catch (error) {
+      console.error("Kunde inte uppdatera användare", error);
+    }
+  };
+
+  // 6. Update (Skicka ny data till servern)
+  const updateUser = async (data: UpdateUserRequest) => {
+    const updatedUser = await authService.updateProfile(data);
+    setUser(updatedUser);
+  };
+
+  return (
+    <Ctx.Provider value={{ 
+      user, 
+      token, // Skickas nu med i context-värdet
+      isAuthenticated: !!user, 
+      isLoading, 
+      login, 
+      register, 
+      logout, 
+      refreshUser,
+      updateUser 
+    }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useAuth() {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }

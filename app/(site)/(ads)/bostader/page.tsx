@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useAuth } from "@/context/AuthContext";
+
+import { toSearchString } from "@/lib/utils";
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 import ListingsFilterButton, {
@@ -12,24 +15,34 @@ import SearchFilter3Fields from "@/components/Listings/Search/SearchFilter-3fiel
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
+import { listingService } from "@/services/listing-service";
+import { ListingCardDTO } from "@/types/listing";
+
+type SearchValues = {
+  city: string;
+  hosts: string;
+  price: string;
+};
+
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ssr: false,
   loading: () => (
-    <div className="min-h-[520px] rounded-2xl bg-gray-100" aria-hidden />
+    <div className="min-h-[300px] sm:min-h-[400px] lg:min-h-[520px] rounded-2xl bg-gray-100" aria-hidden />
   ),
 });
 
+const PAGE_SIZE = 12;
 const priceBounds = { min: 0, max: 12000 };
 
 const propertyTypeOptions = [
   { id: "Rum", label: "Rum" },
-  { id: "Lagenhet", label: "Lagenhet" },
+  { id: "Lagenhet", label: "Lägenhet" },
   { id: "Korridor", label: "Korridor" },
 ];
 
 const amenityOptions = [
-  { id: "Moblerat", label: "Moblerat" },
-  { id: "Poangfri", label: "Poangfri" },
+  { id: "Moblerat", label: "Möblerat" },
+  { id: "Poangfri", label: "Poängfri" },
   { id: "Balkong", label: "Balkong" },
   { id: "Student", label: "Student" },
   { id: "Tunnelbana", label: "Tunnelbana" },
@@ -41,432 +54,419 @@ const defaultListingsFilterState: ListingsFilterState = {
   priceRange: priceBounds,
 };
 
-type ListingItem = {
-  id: string;
-  title: string;
-  area: string;
-  city: string;
-  address?: string;
-  lat: number;
-  lng: number;
-  dwellingType: string;
-  rooms: number;
-  sizeM2: number;
-  rent: number;
-  landlordType: string;
-  isVerified?: boolean;
-  imageUrl: string;
-  tags?: string[];
-};
+const MAX_POSSIBLE_RENT: number = 1_000_000_000_000;
+const MIN_PRICE_RANGE_STEP: number = 500;
+const TARGET_RANGE_COUNT: number = 3;
 
-const listings: ListingItem[] = [
-  {
-    id: "vasagatan-19",
-    title: "1:a Vasagatan 19",
-    area: "Innerstan",
-    city: "Goteborg",
-    address: "Vasagatan 19",
-    lat: 57.7089,
-    lng: 11.9746,
-    dwellingType: "Lagenhet",
-    rooms: 1,
-    sizeM2: 28,
-    rent: 3800,
-    landlordType: "Privat hyresvard",
-    isVerified: true,
-    imageUrl: "/appartment.jpg",
-    tags: ["Moblerat", "Poangfri", "Korridor"],
-  },
-  {
-    id: "linnestaden-6",
-    title: "1:a Linnegatan 6",
-    area: "Linnestaden",
-    city: "Goteborg",
-    address: "Linnegatan 6",
-    lat: 57.6935,
-    lng: 11.9503,
-    dwellingType: "Rum",
-    rooms: 1,
-    sizeM2: 22,
-    rent: 3600,
-    landlordType: "Privat hyresvard",
-    imageUrl: "/appartment.jpg",
-    tags: ["Moblerat", "Studentrum"],
-  },
-  {
-    id: "kungshojd-11",
-    title: "2:a Kungshojd 11",
-    area: "Kungshojd",
-    city: "Goteborg",
-    address: "Kungshojdsgatan 11",
-    lat: 57.7038,
-    lng: 11.959,
-    dwellingType: "Lagenhet",
-    rooms: 2,
-    sizeM2: 44,
-    rent: 5200,
-    landlordType: "Kommunal",
-    isVerified: true,
-    imageUrl: "/appartment.jpg",
-    tags: ["Poangfri", "Balkong"],
-  },
-  {
-    id: "karlaplan-5",
-    title: "1:a Karlaplan 5",
-    area: "Ostermalm",
-    city: "Stockholm",
-    address: "Karlaplan 5",
-    lat: 59.3388,
-    lng: 18.0934,
-    dwellingType: "Rum",
-    rooms: 1,
-    sizeM2: 20,
-    rent: 4700,
-    landlordType: "Stiftelse",
-    imageUrl: "/appartment.jpg",
-    tags: ["Moblerat", "Student"],
-  },
-  {
-    id: "kista-centrum",
-    title: "1,5:a Kista Centrum",
-    area: "Kista",
-    city: "Stockholm",
-    address: "Borgarfjordsgatan 18",
-    lat: 59.4035,
-    lng: 17.9442,
-    dwellingType: "Lagenhet",
-    rooms: 1,
-    sizeM2: 32,
-    rent: 5100,
-    landlordType: "Privat hyresvard",
-    imageUrl: "/appartment.jpg",
-    tags: ["Tunnelbana", "Student"],
-  },
-  {
-    id: "uppsala-norr",
-    title: "1:a Studentstaden",
-    area: "Studentstaden",
-    city: "Uppsala",
-    address: "Studentvagen 12",
-    lat: 59.8586,
-    lng: 17.6389,
-    dwellingType: "Rum",
-    rooms: 1,
-    sizeM2: 18,
-    rent: 3400,
-    landlordType: "Kommunal",
-    imageUrl: "/appartment.jpg",
-    tags: ["Moblerat", "Korridor"],
-  },
-  {
-    id: "lund-centrum",
-    title: "2:a Lund Centrum",
-    area: "Centrum",
-    city: "Lund",
-    address: "Bredgatan 4",
-    lat: 55.7047,
-    lng: 13.191,
-    dwellingType: "Lagenhet",
-    rooms: 2,
-    sizeM2: 46,
-    rent: 5400,
-    landlordType: "AF Bostader",
-    isVerified: true,
-    imageUrl: "/appartment.jpg",
-    tags: ["Poangfri", "Student"],
-  },
-  {
-    id: "malmo-vaster",
-    title: "1:a Malmo Vaster",
-    area: "Vaster",
-    city: "Malmo",
-    address: "Lernacken 2",
-    lat: 55.605,
-    lng: 13.0038,
-    dwellingType: "Rum",
-    rooms: 1,
-    sizeM2: 24,
-    rent: 4100,
-    landlordType: "Privat hyresvard",
-    imageUrl: "/appartment.jpg",
-    tags: ["Moblerat"],
-  },
-  {
-    id: "umea-campus",
-    title: "1:a Umea Campus",
-    area: "Campus",
-    city: "Umea",
-    address: "Universitetsomradet 3",
-    lat: 63.8258,
-    lng: 20.263,
-    dwellingType: "Rum",
-    rooms: 1,
-    sizeM2: 21,
-    rent: 3200,
-    landlordType: "Kommunal",
-    imageUrl: "/appartment.jpg",
-    tags: ["Student", "Nara campus"],
-  },
-  {
-    id: "orebro-sodra",
-    title: "1,5:a Orebro Sodra",
-    area: "Sodra",
-    city: "Orebro",
-    address: "Sodra Grev Rosengatan 7",
-    lat: 59.2741,
-    lng: 15.2066,
-    dwellingType: "Lagenhet",
-    rooms: 1,
-    sizeM2: 30,
-    rent: 4300,
-    landlordType: "Kommunal",
-    imageUrl: "/appartment.jpg",
-    tags: ["Student", "Balkong"],
-  },
-  {
-    id: "linkoping-valla",
-    title: "2:a Linkoping Valla",
-    area: "Valla",
-    city: "Linkoping",
-    address: "Vallavagen 16",
-    lat: 58.4108,
-    lng: 15.6214,
-    dwellingType: "Lagenhet",
-    rooms: 2,
-    sizeM2: 50,
-    rent: 5500,
-    landlordType: "Privat hyresvard",
-    imageUrl: "/appartment.jpg",
-    tags: ["Student", "Moblerat"],
-  },
-  {
-    id: "sundsvall-norra",
-    title: "1:a Sundsvall Norra",
-    area: "Norra",
-    city: "Sundsvall",
-    address: "Skonsberg 8",
-    lat: 62.3908,
-    lng: 17.3069,
-    dwellingType: "Rum",
-    rooms: 1,
-    sizeM2: 23,
-    rent: 3500,
-    landlordType: "Kommunal",
-    imageUrl: "/appartment.jpg",
-    tags: ["Moblerat"],
-  },
-];
+function roundInteger(x: number, target: number) {
+  return Math.round(x / target) * target;
+}
 
-const parseSearchPriceRange = (
-  raw: string | string[] | null
-): { min: number; max: number } | null => {
-  if (typeof raw !== "string") return null;
-  const normalized = raw.replace(/\s/g, "");
+// Gets a list of price ranges based on the current pricing levels.
+function extractRelevantPriceRanges(listings: ListingCardDTO[]): string[] {
+  var min: number = MAX_POSSIBLE_RENT;
+  var max: number = 0;
 
-  if (!normalized) return null;
-  if (normalized.endsWith("+")) {
-    const min = parseInt(normalized.replace("+", ""), 10);
-    if (Number.isNaN(min)) return null;
-    return { min, max: Number.POSITIVE_INFINITY };
+  // Ensure there is always a default
+  if (listings.length == 0) {
+    return ["0 - 8000", "8000+"];
   }
 
+  // Only one listing, make that the only range (including the upper range).
+  if (listings.length == 1) {
+    return [ `0 - ${listings[0].rent}`, `${listings[0].rent}+` ];
+  }
+
+  // Get the minimum and maximum range
+  for (const listing of listings) {
+
+    if (listing.rent > MAX_POSSIBLE_RENT) {
+      throw "Listing rent exceeds highest possible rent";
+    }
+    if (listing.rent < 0) {
+      throw "Listing rent is not a positive integer";
+    }
+
+    if (listing.rent < min) {
+      min = listing.rent;
+    }
+    if (listing.rent > max) {
+      max = listing.rent;
+    }
+  }
+
+  // Round step size to the closest multiple of 500 that produces roughly TARGET_RANGE_COUNT number of ranges.
+  // Also ensure that the range step does not go any lower than MIN_PRICE_RANGE_STEP.
+  //
+  var stepSize = Math.max(
+      MIN_PRICE_RANGE_STEP,
+      roundInteger((max - min) / TARGET_RANGE_COUNT, 500.0));
+
+  // Get all price ranges in (min, max]
+  let results: string[] = [];
+  let prev = min;
+
+  // Add the low end range
+  results.push(`0 - ${min}`)
+  
+  // Add intermediate price ranges
+  for (let i = min + stepSize; i < max; i += stepSize) {
+    // Do not include if there are no listings in that range
+    if (!listings.some(listing => listing.rent >= prev && listing.rent <= i)) {
+      continue;
+    }
+    results.push(`${prev} - ${i}`);
+    prev = i;
+  }
+  // Add the max case
+  results.push(`${max}+`);
+  return results;
+}
+
+const parseSearchPriceRange = (raw: string): { min: number; max: number } | null => {
+  const normalized = raw.replace(/\s/g, "");
+  if (!normalized)
+    return null;
+  if (normalized.endsWith("+")) {
+    const min = parseInt(normalized.replace("+", ""), 10);
+    return Number.isNaN(min) ? null : { min, max: 200000 };
+  }
   const [minStr, maxStr] = normalized.split("-");
   const min = parseInt(minStr ?? "", 10);
   const max = parseInt(maxStr ?? "", 10);
-  if (Number.isNaN(min) || Number.isNaN(max)) return null;
-
-  return { min, max };
+  return Number.isNaN(min) || Number.isNaN(max) ? null : { min, max };
 };
 
-export default function Page() {
+export default function ListingsPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  
   const [view, setView] = useState<SwitchSelectValue>("lista");
-  const [searchValues, setSearchValues] = useState<
-    Record<string, string | string[] | null>
-  >({});
-  const [filters, setFilters] = useState<ListingsFilterState>(
-    defaultListingsFilterState
-  );
+  const [searchValues, setSearchValues] = useState<SearchValues>({
+    city: "",
+    hosts: "",
+    price: ""
+  } as SearchValues);
+  const [filters, setFilters] = useState<ListingsFilterState>(defaultListingsFilterState);
+  
+  const [listings, setListings] = useState<ListingCardDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const isMapView = view === "karta";
+  // Ladda favoriter om inloggad
+  useEffect(() => {
+    if (user) {
+      listingService.getFavorites()
+        .then(favs => {
+          setFavoriteIds(new Set(favs.map(f => f.id)));
+        })
+        .catch(console.error);
+    } else {
+      setFavoriteIds(new Set());
+    }
+  }, [user]);
 
-  const filteredListings = useMemo(() => {
-    const searchCity =
-      typeof searchValues.var === "string"
-        ? searchValues.var.trim().toLowerCase()
-        : "";
-    const searchLandlord =
-      typeof searchValues.hyresvard === "string"
-        ? searchValues.hyresvard.trim().toLowerCase()
-        : "";
-    const searchPriceRange = parseSearchPriceRange(searchValues.pris);
+  const handleFavoriteToggle = useCallback((id: string, isFav: boolean) => {
+    if (!user) {
+      // Hantera oinloggad användare bäst det går (t.ex. modal), failar tyst för nu
+      alert("Du måste vara inloggad för att spara bostäder");
+      return;
+    }
+    
+    // Optimistic UI-uppdatering
+    setFavoriteIds(prev => {
+      const next = new Set(prev);
+      if (isFav) next.add(id);
+      else next.delete(id);
+      return next;
+    });
 
-    return listings.filter((listing) => {
-      const matchesCity =
-        !searchCity ||
-        listing.city.toLowerCase().includes(searchCity) ||
-        listing.area.toLowerCase().includes(searchCity);
+    const action = isFav ? listingService.addFavorite(id) : listingService.removeFavorite(id);
+    action.catch(err => {
+      console.error("Failed to toggle favorite:", err);
+      // Återställ om det misslyckas
+      setFavoriteIds(prev => {
+        const next = new Set(prev);
+        if (isFav) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    });
+  }, [user]);
 
-      const matchesLandlord =
-        !searchLandlord ||
-        listing.landlordType.toLowerCase().includes(searchLandlord);
+  // Samla ihop alla filter till ett format som backend förstår
+  const currentFilters = useMemo(() => {
+    const searchPrice = parseSearchPriceRange(searchValues.price);
+    return {
+      city: toSearchString(searchValues.city),
+      hostType: toSearchString(searchValues.hosts),
+      dwellingType: filters.propertyType,
+      minRent: filters.priceRange.min > 0 ? filters.priceRange.min : (searchPrice?.min ?? null),
+      maxRent: filters.priceRange.max < priceBounds.max ? filters.priceRange.max : (searchPrice?.max ?? null),
+    };
+  }, [searchValues, filters]);
 
-      const matchesSearchPrice =
-        !searchPriceRange ||
-        (listing.rent >= searchPriceRange.min &&
-          (searchPriceRange.max === Number.POSITIVE_INFINITY ||
-            listing.rent <= searchPriceRange.max));
+  const loadListings = useCallback(
+    async (pageToLoad: number, replace = false) => {
+      setError(null);
 
-      const matchesPropertyType =
-        !filters.propertyType ||
-        listing.dwellingType.toLowerCase() ===
-          filters.propertyType.toLowerCase();
+      if (replace) {
+        setLoading(true);
+        // VIKTIGT: Töm listan direkt så att de gamla annonserna försvinner omedelbart
+        setListings([]); 
+      } else {
+        setLoadingMore(true);
+      }
 
-      const matchesAmenities =
-        filters.amenities.length === 0 ||
-        filters.amenities.every((amenity) =>
-          (listing.tags ?? [])
-            .map((tag) => tag.toLowerCase())
-            .includes(amenity.toLowerCase())
+      try {
+        console.log(`Filtering listings on ${JSON.stringify(currentFilters)}`)
+        const res = await listingService.getAll(
+          pageToLoad, 
+          PAGE_SIZE, 
+          currentFilters.city,
+          currentFilters.dwellingType,
+          currentFilters.minRent,
+          currentFilters.maxRent,
+          currentFilters.hostType
         );
 
-      const matchesPriceRange =
-        listing.rent >= filters.priceRange.min &&
-        listing.rent <= filters.priceRange.max;
+        // Spring Boot returnerar data i res.content
+        const newItems = res.content || [];
+ 
+        setTotalPages((res as any).totalPages ?? (res as any).page?.totalPages ?? 0);
+        setPage((res as any).number ?? (res as any).page?.number ?? 0);
 
-      return (
-        matchesCity &&
-        matchesLandlord &&
-        matchesSearchPrice &&
-        matchesPropertyType &&
-        matchesAmenities &&
-        matchesPriceRange
-      );
-    });
-  }, [filters, searchValues]);
-
-  const totalListings = filteredListings.length;
-
-  const listingGridClasses = isMapView
-    ? "grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 justify-items-center"
-    : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center";
-
-  const renderListingCard = (
-    listing: ListingItem,
-    variant: "default" | "compact" = "default"
-  ) => (
-    <div key={listing.id} className="flex w-full justify-center">
-      <ListingCardSmall
-        {...listing}
-        onClick={() => router.push(`/bostader/${listing.id}`)}
-        variant={variant}
-      />
-    </div>
+        // Om replace är true, använd endast de nya objekten
+        setListings((prev) => (replace ? newItems : [...prev, ...newItems]));
+      } catch (err: any) {
+        console.error("Error loading listings:", err);
+        setError("Kunde inte ladda bostäder.");
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [currentFilters] // Dependency array ser till att funktionen har rätt filtervärden
   );
 
-  const renderMapListings = () => {
-    return filteredListings.map((listing) =>
-      renderListingCard(listing, "compact")
+  // Åtgärd: Nollställ allt när filtren ändras
+  useEffect(() => {
+    // När filtren ändras:
+    // 1. Återställ sidnumret till 0 internt
+    // 2. Trigga en omladdning som ersätter (replace) all data
+    setPage(0);
+    loadListings(0, true);
+  }, [currentFilters, loadListings]);
+
+  useEffect(() => {
+    const hasMore = page + 1 < totalPages;
+    if (!hasMore || loading || loadingMore)
+      return;
+
+    const target = loadMoreRef.current;
+    if (!target)
+      return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !loadingMore) {
+          loadListings(page + 1, false);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [page, totalPages, loading, loadingMore, loadListings]);
+
+
+  const totalListingsCount = listings.length;
+  const isMapView = view === "karta";
+
+  // Responsive grid classes with better breakpoint handling
+  const listingGridClasses = isMapView
+    ? "grid grid-cols-1 gap-3 justify-items-center"
+    : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-3 md:gap-6 justify-items-center";
+
+  const renderListingCard = (listing: ListingCardDTO, variant: "default" | "compact" = "default") => {
+    return (
+      <div key={listing.id} className="flex w-full justify-center">
+        <ListingCardSmall
+          id={listing.id}
+          title={listing.title}
+          // Åtgärd: Skicka med obligatoriska props
+          area={listing.location?.split(",")[0] || "Ej angivet"} 
+          city={listing.location?.split(",")[1]?.trim() || listing.location || "Ej angivet"} 
+          dwellingType={listing.dwellingType || "Bostad"}
+          rooms={listing.rooms || 0}
+          sizeM2={listing.sizeM2 || 0}
+          rent={listing.rent || 0}
+          landlordType={listing.hostType}
+          hostName={listing.hostName}
+          hostLogoUrl={listing.hostLogoUrl}
+          isVerified={listing.verifiedHost}
+          isFavorite={favoriteIds.has(listing.id)}
+          onFavoriteToggle={handleFavoriteToggle}
+          imageUrl={listing.imageUrl}
+          tags={listing.tags}
+          onClick={() => router.push(`/bostader/${listing.id}`)}
+          variant={variant}
+        />
+      </div>
     );
   };
 
   return (
-    <main className="flex flex-col gap-8 px-4 pb-12 pt-4">
-      {/* Sektion 1: filter */}
-      <section className="flex justify-center">
-        <div className="flex w-full max-w-[1200px] flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="min-w-[280px] flex-1">
-              <SearchFilter3Fields
-                className="w-full"
-                field1={{
-                  id: "var",
-                  label: "Var",
-                  placeholder: "Sok studentstad",
-                  searchable: true,
-                  options: [
-                    { label: "Goteborg", value: "goteborg" },
-                    { label: "Stockholm", value: "stockholm" },
-                    { label: "Uppsala", value: "uppsala" },
-                    { label: "Lund", value: "lund" },
-                    { label: "Malmo", value: "malmo" },
-                  ],
-                }}
-                field2={{
-                  id: "hyresvard",
-                  label: "Hyresvard",
-                  placeholder: "Valj hyresvard",
-                  searchable: true,
-                  options: [
-                    { label: "Privat hyresvard", value: "privat" },
-                    { label: "Kommunal", value: "kommunal" },
-                    { label: "Stiftelse", value: "stiftelse" },
-                    { label: "AF Bostader", value: "af-bostader" },
-                  ],
-                }}
-                field3={{
-                  id: "pris",
-                  label: "Pris",
-                  placeholder: "Valj prisintervall",
-                  options: [
-                    { label: "0 - 4000", value: "0-4000" },
-                    { label: "4000 - 8000", value: "4000-8000" },
-                    { label: "8000+", value: "8000+" },
-                  ],
-                }}
-                onSubmit={(values) => setSearchValues(values)}
-              />
-            </div>
-            <ListingsFilterButton
-              amenities={amenityOptions}
-              propertyTypes={propertyTypeOptions}
-              priceHistogram={[
-                1, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5,
-                8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3,
-                21, 3, 5, 8, 5, 3, 2,
-              ]}
-              priceBounds={priceBounds}
-              initialState={defaultListingsFilterState}
-              onApply={(state) => setFilters(state)}
-              onClear={() => setFilters(defaultListingsFilterState)}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Sektion 2: rubrik + vyval for bostaderna */}
-      <section className="w-full">
-        <div className="flex w-full flex-wrap items-center justify-between gap-4">
-          <h2 id="bostader-heading" className="text-base font-semibold text-black">
-            Over {totalListings.toLocaleString("sv-SE")} boenden
-          </h2>
-          <SwitchSelect value={view} onChange={setView} />
-        </div>
-      </section>
-
-      {/* Sektion 3: annonser (annonsytor hanteras i layouten) */}
-      <section className="w-full">
-        <FieldSet className="w-full" aria-labelledby="bostader-heading">
-          {isMapView ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] items-start gap-6">
-                <div className={listingGridClasses}>{renderMapListings()}</div>
-                <div
-                  className="rounded-2xl overflow-hidden lg:sticky lg:top-24"
-                  style={{ minHeight: 600, height: "min(72vh, 760px)" }}
-                >
-                <ListingsMap
-                  listings={filteredListings}
-                  onOpenListing={(id) => router.push(`/bostader/${id}`)}
+    <main className="flex flex-col gap-6 sm:gap-8 pb-12 pt-4 w-full h-auto">
+      {/* Responsive container with proper padding */}
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 h-auto">
+        
+        {/* Search and Filter Section */}
+        <section className="w-full">
+          <div className="flex w-full flex-col gap-3 sm:gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-start xl:items-center gap-3 sm:gap-4">
+              {/* Search Filter - Integrated with filter button */}
+              <div className="w-full lg:flex-1">
+                <SearchFilter3Fields
+                  className="w-full"
+                  field1={{
+                    id: "location",
+                    label: "Var",
+                    placeholder: "Sök studentstad",
+                    searchable: true,
+                    options: [
+                      { label: "Göteborg", value: "Göteborg" },
+                      { label: "Stockholm", value: "Stockholm" },
+                      { label: "Uppsala", value: "Uppsala" },
+                      { label: "Lund", value: "Lund" },
+                      { label: "Malmö", value: "Malmö" },
+                    ],
+                  }}
+                  field2={{
+                    id: "hosts",
+                    label: "Hyresvärd",
+                    placeholder: "Välj hyresvärd",
+                    searchable: false,
+                    options: [
+                      { label: "Alla", value: "Alla" },
+                      { label: "Privat hyresvärd", value: "Privat hyresvärd" },
+                      { label: "Företag", value: "Företag" },
+                    ],
+                  }}
+                  field3={{
+                    id: "price",
+                    label: "Pris",
+                    placeholder: "Välj prisintervall",
+                    options: extractRelevantPriceRanges(listings)
+                            .map(priceRange =>
+                              ({ label: priceRange, value: priceRange } as Option))
+                  }}
+                  onSubmit={(values) => setSearchValues({
+                    city: toSearchString(values.city),
+                    hosts: ({
+                      ["Alla"]: "",
+                      ["Privat hyresvärd"]: "privat",
+                      ["Företag"]: "företag"
+                    })[values.hosts],
+                    price: toSearchString(values.price)
+                  } as SearchValues)}
+                  // Pass filter props to integrated component
+                  amenities={amenityOptions}
+                  propertyTypes={propertyTypeOptions}
+                  priceHistogram={[1, 3, 5, 8, 5, 3, 21, 3, 5, 8, 5, 3, 2]}
+                  priceBounds={priceBounds}
+                  initialState={defaultListingsFilterState}
+                  onApply={(state) => setFilters(state)}
+                  onClear={() => setFilters(defaultListingsFilterState)}
                 />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Results Header and View Toggle */}
+        <section className="w-full mt-6 sm:mt-8">
+          <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <h2 id="bostader-heading" className="text-base sm:text-lg font-semibold text-black">
+               {loading && listings.length === 0 
+                  ? "Laddar bostäder..." 
+                  : `Visar ${totalListingsCount} ${totalListingsCount === 1 ? 'bostad' : 'bostäder'}`
+               }
+            </h2>
+            <div className="w-full sm:w-auto">
+              <SwitchSelect value={view} onChange={setView} />
+            </div>
+          </div>
+        </section>
+
+        {/* Main Content Area */}
+        <section className="w-full min-h-[400px] mt-4 sm:mt-6">
+          <FieldSet className="w-full" aria-labelledby="bostader-heading">
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 sm:px-4 py-3 text-xs sm:text-sm text-red-800">
+                {error}
+              </div>
+            )}
+
+            {isMapView ? (
+              /* Map View Layout - Responsive stacking */
+              <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 2xl:grid-cols-3 lg:items-start gap-4 sm:gap-6">
+                {/* Lista - On mobile below map, scrollable on desktop */}
+                <div className={`${listingGridClasses} w-full 2xl:col-span-1`}>
+                   {(listings.length === 0 && !loading) ? (
+                     <div className="col-span-full py-12 sm:py-20 text-center text-sm sm:text-base text-gray-500">
+                        Inga bostäder matchade din sökning.
+                     </div>) :
+                     listings.map((listing) => renderListingCard(listing))
+                   }
+                   <div ref={loadMoreRef} className="h-4 w-full col-span-full" />
+                </div>
+                
+                {/* Map - On mobile at top, sticky on desktop */}
+                <div className="w-full h-[280px] sm:h-[350px] lg:h-[calc(100vh-120px)] rounded-xl lg:rounded-2xl overflow-hidden lg:sticky lg:top-24 z-10 shrink-0 2xl:col-span-2">
+                  <ListingsMap
+                    listings={listings} 
+                    getIsFavorite={(id) => favoriteIds.has(id)}
+                    onFavoriteToggle={handleFavoriteToggle}
+                    onOpenListing={(id) => router.push(`/bostader/${id}`)}
+                  />
                 </div>
               </div>
             ) : (
-              <div className={listingGridClasses}>
-                {filteredListings.map((listing) => renderListingCard(listing))}
-            </div>
-          )}
-        </FieldSet>
-      </section>
+              /* List View Layout */
+              <>
+                {listings.length === 0 && !loading && (
+                   <div className="py-12 sm:py-20 text-center text-sm sm:text-base text-gray-500">
+                      Inga bostäder matchade din sökning.
+                   </div>
+                )}
+
+                <div className={listingGridClasses}>
+                  {listings.map((listing) => renderListingCard(listing))}
+                </div>
+
+                {/* Load More Indicator */}
+                <div ref={loadMoreRef} className="flex w-full items-center justify-center py-6 sm:py-8 min-h-[60px]">
+                  {(loadingMore || loading) && (
+                     <span className="text-xs sm:text-sm text-gray-500 animate-pulse">
+                       Hämtar fler bostäder...
+                     </span>
+                  )}
+                </div>
+              </>
+            )}
+          </FieldSet>
+        </section>
+      </div>
     </main>
   );
 }

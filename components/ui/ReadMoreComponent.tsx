@@ -7,7 +7,7 @@ import React, {
   useEffect,
 } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 
 type Variant = "small" | "large";
 
@@ -150,7 +150,7 @@ export default function ReadMoreComponent({
         }}
         style={{ overflow: "hidden" }}
       >
-        <div className="relative max-w-prose mx-auto">
+        <div className="relative">
           <div
             ref={measureRef}
             className={`text-base leading-relaxed ${textClassName}`}
@@ -172,29 +172,14 @@ export default function ReadMoreComponent({
             mt-3 flex w-full items-center justify-center
           `}
         >
-          <div className="max-w-prose mx-auto flex justify-center">
+          <div className="flex justify-center">
             <Button
               onClick={handleToggle}
-              className={`
-                flex 
-                items-center 
-                justify-center 
-                w-full h-[31px]
-                rounded-full
-                bg-[#004323] text-white
-                text-[14px] leading-[16px]
-                normal-case
-                shadow-[0_3px_4px_rgba(0,0,0,0.25)]
-              `}
+              variant="text"
+              size="sm"
             >
               <span>{expanded ? lessLabel : moreLabel}</span>
-              <motion.span
-                className="inline-block"
-                animate={{ rotate: expanded ? 180 : 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                ▼
-              </motion.span>
+              
             </Button>
           </div>
         </div>

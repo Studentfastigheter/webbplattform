@@ -50,12 +50,17 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
     {
       id: "open",
       label: "Endast öppna",
-      description: "Visar köer där platser finns nu",
+      description: "Visar köer som går att söka just nu",
     },
     {
-      id: "queue",
-      label: "Visa köer",
-      description: "Inkludera köer med väntetid",
+      id: "paused",
+      label: "Pausade",
+      description: "Visar köer som är tillfälligt pausade",
+    },
+    {
+      id: "closed",
+      label: "Stängda",
+      description: "Visar köer som är stängda",
     },
     {
       id: "all",

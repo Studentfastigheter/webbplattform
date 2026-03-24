@@ -11,6 +11,8 @@
   --brand: #004225;
   --brand-600: #0a7a4a;
   --brand-50: #e8f1ed;
+  --brand-soft: color-mix(in oklab, var(--brand) 7%, white);
+  --brand-soft-strong: color-mix(in oklab, var(--brand) 11%, white);
   --border: oklch(0.922 0 0);
   --muted: oklch(0.97 0 0);
   --muted-bg: #ffffff;
@@ -122,9 +124,9 @@ img, svg, video, canvas {
 ────────────────────────────────────────────── */
 .container-page {
   width: 100%;
-  max-width: 72rem;
-  margin-inline: auto;
-  padding-inline: 1rem;
+  max-width: 100%;
+  margin-inline: 0;
+  padding-inline: 0;
 }
 
 .section { padding-block: 3.5rem; }
@@ -225,16 +227,19 @@ img, svg, video, canvas {
 }
 
 .map-popup .leaflet-popup-content-wrapper {
-  padding: 0;
-  border-radius: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: none !important;
 }
 
-/* Ta bort default-marginal s? kortet kan g? kant-till-kant */
 .map-popup .leaflet-popup-content {
-  margin: 0;
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.leaflet-popup-content p {
+  margin: 0 !important;
 }
 
 .map-popup .leaflet-popup-tip-container,

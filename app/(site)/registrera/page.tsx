@@ -4,9 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { useAuth } from "@/context/AuthContext";
 import { AuthCard } from "@/components/ui/AuthCard";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
@@ -15,44 +14,24 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-
-type AccountType = "student" | "landlord" | "company";
+import { useAuth } from "@/context/AuthContext";
 
 type RegisterForm = {
-  type: AccountType;
   ssn: string;
   email: string;
   password: string;
 };
 
-const accountTypeOptions: {
-  value: AccountType;
-  title: string;
-}[] = [
-  {
-    value: "student",
-    title: "Student",
-  },
-  {
-    value: "landlord",
-    title: "Uthyrare",
-  },
-  {
-    value: "company",
-    title: "Företag",
-  },
-];
-
 export default function RegisterPage() {
   const [form, setForm] = useState<RegisterForm>({
-    type: "student",
     ssn: "",
     email: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+
+  const { register } = useAuth();
   const router = useRouter();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -63,35 +42,25 @@ export default function RegisterPage() {
       setError("Fyll i alla fält.");
       return;
     }
+
     if (form.password.length < 6) {
       setError("Lösenord måste vara minst 6 tecken.");
       return;
     }
 
     setLoading(true);
+
     try {
-      const res = await fetch("/api/users/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+      await register({
+        accountType: "student",
+        ssn: form.ssn.trim(),
+        email: form.email.trim(),
+        password: form.password,
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const msg =
-          (data as any)?.reason ||
-          (data as any)?.error ||
-          (data as any)?.message ||
-          (res.status === 409
-            ? "E-post eller personnummer används redan."
-            : "Kunde inte registrera användaren.");
-        throw new Error(msg);
-      }
-
-      await login(form.email, form.password);
       router.push("/");
     } catch (err: any) {
-      setError(err?.message ?? "Något gick fel.");
+      setError(err?.message ?? "Kunde inte skapa konto. Kontrollera uppgifterna.");
     } finally {
       setLoading(false);
     }
@@ -111,35 +80,6 @@ export default function RegisterPage() {
         >
           <form className="space-y-6" onSubmit={onSubmit}>
             <FieldGroup>
-              <Field>
-                <FieldLabel>Kontotyp</FieldLabel>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {accountTypeOptions.map((option) => {
-                    const isSelected = form.type === option.value;
-                    const baseClasses =
-                      "rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600";
-                    const stateClasses = isSelected
-                      ? "border-[#004225] bg-green-50 shadow-sm"
-                      : "border-neutral-200 hover:border-[#004225]/60";
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() =>
-                          setForm((prev) => ({ ...prev, type: option.value }))
-                        }
-                        className={`${baseClasses} ${stateClasses}`}
-                        aria-pressed={isSelected}
-                      >
-                        <span className="block text-sm font-semibold text-neutral-800">
-                          {option.title}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
-
               <Field>
                 <FieldLabel htmlFor="ssn">Personnummer</FieldLabel>
                 <Input
@@ -186,7 +126,7 @@ export default function RegisterPage() {
               </Field>
 
               <Field>
-                <Button type="submit" color="success" variant="solid" radius="full" className="mt-1 w-full justify-center text-white bg-[#004225] hover:bg-[#004225]/90" disabled={loading}>
+                <Button type="submit" fullWidth className="mt-1" disabled={loading}>
                   {loading ? "Skapar..." : "Registrera"}
                 </Button>
               </Field>

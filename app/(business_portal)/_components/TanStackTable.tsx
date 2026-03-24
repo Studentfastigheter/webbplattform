@@ -1,6 +1,6 @@
 "use client";
 
-import { createAds, Ad } from "@/lib/data";
+import { createAds, type TableAd } from "@/lib/data";
 import {
   Column,
   createColumnHelper,
@@ -36,7 +36,7 @@ const rowDensityValues = {
   "spaced": 64,
 }
 
-const columnHelper = createColumnHelper<Ad>();
+const columnHelper = createColumnHelper<TableAd>();
 
 const columns = [
   columnHelper.display({
@@ -150,7 +150,7 @@ export function DataTable() {
     });
   }, [rowDensity]);
 
-  const table = useReactTable<Ad>({
+  const table = useReactTable<TableAd>({
     data: rowData,
     columns,
     columnResizeMode: "onChange",

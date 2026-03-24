@@ -2,10 +2,10 @@ import React from "react";
 import clsx from "clsx";
 import type { ListFrameRow } from "../layout/ListFrame";
 import Tag from "../ui/Tag";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui/button";
 import StatusTag, { type Status } from "../ui/statusTag";
 
-type QueueRowProps = {
+export type QueueRowProps = {
   id: string | number;
   name: string;
   logoUrl: string;
