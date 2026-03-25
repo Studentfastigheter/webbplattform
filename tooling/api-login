@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+EMAIL=contact@campuslyan.se
+PASSWORD=demo123
+
+if [[ $1 ]]; then
+  EMAIL=$1
+  shift
+fi
+
+if [[ $1 ]]; then
+  PASSWORD=$1
+  shift
+fi
+
+api-request /auth/login "{
+  \"email\": \"$EMAIL\",
+  \"password\": \"$PASSWORD\"
+}" "$@"

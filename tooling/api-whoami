@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+RESPONSE=$(api-request /auth/me --raw)
+echo "$(jq --raw-output .accountType <<<"$RESPONSE") $(jq --raw-output .displayName <<<"$RESPONSE") ($(jq --raw-output .email <<<"$RESPONSE"))"

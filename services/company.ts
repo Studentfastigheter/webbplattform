@@ -1,4 +1,5 @@
 import { makeCompanyRequest } from "@/lib/api-company";
+import { authService } from "@/services/auth-service";
 
 export type GraphEntry = {
 	category: string,
@@ -8,6 +9,11 @@ export type GraphEntry = {
 export type TimelineEntry = {
 	timestamp: Date,
 	value: number,
+};
+
+export type CompanyInfo = {
+  userId: string,
+  name: string,
 };
 
 function getCompanyId(): string {
@@ -26,6 +32,14 @@ function parseTimelineEntries(json: object[]): TimelineEntry[] {
 }
 
 export const companyService = {
+
+  myCompany: async (): Promise<CompanyInfo> => {
+    const result = await authService.me();
+    if (result.accountType === "student") {
+      throw new Error("Denna funktion är inte tillgänglig för studenter. Försök att logga in som uthyrare istället.");
+    }
+    return { userId: result.id, name: result.companyName };
+  },
 	residentsBySchool: async (): Promise<GraphEntry[]> => {
 		return parseGraphEntries(await makeCompanyRequest<object[]>("/residents/by_school", getCompanyId(), {}));
 	},

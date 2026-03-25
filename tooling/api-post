@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+ENDPOINT=$1
+shift
+
+POST_ARGS=()
+while [[ $@ ]]; do
+  ARG=$1
+  shift
+  if [ "$ARG" == "--" ]; then
+    break
+  fi
+  POST_ARGS+=("$ARG")
+done
+
+POST_BODY=$({
+  echo "{"
+  for i in "${!POST_ARGS[@]}"; do
+    ARG=${POST_ARGS[$i]}
+    key=${ARG%%=*}
+    value=${ARG#*=}
+    comma=","
+    if (($i == ${#POST_ARGS[@]} - 1)); then
+      comma=
+    fi
+    echo "  \"$key\": \"$value\"${comma}"
+  done
+  echo "}"
+})
+api-request "$ENDPOINT" "${POST_BODY}" "$@"

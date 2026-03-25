@@ -16,6 +16,7 @@ Usage:
   request <endpoint> [request-body]
     [-D<header>=<value>]...
     [-v|--verbose]
+    [--raw]
     [-o|--output <response-body-file>]
     [--]
 EOF
@@ -40,7 +41,7 @@ if [[ -f "$SCRIPT_DIR/.jwt" ]]; then
   JWT=$(cat "$SCRIPT_DIR/.jwt")
 fi
 
-PARSED_ARGUMENTS=$(getopt -o :D:vo: --long verbose,output -- "$@")
+PARSED_ARGUMENTS=$(getopt -o :D:vo: --long verbose,output,raw -- "$@")
 
 usage() {
   echo "$USAGE"
@@ -50,6 +51,7 @@ usage() {
 HEADERS=("-H" "Content-Type: application/json")
 
 VERBOSE=0
+RAW=0
 
 OUTPUT_FILE=
 
@@ -73,6 +75,10 @@ while :; do
     shift
     shift
     ;;
+  --raw)
+    RAW=1
+    shift
+    ;;
   --)
     shift
     break
@@ -90,9 +96,7 @@ shift
 DATA=$1
 shift
 
-if [[ -z ${JWT+x} ]]; then
-  true
-else
+if [[ ${JWT} ]]; then
   if (($VERBOSE)); then
     echo "Using JWT from $SCRIPT_DIR/.jwt"
   fi
@@ -119,13 +123,20 @@ body="$(curl "$HOST$ENDPOINT" -s -w "\n%{http_code}" "${HEADERS[@]}" | {
   read body
   read code
 
-  echo "HTTP response code: $code" >&2
+  if ((!$RAW)); then
+    echo "HTTP response code: $code" >&2
+  fi
   echo $body
 })"
 
 if (($?)); then
   echo "Call to curl failed."
   exit 1
+fi
+
+if (($RAW)); then
+  jq . <<<"$body"
+  exit 0
 fi
 
 if [[ -z "$body" ]]; then
