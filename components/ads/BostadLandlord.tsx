@@ -1,7 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import Tag from "@/components/ui/Tag";
 import type { AdvertiserSummary } from "@/types";
-import { Star, Building2, User } from "lucide-react";
+import { Star, Building2, User, ArrowRight } from "lucide-react";
 
 type Props = {
   advertiser: AdvertiserSummary & {
@@ -9,12 +10,13 @@ type Props = {
     reviewCount?: number;
     requirements?: string[];
     totalApartments?: number;
+    companyPageUrl?: string;
   };
 };
 
 export default function BostadLandlord({ advertiser }: Props) {
   const isCompany = advertiser.type === "company";
-  
+
   return (
     <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
       <div className="flex flex-col gap-4 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -68,7 +70,7 @@ export default function BostadLandlord({ advertiser }: Props) {
       </div>
 
       <div className="mt-6 flex flex-col lg:flex-row gap-6 lg:gap-12 text-sm text-gray-800">
-        
+
         {/* Left: Description & Total Apartments */}
         <div className="flex-1 flex flex-col gap-4">
           <div className="flex flex-col mb-2">
@@ -77,7 +79,7 @@ export default function BostadLandlord({ advertiser }: Props) {
               {advertiser.description || "Vi erbjuder moderna och trygga studentbostäder nära campus. Vårt mål är att göra studentlivet enklare för dig."}
             </p>
           </div>
-          
+
           <div className="flex items-center gap-2 bg-green-50/50 p-3 py-2.5 rounded-xl border border-green-100/50 w-fit">
             <Building2 className="w-5 h-5 text-green-700" />
             <span className="font-medium text-green-900">
@@ -89,7 +91,7 @@ export default function BostadLandlord({ advertiser }: Props) {
         {/* Right: Requirements & Highlights */}
         <div className="flex-1 bg-gray-50/70 p-5 rounded-2xl border border-gray-100">
           <h3 className="font-semibold text-gray-900 text-base mb-4">Krav på hyresgäst</h3>
-          
+
           <ul className="grid gap-3 list-none p-0 m-0">
             {(advertiser.requirements || ["Kräver aktivt medlemskap i studentkår", "Inga betalningsanmärkningar", "Maxinkomst enligt CSN-gräns", "Svenskt personnummer eller samordningsnummer"]).map((req, idx) => (
               <li key={idx} className="flex items-start gap-2.5">
@@ -100,6 +102,18 @@ export default function BostadLandlord({ advertiser }: Props) {
           </ul>
         </div>
       </div>
+
+      {advertiser.companyPageUrl && (
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <Link
+            href={advertiser.companyPageUrl}
+            className="inline-flex items-center gap-2 rounded-xl bg-green-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-800"
+          >
+            Läs mer om {advertiser.displayName}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
     </section>
   );
 }

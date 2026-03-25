@@ -11,6 +11,7 @@ import BostadAbout from "@/components/ads/BostadAbout";
 import BostadLandlord from "@/components/ads/BostadLandlord";
 
 import { listingService } from "@/services/listing-service";
+import { queueService } from "@/services/queue-service";
 import { ListingDetailDTO, ListingCardDTO } from "@/types/listing";
 import { AdvertiserSummary } from "@/types";
 
@@ -361,6 +362,7 @@ export default function ListingDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
@@ -437,6 +439,24 @@ export default function ListingDetailPage() {
     return () => { active = false; };
   }, [listingId]);
 
+  // Hämta företagets logga om det är en företagsannons
+  useEffect(() => {
+    if (!listing) return;
+    if (listing.ownerType.toLowerCase() !== "company") return;
+    if (!listing.ownerId) return;
+
+    let active = true;
+    queueService.getCompany(listing.ownerId)
+      .then((company) => {
+        if (active && company.logoUrl) {
+          setCompanyLogoUrl(company.logoUrl);
+        }
+      })
+      .catch(() => { /* ignorera */ });
+
+    return () => { active = false; };
+  }, [listing]);
+
   const handleApply = useCallback(() => {
     if (!listingId || !listing) return;
     if (!user) {
@@ -461,13 +481,14 @@ export default function ListingDetailPage() {
 
   const galleryImages = useMemo(() => listing?.imageUrls || [], [listing]);
 
-  const advertiser: AdvertiserSummary | null = useMemo(() => {
+  const advertiser: (AdvertiserSummary & { companyPageUrl?: string }) | null = useMemo(() => {
     if (!listing) return null;
+    const isCompany = listing.ownerType.toLowerCase() === "company";
     return {
       id: listing.ownerId,
-      type: listing.ownerType.toLowerCase() === "company" ? "company" : "private_landlord",
+      type: isCompany ? "company" : "private_landlord",
       displayName: listing.ownerName,
-      logoUrl: listing.ownerLogoUrl || null,
+      logoUrl: companyLogoUrl || listing.ownerLogoUrl || null,
       bannerUrl: null,
       city: null,
       rating: null,
@@ -477,9 +498,10 @@ export default function ListingDetailPage() {
       contactEmail: null,
       contactPhone: null,
       contactNote: listing.provider ? `Förmedlas via ${listing.provider}` : null,
-      subtitle: listing.ownerType.toLowerCase() === "company" ? "Företag" : "Privat hyresvärd",
+      subtitle: isCompany ? "Företag" : "Privat hyresvärd",
+      companyPageUrl: isCompany ? `/alla-koer/${listing.ownerId}` : undefined,
     };
-  }, [listing]);
+  }, [listing, companyLogoUrl]);
 
   const mapListings = useMemo<ListingCardDTO[]>(() => {
     if (!listing) return [];
