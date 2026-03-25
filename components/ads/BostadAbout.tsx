@@ -4,7 +4,7 @@ import HousingInfoBox from "@/components/ui/housingInfoBox";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import Tag from "@/components/ui/Tag";
 import { ListingDetailDTO } from "@/types/listing";
-import { Heart, Home, MapPin, Share2 } from "lucide-react";
+import { Check, Heart, Home, MapPin, Share2 } from "lucide-react";
 import React, { useState } from "react";
 import EditWrapper from "@/app/(business_portal)/_components/EditWrapper";
 import BostadForm from "./BostadForm";
@@ -28,12 +28,14 @@ function BostadAboutContent({
   isFavorite,
   onApplyClick,
   applyDisabled,
+  hasApplied,
   dwellingLabel,
 }: {
   listing: ListingDetailDTO;
   isFavorite?: boolean;
   onApplyClick?: () => void;
   applyDisabled?: boolean;
+  hasApplied?: boolean;
   dwellingLabel: string;
 }) {
   const { user } = useAuth();
@@ -154,20 +156,33 @@ function BostadAboutContent({
           </div>
 
           {/* Apply button */}
-          <Button
-            onClick={onApplyClick}
-            disabled={applyDisabled}
-            className={cn(
+          {hasApplied ? (
+            <div className={cn(
               "h-11 px-8 flex items-center justify-center gap-2",
               "rounded-full",
-              "bg-[#004225] text-white",
+              "bg-green-100 text-green-800",
               "text-[14px] font-medium",
-              "shadow-sm hover:shadow-md transition-all",
-              "hover:bg-[#00331b] active:scale-[0.98]"
-            )}
-          >
-            Visa intresse
-          </Button>
+              "border border-green-200"
+            )}>
+              <Check className="h-4 w-4" />
+              Du har ansökt
+            </div>
+          ) : (
+            <Button
+              onClick={onApplyClick}
+              disabled={applyDisabled}
+              className={cn(
+                "h-11 px-8 flex items-center justify-center gap-2",
+                "rounded-full",
+                "bg-[#004225] text-white",
+                "text-[14px] font-medium",
+                "shadow-sm hover:shadow-md transition-all",
+                "hover:bg-[#00331b] active:scale-[0.98]"
+              )}
+            >
+              Skicka ansökan
+            </Button>
+          )}
         </div>
       </div>
 
@@ -210,6 +225,7 @@ type Props = {
   listing: ListingDetailDTO;
   onApplyClick?: () => void;
   applyDisabled?: boolean;
+  hasApplied?: boolean;
   isEditable?: boolean;
   isFavorite?: boolean;
 };
@@ -218,6 +234,7 @@ export default function BostadAbout({
   listing,
   onApplyClick,
   applyDisabled,
+  hasApplied,
   isEditable = false,
   isFavorite,
 }: Props) {
@@ -320,6 +337,7 @@ export default function BostadAbout({
           isFavorite={isFavorite}
           onApplyClick={onApplyClick}
           applyDisabled={applyDisabled}
+          hasApplied={hasApplied}
           dwellingLabel={dwellingLabel}
         />
       )}

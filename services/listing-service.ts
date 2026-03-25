@@ -115,8 +115,13 @@ export const listingService = {
 
   // 3. HÄMTA MINA ANSÖKNINGAR
   // Anropar: GET /api/applications/my
-  getMyApplications: async (): Promise<StudentApplicationDTO[]> => {
-    return await apiClient<StudentApplicationDTO[]>("/applications/my");
+  getMyApplications: async (page = 0, size = 50): Promise<StudentApplicationDTO[]> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<any>(`/applications/my${query}`);
+    // Hantera både paginerat svar (PageResponse) och ren array
+    if (res?.content && Array.isArray(res.content)) return res.content;
+    if (Array.isArray(res)) return res;
+    return [];
   },
 
 // --- FAVORITER ---
@@ -164,6 +169,7 @@ export const listingService = {
   // --- ÖVRIGA METODER ---
 
   // Ansök till en privat annons
+  // Anropar: POST /api/applications/private/{id}
   apply: async (listingId: string, message: string): Promise<void> => {
     await apiClient(`/applications/private/${listingId}`, {
       method: "POST",
@@ -171,11 +177,20 @@ export const listingService = {
     });
   },
 
-  // Intresseanmälningar (för företag)
-  registerInterest: async (listingId: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/interest`, {
+  // Dra tillbaka en ansökan
+  // Anropar: DELETE /api/applications/{id}
+  withdrawApplication: async (applicationId: number): Promise<void> => {
+    await apiClient(`/applications/${applicationId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // Ansök till en företagsannons
+  // Anropar: POST /api/listings/{id}/applications
+  applyToListing: async (listingId: string, message?: string): Promise<void> => {
+    await apiClient(`/listings/${listingId}/applications`, {
       method: "POST",
-      body: JSON.stringify({}) 
+      body: JSON.stringify({ message: message ?? "" }),
     });
   },
 

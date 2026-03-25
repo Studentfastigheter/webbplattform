@@ -1,6 +1,6 @@
 import React from "react";
 import clsx from "clsx";
-import { Heart, Share2, Home, MapPin, Building2 } from "lucide-react";
+import { Trash2, Home, MapPin, Building2 } from "lucide-react";
 import Tag from "../ui/Tag";
 import type { ListFrameRow } from "../layout/ListFrame";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,7 @@ type ListingSummary = Pick<
 export type ListingApplicationRowProps = ListingSummary & {
   status: Status;
   applicationDate: DateString;
-  onManage?: () => void;
-  onFavorite?: () => void;
-  onShare?: () => void;
+  onWithdraw?: () => void;
   onOpen?: () => void;
 };
 
@@ -146,35 +144,29 @@ const DateCell: React.FC<{ date: DateString }> = ({ date }) => (
 );
 
 const ActionsCell: React.FC<
-  Pick<ListingApplicationRowProps, "onManage" | "onFavorite" | "onShare">
-> = ({ onManage, onFavorite, onShare }) => (
+  Pick<ListingApplicationRowProps, "onWithdraw" | "onOpen">
+> = ({ onWithdraw, onOpen }) => (
   <div className="flex flex-col items-center gap-2">
-    <div className="flex items-center justify-center gap-3">
-      <button
-        type="button"
-        onClick={onFavorite}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#CFCFCF] bg-white text-black transition hover:bg-[#f5f5f5]"
-      >
-        <Heart size={18} />
-      </button>
-      <button
-        type="button"
-        onClick={onShare}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#CFCFCF] bg-white text-black transition hover:bg-[#f5f5f5]"
-      >
-        <Share2 size={18} />
-      </button>
-    </div>
     <Button
       type="button"
-      onClick={onManage}
+      onClick={onOpen}
       className={clsx(
-        "h-9 w-[84px] rounded-full bg-[#D9D9D9] text-[12px] font-medium text-black",
-        "transition hover:bg-[#cfcfcf]"
+        "h-9 w-25 rounded-full bg-[#004225] text-[12px] font-medium text-white",
+        "transition hover:bg-[#00331b]"
       )}
     >
-      Hantera
+      Visa annons
     </Button>
+    {onWithdraw && (
+      <button
+        type="button"
+        onClick={onWithdraw}
+        className="flex items-center gap-1.5 text-[12px] text-red-600 hover:text-red-800 transition"
+      >
+        <Trash2 size={14} />
+        Dra tillbaka
+      </button>
+    )}
   </div>
 );
 
@@ -184,9 +176,7 @@ export const buildListingApplicationRow = (props: ListingApplicationRowProps): L
     tags,
     status,
     applicationDate,
-    onManage,
-    onFavorite,
-    onShare,
+    onWithdraw,
     onOpen,
   } = props;
 
@@ -199,9 +189,8 @@ export const buildListingApplicationRow = (props: ListingApplicationRowProps): L
       <DateCell key={`${listingId}-date`} date={applicationDate} />,
       <ActionsCell
         key={`${listingId}-actions`}
-        onManage={onManage}
-        onFavorite={onFavorite}
-        onShare={onShare}
+        onWithdraw={onWithdraw}
+        onOpen={onOpen}
       />,
     ],
   };

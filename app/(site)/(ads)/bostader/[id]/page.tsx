@@ -364,6 +364,7 @@ export default function ListingDetailPage() {
 
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
 
@@ -373,16 +374,23 @@ export default function ListingDetailPage() {
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
-  // Ladda favoriter om inloggad
+  // Ladda favoriter och kolla om redan ansökt
   useEffect(() => {
     if (user) {
       listingService.getFavorites().then(favs => {
         setFavoriteIds(new Set(favs.map(f => f.id)));
       }).catch(console.error);
+
+      if (listingId) {
+        listingService.getMyApplications().then(apps => {
+          setHasApplied(apps.some(a => a.listingId === listingId));
+        }).catch(console.error);
+      }
     } else {
       setFavoriteIds(new Set());
+      setHasApplied(false);
     }
-  }, [user]);
+  }, [user, listingId]);
 
   const handleFavoriteToggle = useCallback((id: string, isFav: boolean) => {
     if (!user) {
@@ -468,14 +476,19 @@ export default function ListingDetailPage() {
     setApplyError(null);
     setApplySuccess(null);
 
-    const action =
-      listing.ownerType.toLowerCase() === "company" || listing.ownerType === "Företag"
-        ? listingService.registerInterest(listingId)
-        : listingService.apply(listingId, "Hej! Jag är intresserad.");
+    const isCompanyListing =
+      listing.ownerType.toLowerCase() === "company" || listing.ownerType === "Företag";
+
+    const action = isCompanyListing
+      ? listingService.applyToListing(listingId, "Hej! Jag är intresserad.")
+      : listingService.apply(listingId, "Hej! Jag är intresserad.");
 
     action
-      .then(() => setApplySuccess("Intresseanmälan skickad!"))
-      .catch((err: any) => setApplyError(err?.message ?? "Kunde inte skicka intresse."))
+      .then(() => {
+        setApplySuccess("Ansökan skickad!");
+        setHasApplied(true);
+      })
+      .catch((err: any) => setApplyError(err?.message ?? "Kunde inte skicka ansökan."))
       .finally(() => setApplying(false));
   }, [listingId, listing, user]);
 
@@ -576,7 +589,8 @@ export default function ListingDetailPage() {
             listing={listing}
             isFavorite={favoriteIds.has(listing.id)}
             onApplyClick={handleApply}
-            applyDisabled={applying}
+            applyDisabled={applying || hasApplied}
+            hasApplied={hasApplied}
           />
 
           {/* 3. Map — own dedicated section */}

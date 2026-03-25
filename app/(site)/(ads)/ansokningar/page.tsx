@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
@@ -22,7 +22,7 @@ const STUDENT_COLUMNS: ListFrameColumn[] = [
   { id: "etikett", label: "Etikett", width: "1.4fr" },
   { id: "status", label: "Status", align: "center", width: "1.1fr" },
   { id: "ansokningsdag", label: "Ansökningsdag", align: "left", width: "1fr" },
-  { id: "andra_anmalan", label: "Ändra anmälan", align: "center", width: "1.1fr" },
+  { id: "atgarder", label: "Åtgärder", align: "center", width: "1.1fr" },
 ];
 
 const LANDLORD_COLUMNS: ListFrameColumn[] = [
@@ -50,10 +50,22 @@ export default function MyApplicationsPage() {
   const isStudent = userAccountType === "student";
   const isPrivateLandlord = userAccountType === "private_landlord";
 
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const handleWithdraw = useCallback(async (applicationId: number, listingTitle: string) => {
+    if (!confirm(`Vill du dra tillbaka din ansökan till "${listingTitle}"?`)) return;
+
+    try {
+      await listingService.withdrawApplication(applicationId);
+      setReloadKey((k) => k + 1);
+    } catch (err: any) {
+      setError(err?.message ?? "Kunde inte dra tillbaka ansökan.");
+    }
+  }, []);
+
   useEffect(() => {
     setError(null);
 
-    // FIX 1: Kolla om user saknas istället för token
     if (!user) {
       setStudentApplications([]);
       setLandlordApplications([]);
@@ -79,11 +91,8 @@ export default function MyApplicationsPage() {
 
       listingService
         .getMyApplications()
-        .then((raw) => {
+        .then((apps) => {
           if (!active) return;
-
-          const apps = Array.isArray(raw) ? raw : (raw as any)?.data ?? (raw as any)?.applications ?? [];
-          console.log("getMyApplications response:", raw);
 
           const mapped: ListingApplicationRowProps[] = apps.map(
             (app: any): ListingApplicationRowProps => ({
@@ -98,14 +107,14 @@ export default function MyApplicationsPage() {
               landlordType: app.hostType,
               imageUrl: app.listingImage,
               tags: [],
-              
+
               images: app.listingImage
                 ? [
-                    { 
-                      imageId: 1, 
+                    {
+                      imageId: 1,
                       listingId: app.listingId,
-                      imageUrl: app.listingImage 
-                    } as any 
+                      imageUrl: app.listingImage
+                    } as any
                   ]
                 : [],
 
@@ -126,14 +135,14 @@ export default function MyApplicationsPage() {
                   city: app.city,
               },
 
-              // FIX 3: Casting 'as any' löser typfelet med Status-strängen
-              status: (app.status === 'submitted' ? 'Aktiv' : 
-                       app.status === 'accepted' ? 'Godkänd' : 
-                       app.status === 'rejected' ? 'Nekad' : 'Aktiv') as any,
-              
-              applicationDate: app.appliedAt, 
+              status: (app.status === 'submitted' ? 'Under granskning' :
+                       app.status === 'accepted' ? 'Antagen' :
+                       app.status === 'rejected' ? 'Nekad' : 'Under granskning') as any,
+
+              applicationDate: new Date(app.appliedAt).toLocaleDateString("sv-SE"),
 
               onOpen: () => router.push(`/bostader/${app.listingId}`),
+              onWithdraw: () => handleWithdraw(app.applicationId, app.listingTitle),
             })
           );
           setStudentApplications(mapped);
@@ -167,7 +176,7 @@ export default function MyApplicationsPage() {
     return () => {
       active = false;
     };
-  }, [user, isStudent, isPrivateLandlord, router]); // FIX: Bytte token mot user i dependency array
+  }, [user, isStudent, isPrivateLandlord, router, reloadKey, handleWithdraw]);
 
   const studentRows = useMemo(
     () => studentApplications.map(buildListingApplicationRow),
