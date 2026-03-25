@@ -19,7 +19,7 @@ export default function QueueDetailPage() {
 
   const [company, setCompany] = useState<CompanyDTO | null>(null);
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
-  const [listings] = useState<ListingCardDTO[]>([]);
+  const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -40,11 +40,13 @@ export default function QueueDetailPage() {
     Promise.all([
       queueService.getCompany(companyId),
       queueService.getByCompany(companyId),
+      queueService.getCompanyListings(companyId),
     ])
-      .then(([companyData, companyQueues]) => {
+      .then(([companyData, companyQueues, companyListings]) => {
         if (!active) return;
         setCompany(companyData);
         setQueues(Array.isArray(companyQueues) ? companyQueues : []);
+        setListings(Array.isArray(companyListings) ? companyListings : []);
       })
       .catch((err) => {
         if (!active) return;

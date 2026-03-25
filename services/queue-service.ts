@@ -1,5 +1,6 @@
 import { apiClient, buildQuery } from "@/lib/api-client";
 import { HousingQueueDTO } from "@/types/queue";
+import { ListingCardDTO } from "@/types/listing";
 
 export interface CompanyDTO {
   id: number;
@@ -69,5 +70,11 @@ export const queueService = {
 
   getCompany: async (companyId: number): Promise<CompanyDTO> => {
     return await apiClient<CompanyDTO>(`/companies/${companyId}`);
+  },
+
+  getCompanyListings: async (companyId: number, page = 0, size = 12): Promise<ListingCardDTO[]> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<any>(`/companies/${companyId}/listings${query}`);
+    return res?.content ?? [];
   },
 };
