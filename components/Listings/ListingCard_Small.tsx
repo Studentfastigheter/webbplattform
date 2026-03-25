@@ -228,77 +228,73 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           )}
         </div>
 
-        {/* Location + Size */}
+        {/* Info grid: two columns */}
         <div
-          className="flex items-start justify-between"
-          style={{ gap: scaleValue(16), fontSize: scaleValue(14) }}
+          className="grid"
+          style={{
+            gridTemplateColumns: "1fr auto",
+            gap: `${scaleValue(4)} ${scaleValue(16)}`,
+            fontSize: scaleValue(14),
+          }}
         >
-          <div
-            className="min-w-0 text-gray-700"
+          {/* Row 1 left: address */}
+          <p className="font-medium text-gray-700" style={{ wordBreak: "break-word" }}>
+            {[area, city].filter(Boolean).join(", ")}
+          </p>
+
+          {/* Row 1 right: price */}
+          <p
+            className="font-bold text-gray-900 whitespace-nowrap text-right"
             style={{
-              display: "grid",
-              rowGap: scaleValue(4),
-              minHeight: scaleValue(44),
+              fontSize: scaleValue(17),
+              lineHeight: scaleValue(22),
             }}
           >
-            <p className="truncate font-medium" title={[area, city].filter(Boolean).join(", ")}>
-              {[area, city].filter(Boolean).join(", ")}
-            </p>
-            <p
-              className="truncate text-gray-500"
-              title={`${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`}
-            >
-              {dwellingType ?? "-"} {"\u00b7"} {rooms ?? "-"} rum {"\u00b7"} {sizeM2 ?? "-"} m{"\u00b2"}
-            </p>
-          </div>
+            {formatRent(rent)}
+          </p>
 
-          <div
-            className="flex min-w-[170px] max-w-[52%] flex-col items-end text-right text-black"
-            style={{ rowGap: scaleValue(4) }}
+          {/* Row 2 left: details */}
+          <p
+            className="text-gray-500"
+            style={{ wordBreak: "break-word" }}
           >
-            <p
-              className="font-bold text-gray-900"
+            {dwellingType ?? "-"} {"\u00b7"} {rooms ?? "-"} rum {"\u00b7"} {sizeM2 ?? "-"} m{"\u00b2"}
+          </p>
+
+          {/* Row 2 right: host logo + name */}
+          <div
+            className="flex items-center justify-end"
+            style={{ gap: scaleValue(6) }}
+          >
+            <img
+              src={hostLogoUrl || "/campuslyan-logo.svg"}
+              alt={hostName || "CampusLyan"}
+              className="bg-gray-50 border border-gray-200"
               style={{
-                fontSize: scaleValue(18),
-                lineHeight: scaleValue(22),
-                whiteSpace: "nowrap",
+                width: scaleValue(22),
+                height: scaleValue(22),
+                borderRadius: "999px",
+                objectFit: "cover",
+                flexShrink: 0,
+              }}
+            />
+            <p
+              className="text-gray-500 font-medium text-right"
+              style={{
+                fontSize: scaleValue(12),
+                lineHeight: scaleValue(16),
+                wordBreak: "break-word",
               }}
             >
-              {formatRent(rent)}
+              {hostName ?? landlordType}
             </p>
-            <div className="flex items-center justify-end w-full" style={{ gap: scaleValue(6) }}>
-              <img
-                src="/campuslyan-logo.svg"
-                alt="CampusLyan"
-                style={{
-                  width: scaleValue(16),
-                  height: scaleValue(16),
-                  borderRadius: "999px",
-                  objectFit: "cover"
-                }}
-              />
-              <p
-                className="truncate text-gray-500 font-medium"
-                style={{
-                  fontSize: scaleValue(14),
-                  lineHeight: scaleValue(18),
-                  maxWidth: "100%",
-                }}
-                title={hostName || landlordType}
-              >
-                {hostName ?? landlordType}
-              </p>
-            </div>
           </div>
         </div>
-        
+
         {safeTags.length > 0 && (
           <div
-            className="flex flex-wrap pt-0"
-            style={{
-              gap: scaleValue(8),
-              minHeight: scaleValue(30),
-            }}
+            className="flex flex-wrap"
+            style={{ gap: scaleValue(6) }}
           >
             {safeTags.slice(0, 3).map((tag) => (
               <Tag
