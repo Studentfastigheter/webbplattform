@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+
+USAGE <<EOF
+Author: JaarmaCo@git
+
+Small curl wrapper for testing application endpoints.
+
+As of now, it only handles GET and POST requests. If a body is specified then this command
+performs a GET request, otherwise a POST.
+
+If any response includes the accessToken json property, that value is stored and later used
+as the JWT in subsequent requests (stored in {git-root}/tooling/.jwt).
+
+Usage:
+  request <endpoint> [request-body]
+    [-D<header>=<value>]...
+    [-v|--verbose]
+    [-o|--output <response-body-file>]
+    [--]
+EOF
+
+command_exists() {
+  type "$1" &>/dev/null
+}
+
+if ! command_exists jq; then
+  echo "This script requires jq to run."
+  echo "See https://jqlang.org/"
+  exit 1
+fi
+
+HOST="http://localhost:8080/api"
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
+JWT=""
+if [[ -f "$SCRIPT_DIR/.jwt" ]]; then
+  JWT=$(cat "$SCRIPT_DIR/.jwt")
+fi
+
+PARSED_ARGUMENTS=$(getopt -o :D:vo: --long verbose,output -- "$@")
+
+usage() {
+  echo "$USAGE"
+  exit 2
+}
+
+HEADERS=("-H" "Content-Type: application/json")
+
+VERBOSE=0
+
+OUTPUT_FILE=
+
+eval set -- "$PARSED_ARGUMENTS"
+while :; do
+  case $1 in
+  -D)
+    kvp=$2
+    shift
+    shift
+    key=${kvp%%=*}
+    value=${kvp#*=}
+    HEADERS+=("-H" "$key: $value")
+    ;;
+  -v | --verbose)
+    VERBOSE=1
+    shift
+    ;;
+  -o | --output)
+    OUTPUT_FILE=$2
+    shift
+    shift
+    ;;
+  --)
+    shift
+    break
+    ;;
+  *)
+    echo "Unexpected option $1"
+    usage
+    ;;
+  esac
+done
+
+ENDPOINT=$1
+shift
+
+DATA=$1
+shift
+
+if [[ -z ${JWT+x} ]]; then
+  true
+else
+  if (($VERBOSE)); then
+    echo "Using JWT from $SCRIPT_DIR/.jwt"
+  fi
+  HEADERS+=("-H" "Authorization: Bearer ${JWT}")
+fi
+
+if [[ ${DATA} ]]; then
+  HEADERS+=("-d" "$DATA")
+fi
+
+if (($VERBOSE)); then
+  HEADERS+=("-v")
+fi
+
+if (($VERBOSE)); then
+  echo "Calling curl with arguments:"
+  echo "# $HOST$ENDPOINT"
+  for ARG in "${HEADERS[@]}"; do
+    echo "# $ARG"
+  done
+fi
+
+body="$(curl "$HOST$ENDPOINT" -s -w "\n%{http_code}" "${HEADERS[@]}" | {
+  read body
+  read code
+
+  echo "HTTP response code: $code" >&2
+  echo $body
+})"
+
+if (($?)); then
+  echo "Call to curl failed."
+  exit 1
+fi
+
+if [[ -z "$body" ]]; then
+  echo "Server did not provide a response." >&2
+else
+  if (($VERBOSE)); then
+    echo "$body"
+  fi
+  if [[ ${OUTPUT_FILE} ]]; then
+    jq . <<<"$body" >"$OUTPUT_FILE"
+  else
+    jq . <<<"$body"
+  fi
+fi
+
+if jq -e 'has("accessToken")' <<<"$body" &>/dev/null; then
+  jq --raw-output .accessToken <<<"$body" >"$SCRIPT_DIR/.jwt"
+  echo "Stored access token in $SCRIPT_DIR/.jwt" >&2
+fi
