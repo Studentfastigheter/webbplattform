@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Building2 } from "lucide-react";
 import FilterButton from "../_components/FilterButton";
 import StatisticsContainer from "../_components/Statistics/StatisticsContainer";
@@ -8,6 +12,8 @@ import { AvailableStatistics } from "@/lib/definitions";
 import { StatisticProps } from "../_statics/types";
 import { getStatistics } from "@/lib/actions";
 import VacancyGraph from "../_components/Graphs/VacancyGraph";
+import { companyService } from "@/services/company";
+import { useAuth } from "@/context/AuthContext";
 
 const timeOptions = [
   { value: "1y", label: "1 år" },
@@ -30,18 +36,33 @@ const applications = [
     { name: "Anna Andersson", age: 22, address: "Chalmers tvärgata 4" },
 ];
 
-
-
 export default function Home() {
 
   const selectedStatistics: AvailableStatistics[] = ["applications", "views", "interactions", "active_posts"];
   const statisticsPromise: Promise<StatisticProps[]> = getStatistics({ statisticsToFetch: selectedStatistics })
-  // const applications = []
+
+  const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user === null) {
+      router.push("/logga-in");
+      return;
+    }
+
+    // Temporary: checks that the applications endpoint works
+    companyService
+      .applicationCount()
+      .then(count =>
+        console.log(`Total number of applications: ${count}`))
+      .catch(err =>
+        alert(err));
+  }, []);
 
   return (
     <>
       <div className="p-2 flex justify-between items-center mt-2">
-        <h1 className="text-brand text-2xl font-bold">Välkommen tillbaka, SGS</h1>
+        <h1 className="text-brand text-2xl font-bold">{`Välkommen tillbaka, ${user.displayName}`}</h1>
         <div className="flex gap-4">
           <FilterButton 
             options={filterOptions} 

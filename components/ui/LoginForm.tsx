@@ -22,7 +22,7 @@ type LoginFormProps = React.ComponentProps<"div">;
 export function LoginForm({ className, ...props }: LoginFormProps) {
   const router = useRouter();
   // OBS: ready har bytt namn till isLoading i AuthContext
-  const { login, isLoading } = useAuth();
+  const { user, login, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
     setSubmitting(true);
     try {
       await login({ email: email.trim(), password });
-      router.push("/");
+      router.push(user.accountType === "student" ? "/" : "/portal");
     } catch (err: any) {
       setError(err?.message ?? "Något gick fel vid inloggning.");
     } finally {

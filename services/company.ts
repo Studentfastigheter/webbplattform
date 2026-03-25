@@ -1,5 +1,5 @@
-import { makeCompanyRequest } from "@/lib/api-company";
 import { authService } from "@/services/auth-service";
+import { apiClient } from "@/lib/api-client";
 
 export type GraphEntry = {
 	category: string,
@@ -16,19 +16,26 @@ export type CompanyInfo = {
   name: string,
 };
 
-function getCompanyId(): string {
-	// TODO: Use active id
-	return "demo";
+function getLocalCompanyInfo(): CompanyInfo {
+  const local = localStorage.getItem("MY_COMPANY");
+  if (local === null) {
+    return null;
+  }
+  return JSON.parse(local) as CompanyInfo;
 }
 
-function parseGraphEntries(json: object[]): GraphEntry[] {
-	// TODO: Potentially per-response translation.
-	return json as GraphEntry[];
+function setLocalCompanyInfo(info: CompanyInfo) {
+  localStorage.setItem("MY_COMPANY", JSON.stringify(info));
 }
 
-function parseTimelineEntries(json: object[]): TimelineEntry[] {
-	// TODO: Potentially per-response translation.
-	return json as TimelineEntry[];
+async function getCompanyId(): string {
+	const local = getLocalCompanyInfo();
+  if (local === null) {
+    const info = await companyService.myCompany();
+    setLocalCompanyInfo(info);
+    return info.userId;
+  }
+	return local.userId;
 }
 
 export const companyService = {
@@ -40,16 +47,8 @@ export const companyService = {
     }
     return { userId: result.id, name: result.companyName };
   },
-	residentsBySchool: async (): Promise<GraphEntry[]> => {
-		return parseGraphEntries(await makeCompanyRequest<object[]>("/residents/by_school", getCompanyId(), {}));
-	},
-	residentsByCity: async (): Promise<GraphEntry[]> => {
-		return parseGraphEntries(await makeCompanyRequest<object[]>("/residents/by_city", getCompanyId(), {}));
-	},
-	residentsByGender: async (): Promise<GraphEntry[]> => {
-		return parseGraphEntries(await makeCompanyRequest<object[]>("/residents/by_gender", getCompanyId(), {}));
-	},
-	applicationsOverTime: async (): Promise<TimelineEntry[]> => {
-		return parseTimelineEntries(await makeCompanyRequest<object[]>("/applications", getCompanyId(), {}));
-	},
+  applicationCount: async (): Promise<number> => {
+    const id = await getCompanyId();
+    return apiClient<number>(`/analytics/${id}/current_applications`);
+  },
 };
