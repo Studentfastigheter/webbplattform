@@ -12,11 +12,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "www.dropbox.com" },
-      { protocol: "https", hostname: "cdn2.hubspot.net" },
+      { protocol: "https", hostname: "www.secretescapes.se" },
       { protocol: "https", hostname: "media.licdn.com" },
       { protocol: "https", hostname: "image-cdn.mild.cloud" },
       { protocol: "https", hostname: "img.meccdn.com" },
       { protocol: "https", hostname: "www.familjebostader.se" },
+      { protocol: "https", hostname: "encrypted-tbn0.gstatic.com" },
+      { protocol: "https", hostname: "www.chalmersstudentbostader.se" },
+      { protocol: "https", hostname: "www.hallnollan.se" },
       {
         protocol: "https",
         hostname: "sgs-fastighet.momentum.se",
