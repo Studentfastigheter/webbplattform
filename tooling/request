@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-USAGE <<EOF
+USAGE=$(
+  echo <<EOF
 Author: JaarmaCo@git
 
 Small curl wrapper for testing application endpoints.
@@ -18,6 +19,7 @@ Usage:
     [-o|--output <response-body-file>]
     [--]
 EOF
+)
 
 command_exists() {
   type "$1" &>/dev/null
