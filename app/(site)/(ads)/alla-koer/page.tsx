@@ -71,14 +71,30 @@ export default function Page() {
             if (!active)
                 return;
             (async () => {
+                // Hämta unika företag för att få deras logga
+                const uniqueCompanyIds = [...new Set(res.map(dto => dto.companyId).filter(Boolean))];
+                const companyMap = new Map<number, { logoUrl?: string }>();
+                await Promise.all(
+                    uniqueCompanyIds.map(async (companyId) => {
+                        try {
+                            const company = await queueService.getCompany(companyId);
+                            companyMap.set(companyId, company);
+                        } catch {
+                            // Ignorera om företaget inte kan hämtas
+                        }
+                    })
+                );
+
                 const mapped: AdvertisedHousingQueue[] = await Promise.all(res.map(async dto => {
+                    const companyLogo = companyMap.get(dto.companyId)?.logoUrl;
                     const base: AdvertisedHousingQueue = {
                         ...dto,
+                        logoUrl: companyLogo || dto.logoUrl,
                         advertiser: {
                             type: "company",
                             id: dto.companyId as unknown as CompanyId,
                             displayName: dto.name,
-                            logoUrl: dto.logoUrl,
+                            logoUrl: companyLogo || dto.logoUrl,
                             bannerUrl: undefined,
                             phone: null,
                             contactEmail: null,
