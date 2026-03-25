@@ -42,24 +42,23 @@ export default function Home() {
   const statisticsPromise: Promise<StatisticProps[]> = getStatistics({ statisticsToFetch: selectedStatistics })
 
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   useEffect(() => {
-    if (user === null) {
-      router.push("/logga-in");
-      return;
-    }
-
-    // Temporary: checks that the applications endpoint works
-    companyService
-      .applicationCount()
-      .then(count =>
-        console.log(`Total number of applications: ${count}`))
-      .catch(err =>
-        alert(err));
+    (async () => {
+      if (user !== null) {
+        return;
+      }
+      try {
+        await refreshUser();
+      } catch (err) {
+        console.error(err);
+        router.push("/logga-in");
+      }
+    })();
   }, []);
 
-  return (
+  return user === null ? (<></>) : (
     <>
       <div className="p-2 flex justify-between items-center mt-2">
         <h1 className="text-brand text-2xl font-bold">{`Välkommen tillbaka, ${user.displayName}`}</h1>

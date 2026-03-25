@@ -11,32 +11,18 @@ export type TimelineEntry = {
 	value: number,
 };
 
+export type Timeline = TimelineEntry[];
+
 export type CompanyInfo = {
   userId: string,
   name: string,
 };
 
-function getLocalCompanyInfo(): CompanyInfo {
-  const local = localStorage.getItem("MY_COMPANY");
-  if (local === null) {
-    return null;
-  }
-  return JSON.parse(local) as CompanyInfo;
-}
-
-function setLocalCompanyInfo(info: CompanyInfo) {
-  localStorage.setItem("MY_COMPANY", JSON.stringify(info));
-}
-
-async function getCompanyId(): string {
-	const local = getLocalCompanyInfo();
-  if (local === null) {
-    const info = await companyService.myCompany();
-    setLocalCompanyInfo(info);
-    return info.userId;
-  }
-	return local.userId;
-}
+type ApplicationStatisticEntry = {
+  year: number,
+  month: number,
+  numApplications: number,
+};
 
 export const companyService = {
 
@@ -47,8 +33,16 @@ export const companyService = {
     }
     return { userId: result.id, name: result.companyName };
   },
-  applicationCount: async (): Promise<number> => {
-    const id = await getCompanyId();
+  applicationCount: async (id: string): Promise<number> => {
     return apiClient<number>(`/analytics/${id}/current_applications`);
+  },
+  applicationsTimeline: async (id: string): Promise<Timeline> => {
+    const entries = await apiClient<ApplicationStatisticEntry[]>(`/analytics/${id}/current_applications/trend`);
+    return entries.map(({ year, month, numApplications }) => {
+      return {
+        timestamp: new Date(year, month, 1),
+        value: numApplications,
+      };
+    });
   },
 };
