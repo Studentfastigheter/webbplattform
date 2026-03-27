@@ -22,7 +22,7 @@ const PLATTFORM_LINKS = [
 ];
 
 const PARTNER_LINKS = [
-  { href: "/partners", label: "Samarbetspartners" },
+  { href: "/partners", label: "Våra partners" },
 ];
 
 const COMPANY_LINKS = [

@@ -16,6 +16,7 @@ import {
 const navItems = [
   { name: "Hem", link: "/" },
   { name: "För företag", link: "/for-foretag" },
+  { name: "Partners", link: "/partners" },
   { name: "Om oss", link: "/om" },
 ];
 
@@ -38,7 +39,7 @@ export default function SiteHeader() {
           href={waitlistHref}
           className="relative z-20 hidden rounded-full bg-[#004225] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00341d] lg:inline-flex"
         >
-          {"Anmäl intresse"}
+          Anmäl intresse
         </Link>
       </NavBody>
 
@@ -67,9 +68,9 @@ export default function SiteHeader() {
           <Link
             href={waitlistHref}
             onClick={() => setIsMobileMenuOpen(false)}
-            className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-[#004225] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
+            className="inline-flex w-full items-center justify-center rounded-full bg-[#004225] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
           >
-            {"Anmäl intresse"}
+            Anmäl intresse
           </Link>
         </MobileNavMenu>
       </MobileNav>

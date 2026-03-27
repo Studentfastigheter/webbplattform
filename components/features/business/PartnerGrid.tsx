@@ -5,47 +5,108 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SectionBadge } from "@/components/ui/section-badge";
 
-// Typer för datan
 export interface PartnerItem {
   name: string;
   category: string;
   description: string;
-  logoSrc: string; // Här förväntas nu bara filnamnet, t.ex. "logo.png"
+  logoSrc: string;
   href: string;
 }
 
 interface PartnerGridProps {
   title: string;
   description: string;
+  subDescription?: string;
   partners: PartnerItem[];
+  badgeText?: string;
+  columns?: 3 | 4;
+  variant?: "default" | "founding";
 }
 
-export const PartnerGrid = ({ title, description, partners }: PartnerGridProps) => {
+export const PartnerGrid = ({
+  title,
+  description,
+  subDescription,
+  partners,
+  badgeText = "Våra partners",
+  columns = 3,
+  variant = "default",
+}: PartnerGridProps) => {
+  const isFoundingVariant = variant === "founding";
+
+  const sectionClasses = isFoundingVariant
+    ? "py-24 px-6 bg-primary"
+    : "py-24 px-6 bg-background";
+
+  const gridColsClass =
+    columns === 4
+      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+      : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8";
+
+  const cardClasses = isFoundingVariant
+    ? "rounded-xl p-8 flex flex-col h-full transition-shadow shadow-[0_0_20px_rgba(251,191,36,0.35),0_0_6px_rgba(251,191,36,0.25)] hover:shadow-lg"
+    : "bg-card rounded-xl border border-border p-8 flex flex-col h-full transition-shadow hover:shadow-lg";
+
   return (
-    <section className="py-24 px-6 bg-background">
+    <section className={sectionClasses}>
       <div className="max-w-7xl mx-auto">
-        
-        {/* --- Rubrik och Introduktionstext --- */}
         <div className="max-w-3xl mx-auto text-center mb-20">
-          <div className="flex justify-center">
-            <SectionBadge text="Våra partners" />
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-8 tracking-tight">
+
+          <h2
+            className={`text-4xl md:text-5xl font-bold mb-8 tracking-tight ${
+              isFoundingVariant ? "text-primary-foreground" : "text-foreground"
+            }`}
+          >
             {title}
           </h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
+          <p
+            className={`text-lg leading-relaxed ${
+              isFoundingVariant ? "text-primary-foreground/80" : "text-muted-foreground"
+            }`}
+          >
             {description}
           </p>
+          {subDescription && (
+            <p
+              className={`text-lg leading-relaxed mt-4 ${
+                isFoundingVariant ? "text-primary-foreground/80" : "text-muted-foreground"
+              }`}
+            >
+              {subDescription}
+            </p>
+          )}
+          {isFoundingVariant && (
+            <Link
+              href="/for-foretag#bokning"
+              className="mt-8 inline-flex rounded-full px-8 py-3 text-base font-semibold transition hover:opacity-90"
+              style={{
+                border: "2px solid #d4a017",
+                background: "transparent",
+                color: "#d4a017",
+              }}
+            >
+              Bli partner
+            </Link>
+          )}
         </div>
 
-        {/* --- Partner Grid --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className={gridColsClass}>
           {partners.map((partner, index) => (
-            <div 
+            <div
               key={index}
-              className="bg-card rounded-xl border border-border p-8 flex flex-col h-full transition-shadow hover:shadow-lg"
+              className={cardClasses}
+              style={
+                isFoundingVariant
+                  ? {
+                      border: "4px solid transparent",
+                      backgroundImage:
+                        "linear-gradient(var(--card), var(--card)), linear-gradient(145deg, #d4a017, #f5d778, #b8860b, #f5d778, #d4a017)",
+                      backgroundOrigin: "border-box",
+                      backgroundClip: "padding-box, border-box",
+                    }
+                  : undefined
+              }
             >
-              {/* Kategori-etikett i toppen */}
               <div className="mb-6">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
                   {partner.category}
@@ -53,39 +114,36 @@ export const PartnerGrid = ({ title, description, partners }: PartnerGridProps) 
                 <div className="mt-4 h-px bg-border w-full"></div>
               </div>
 
-              {/* Logotyp-container */}
               <div className="h-32 flex items-center justify-center mb-8 px-4">
-                 {partner.logoSrc ? (
-                    /* HÄR ÄR ÄNDRINGEN */
-                    /* Vi lägger till /nedladdare/ före filnamnet */
-                    <img 
-                      src={`/logos/${partner.logoSrc}`} 
-                      alt={`${partner.name} logotyp`}
-                      className="max-h-full w-auto object-contain"
-                    />
-                 ) : (
-                    <span className="text-2xl font-bold text-muted-foreground/60">{partner.name}</span>
-                 )}
+                {partner.logoSrc ? (
+                  <img
+                    src={partner.logoSrc.startsWith("http") ? partner.logoSrc : `/logos/${partner.logoSrc}`}
+                    alt={`${partner.name} logotyp`}
+                    className="max-h-full w-auto object-contain"
+                  />
+                ) : (
+                  <span className="text-2xl font-bold text-muted-foreground/60">
+                    {partner.name}
+                  </span>
+                )}
               </div>
 
-              {/* Textinnehåll */}
               <div className="flex-grow">
                 <h3 className="text-xl font-bold text-foreground mb-3">
-                    {partner.name}
+                  {partner.name}
                 </h3>
                 <p className="text-muted-foreground text-base leading-relaxed mb-8">
                   {partner.description}
                 </p>
               </div>
 
-              {/* "LÄS MER" länk i botten */}
               <div className="mt-auto">
-                <Link 
+                <Link
                   href={partner.href}
-                  target="_blank"
+                  {...(partner.href.startsWith("http") ? { target: "_blank" } : {})}
                   className="group inline-flex items-center text-sm font-bold text-foreground hover:text-foreground transition-colors"
                 >
-                  LÄS MER 
+                  {partner.href.startsWith("/") ? "KONTAKTA OSS" : "LÄS MER"}
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
               </div>

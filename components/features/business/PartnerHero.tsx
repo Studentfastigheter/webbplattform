@@ -1,18 +1,19 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { ArrowDown } from "lucide-react";
 import { SectionBadge } from "@/components/ui/section-badge";
 
 export const TrustHero = () => {
   return (
-    <section className="relative bg-background border-b border-border overflow-hidden">
-      
+    <section className="relative bg-background border-b border-border overflow-hidden min-h-[85vh] flex items-center justify-center">
+
       {/* --- Bakgrundseffekter (Subtil premium-känsla) --- */}
       <div className="absolute inset-0"></div>
       <div className="absolute top-0 inset-x-0 h-px"></div>
 
-      <div className="relative container mx-auto px-6 max-w-5xl pt-24 pb-20 lg:pt-32 lg:pb-24 text-center">
+      <div className="relative container mx-auto px-6 max-w-5xl py-20 text-center">
         <div className="flex justify-center">
           <SectionBadge text="Partnerskap" />
         </div>
@@ -30,9 +31,9 @@ export const TrustHero = () => {
 */}
         {/* --- Huvudrubrik --- */}
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-8 text-balance">
-          Vi skapar förtroende mellan <br className="hidden md:block"/>
+          Vi är bryggan mellan <br className="hidden md:block"/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-pop-contrast">
-             studenter och bostadsmarknad.
+             studenter och bostadsmarknaden
           </span>
         </h1>
 
@@ -71,6 +72,14 @@ export const TrustHero = () => {
            </div>
         </div>
 */}
+        {/* --- CTA --- */}
+        <Link
+          href="/for-foretag#bokning"
+          className="inline-flex rounded-full bg-[#004225] px-8 py-3 text-base font-semibold text-white transition hover:bg-[#00341d] mb-8"
+        >
+          Boka möte
+        </Link>
+
         {/* --- Scroll Indicator --- */}
         <div className="animate-bounce text-muted-foreground/60 flex justify-center">
             <ArrowDown size={24} />
