@@ -1,7 +1,7 @@
 "use client";
 
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -18,7 +18,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 
-import { companyService, type Timeline, type TimelineEntry } from "@/services/company";
+import { companyService, type Timeline } from "@/services/company";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -57,7 +57,6 @@ function dateRangeString(previous: Date, current: Date): string {
   }
 }
 
-// ChatGPT Slop, I'll replace it some day (JaarmaCo@git)
 function growthPercent(xs: number[], ys: number[]): number {
   const n = xs.length;
   if (n < 2) return 0.0;
@@ -69,7 +68,7 @@ function growthPercent(xs: number[], ys: number[]): number {
 }
 
 function growthThisMonth(timeline: Timeline): number {
-  return growthPercent(timeline.map(({ timestamp }) => timestamp.getYear() * 12 + timestamp.getMonth()),
+  return growthPercent(timeline.map(({ timestamp }) => timestamp.getFullYear() * 12 + timestamp.getMonth()),
                        timeline.map(({ value }) => value));
 }
 
@@ -88,7 +87,7 @@ export default function TotalApplicantsChart({
     className,
 }: Props) {
 
-  const [chartData, setChartData] = useState([]);
+  const [chartData, setChartData] = useState<{ month: string, queuers: number }[]>([]);
   const [trend, setTrend] = useState(0.0);
   const [startDate, setStartDate] = useState(new Date(Date.now()));
   const { user, refreshUser } = useAuth();
@@ -103,13 +102,17 @@ export default function TotalApplicantsChart({
           return;
         }
       }
+      if (user === null) {
+        console.error("Could not get user");
+        return;
+      }
       const timeline: Timeline = await companyService
-        .applicationsTimeline(user.id)
+        .applicationsTimeline(user.id.toString())
         .catch(err => {
           console.error(err);
           return [];
         })
-        .then(tl => tl.sort((a, b) => a.timestamp > b.timestamp));
+        .then(tl => tl.sort((a, b) => a.timestamp < b.timestamp ? -1 : (a.timestamp > b.timestamp ? 1 : 0)));
 
 
       console.log(`Timeline: ${
@@ -139,7 +142,7 @@ export default function TotalApplicantsChart({
         const timestamp = monthFrom(now, -i);
         const month = timestamp.getFullYear() * 12 + timestamp.getMonth();
         if (timelineByTime.has(month)) {
-          const value = timelineByTime.get(month);
+          const value = timelineByTime.get(month) ?? 0;
           paddedTimeline.push({ timestamp: timestamp, value: value });
           prev = value;
         } else {

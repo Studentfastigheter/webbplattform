@@ -12,16 +12,7 @@ import { AvailableStatistics } from "@/lib/definitions";
 import { StatisticProps } from "../_statics/types";
 import { getStatistics } from "@/lib/actions";
 import VacancyGraph from "../_components/Graphs/VacancyGraph";
-import { companyService } from "@/services/company";
 import { useAuth } from "@/context/AuthContext";
-
-const timeOptions = [
-  { value: "1y", label: "1 år" },
-  { value: "3y", label: "3 år" },
-  { value: "6m", label: "6 mån" },
-  { value: "3m", label: "3 mån" },
-  { value: "1m", label: "1 mån" },
-]
 
 const filterOptions = [
   { value: "alla", label: "Alla städer" },
