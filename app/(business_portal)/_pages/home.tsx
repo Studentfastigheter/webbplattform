@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2 } from "lucide-react";
 import FilterButton from "../_components/FilterButton";
@@ -13,6 +13,8 @@ import { StatisticProps } from "../_statics/types";
 import { getStatistics } from "@/lib/actions";
 import VacancyGraph from "../_components/Graphs/VacancyGraph";
 import { useAuth } from "@/context/AuthContext";
+import { companyService } from "@/services/company";
+import { CompanyModule } from "@faker-js/faker";
 
 const filterOptions = [
   { value: "alla", label: "Alla städer" },
@@ -20,12 +22,6 @@ const filterOptions = [
   { value: "goteborg", label: "Göteborg" },
   { value: "malmo", label: "Malmö" },
 ]
-
-const applications = [
-    { name: "Karl Karlsson", age: 18, address: "Chalmers tvärgata 2" },
-    { name: "Johan Johansson", age: 18, address: "Chalmers tvärgata 3" },
-    { name: "Anna Andersson", age: 22, address: "Chalmers tvärgata 4" },
-];
 
 export default function Home() {
 
@@ -35,9 +31,13 @@ export default function Home() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
 
+  const [ applications, setApplications ] = useState<{ name: string, address: string }[]>([]);
+
   useEffect(() => {
     (async () => {
       if (user !== null) {
+        const newApplications = await companyService.newApplications(user.id.toString());
+        setApplications(newApplications.map(app => ({ name: `${app.firstName} ${app.surname}`, address: app.address, })));
         return;
       }
       try {
@@ -69,7 +69,6 @@ export default function Home() {
         <ApplicantsDistributionChart className="col-span-3" />
         <NewApplications className="col-span-3" applications={applications} />
       
-
       </div>
 
       <VacancyGraph />

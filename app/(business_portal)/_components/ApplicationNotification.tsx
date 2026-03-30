@@ -1,27 +1,18 @@
 "use client"
 
 import Image from "next/image"
-import Favorite from "./Favorite"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { Check } from "lucide-react"
-import { useState } from "react"
 import Link from "next/link"
 
 
 export type ApplicationNotificationProps = {
     name: string,
-    age: number,
     address: string,
 }
 
-
 export default function ApplicationNotification({
     name,
-    age,
     address,
 }: ApplicationNotificationProps) {
-
-    const [isRead, setIsRead] = useState(false);
 
     return (
         <Link href="#" className="flex relative gap-4 cursor-pointer">
@@ -29,7 +20,7 @@ export default function ApplicationNotification({
                 <Image src="/campuslyan-logo.svg" alt="Foto på ansökare" width={24} height={24} />
                 <div className="">
                     <h4 className="text-sm font-medium">{address}</h4>
-                    <p className="text-muted-foreground text-xs">{name} - {age} år</p>
+                    <p className="text-muted-foreground text-xs">{name}</p>
                 </div>
                 
                 {/* {!isRead && <div className="absolute top-1/2 -translate-4 left-6 bg-brand w-1 h-1 rounded-full" />} */}

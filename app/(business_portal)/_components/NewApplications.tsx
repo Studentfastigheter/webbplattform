@@ -1,13 +1,8 @@
 import React from "react"
 import Container from "./Container";
-import Image from "next/image";
-import { Check, SquareArrowOutUpRight, SquareArrowUpRight, Star } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import Favorite from "./Favorite";
+import { SquareArrowOutUpRight, } from "lucide-react";
 import ApplicationNotification, {ApplicationNotificationProps} from "./ApplicationNotification";
 import Link from "next/link";
-
-
 
 type NewApplicationsProps = React.HTMLAttributes<HTMLDivElement> & {
     applications: ApplicationNotificationProps[],
