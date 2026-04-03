@@ -14,7 +14,6 @@ import { getStatistics } from "@/lib/actions";
 import VacancyGraph from "../_components/Graphs/VacancyGraph";
 import { useAuth } from "@/context/AuthContext";
 import { companyService } from "@/services/company";
-import { CompanyModule } from "@faker-js/faker";
 
 const filterOptions = [
   { value: "alla", label: "Alla städer" },

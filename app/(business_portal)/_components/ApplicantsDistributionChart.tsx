@@ -1,8 +1,6 @@
-"use client"
-
-import { TrendingUp } from "lucide-react"
-import { Bar, BarChart, LabelList, XAxis, YAxis } from "recharts"
-
+"use client";
+import { TrendingUp } from "lucide-react";
+import { Bar, BarChart, LabelList, XAxis, YAxis } from "recharts";
 import {
   Card,
   CardContent,
@@ -10,33 +8,25 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "@/components/ui/chart"
-import { useRouter } from "next/navigation"
+} from "@/components/ui/chart";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { companyService, type ObjectApplicationCount } from "@/services/company";
+import { useAuth } from "@/context/AuthContext";
 
-export const description = "A horizontal bar chart"
-
+export const description = "A horizontal bar chart";
 
 type ChartDataProps = {
     object: string;
     applications: number;
     href?: string;
-}
-
-
-const chartData: ChartDataProps[] = [
-  { object: "Chalmers tvärgata 13b", applications: 324, href: "/portal/annonser/1" },
-  { object: "Chalmers tvärgata 14a", applications: 123, href: "/portal/annonser/2" },
-  { object: "Chalmers tvärgata 15b", applications: 105, href: "/portal/annonser/3" },
-  { object: "Chalmers tvärgata 16b", applications: 94, href: "/portal/annonser/4" },
-//   { object: "Chalmers tvärgata 17b", applications: 78, href: "/portal/annonser/5" },
-//   { object: "Lgh 1005", applications: 32, href: "/portal/annonser/6" },
-]
+};
 
 const chartConfig = {
   applications: {
@@ -110,8 +100,23 @@ export default function ApplicantsDistributionChart({
 }: Props) {
 
   const router = useRouter();
+  const [chartData, setChartData ] = useState<ChartDataProps[]>([]);
+  const { user } = useAuth();
 
-
+  useEffect(() => {
+      (async () => {
+          if (user === null) {
+            console.error("User was not present.");
+            return;
+          }
+          const results: ObjectApplicationCount[] = await companyService.applicationCountsPerObject(user.id);
+          setChartData(results.map(({ listingId, address, numApplications }) => ({
+              object: address,
+              applications: numApplications,
+              href: `/portal/annonser/${listingId}`
+          })));
+      })();
+  }, [])
 
   return (
     <div className={className}>
