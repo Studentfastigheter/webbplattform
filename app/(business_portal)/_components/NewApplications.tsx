@@ -19,10 +19,10 @@ export default function NewApplications({
             </Link>
             <div>
                 <h3 className="text-sm font-bold">Nya ansökningar</h3>
-                <p className="text-xs text-muted-foreground">Du har <span>3</span> nya ansökningar</p>
+                <p className="text-xs text-muted-foreground">Du har <span>{applications.length}</span> nya ansökningar</p>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4" style={{ overflow: 'auto', height: 300 }}>
                 {
                     applications.map((application, index) => (
                         <ApplicationNotification 
