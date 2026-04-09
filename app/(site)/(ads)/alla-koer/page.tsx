@@ -181,7 +181,7 @@ export default function Page() {
 
     const queueGridClasses = isMapView
         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 justify-items-center"
-        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 justify-items-center";
+        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-5 justify-items-center";
 
     const renderQueueCard = (queue: QueueWithUI) => {
         const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";

@@ -21,11 +21,11 @@ export type QueListingCardProps = QueueSummary & {
   onToggleSelect?: () => void;
 };
 
-const BASE_WIDTH = 480;
-const MIN_SCALE = 0.75;
+const BASE_WIDTH = 360;
+const MIN_SCALE = 0.7;
 const MAX_SCALE = 1;
-const BADGE_MIN_SCALE = 0.8;
-const BADGE_MAX_SCALE = 1;
+const BADGE_MIN_SCALE = 0.95;
+const BADGE_MAX_SCALE = 1.25;
 
 const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
   const {
@@ -103,23 +103,24 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
       onClick={e => onViewListings()}
       onMouseEnter={e => setIsHovering(true)}
       onMouseLeave={e => setIsHovering(false)}
-      className={`relative flex w-full max-w-[520px] flex-col cursor-pointer group
-        shadow-md hover:shadow-lg transition-all duration-200
+      className={`relative flex w-full max-w-[320px] flex-col cursor-pointer group
+        shadow-md hover:shadow-lg transition-all duration-200 border border-gray-100
         ${isSelected ? "bg-green-50/60" : "bg-white"}`}
       style={{
         padding: scaleValue(20),
-        borderRadius: scaleValue(28),
-        gap: scaleValue(14),
+        borderRadius: scaleValue(20),
+        gap: scaleValue(16),
+        minHeight: scaleValue(340),
         transform: isHovering ? "translateY(-2px)" : "translateY(0)",
       }}
     >
       {/* Logo — large, centered, hero element */}
       <div
-        className="flex items-center justify-center shrink-0 rounded-2xl bg-gray-50 self-center"
+        className="flex items-center justify-center shrink-0 self-center"
         style={{
-          width: scaleValue(100),
-          height: scaleValue(100),
-          padding: scaleValue(12),
+          width: "100%",
+          height: scaleValue(150),
+          padding: scaleValue(8),
         }}
       >
         {logoUrl ? (
@@ -129,12 +130,12 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
             className="max-h-full max-w-full object-contain"
           />
         ) : (
-          <Building2 size={36 * scale} className="text-gray-400" />
+          <Building2 size={48 * scale} className="text-gray-400" />
         )}
       </div>
 
-      {/* Text content — left-aligned */}
-      <div className="flex flex-col" style={{ gap: scaleValue(6) }}>
+      {/* Text content — left-aligned, grows to fill space */}
+      <div className="flex flex-col flex-1" style={{ gap: scaleValue(6) }}>
         {/* Verified badge */}
         {isVerified && (
           <div
@@ -151,8 +152,8 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         <h3
           className="font-bold text-gray-900"
           style={{
-            fontSize: scaleValue(17),
-            lineHeight: scaleValue(22),
+            fontSize: scaleValue(20),
+            lineHeight: scaleValue(26),
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -167,8 +168,8 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           className="flex items-center flex-wrap text-gray-500"
           style={{
             gap: scaleValue(6),
-            fontSize: scaleValue(13),
-            lineHeight: scaleValue(18),
+            fontSize: scaleValue(15),
+            lineHeight: scaleValue(20),
           }}
         >
           {locationLabel && (
@@ -214,16 +215,16 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
       )}
 
       {/* Select button */}
-      <div className="flex justify-center">
+      <div className="flex mt-auto">
         <Button
           type="button"
           onClick={e => {
             e.stopPropagation();
             onToggleSelect?.();
           }}
-          size="xs"
+          size="sm"
           variant={isSelected ? "default" : "secondary"}
-          className="transition-colors duration-150"
+          className="w-full transition-colors duration-150"
         >
           {isSelected ? "Ta bort" : "Lägg till"}
         </Button>
