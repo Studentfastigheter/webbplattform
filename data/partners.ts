@@ -2,26 +2,26 @@ import type { PartnerItem } from "@/components/features/business/PartnerGrid";
 
 export const foundingPartners: PartnerItem[] = [
   {
-    name: "Reserverad",
+    name: "Grundande partner",
     category: "Grundande partner",
     description:
-      "Denna plats är redan under förhandling. Endast ett fåtal utvalda aktörer erbjuds möjligheten att bli grundande partner.",
+      "Som grundande partner får ni en framträdande position på plattformen med hög synlighet mot studenter, samt möjlighet att vara med och forma hur ert erbjudande presenteras från start.",
     logoSrc: "",
     href: "/for-foretag#bokning",
   },
   {
-    name: "Reserverad",
+    name: "Grundande partner",
     category: "Grundande partner",
     description:
-      "Denna plats är redan under förhandling. Endast ett fåtal utvalda aktörer erbjuds möjligheten att bli grundande partner.",
+      "Ni exponeras löpande i centrala delar av plattformen och associeras med lanseringen, vilket stärker ert varumärke i en relevant och attraktiv målgrupp.",
     logoSrc: "",
     href: "/for-foretag#bokning",
   },
   {
-    name: "1 plats kvar",
+    name: "Grundande partner",
     category: "Grundande partner",
     description:
-      "Den sista platsen som grundande partner. Kontakta oss för att ta del av vårt exklusiva erbjudande innan möjligheten stängs.",
+      "Partnerskapet ger er prioriterad synlighet, tidig närvaro i ekosystemet och möjligheten att bygga relationer med studenter redan från plattformens uppstart.",
     logoSrc: "",
     href: "/for-foretag#bokning",
   },
