@@ -430,7 +430,7 @@ export default function PortalAdsPage() {
                   showHostLogo={false}
                   imageTopRightContent={
                     <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold shadow-sm ${statusClassMap[item.statusTone]}`}
+                      className={`inline-flex rounded-full border px-3 py-2.5 text-[10px] font-semibold shadow-sm ${statusClassMap[item.statusTone]}`}
                     >
                       {item.statusLabel}
                     </span>
