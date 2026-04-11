@@ -119,15 +119,21 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         className="flex items-center justify-center shrink-0 self-center"
         style={{
           width: "100%",
-          height: scaleValue(150),
-          padding: scaleValue(8),
+          minHeight: scaleValue(80),
+          flexGrow: 1,
+          padding: scaleValue(4),
         }}
       >
         {logoUrl ? (
           <img
             src={logoUrl}
             alt={logoAlt ?? name}
-            className="max-h-full max-w-full object-contain"
+            className="object-contain"
+            style={{
+              maxWidth: "100%",
+              maxHeight: scaleValue(180),
+              borderRadius: scaleValue(6),
+            }}
           />
         ) : (
           <Building2 size={48 * scale} className="text-gray-400" />
@@ -135,7 +141,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
       </div>
 
       {/* Text content — left-aligned, grows to fill space */}
-      <div className="flex flex-col flex-1" style={{ gap: scaleValue(6) }}>
+      <div className="flex flex-col" style={{ gap: scaleValue(6) }}>
         {/* Verified badge */}
         {isVerified && (
           <div
@@ -215,16 +221,16 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
       )}
 
       {/* Select button */}
-      <div className="flex mt-auto">
+      <div className="flex">
         <Button
           type="button"
           onClick={e => {
             e.stopPropagation();
             onToggleSelect?.();
           }}
-          size="sm"
+          size="xs"
           variant={isSelected ? "default" : "secondary"}
-          className="w-full transition-colors duration-150"
+          className="w-full text-xs transition-colors duration-150"
         >
           {isSelected ? "Ta bort" : "Lägg till"}
         </Button>
