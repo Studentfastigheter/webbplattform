@@ -107,7 +107,7 @@ export default function TotalApplicantsChart({
         return;
       }
       const timeline: Timeline = await companyService
-        .applicationsTimeline(user.id.toString())
+        .applicationsTimeline(user.id)
         .catch(err => {
           console.error(err);
           return [];

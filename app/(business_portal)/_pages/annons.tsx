@@ -3,12 +3,25 @@
 import BostadAbout from "@/components/ads/BostadAbout";
 import BostadGallery from "@/components/ads/BostadGallery";
 import BostadLandlord from "@/components/ads/BostadLandlord";
-import { ListingDetail } from "@/components/ads/types";
+import { ListingDetailDTO } from "@/types/listing";
 import { FormGroup, FormShell, InputField } from "@/components/Dashboard/Form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
+type ListingDetail = ListingDetailDTO & {
+  address?: string;
+  images: string[];
+  landlord?: {
+    name: string;
+    subtitle: string;
+    logo: string;
+    rating: number;
+    reviewCount: number;
+    highlights: string[];
+    contactNote: string;
+  };
+};
 
 const listingContent: Record<string, ListingDetail> = {
   "vasagatan-19": {
@@ -17,9 +30,10 @@ const listingContent: Record<string, ListingDetail> = {
     area: "Innerstan",
     city: "Goteborg",
     address: "Vasagatan 19",
+    fullAddress: "Vasagatan 19",
     dwellingType: "Lagenhet",
-    rooms: "3 rum",
-    size: "42 m2",
+    rooms: 3,
+    sizeM2: 42,
     rent: 3800,
     moveIn: "2026-07-03",
     applyBy: "2026-05-24",
@@ -31,6 +45,18 @@ const listingContent: Record<string, ListingDetail> = {
       "/appartment.jpg",
       "/appartment.jpg",
     ],
+    imageUrls: [
+      "/appartment.jpg",
+      "/appartment.jpg",
+      "/appartment.jpg",
+      "/appartment.jpg",
+      "/appartment.jpg",
+    ],
+    ownerType: "company",
+    ownerName: "SGS Studentbostader",
+    ownerLogoUrl: "/logos/sgs-logo.svg",
+    ownerId: 0,
+    verifiedOwner: true,
     description:
       "Snygg citylya i lugnt kvarter. Modern 1a med gott om ljusinslapp, naturnara promenadstrak och trendiga cafeer runt hornet. Tunnelbanan framfor byggnaden tar dig snabbt till centrala stan pa 9 minuter. Bekvama dubbelsangar eller enkelsangar, pentry med alla nodvandigheter, badrum med dusch, smart-TV med Netflix och snabbt Wi-Fi for distansstudier. I samarbete med en specialist erbjuder vi en gratis guidad rundtur i Gamla Stan for alla bokningar.Snygg citylya i lugnt kvarter. Modern 1a med gott om ljusinslapp, naturnara promenadstrak och trendiga cafeer runt hornet. Tunnelbanan framfor byggnaden tar dig snabbt till centrala stan pa 9 minuter. Bekvama dubbelsangar eller enkelsangar, pentry med alla nodvandigheter, badrum med dusch, smart-TV med Netflix och snabbt Wi-Fi for distansstudier. I samarbete med en specialist erbjuder vi en gratis guidad rundtur i Gamla Stan for alla bokningar.Snygg citylya i lugnt kvarter. Modern 1a med gott om ljusinslapp, naturnara promenadstrak och trendiga cafeer runt hornet. Tunnelbanan framfor byggnaden tar dig snabbt till centrala stan pa 9 minuter. Bekvama dubbelsangar eller enkelsangar, pentry med alla nodvandigheter, badrum med dusch, smart-TV med Netflix och snabbt Wi-Fi for distansstudier. I samarbete med en specialist erbjuder vi en gratis guidad rundtur i Gamla Stan for alla bokningar.",
     landlord: {

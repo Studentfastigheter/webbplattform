@@ -22,18 +22,18 @@ export default function FilterButton({
 
   return(
     <div className="relative">
-      <button onClick={() => setFilterOpen(prev => !prev)} className={`border border-neutral-100 hover:text-neutral-800 text-sm font-semibold rounded-sm ${filterOpen ? "rounded-b-none text-neutral-800" : "rounded-b-sm text-neutral-500"} px-4 py-2 flex gap-2 cursor-pointer`}>
+      <button onClick={() => setFilterOpen(prev => !prev)} className={`flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-theme-xs transition hover:bg-gray-50 ${filterOpen ? "text-gray-900" : "text-gray-600"}`}>
         {icon}
         {options.find(option => option.value === sortOption)?.label} 
         <ChevronDown size={16} />
       </button>
-      <ul className="absolute text-sm top-9 right-0 left-0 border border-neutral-200 bg-white rounded-b-sm z-10 px-5 pb-0.5" style={{display: filterOpen ? "block" : "none"}}>
+      <ul className="absolute left-0 right-0 top-11 z-10 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm shadow-theme-md" style={{display: filterOpen ? "block" : "none"}}>
         {options.map(option => {
           if (option.value === sortOption) return null;
           return (
-            <li key={option.value} className="border-b border-neutral-200 last:border-none">
+            <li key={option.value}>
               <button 
-              className="w-full py-2.5 cursor-pointer" 
+              className="w-full cursor-pointer rounded-md px-2 py-2 text-left text-gray-700 hover:bg-gray-50" 
               onClick={() => {
                 setSortOption(option.value); 
                 setFilterOpen(false)

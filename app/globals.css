@@ -526,3 +526,87 @@ img, svg, video, canvas {
 .animate-dropdown {
   animation: dropdown 0.18s ease-out;
 }
+
+/* TailAdmin portal tokens */
+@theme {
+  --text-theme-sm: 14px;
+  --text-theme-sm--line-height: 20px;
+  --text-theme-xs: 12px;
+  --text-theme-xs--line-height: 18px;
+  --text-title-sm: 30px;
+  --text-title-sm--line-height: 38px;
+
+  --color-brand-25: #f6fbf8;
+  --color-brand-50: #e8f5ee;
+  --color-brand-100: #cce8d8;
+  --color-brand-200: #9fd0b6;
+  --color-brand-300: #6bb18d;
+  --color-brand-400: #3f9369;
+  --color-brand-500: #004225;
+  --color-brand-600: #0a7a4a;
+  --color-brand-700: #075c39;
+  --color-brand-800: #06472d;
+  --color-brand-900: #053824;
+
+  --color-success-50: #ecfdf3;
+  --color-success-500: #12b76a;
+  --color-success-700: #027a48;
+  --color-error-50: #fef3f2;
+  --color-error-500: #f04438;
+  --color-error-700: #b42318;
+
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+  --shadow-theme-sm:
+    0px 1px 3px 0px rgba(16, 24, 40, 0.1),
+    0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+  --shadow-theme-md:
+    0px 4px 8px -2px rgba(16, 24, 40, 0.1),
+    0px 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --shadow-theme-lg:
+    0px 12px 16px -4px rgba(16, 24, 40, 0.08),
+    0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+}
+
+.portal-admin {
+  font-family: var(--font-outfit), var(--font-geist-sans), sans-serif;
+}
+
+@utility menu-item {
+  @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm font-medium;
+}
+
+@utility menu-item-active {
+  @apply bg-brand-50 text-brand-500;
+}
+
+@utility menu-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100 hover:text-gray-700;
+}
+
+@utility menu-item-icon-active {
+  @apply text-brand-500;
+}
+
+@utility menu-item-icon-inactive {
+  @apply text-gray-500 group-hover:text-gray-700;
+}
+
+@utility menu-dropdown-item {
+  @apply relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-theme-sm font-medium;
+}
+
+@utility menu-dropdown-item-active {
+  @apply bg-brand-50 text-brand-500;
+}
+
+@utility menu-dropdown-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100;
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

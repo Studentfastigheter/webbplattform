@@ -23,12 +23,14 @@ export default function Statistic({
 
   return (
     <Container padding={"sm"} {...props}>
-      <div className="flex gap-2 text-sm text-neutral-400 mb-2">
-        <Icon size={14} className="text-neutral-400" />
-        <p className="tracking-wide">{label}</p>
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-500">
+          <Icon size={18} />
+        </div>
+        <p className="text-theme-sm font-medium text-gray-500">{label}</p>
       </div>
-      <div className="flex gap-2">
-        <p className="text-brand text-2xl/[24px] font-bold">
+      <div className="flex items-end gap-2">
+        <p className="text-3xl font-semibold leading-none text-gray-900">
           {Number(filteredData).toLocaleString("sv-SE")}
         </p>
         <Trend changeInPercent={filteredChangeInPercent} increaseDirection={increaseDirection} />

@@ -13,8 +13,13 @@ import { FolderDown, Plus } from "lucide-react"
 
 export default function Annonser() {
   return (
-    <>
-      <div className="mb-4 m-2 flex items-center gap-3 justify-between">
+    <div className="space-y-6">
+      <div>
+        <p className="text-theme-sm text-gray-500">Objekt</p>
+        <h1 className="text-2xl font-semibold text-gray-900">Annonser</h1>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-theme-xs lg:flex-row lg:items-center lg:justify-between">
         <Search />
 
         <div className="flex gap-2">
@@ -30,7 +35,7 @@ export default function Annonser() {
         </div>
       </div>
 
-      <div className="mb-8 m-2 flex gap-4">
+      <div className="flex flex-wrap gap-3">
         <FilterButton 
           options={[
             { label: "Alla städer", value: "all" }, 
@@ -50,7 +55,7 @@ export default function Annonser() {
         
       </div>
 
-      <div className="m-2 grid gap-4 grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AnnonsPreview 
           id="1"
           imageUrl="/appartment.jpg" 
@@ -295,6 +300,6 @@ export default function Annonser() {
       </div>
 
       
-    </>      
+    </div>      
   )
 }

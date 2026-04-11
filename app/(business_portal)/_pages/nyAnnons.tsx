@@ -8,7 +8,7 @@ export default function NyAnnons() {
   return (
     <div className="grid grid-cols-12">
 
-      <ImageUploadField className="col-span-3" title="Släpp din CSV-fil här!" maxSize="5MB" supportedFileTypes={[".csv"]} />
+      <ImageUploadField className="col-span-3" heading="Släpp din CSV-fil här!" maxSize="5MB" supportedFileTypes={[".csv"]} />
 
       <div className="my-2 col-span-3 text-center flex items-center">
         <p className="text-sm mx-8">eller</p>

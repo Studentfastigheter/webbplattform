@@ -158,11 +158,13 @@ function updateApplicationStatus(applicationIds: string[], status: string) {
 type Props = React.HTMLAttributes<HTMLDivElement> & {
   className?: string
   applicantsTableProps: Promise<ApplicantsTableProps[]>
+  initialFilterQueue?: boolean
 }
 
 export default function ApplicantsTable({
     className,
     applicantsTableProps,
+    initialFilterQueue = false,
     ...props
 }: Props) {
 
@@ -211,11 +213,15 @@ export default function ApplicantsTable({
     const [selectedStatus, setSelectedStatus] = useState<
     "pending" | "reviewed" | "accepted" | "rejected" | null
     >(null)
-    const [filterQueue, setFilterQueue] = useState(false)
+    const [filterQueue, setFilterQueue] = useState(initialFilterQueue)
 
     useEffect(() => {
       table.getColumn("object")?.setFilterValue(filterQueue ? "Bostadskö" : undefined)
     }, [filterQueue, table])
+
+    useEffect(() => {
+      setFilterQueue(initialFilterQueue)
+    }, [initialFilterQueue])
 
 
   return (

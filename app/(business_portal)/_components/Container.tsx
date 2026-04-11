@@ -37,7 +37,7 @@ export default function Container(
     
 ) {
     return (
-        <div {...props} onClick={onClick} className={twMerge(`bg-white m-2 relative rounded-lg border border-neutral-200 ${onClick ? "select-none cursor-pointer" : ""} ${borderStyle == "solid" ? "shadow-sm" : ""} ${PaddingOptions[padding]} ${BorderStyles[borderStyle]}`, className)}>
+        <div {...props} onClick={onClick} className={twMerge(`relative rounded-lg border border-gray-200 bg-white ${onClick ? "select-none cursor-pointer" : ""} ${borderStyle == "solid" ? "shadow-theme-xs" : ""} ${PaddingOptions[padding]} ${BorderStyles[borderStyle]}`, className)}>
             {children}
         </div>
     )

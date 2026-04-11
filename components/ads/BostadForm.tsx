@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { ListingDetail } from "./types";
+import { ListingDetailDTO } from "@/types/listing";
 
 
 import * as React from "react"
@@ -31,7 +31,7 @@ import { Textarea } from "../ui/textarea";
 import { toast } from "sonner";
 
 type Props = {
-  listing: ListingDetail;
+  listing: ListingDetailDTO;
   children: React.ReactNode;
 };
 

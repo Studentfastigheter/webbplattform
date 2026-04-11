@@ -35,7 +35,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       if (user !== null) {
-        const newApplications = await companyService.newApplications(user.id.toString());
+        const newApplications = await companyService.newApplications(user.id);
         setApplications(newApplications.map(app => ({ name: `${app.firstName} ${app.surname}`, address: app.address, })));
         return;
       }
@@ -49,9 +49,12 @@ export default function Home() {
   }, []);
 
   return user === null ? (<></>) : (
-    <>
-      <div className="p-2 flex justify-between items-center mt-2">
-        <h1 className="text-brand text-2xl font-bold">{`Välkommen tillbaka, ${user.displayName}`}</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-theme-sm text-gray-500">Company portal</p>
+          <h1 className="text-2xl font-semibold text-gray-900">{`Välkommen tillbaka, ${user.displayName}`}</h1>
+        </div>
         <div className="flex gap-4">
           <FilterButton 
             options={filterOptions} 
@@ -62,15 +65,15 @@ export default function Home() {
 
       <StatisticsContainer statisticsPromise={statisticsPromise} />
 
-      <div className="grid grid-cols-12 md:grid-cols-9">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         
-        <TotalApplicantsChart className="col-span-3" />
-        <ApplicantsDistributionChart className="col-span-3" />
-        <NewApplications className="col-span-3" applications={applications} />
+        <TotalApplicantsChart />
+        <ApplicantsDistributionChart />
+        <NewApplications applications={applications} />
       
       </div>
 
       <VacancyGraph />
-    </>
+    </div>
   )
 }

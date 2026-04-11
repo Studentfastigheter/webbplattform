@@ -21,8 +21,8 @@ export default function StatisticClient({
     const [selectedTimeframe, setSelectedTimeframe] = useState("1w");
 
     return (
-        <div>
-            <div className="flex items-center m-2">
+        <div className="space-y-4">
+            <div className="flex items-center">
                 <Toggles 
                     options={[
                         { value: "1w", ariaLabel: "1 vecka", label: "1 vecka" },
@@ -35,11 +35,10 @@ export default function StatisticClient({
                     value={selectedTimeframe}
                 />
             </div>
-            <div className="grid grid-cols-12 md:grid-cols-8">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((s) => (
                     <Statistic
                         key={s.label}
-                        className="col-span-3 md:col-span-2"
                         Icon={ICON_BY_KEY[s.iconKey]}
                         label={s.label}
                         data={s.data}

@@ -1,32 +1,19 @@
-import { getApplicantsTableData, getRecentApplications, getStatistics } from "@/lib/actions";
-import ApplicantsTable from "../_components/ApplicantsTable";
-import StatisticsContainer from "../_components/Statistics/StatisticsContainer";
-import { StatisticProps } from "../_statics/types";
-import { AvailableStatistics } from "@/lib/definitions";
+import { getApplicantsTableData } from "@/lib/actions";
+import ApplicationsInsights, {
+  type ApplicationsMode,
+} from "../_components/ApplicationsInsights";
 
-
-export default function Ansokningar() {
-
-  
-    const selectedStatistics: AvailableStatistics[] = ["applications", "views", "interactions", "active_posts"];
-    const statisticsPromise: Promise<StatisticProps[]> = getStatistics({ statisticsToFetch: selectedStatistics })
-    const applicantsTableProps = getApplicantsTableData({ pageSize: 20 })
-
+export default function Ansokningar({
+  mode = "interest",
+}: {
+  mode?: ApplicationsMode;
+}) {
+  const applicantsTableProps = getApplicantsTableData({ pageSize: 20 });
 
   return (
-    <div>
-      
-      <StatisticsContainer statisticsPromise={statisticsPromise} />
-
-        
-        
-      <div className="grid grid-cols-12 md:grid-cols-9">
-      
-        {/* <NewApplications className="col-span-3" applications={applications} /> */}
-        <ApplicantsTable className="col-span-12" applicantsTableProps={applicantsTableProps} />
-
-      </div>
-        
-    </div>
-  )
+    <ApplicationsInsights
+      applicantsTableProps={applicantsTableProps}
+      mode={mode}
+    />
+  );
 }
