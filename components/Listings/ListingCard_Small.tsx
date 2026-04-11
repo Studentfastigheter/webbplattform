@@ -30,6 +30,11 @@ export type ListingCardSmallProps = {
   onClick?: () => void;
   onHoverChange?: (hovering: boolean) => void;
   variant?: "default" | "compact";
+  footerContent?: React.ReactNode;
+  showFavoriteButton?: boolean;
+  imageTopRightContent?: React.ReactNode;
+  showHostLogo?: boolean;
+  contentTopRightContent?: React.ReactNode;
 };
 
 const BASE_WIDTH = 380;
@@ -67,6 +72,11 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     onClick,
     onHoverChange,
     variant = "default",
+    footerContent,
+    showFavoriteButton = true,
+    imageTopRightContent,
+    showHostLogo = true,
+    contentTopRightContent,
   } = props;
 
   const { user } = useAuth();
@@ -131,7 +141,13 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
   const logoSize = variant === "compact" ? 50 : 64;
   const contentPadding = 13;
-  const logoRightOffset = 16;
+  const logoRightOffset = showHostLogo ? 16 : 0;
+  const hasContentTopRight = Boolean(contentTopRightContent);
+  const contentRightPadding = showHostLogo
+    ? logoRightOffset + logoSize + 14
+    : hasContentTopRight
+      ? contentPadding + 96
+      : contentPadding;
   const logoAlt = hostName || landlordType
     ? `${hostName ?? landlordType} logotyp`
     : "Hyresvardens logotyp";
@@ -158,8 +174,12 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           lineHeight: 0,
         }}
       >
-        {/* Favorite Button (Only visible if logged in) */}
-        {user && (
+        {imageTopRightContent && (
+          <div className="absolute right-3 top-3 z-10">{imageTopRightContent}</div>
+        )}
+
+        {/* Favorite Button (Only visible if logged in and enabled) */}
+        {user && showFavoriteButton && (
           <button
             type="button"
             onClick={handleFavoriteClick}
@@ -195,31 +215,45 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
         className="relative flex flex-col"
         style={{
           padding: scaleValue(contentPadding),
-          paddingRight: scaleValue(logoRightOffset + logoSize + 14),
+          paddingRight: scaleValue(contentRightPadding),
           gap: scaleValue(8),
         }}
       >
-        <div
-          className="absolute top-1/2 flex items-center justify-center"
-          style={{
-            right: scaleValue(logoRightOffset),
-            width: scaleValue(logoSize),
-            height: scaleValue(logoSize),
-            borderRadius: scaleValue(6),
-            overflow: "hidden",
-            transform: "translateY(-50%)",
-          }}
-        >
-          <img
-            src={hostLogoUrl || "/campuslyan-logo.svg"}
-            alt={logoAlt}
-            className="block h-full w-full"
+        {contentTopRightContent && (
+          <div
+            className="absolute z-[1]"
             style={{
-              borderRadius: scaleValue(6),
-              objectFit: "contain",
+              top: scaleValue(contentPadding),
+              right: scaleValue(contentPadding),
             }}
-          />
-        </div>
+          >
+            {contentTopRightContent}
+          </div>
+        )}
+
+        {showHostLogo && (
+          <div
+            className="absolute top-1/2 flex items-center justify-center"
+            style={{
+              right: scaleValue(logoRightOffset),
+              width: scaleValue(logoSize),
+              height: scaleValue(logoSize),
+              borderRadius: scaleValue(6),
+              overflow: "hidden",
+              transform: "translateY(-50%)",
+            }}
+          >
+            <img
+              src={hostLogoUrl || "/campuslyan-logo.svg"}
+              alt={logoAlt}
+              className="block h-full w-full"
+              style={{
+                borderRadius: scaleValue(6),
+                objectFit: "contain",
+              }}
+            />
+          </div>
+        )}
 
         {/* Listing facts + host logo */}
         <div
@@ -304,6 +338,15 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
                 lineHeight={tagSize.lineHeight}
               />
             ))}
+          </div>
+        )}
+
+        {footerContent && (
+          <div
+            className="border-t border-gray-200 pt-2"
+            style={{ marginTop: scaleValue(2) }}
+          >
+            {footerContent}
           </div>
         )}
       </div>
