@@ -18,7 +18,7 @@ type Props = {
 export function SwitchSelect({
   value,
   onChange,
-  labels = { lista: "Lista", karta: "Karta" },
+  labels,
   className = "",
   disabled = false,
   fullWidth = false,
@@ -28,10 +28,12 @@ export function SwitchSelect({
 
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value! : internal;
+  const showLabels = labels !== undefined;
+  const resolvedLabels = { lista: labels?.lista ?? "Lista", karta: labels?.karta ?? "Karta" };
 
   const options = [
-    { key: "lista" as const, label: labels.lista ?? "Lista", icon: <List className="w-[18px] h-[18px]" /> },
-    { key: "karta" as const, label: labels.karta ?? "Karta", icon: <Map className="w-[18px] h-[18px]" /> },
+    { key: "lista" as const, label: resolvedLabels.lista, icon: <List className="h-4 w-4 sm:h-[18px] sm:w-[18px] xl:h-5 xl:w-5" /> },
+    { key: "karta" as const, label: resolvedLabels.karta, icon: <Map className="h-4 w-4 sm:h-[18px] sm:w-[18px] xl:h-5 xl:w-5" /> },
   ];
 
   const selectedIndex = currentValue === "karta" ? 1 : 0;
@@ -41,7 +43,11 @@ export function SwitchSelect({
     onChange?.(next);
   };
 
-  const widthClass = fullWidth ? "w-full" : "w-[160px] sm:w-[200px]";
+  const widthClass = fullWidth
+    ? "w-full"
+    : showLabels
+      ? "w-[128px] sm:w-[144px] xl:w-[152px]"
+      : "w-[72px] sm:w-20 xl:w-24";
 
   return (
     <div
@@ -49,11 +55,12 @@ export function SwitchSelect({
       aria-disabled={disabled}
       className={[
         "relative inline-grid grid-cols-2 items-center",
-        "h-8",
+        "h-8 sm:h-9",
         widthClass,
         "rounded-full bg-white",
         "border border-black/10",
-        "shadow-[0_7px_18px_rgba(0,0,0,0.12)]",
+        "shadow-[0_6px_18px_rgba(0,0,0,0.08)]",
+        "overflow-hidden",
         disabled ? "opacity-60 pointer-events-none" : "",
         className,
       ].join(" ")}
@@ -62,13 +69,22 @@ export function SwitchSelect({
       <motion.div
         aria-hidden
         className={[
-          // fyll hela höjden och halva bredden
-          "absolute top-0 bottom-0 left-0 w-1/2",
-          "rounded-full bg-[#004225]",
-          "shadow-[0_2px_10px_rgba(0,0,0,0.22)]",
+          "absolute inset-y-0 left-0 w-1/2",
+          "bg-[#004225]",
+          "shadow-[0_4px_12px_rgba(0,66,37,0.22)]",
         ].join(" ")}
-        animate={{ x: `${selectedIndex * 100}%` }}
-        transition={{ duration: 0.22, ease: "easeInOut" }}
+        initial={false}
+        animate={{
+          x: `${selectedIndex * 100}%`,
+          borderTopLeftRadius: selectedIndex === 0 ? "999px" : "0px",
+          borderBottomLeftRadius: selectedIndex === 0 ? "999px" : "0px",
+          borderTopRightRadius: selectedIndex === 1 ? "999px" : "0px",
+          borderBottomRightRadius: selectedIndex === 1 ? "999px" : "0px",
+        }}
+        transition={{
+          duration: 0.32,
+          ease: [0.22, 1, 0.36, 1],
+        }}
       />
 
       {options.map((opt) => {
@@ -79,16 +95,17 @@ export function SwitchSelect({
             type="button"
             role="tab"
             aria-selected={active}
+            aria-label={opt.label}
             onClick={() => setValue(opt.key)}
             className={[
               "relative z-10 h-full w-full flex items-center justify-center gap-2 rounded-full",
-              "text-sm font-medium tracking-tight",
+              "text-xs font-medium tracking-tight",
               "transition-colors duration-200",
               active ? "text-white" : "text-black/80",
             ].join(" ")}
           >
             {opt.icon}
-            {opt.label}
+            {showLabels && <span>{opt.label}</span>}
           </button>
         );
       })}

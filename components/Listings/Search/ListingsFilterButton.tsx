@@ -33,6 +33,7 @@ type ListingsFilterButtonProps = Omit<
   propertyTypes?: { id: string; label: string }[];
   priceHistogram?: number[];
   priceBounds?: PriceBounds;
+  showPriceFilter?: boolean;
   initialState?: ListingsFilterState;
   onApply?: (state: ListingsFilterState) => void;
   onClear?: () => void;
@@ -46,6 +47,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
   propertyTypes = [],
   priceHistogram = [],
   priceBounds = defaultBounds,
+  showPriceFilter = true,
   initialState,
   onApply,
   onClear,
@@ -78,6 +80,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
     const amenities = exists
       ? state.amenities.filter((item) => item !== id)
       : [...state.amenities, id];
+
     updateState({
       ...state,
       amenities,
@@ -106,30 +109,36 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
   const content = (
     <>
-      <AmenityGridSection
-        title="Rekommenderat för dig"
-        description="Dessa värden kan fyllas med populär data från databasen."
-        items={amenities}
-        selectedIds={state.amenities}
-        onToggle={handleAmenityToggle}
-      />
+      {amenities.length > 0 && (
+        <AmenityGridSection
+          title="Rekommenderat för dig"
+          description="Dessa värden kan fyllas med populär data från databasen."
+          items={amenities}
+          selectedIds={state.amenities}
+          onToggle={handleAmenityToggle}
+        />
+      )}
 
-      <PropertyTypeSection
-        title="Boendetyp"
-        items={propertyTypes}
-        selectedId={state.propertyType}
-        onSelect={handlePropertyType}
-      />
+      {propertyTypes.length > 0 && (
+        <PropertyTypeSection
+          title="Boendetyp"
+          items={propertyTypes}
+          selectedId={state.propertyType}
+          onSelect={handlePropertyType}
+        />
+      )}
 
-      <PriceRangeSection
-        title="Prisintervall"
-        description="Resepris, inklusive alla avgifter."
-        histogram={priceHistogram}
-        bounds={priceBounds}
-        value={[state.priceRange.min, state.priceRange.max]}
-        onChange={(range) => handlePriceRangeChange(range)}
-        withBorder={false}
-      />
+      {showPriceFilter && (
+        <PriceRangeSection
+          title="Prisintervall"
+          description="Resepris, inklusive alla avgifter."
+          histogram={priceHistogram}
+          bounds={priceBounds}
+          value={[state.priceRange.min, state.priceRange.max]}
+          onChange={(range) => handlePriceRangeChange(range)}
+          withBorder={false}
+        />
+      )}
     </>
   );
 

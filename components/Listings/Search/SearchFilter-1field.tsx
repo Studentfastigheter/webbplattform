@@ -19,12 +19,14 @@ export type OneFieldSearchProps = {
   field: OneFieldConfig;
   onSubmit: (values: Record<string, FieldValue>) => void;
   className?: string;
+  renderFilter?: () => React.ReactNode;
 };
 
 const OneFieldSearch: React.FC<OneFieldSearchProps> = ({
   field,
   onSubmit,
   className,
+  renderFilter,
 }) => {
   const fields: FilterField[] = [
     {
@@ -39,6 +41,7 @@ const OneFieldSearch: React.FC<OneFieldSearchProps> = ({
       fields={fields}
       onSubmit={onSubmit}
       className={className}
+      renderFilter={renderFilter}
     />
   );
 };

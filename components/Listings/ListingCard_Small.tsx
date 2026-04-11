@@ -120,10 +120,10 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
   const scaleValue = (value: number) => `${(value * scale).toFixed(2)}px`;
   const tagSize = {
-    height: 26 * scale,
-    horizontalPadding: 14 * scale,
-    fontSize: 14 * scale,
-    lineHeight: 20 * scale,
+    height: 24 * scale,
+    horizontalPadding: 12 * scale,
+    fontSize: 13 * scale,
+    lineHeight: 18 * scale,
   };
 
   const safeTags = tags ?? [];
@@ -236,8 +236,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             <p
               className="text-gray-500"
               style={{
-                fontSize: scaleValue(12),
-                lineHeight: scaleValue(16),
+                fontSize: scaleValue(11.5),
+                lineHeight: scaleValue(15),
                 display: "-webkit-box",
                 WebkitLineClamp: 1,
                 WebkitBoxOrient: "vertical",
@@ -251,8 +251,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             <h3
               className="font-medium text-gray-900"
               style={{
-                fontSize: scaleValue(18),
-                lineHeight: scaleValue(23),
+                fontSize: scaleValue(17),
+                lineHeight: scaleValue(22),
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
@@ -267,8 +267,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
               className="font-medium text-gray-900"
               style={{
                 marginTop: scaleValue(3),
-                fontSize: scaleValue(15.5),
-                lineHeight: scaleValue(20),
+                fontSize: scaleValue(14.5),
+                lineHeight: scaleValue(19),
               }}
             >
               {formatRent(rent)}
@@ -277,7 +277,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             <p
               className="text-gray-500"
               style={{
-                fontSize: scaleValue(12.5),
+                fontSize: scaleValue(12),
                 lineHeight: scaleValue(16),
                 wordBreak: "break-word",
               }}
