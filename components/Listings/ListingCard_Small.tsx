@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Tag from "../ui/Tag";
-import VerifiedTag from "../ui/VerifiedTag";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -36,12 +35,9 @@ export type ListingCardSmallProps = {
 const BASE_WIDTH = 380;
 const CARD_MIN_WIDTH = 280;
 const COMPACT_CARD_MIN_WIDTH = 260;
-const IMAGE_BASE_HEIGHT = 220;
-const IMAGE_COMPACT_HEIGHT = 180;
+const IMAGE_ASPECT_RATIO = "16 / 10";
 const MIN_SCALE = 0.55;
 const MAX_SCALE = 1;
-const BADGE_MIN_SCALE = 0.8;
-const BADGE_MAX_SCALE = 1;
 
 const formatRent = (rent?: number | null) =>
   typeof rent === "number"
@@ -63,7 +59,6 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     landlordType,
     hostName,
     hostLogoUrl,
-    isVerified = false,
     id,
     isFavorite,
     onFavoriteToggle,
@@ -97,8 +92,6 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
   const baseWidth = variant === "compact" ? 320 : BASE_WIDTH;
   const maxWidth = variant === "compact" ? 360 : 480;
-  const imageBaseHeight =
-    variant === "compact" ? IMAGE_COMPACT_HEIGHT : IMAGE_BASE_HEIGHT;
 
   useEffect(() => {
     const node = cardRef.current;
@@ -132,12 +125,16 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     fontSize: 14 * scale,
     lineHeight: 20 * scale,
   };
-  const badgeScale = Math.min(
-    Math.max(scale, BADGE_MIN_SCALE),
-    BADGE_MAX_SCALE
-  );
 
   const safeTags = tags ?? [];
+  const locationText = [area, city].filter(Boolean).join(", ") || "Ej angivet";
+  const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
+  const logoSize = variant === "compact" ? 50 : 64;
+  const contentPadding = 13;
+  const logoRightOffset = 16;
+  const logoAlt = hostName || landlordType
+    ? `${hostName ?? landlordType} logotyp`
+    : "Hyresvardens logotyp";
 
   return (
     <div
@@ -157,7 +154,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
       <div
         className="w-full bg-gray-100 overflow-hidden relative shrink-0 group/image"
         style={{
-          height: scaleValue(imageBaseHeight),
+          aspectRatio: IMAGE_ASPECT_RATIO,
+          lineHeight: 0,
         }}
       >
         {/* Favorite Button (Only visible if logged in) */}
@@ -172,121 +170,119 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           </button>
         )}
 
-        <div className="h-full w-full">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={title}
-              className="h-full w-full object-cover transition-transform duration-500"
-            />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center text-gray-400">
-              <span style={{ fontSize: scaleValue(14) }}>Ingen bild</span>
-            </div>
-          )}
-        </div>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={title}
+            className="absolute inset-0 block h-full w-full object-cover object-center transition-transform duration-500"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+            <span
+              style={{
+                fontSize: scaleValue(14),
+                lineHeight: scaleValue(18),
+              }}
+            >
+              Ingen bild
+            </span>
+          </div>
+        )}
       </div>
 
       {/* CONTENT */}
       <div
-        className="flex flex-col"
+        className="relative flex flex-col"
         style={{
-          padding: scaleValue(16),
-          gap: scaleValue(12),
+          padding: scaleValue(contentPadding),
+          paddingRight: scaleValue(logoRightOffset + logoSize + 14),
+          gap: scaleValue(8),
         }}
       >
-        {/* Title + Badge */}
         <div
-          className="flex items-start justify-between"
-          style={{ gap: scaleValue(16) }}
-        >
-          <h3
-            className="font-bold text-gray-900"
-            style={{
-              fontSize: scaleValue(18),
-              lineHeight: scaleValue(22),
-              minHeight: scaleValue(44), // reserve two lines
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {title}
-          </h3>
-
-          {isVerified && (
-            <div
-              style={{
-                transform: `scale(${badgeScale})`,
-                transformOrigin: "top right",
-                flexShrink: 0,
-              }}
-            >
-              <VerifiedTag />
-            </div>
-          )}
-        </div>
-
-        {/* Info grid: two columns */}
-        <div
-          className="grid"
+          className="absolute top-1/2 flex items-center justify-center"
           style={{
-            gridTemplateColumns: "1fr auto",
-            gap: `${scaleValue(4)} ${scaleValue(16)}`,
-            fontSize: scaleValue(14),
+            right: scaleValue(logoRightOffset),
+            width: scaleValue(logoSize),
+            height: scaleValue(logoSize),
+            borderRadius: scaleValue(6),
+            overflow: "hidden",
+            transform: "translateY(-50%)",
           }}
         >
-          {/* Row 1 left: address */}
-          <p className="font-medium text-gray-700" style={{ wordBreak: "break-word" }}>
-            {[area, city].filter(Boolean).join(", ")}
-          </p>
-
-          {/* Row 1 right: price */}
-          <p
-            className="font-bold text-gray-900 whitespace-nowrap text-right"
+          <img
+            src={hostLogoUrl || "/campuslyan-logo.svg"}
+            alt={logoAlt}
+            className="block h-full w-full"
             style={{
-              fontSize: scaleValue(17),
-              lineHeight: scaleValue(22),
+              borderRadius: scaleValue(6),
+              objectFit: "contain",
+            }}
+          />
+        </div>
+
+        {/* Listing facts + host logo */}
+        <div
+          className="min-w-0"
+        >
+          <div
+            className="min-w-0"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: scaleValue(3),
             }}
           >
-            {formatRent(rent)}
-          </p>
-
-          {/* Row 2 left: details */}
-          <p
-            className="text-gray-500"
-            style={{ wordBreak: "break-word" }}
-          >
-            {dwellingType ?? "-"} {"\u00b7"} {rooms ?? "-"} rum {"\u00b7"} {sizeM2 ?? "-"} m{"\u00b2"}
-          </p>
-
-          {/* Row 2 right: host logo + name */}
-          <div
-            className="flex items-center justify-end"
-            style={{ gap: scaleValue(6) }}
-          >
-            <img
-              src={hostLogoUrl || "/campuslyan-logo.svg"}
-              alt={hostName || "CampusLyan"}
-              className="bg-gray-50 border border-gray-200"
-              style={{
-                width: scaleValue(22),
-                height: scaleValue(22),
-                borderRadius: "999px",
-                objectFit: "cover",
-                flexShrink: 0,
-              }}
-            />
             <p
-              className="text-gray-500 font-medium text-right"
+              className="text-gray-500"
               style={{
                 fontSize: scaleValue(12),
+                lineHeight: scaleValue(16),
+                display: "-webkit-box",
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                wordBreak: "break-word",
+              }}
+            >
+              {locationText}
+            </p>
+
+            <h3
+              className="font-medium text-gray-900"
+              style={{
+                fontSize: scaleValue(18),
+                lineHeight: scaleValue(23),
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                wordBreak: "break-word",
+              }}
+            >
+              {title}
+            </h3>
+
+            <p
+              className="font-medium text-gray-900"
+              style={{
+                marginTop: scaleValue(3),
+                fontSize: scaleValue(15.5),
+                lineHeight: scaleValue(20),
+              }}
+            >
+              {formatRent(rent)}
+            </p>
+
+            <p
+              className="text-gray-500"
+              style={{
+                fontSize: scaleValue(12.5),
                 lineHeight: scaleValue(16),
                 wordBreak: "break-word",
               }}
             >
-              {hostName ?? landlordType}
+              {detailsText}
             </p>
           </div>
         </div>
