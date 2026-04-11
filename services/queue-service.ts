@@ -15,11 +15,11 @@ export interface CompanyDTO {
 };
 
 export type QueueFilters = {
-  id?: string;         // Queue id,                       TODO: This should probably change (JaarmaCo@git)
-  city?: string;       // City the queues should be in.
-  pageNumber: number;  // Page number to get.
-  pageSize: number;    // Number of entries in a page.
-  pageCount: number;   // Number of pages to fetch.
+  id?: string | null;          // Queue id, TODO: This should probably change (JaarmaCo@git)
+  city?: string | null;        // City the queues should be in.
+  pageNumber?: number;         // Page number to get.
+  pageSize?: number;           // Number of entries in a page.
+  pageCount?: number;          // Number of pages to fetch.
 };
 
 const DEFAULT_PAGE_SIZE = 12;
@@ -31,7 +31,7 @@ export const queueService = {
                  pageNumber = 1,
                  pageSize   = DEFAULT_PAGE_SIZE,
                  pageCount  = 1,
-               }: QueueFilters = {}): Promise<HousingQueueDTO> => {
+               }: QueueFilters = {}): Promise<HousingQueueDTO[]> => {
     const drop = pageSize * (pageNumber - 1);
     const take = pageSize;
     const query: Record<string, any> = {

@@ -1,17 +1,10 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import ChipCloudSection from "@/components/Listings/filter_sections/ChipCloudSection";
 import StatusCardSection from "@/components/Listings/filter_sections/StatusCardSection";
-import FilterButton, {
-  type FilterButtonProps,
-} from "./filterbutton";
+import FilterButton, { type FilterButtonProps } from "./filterbutton";
 
 export type QueueFilterState = {
   cities: string[];
@@ -75,11 +68,7 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
   emptyState,
   ...buttonProps
 }) => {
-  const resolvedInitial = useMemo(
-    () => initialState,
-    [initialState]
-  );
-
+  const resolvedInitial = useMemo(() => initialState, [initialState]);
   const [state, setState] = useState<QueueFilterState>(resolvedInitial);
 
   useEffect(() => {
@@ -122,38 +111,44 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
 
     return (
       <>
-        <ChipCloudSection
-          title="Var vill du ställa dig i kö?"
-          description="Städer hämtas dynamiskt från databasen."
-          items={cities.map((city) => ({
-            id: city,
-            label: city,
-            count: cityCounts?.[city],
-          }))}
-          selectedIds={state.cities}
-          onToggle={(id) => toggleValue("cities", id)}
-        />
+        {cities.length > 0 && (
+          <ChipCloudSection
+            title="Var vill du ställa dig i kö?"
+            description="Städer hämtas dynamiskt från databasen."
+            items={cities.map((city) => ({
+              id: city,
+              label: city,
+              count: cityCounts?.[city],
+            }))}
+            selectedIds={state.cities}
+            onToggle={(id) => toggleValue("cities", id)}
+          />
+        )}
 
-        <ChipCloudSection
-          title="Hyresvärd"
-          description="Visar vilka köer som hanteras av respektive värd."
-          items={landlords.map((landlord) => ({
-            id: landlord,
-            label: landlord,
-            count: landlordCounts?.[landlord],
-          }))}
-          selectedIds={state.landlords}
-          onToggle={(id) => toggleValue("landlords", id)}
-        />
+        {landlords.length > 0 && (
+          <ChipCloudSection
+            title="Bostadskö"
+            description="Visar specifika bostadsköer."
+            items={landlords.map((landlord) => ({
+              id: landlord,
+              label: landlord,
+              count: landlordCounts?.[landlord],
+            }))}
+            selectedIds={state.landlords}
+            onToggle={(id) => toggleValue("landlords", id)}
+          />
+        )}
 
-        <StatusCardSection
-          title="Köläge"
-          description="Anpassa om du vill se öppna köer eller alla."
-          items={statuses}
-          selectedId={state.status}
-          onSelect={(id) => updateState({ ...state, status: id })}
-          withBorder={false}
-        />
+        {statuses.length > 0 && (
+          <StatusCardSection
+            title="Köläge"
+            description="Anpassa om du vill se öppna köer eller alla."
+            items={statuses}
+            selectedId={state.status}
+            onSelect={(id) => updateState({ ...state, status: id })}
+            withBorder={false}
+          />
+        )}
       </>
     );
   }, [
