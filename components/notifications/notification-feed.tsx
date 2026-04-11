@@ -4,7 +4,6 @@ import * as React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { NotificationItem } from "@/types";
 import { notificationService } from "@/services/notification-service";
-import { MessageNotificationCard } from "./cards/message-card";
 import { QueueUpdateNotificationCard } from "./cards/queue-update-card";
 import { ListingStatusNotificationCard } from "./cards/listing-status-card";
 import { useAuth } from "@/context/AuthContext";
@@ -52,9 +51,13 @@ export function NotificationsFeed({ items: initialItems }: Props) {
   };
 
   const ordered = React.useMemo(
-    () => [...notifications].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ),
+    () =>
+      notifications
+        .filter((notification) => notification.type !== "message")
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
     [notifications]
   );
 
@@ -87,7 +90,7 @@ function renderNotification(notification: NotificationItem) {
   // Samma switch-logik som tidigare...
   switch (notification.type) {
     case "message":
-      return <MessageNotificationCard notification={notification} />;
+      return null;
     case "queue_update":
       return <QueueUpdateNotificationCard notification={notification} />;
     case "listing_status":

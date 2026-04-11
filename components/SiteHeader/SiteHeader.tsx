@@ -45,7 +45,6 @@ const studentNavItems: NavItem[] = [
       { name: "Mina köer", link: "/koer" },
     ],
   },
-  { name: "Meddelanden", link: "/meddelanden" },
   { name: "Notiser", link: "/notiser" },
 ];
 
@@ -60,7 +59,6 @@ const landlordNavItems: NavItem[] = [
       { name: "Ansökningar", link: "/ansokningar" },
     ],
   },
-  { name: "Meddelanden", link: "/meddelanden" },
   { name: "Notiser", link: "/notiser" },
 ];
 

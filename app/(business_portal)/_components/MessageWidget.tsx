@@ -317,9 +317,6 @@ export function MessageWidget({ messages, onMarkAllRead, onMarkRead }: Props) {
 
         {/* Footer */}
         <div className="flex items-center justify-between p-3">
-          <Link href="/portal/meddelanden" className="text-sm underline underline-offset-4">
-            Visa alla
-          </Link>
           <Link href="/portal/ansokningar" className="text-sm underline underline-offset-4">
             Ansökningar
           </Link>
