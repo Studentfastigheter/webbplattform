@@ -9,8 +9,8 @@ type AuthCtx = {
   token: string | null; // NYTT: Exponera token för att fixa TypeScript-fel
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (data: LoginRequest) => Promise<void>;
-  register: (data: RegisterRequest) => Promise<void>;
+  login: (data: LoginRequest) => Promise<User>;
+  register: (data: RegisterRequest) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>; 
   updateUser: (data: UpdateUserRequest) => Promise<void>;
@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("token", res.accessToken);
     setToken(res.accessToken); // Uppdatera token vid inloggning
     setUser(res.user);
+    return res.user;
   };
 
   // 3. Register
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("token", res.accessToken);
     setToken(res.accessToken); // Uppdatera token vid registrering
     setUser(res.user);
+    return res.user;
   };
 
   // 4. Logout
@@ -111,5 +113,4 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
-
 

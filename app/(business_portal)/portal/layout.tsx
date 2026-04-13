@@ -1,5 +1,6 @@
 // app/(dashboard)/layout.tsx
 import type { ReactNode } from "react";
+import { PortalAccountGuard } from "@/components/auth/AccountRouteGuards";
 import { DashboardShell } from "../_components/DashboardShell";
 
 export default function DashboardLayout({
@@ -8,8 +9,10 @@ export default function DashboardLayout({
   children: ReactNode;
 }) {
   return (
-    <DashboardShell>
-      {children}
-    </DashboardShell>
+    <PortalAccountGuard>
+      <DashboardShell>
+        {children}
+      </DashboardShell>
+    </PortalAccountGuard>
   );
 }
