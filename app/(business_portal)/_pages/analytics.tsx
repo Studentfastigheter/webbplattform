@@ -56,7 +56,7 @@ const defaultAnalyticsPeriods = ["P7D", "P1M", "P3M", "P1Y"];
 const defaultSelectedPeriod = "P1M";
 const periodLabels: Record<string, string> = {
   P7D: "7 dagar",
-  P1M: "1 manad",
+  P1M: "1 månad",
   P3M: "3 manader",
   P1Y: "1 ar",
 };
@@ -521,14 +521,14 @@ export default function Analytics() {
   );
   const trendData = useMemo(() => buildTrendRows(payload.timeline), [payload.timeline]);
   const trendSeries: TrendSeries[] = [
-    { key: "applications", label: "Ansokningar", color: "var(--color-brand-500)" },
+    { key: "applications", label: "Ansökningar", color: "var(--color-brand-500)" },
     { key: "avg", label: "Rullande snitt", color: "var(--color-brand-300)" },
   ];
 
   const funnelSteps: FunnelStep[] = [
     { label: "Visningar", value: metrics.viewings.count },
     { label: "Interaktioner", value: metrics.interactions.count },
-    { label: "Ansokningar", value: metrics.applications.count },
+    { label: "Ansökningar", value: metrics.applications.count },
   ];
   const applicationRate =
     metrics.viewings.count > 0 ? (metrics.applications.count / metrics.viewings.count) * 100 : 0;
@@ -543,7 +543,7 @@ export default function Analytics() {
       color: metricPalette.interactions,
     },
     {
-      label: "Ansokningar",
+      label: "Ansökningar",
       value: metrics.applications.count,
       color: metricPalette.applications,
     },
@@ -592,14 +592,14 @@ export default function Analytics() {
       ? payload.newApplications.slice(0, 8).map((application, index) => ({
           id: String(application.applicationId ?? application.id ?? application.studentId ?? index),
           title: `${application.firstName ?? ""} ${application.surname ?? ""}`.trim() || "Ny ansokan",
-          subtitle: shortText(application.listingTitle ?? application.address ?? "Okand annons"),
+          subtitle: shortText(application.listingTitle ?? application.address ?? "Okänd annons"),
           meta: application.submittedAt ?? application.createdAt ?? "Ny ansokan",
         }))
       : [
           {
             id: "empty",
-            title: "Inga nya ansokningar",
-            subtitle: "Nya ansokningar visas har nar backend skickar data.",
+            title: "Inga nya ansökningar",
+            subtitle: "Nya ansokningar visas här när backend skickar data.",
             meta: "Uppdatera sidan senare",
           },
         ];
@@ -611,9 +611,9 @@ export default function Analytics() {
   if (!user || user.accountType !== "company") {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h1 className="text-xl font-semibold text-gray-900">Ingen foretagsportal hittades</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Ingen företagsportal hittades</h1>
         <p className="mt-2 text-theme-sm text-gray-500">
-          Logga in som foretag for att visa analysdatan.
+          Logga in som företag för att visa analysdatan.
         </p>
       </div>
     );
@@ -625,10 +625,10 @@ export default function Analytics() {
         <div className="space-y-2">
           <p className="text-theme-sm text-gray-500">Analytics</p>
           <h1 className="text-2xl font-semibold text-gray-900">
-            Analys for {user.companyName || user.displayName || "foretaget"}
+            Analys för {user.companyName || user.displayName || "företaget"}
           </h1>
           <p className="text-theme-sm text-gray-500">
-            Statistik for ansokningar, visningar, interaktioner och aktiva annonser.
+            Statistik för ansökningar, visningar, interaktioner och aktiva annonser.
           </p>
           {errorMessage ? <p className="text-theme-xs text-error-700">{errorMessage}</p> : null}
         </div>
@@ -654,7 +654,7 @@ export default function Analytics() {
           change={formatChange(metrics.applications.percentageChange)}
           direction={metrics.applications.percentageChange >= 0 ? "up" : "down"}
           icon={<Users className="h-6 w-6" />}
-          label="Ansokningar"
+          label="Ansökningar"
           value={formatNumber(metrics.applications.count)}
         />
         <MetricCard
@@ -689,7 +689,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <TrendAreaChartCard
           data={trendData}
-          description="Manadsvy for ansokningar med rullande snitt."
+          description="Manadsvy för ansökningar med rullande snitt."
           series={trendSeries}
           title="Ansokningstrend"
         />
@@ -711,16 +711,16 @@ export default function Analytics() {
           title="Konvertering"
         />
         <DonutBreakdownCard
-          description="Fordelning av ansokningar per annons."
+          description="Fördelning av ansokningar per annons."
           items={objectDonutItems}
           title="Toppannonser"
         />
         <ActivityListCard
-          description="Senaste ansokningarna fran analytics-endpointen."
+          description="Senaste ansokningarna från analytics-endpointen."
           items={activityItems}
-          title="Nya ansokningar"
+          title="Nya ansökningar"
         />
-        <CardShell description="Beraknade nyckeltal for vald period." title="Nyckeltal">
+        <CardShell description="Beraknade nyckeltal för vald period." title="Nyckeltal">
           <div className="grid gap-3 text-theme-sm text-gray-600">
             <div className="flex items-center justify-between">
               <span>Vald period</span>
@@ -735,7 +735,7 @@ export default function Analytics() {
               <span className="font-medium text-gray-800">{formatPercent(interactionRate)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Ansokningar per aktiv annons</span>
+              <span>Ansökningar per aktiv annons</span>
               <span className="font-medium text-gray-800">
                 {(
                   metrics.applications.count / Math.max(metrics.activeListings.count, 1)
@@ -757,9 +757,9 @@ export default function Analytics() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <TopListingsTableCard
-          description="Annonser sorterade efter antal ansokningar."
+          description="Annonser sorterade efter antal ansökningar."
           rows={topListingRows}
-          title="Ansokningar per annons"
+          title="Ansökningar per annons"
         />
         <ActiveAdsCard ads={payload.currentAds} companyName={user.companyName} />
       </div>

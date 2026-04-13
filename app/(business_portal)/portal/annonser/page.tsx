@@ -141,7 +141,7 @@ function mapStatus(statusRaw?: string): {
     return { label: "Inaktiv", tone: "warning" };
   }
 
-  return { label: statusRaw ?? "Okand", tone: "neutral" };
+  return { label: statusRaw ?? "Okänd", tone: "neutral" };
 }
 
 function formatDate(value?: string): string {

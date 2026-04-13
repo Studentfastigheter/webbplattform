@@ -60,7 +60,7 @@ const metricPalette = {
 };
 const periodLabels: Record<string, string> = {
   P7D: "7 dagar",
-  P1M: "1 manad",
+  P1M: "1 månad",
   P3M: "3 manader",
   P1Y: "1 ar",
 };
@@ -466,7 +466,7 @@ export default function PortalOverview() {
   const trendSeries: TrendSeries[] = [
     {
       key: "applications",
-      label: "Ansokningar",
+      label: "Ansökningar",
       color: "var(--color-brand-500)",
     },
     {
@@ -519,7 +519,7 @@ export default function PortalOverview() {
         color: metricPalette.interactions,
       },
       {
-        label: "Ansokningar",
+        label: "Ansökningar",
         value: totals.applications.count,
         color: metricPalette.applications,
       },
@@ -538,7 +538,7 @@ export default function PortalOverview() {
   const funnelSteps: FunnelStep[] = [
     { label: "Visningar", value: totals.viewings.count },
     { label: "Interaktioner", value: totals.interactions.count },
-    { label: "Ansokningar", value: totals.applications.count },
+    { label: "Ansökningar", value: totals.applications.count },
   ];
 
   const applicationRate =
@@ -551,8 +551,8 @@ export default function PortalOverview() {
       return [
         {
           id: "empty",
-          title: "Inga nya ansokningar",
-          subtitle: "Nya ansokningar visas har nar data finns.",
+          title: "Inga nya ansökningar",
+          subtitle: "Nya ansokningar visas här när data finns.",
           meta: "Uppdatera sidan om en stund",
         },
       ];
@@ -604,9 +604,9 @@ export default function PortalOverview() {
   if (!user) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h1 className="text-xl font-semibold text-gray-900">Ingen anvandare hittades</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Ingen användare hittades</h1>
         <p className="mt-2 text-theme-sm text-gray-500">
-          Logga in igen for att visa portalens oversikt.
+          Logga in igen för att visa portalens oversikt.
         </p>
       </div>
     );
@@ -618,10 +618,10 @@ export default function PortalOverview() {
         <div className="flex flex-col gap-2">
           <p className="text-theme-sm text-gray-500">Company portal</p>
           <h1 className="text-2xl font-semibold text-gray-900">
-            Oversikt for {user.displayName || user.companyName || "Foretaget"}
+            Översikt för {user.displayName || user.companyName || "Företaget"}
           </h1>
           <p className="text-theme-sm text-gray-500">
-            Samlad bild over annonser, ansokningar och aktuell efterfragan.
+            Samlad bild över annonser, ansökningar och aktuell efterfrågan.
           </p>
           {errorMessage ? (
             <p className="text-theme-xs text-error-700">{errorMessage}</p>
@@ -649,7 +649,7 @@ export default function PortalOverview() {
           change={formatChange(totals.applications.percentageChange)}
           direction={totals.applications.percentageChange >= 0 ? "up" : "down"}
           icon={<Users className="h-6 w-6" />}
-          label="Ansokningar"
+          label="Ansökningar"
           value={totals.applications.count.toLocaleString("sv-SE")}
         />
         <MetricCard
@@ -683,12 +683,12 @@ export default function PortalOverview() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <TrendAreaChartCard
           data={trendData}
-          description="Ansokningar over tid med rullande snitt."
+          description="Ansökningar över tid med rullande snitt."
           series={trendSeries}
           title="Ansokningstrend"
         />
         <DonutBreakdownCard
-          description="Fordelning av ansokningar per objekt."
+          description="Fördelning av ansokningar per objekt."
           items={donutItems}
           title="Toppobjekt"
         />
@@ -706,9 +706,9 @@ export default function PortalOverview() {
           title="Datamix"
         />
         <ActivityListCard
-          description="Senaste inkomna ansokningar."
+          description="Senast inkomna ansökningar."
           items={activityItems}
-          title="Nya ansokningar"
+          title="Nya ansökningar"
         />
         <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-800">Nyckeltal</h3>
@@ -738,7 +738,7 @@ export default function PortalOverview() {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Snitt ansokningar/annons</span>
+              <span>Snitt ansökningar/annons</span>
               <span className="font-medium text-gray-800">
                 {totals.averagePerListing.toLocaleString("sv-SE", {
                   minimumFractionDigits: 1,
@@ -753,13 +753,13 @@ export default function PortalOverview() {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Ansokningar i funnel</span>
+              <span>Ansökningar i funnel</span>
               <span className="font-medium text-gray-800">
                 {totals.applications.count.toLocaleString("sv-SE")}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Nya ansokningar idag</span>
+              <span>Nya ansökningar idag</span>
               <span className="font-medium text-gray-800">
                 {payload.newApplications.length.toLocaleString("sv-SE")}
               </span>
@@ -770,7 +770,7 @@ export default function PortalOverview() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <TopListingsTableCard
-          description="Objekt med flest ansokningar just nu."
+          description="Objekt med flest ansökningar just nu."
           rows={topRows}
           title="Objektprestanda"
         />

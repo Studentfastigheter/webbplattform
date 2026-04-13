@@ -33,12 +33,12 @@ const periodOptions: { label: string; value: TimePeriod }[] = [
 ];
 const periodToGeneralPeriod: Record<TimePeriod, string> = { "30d": "P1M", "90d": "P3M", "12m": "P1Y" };
 const applicationChartConfig = {
-  applications: { label: "Ansokningar", color: "#004225" },
+  applications: { label: "Ansökningar", color: "#004225" },
   avg: { label: "Rullande snitt", color: "#6bb18d" },
 } satisfies ChartConfig;
 const queueChartConfig = {
-  joined: { label: "Nya i ko", color: "#004225" },
-  cumulative: { label: "Totalt i ko", color: "#2563eb" },
+  joined: { label: "Nya i kö", color: "#004225" },
+  cumulative: { label: "Totalt i kö", color: "#2563eb" },
 } satisfies ChartConfig;
 const palette = ["#004225", "#2563eb", "#c2410c", "#64748b", "#3f9369", "#9fd0b6"];
 
@@ -154,14 +154,14 @@ function buildObjectTrendRows(timeline: Timeline, objects: ObjectApplicationCoun
 
 function cityFromListing(listing: ListingCardDTO) {
   const parts = listing.location?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
-  return parts[1] ?? parts[0] ?? "Okand stad";
+  return parts[1] ?? parts[0] ?? "Okänd stad";
 }
 
 function buildPortfolioItems(listings: ListingCardDTO[], queues: HousingQueueDTO[]): DonutBreakdownItem[] {
   const cities = new Map<string, number>();
   listings.forEach((listing) => cities.set(cityFromListing(listing), (cities.get(cityFromListing(listing)) ?? 0) + 1));
   queues.forEach((queue) => {
-    const city = queue.city || "Okand stad";
+    const city = queue.city || "Okänd stad";
     cities.set(city, (cities.get(city) ?? 0) + (queue.activeListings ?? 0));
   });
   const rows = Array.from(cities.entries()).sort((left, right) => right[1] - left[1]).slice(0, 5);
@@ -171,7 +171,7 @@ function buildPortfolioItems(listings: ListingCardDTO[], queues: HousingQueueDTO
 }
 
 function getQueueApplicationName(application: QueueApplicationDTO) {
-  return application.fullName || [application.firstName, application.surname].filter(Boolean).join(" ") || `Student ${application.studentId ?? ""}`.trim() || "Okand student";
+  return application.fullName || [application.firstName, application.surname].filter(Boolean).join(" ") || `Student ${application.studentId ?? ""}`.trim() || "Okänd student";
 }
 
 function getQueueTotal(queues: HousingQueueDTO[], queueApplications: QueueApplicationDTO[]) {
@@ -278,7 +278,7 @@ function ObjectTrendChart({ data, objects }: { data: Array<Record<string, string
 
 function QueueTrendChart({ data }: { data: Array<Record<string, string | number>> }) {
   return (
-    <CardShell className="xl:col-span-2" description="Nya studenter i kon och ackumulerat koantal over tid." title="Koutveckling">
+    <CardShell className="xl:col-span-2" description="Nya studenter i kön och ackumulerat köantal över tid." title="Köutveckling">
       <div className="max-w-full overflow-x-auto">
         <ChartContainer className="h-[320px] min-w-[720px] xl:min-w-full" config={queueChartConfig}>
           <LineChart data={data} margin={{ left: 12, right: 12 }}>
@@ -300,7 +300,7 @@ function QueueDistributionChart({ queues }: { queues: HousingQueueDTO[] }) {
   const data = queues.length > 0
     ? queues.map((queue, index) => ({ label: shortText(queue.name, 24), value: pickNumber(queue, ["queueApplications", "queueApplicationsCount", "studentsInQueue", "studentsInQueueCount", "totalQueued", "totalApplicants", "activeListings"]) ?? 0, color: palette[index] ?? palette[palette.length - 1] }))
     : [{ label: "Ingen data", value: 1, color: palette[0] }];
-  return <DonutBreakdownCard description="Fordelning mellan foretagets koer." items={data} title="Koer" />;
+  return <DonutBreakdownCard description="Fördelning mellan foretagets köer." items={data} title="Koer" />;
 }
 
 function PropertyStockCard({ listings, queues }: { listings: ListingCardDTO[]; queues: HousingQueueDTO[] }) {
@@ -309,7 +309,7 @@ function PropertyStockCard({ listings, queues }: { listings: ListingCardDTO[]; q
   listings.forEach((listing) => cities.add(cityFromListing(listing)));
   queues.forEach((queue) => queue.city && cities.add(queue.city));
   return (
-    <CardShell description="Sammanfattning av foretagets objekt och koer." title="Fastighetsbestand">
+    <CardShell description="Sammanfattning av foretagets objekt och köer." title="Fastighetsbestand">
       <div className="grid gap-3 text-theme-sm text-gray-600">
         <div className="flex justify-between"><span>Aktiva objekt</span><span className="font-medium text-gray-800">{formatNumber(listings.length)}</span></div>
         <div className="flex justify-between"><span>Bostadskoer</span><span className="font-medium text-gray-800">{formatNumber(queues.length)}</span></div>
@@ -326,7 +326,7 @@ function ObjectsTable({ rows }: { rows: ObjectApplicationCount[] }) {
       {rows.length === 0 ? <EmptyState>Inga objekt med ansokningsdata hittades.</EmptyState> : (
         <div className="max-w-full overflow-x-auto">
           <table className="w-full min-w-[620px] text-left">
-            <thead className="border-y border-gray-100"><tr>{["Objekt", "Ansokningar", "Andel", "Signal"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
+            <thead className="border-y border-gray-100"><tr>{["Objekt", "Ansökningar", "Andel", "Signal"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
             <tbody className="divide-y divide-gray-100">
               {rows.slice(0, 8).map((row) => {
                 const total = Math.max(rows.reduce((sum, item) => sum + item.numApplications, 0), 1);
@@ -358,7 +358,7 @@ function NewApplicationsTable({ rows }: { rows: NewApplication[] }) {
             <article className="rounded-lg border border-gray-100 bg-gray-50 p-3" key={`${application.applicationId ?? application.id ?? application.studentId}-${index}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-theme-sm font-semibold text-gray-800">{[application.firstName, application.surname].filter(Boolean).join(" ") || "Okand sokande"}</p>
+                  <p className="text-theme-sm font-semibold text-gray-800">{[application.firstName, application.surname].filter(Boolean).join(" ") || "Okänd sökande"}</p>
                   <p className="mt-1 text-theme-xs text-gray-500">{shortText(application.listingTitle ?? application.address ?? "Okant objekt", 42)}</p>
                 </div>
                 <span className="shrink-0 text-theme-xs text-gray-400">{formatDate(application.submittedAt ?? application.createdAt)}</span>
@@ -373,13 +373,13 @@ function NewApplicationsTable({ rows }: { rows: NewApplication[] }) {
 
 function QueueStudentsTable({ rows }: { rows: QueueApplicationDTO[] }) {
   return (
-    <CardShell className="xl:col-span-2" description="Studenter som har stallt sig i foretagets koer." title="Studenter i ko">
+    <CardShell className="xl:col-span-2" description="Studenter som har stallt sig i foretagets köer." title="Studenter i kö">
       {rows.length === 0 ? (
-        <EmptyState>Ingen studentlista kunde hamtas fran ko-endpoints. Nar backend skickar koansokningar visas namn, ko, status och anslutningsdatum har.</EmptyState>
+        <EmptyState>Ingen studentlista kunde hämtas från kö-endpoints. Nar backend skickar köansökningar visas namn, ko, status och anslutningsdatum har.</EmptyState>
       ) : (
         <div className="max-w-full overflow-x-auto">
           <table className="w-full min-w-[720px] text-left">
-            <thead className="border-y border-gray-100"><tr>{["Student", "Ko", "Kodagar", "Status", "Ansluten"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
+            <thead className="border-y border-gray-100"><tr>{["Student", "Ko", "Ködagar", "Status", "Ansluten"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
             <tbody className="divide-y divide-gray-100">
               {rows.map((row, index) => (
                 <tr key={`${row.id ?? row.studentId ?? "student"}-${index}`}>
@@ -492,8 +492,8 @@ export default function ApplicationsInsights({
   if (!user || user.accountType !== "company") {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h1 className="text-xl font-semibold text-gray-900">Foretagskonto kravs</h1>
-        <p className="mt-2 text-theme-sm text-gray-500">Logga in som foretag for att visa den har sidan.</p>
+        <h1 className="text-xl font-semibold text-gray-900">Företagskonto krävs</h1>
+        <p className="mt-2 text-theme-sm text-gray-500">Logga in som företag för att visa den här sidan.</p>
       </div>
     );
   }
@@ -502,10 +502,10 @@ export default function ApplicationsInsights({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-theme-sm text-gray-500">Ansokningar</p>
-          <h1 className="text-2xl font-semibold text-gray-900">{isQueue ? "Koansokningar" : "Intresseanmalningar"}</h1>
+          <p className="text-theme-sm text-gray-500">Ansökningar</p>
+          <h1 className="text-2xl font-semibold text-gray-900">{isQueue ? "Köansökningar" : "Intresseanmälningar"}</h1>
           <p className="mt-1 max-w-3xl text-theme-sm text-gray-500">
-            {isQueue ? "Folj koantal, utveckling over tid och studenter som stallt sig i kon." : "Folj total efterfragan, objekt som trendar och hur fastighetsbestandets data fordelas."}
+            {isQueue ? "Följ köantal, utveckling över tid och studenter som ställt sig i kön." : "Följ total efterfragan, objekt som trendar och hur fastighetsbeståndets data fördelas."}
           </p>
           {errorMessage ? <p className="mt-2 text-theme-xs text-error-700">{errorMessage}</p> : null}
         </div>
@@ -515,15 +515,15 @@ export default function ApplicationsInsights({
       {isQueue ? (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard change="0,0%" icon={<Users className="h-6 w-6" />} label="Stallda i ko" value={formatNumber(queueTotal)} />
-            <MetricCard change="0,0%" icon={<ListOrdered className="h-6 w-6" />} label="Bostadskoer" value={formatNumber(queuePayload.queues.length)} />
-            <MetricCard change="0,0%" icon={<Clock3 className="h-6 w-6" />} label="Snitt vantetid" value={averageWaitDays ? `${formatNumber(averageWaitDays)} dagar` : "-"} />
-            <MetricCard change="0,0%" icon={<Home className="h-6 w-6" />} label="Registrerade bostader" value={formatNumber(totalUnits)} />
+            <MetricCard change="0,0%" icon={<Users className="h-6 w-6" />} label="Ställda i kö" value={formatNumber(queueTotal)} />
+            <MetricCard change="0,0%" icon={<ListOrdered className="h-6 w-6" />} label="Bostadsköer" value={formatNumber(queuePayload.queues.length)} />
+            <MetricCard change="0,0%" icon={<Clock3 className="h-6 w-6" />} label="Snitt väntetid" value={averageWaitDays ? `${formatNumber(averageWaitDays)} dagar` : "-"} />
+            <MetricCard change="0,0%" icon={<Home className="h-6 w-6" />} label="Registrerade bostäder" value={formatNumber(totalUnits)} />
           </div>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><QueueTrendChart data={queueTrendRows} /><QueueDistributionChart queues={queuePayload.queues} /></div>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             <QueueStudentsTable rows={queuePayload.queueApplications} />
-            <CardShell description="Kort oversikt per ko." title="Kooversikt">
+            <CardShell description="Kort oversikt per ko." title="Kööversikt">
               {queuePayload.queues.length === 0 ? <EmptyState>Inga koer hittades for foretaget.</EmptyState> : (
                 <div className="grid gap-3">
                   {queuePayload.queues.map((queue) => (
@@ -542,12 +542,12 @@ export default function ApplicationsInsights({
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard change={formatChange(applicationMetric.change)} direction={applicationMetric.change >= 0 ? "up" : "down"} icon={<Users className="h-6 w-6" />} label="Intresseanmalningar" value={formatNumber(applicationMetric.count)} />
+            <MetricCard change={formatChange(applicationMetric.change)} direction={applicationMetric.change >= 0 ? "up" : "down"} icon={<Users className="h-6 w-6" />} label="Intresseanmälningar" value={formatNumber(applicationMetric.count)} />
             <MetricCard change="0,0%" icon={<Building2 className="h-6 w-6" />} label="Obesvarade" value={formatNumber(interestPayload.openApplications)} />
             <MetricCard change={formatChange(viewMetric.change)} direction={viewMetric.change >= 0 ? "up" : "down"} icon={<Home className="h-6 w-6" />} label="Visningar" value={formatNumber(viewMetric.count)} />
             <MetricCard change={formatChange(activeListingsMetric.change)} direction={activeListingsMetric.change >= 0 ? "up" : "down"} icon={<ListOrdered className="h-6 w-6" />} label="Aktiva objekt" value={formatNumber(activeListingsMetric.count)} />
           </div>
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><TrendChart data={trendRows} description="Total volym over tid for vald period." title="Intresse over tid" /><DonutBreakdownCard description="Aktiva objekt och koer per stad." items={portfolioItems} title="Bestand per stad" /></div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><TrendChart data={trendRows} description="Total volym over tid för vald period." title="Intresse over tid" /><DonutBreakdownCard description="Aktiva objekt och koer per stad." items={portfolioItems} title="Bestånd per stad" /></div>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><ObjectTrendChart data={objectTrendRows} objects={interestPayload.applicationsByObject} /><PropertyStockCard listings={interestPayload.listings} queues={interestPayload.queues} /></div>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><ObjectsTable rows={interestPayload.applicationsByObject} /><NewApplicationsTable rows={interestPayload.newApplications} /></div>
         </>

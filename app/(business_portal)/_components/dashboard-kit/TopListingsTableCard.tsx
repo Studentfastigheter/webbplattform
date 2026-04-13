@@ -30,7 +30,7 @@ export default function TopListingsTableCard({
         <table className="w-full min-w-[700px] text-left">
           <thead className="border-y border-gray-100">
             <tr>
-              {["Objekt", "Ansokningar", "Andel", "Status"].map((heading) => (
+              {["Objekt", "Ansökningar", "Andel", "Status"].map((heading) => (
                 <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>
                   {heading}
                 </th>

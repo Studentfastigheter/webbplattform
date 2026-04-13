@@ -68,7 +68,7 @@ const queueToEditable = (queue: HousingQueueDTO): EditableQueueDraft => ({
 
 const createFallbackQueue = (name: string): EditableQueueDraft => ({
   id: "preview-queue",
-  name: name ? `${name} ko` : "Din ko",
+  name: name ? `${name} ko` : "Din kö",
   city: "",
   waitDays: "",
   totalUnits: "",
@@ -81,7 +81,7 @@ function buildInitialDraft(
 ): ProfileDraft {
   return {
     companyId,
-    name: companyData.name || "Foretag",
+    name: companyData.name || "Företag",
     subtitle: companyData.subtitle || "",
     description: companyData.description || "",
     website: companyData.website || "",
@@ -273,7 +273,7 @@ export default function ProfilePage() {
     return {
       id: String(company?.id ?? draft.companyId),
       companyId: company?.id ?? draft.companyId,
-      name: draft.name || company?.name || "Foretag",
+      name: draft.name || company?.name || "Företag",
       city: "",
       logoUrl: draft.logoUrl || company?.logoUrl || "/logos/campuslyan-logo.svg",
       bannerUrl: draft.bannerUrl || company?.bannerUrl || "/appartment.jpg",
@@ -323,7 +323,7 @@ export default function ProfilePage() {
       ...current,
       {
         id: `preview-${Date.now()}`,
-        name: "Ny ko",
+        name: "Ny kö",
         city: "",
         waitDays: "",
         totalUnits: "",
@@ -425,7 +425,7 @@ export default function ProfilePage() {
     return (
       <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Hamtar foretagsprofil...
+        Hämtar företagsprofil...
       </div>
     );
   }
@@ -433,10 +433,10 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-gray-900">Foretagsprofil</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Företagsprofil</h1>
         <p className="text-sm text-gray-600">
-          Redigera falten och forhandsgranska exakt hur profilen visas pa
-          sidan for alla koer.
+          Redigera fälten och förhandsgranska exakt hur profilen visas på
+          sidan for alla köer.
         </p>
         {error && (
           <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -522,7 +522,7 @@ export default function ProfilePage() {
                   onChange={(event) =>
                     updateDraftField("contactEmail", event.target.value)
                   }
-                  placeholder="kontakt@foretag.se"
+                  placeholder="kontakt@företag.se"
                 />
               </div>
 
@@ -629,7 +629,7 @@ export default function ProfilePage() {
                               event.target.value
                             )
                           }
-                          placeholder="Ko-dagar"
+                          placeholder="Kö-dagar"
                         />
                         <Input
                           value={queue.totalUnits}

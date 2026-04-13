@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "encrypted-tbn0.gstatic.com" },
       { protocol: "https", hostname: "www.chalmersstudentbostader.se" },
       { protocol: "https", hostname: "www.hallnollan.se" },
+      { protocol: "https", hostname: "k2a.se" },
+      { protocol: "https", hostname: "campusroslagen.se" },
+      { protocol: "https", hostname: "www.wikowia.se" },
+      { protocol: "https", hostname: "heimstaden.com" },
+      { protocol: "https", hostname: "www.hyresgastforeningen.se" },
       {
         protocol: "https",
         hostname: "sgs-fastighet.momentum.se",

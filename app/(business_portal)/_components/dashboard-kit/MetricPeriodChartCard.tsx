@@ -23,7 +23,7 @@ export type MetricPeriodChangeRow = MetricPeriodChartRow;
 
 const chartConfig = {
   applications: {
-    label: "Ansokningar",
+    label: "Ansökningar",
     color: "#004225",
   },
   viewings: {
@@ -48,7 +48,7 @@ export function MetricPeriodVolumeChartCard({
   return (
     <CardShell
       className="xl:col-span-2"
-      description="Jamfor ansokningar, visningar, interaktioner och aktiva annonser over valbara perioder."
+      description="Jämför ansokningar, visningar, interaktioner och aktiva annonser över valbara perioder."
       title="Volymer per period"
     >
       <div className="max-w-full overflow-x-auto">
