@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Settings, UserCircle, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -12,21 +13,57 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import { queueService } from "@/services/queue-service";
 import { dashboardRelPath } from "../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
 export default function PortalHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = usePortalSidebar();
   const { user, logout } = useAuth();
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const displayName = user?.displayName || user?.companyName || "SGS";
   const email = user?.email || "test@sgs.se";
   const role = user?.accountType === "company" ? "Företagskonto" : "Hyresvärd";
+  const avatarSrc =
+    user?.accountType === "company"
+      ? companyLogoUrl || user?.logoUrl || ""
+      : user?.logoUrl || "";
   const initials = displayName
     .split(" ")
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  useEffect(() => {
+    setCompanyLogoUrl(null);
+
+    if (!user || user.accountType !== "company") {
+      return;
+    }
+
+    const companyId = Number(user.id);
+    if (!Number.isFinite(companyId)) {
+      return;
+    }
+
+    let active = true;
+
+    queueService
+      .getCompany(companyId)
+      .then((company) => {
+        if (!active) return;
+        setCompanyLogoUrl(company.logoUrl || null);
+      })
+      .catch(() => {
+        if (!active) return;
+        setCompanyLogoUrl(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.accountType, user?.id]);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {
@@ -72,9 +109,15 @@ export default function PortalHeader() {
                 className="group flex items-center text-gray-700"
                 type="button"
               >
-                <Avatar className="mr-3 h-11 w-11 overflow-hidden rounded-full">
-                  <AvatarImage alt={displayName} src={user?.logoUrl ?? ""} />
-                  <AvatarFallback className="rounded-full bg-brand-50 text-brand-500">
+                <Avatar className="mr-3 h-11 w-11 overflow-hidden rounded-none bg-transparent">
+                  {avatarSrc ? (
+                    <AvatarImage
+                      alt={`${displayName} logotyp`}
+                      className="object-contain"
+                      src={avatarSrc}
+                    />
+                  ) : null}
+                  <AvatarFallback className="rounded-md bg-brand-50 text-brand-500">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
