@@ -24,12 +24,23 @@ export type RollingAd = {
 
 // --- Mock Coordinates Utility ---
 // En enkel fallback för att generera koordinater om backend inte levererar dem (t.ex. vid mock/demo-data).
-const addMockCoordinates = <T extends { lat?: number | null; lng?: number | null; title: string; location: string }>(dto: T): T => {
+const addMockCoordinates = <T extends {
+  lat?: number | null;
+  lng?: number | null;
+  title: string;
+  location?: string | null;
+  city?: string | null;
+  area?: string | null;
+  fullAddress?: string | null;
+}>(dto: T): T => {
   if (typeof dto.lat === "number" && typeof dto.lng === "number") return dto;
 
   // Deterministisk offset baserad på titel/plats för att de inte ska alla ligga på exakt samma pixel (hash algorithm)
   const titleLower = dto.title?.toLowerCase() || "";
-  const locLower = dto.location?.toLowerCase() || "";
+  const locLower = [dto.location, dto.city, dto.area, dto.fullAddress]
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .join(" ")
+    .toLowerCase();
   
   let hash = 0;
   for (let i = 0; i < titleLower.length; i++) {
@@ -219,13 +230,23 @@ export const listingService = {
    */
   getCurrentAds: async (): Promise<RollingAd[]> => {
     try {
-      const ads = await apiClient<any[]>("/ads/current");
+      const ads = await apiClient<unknown[]>("/ads/current");
+      if (!Array.isArray(ads)) {
+        return [];
+      }
       
-      return ads.map((ad) => ({
-        id: ad.id,
-        company: ad.company, // Matchar 'company' i Java-modellen
-        data: ad.data,       // Innehåller JsonNode (JSONB)
-      }));
+      return ads
+        .filter((ad): ad is { id: number | string; company?: string; data?: unknown } => (
+          typeof ad === "object" &&
+          ad !== null &&
+          "id" in ad &&
+          (typeof ad.id === "number" || typeof ad.id === "string")
+        ))
+        .map((ad) => ({
+          id: ad.id,
+          company: ad.company, // Matchar 'company' i Java-modellen
+          data: ad.data,       // Innehåller JsonNode (JSONB)
+        }));
     } catch (e) {
       console.error("Kunde inte hämta annonser:", e);
       return [];

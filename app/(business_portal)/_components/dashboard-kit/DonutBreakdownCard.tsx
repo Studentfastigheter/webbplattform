@@ -51,8 +51,8 @@ export default function DonutBreakdownCard({
       </ChartContainer>
 
       <div className="mt-4 grid gap-3">
-        {items.map((item) => (
-          <div className="flex items-center justify-between" key={item.label}>
+        {data.map((item) => (
+          <div className="flex items-center justify-between" key={item.key}>
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
               <span className="text-theme-sm text-gray-600">{item.label}</span>
@@ -66,4 +66,3 @@ export default function DonutBreakdownCard({
     </CardShell>
   );
 }
-

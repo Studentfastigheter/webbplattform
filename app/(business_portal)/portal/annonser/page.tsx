@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, FileUser, Plus, Search, X } from "lucide-react";
+import { Eye, FileUser, MousePointerClick, Plus, Search, X } from "lucide-react";
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,7 @@ type DateSort = "newest" | "oldest";
 type PortalListing = {
   listing: ListingCardDTO;
   views: number;
+  clicks: number;
   applications: number;
   publishedAt: string;
   publishedAtTime: number | null;
@@ -270,10 +271,30 @@ export default function PortalAdsPage() {
               "views",
               "viewCount",
               "viewsCount",
+              "viewings",
+              "viewingsCount",
               "impressions",
               "stats.views",
+              "stats.viewings",
               "analytics.views",
+              "analytics.viewings",
               "statistics.views",
+              "statistics.viewings",
+            ]) ?? 0;
+          const clicks =
+            pickNumber(raw, [
+              "clicks",
+              "clickCount",
+              "clicksCount",
+              "interactions",
+              "interactionCount",
+              "interactionsCount",
+              "stats.clicks",
+              "stats.interactions",
+              "analytics.clicks",
+              "analytics.interactions",
+              "statistics.clicks",
+              "statistics.interactions",
             ]) ?? 0;
 
           const applications = resolveApplicationCount(raw, applicationsLookup) ?? 0;
@@ -292,6 +313,7 @@ export default function PortalAdsPage() {
           return {
             listing: dto,
             views,
+            clicks,
             applications,
             publishedAt: formatDate(publishedAtRaw),
             publishedAtTime: parseDateTime(publishedAtRaw),
@@ -576,16 +598,22 @@ export default function PortalAdsPage() {
                     </span>
                   }
                   footerContent={
-                    <div className="grid grid-cols-[auto_auto_1fr] items-center gap-2 text-[11px] text-gray-600">
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
-                        <Eye className="h-3 w-3 text-gray-500" />
-                        {item.views.toLocaleString("sv-SE")}
-                      </span>
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
-                        <FileUser className="h-3 w-3 text-gray-500" />
-                        {item.applications.toLocaleString("sv-SE")}
-                      </span>
-                      <span className="truncate text-right">
+                    <div className="flex items-end justify-between gap-3 text-[11px] text-gray-600">
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
+                          <Eye className="h-3 w-3 text-gray-500" />
+                          {item.views.toLocaleString("sv-SE")} visn.
+                        </span>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
+                          <MousePointerClick className="h-3 w-3 text-gray-500" />
+                          {item.clicks.toLocaleString("sv-SE")} klick
+                        </span>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
+                          <FileUser className="h-3 w-3 text-gray-500" />
+                          {item.applications.toLocaleString("sv-SE")} ans.
+                        </span>
+                      </div>
+                      <span className="shrink-0 whitespace-nowrap text-right">
                         Publicerad {item.publishedAt}
                       </span>
                     </div>

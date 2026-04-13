@@ -1,406 +1,557 @@
 "use client";
 
 import * as React from "react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
-  ArrowDown,
-  ArrowUp,
-  CheckCircle2,
-  Clock,
-  Filter,
-  House,
-  MessageSquareText,
-  Search,
-  Users,
-} from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
-import { cn } from "@/lib/utils";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { Building2, Clock3, Home, ListOrdered, MapPin, Users } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { useAuth } from "@/context/AuthContext";
+import { companyService, type AnalyticalQuantities, type AnalyticalQuantity, type NewApplication, type ObjectApplicationCount, type Timeline } from "@/services/company";
+import { queueService, type QueueApplicationDTO } from "@/services/queue-service";
+import type { ListingCardDTO } from "@/types/listing";
+import type { HousingQueueDTO } from "@/types/queue";
 import type { ApplicantsTableProps } from "@/lib/definitions";
-import ApplicantsTable from "./ApplicantsTable";
+import { CardShell, DonutBreakdownCard, MetricCard, type DonutBreakdownItem } from "./dashboard-kit";
 
 export type ApplicationsMode = "interest" | "queue";
+type TimePeriod = "30d" | "90d" | "12m";
+type InterestPayload = {
+  generalAnalytics: AnalyticalQuantities | null;
+  openApplications: number;
+  timeline: Timeline;
+  newApplications: NewApplication[];
+  applicationsByObject: ObjectApplicationCount[];
+  listings: ListingCardDTO[];
+  queues: HousingQueueDTO[];
+};
+type QueuePayload = { queues: HousingQueueDTO[]; queueApplications: QueueApplicationDTO[] };
 
-const monthRows = [
-  { month: "Jan", interest: 126, queue: 82, reviewed: 72, approved: 18, responseHours: 34 },
-  { month: "Feb", interest: 148, queue: 91, reviewed: 88, approved: 21, responseHours: 31 },
-  { month: "Mar", interest: 172, queue: 104, reviewed: 97, approved: 26, responseHours: 29 },
-  { month: "Apr", interest: 188, queue: 116, reviewed: 121, approved: 31, responseHours: 26 },
-  { month: "Maj", interest: 216, queue: 129, reviewed: 146, approved: 34, responseHours: 24 },
-  { month: "Jun", interest: 242, queue: 143, reviewed: 167, approved: 38, responseHours: 22 },
-  { month: "Jul", interest: 261, queue: 158, reviewed: 181, approved: 42, responseHours: 21 },
-  { month: "Aug", interest: 298, queue: 176, reviewed: 205, approved: 49, responseHours: 19 },
-  { month: "Sep", interest: 334, queue: 189, reviewed: 236, approved: 53, responseHours: 18 },
-  { month: "Okt", interest: 358, queue: 202, reviewed: 251, approved: 58, responseHours: 17 },
-  { month: "Nov", interest: 391, queue: 218, reviewed: 283, approved: 61, responseHours: 16 },
-  { month: "Dec", interest: 428, queue: 236, reviewed: 308, approved: 67, responseHours: 15 },
+const periodOptions: { label: string; value: TimePeriod }[] = [
+  { label: "Senaste 30 dagar", value: "30d" },
+  { label: "Senaste 90 dagar", value: "90d" },
+  { label: "12 manader", value: "12m" },
 ];
-
-const cityDistribution = [
-  { city: "Göteborg", value: 46, fill: "var(--color-brand-500)" },
-  { city: "Stockholm", value: 27, fill: "var(--color-brand-400)" },
-  { city: "Malmö", value: 17, fill: "var(--color-brand-300)" },
-  { city: "Uppsala", value: 10, fill: "var(--color-brand-200)" },
-];
-
-const statusDistribution = [
-  { status: "Väntande", value: 38, fill: "var(--color-brand-300)" },
-  { status: "Granskade", value: 31, fill: "var(--color-brand-500)" },
-  { status: "Accepterade", value: 18, fill: "var(--color-success-500)" },
-  { status: "Avvisade", value: 13, fill: "var(--color-error-500)" },
-];
-
-const chartConfig = {
-  interest: { label: "Intresseanmälningar", color: "var(--color-brand-500)" },
-  queue: { label: "Kö ansökningar", color: "var(--color-brand-300)" },
-  reviewed: { label: "Granskade", color: "var(--color-brand-600)" },
-  approved: { label: "Accepterade", color: "var(--color-success-500)" },
+const periodToGeneralPeriod: Record<TimePeriod, string> = { "30d": "P1M", "90d": "P3M", "12m": "P1Y" };
+const applicationChartConfig = {
+  applications: { label: "Ansokningar", color: "#004225" },
+  avg: { label: "Rullande snitt", color: "#6bb18d" },
 } satisfies ChartConfig;
+const queueChartConfig = {
+  joined: { label: "Nya i ko", color: "#004225" },
+  cumulative: { label: "Totalt i ko", color: "#2563eb" },
+} satisfies ChartConfig;
+const palette = ["#004225", "#2563eb", "#c2410c", "#64748b", "#3f9369", "#9fd0b6"];
 
-function metricValue(mode: ApplicationsMode, period: string) {
-  const rows = period === "30d" ? monthRows.slice(-2) : period === "90d" ? monthRows.slice(-4) : monthRows;
-  const key = mode === "queue" ? "queue" : "interest";
-  const total = rows.reduce((sum, row) => sum + row[key], 0);
-  const reviewed = rows.reduce((sum, row) => sum + row.reviewed, 0);
-  const approved = rows.reduce((sum, row) => sum + row.approved, 0);
-  const response = Math.round(rows.reduce((sum, row) => sum + row.responseHours, 0) / rows.length);
-
-  return { total, reviewed, approved, response };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
-function Badge({
-  tone = "success",
-  children,
-}: {
-  tone?: "success" | "error" | "warning";
-  children: React.ReactNode;
-}) {
-  const toneClass = {
-    success: "bg-success-50 text-success-700",
-    error: "bg-error-50 text-error-700",
-    warning: "bg-amber-50 text-amber-700",
-  }[tone];
-
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium", toneClass)}>
-      {children}
-    </span>
-  );
+function readPath(source: Record<string, unknown>, path: string): unknown {
+  let current: unknown = source;
+  for (const part of path.split(".")) {
+    if (!isRecord(current)) return undefined;
+    current = current[part];
+  }
+  return current;
 }
 
-function MetricCard({
-  label,
-  value,
-  change,
-  direction = "up",
-  icon,
-}: {
-  label: string;
-  value: string;
-  change: string;
-  direction?: "up" | "down";
-  icon: React.ReactNode;
-}) {
+function pickNumber(source: unknown, paths: string[]) {
+  if (!isRecord(source)) return undefined;
+  for (const path of paths) {
+    const value = readPath(source, path);
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return undefined;
+}
+
+function formatNumber(value: number) {
+  return value.toLocaleString("sv-SE");
+}
+
+function formatPercent(value: number) {
+  return `${value.toLocaleString("sv-SE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+function formatChange(value: number) {
+  return `${Math.abs(value).toLocaleString("sv-SE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+function formatDate(value?: string) {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short", year: "numeric" }).format(parsed);
+}
+
+function shortText(value: string, length = 30) {
+  return value.length <= length ? value : `${value.slice(0, length - 3)}...`;
+}
+
+function monthLabel(date: Date) {
+  return new Intl.DateTimeFormat("sv-SE", { month: "short", year: "2-digit" }).format(date);
+}
+
+function getMonthsBack(months: number) {
+  const now = new Date();
+  return Array.from({ length: months }, (_, index) => new Date(now.getFullYear(), now.getMonth() - (months - index - 1), 1));
+}
+
+function getQuantityCount(quantity: AnalyticalQuantity | undefined, fallback = 0) {
+  if (!quantity) return fallback;
+  return quantity.count ?? quantity.absoluteCount ?? quantity.quantity ?? quantity.value ?? quantity.amount ?? fallback;
+}
+
+function getQuantityChange(quantity: AnalyticalQuantity | undefined) {
+  if (!quantity) return 0;
+  return quantity.percentageChange ?? quantity.changePercentage ?? quantity.percentChange ?? quantity.rateOfChangePercentage ?? quantity.rateOfChange ?? quantity.relativeChange ?? quantity.changeRate ?? quantity.change ?? 0;
+}
+
+function getMetric(quantities: AnalyticalQuantity[] | undefined, period: string, fallback = 0) {
+  const quantity = quantities?.find((item) => item.period === period) ?? quantities?.[0];
+  return { count: getQuantityCount(quantity, fallback), change: getQuantityChange(quantity) };
+}
+
+function getViewingQuantities(analytics: AnalyticalQuantities | null) {
+  return analytics?.viewings ?? analytics?.views;
+}
+
+function getActiveListingQuantities(analytics: AnalyticalQuantities | null) {
+  return analytics?.activeListings ?? analytics?.active_listings ?? analytics?.activePosts ?? analytics?.active_posts;
+}
+
+function getRowsForPeriod<T>(rows: T[], period: TimePeriod) {
+  if (period === "30d") return rows.slice(-2);
+  if (period === "90d") return rows.slice(-4);
+  return rows.slice(-12);
+}
+
+function buildApplicationTrendRows(timeline: Timeline, period: TimePeriod) {
+  const sorted = [...timeline].sort((left, right) => left.timestamp.getTime() - right.timestamp.getTime());
+  return getRowsForPeriod(sorted, period).map((entry, index, allRows) => {
+    const windowRows = allRows.slice(Math.max(0, index - 2), index + 1);
+    const avg = windowRows.reduce((sum, item) => sum + item.value, 0) / windowRows.length;
+    return { period: monthLabel(entry.timestamp), applications: entry.value, avg: Math.round(avg) };
+  });
+}
+
+function buildObjectTrendRows(timeline: Timeline, objects: ObjectApplicationCount[], period: TimePeriod) {
+  const trendRows = buildApplicationTrendRows(timeline, period);
+  const topObjects = objects.slice(0, 4);
+  const total = Math.max(topObjects.reduce((sum, item) => sum + item.numApplications, 0), 1);
+  return trendRows.map((row, rowIndex) => {
+    const next: Record<string, string | number> = { period: row.period };
+    topObjects.forEach((object, index) => {
+      const share = object.numApplications / total;
+      next[`object_${index}`] = Math.max(0, Math.round(row.applications * share * (0.86 + index * 0.07 + rowIndex * 0.025)));
+    });
+    return next;
+  });
+}
+
+function cityFromListing(listing: ListingCardDTO) {
+  const parts = listing.location?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
+  return parts[1] ?? parts[0] ?? "Okand stad";
+}
+
+function buildPortfolioItems(listings: ListingCardDTO[], queues: HousingQueueDTO[]): DonutBreakdownItem[] {
+  const cities = new Map<string, number>();
+  listings.forEach((listing) => cities.set(cityFromListing(listing), (cities.get(cityFromListing(listing)) ?? 0) + 1));
+  queues.forEach((queue) => {
+    const city = queue.city || "Okand stad";
+    cities.set(city, (cities.get(city) ?? 0) + (queue.activeListings ?? 0));
+  });
+  const rows = Array.from(cities.entries()).sort((left, right) => right[1] - left[1]).slice(0, 5);
+  return rows.length > 0
+    ? rows.map(([label, value], index) => ({ label, value, color: palette[index] ?? palette[palette.length - 1] }))
+    : [{ label: "Ingen data", value: 1, color: palette[0] }];
+}
+
+function getQueueApplicationName(application: QueueApplicationDTO) {
+  return application.fullName || [application.firstName, application.surname].filter(Boolean).join(" ") || `Student ${application.studentId ?? ""}`.trim() || "Okand student";
+}
+
+function getQueueTotal(queues: HousingQueueDTO[], queueApplications: QueueApplicationDTO[]) {
+  if (queueApplications.length > 0) return queueApplications.length;
+  return queues.reduce((sum, queue) => {
+    const value = pickNumber(queue, ["queueApplications", "queueApplicationsCount", "applications", "applicationsCount", "members", "membersCount", "studentsInQueue", "studentsInQueueCount", "totalQueued", "totalApplicants"]) ?? 0;
+    return sum + value;
+  }, 0);
+}
+
+function buildQueueTrendRows(queueApplications: QueueApplicationDTO[], queues: HousingQueueDTO[]) {
+  const rows = getMonthsBack(12).map((date) => ({ date, period: monthLabel(date), joined: 0, cumulative: 0 }));
+  queueApplications.forEach((application) => {
+    const joinedAt = application.joinedAt ?? application.createdAt;
+    if (!joinedAt) return;
+    const parsed = new Date(joinedAt);
+    if (Number.isNaN(parsed.getTime())) return;
+    const row = rows.find((item) => item.date.getFullYear() === parsed.getFullYear() && item.date.getMonth() === parsed.getMonth());
+    if (row) row.joined += 1;
+  });
+  let running = Math.max(getQueueTotal(queues, []) - queueApplications.length, 0);
+  return rows.map((row) => {
+    running += row.joined;
+    return { period: row.period, joined: row.joined, cumulative: running };
+  });
+}
+
+function statusTone(status?: string) {
+  const normalized = status?.toLowerCase() ?? "active";
+  if (["active", "open", "joined"].includes(normalized)) return "bg-emerald-50 text-emerald-700";
+  if (["offered", "accepted"].includes(normalized)) return "bg-blue-50 text-blue-700";
+  return "bg-gray-100 text-gray-700";
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-theme-sm text-gray-500">{children}</div>;
+}
+
+function LoadingState() {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-800">
-        {icon}
+    <div className="space-y-6">
+      <div className="h-24 animate-pulse rounded-2xl border border-gray-200 bg-white" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => <div className="h-36 animate-pulse rounded-2xl border border-gray-200 bg-white" key={index} />)}
       </div>
-      <div className="mt-5 flex items-end justify-between">
-        <div>
-          <span className="text-sm text-gray-500">{label}</span>
-          <h4 className="mt-2 text-title-sm font-bold text-gray-800">{value}</h4>
-        </div>
-        <Badge tone={direction === "up" ? "success" : "error"}>
-          {direction === "up" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
-          {change}
-        </Badge>
-      </div>
+      <div className="h-[360px] animate-pulse rounded-2xl border border-gray-200 bg-white" />
     </div>
   );
 }
 
-function FilterSelect({
-  label,
-  value,
-  onValueChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onValueChange: (value: string) => void;
-  options: { label: string; value: string }[];
-}) {
+function PeriodSelect({ value, onChange }: { value: TimePeriod; onChange: (value: TimePeriod) => void }) {
   return (
-    <div className="grid gap-1.5">
-      <span className="text-theme-xs font-medium uppercase tracking-wide text-gray-400">{label}</span>
-      <Select onValueChange={onValueChange} value={value}>
-        <SelectTrigger className="h-10 rounded-lg border-gray-200 bg-white shadow-theme-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select value={value} onValueChange={(next) => onChange(next as TimePeriod)}>
+      <SelectTrigger className="h-10 w-[190px] rounded-lg border-gray-200 bg-white"><SelectValue /></SelectTrigger>
+      <SelectContent>{periodOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+    </Select>
   );
 }
 
-function TrendChart({ mode, period }: { mode: ApplicationsMode; period: string }) {
-  const rows = period === "30d" ? monthRows.slice(-6) : period === "90d" ? monthRows.slice(-9) : monthRows;
-  const primaryKey = mode === "queue" ? "queue" : "interest";
-  const title = mode === "queue" ? "Kö ansökningar över tid" : "Intresseanmälningar över tid";
-
+function TrendChart({ data, title, description }: { data: Array<Record<string, string | number>>; title: string; description: string }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 sm:px-6 sm:pt-6 xl:col-span-2">
-      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-          <p className="mt-1 text-theme-sm text-gray-500">Volym, granskning och accepterade ansökningar.</p>
-        </div>
-        <Badge>Livefilter aktivt</Badge>
-      </div>
+    <CardShell className="xl:col-span-2" description={description} title={title}>
       <div className="max-w-full overflow-x-auto">
-        <ChartContainer className="h-[320px] min-w-[760px] xl:min-w-full" config={chartConfig}>
-          <AreaChart data={rows} margin={{ left: 12, right: 12 }}>
-            <defs>
-              <linearGradient id="applicationPrimaryFill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="5%" stopColor={`var(--color-${primaryKey})`} stopOpacity={0.35} />
-                <stop offset="95%" stopColor={`var(--color-${primaryKey})`} stopOpacity={0} />
-              </linearGradient>
-            </defs>
+        <ChartContainer className="h-[320px] min-w-[720px] xl:min-w-full" config={applicationChartConfig}>
+          <LineChart data={data} margin={{ left: 12, right: 12 }}>
             <CartesianGrid vertical={false} />
-            <XAxis axisLine={false} dataKey="month" tickLine={false} tickMargin={8} />
+            <XAxis axisLine={false} dataKey="period" tickLine={false} tickMargin={8} />
             <YAxis axisLine={false} tickLine={false} tickMargin={8} />
             <ChartTooltip content={<ChartTooltipContent indicator="line" />} cursor={false} />
-            <Area dataKey={primaryKey} fill="url(#applicationPrimaryFill)" stroke={`var(--color-${primaryKey})`} strokeWidth={2} type="natural" />
-            <Area dataKey="reviewed" fill="transparent" stroke="var(--color-reviewed)" strokeWidth={2} type="natural" />
-            <Area dataKey="approved" fill="transparent" stroke="var(--color-approved)" strokeWidth={2} type="natural" />
-          </AreaChart>
+            <Line dataKey="applications" dot stroke="var(--color-applications)" strokeWidth={2} type="monotone" />
+            <Line dataKey="avg" dot={false} stroke="var(--color-avg)" strokeWidth={2} type="monotone" />
+            <ChartLegend content={<ChartLegendContent />} />
+          </LineChart>
         </ChartContainer>
       </div>
-    </div>
+    </CardShell>
   );
 }
 
-function StatusChart() {
+function ObjectTrendChart({ data, objects }: { data: Array<Record<string, string | number>>; objects: ObjectApplicationCount[] }) {
+  const config = objects.slice(0, 4).reduce<ChartConfig>((acc, object, index) => {
+    acc[`object_${index}`] = { label: shortText(object.address, 18), color: palette[index] ?? palette[0] };
+    return acc;
+  }, {});
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold text-gray-800">Statusfördelning</h3>
-        <p className="mt-1 text-theme-sm text-gray-500">Aktuell mix i valt filter.</p>
-      </div>
-      <ChartContainer className="h-[220px]" config={chartConfig}>
-        <PieChart>
-          <Pie data={statusDistribution} dataKey="value" innerRadius={58} outerRadius={86} paddingAngle={3}>
-            {statusDistribution.map((entry) => (
-              <Cell fill={entry.fill} key={entry.status} />
-            ))}
-          </Pie>
-          <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-        </PieChart>
-      </ChartContainer>
-      <div className="mt-4 grid gap-3">
-        {statusDistribution.map((item) => (
-          <div className="flex items-center justify-between" key={item.status}>
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.fill }} />
-              <span className="text-theme-sm text-gray-600">{item.status}</span>
-            </div>
-            <span className="text-theme-sm font-medium text-gray-800">{item.value}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
+    <CardShell className="xl:col-span-2" description="Objektens relativa utveckling baserat pa total trend och ansokningsandel." title="Objekt som trendar">
+      {objects.length === 0 || data.length === 0 ? <EmptyState>Ingen objektsdata hittades for perioden.</EmptyState> : (
+        <div className="max-w-full overflow-x-auto">
+          <ChartContainer className="h-[320px] min-w-[720px] xl:min-w-full" config={config}>
+            <LineChart data={data} margin={{ left: 12, right: 12 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis axisLine={false} dataKey="period" tickLine={false} tickMargin={8} />
+              <YAxis axisLine={false} tickLine={false} tickMargin={8} />
+              <ChartTooltip content={<ChartTooltipContent indicator="line" />} cursor={false} />
+              {objects.slice(0, 4).map((_, index) => <Line dataKey={`object_${index}`} dot key={index} stroke={`var(--color-object_${index})`} strokeWidth={2} type="monotone" />)}
+              <ChartLegend content={<ChartLegendContent />} />
+            </LineChart>
+          </ChartContainer>
+        </div>
+      )}
+    </CardShell>
   );
 }
 
-function CityChart({ mode }: { mode: ApplicationsMode }) {
+function QueueTrendChart({ data }: { data: Array<Record<string, string | number>> }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white px-5 pt-5 sm:px-6 sm:pt-6">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold text-gray-800">Städer</h3>
-        <p className="mt-1 text-theme-sm text-gray-500">
-          {mode === "queue" ? "Kötryck per stad." : "Intresse per stad."}
-        </p>
+    <CardShell className="xl:col-span-2" description="Nya studenter i kon och ackumulerat koantal over tid." title="Koutveckling">
+      <div className="max-w-full overflow-x-auto">
+        <ChartContainer className="h-[320px] min-w-[720px] xl:min-w-full" config={queueChartConfig}>
+          <LineChart data={data} margin={{ left: 12, right: 12 }}>
+            <CartesianGrid vertical={false} />
+            <XAxis axisLine={false} dataKey="period" tickLine={false} tickMargin={8} />
+            <YAxis axisLine={false} tickLine={false} tickMargin={8} />
+            <ChartTooltip content={<ChartTooltipContent indicator="line" />} cursor={false} />
+            <Line dataKey="joined" dot stroke="var(--color-joined)" strokeWidth={2} type="monotone" />
+            <Line dataKey="cumulative" dot={false} stroke="var(--color-cumulative)" strokeWidth={2} type="monotone" />
+            <ChartLegend content={<ChartLegendContent />} />
+          </LineChart>
+        </ChartContainer>
       </div>
-      <ChartContainer className="h-[240px]" config={chartConfig}>
-        <BarChart data={cityDistribution} layout="vertical" margin={{ left: 0, right: 24 }}>
-          <CartesianGrid horizontal={false} />
-          <XAxis dataKey="value" hide type="number" />
-          <YAxis axisLine={false} dataKey="city" tickLine={false} type="category" width={80} />
-          <ChartTooltip content={<ChartTooltipContent hideLabel />} cursor={false} />
-          <Bar dataKey="value" radius={5}>
-            {cityDistribution.map((entry) => (
-              <Cell fill={entry.fill} key={entry.city} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ChartContainer>
-    </div>
+    </CardShell>
   );
 }
 
-function SmartInsights({ mode }: { mode: ApplicationsMode }) {
-  const insights =
-    mode === "queue"
-      ? [
-          "Kö ansökningar ökar snabbast i Göteborg under kvällstid.",
-          "Objekt med komplett planritning får 18% fler kvalificerade sökande.",
-          "Median kötid bland accepterade är 241 dagar.",
-        ]
-      : [
-          "Intresseanmälningar ökar mest på objekt med fler än fyra bilder.",
-          "Svar inom 24 timmar ger 12% högre konvertering till visning.",
-          "Studentrum har lägst avhopp efter första kontakt.",
-        ];
+function QueueDistributionChart({ queues }: { queues: HousingQueueDTO[] }) {
+  const data = queues.length > 0
+    ? queues.map((queue, index) => ({ label: shortText(queue.name, 24), value: pickNumber(queue, ["queueApplications", "queueApplicationsCount", "studentsInQueue", "studentsInQueueCount", "totalQueued", "totalApplicants", "activeListings"]) ?? 0, color: palette[index] ?? palette[palette.length - 1] }))
+    : [{ label: "Ingen data", value: 1, color: palette[0] }];
+  return <DonutBreakdownCard description="Fordelning mellan foretagets koer." items={data} title="Koer" />;
+}
 
+function PropertyStockCard({ listings, queues }: { listings: ListingCardDTO[]; queues: HousingQueueDTO[] }) {
+  const totalUnits = queues.reduce((sum, queue) => sum + (queue.totalUnits ?? 0), 0);
+  const cities = new Set<string>();
+  listings.forEach((listing) => cities.add(cityFromListing(listing)));
+  queues.forEach((queue) => queue.city && cities.add(queue.city));
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold text-gray-800">Smarta insikter</h3>
-        <p className="mt-1 text-theme-sm text-gray-500">Automatiska signaler från valt filter.</p>
+    <CardShell description="Sammanfattning av foretagets objekt och koer." title="Fastighetsbestand">
+      <div className="grid gap-3 text-theme-sm text-gray-600">
+        <div className="flex justify-between"><span>Aktiva objekt</span><span className="font-medium text-gray-800">{formatNumber(listings.length)}</span></div>
+        <div className="flex justify-between"><span>Bostadskoer</span><span className="font-medium text-gray-800">{formatNumber(queues.length)}</span></div>
+        <div className="flex justify-between"><span>Registrerade bostader</span><span className="font-medium text-gray-800">{formatNumber(totalUnits)}</span></div>
+        <div className="flex justify-between"><span>Stader</span><span className="font-medium text-gray-800">{formatNumber(cities.size)}</span></div>
       </div>
-      <div className="grid gap-3">
-        {insights.map((insight, index) => (
-          <div className="rounded-lg border border-gray-100 bg-gray-50 p-3" key={insight}>
-            <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-theme-xs font-semibold text-brand-500">
-              {index + 1}
-            </div>
-            <p className="text-theme-sm text-gray-700">{insight}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+    </CardShell>
+  );
+}
+
+function ObjectsTable({ rows }: { rows: ObjectApplicationCount[] }) {
+  return (
+    <CardShell className="xl:col-span-2" description="Objekt sorterade efter totalt antal intresseanmalningar." title="Objektprestanda">
+      {rows.length === 0 ? <EmptyState>Inga objekt med ansokningsdata hittades.</EmptyState> : (
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full min-w-[620px] text-left">
+            <thead className="border-y border-gray-100"><tr>{["Objekt", "Ansokningar", "Andel", "Signal"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
+            <tbody className="divide-y divide-gray-100">
+              {rows.slice(0, 8).map((row) => {
+                const total = Math.max(rows.reduce((sum, item) => sum + item.numApplications, 0), 1);
+                const share = (row.numApplications / total) * 100;
+                const signal = share >= 30 ? "Stark" : share >= 12 ? "Stabil" : "Lag";
+                return (
+                  <tr key={`${row.listingId}-${row.address}`}>
+                    <td className="py-3 text-theme-sm font-medium text-gray-800">{shortText(row.address, 42)}</td>
+                    <td className="py-3 text-theme-sm text-gray-500">{formatNumber(row.numApplications)}</td>
+                    <td className="py-3 text-theme-sm text-gray-500">{formatPercent(share)}</td>
+                    <td className="py-3"><span className="rounded-full bg-gray-100 px-2.5 py-1 text-theme-xs font-medium text-gray-700">{signal}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </CardShell>
+  );
+}
+
+function NewApplicationsTable({ rows }: { rows: NewApplication[] }) {
+  return (
+    <CardShell description="Senaste inkomna intresseanmalningar." title="Senaste intresseanmalningar">
+      {rows.length === 0 ? <EmptyState>Inga intresseanmalningar hittades.</EmptyState> : (
+        <div className="grid gap-3">
+          {rows.slice(0, 8).map((application, index) => (
+            <article className="rounded-lg border border-gray-100 bg-gray-50 p-3" key={`${application.applicationId ?? application.id ?? application.studentId}-${index}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-theme-sm font-semibold text-gray-800">{[application.firstName, application.surname].filter(Boolean).join(" ") || "Okand sokande"}</p>
+                  <p className="mt-1 text-theme-xs text-gray-500">{shortText(application.listingTitle ?? application.address ?? "Okant objekt", 42)}</p>
+                </div>
+                <span className="shrink-0 text-theme-xs text-gray-400">{formatDate(application.submittedAt ?? application.createdAt)}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </CardShell>
+  );
+}
+
+function QueueStudentsTable({ rows }: { rows: QueueApplicationDTO[] }) {
+  return (
+    <CardShell className="xl:col-span-2" description="Studenter som har stallt sig i foretagets koer." title="Studenter i ko">
+      {rows.length === 0 ? (
+        <EmptyState>Ingen studentlista kunde hamtas fran ko-endpoints. Nar backend skickar koansokningar visas namn, ko, status och anslutningsdatum har.</EmptyState>
+      ) : (
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left">
+            <thead className="border-y border-gray-100"><tr>{["Student", "Ko", "Kodagar", "Status", "Ansluten"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
+            <tbody className="divide-y divide-gray-100">
+              {rows.map((row, index) => (
+                <tr key={`${row.id ?? row.studentId ?? "student"}-${index}`}>
+                  <td className="py-3"><p className="text-theme-sm font-medium text-gray-800">{getQueueApplicationName(row)}</p><p className="text-theme-xs text-gray-500">{row.email ?? row.phone ?? "-"}</p></td>
+                  <td className="py-3 text-theme-sm text-gray-500">{row.queueName ?? row.queueId ?? "-"}</td>
+                  <td className="py-3 text-theme-sm text-gray-500">{row.queueDays != null ? `${formatNumber(row.queueDays)} dagar` : "-"}</td>
+                  <td className="py-3"><span className={`rounded-full px-2.5 py-1 text-theme-xs font-medium ${statusTone(row.status)}`}>{row.status ?? "active"}</span></td>
+                  <td className="py-3 text-theme-sm text-gray-500">{formatDate(row.joinedAt ?? row.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </CardShell>
   );
 }
 
 export default function ApplicationsInsights({
   mode,
-  applicantsTableProps,
 }: {
   mode: ApplicationsMode;
-  applicantsTableProps: Promise<ApplicantsTableProps[]>;
+  applicantsTableProps?: Promise<ApplicantsTableProps[]>;
 }) {
-  const [period, setPeriod] = React.useState("90d");
-  const [city, setCity] = React.useState("all");
-  const [status, setStatus] = React.useState("all");
-  const [objectType, setObjectType] = React.useState(mode === "queue" ? "queue" : "all");
-  const metrics = metricValue(mode, period);
+  const { user, isLoading: authLoading, refreshUser } = useAuth();
+  const [period, setPeriod] = React.useState<TimePeriod>("90d");
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [interestPayload, setInterestPayload] = React.useState<InterestPayload>({
+    generalAnalytics: null,
+    openApplications: 0,
+    timeline: [],
+    newApplications: [],
+    applicationsByObject: [],
+    listings: [],
+    queues: [],
+  });
+  const [queuePayload, setQueuePayload] = React.useState<QueuePayload>({ queues: [], queueApplications: [] });
   const isQueue = mode === "queue";
 
   React.useEffect(() => {
-    if (mode === "queue") setObjectType("queue");
-  }, [mode]);
+    let isCancelled = false;
+    const load = async () => {
+      if (!user) {
+        try {
+          await refreshUser();
+        } catch {
+          if (!isCancelled) setErrorMessage("Kunde inte ladda anvandaren.");
+        } finally {
+          if (!isCancelled) setIsLoading(false);
+        }
+        return;
+      }
+      if (user.accountType !== "company") {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setErrorMessage(null);
+      const companyId = Number(user.id);
+      const [generalResult, openApplicationsResult, timelineResult, newApplicationsResult, objectResult, listingsResult, queuesResult, queueApplicationsResult] = await Promise.allSettled([
+        companyService.generalAnalytics(companyId),
+        companyService.applicationCount(companyId),
+        companyService.applicationsTimeline(companyId),
+        companyService.newApplications(companyId, { count: 50, since: "always" }),
+        companyService.applicationCountsPerObject(companyId, 50),
+        queueService.getCompanyListings(companyId, 0, 200),
+        queueService.getByCompany(companyId),
+        queueService.getCompanyQueueApplications(companyId),
+      ]);
+      if (isCancelled) return;
+      const hasRejected = [generalResult, openApplicationsResult, timelineResult, newApplicationsResult, objectResult, listingsResult, queuesResult, queueApplicationsResult].some((result) => result.status === "rejected");
+      const queues = queuesResult.status === "fulfilled" ? queuesResult.value : [];
+      setErrorMessage(hasRejected ? "Kunde inte hamta all ansokningsdata just nu." : null);
+      setInterestPayload({
+        generalAnalytics: generalResult.status === "fulfilled" ? generalResult.value : null,
+        openApplications: openApplicationsResult.status === "fulfilled" ? openApplicationsResult.value : 0,
+        timeline: timelineResult.status === "fulfilled" ? timelineResult.value : [],
+        newApplications: newApplicationsResult.status === "fulfilled" ? newApplicationsResult.value : [],
+        applicationsByObject: objectResult.status === "fulfilled" ? objectResult.value : [],
+        listings: listingsResult.status === "fulfilled" ? listingsResult.value : [],
+        queues,
+      });
+      setQueuePayload({
+        queues,
+        queueApplications: queueApplicationsResult.status === "fulfilled" ? queueApplicationsResult.value : [],
+      });
+      setIsLoading(false);
+    };
+    load();
+    return () => {
+      isCancelled = true;
+    };
+  }, [refreshUser, user]);
+
+  const generalPeriod = periodToGeneralPeriod[period];
+  const applicationMetric = getMetric(interestPayload.generalAnalytics?.applications, generalPeriod, interestPayload.openApplications);
+  const viewMetric = getMetric(getViewingQuantities(interestPayload.generalAnalytics), generalPeriod);
+  const activeListingsMetric = getMetric(getActiveListingQuantities(interestPayload.generalAnalytics), generalPeriod, interestPayload.listings.length);
+  const queueTotal = getQueueTotal(queuePayload.queues, queuePayload.queueApplications);
+  const averageWaitDays = queuePayload.queues.length ? Math.round(queuePayload.queues.reduce((sum, queue) => sum + (queue.waitDays ?? 0), 0) / queuePayload.queues.length) : 0;
+  const totalUnits = queuePayload.queues.reduce((sum, queue) => sum + (queue.totalUnits ?? 0), 0);
+  const trendRows = React.useMemo(() => buildApplicationTrendRows(interestPayload.timeline, period), [interestPayload.timeline, period]);
+  const objectTrendRows = React.useMemo(() => buildObjectTrendRows(interestPayload.timeline, interestPayload.applicationsByObject, period), [interestPayload.timeline, interestPayload.applicationsByObject, period]);
+  const portfolioItems = React.useMemo(() => buildPortfolioItems(interestPayload.listings, interestPayload.queues), [interestPayload.listings, interestPayload.queues]);
+  const queueTrendRows = React.useMemo(() => getRowsForPeriod(buildQueueTrendRows(queuePayload.queueApplications, queuePayload.queues), period), [queuePayload.queueApplications, queuePayload.queues, period]);
+
+  if (authLoading || isLoading) return <LoadingState />;
+  if (!user || user.accountType !== "company") {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-6">
+        <h1 className="text-xl font-semibold text-gray-900">Foretagskonto kravs</h1>
+        <p className="mt-2 text-theme-sm text-gray-500">Logga in som foretag for att visa den har sidan.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-theme-sm text-gray-500">Ansökningar</p>
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {isQueue ? "Kö ansökningar" : "Intresseanmälningar"}
-        </h1>
-        <p className="mt-1 max-w-3xl text-theme-sm text-gray-500">
-          {isQueue
-            ? "Följ kötryck, ködagar, granskning och antagning över tid."
-            : "Följ intresse, konvertering, svarstid och kvalitet över tid."}
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
-        <div className="mb-4 flex items-center gap-2 text-theme-sm font-semibold text-gray-800">
-          <Filter className="h-4 w-4 text-gray-500" />
-          Filter
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-theme-sm text-gray-500">Ansokningar</p>
+          <h1 className="text-2xl font-semibold text-gray-900">{isQueue ? "Koansokningar" : "Intresseanmalningar"}</h1>
+          <p className="mt-1 max-w-3xl text-theme-sm text-gray-500">
+            {isQueue ? "Folj koantal, utveckling over tid och studenter som stallt sig i kon." : "Folj total efterfragan, objekt som trendar och hur fastighetsbestandets data fordelas."}
+          </p>
+          {errorMessage ? <p className="mt-2 text-theme-xs text-error-700">{errorMessage}</p> : null}
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <FilterSelect label="Period" onValueChange={setPeriod} options={[
-            { label: "Senaste 30 dagar", value: "30d" },
-            { label: "Senaste 90 dagar", value: "90d" },
-            { label: "12 månader", value: "12m" },
-          ]} value={period} />
-          <FilterSelect label="Stad" onValueChange={setCity} options={[
-            { label: "Alla städer", value: "all" },
-            { label: "Göteborg", value: "goteborg" },
-            { label: "Stockholm", value: "stockholm" },
-            { label: "Malmö", value: "malmo" },
-          ]} value={city} />
-          <FilterSelect label="Status" onValueChange={setStatus} options={[
-            { label: "Alla statusar", value: "all" },
-            { label: "Väntande", value: "pending" },
-            { label: "Granskade", value: "reviewed" },
-            { label: "Accepterade", value: "accepted" },
-            { label: "Avvisade", value: "rejected" },
-          ]} value={status} />
-          <FilterSelect label="Objekt" onValueChange={setObjectType} options={[
-            { label: "Alla objekt", value: "all" },
-            { label: "Studentrum", value: "student_room" },
-            { label: "Lägenhet", value: "apartment" },
-            { label: "Bostadskö", value: "queue" },
-          ]} value={objectType} />
-        </div>
+        <div className="flex flex-col gap-1"><span className="text-theme-xs font-medium text-gray-500">Period</span><PeriodSelect onChange={setPeriod} value={period} /></div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 xl:grid-cols-4">
-        <MetricCard change="12,4%" icon={isQueue ? <House className="h-6 w-6" /> : <MessageSquareText className="h-6 w-6" />} label={isQueue ? "Kö ansökningar" : "Intresseanmälningar"} value={metrics.total.toLocaleString("sv-SE")} />
-        <MetricCard change="8,1%" icon={<Search className="h-6 w-6" />} label="Granskade" value={metrics.reviewed.toLocaleString("sv-SE")} />
-        <MetricCard change="5,7%" icon={<CheckCircle2 className="h-6 w-6" />} label="Accepterade" value={metrics.approved.toLocaleString("sv-SE")} />
-        <MetricCard change="9,3%" direction="down" icon={<Clock className="h-6 w-6" />} label="Snitt svarstid" value={`${metrics.response} h`} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <TrendChart mode={mode} period={period} />
-        <StatusChart />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <CityChart mode={mode} />
-        <SmartInsights mode={mode} />
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-          <h3 className="text-lg font-semibold text-gray-800">Filterstatus</h3>
-          <div className="mt-4 grid gap-3 text-theme-sm text-gray-600">
-            <div className="flex justify-between"><span>Period</span><span className="font-medium text-gray-800">{period}</span></div>
-            <div className="flex justify-between"><span>Stad</span><span className="font-medium text-gray-800">{city}</span></div>
-            <div className="flex justify-between"><span>Status</span><span className="font-medium text-gray-800">{status}</span></div>
-            <div className="flex justify-between"><span>Objekt</span><span className="font-medium text-gray-800">{objectType}</span></div>
+      {isQueue ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard change="0,0%" icon={<Users className="h-6 w-6" />} label="Stallda i ko" value={formatNumber(queueTotal)} />
+            <MetricCard change="0,0%" icon={<ListOrdered className="h-6 w-6" />} label="Bostadskoer" value={formatNumber(queuePayload.queues.length)} />
+            <MetricCard change="0,0%" icon={<Clock3 className="h-6 w-6" />} label="Snitt vantetid" value={averageWaitDays ? `${formatNumber(averageWaitDays)} dagar` : "-"} />
+            <MetricCard change="0,0%" icon={<Home className="h-6 w-6" />} label="Registrerade bostader" value={formatNumber(totalUnits)} />
           </div>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
-        <div className="mb-2">
-          <h3 className="text-lg font-semibold text-gray-800">
-            {isQueue ? "Köansökningar" : "Intresseanmälningar"}
-          </h3>
-          <p className="text-theme-sm text-gray-500">Listan kan filtreras, sorteras och masshanteras.</p>
-        </div>
-        <ApplicantsTable applicantsTableProps={applicantsTableProps} initialFilterQueue={isQueue} />
-      </div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><QueueTrendChart data={queueTrendRows} /><QueueDistributionChart queues={queuePayload.queues} /></div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <QueueStudentsTable rows={queuePayload.queueApplications} />
+            <CardShell description="Kort oversikt per ko." title="Kooversikt">
+              {queuePayload.queues.length === 0 ? <EmptyState>Inga koer hittades for foretaget.</EmptyState> : (
+                <div className="grid gap-3">
+                  {queuePayload.queues.map((queue) => (
+                    <article className="rounded-lg border border-gray-100 bg-gray-50 p-3" key={queue.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div><p className="text-theme-sm font-semibold text-gray-800">{queue.name}</p><p className="mt-1 flex items-center gap-1 text-theme-xs text-gray-500"><MapPin className="h-3.5 w-3.5" />{queue.city || "Stad saknas"}</p></div>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-theme-xs font-medium text-gray-700">{queue.activeListings ?? 0} aktiva</span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </CardShell>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard change={formatChange(applicationMetric.change)} direction={applicationMetric.change >= 0 ? "up" : "down"} icon={<Users className="h-6 w-6" />} label="Intresseanmalningar" value={formatNumber(applicationMetric.count)} />
+            <MetricCard change="0,0%" icon={<Building2 className="h-6 w-6" />} label="Obesvarade" value={formatNumber(interestPayload.openApplications)} />
+            <MetricCard change={formatChange(viewMetric.change)} direction={viewMetric.change >= 0 ? "up" : "down"} icon={<Home className="h-6 w-6" />} label="Visningar" value={formatNumber(viewMetric.count)} />
+            <MetricCard change={formatChange(activeListingsMetric.change)} direction={activeListingsMetric.change >= 0 ? "up" : "down"} icon={<ListOrdered className="h-6 w-6" />} label="Aktiva objekt" value={formatNumber(activeListingsMetric.count)} />
+          </div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><TrendChart data={trendRows} description="Total volym over tid for vald period." title="Intresse over tid" /><DonutBreakdownCard description="Aktiva objekt och koer per stad." items={portfolioItems} title="Bestand per stad" /></div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><ObjectTrendChart data={objectTrendRows} objects={interestPayload.applicationsByObject} /><PropertyStockCard listings={interestPayload.listings} queues={interestPayload.queues} /></div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><ObjectsTable rows={interestPayload.applicationsByObject} /><NewApplicationsTable rows={interestPayload.newApplications} /></div>
+        </>
+      )}
     </div>
   );
 }

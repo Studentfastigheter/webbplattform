@@ -22,6 +22,48 @@ export type QueueFilters = {
   pageCount?: number;          // Number of pages to fetch.
 };
 
+export type QueueApplicationDTO = {
+  id?: string | number;
+  queueId?: string;
+  queueName?: string;
+  studentId?: number;
+  firstName?: string;
+  surname?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  joinedAt?: string;
+  createdAt?: string;
+  status?: string;
+  queueDays?: number;
+  position?: number;
+};
+
+function readEmbeddedQueueApplications(queue: HousingQueueDTO): QueueApplicationDTO[] {
+  const rawQueue = queue as HousingQueueDTO & Record<string, unknown>;
+  const candidates = [
+    rawQueue.queueApplications,
+    rawQueue.applications,
+    rawQueue.students,
+    rawQueue.members,
+  ];
+  const embedded = candidates.find(Array.isArray);
+
+  if (!embedded) {
+    return [];
+  }
+
+  return embedded
+    .filter((application): application is QueueApplicationDTO => (
+      typeof application === "object" && application !== null
+    ))
+    .map((application) => ({
+      ...application,
+      queueId: application.queueId ?? queue.id,
+      queueName: application.queueName ?? queue.name,
+    }));
+}
+
 const DEFAULT_PAGE_SIZE = 12;
 
 export const queueService = {
@@ -76,5 +118,41 @@ export const queueService = {
     const query = buildQuery({ page, size });
     const res = await apiClient<any>(`/companies/${companyId}/listings${query}`);
     return res?.content ?? [];
+  },
+
+  getCompanyQueueApplications: async (companyId: number): Promise<QueueApplicationDTO[]> => {
+    const queues = await queueService.getByCompany(companyId).catch(() => []);
+    const queueApplications = await Promise.all(
+      queues.map(async (queue) => {
+        const embeddedApplications = readEmbeddedQueueApplications(queue);
+        if (embeddedApplications.length > 0) {
+          return embeddedApplications;
+        }
+
+        const endpoints = [
+          `/queues/${queue.id}/applications`,
+          `/queue/${queue.id}/applications`,
+          `/companies/${companyId}/queues/${queue.id}/applications`,
+        ];
+
+        for (const endpoint of endpoints) {
+          try {
+            const result = await apiClient<QueueApplicationDTO[] | { content?: QueueApplicationDTO[] }>(endpoint);
+            const rows = Array.isArray(result) ? result : result?.content ?? [];
+            return rows.map((application) => ({
+              ...application,
+              queueId: application.queueId ?? queue.id,
+              queueName: application.queueName ?? queue.name,
+            }));
+          } catch {
+            // Try the next known shape.
+          }
+        }
+
+        return [];
+      })
+    );
+
+    return queueApplications.flat();
   },
 };
