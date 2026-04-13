@@ -78,12 +78,6 @@ const tagsOptions = [
 ];
 
 
-const defaultRooms = 3;
-const defaultSize = 42;
-
-
-
-
 export default function BostadForm({
     listing,
     children,
@@ -139,6 +133,10 @@ export default function BostadForm({
                             <Label htmlFor="title">Titel</Label>
                             <Input id="title" name="title" defaultValue={listing.title} />
                         </div>
+                        <div className="grid gap-3">
+                            <Label htmlFor="fullAddress">Adress</Label>
+                            <Input id="fullAddress" name="fullAddress" defaultValue={listing.fullAddress ?? ""} />
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="grid gap-3">
                                 <Label htmlFor="area">Område</Label>
@@ -148,6 +146,16 @@ export default function BostadForm({
                                 <Label htmlFor="city">Stad</Label>
                                 <Input id="city" name="city" defaultValue={listing.city} />
                             </div>
+                        </div>
+                        <div className="grid gap-3">
+                            <Label htmlFor="rent">Månadshyra</Label>
+                            <InputField
+                                id="rent"
+                                name="rent"
+                                defaultValue={listing.rent}
+                                type="number"
+                                suffix="kr/mån"
+                            />
                         </div>
                         <div className="grid gap-3">
                         <Label htmlFor="username-1">Typ av fastighet</Label>
@@ -201,7 +209,7 @@ export default function BostadForm({
                                 <InputField 
                                     id="rooms" 
                                     name="rooms" 
-                                    defaultValue={defaultRooms} 
+                                    defaultValue={listing.rooms} 
                                     type="number"
                                     suffix="rum"
                                 />
@@ -210,13 +218,31 @@ export default function BostadForm({
                             <div className="grid gap-3">
                                 <Label htmlFor="size">Storlek</Label>
                                 <InputField 
-                                    id="rooms" 
-                                    name="rooms" 
-                                    defaultValue={defaultSize} 
+                                    id="sizeM2" 
+                                    name="sizeM2" 
+                                    defaultValue={listing.sizeM2 ?? undefined} 
                                     type="number"
                                     suffix="kvm"
                                 />
                             </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="grid gap-3">
+                                    <Label htmlFor="availableFrom">Tillgänglig från</Label>
+                                    <Input id="availableFrom" name="availableFrom" type="date" defaultValue={listing.availableFrom ?? ""} />
+                                </div>
+                                <div className="grid gap-3">
+                                    <Label htmlFor="availableTo">Tillgänglig till</Label>
+                                    <Input id="availableTo" name="availableTo" type="date" defaultValue={listing.availableTo ?? ""} />
+                                </div>
+                                <div className="grid gap-3">
+                                    <Label htmlFor="moveIn">Inflyttning</Label>
+                                    <Input id="moveIn" name="moveIn" type="date" defaultValue={listing.moveIn ?? ""} />
+                                </div>
+                                <div className="grid gap-3">
+                                    <Label htmlFor="applyBy">Sista ansökan</Label>
+                                    <Input id="applyBy" name="applyBy" type="date" defaultValue={listing.applyBy ?? ""} />
+                                </div>
                             </div>
                             <div className="grid gap-3">
                                 <Label htmlFor="tags">Etiketter</Label>
