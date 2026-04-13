@@ -114,7 +114,7 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
                 value={waitlistForm.email}
                 onChange={handleWaitlistChange}
                 className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-foreground/40 focus:ring-2 focus:ring-foreground/10"
-                placeholder="namn@epost.se"
+                placeholder="Ange din e-post för att hitta din nästa lya"
                 autoComplete="email"
                 inputMode="email"
               />
