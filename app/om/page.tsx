@@ -107,7 +107,7 @@ const TEAM_CATEGORIES = [
       },
       { name: "Linnéa Sandell", 
         role: "Marketing Associate",
-        image: "/team/Profilbild-Linnea.jpeg",
+        image: "/team/Profilbild-Linnea.jpg",
         linkedin: "https://www.linkedin.com/in/linnéasandell/",
       },
     ],
