@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import QueueHero from "@/components/ads/QueueHero";
-import QueueListings from "@/components/ads/QueueListings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,9 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { queueService, type CompanyDTO } from "@/services/queue-service";
-import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
-import { Eye, Loader2, Save } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { UploadButton } from "../../_components/UploadButton";
 
 const DRAFT_STORAGE_PREFIX = "portal-company-profile-draft-v1";
@@ -32,47 +29,9 @@ type ProfileDraft = {
   linkedin: string;
 };
 
-type EditableQueueDraft = {
-  id: string;
-  name: string;
-  city: string;
-  waitDays: string;
-  totalUnits: string;
-};
-
 type StoredProfileDraft = {
   fields: ProfileDraft;
-  queues: EditableQueueDraft[];
 };
-
-const parseOptionalNumber = (value: string): number | undefined => {
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : undefined;
-};
-
-const numberToInput = (value?: number): string => {
-  if (typeof value !== "number" || Number.isNaN(value)) return "";
-  return String(value);
-};
-
-const queueToEditable = (queue: HousingQueueDTO): EditableQueueDraft => ({
-  id: queue.id,
-  name: queue.name,
-  city: queue.city ?? "",
-  waitDays: numberToInput(queue.waitDays),
-  totalUnits: numberToInput(queue.totalUnits),
-});
-
-const createFallbackQueue = (name: string): EditableQueueDraft => ({
-  id: "preview-queue",
-  name: name ? `${name} ko` : "Din kö",
-  city: "",
-  waitDays: "",
-  totalUnits: "",
-});
 
 function buildInitialDraft(
   companyId: number,
@@ -105,9 +64,7 @@ export default function ProfilePage() {
   });
 
   const [company, setCompany] = useState<CompanyDTO | null>(null);
-  const [baseQueues, setBaseQueues] = useState<HousingQueueDTO[]>([]);
-  const [queueEdits, setQueueEdits] = useState<EditableQueueDraft[]>([]);
-  const [listings, setListings] = useState<ListingCardDTO[]>([]);
+  const [companyQueue, setCompanyQueue] = useState<HousingQueueDTO | null>(null);
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -148,9 +105,8 @@ export default function ProfilePage() {
     Promise.all([
       queueService.getCompany(companyId),
       queueService.getByCompany(companyId),
-      queueService.getCompanyListings(companyId),
     ])
-      .then(([companyData, companyQueues, companyListings]) => {
+      .then(([companyData, companyQueues]) => {
         if (!active) return;
 
         const normalizedQueues = Array.isArray(companyQueues) ? companyQueues : [];
@@ -158,13 +114,8 @@ export default function ProfilePage() {
         const storageKey = `${DRAFT_STORAGE_PREFIX}-${companyId}`;
 
         const initialDraft = buildInitialDraft(companyId, companyData, firstQueue);
-        const initialQueueEdits =
-          normalizedQueues.length > 0
-            ? normalizedQueues.map(queueToEditable)
-            : [createFallbackQueue(initialDraft.name)];
 
         let nextDraft = initialDraft;
-        let nextQueueEdits = initialQueueEdits;
 
         if (typeof window !== "undefined") {
           const rawStored = localStorage.getItem(storageKey);
@@ -178,10 +129,6 @@ export default function ProfilePage() {
                   companyId,
                 };
               }
-
-              if (Array.isArray(parsed?.queues) && parsed.queues.length > 0) {
-                nextQueueEdits = parsed.queues;
-              }
             } catch {
               // Ignore invalid local draft payload.
             }
@@ -189,10 +136,8 @@ export default function ProfilePage() {
         }
 
         setCompany(companyData);
-        setBaseQueues(normalizedQueues);
-        setListings(Array.isArray(companyListings) ? companyListings : []);
+        setCompanyQueue(firstQueue ?? null);
         setDraft(nextDraft);
-        setQueueEdits(nextQueueEdits);
       })
       .catch((fetchError) => {
         if (!active) return;
@@ -213,59 +158,8 @@ export default function ProfilePage() {
     };
   }, [authLoading, companyId, user]);
 
-  const previewQueues = useMemo(() => {
-    if (!draft) return [];
-
-    const baseQueueById = new Map(baseQueues.map((queue) => [queue.id, queue]));
-
-    return queueEdits.map((queueEdit) => {
-      const baseQueue = baseQueueById.get(queueEdit.id);
-      const facebook = draft.facebook || baseQueue?.socialLinks?.facebook;
-      const linkedin = draft.linkedin || baseQueue?.socialLinks?.linkedin;
-
-      return {
-        id: queueEdit.id,
-        companyId: company?.id ?? draft.companyId,
-        name: queueEdit.name || baseQueue?.name || "Ko",
-        city: queueEdit.city || baseQueue?.city || "",
-        logoUrl: draft.logoUrl || baseQueue?.logoUrl || "/logos/campuslyan-logo.svg",
-        bannerUrl: draft.bannerUrl || baseQueue?.bannerUrl || "/appartment.jpg",
-        description: draft.description || baseQueue?.description,
-        website: draft.website || baseQueue?.website,
-        activeListings: listings.length,
-        contactEmail: draft.contactEmail || baseQueue?.contactEmail,
-        contactPhone: draft.contactPhone || baseQueue?.contactPhone,
-        totalUnits: parseOptionalNumber(queueEdit.totalUnits) ?? baseQueue?.totalUnits,
-        waitDays: parseOptionalNumber(queueEdit.waitDays) ?? baseQueue?.waitDays,
-        socialLinks:
-          facebook || linkedin
-            ? {
-                facebook: facebook || undefined,
-                linkedin: linkedin || undefined,
-              }
-            : undefined,
-      } satisfies HousingQueueDTO;
-    });
-  }, [baseQueues, company?.id, draft, listings.length, queueEdits]);
-
   const heroQueue = useMemo(() => {
     if (!draft) return null;
-
-    const totalUnits = previewQueues.reduce((sum, queue) => {
-      return sum + (queue.totalUnits ?? 0);
-    }, 0);
-
-    const waitDaysList = previewQueues
-      .map((queue) => queue.waitDays)
-      .filter((value): value is number => typeof value === "number");
-
-    const averageWaitDays =
-      waitDaysList.length > 0
-        ? Math.round(
-            waitDaysList.reduce((sum, value) => sum + value, 0) /
-              waitDaysList.length
-          )
-        : undefined;
 
     const facebook = draft.facebook.trim();
     const linkedin = draft.linkedin.trim();
@@ -279,9 +173,9 @@ export default function ProfilePage() {
       bannerUrl: draft.bannerUrl || company?.bannerUrl || "/appartment.jpg",
       description: draft.description || company?.description,
       website: draft.website || company?.website,
-      activeListings: listings.length,
-      totalUnits,
-      waitDays: averageWaitDays,
+      activeListings: 0,
+      totalUnits: companyQueue?.totalUnits,
+      waitDays: companyQueue?.waitDays,
       contactEmail: draft.contactEmail || undefined,
       contactPhone: draft.contactPhone || undefined,
       socialLinks:
@@ -292,7 +186,7 @@ export default function ProfilePage() {
             }
           : undefined,
     } satisfies HousingQueueDTO;
-  }, [company, draft, listings.length, previewQueues]);
+  }, [company, companyQueue, draft]);
 
   const updateDraftField = <K extends keyof ProfileDraft>(
     key: K,
@@ -302,33 +196,6 @@ export default function ProfilePage() {
       if (!current) return current;
       return { ...current, [key]: value };
     });
-    setSaveMessage(null);
-  };
-
-  const updateQueueField = <K extends keyof EditableQueueDraft>(
-    queueId: string,
-    key: K,
-    value: EditableQueueDraft[K]
-  ) => {
-    setQueueEdits((current) =>
-      current.map((queue) =>
-        queue.id === queueId ? { ...queue, [key]: value } : queue
-      )
-    );
-    setSaveMessage(null);
-  };
-
-  const addPreviewQueue = () => {
-    setQueueEdits((current) => [
-      ...current,
-      {
-        id: `preview-${Date.now()}`,
-        name: "Ny kö",
-        city: "",
-        waitDays: "",
-        totalUnits: "",
-      },
-    ]);
     setSaveMessage(null);
   };
 
@@ -348,7 +215,6 @@ export default function ProfilePage() {
           logoUrl: draft.logoUrl.startsWith("blob:") ? "/logos/campuslyan-logo.svg" : draft.logoUrl,
           bannerUrl: draft.bannerUrl.startsWith("blob:") ? "/appartment.jpg" : draft.bannerUrl,
         },
-        queues: queueEdits,
       };
 
       if (typeof window !== "undefined") {
@@ -456,8 +322,8 @@ export default function ProfilePage() {
         )}
       </header>
 
-      <div className="grid gap-6 2xl:grid-cols-[380px_minmax(0,1fr)]">
-        <Card className="h-fit border-gray-200 bg-white 2xl:sticky 2xl:top-24">
+      <div className="grid gap-6 xl:grid-cols-[460px_minmax(0,1fr)]">
+        <Card className="h-fit border-gray-200 bg-white xl:sticky xl:top-24">
           <CardHeader>
             <CardTitle>Redigera profil</CardTitle>
           </CardHeader>
@@ -586,69 +452,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Koer i preview</Label>
-                <Button variant="outline" size="sm" onClick={addPreviewQueue}>
-                  Ny ko
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                {queueEdits.map((queue) => (
-                  <div
-                    key={queue.id}
-                    className="rounded-lg border border-gray-200 p-3"
-                  >
-                    <div className="grid gap-3">
-                      <Input
-                        value={queue.name}
-                        onChange={(event) =>
-                          updateQueueField(queue.id, "name", event.target.value)
-                        }
-                        placeholder="Konamn"
-                      />
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <Input
-                          value={queue.city}
-                          onChange={(event) =>
-                            updateQueueField(
-                              queue.id,
-                              "city",
-                              event.target.value
-                            )
-                          }
-                          placeholder="Stad"
-                        />
-                        <Input
-                          value={queue.waitDays}
-                          onChange={(event) =>
-                            updateQueueField(
-                              queue.id,
-                              "waitDays",
-                              event.target.value
-                            )
-                          }
-                          placeholder="Kö-dagar"
-                        />
-                        <Input
-                          value={queue.totalUnits}
-                          onChange={(event) =>
-                            updateQueueField(
-                              queue.id,
-                              "totalUnits",
-                              event.target.value
-                            )
-                          }
-                          placeholder="Antal bostäder"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <Button onClick={handleSave} isLoading={saving}>
               {!saving && <Save className="h-4 w-4" />}
               Spara profil
@@ -656,77 +459,41 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
-            <div>
-              <h2 className="inline-flex items-center gap-2 text-base font-semibold text-gray-900">
-                <Eye className="h-4 w-4" />
-                Offentlig förhandsvisning
-              </h2>
-              <p className="text-sm text-gray-600">
-                Samma layout som sidan /alla-koer/[id].
-              </p>
-            </div>
-
-            {company?.id ? (
-              <Link
-                href={`/alla-koer/${company.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-[#004225] hover:underline"
-              >
-                Oppna publik sida
-              </Link>
-            ) : null}
-          </div>
-
-          <main className="min-h-screen bg-white px-2 pb-8 sm:px-4 lg:px-6">
+        <section className="h-fit overflow-hidden rounded-2xl border border-gray-200 bg-white">
+          <main className="bg-white pb-8">
             <QueueHero queue={heroQueue} />
 
-            {previewQueues.length > 0 && (
-              <div className="mx-auto mt-10 max-w-4xl px-4 sm:px-6">
-                <h2 className="mb-4 text-lg font-semibold text-gray-900">
-                  Bostadsköer
-                </h2>
-                <div className="space-y-3">
-                  {previewQueues.map((queue) => (
-                    <div
-                      key={queue.id}
-                      className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-900">{queue.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {queue.city || "Stad saknas"}
-                          {queue.waitDays != null &&
-                            ` | ca ${queue.waitDays} dagars kötid`}
-                          {queue.totalUnits != null &&
-                            ` | ${queue.totalUnits} bostäder`}
-                        </p>
-                      </div>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="shrink-0 opacity-80"
-                        isDisabled
-                      >
-                        Forhandsvisning
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="mx-auto mt-10 max-w-4xl px-4 pb-16 sm:px-6">
-              {listings.length > 0 ? (
-                <QueueListings
-                  listings={listings}
-                  title={`Lediga bostäder hos ${heroQueue.name}`}
-                />
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                Bostadskö
+              </h2>
+
+              {companyQueue ? (
+                <article className="rounded-xl border border-gray-200 bg-white p-5">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold text-gray-900">
+                        {companyQueue.name}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {companyQueue.city || "Stad saknas"}
+                        {companyQueue.waitDays != null &&
+                          ` | ca ${companyQueue.waitDays} dagars kötid`}
+                        {companyQueue.totalUnits != null &&
+                          ` | ${companyQueue.totalUnits} bostäder`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {companyQueue.description && (
+                    <p className="mt-4 text-sm leading-6 text-gray-600">
+                      {companyQueue.description}
+                    </p>
+                  )}
+                </article>
               ) : (
                 <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
-                  Det finns inga lediga bostäder publicerade just nu.
+                  Ingen bostadskö hittades för företaget.
                 </div>
               )}
             </div>
