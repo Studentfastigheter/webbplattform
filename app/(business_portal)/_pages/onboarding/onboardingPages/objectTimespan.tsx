@@ -1,142 +1,73 @@
 "use client";
 
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { FormShell } from "@/components/Dashboard/Form";
+import { Input } from "@/components/ui/input";
+import { useListingDraft } from "../listingDraftContext";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { format } from "date-fns"
-import { CalendarIcon, ChevronDownIcon } from "lucide-react"
+  FieldGrid,
+  FieldRow,
+  FieldStack,
+  StepFormLayout,
+  fieldInputClassName,
+} from "./listingFormUi";
 
-import { useState } from "react";
-import { MultiselectButton, FormGroup, FormShell } from "@/components/Dashboard/Form";
-import { sv } from "date-fns/locale/sv";
+export default function ObjectTimespan() {
+  const { draft, updateDraft } = useListingDraft();
 
+  return (
+    <StepFormLayout>
+      <FormShell
+        className="m-0 max-w-none"
+        heading="Datum"
+        description="Lägg till datum om annonsen har deadline eller en bestämd tillgänglighet."
+      >
+        <FieldStack>
+          <FieldGrid columns={3}>
+            <FieldRow
+              apiName="applyBy"
+              label="Sista ansökningsdag"
+              description="Valfritt."
+            >
+              <Input
+                className={fieldInputClassName}
+                type="date"
+                value={draft.applyBy}
+                onChange={(event) => updateDraft({ applyBy: event.target.value })}
+              />
+            </FieldRow>
 
-const MOVE_IN_OPTIONS = [
-    {
-        id: "soonest_possible",
-        label: "Snarast möjligt",
-    },
-    {
-        id: "choose_date",
-        label: "Välj datum",
-    },
-]
-
-const MOVE_OUT_OPTIONS = [
-    {
-        id: "until_further_notice",
-        label: "Tills vidare",
-    },
-    {
-        id: "choose_date",
-        label: "Välj datum",
-    },
-]
-
-
-
-export default function ObjectType() {
-
-	const [moveIn, setMoveIn] = useState<string | null>(null);
-	const [moveOut, setMoveOut] = useState<string | null>(null);
-
-    const [moveInDate, setMoveInDate] = useState<Date>();
-    const [moveOutDate, setMoveOutDate] = useState<Date>();
-
-	
-
-    return (
-        <FormShell heading="Välj in- och utflyttningsdatum">
-
-            <FormGroup heading="Inflyttning" className="mb-8">
-                {MOVE_IN_OPTIONS.map((type) => (
-                    <MultiselectButton
-                        key={type.id}
-                        id={type.id}
-                        label={type.label}
-                        checked={moveIn === type.id}
-                        onCheckedChange={() => {
-                            if (moveIn === type.id) {
-                                setMoveIn(null);
-                            } else {
-                                setMoveIn(type.id)
-                            }
-                        }}
-                    />
-                ))}
-                
-                {
-                    moveIn === "choose_date" && (
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant="outline"
-                                data-empty={!moveInDate}
-                                className="data-[empty=true]:text-muted-foreground w-[212px] justify-between text-left font-normal"
-                                >
-                                {moveInDate ? format(moveInDate, "PPP", { locale: sv }) : <span>Välj ett datum</span>}
-                                <CalendarIcon className="w-4 h-4" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                mode="single"
-                                selected={moveInDate}
-                                onSelect={setMoveInDate}
-                                defaultMonth={moveInDate}
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    )
+            <FieldRow
+              apiName="availableFrom"
+              label="Tillgänglig från"
+              description="Valfritt men rekommenderas."
+            >
+              <Input
+                className={fieldInputClassName}
+                type="date"
+                value={draft.availableFrom}
+                onChange={(event) =>
+                  updateDraft({ availableFrom: event.target.value })
                 }
-            </FormGroup>
-            
-            <FormGroup heading="Utflyttning">
-                {MOVE_OUT_OPTIONS.map((option) => (
-                    <MultiselectButton
-                        key={option.id}
-                        id={option.id}
-                        label={option.label}
-                        checked={moveOut === option.id}
-                        onCheckedChange={() => {
-                            if (moveOut === option.id) {
-                                setMoveOut(null);
-                            } else {
-                                setMoveOut(option.id)
-                            }
-                        }}
-                    />
-                ))}
-                {
-                    moveOut === "choose_date" && (
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant="outline"
-                                data-empty={!moveOutDate}
-                                className="data-[empty=true]:text-muted-foreground w-[212px] justify-between text-left font-normal"
-                                >
-                                {moveOutDate ? format(moveOutDate, "PPP", { locale: sv }) : <span>Välj ett datum</span>}
-                                <CalendarIcon className="w-4 h-4" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                mode="single"
-                                selected={moveOutDate}
-                                onSelect={setMoveOutDate}
-                                defaultMonth={moveOutDate}
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    )
+              />
+            </FieldRow>
+
+            <FieldRow
+              apiName="availableTo"
+              label="Tillgänglig till"
+              description="Valfritt."
+            >
+              <Input
+                className={fieldInputClassName}
+                type="date"
+                value={draft.availableTo}
+                onChange={(event) =>
+                  updateDraft({ availableTo: event.target.value })
                 }
-            </FormGroup>
-        </FormShell>
-    );
+              />
+            </FieldRow>
+          </FieldGrid>
+        </FieldStack>
+      </FormShell>
+    </StepFormLayout>
+  );
 }
-

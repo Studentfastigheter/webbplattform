@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { MultiselectButton, FormGroup, FormShell } from "@/components/Dashboard/Form";
+import { useListingDraft } from "../listingDraftContext";
 
 
 const ObjectTypes = [
@@ -35,9 +35,7 @@ const WithFurnitureOptions = [
 
 
 export default function ObjectType() {
-
-	const [selectedType, setSelectedType] = useState<string | null>(null);
-	const [selectedFurniture, setSelectedFurniture] = useState<string | null>(null);
+	const { draft, updateDraft } = useListingDraft();
 
     return (
         <FormShell heading="Vad vill du hyra ut?">
@@ -49,12 +47,15 @@ export default function ObjectType() {
                         id={type.id}
                         label={type.label}
                         description={type.description}
-                        checked={selectedType === type.id}
+                        checked={draft.rentalMode === type.id}
                         onCheckedChange={() => {
-                            if (selectedType === type.id) {
-                                setSelectedType(null);
+                            if (draft.rentalMode === type.id) {
+                                updateDraft({ rentalMode: "" });
                             } else {
-                                setSelectedType(type.id)
+                                updateDraft({
+                                    rentalMode: type.id,
+                                    dwellingType: type.id === "shared_room" ? "ROOM" : draft.dwellingType,
+                                });
                             }
                         }}
                     />
@@ -67,12 +68,12 @@ export default function ObjectType() {
                         key={option.id}
                         id={option.id}
                         label={option.label}
-                        checked={selectedFurniture === option.id}
+                        checked={draft.furnishing === option.id}
                         onCheckedChange={() => {
-                            if (selectedFurniture === option.id) {
-                                setSelectedFurniture(null);
+                            if (draft.furnishing === option.id) {
+                                updateDraft({ furnishing: "" });
                             } else {
-                                setSelectedFurniture(option.id)
+                                updateDraft({ furnishing: option.id });
                             }
                         }}
                     />

@@ -44,7 +44,7 @@ function DashboardFrame({
       </div>
       {footerContent && (
         <div
-          className={`fixed bottom-0 right-0 z-40 transition-all duration-300 ease-in-out ${mainContentMargin}`}
+          className={`pointer-events-none fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ease-in-out ${mainContentMargin}`}
         >
           {footerContent}
         </div>

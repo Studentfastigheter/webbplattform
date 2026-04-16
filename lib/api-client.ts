@@ -12,6 +12,18 @@ export const API_BASE = normalizeApiBase(
     : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api"
 );
 
+export class ApiError extends Error {
+  status: number;
+  body: unknown;
+
+  constructor(message: string, status: number, body: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
 const STATUS_MESSAGES: Record<number, string> = {
   400: "Ogiltig förfrågan. Kontrollera fälten och försök igen.",
   401: "Du måste vara inloggad för att göra detta.",
@@ -100,7 +112,7 @@ export async function apiClient<T>(
       res.statusText ||
       `Något gick fel (${res.status}).`;
 
-    throw new Error(String(message));
+    throw new ApiError(String(message), res.status, parsed);
   }
 
   if (!rawBody) return undefined as T;

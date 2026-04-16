@@ -1,8 +1,9 @@
-import { apiClient, buildQuery } from "@/lib/api-client";
+import { ApiError, apiClient, buildQuery } from "@/lib/api-client";
 import {
   ListingCardDTO,
   ListingDetailDTO,
   PageResponse,
+  PublishListingRequest,
   StudentApplicationDTO,
 } from "@/types/listing";
 
@@ -77,6 +78,51 @@ const addMockCoordinates = <T extends {
 // --- Service ---
 
 export const listingService = {
+
+  // Publicera en ny annons som inloggat företag eller privat hyresvärd.
+  publish: async (payload: PublishListingRequest): Promise<void> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token && token !== "null" && token !== "undefined") {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    const res = await fetch("/api/company/listings", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+
+    if (res.ok) {
+      return;
+    }
+
+    const rawBody = await res.text().catch(() => "");
+    let parsed: any = undefined;
+
+    if (rawBody) {
+      try {
+        parsed = JSON.parse(rawBody);
+      } catch {
+        parsed = rawBody;
+      }
+    }
+
+    const message =
+      parsed?.message ||
+      parsed?.error ||
+      (typeof parsed === "string" ? parsed : null) ||
+      res.statusText ||
+      `Kunde inte publicera annonsen (${res.status}).`;
+
+    throw new ApiError(String(message), res.status, parsed);
+  },
 
   /**
    * 1. HÄMTA FILTRERAT FLÖDE (Feed)

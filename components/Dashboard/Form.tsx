@@ -68,7 +68,7 @@ export function MultiselectButton({
     return (
         <Label
          {...props}
-         className={cn("hover:bg-accent/50 cursor-pointer flex items-start gap-2 justify-between rounded-lg border p-4 has-[[aria-checked=true]]:border-blue-600 has-[[aria-checked=true]]:bg-blue-50 dark:has-[[aria-checked=true]]:border-blue-900 dark:has-[[aria-checked=true]]:bg-blue-950", className)}>
+         className={cn("cursor-pointer flex items-start gap-2 justify-between rounded-md border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 has-[[aria-checked=true]]:border-[#004225] has-[[aria-checked=true]]:bg-[#004225]/5", className)}>
             <div className="grid gap-1.5 font-normal">
                 <p className="text-sm leading-none font-medium">
                     {label}
@@ -84,7 +84,7 @@ export function MultiselectButton({
                 checked={checked}
                 defaultChecked={defaultChecked}
                 onCheckedChange={() => onCheckedChange()}
-                className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+                className="data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225] data-[state=checked]:text-white"
             />
         </Label>
     )
@@ -113,7 +113,7 @@ export function MultiSelectCard({
     return (
         <Label
          {...props}
-         className={cn("hover:bg-accent/50 cursor-pointer flex items-start gap-2 justify-between rounded-lg border p-4 has-[[aria-checked=true]]:border-blue-600 has-[[aria-checked=true]]:bg-blue-50 dark:has-[[aria-checked=true]]:border-blue-900 dark:has-[[aria-checked=true]]:bg-blue-950", className)}>
+         className={cn("cursor-pointer flex items-start gap-2 justify-between rounded-md border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 has-[[aria-checked=true]]:border-[#004225] has-[[aria-checked=true]]:bg-[#004225]/5", className)}>
             <div>
                 {children}
             </div>
@@ -122,7 +122,7 @@ export function MultiSelectCard({
                 checked={checked}
                 defaultChecked={defaultChecked}
                 onCheckedChange={() => onCheckedChange()}
-                className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+                className="data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225] data-[state=checked]:text-white"
             />
         </Label>
     )
@@ -145,13 +145,14 @@ export function InputField({
 }
 
 export function TextAreaField({
+    className,
     ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     return (
         <div className="relative">
             <textarea
                 {...props}
-                className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className={cn("w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-none placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004225]/15 disabled:cursor-not-allowed disabled:opacity-50", className)}
             />
         </div>
     )

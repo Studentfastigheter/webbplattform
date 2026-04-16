@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { MultiselectButton, FormGroup, FormShell } from "@/components/Dashboard/Form";
+import { useListingDraft, type PortalDwellingType } from "../listingDraftContext";
 
 
 const ObjectTypes = [
@@ -35,6 +35,16 @@ const ObjectTypes = [
     }
 ]
 
+const dwellingTypeByObjectType: Record<string, PortalDwellingType> = {
+    apartment: "APARTMENT",
+    villa: "APARTMENT",
+    townhouse: "APARTMENT",
+    cabin: "APARTMENT",
+    semi_detached: "APARTMENT",
+    corridor: "CORRIDOR_ROOM",
+    other: "APARTMENT",
+};
+
 const ObjectLegalTypes = [
     {
         id: "bostadsratt",
@@ -48,9 +58,7 @@ const ObjectLegalTypes = [
 
 
 export default function ObjectType2() {
-
-    const [selectedType, setSelectedType] = useState<string | null>(null);
-    const [selectedLegalType, setSelectedLegalType] = useState<string | null>(null);
+    const { draft, updateDraft } = useListingDraft();
 
     return (
         <FormShell heading="Vilken typ av bostad är det?">
@@ -64,12 +72,15 @@ export default function ObjectType2() {
                         key={type.id}
                         id={type.id}
                         label={type.label}
-                        checked={selectedType === type.id}
+                        checked={draft.objectType === type.id}
                         onCheckedChange={() => {
-                            if (selectedType === type.id) {
-                                setSelectedType(null);
+                            if (draft.objectType === type.id) {
+                                updateDraft({ objectType: "" });
                             } else {
-                                setSelectedType(type.id)
+                                updateDraft({
+                                    objectType: type.id,
+                                    dwellingType: dwellingTypeByObjectType[type.id] ?? "APARTMENT",
+                                });
                             }
                         }}
                     />
@@ -81,12 +92,12 @@ export default function ObjectType2() {
                         key={type.id}
                         id={type.id}
                         label={type.label}
-                        checked={selectedLegalType === type.id}
+                        checked={draft.legalType === type.id}
                         onCheckedChange={() => {
-                            if (selectedLegalType === type.id) {
-                                setSelectedLegalType(null);
+                            if (draft.legalType === type.id) {
+                                updateDraft({ legalType: "" });
                             } else {
-                                setSelectedLegalType(type.id)
+                                updateDraft({ legalType: type.id });
                             }
                         }}
                     />

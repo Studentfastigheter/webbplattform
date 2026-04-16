@@ -1,143 +1,164 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
+
 import { useDashboardFooter } from "../../_components/DashboardShell";
-import { useEffect } from "react";
-import NormalButton from "../../_components/NormalButton";
 import { dashboardRelPath } from "../../_statics/variables";
-import { isStageNumberValid } from "../../portal/annonser/ny/onboarding/[stage]/page";
+import { ListingDraftProvider } from "./listingDraftContext";
 
-
-
-
-const FOOTER_HEIGHT = "68px";
-
-
-function getStageProgress(
-  stepPagesList: any[][],
-  currentStepIndex: number // 0-based index in flattened list
-): number[] {
-  let globalIndex = 0;
-
-  return stepPagesList.map(stage => {
-    const stageStart = globalIndex;
-    const stageEnd = globalIndex + stage.length;
-
-    let progress: number;
-
-    if (currentStepIndex >= stageEnd) {
-      // Stage fully completed
-      progress = 1;
-    } else if (currentStepIndex < stageStart) {
-      // Stage not started
-      progress = 0;
-    } else {
-      // Currently inside this stage
-      progress = (currentStepIndex - stageStart + 1) / stage.length;
-    }
-
-    globalIndex = stageEnd;
-
-    return progress;
-  });
-}
-
+const FOOTER_HEIGHT = "88px";
 
 type FooterContentProps = {
-    stageNumber: number,
-    nextPagePossible: boolean,
-    previousPagePossible: boolean,
-    stepPagesList: any[][]
+  currentStep: number;
+  nextPagePossible: boolean;
+  previousPagePossible: boolean;
+  stepLabels: string[];
+};
+
+function ActionLink({
+  children,
+  disabled,
+  href,
+  variant = "secondary",
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  href: string;
+  variant?: "primary" | "secondary";
+}) {
+  const base =
+    "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors";
+  const classes =
+    variant === "primary"
+      ? `${base} bg-[#004225] text-white hover:bg-[#06391f]`
+      : `${base} text-gray-600 hover:bg-gray-50 hover:text-gray-950`;
+
+  if (disabled) {
+    return <span className={`${classes} pointer-events-none opacity-40`}>{children}</span>;
+  }
+
+  return (
+    <Link className={classes} href={href}>
+      {children}
+    </Link>
+  );
 }
 
 function FooterContent({
-    stageNumber, 
-    nextPagePossible, 
-    previousPagePossible,
-    stepPagesList
+  currentStep,
+  nextPagePossible,
+  previousPagePossible,
+  stepLabels,
 }: FooterContentProps) {
+  const path = `${dashboardRelPath}/annonser/ny/onboarding/`;
+  const nextLabel = stepLabels[currentStep] ?? "Nästa";
 
-    const path = dashboardRelPath + "/annonser/ny/onboarding/";
-    const stageProgress = getStageProgress(stepPagesList, stageNumber - 1);
+  return (
+    <div className="w-full px-4 pb-5 md:px-6">
+      <div className="pointer-events-auto mx-auto w-full max-w-4xl">
+        <div className="mx-auto flex w-fit max-w-full items-center gap-1 rounded-md border border-gray-200 bg-white/95 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
+          <ActionLink
+            href={previousPagePossible ? `${path}${currentStep - 1}` : `${dashboardRelPath}/annonser`}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {previousPagePossible ? "Tillbaka" : "Avbryt"}
+          </ActionLink>
 
-    return (
-        <div>
-            <div className="flex gap-1">
-                {
-                    stepPagesList.map((stage, index) => (
-                        <div key={index} className="h-1 flex-1">
-                            <div style={{
-                                "width": `${stageProgress[index] * 100}%`
-                            }} 
-                            className="bg-gray-700 h-full"
-                            />
-                        </div>
-                    ))
-                }
-            </div>
-            <div className="flex justify-between p-4 bg-white">
-                <NormalButton 
-                    text="Tillbaka"
-                    href={previousPagePossible ? path + (stageNumber - 1).toString() : "#"}
-                    disabled={!previousPagePossible}
-                />
-                <NormalButton 
-                    text="Nästa" 
-                    href={nextPagePossible ? path + (stageNumber + 1).toString() : "#"}
-                    variant="primary"
-                    disabled={!nextPagePossible}
-                />
-            </div>
+          <div className="mx-1 h-5 w-px bg-gray-200" />
+
+          <ActionLink
+            href={nextPagePossible ? `${path}${currentStep + 1}` : "#"}
+            disabled={!nextPagePossible}
+            variant="primary"
+          >
+            {nextPagePossible ? nextLabel : "Klar"}
+            <ChevronRight className="h-4 w-4" />
+          </ActionLink>
         </div>
-    )
+      </div>
+    </div>
+  );
 }
 
+function ProgressHeader({
+  currentStep,
+  stepLabels,
+}: {
+  currentStep: number;
+  stepLabels: string[];
+}) {
+  const totalSteps = stepLabels.length;
+  const currentLabel = stepLabels[currentStep - 1] ?? "Steg";
+
+  return (
+    <div className="mx-auto mb-8 w-full max-w-4xl px-4 pt-2 md:px-6">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium text-gray-500">
+            Steg {currentStep} av {totalSteps}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-gray-950">
+            {currentLabel}
+          </h1>
+        </div>
+        <p className="hidden text-sm text-gray-500 sm:block">Utkast sparas automatiskt</p>
+      </div>
+    </div>
+  );
+}
 
 type Props = {
-    currentStep: number,
-    stepPagesList: any[][]
+  currentStep: number;
+  stepLabels: string[];
+  stepPagesList: Array<Array<React.ComponentType>>;
 };
 
-export default function Onboarding(
-    { 
-        currentStep,
-        stepPagesList,
-    }: Props) {
+export default function Onboarding({
+  currentStep,
+  stepLabels,
+  stepPagesList,
+}: Props) {
+  const flatPagesList = stepPagesList.flat();
+  const nextPagePossible = currentStep + 1 <= flatPagesList.length;
+  const previousPagePossible = currentStep - 1 >= 1;
+  const setFooter = useDashboardFooter();
+  const CurrentStepPage = flatPagesList[currentStep - 1];
 
-    const flatPagesList = stepPagesList.flat();
-
-    const nextPagePossible = isStageNumberValid(currentStep + 1);
-    const previousPagePossible = isStageNumberValid(currentStep - 1);
-
-    const setFooter = useDashboardFooter();
-
-    useEffect(() => {
-        setFooter(
-            <FooterContent
-                stepPagesList={stepPagesList}
-                stageNumber={currentStep}
-                nextPagePossible={nextPagePossible}
-                previousPagePossible={previousPagePossible}
-            />
-        );
-
-        return () => {
-            setFooter(null);
-        };
-    }, [setFooter, currentStep, nextPagePossible, previousPagePossible]);
-
-    const CurrentStepPage = flatPagesList[currentStep - 1];
-
-    
-
-    return (
-        <div
-            style={{
-                "--footer-height": FOOTER_HEIGHT,
-                marginBottom: `calc(${FOOTER_HEIGHT} + 40px)` // Footer + Header height
-            } as React.CSSProperties}
-            className="flex flex-col flex-1"
-        >
-            <CurrentStepPage />
-        </div>
+  useEffect(() => {
+    setFooter(
+      <FooterContent
+        currentStep={currentStep}
+        nextPagePossible={nextPagePossible}
+        previousPagePossible={previousPagePossible}
+        stepLabels={stepLabels}
+      />,
     );
+
+    return () => setFooter(null);
+  }, [
+    currentStep,
+    nextPagePossible,
+    previousPagePossible,
+    setFooter,
+    stepLabels,
+  ]);
+
+  return (
+    <ListingDraftProvider>
+      <div
+        style={{
+          "--footer-height": FOOTER_HEIGHT,
+          marginBottom: `calc(${FOOTER_HEIGHT} + 40px)`,
+        } as React.CSSProperties}
+        className="min-h-[calc(100vh-140px)]"
+      >
+        <ProgressHeader currentStep={currentStep} stepLabels={stepLabels} />
+        <div className="px-4 md:px-6">
+          <CurrentStepPage />
+        </div>
+      </div>
+    </ListingDraftProvider>
+  );
 }

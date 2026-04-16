@@ -13,6 +13,19 @@ import { Check, Heart, Home, MapPin, Share2 } from "lucide-react";
 import React, { useState } from "react";
 import BostadForm from "./BostadForm";
 
+const DWELLING_TYPE_LABELS: Record<string, string> = {
+  APARTMENT: "Lägenhet",
+  ROOM: "Rum",
+  CORRIDOR_ROOM: "Korridorsrum",
+  apartment: "Lägenhet",
+  room: "Rum",
+  corridor_room: "Korridorsrum",
+};
+
+function formatDwellingType(value: string) {
+  return DWELLING_TYPE_LABELS[value] ?? value;
+}
+
 function BostadAboutContent({
   listing,
   isFavorite,
@@ -56,7 +69,10 @@ function BostadAboutContent({
     }
   };
 
-  const isRentNumber = typeof listing.rent === "number";
+  const isRentNumber =
+    typeof listing.rent === "number" &&
+    Number.isFinite(listing.rent) &&
+    listing.rent > 0;
   const rentValue = isRentNumber ? listing.rent.toLocaleString("sv-SE") : "Ej angiven";
 
   return (
@@ -236,7 +252,7 @@ export default function BostadAbout({
   hideStudentActions = false,
 }: Props) {
   const dwellingLabel = [
-    listing.dwellingType,
+    listing.dwellingType ? formatDwellingType(listing.dwellingType) : null,
     listing.rooms ? `${listing.rooms} rum` : null,
     listing.sizeM2 ? `${listing.sizeM2} m²` : null,
   ]

@@ -74,6 +74,24 @@ export interface StudentApplicationDTO {
   hostType: string;
 }
 
+// Payload for POST /api/listings.
+export interface PublishListingRequest {
+  title: string;
+  city: string;
+  area?: string;
+  address: string;
+  dwellingType: string;
+  rooms?: number;
+  sizeM2?: number;
+  rent?: number;
+  description: string;
+  tags: string[];
+  images: string[];
+  applyBy?: DateString;
+  availableFrom?: DateString;
+  availableTo?: DateString;
+}
+
 // Generisk typ för Paginering från Spring Boot
 export interface PageResponse<T> {
   content: T[];

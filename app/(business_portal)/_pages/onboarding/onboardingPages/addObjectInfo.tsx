@@ -1,242 +1,97 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-
-import { Button } from "@/components/ui/button"
+import { FormGroup, FormShell } from "@/components/Dashboard/Form";
+import { Input } from "@/components/ui/input";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
-import Divider from "@/components/ui/Divider"
-import { FormShell } from "@/components/Dashboard/Form"
-
-const formSchema = z.object({
-    search: z.string().min(2, {
-        message: "Vänligen ange en giltig adress.",
-    }),
-    street: z.string().min(1, { message: "Vänligen ange en giltig gata." }),
-    streetnumber: z.string().min(1, { message: "Vänligen ange ett giltigt gatunummer." }),
-    postalcode: z.string().min(1, { message: "Vänligen ange en giltig postkod." }),
-    city: z.string().min(1, { message: "Vänligen ange en giltig stad." }),
-    county: z.string().optional(),
-    apartmentnumber: z.string().optional(),
-    country: z.string().min(1, { message: "Vänligen ange ett giltigt land." }),
-    floor: z.string().optional(),
-    floorsinbuilding: z.string().optional(),
-})
-
-
-function InputGroup({ children } : {
-    children: React.ReactNode
-}) {
-    return (
-        <div className="grid grid-cols-2 gap-4">
-            {children}
-        </div>
-    )
-}
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useListingDraft, type PortalDwellingType } from "../listingDraftContext";
+import {
+  FieldGrid,
+  FieldRow,
+  FieldStack,
+  StepFormLayout,
+  fieldInputClassName,
+} from "./listingFormUi";
 
 export default function AddObjectInfo() {
+  const { draft, updateDraft } = useListingDraft();
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            search: "",
-            street: "",
-            streetnumber: "",
-            postalcode: "",
-            city: "",
-            county: "",
-            apartmentnumber: "",
-            country: "",
-            floor: "",
-            floorsinbuilding: "",
-        },
-    })
+  return (
+    <StepFormLayout>
+      <FormShell
+        className="m-0 max-w-none"
+        heading="Grunddata"
+        description="Börja med annonsens titel, plats och bostadstyp."
+      >
+        <FieldStack>
+          <FieldRow apiName="title" label="Titel">
+            <Input
+              className={fieldInputClassName}
+              placeholder="Ex: 3:a nära Chalmers"
+              value={draft.title}
+              onChange={(event) => updateDraft({ title: event.target.value })}
+            />
+          </FieldRow>
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        // Do something with the form values.
-        // ✅ This will be type-safe and validated.
-        console.log(values)
-        
-    }
+          <FieldGrid>
+            <FieldRow apiName="city" label="Stad">
+              <Input
+                className={fieldInputClassName}
+                placeholder="Göteborg"
+                value={draft.city}
+                onChange={(event) => updateDraft({ city: event.target.value })}
+              />
+            </FieldRow>
 
-    return (
-        <FormShell>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-lg mx-auto">
-                    <div>
-                        <h2 className="text-xl font-bold">Vilken adress har bostaden?</h2>
-                        <p className="text-muted-foreground text-sm mt-2">Endast gatunamnet syns i annonsen.</p>
-                    </div>
-                    <FormField
-                        control={form.control}
-                        name="search"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormControl>
-                                    <div className="relative w-full">
-                                        <Search size={16} className="absolute top-[50%] translate-[-50%] left-5 text-muted-foreground" />
-                                        <Input className="px-10 py-5" placeholder="Sök bostad" {...field} />
-                                    </div>
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
-                    
-                    <Divider />
-                    
-                    <InputGroup>
-                        <FormField
-                            control={form.control}
-                            name="street"
-                            render={({ field }) => (
-                                <FormItem>
-                                    {/* If value is optional, add a text saying its optional in formlabel */}
+            <FieldRow
+              apiName="area"
+              label="Område"
+              description="Valfritt, men hjälper studenter förstå läget snabbare."
+            >
+              <Input
+                className={fieldInputClassName}
+                placeholder="Johanneberg"
+                value={draft.area}
+                onChange={(event) => updateDraft({ area: event.target.value })}
+              />
+            </FieldRow>
+          </FieldGrid>
 
-                                    <FormLabel>Gata</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Gatuadress" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+          <FieldRow apiName="address" label="Adress">
+            <Input
+              className={fieldInputClassName}
+              placeholder="Gibraltargatan 82"
+              value={draft.address}
+              onChange={(event) => updateDraft({ address: event.target.value })}
+            />
+          </FieldRow>
 
-                        <FormField
-                            control={form.control}
-                            name="streetnumber"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Gatunummer</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Gatunummer" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        
-                    </InputGroup>
-
-                    <InputGroup>
-                        <FormField
-                            control={form.control}
-                            name="postalcode"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Postnummer</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Postnummer" {...field} />
-                                        </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="city"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Stad</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Stad" {...field} />
-                                        </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                    </InputGroup>
-
-                    <InputGroup>
-                        <FormField
-                            control={form.control}
-                            name="county"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Kommun <span className="text-muted-foreground text-xs">(Valfritt)</span></FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Kommun" {...field} />
-                                        </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="apartmentnumber"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Lägenhetsnummer <span className="text-muted-foreground text-xs">(Valfritt)</span></FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Lägenhetsnummer" {...field} />
-                                        </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        
-                    </InputGroup>
-
-                    <InputGroup>
-                        <FormField
-                            control={form.control}
-                            name="country"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Land</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Land" {...field} />
-                                        </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="floor"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Våning <span className="text-muted-foreground text-xs">(Valfritt)</span></FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Våning" {...field} />
-                                        </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                    </InputGroup>
-
-                    <InputGroup>
-                        <FormField
-                            control={form.control}
-                            name="floorsinbuilding"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Våningar i byggnaden</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Våningar i byggnaden" {...field} />
-                                        </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </InputGroup>
-                </form>
-            </Form>
-        </FormShell>
-    )
+          <FormGroup heading="Boendetyp" gap="md" className="mb-0 py-5 last:pb-0">
+            <FieldRow apiName="dwellingType" label="Välj boendetyp">
+              <Select
+                value={draft.dwellingType}
+                onValueChange={(value) =>
+                  updateDraft({ dwellingType: value as PortalDwellingType })
+                }
+              >
+                <SelectTrigger className={`w-full ${fieldInputClassName}`}>
+                  <SelectValue placeholder="Välj boendetyp" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="APARTMENT">Lägenhet</SelectItem>
+                  <SelectItem value="ROOM">Rum</SelectItem>
+                  <SelectItem value="CORRIDOR_ROOM">Korridorsrum</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldRow>
+          </FormGroup>
+        </FieldStack>
+      </FormShell>
+    </StepFormLayout>
+  );
 }
