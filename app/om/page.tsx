@@ -90,7 +90,7 @@ const TEAM_CATEGORIES = [
     members: [
       { name: "Alve Nilsson", 
         role: "Commercial Associate",
-        image: "/team/Profilbild-Alve.jpeg",
+        image: "/team/Profilbild-Alve.jpg",
         linkedin: "https://www.linkedin.com/in/alve-nilsson-47710a226/",
         email: "alve.nilsson@campuslyan.se",
       },
@@ -118,7 +118,7 @@ const TEAM_CATEGORIES = [
       {
         name: "Marco Speziale",
         role: "Backend Engineer",
-        image: "/team/Profilbild-Marco.png",
+        image: "/team/Profilbild-Marco.jpg",
         linkedin: "https://www.linkedin.com/in/marco-speziale-1ba67a169/",
       },
       {
@@ -142,7 +142,7 @@ const TEAM_CATEGORIES = [
       {
         name: "Sumiya Sayeed",
         role: "Frontend Engineer",
-        image: "/team/Profilbild-Sumiya.png",
+        image: "/team/Profilbild-Sumiya.jpg",
         linkedin: "https://www.linkedin.com/in/sumiya-sayeed-04a9319b/",
       },
     ],
