@@ -150,7 +150,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
       : contentPadding;
   const logoAlt = hostName || landlordType
     ? `${hostName ?? landlordType} logotyp`
-    : "Hyresvardens logotyp";
+    : "Hyresvärdens logotyp";
 
   return (
     <div

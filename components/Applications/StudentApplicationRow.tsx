@@ -136,7 +136,7 @@ export const buildStudentApplicationRow = (
         onClick={onOpen}
         className="h-9 w-[110px] rounded-full bg-[#D9D9D9] text-[12px] font-medium text-black transition hover:bg-[#cfcfcf]"
       >
-        Se ansokan
+        Se ansökan
       </Button>
     </div>
   );

@@ -29,7 +29,7 @@ type QueuePayload = { queues: HousingQueueDTO[]; queueApplications: QueueApplica
 const periodOptions: { label: string; value: TimePeriod }[] = [
   { label: "Senaste 30 dagar", value: "30d" },
   { label: "Senaste 90 dagar", value: "90d" },
-  { label: "12 manader", value: "12m" },
+  { label: "12 månader", value: "12m" },
 ];
 const periodToGeneralPeriod: Record<TimePeriod, string> = { "30d": "P1M", "90d": "P3M", "12m": "P1Y" };
 const applicationChartConfig = {
@@ -257,8 +257,8 @@ function ObjectTrendChart({ data, objects }: { data: Array<Record<string, string
     return acc;
   }, {});
   return (
-    <CardShell className="xl:col-span-2" description="Objektens relativa utveckling baserat pa total trend och ansokningsandel." title="Objekt som trendar">
-      {objects.length === 0 || data.length === 0 ? <EmptyState>Ingen objektsdata hittades for perioden.</EmptyState> : (
+    <CardShell className="xl:col-span-2" description="Objektens relativa utveckling baserat på total trend och ansökningsandel." title="Objekt som trendar">
+      {objects.length === 0 || data.length === 0 ? <EmptyState>Ingen objektsdata hittades för perioden.</EmptyState> : (
         <div className="max-w-full overflow-x-auto">
           <ChartContainer className="h-[320px] min-w-[720px] xl:min-w-full" config={config}>
             <LineChart data={data} margin={{ left: 12, right: 12 }}>
@@ -300,7 +300,7 @@ function QueueDistributionChart({ queues }: { queues: HousingQueueDTO[] }) {
   const data = queues.length > 0
     ? queues.map((queue, index) => ({ label: shortText(queue.name, 24), value: pickNumber(queue, ["queueApplications", "queueApplicationsCount", "studentsInQueue", "studentsInQueueCount", "totalQueued", "totalApplicants", "activeListings"]) ?? 0, color: palette[index] ?? palette[palette.length - 1] }))
     : [{ label: "Ingen data", value: 1, color: palette[0] }];
-  return <DonutBreakdownCard description="Fördelning mellan foretagets köer." items={data} title="Koer" />;
+  return <DonutBreakdownCard description="Fördelning mellan företagets köer." items={data} title="Köer" />;
 }
 
 function PropertyStockCard({ listings, queues }: { listings: ListingCardDTO[]; queues: HousingQueueDTO[] }) {
@@ -309,12 +309,12 @@ function PropertyStockCard({ listings, queues }: { listings: ListingCardDTO[]; q
   listings.forEach((listing) => cities.add(cityFromListing(listing)));
   queues.forEach((queue) => queue.city && cities.add(queue.city));
   return (
-    <CardShell description="Sammanfattning av foretagets objekt och köer." title="Fastighetsbestand">
+    <CardShell description="Sammanfattning av företagets objekt och köer." title="Fastighetsbestånd">
       <div className="grid gap-3 text-theme-sm text-gray-600">
         <div className="flex justify-between"><span>Aktiva objekt</span><span className="font-medium text-gray-800">{formatNumber(listings.length)}</span></div>
-        <div className="flex justify-between"><span>Bostadskoer</span><span className="font-medium text-gray-800">{formatNumber(queues.length)}</span></div>
-        <div className="flex justify-between"><span>Registrerade bostader</span><span className="font-medium text-gray-800">{formatNumber(totalUnits)}</span></div>
-        <div className="flex justify-between"><span>Stader</span><span className="font-medium text-gray-800">{formatNumber(cities.size)}</span></div>
+        <div className="flex justify-between"><span>Bostadsköer</span><span className="font-medium text-gray-800">{formatNumber(queues.length)}</span></div>
+        <div className="flex justify-between"><span>Registrerade bostäder</span><span className="font-medium text-gray-800">{formatNumber(totalUnits)}</span></div>
+        <div className="flex justify-between"><span>Städer</span><span className="font-medium text-gray-800">{formatNumber(cities.size)}</span></div>
       </div>
     </CardShell>
   );
@@ -322,8 +322,8 @@ function PropertyStockCard({ listings, queues }: { listings: ListingCardDTO[]; q
 
 function ObjectsTable({ rows }: { rows: ObjectApplicationCount[] }) {
   return (
-    <CardShell className="xl:col-span-2" description="Objekt sorterade efter totalt antal intresseanmalningar." title="Objektprestanda">
-      {rows.length === 0 ? <EmptyState>Inga objekt med ansokningsdata hittades.</EmptyState> : (
+    <CardShell className="xl:col-span-2" description="Objekt sorterade efter totalt antal intresseanmälningar." title="Objektprestanda">
+      {rows.length === 0 ? <EmptyState>Inga objekt med ansökningsdata hittades.</EmptyState> : (
         <div className="max-w-full overflow-x-auto">
           <table className="w-full min-w-[620px] text-left">
             <thead className="border-y border-gray-100"><tr>{["Objekt", "Ansökningar", "Andel", "Signal"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
@@ -331,7 +331,7 @@ function ObjectsTable({ rows }: { rows: ObjectApplicationCount[] }) {
               {rows.slice(0, 8).map((row) => {
                 const total = Math.max(rows.reduce((sum, item) => sum + item.numApplications, 0), 1);
                 const share = (row.numApplications / total) * 100;
-                const signal = share >= 30 ? "Stark" : share >= 12 ? "Stabil" : "Lag";
+                const signal = share >= 30 ? "Stark" : share >= 12 ? "Stabil" : "Låg";
                 return (
                   <tr key={`${row.listingId}-${row.address}`}>
                     <td className="py-3 text-theme-sm font-medium text-gray-800">{shortText(row.address, 42)}</td>
@@ -351,15 +351,15 @@ function ObjectsTable({ rows }: { rows: ObjectApplicationCount[] }) {
 
 function NewApplicationsTable({ rows }: { rows: NewApplication[] }) {
   return (
-    <CardShell description="Senaste inkomna intresseanmalningar." title="Senaste intresseanmalningar">
-      {rows.length === 0 ? <EmptyState>Inga intresseanmalningar hittades.</EmptyState> : (
+    <CardShell description="Senaste inkomna intresseanmälningar." title="Senaste intresseanmälningar">
+      {rows.length === 0 ? <EmptyState>Inga intresseanmälningar hittades.</EmptyState> : (
         <div className="grid gap-3">
           {rows.slice(0, 8).map((application, index) => (
             <article className="rounded-lg border border-gray-100 bg-gray-50 p-3" key={`${application.applicationId ?? application.id ?? application.studentId}-${index}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-theme-sm font-semibold text-gray-800">{[application.firstName, application.surname].filter(Boolean).join(" ") || "Okänd sökande"}</p>
-                  <p className="mt-1 text-theme-xs text-gray-500">{shortText(application.listingTitle ?? application.address ?? "Okant objekt", 42)}</p>
+                  <p className="mt-1 text-theme-xs text-gray-500">{shortText(application.listingTitle ?? application.address ?? "Okänt objekt", 42)}</p>
                 </div>
                 <span className="shrink-0 text-theme-xs text-gray-400">{formatDate(application.submittedAt ?? application.createdAt)}</span>
               </div>
@@ -373,13 +373,13 @@ function NewApplicationsTable({ rows }: { rows: NewApplication[] }) {
 
 function QueueStudentsTable({ rows }: { rows: QueueApplicationDTO[] }) {
   return (
-    <CardShell className="xl:col-span-2" description="Studenter som har stallt sig i foretagets köer." title="Studenter i kö">
+    <CardShell className="xl:col-span-2" description="Studenter som har ställt sig i företagets köer." title="Studenter i kö">
       {rows.length === 0 ? (
-        <EmptyState>Ingen studentlista kunde hämtas från kö-endpoints. Nar backend skickar köansökningar visas namn, ko, status och anslutningsdatum har.</EmptyState>
+        <EmptyState>Ingen studentlista kunde hämtas från kö-endpoints. När backend skickar köansökningar visas namn, kö, status och anslutningsdatum här.</EmptyState>
       ) : (
         <div className="max-w-full overflow-x-auto">
           <table className="w-full min-w-[720px] text-left">
-            <thead className="border-y border-gray-100"><tr>{["Student", "Ko", "Ködagar", "Status", "Ansluten"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
+            <thead className="border-y border-gray-100"><tr>{["Student", "Kö", "Ködagar", "Status", "Ansluten"].map((heading) => <th className="py-3 text-theme-xs font-medium text-gray-500" key={heading}>{heading}</th>)}</tr></thead>
             <tbody className="divide-y divide-gray-100">
               {rows.map((row, index) => (
                 <tr key={`${row.id ?? row.studentId ?? "student"}-${index}`}>
@@ -427,7 +427,7 @@ export default function ApplicationsInsights({
         try {
           await refreshUser();
         } catch {
-          if (!isCancelled) setErrorMessage("Kunde inte ladda anvandaren.");
+          if (!isCancelled) setErrorMessage("Kunde inte ladda användaren.");
         } finally {
           if (!isCancelled) setIsLoading(false);
         }
@@ -454,7 +454,7 @@ export default function ApplicationsInsights({
       if (isCancelled) return;
       const hasRejected = [generalResult, openApplicationsResult, timelineResult, newApplicationsResult, objectResult, listingsResult, queuesResult, queueApplicationsResult].some((result) => result.status === "rejected");
       const queues = queuesResult.status === "fulfilled" ? queuesResult.value : [];
-      setErrorMessage(hasRejected ? "Kunde inte hamta all ansokningsdata just nu." : null);
+      setErrorMessage(hasRejected ? "Kunde inte hämta all ansökningsdata just nu." : null);
       setInterestPayload({
         generalAnalytics: generalResult.status === "fulfilled" ? generalResult.value : null,
         openApplications: openApplicationsResult.status === "fulfilled" ? openApplicationsResult.value : 0,
@@ -505,7 +505,7 @@ export default function ApplicationsInsights({
           <p className="text-theme-sm text-gray-500">Ansökningar</p>
           <h1 className="text-2xl font-semibold text-gray-900">{isQueue ? "Köansökningar" : "Intresseanmälningar"}</h1>
           <p className="mt-1 max-w-3xl text-theme-sm text-gray-500">
-            {isQueue ? "Följ köantal, utveckling över tid och studenter som ställt sig i kön." : "Följ total efterfragan, objekt som trendar och hur fastighetsbeståndets data fördelas."}
+            {isQueue ? "Följ köantal, utveckling över tid och studenter som ställt sig i kön." : "Följ total efterfrågan, objekt som trendar och hur fastighetsbeståndets data fördelas."}
           </p>
           {errorMessage ? <p className="mt-2 text-theme-xs text-error-700">{errorMessage}</p> : null}
         </div>
@@ -523,8 +523,8 @@ export default function ApplicationsInsights({
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><QueueTrendChart data={queueTrendRows} /><QueueDistributionChart queues={queuePayload.queues} /></div>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             <QueueStudentsTable rows={queuePayload.queueApplications} />
-            <CardShell description="Kort oversikt per ko." title="Kööversikt">
-              {queuePayload.queues.length === 0 ? <EmptyState>Inga koer hittades for foretaget.</EmptyState> : (
+            <CardShell description="Kort översikt per kö." title="Kööversikt">
+              {queuePayload.queues.length === 0 ? <EmptyState>Inga köer hittades för företaget.</EmptyState> : (
                 <div className="grid gap-3">
                   {queuePayload.queues.map((queue) => (
                     <article className="rounded-lg border border-gray-100 bg-gray-50 p-3" key={queue.id}>
@@ -547,7 +547,7 @@ export default function ApplicationsInsights({
             <MetricCard change={formatChange(viewMetric.change)} direction={viewMetric.change >= 0 ? "up" : "down"} icon={<Home className="h-6 w-6" />} label="Visningar" value={formatNumber(viewMetric.count)} />
             <MetricCard change={formatChange(activeListingsMetric.change)} direction={activeListingsMetric.change >= 0 ? "up" : "down"} icon={<ListOrdered className="h-6 w-6" />} label="Aktiva objekt" value={formatNumber(activeListingsMetric.count)} />
           </div>
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><TrendChart data={trendRows} description="Total volym over tid för vald period." title="Intresse over tid" /><DonutBreakdownCard description="Aktiva objekt och koer per stad." items={portfolioItems} title="Bestånd per stad" /></div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><TrendChart data={trendRows} description="Total volym över tid för vald period." title="Intresse över tid" /><DonutBreakdownCard description="Aktiva objekt och köer per stad." items={portfolioItems} title="Bestånd per stad" /></div>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><ObjectTrendChart data={objectTrendRows} objects={interestPayload.applicationsByObject} /><PropertyStockCard listings={interestPayload.listings} queues={interestPayload.queues} /></div>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><ObjectsTable rows={interestPayload.applicationsByObject} /><NewApplicationsTable rows={interestPayload.newApplications} /></div>
         </>

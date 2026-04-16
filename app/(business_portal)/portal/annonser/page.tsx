@@ -329,7 +329,7 @@ export default function PortalAdsPage() {
         setError(
           requestError instanceof Error
             ? requestError.message
-            : "Kunde inte hamta annonser for foretaget."
+            : "Kunde inte hämta annonser för företaget."
         );
       })
       .finally(() => {
@@ -404,7 +404,7 @@ export default function PortalAdsPage() {
   if (!user) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Logga in for att se foretagets annonser.
+        Logga in för att se företagets annonser.
       </div>
     );
   }
@@ -412,7 +412,7 @@ export default function PortalAdsPage() {
   if (user.accountType !== "company") {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Denna sida ar bara tillganglig for foretagskonton.
+        Denna sida är bara tillgänglig för företagskonton.
       </div>
     );
   }
@@ -560,7 +560,7 @@ export default function PortalAdsPage() {
 
       {loading ? (
         <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
-          Hamtar foretagets annonser...
+          Hämtar företagets annonser...
         </div>
       ) : filteredAds.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">

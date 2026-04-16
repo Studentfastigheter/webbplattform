@@ -60,7 +60,7 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
   const resolvedImage = imageUrl ?? images?.[0]?.imageUrl;
   const resolvedRent = formatCurrency(rent);
   const locationLabel = [area, city].filter(Boolean).join(", ") || "-";
-  const landlordLabel = landlordType ?? advertiser?.displayName ?? "Hyresvard";
+  const landlordLabel = landlordType ?? advertiser?.displayName ?? "Hyresvärd";
 
   return (
     <button
@@ -79,7 +79,7 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
         {isVerified && (
           <div className="mb-1">
             <Tag
-              text="Verifierad hyresvard"
+              text="Verifierad hyresvärd"
               bgColor="#0F4D0F"
               textColor="#FFFFFF"
               height={18}

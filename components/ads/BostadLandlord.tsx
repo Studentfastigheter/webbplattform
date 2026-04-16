@@ -38,7 +38,7 @@ export default function BostadLandlord({ advertiser }: Props) {
           </div>
           <div className="flex flex-col gap-1">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-green-900">
-              Din hyresvard
+              Din hyresvärd
             </p>
             <h2 className="text-xl font-semibold text-gray-900">
               {advertiser.displayName}
@@ -48,7 +48,7 @@ export default function BostadLandlord({ advertiser }: Props) {
             )}
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <Tag
-                text="Verifierad hyresvard"
+                text="Verifierad hyresvärd"
                 bgColor="#0F4D0F"
                 textColor="#FFFFFF"
                 height={20}
@@ -60,7 +60,7 @@ export default function BostadLandlord({ advertiser }: Props) {
                   <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                   <span>
                     {advertiser.rating.toFixed(1)} (
-                    {advertiser.reviewCount ?? 0} omdomen)
+                    {advertiser.reviewCount ?? 0} omdömen)
                   </span>
                 </span>
               )}

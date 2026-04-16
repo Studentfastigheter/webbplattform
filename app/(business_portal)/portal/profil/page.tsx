@@ -137,7 +137,7 @@ export default function ProfilePage() {
     }
 
     if (companyId == null || Number.isNaN(companyId)) {
-      setError("Ogiltigt foretags-ID.");
+      setError("Ogiltigt företags-ID.");
       return;
     }
 
@@ -200,7 +200,7 @@ export default function ProfilePage() {
         setError(
           fetchError instanceof Error
             ? fetchError.message
-            : "Kunde inte ladda foretagsprofilen."
+            : "Kunde inte ladda företagsprofilen."
         );
       })
       .finally(() => {
@@ -408,7 +408,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Logga in for att hantera foretagsprofilen.
+        Logga in för att hantera företagsprofilen.
       </div>
     );
   }
@@ -416,7 +416,7 @@ export default function ProfilePage() {
   if (user.accountType === "student") {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Denna profilsida galler bara for foretagskonton.
+        Denna profilsida gäller bara för företagskonton.
       </div>
     );
   }
@@ -436,7 +436,7 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-semibold text-gray-900">Företagsprofil</h1>
         <p className="text-sm text-gray-600">
           Redigera fälten och förhandsgranska exakt hur profilen visas på
-          sidan for alla köer.
+          sidan för alla köer.
         </p>
         {error && (
           <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -471,7 +471,7 @@ export default function ProfilePage() {
                 onChange={(event) =>
                   updateDraftField("name", event.target.value)
                 }
-                placeholder="Ange foretagsnamn"
+                placeholder="Ange företagsnamn"
               />
             </div>
 
@@ -483,7 +483,7 @@ export default function ProfilePage() {
                 onChange={(event) =>
                   updateDraftField("subtitle", event.target.value)
                 }
-                placeholder="Kort beskrivning av foretaget"
+                placeholder="Kort beskrivning av företaget"
               />
             </div>
 
@@ -495,7 +495,7 @@ export default function ProfilePage() {
                 onChange={(event) =>
                   updateDraftField("description", event.target.value)
                 }
-                placeholder="Beskriv foretaget"
+                placeholder="Beskriv företaget"
                 rows={5}
               />
             </div>
@@ -640,7 +640,7 @@ export default function ProfilePage() {
                               event.target.value
                             )
                           }
-                          placeholder="Antal bostader"
+                          placeholder="Antal bostäder"
                         />
                       </div>
                     </div>
@@ -661,7 +661,7 @@ export default function ProfilePage() {
             <div>
               <h2 className="inline-flex items-center gap-2 text-base font-semibold text-gray-900">
                 <Eye className="h-4 w-4" />
-                Offentlig forhandsvisning
+                Offentlig förhandsvisning
               </h2>
               <p className="text-sm text-gray-600">
                 Samma layout som sidan /alla-koer/[id].
@@ -686,7 +686,7 @@ export default function ProfilePage() {
             {previewQueues.length > 0 && (
               <div className="mx-auto mt-10 max-w-4xl px-4 sm:px-6">
                 <h2 className="mb-4 text-lg font-semibold text-gray-900">
-                  Bostadskoer
+                  Bostadsköer
                 </h2>
                 <div className="space-y-3">
                   {previewQueues.map((queue) => (
@@ -699,9 +699,9 @@ export default function ProfilePage() {
                         <p className="text-sm text-gray-500">
                           {queue.city || "Stad saknas"}
                           {queue.waitDays != null &&
-                            ` | ca ${queue.waitDays} dagars kotid`}
+                            ` | ca ${queue.waitDays} dagars kötid`}
                           {queue.totalUnits != null &&
-                            ` | ${queue.totalUnits} bostader`}
+                            ` | ${queue.totalUnits} bostäder`}
                         </p>
                       </div>
                       <Button
@@ -722,11 +722,11 @@ export default function ProfilePage() {
               {listings.length > 0 ? (
                 <QueueListings
                   listings={listings}
-                  title={`Lediga bostader hos ${heroQueue.name}`}
+                  title={`Lediga bostäder hos ${heroQueue.name}`}
                 />
               ) : (
                 <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
-                  Det finns inga lediga bostader publicerade just nu.
+                  Det finns inga lediga bostäder publicerade just nu.
                 </div>
               )}
             </div>

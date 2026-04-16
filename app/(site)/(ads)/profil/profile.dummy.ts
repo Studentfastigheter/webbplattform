@@ -19,9 +19,9 @@ export const DUMMY_PROFILE: StudentProfileExtended = {
   bannerImage: "/appartment.jpg",
   avatarUrl: DEFAULT_PROFILE_IMAGE,
   description:
-    "Jag pluggar tredje aret till civilingenjor och letar efter ett lugnt boende nara campus. " +
-    "Vardagarna gar mest till studier, traning och ett extrajobb pa helgerna. " +
-    "Jag ar ordningsam, rokfri och uppskattar ett hem dar det ar enkelt att fokusera men ocksa trevligt att bjuda over vanner pa middag ibland.",
+    "Jag pluggar tredje året till civilingenjör och letar efter ett lugnt boende nära campus. " +
+    "Vardagarna går mest till studier, träning och ett extrajobb på helgerna. " +
+    "Jag är ordningsam, rökfri och uppskattar ett hem där det är enkelt att fokusera men också trevligt att bjuda över vänner på middag ibland.",
   verified: true,
   verifiedStudent: true,
   schoolId: 1,

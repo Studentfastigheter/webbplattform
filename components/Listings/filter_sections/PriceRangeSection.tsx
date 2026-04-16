@@ -134,7 +134,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
               ))
             ) : (
               <p className="text-sm text-black/50">
-                Prisdata hamtas automatiskt nar statistik finns.
+                Prisdata hämtas automatiskt när statistik finns.
               </p>
             )}
           </div>

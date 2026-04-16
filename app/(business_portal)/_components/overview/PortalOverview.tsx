@@ -61,8 +61,8 @@ const metricPalette = {
 const periodLabels: Record<string, string> = {
   P7D: "7 dagar",
   P1M: "1 månad",
-  P3M: "3 manader",
-  P1Y: "1 ar",
+  P3M: "3 månader",
+  P1Y: "1 år",
 };
 
 function monthLabel(timestamp: Date) {
@@ -318,7 +318,7 @@ export default function PortalOverview() {
           await refreshUser();
         } catch {
           if (!isCancelled) {
-            setErrorMessage("Kunde inte ladda anvandaren.");
+            setErrorMessage("Kunde inte ladda användaren.");
           }
         } finally {
           if (!isCancelled) {
@@ -376,7 +376,7 @@ export default function PortalOverview() {
 
           setErrorMessage(
             hasRejectedRequest
-              ? "Kunde inte hamta all statistik just nu."
+              ? "Kunde inte hämta all statistik just nu."
               : null
           );
           setPayload({
@@ -392,7 +392,7 @@ export default function PortalOverview() {
         }
       } catch (error) {
         if (!isCancelled) {
-          setErrorMessage("Kunde inte hamta statistik just nu.");
+          setErrorMessage("Kunde inte hämta statistik just nu.");
           setPayload((previous) => ({
             ...previous,
             timeline:
@@ -552,7 +552,7 @@ export default function PortalOverview() {
         {
           id: "empty",
           title: "Inga nya ansökningar",
-          subtitle: "Nya ansokningar visas här när data finns.",
+          subtitle: "Nya ansökningar visas här när data finns.",
           meta: "Uppdatera sidan om en stund",
         },
       ];
@@ -562,7 +562,7 @@ export default function PortalOverview() {
       id: String(application.studentId),
       title: `${application.firstName} ${application.surname}`,
       subtitle: shortAddress(application.address),
-      meta: "Ny ansokan",
+      meta: "Ny ansökan",
     }));
   }, [payload.newApplications]);
 
@@ -577,10 +577,10 @@ export default function PortalOverview() {
       const sharePercent = (object.numApplications / denominator) * 100;
       const status =
         sharePercent >= 30
-          ? { label: "Hog efterfragan", tone: "success" as const }
+          ? { label: "Hög efterfrågan", tone: "success" as const }
           : sharePercent >= 15
             ? { label: "Aktiv", tone: "info" as const }
-            : { label: "Lag trafik", tone: "warning" as const };
+            : { label: "Låg trafik", tone: "warning" as const };
 
       return {
         id: object.listingId,
@@ -606,7 +606,7 @@ export default function PortalOverview() {
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
         <h1 className="text-xl font-semibold text-gray-900">Ingen användare hittades</h1>
         <p className="mt-2 text-theme-sm text-gray-500">
-          Logga in igen för att visa portalens oversikt.
+          Logga in igen för att visa portalens översikt.
         </p>
       </div>
     );
@@ -614,19 +614,10 @@ export default function PortalOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-col gap-2">
-          <p className="text-theme-sm text-gray-500">Company portal</p>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Översikt för {user.displayName || user.companyName || "Företaget"}
-          </h1>
-          <p className="text-theme-sm text-gray-500">
-            Samlad bild över annonser, ansökningar och aktuell efterfrågan.
-          </p>
-          {errorMessage ? (
-            <p className="text-theme-xs text-error-700">{errorMessage}</p>
-          ) : null}
-        </div>
+      <div className="flex flex-col gap-2 lg:items-end">
+        {errorMessage ? (
+          <p className="text-theme-xs text-error-700 lg:text-right">{errorMessage}</p>
+        ) : null}
         <div className="flex flex-col gap-1">
           <span className="text-theme-xs font-medium text-gray-500">Period</span>
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -685,10 +676,10 @@ export default function PortalOverview() {
           data={trendData}
           description="Ansökningar över tid med rullande snitt."
           series={trendSeries}
-          title="Ansokningstrend"
+          title="Ansökningstrend"
         />
         <DonutBreakdownCard
-          description="Fördelning av ansokningar per objekt."
+          description="Fördelning av ansökningar per objekt."
           items={donutItems}
           title="Toppobjekt"
         />
@@ -696,7 +687,7 @@ export default function PortalOverview() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         <FunnelCard
-          description={`Fran visning till ansokan under ${periodLabel(selectedPeriod).toLowerCase()}.`}
+          description={`Från visning till ansökan under ${periodLabel(selectedPeriod).toLowerCase()}.`}
           steps={funnelSteps}
           title="Konvertering"
         />

@@ -70,7 +70,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     return () => observer.disconnect();
   }, []);
 
-  const unitsText = unitsLabel ?? (totalUnits ? `${totalUnits} bostader` : undefined);
+  const unitsText = unitsLabel ?? (totalUnits ? `${totalUnits} bostäder` : undefined);
 
   const scaleValue = (value: number) => `${(value * scale).toFixed(2)}px`;
 

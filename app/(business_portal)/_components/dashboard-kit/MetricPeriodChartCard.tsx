@@ -48,7 +48,7 @@ export function MetricPeriodVolumeChartCard({
   return (
     <CardShell
       className="xl:col-span-2"
-      description="Jämför ansokningar, visningar, interaktioner och aktiva annonser över valbara perioder."
+      description="Jämför ansökningar, visningar, interaktioner och aktiva annonser över valbara perioder."
       title="Volymer per period"
     >
       <div className="max-w-full overflow-x-auto">
@@ -77,8 +77,8 @@ export function MetricPeriodChangeChartCard({
 }) {
   return (
     <CardShell
-      description="Procentuell forandring jamfort med foregaende motsvarande period."
-      title="Forandring"
+      description="Procentuell förändring jämfört med föregående motsvarande period."
+      title="Förändring"
     >
       <div className="max-w-full overflow-x-auto">
         <ChartContainer className="h-[320px] min-w-[520px] xl:min-w-full" config={chartConfig}>

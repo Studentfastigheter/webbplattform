@@ -57,8 +57,8 @@ const defaultSelectedPeriod = "P1M";
 const periodLabels: Record<string, string> = {
   P7D: "7 dagar",
   P1M: "1 månad",
-  P3M: "3 manader",
-  P1Y: "1 ar",
+  P3M: "3 månader",
+  P1Y: "1 år",
 };
 const metricPalette = {
   applications: "#004225",
@@ -295,9 +295,9 @@ function OpenApplicationsCard({ value }: { value: number }) {
         <BarChart3 className="h-6 w-6" />
       </div>
       <div className="mt-5">
-        <span className="text-sm text-gray-500">Obesvarade ansokningar</span>
+        <span className="text-sm text-gray-500">Obesvarade ansökningar</span>
         <h4 className="mt-2 text-title-sm font-bold text-gray-800">{formatNumber(value)}</h4>
-        <p className="mt-2 text-theme-xs text-gray-500">Aktuellt antal som vantar pa svar.</p>
+        <p className="mt-2 text-theme-xs text-gray-500">Aktuellt antal som väntar på svar.</p>
       </div>
     </div>
   );
@@ -397,7 +397,7 @@ export default function Analytics() {
           await refreshUser();
         } catch {
           if (!isCancelled) {
-            setErrorMessage("Kunde inte ladda anvandaren.");
+            setErrorMessage("Kunde inte ladda användaren.");
           }
         } finally {
           if (!isCancelled) {
@@ -444,7 +444,7 @@ export default function Analytics() {
         currentAdsResult,
       ].some((result) => result.status === "rejected");
 
-      setErrorMessage(hasRejectedRequest ? "Kunde inte hamta all analysdata just nu." : null);
+      setErrorMessage(hasRejectedRequest ? "Kunde inte hämta all analysdata just nu." : null);
       setPayload({
         generalAnalytics: getFulfilledValue<AnalyticalQuantities | null>(
           generalAnalyticsResult,
@@ -562,10 +562,10 @@ export default function Analytics() {
     const sharePercent = (object.numApplications / totalApplications) * 100;
     const status =
       sharePercent >= 30
-        ? { label: "Hog efterfragan", tone: "success" as const }
+        ? { label: "Hög efterfrågan", tone: "success" as const }
         : sharePercent >= 15
           ? { label: "Aktiv", tone: "info" as const }
-          : { label: "Lag trafik", tone: "warning" as const };
+          : { label: "Låg trafik", tone: "warning" as const };
 
     return {
       id: object.listingId,
@@ -591,15 +591,15 @@ export default function Analytics() {
     payload.newApplications.length > 0
       ? payload.newApplications.slice(0, 8).map((application, index) => ({
           id: String(application.applicationId ?? application.id ?? application.studentId ?? index),
-          title: `${application.firstName ?? ""} ${application.surname ?? ""}`.trim() || "Ny ansokan",
+          title: `${application.firstName ?? ""} ${application.surname ?? ""}`.trim() || "Ny ansökan",
           subtitle: shortText(application.listingTitle ?? application.address ?? "Okänd annons"),
-          meta: application.submittedAt ?? application.createdAt ?? "Ny ansokan",
+          meta: application.submittedAt ?? application.createdAt ?? "Ny ansökan",
         }))
       : [
           {
             id: "empty",
             title: "Inga nya ansökningar",
-            subtitle: "Nya ansokningar visas här när backend skickar data.",
+            subtitle: "Nya ansökningar visas här när backend skickar data.",
             meta: "Uppdatera sidan senare",
           },
         ];
@@ -689,9 +689,9 @@ export default function Analytics() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <TrendAreaChartCard
           data={trendData}
-          description="Manadsvy för ansökningar med rullande snitt."
+          description="Månadsvy för ansökningar med rullande snitt."
           series={trendSeries}
-          title="Ansokningstrend"
+          title="Ansökningstrend"
         />
         <DonutBreakdownCard
           description={`Datamix under ${periodLabel(selectedPeriod).toLowerCase()}.`}
@@ -706,21 +706,21 @@ export default function Analytics() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         <FunnelCard
-          description={`Fran visning till ansokan under ${periodLabel(selectedPeriod).toLowerCase()}.`}
+          description={`Från visning till ansökan under ${periodLabel(selectedPeriod).toLowerCase()}.`}
           steps={funnelSteps}
           title="Konvertering"
         />
         <DonutBreakdownCard
-          description="Fördelning av ansokningar per annons."
+          description="Fördelning av ansökningar per annons."
           items={objectDonutItems}
           title="Toppannonser"
         />
         <ActivityListCard
-          description="Senaste ansokningarna från analytics-endpointen."
+          description="Senaste ansökningarna från analytics-endpointen."
           items={activityItems}
           title="Nya ansökningar"
         />
-        <CardShell description="Beraknade nyckeltal för vald period." title="Nyckeltal">
+        <CardShell description="Beräknade nyckeltal för vald period." title="Nyckeltal">
           <div className="grid gap-3 text-theme-sm text-gray-600">
             <div className="flex items-center justify-between">
               <span>Vald period</span>
@@ -746,7 +746,7 @@ export default function Analytics() {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Nya ansokningar i listan</span>
+              <span>Nya ansökningar i listan</span>
               <span className="font-medium text-gray-800">
                 {formatNumber(payload.newApplications.length)}
               </span>
