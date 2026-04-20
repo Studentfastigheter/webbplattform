@@ -56,6 +56,20 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface StudentRegistrationResponse {
+  authRef: string;
+}
+
+export type RegisterResponse = AuthResponse | StudentRegistrationResponse;
+
+export type FrejaAuthStatus =
+  | "MATCHES"
+  | "CLASHING"
+  | "DISAPPROVED"
+  | "PENDING"
+  | "EXPIRED"
+  | "CANCELED";
+
 // --- Requests (Matchar dina Java DTOs) ---
 
 export interface LoginRequest {
