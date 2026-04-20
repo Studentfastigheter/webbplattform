@@ -24,68 +24,19 @@ const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 
-const DUMMY_NEARBY_LISTINGS: ListingCardDTO[] = [
-  {
-    id: "nearby-1",
-    title: "Pennygången 12",
-    city: "Göteborg",
-    area: "Göteborg, Sverige",
-    rent: 4100,
-    dwellingType: "apartment",
-    rooms: 1,
-    sizeM2: 24,
-    description: "",
-    tags: ["Möblerat", "Balkong"],
-    imageUrls: ["https://image-cdn.mild.cloud/sgs.se/wp-content/uploads/2025/06/4X3A7575sgs_fotolisaforsell.jpg?height=683&aspect_ratio=1024:683&quality=80"],
-    imageUrl: "https://image-cdn.mild.cloud/sgs.se/wp-content/uploads/2025/06/4X3A7575sgs_fotolisaforsell.jpg?height=683&aspect_ratio=1024:683&quality=80",
-    hostType: "företag",
-    verifiedHost: true,
-    ownerType: "company",
-    ownerName: "Campuslyan",
-    ownerId: 1,
-    verifiedOwner: true
-  } as unknown as ListingCardDTO,
-  {
-    id: "nearby-2",
-    title: "Pennygången 14",
-    city: "Göteborg",
-    area: "Göteborg, Sverige",
-    rent: 4600,
-    dwellingType: "apartment",
-    rooms: 2,
-    sizeM2: 45,
-    description: "",
-    tags: ["Student"],
-    imageUrls: ["https://image-cdn.mild.cloud/sgs.se/wp-content/uploads/2025/06/4X3A7568sgs_fotolisaforsell.jpg?height=683&aspect_ratio=1024:683&quality=80"],
-    imageUrl: "https://image-cdn.mild.cloud/sgs.se/wp-content/uploads/2025/06/4X3A7568sgs_fotolisaforsell.jpg?height=683&aspect_ratio=1024:683&quality=80",
-    hostType: "företag",
-    verifiedHost: true,
-    ownerType: "company",
-    ownerName: "Campuslyan",
-    ownerId: 1,
-    verifiedOwner: true
-  } as unknown as ListingCardDTO,
-  {
-    id: "nearby-3",
-    title: "Pennygången 2",
-    city: "Göteborg",
-    area: "Göteborg, Sverige",
-    rent: 3900,
-    dwellingType: "apartment",
-    rooms: 1,
-    sizeM2: 20,
-    description: "",
-    tags: ["Poängfri"],
-    imageUrls: ["https://image-cdn.mild.cloud/sgs.se/wp-content/uploads/2025/06/4X3A7575sgs_fotolisaforsell.jpg?height=683&aspect_ratio=1024:683&quality=80"],
-    imageUrl: "https://image-cdn.mild.cloud/sgs.se/wp-content/uploads/2025/06/4X3A7575sgs_fotolisaforsell.jpg?height=683&aspect_ratio=1024:683&quality=80",
-    hostType: "företag",
-    verifiedHost: true,
-    ownerType: "company",
-    ownerName: "Campuslyan",
-    ownerId: 1,
-    verifiedOwner: true
-  } as unknown as ListingCardDTO
-];
+const NEARBY_LISTINGS_LIMIT = 8;
+const NEARBY_LISTINGS_FETCH_SIZE = NEARBY_LISTINGS_LIMIT + 1;
+
+const splitListingLocation = (location?: string | null) => {
+  const [area, ...cityParts] = (location ?? "").split(",");
+  const trimmedArea = area?.trim();
+  const trimmedCity = cityParts.join(",").trim();
+
+  return {
+    area: trimmedArea || "Ej angivet",
+    city: trimmedCity || trimmedArea || "Ej angivet",
+  };
+};
 
 // ─── Lightbox ────────────────────────────────────────────────────────────────
 function Lightbox({
@@ -373,6 +324,9 @@ export default function ListingDetailPage() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [nearbyListings, setNearbyListings] = useState<ListingCardDTO[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
 
   // Ladda favoriter och kolla om redan ansökt
   useEffect(() => {
@@ -446,6 +400,71 @@ export default function ListingDetailPage() {
 
     return () => { active = false; };
   }, [listingId]);
+
+  useEffect(() => {
+    if (!listing) {
+      setNearbyListings([]);
+      setNearbyError(null);
+      setNearbyLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    const loadNearbyListings = async () => {
+      setNearbyLoading(true);
+      setNearbyError(null);
+      setNearbyListings([]);
+
+      try {
+        const location = listing.city || listing.area || null;
+        const nearbyResponse = await listingService.getAll(
+          0,
+          NEARBY_LISTINGS_FETCH_SIZE,
+          location
+        );
+
+        const byId = new Map<string, ListingCardDTO>();
+        const addCandidates = (items: ListingCardDTO[] = []) => {
+          items.forEach((item) => {
+            if (item.id !== listing.id && !byId.has(item.id)) {
+              byId.set(item.id, item);
+            }
+          });
+        };
+
+        addCandidates(nearbyResponse.content);
+
+        if (byId.size < NEARBY_LISTINGS_LIMIT) {
+          const fallbackResponse = await listingService.getAll(
+            0,
+            NEARBY_LISTINGS_LIMIT * 3
+          );
+          addCandidates(fallbackResponse.content);
+        }
+
+        if (active) {
+          setNearbyListings(
+            Array.from(byId.values()).slice(0, NEARBY_LISTINGS_LIMIT)
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load nearby listings:", err);
+        if (active) {
+          setNearbyError("Kunde inte ladda fler bostäder.");
+          setNearbyListings([]);
+        }
+      } finally {
+        if (active) {
+          setNearbyLoading(false);
+        }
+      }
+    };
+
+    loadNearbyListings();
+
+    return () => { active = false; };
+  }, [listing]);
 
   // Hämta företagets logga om det är en företagsannons
   useEffect(() => {
@@ -644,29 +663,51 @@ export default function ListingDetailPage() {
                 className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory px-1"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
               >
-                {DUMMY_NEARBY_LISTINGS.map((nearby) => (
-                  <div key={nearby.id} className="snap-start shrink-0">
-                    <ListingCardSmall
-                      title={nearby.title}
-                      area={(nearby as any).area}
-                      city={(nearby as any).city}
-                      dwellingType={nearby.dwellingType}
-                      rooms={nearby.rooms}
-                      sizeM2={nearby.sizeM2 || 0}
-                      rent={nearby.rent}
-                      landlordType={nearby.hostType}
-                      hostName={(nearby as any).ownerName}
-                      hostLogoUrl={(nearby as any).ownerLogoUrl ?? undefined}
-                      // isVerified={(nearby as any).verifiedOwner}
-                      isFavorite={favoriteIds.has(nearby.id)}
-                      onFavoriteToggle={handleFavoriteToggle}
-                      imageUrl={nearby.imageUrl}
-                      // tags={nearby.tags}
-                      variant="compact"
-                      onClick={() => router.push(`/bostader/${nearby.id}`)}
-                    />
+                {nearbyLoading && (
+                  <div className="w-full py-8 text-sm text-gray-500">
+                    Hämtar fler bostäder...
                   </div>
-                ))}
+                )}
+
+                {!nearbyLoading && nearbyError && (
+                  <div className="w-full py-8 text-sm text-red-700">
+                    {nearbyError}
+                  </div>
+                )}
+
+                {!nearbyLoading && !nearbyError && nearbyListings.length === 0 && (
+                  <div className="w-full py-8 text-sm text-gray-500">
+                    Inga fler bostäder hittades just nu.
+                  </div>
+                )}
+
+                {!nearbyLoading && !nearbyError && nearbyListings.map((nearby) => {
+                  const { area, city } = splitListingLocation(nearby.location);
+
+                  return (
+                    <div key={nearby.id} className="snap-start shrink-0">
+                      <ListingCardSmall
+                        id={nearby.id}
+                        title={nearby.title}
+                        area={area}
+                        city={city}
+                        dwellingType={nearby.dwellingType || "Bostad"}
+                        rooms={nearby.rooms || 0}
+                        sizeM2={nearby.sizeM2 || 0}
+                        rent={nearby.rent || 0}
+                        landlordType={nearby.hostType}
+                        hostName={nearby.hostName}
+                        hostLogoUrl={nearby.hostLogoUrl}
+                        isVerified={nearby.verifiedHost}
+                        isFavorite={favoriteIds.has(nearby.id)}
+                        onFavoriteToggle={handleFavoriteToggle}
+                        imageUrl={nearby.imageUrl}
+                        tags={nearby.tags}
+                        onClick={() => router.push(`/bostader/${nearby.id}`)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>
