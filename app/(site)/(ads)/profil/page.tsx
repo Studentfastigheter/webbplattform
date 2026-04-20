@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import ProfileHero, {
   type StudentProfileExtended,
 } from "@/components/profile/ProfileHero";
+import ProfileDocumentsSection from "@/components/profile/ProfileDocumentsSection";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import { authService } from "@/services/auth-service";
@@ -153,6 +154,7 @@ export default function Page() {
   return (
     <main className="mx-4 min-h-screen bg-white pb-16 sm:mx-8 lg:mx-12">
       <ProfileHero student={profile} />
+      <ProfileDocumentsSection />
     </main>
   );
 }
