@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { LangProvider } from "@/context/LangContext";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/next';
 import { Theme } from "@radix-ui/themes";
@@ -83,6 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SpeedInsights />
         <Analytics />
         <AuthProvider>
+        <LangProvider>
             <Theme>
               <ScrollToTop />
               <main>{children}</main>
@@ -98,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 theme="light"
               />
             </Theme>
+        </LangProvider>
         </AuthProvider>
       </body>
     </html>

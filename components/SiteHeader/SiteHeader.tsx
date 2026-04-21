@@ -18,6 +18,7 @@ import {
   Navbar,
   type NavbarItem,
 } from "@/components/ui/resizable-navbar";
+import LanguageToggle from "./LanguageToggle";
 
 type NavItem = NavbarItem;
 
@@ -224,6 +225,7 @@ export default function SiteHeader() {
 
   return (
     <Navbar className="top-4">
+      <LanguageToggle className="ml-4"/>
       <NavBody>
         <Link
           href="/"
@@ -241,7 +243,6 @@ export default function SiteHeader() {
             <span className="text-base">CampusLyan</span>
           </div>
         </Link>
-
         <NavItems items={navItems} onItemClick={() => setIsAccountMenuOpen(false)} />
 
         <div className="relative z-20 hidden items-center gap-2 lg:flex">
