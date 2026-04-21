@@ -52,8 +52,11 @@ export async function apiClient<T>(
   { headers, ...customOptions }: RequestInit = {},
   token?: string
 ): Promise<T> {
+  const isFormDataBody =
+    typeof FormData !== "undefined" && customOptions.body instanceof FormData;
+
   const defaultHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(isFormDataBody ? {} : { "Content-Type": "application/json" }),
     ...(headers as Record<string, string>),
   };
 

@@ -24,8 +24,12 @@ export type QueueFilters = {
 
 export type QueueApplicationDTO = {
   id?: string | number;
-  queueId?: string;
+  queueId?: string | number;
   queueName?: string;
+  queue?: {
+    id?: string | number;
+    name?: string;
+  };
   studentId?: number;
   firstName?: string;
   surname?: string;
@@ -38,6 +42,23 @@ export type QueueApplicationDTO = {
   queueDays?: number;
   position?: number;
 };
+
+export function getQueueApplicationQueueId(
+  application: QueueApplicationDTO
+): string | null {
+  const queueId = application.queueId ?? application.queue?.id;
+  return queueId != null ? String(queueId) : null;
+}
+
+export function buildJoinedQueueIdSet(
+  applications: QueueApplicationDTO[]
+): Set<string> {
+  return new Set(
+    applications
+      .map(getQueueApplicationQueueId)
+      .filter((queueId): queueId is string => Boolean(queueId))
+  );
+}
 
 function readEmbeddedQueueApplications(queue: HousingQueueDTO): QueueApplicationDTO[] {
   const rawQueue = queue as HousingQueueDTO & Record<string, unknown>;
@@ -107,7 +128,20 @@ export const queueService = {
   },
 
   getMyQueues: async (): Promise<any[]> => {
-    return await apiClient<any[]>("/queues/my");
+    const res = await apiClient<
+      | QueueApplicationDTO[]
+      | {
+          content?: QueueApplicationDTO[];
+          data?: QueueApplicationDTO[];
+          queues?: QueueApplicationDTO[];
+        }
+    >("/queues/my");
+
+    if (Array.isArray(res)) {
+      return res;
+    }
+
+    return res?.content ?? res?.data ?? res?.queues ?? [];
   },
 
   getCompany: async (companyId: number): Promise<CompanyDTO> => {

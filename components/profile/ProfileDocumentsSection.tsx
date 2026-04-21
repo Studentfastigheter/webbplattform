@@ -18,6 +18,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cx } from "@/lib/utils/cx";
+import {
+  documentService,
+  type DocumentPropagationResult,
+} from "@/services/document-service";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf";
@@ -30,11 +34,14 @@ type StudentDocument = {
   title: string;
   note?: string;
   name: string;
+  file: File;
   size: number;
   type?: FileIconType;
   mimeType?: string;
   progress: number;
   failed?: boolean;
+  errorMessage?: string;
+  propagationResult?: DocumentPropagationResult;
   uploadedAt: string;
   objectUrl?: string;
   downloadUrl?: string;
@@ -44,6 +51,13 @@ type EditDraft = {
   title: string;
   note: string;
 };
+
+type StatusMessage =
+  | string
+  | {
+      tone: "success" | "warning" | "error";
+      text: string;
+    };
 
 const emptyEditDraft: EditDraft = {
   title: "",
@@ -57,22 +71,20 @@ const destructiveButtonClassName =
   "rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 shadow-none hover:bg-red-50";
 
 const dropZoneClassName =
-  "bg-white text-gray-500 ring-gray-200 [&_.text-error-primary]:text-red-600 [&_button]:text-[#004225]";
+  "rounded-lg border border-dashed border-gray-300 bg-gray-50/70 text-gray-500 ring-0 transition-colors hover:border-[#004225]/50 hover:bg-white [&_.text-error-primary]:text-red-600 [&_button]:text-[#004225]";
 
 const uploadListItemClassName =
-  "bg-white ring-gray-200 [&_.bg-fg-brand-primary]:bg-[#004225] [&_.bg-quaternary]:bg-gray-100 [&_.text-fg-quaternary]:text-gray-400 [&_.text-fg-success-primary]:text-emerald-600 [&_.text-quaternary]:text-gray-500 [&_.text-secondary]:text-gray-900 [&_.text-success-primary]:text-emerald-700 [&_.text-tertiary]:text-gray-500";
+  "rounded-lg bg-white ring-gray-200 shadow-sm [&_.bg-fg-brand-primary]:bg-[#004225] [&_.bg-quaternary]:bg-gray-100 [&_.text-fg-quaternary]:text-gray-400 [&_.text-fg-success-primary]:text-emerald-600 [&_.text-quaternary]:text-gray-500 [&_.text-secondary]:text-gray-900 [&_.text-success-primary]:text-emerald-700 [&_.text-tertiary]:text-gray-500";
 
-const uploadFile = (onProgress: (progress: number) => void) => {
-  let progress = 0;
+const startUploadProgress = (onProgress: (progress: number) => void) => {
+  let progress = 8;
+
+  onProgress(progress);
 
   const interval = window.setInterval(() => {
-    progress += 10;
-    onProgress(Math.min(progress, 100));
-
-    if (progress >= 100) {
-      window.clearInterval(interval);
-    }
-  }, 80);
+    progress = Math.min(progress + 8, 90);
+    onProgress(progress);
+  }, 180);
 
   return () => window.clearInterval(interval);
 };
@@ -141,11 +153,100 @@ function formatUploadedAt(value: string) {
   }).format(new Date(value));
 }
 
+const successResultKeys = [
+  "succeeded",
+  "successful",
+  "successes",
+  "successfulCompanies",
+] as const;
+const failureResultKeys = [
+  "failed",
+  "failures",
+  "failedCompanies",
+  "errors",
+] as const;
+
+function getPropagationList(
+  result: DocumentPropagationResult,
+  keys: readonly (keyof DocumentPropagationResult)[]
+) {
+  for (const key of keys) {
+    const value = result[key];
+    if (Array.isArray(value)) return value;
+  }
+
+  return [];
+}
+
+function getPropagationCount(
+  result: DocumentPropagationResult,
+  countKeys: readonly (keyof DocumentPropagationResult)[],
+  listKeys: readonly (keyof DocumentPropagationResult)[]
+) {
+  for (const key of countKeys) {
+    const value = result[key];
+    if (typeof value === "number") return value;
+  }
+
+  const list = getPropagationList(result, listKeys);
+  return list.length > 0 ? list.length : undefined;
+}
+
+function getPropagationSummary(result?: DocumentPropagationResult) {
+  if (!result) return null;
+
+  const successCount = getPropagationCount(
+    result,
+    ["successCount", "succeededCount"],
+    successResultKeys
+  );
+  const failureCount = getPropagationCount(
+    result,
+    ["failureCount", "failedCount"],
+    failureResultKeys
+  );
+
+  if (successCount !== undefined || failureCount !== undefined) {
+    const successes = successCount ?? 0;
+    const failures = failureCount ?? 0;
+
+    if (failures > 0) {
+      return `${successes} bolag tog emot dokumentet, ${failures} misslyckades.`;
+    }
+
+    if (successes > 0) {
+      return `Dokumentet skickades till ${successes} bolag.`;
+    }
+
+    return "Dokumentet laddades upp, men inga mottagare rapporterades.";
+  }
+
+  return result.message ?? "Dokumentet laddades upp till backend.";
+}
+
+function hasPropagationFailures(result?: DocumentPropagationResult) {
+  if (!result) return false;
+
+  const failureCount = getPropagationCount(
+    result,
+    ["failureCount", "failedCount"],
+    failureResultKeys
+  );
+
+  return typeof failureCount === "number" && failureCount > 0;
+}
+
+function getUploadErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  return "Kunde inte ladda upp dokumentet till backend.";
+}
+
 function createDocumentFromFile(file: File): StudentDocument {
   return {
     id: crypto.randomUUID(),
     title: titleFromFileName(file.name),
     name: file.name,
+    file,
     size: file.size,
     type: getFileIconType(file),
     mimeType: file.type,
@@ -157,7 +258,7 @@ function createDocumentFromFile(file: File): StudentDocument {
 
 export default function ProfileDocumentsSection() {
   const [documents, setDocuments] = useState<StudentDocument[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<StatusMessage | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft>(emptyEditDraft);
   const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(
@@ -206,6 +307,100 @@ export default function ProfileDocumentsSection() {
     objectUrlsRef.current.delete(objectUrl);
   };
 
+  const setDocumentProgress = (documentId: string, progress: number) => {
+    setDocuments((current) =>
+      current.map((item) =>
+        item.id === documentId ? { ...item, progress } : item
+      )
+    );
+  };
+
+  const uploadDocumentToBackend = async (documentId: string, file: File) => {
+    uploadCleanupsRef.current.get(documentId)?.();
+    uploadCleanupsRef.current.delete(documentId);
+
+    setDocuments((current) =>
+      current.map((item) =>
+        item.id === documentId
+          ? {
+              ...item,
+              failed: false,
+              errorMessage: undefined,
+              propagationResult: undefined,
+              progress: 0,
+            }
+          : item
+      )
+    );
+
+    const controller = new AbortController();
+    const stopProgress = startUploadProgress((progress) =>
+      setDocumentProgress(documentId, progress)
+    );
+    const cleanupUpload = () => {
+      stopProgress();
+      controller.abort();
+    };
+
+    uploadCleanupsRef.current.set(documentId, cleanupUpload);
+
+    try {
+      const result = await documentService.upload(file, {
+        signal: controller.signal,
+      });
+
+      stopProgress();
+      if (uploadCleanupsRef.current.get(documentId) === cleanupUpload) {
+        uploadCleanupsRef.current.delete(documentId);
+      }
+
+      setDocuments((current) =>
+        current.map((item) =>
+          item.id === documentId
+            ? {
+                ...item,
+                failed: false,
+                errorMessage: undefined,
+                propagationResult: result,
+                progress: 100,
+              }
+            : item
+        )
+      );
+
+      setMessage({
+        tone: hasPropagationFailures(result) ? "warning" : "success",
+        text: getPropagationSummary(result) ?? "Dokumentet laddades upp.",
+      });
+    } catch (error) {
+      stopProgress();
+      if (uploadCleanupsRef.current.get(documentId) === cleanupUpload) {
+        uploadCleanupsRef.current.delete(documentId);
+      }
+
+      if (controller.signal.aborted) return;
+
+      const errorMessage = getUploadErrorMessage(error);
+
+      setDocuments((current) =>
+        current.map((item) =>
+          item.id === documentId
+            ? {
+                ...item,
+                failed: true,
+                errorMessage,
+              }
+            : item
+        )
+      );
+
+      setMessage({
+        tone: "error",
+        text: errorMessage,
+      });
+    }
+  };
+
   const handleDropFiles = (files: FileList) => {
     setMessage(null);
 
@@ -222,19 +417,7 @@ export default function ProfileDocumentsSection() {
     setDocuments((current) => [...newDocuments, ...current]);
 
     newDocuments.forEach((document) => {
-      const cleanup = uploadFile((progress) => {
-        setDocuments((current) =>
-          current.map((item) =>
-            item.id === document.id ? { ...item, progress } : item
-          )
-        );
-
-        if (progress >= 100) {
-          uploadCleanupsRef.current.delete(document.id);
-        }
-      });
-
-      uploadCleanupsRef.current.set(document.id, cleanup);
+      void uploadDocumentToBackend(document.id, document.file);
     });
   };
 
@@ -270,27 +453,12 @@ export default function ProfileDocumentsSection() {
   };
 
   const handleRetryDocument = (documentId: string) => {
-    setDocuments((current) =>
-      current.map((item) =>
-        item.id === documentId
-          ? { ...item, failed: false, progress: 0 }
-          : item
-      )
-    );
+    const document = documents.find((item) => item.id === documentId);
 
-    const cleanup = uploadFile((progress) => {
-      setDocuments((current) =>
-        current.map((item) =>
-          item.id === documentId ? { ...item, progress } : item
-        )
-      );
+    if (!document) return;
 
-      if (progress >= 100) {
-        uploadCleanupsRef.current.delete(documentId);
-      }
-    });
-
-    uploadCleanupsRef.current.set(documentId, cleanup);
+    setMessage(null);
+    void uploadDocumentToBackend(documentId, document.file);
   };
 
   const handleStartEdit = (document: StudentDocument) => {
@@ -400,10 +568,13 @@ export default function ProfileDocumentsSection() {
     );
   };
 
+  const messageTone = typeof message === "string" ? "error" : message?.tone;
+  const messageText = typeof message === "string" ? message : message?.text;
+
   return (
     <section className="mx-auto mt-12 max-w-4xl px-4 sm:px-6">
       <div className="border-t border-gray-200 pt-10">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-2xl">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#004225]">
               Profilbilagor
@@ -416,14 +587,10 @@ export default function ProfileDocumentsSection() {
               bostadsansökan. PDF fungerar bäst.
             </p>
           </div>
-
-          <div className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
-            Sparas i den här sessionen
-          </div>
         </div>
 
         <div className="mt-6">
-          <FileUpload.Root>
+          <FileUpload.Root className="gap-3">
             <FileUpload.DropZone
               accept={ACCEPTED_FILE_TYPES}
               maxSize={MAX_FILE_SIZE}
@@ -437,14 +604,24 @@ export default function ProfileDocumentsSection() {
               className={dropZoneClassName}
             />
 
-            {message && (
-              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                {message}
+            {messageText && (
+              <p
+                className={cx(
+                  "rounded-lg border px-3 py-2 text-sm font-medium",
+                  messageTone === "success" &&
+                    "border-emerald-100 bg-emerald-50/70 text-emerald-700",
+                  messageTone === "warning" &&
+                    "border-amber-100 bg-amber-50/70 text-amber-800",
+                  messageTone === "error" &&
+                    "border-red-100 bg-red-50/70 text-red-700"
+                )}
+              >
+                {messageText}
               </p>
             )}
 
             {documents.length === 0 ? (
-              <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center">
+              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center">
                 <p className="text-sm font-medium text-gray-900">
                   Inga dokument uppladdade än.
                 </p>
@@ -471,7 +648,7 @@ export default function ProfileDocumentsSection() {
                         onRetry={() => handleRetryDocument(document.id)}
                       />
 
-                      <li className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                      <li className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
                         {isEditing ? (
                           <div className="grid gap-4">
                             <div className="grid gap-4 md:grid-cols-2">
@@ -541,6 +718,27 @@ export default function ProfileDocumentsSection() {
                               {document.note && (
                                 <p className="mt-1 leading-6">
                                   {document.note}
+                                </p>
+                              )}
+                              {document.errorMessage && (
+                                <p className="mt-1 text-red-600">
+                                  {document.errorMessage}
+                                </p>
+                              )}
+                              {document.propagationResult && (
+                                <p
+                                  className={cx(
+                                    "mt-1",
+                                    hasPropagationFailures(
+                                      document.propagationResult
+                                    )
+                                      ? "text-amber-700"
+                                      : "text-emerald-700"
+                                  )}
+                                >
+                                  {getPropagationSummary(
+                                    document.propagationResult
+                                  )}
                                 </p>
                               )}
                             </div>

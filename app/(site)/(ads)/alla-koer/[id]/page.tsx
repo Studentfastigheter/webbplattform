@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
-import { queueService, type CompanyDTO } from "@/services/queue-service";
+import {
+  buildJoinedQueueIdSet,
+  queueService,
+  type CompanyDTO,
+} from "@/services/queue-service";
 import { useAuth } from "@/context/AuthContext";
 import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
@@ -15,14 +19,15 @@ export default function QueueDetailPage() {
   const params = useParams<{ id: string }>();
   const companyIdRaw = params?.id;
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   const [company, setCompany] = useState<CompanyDTO | null>(null);
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [joining, setJoining] = useState(false);
+  const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
+  const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!companyIdRaw) return;
@@ -63,6 +68,33 @@ export default function QueueDetailPage() {
     };
   }, [companyIdRaw]);
 
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      setJoinedQueueIds(new Set());
+      return;
+    }
+
+    let active = true;
+
+    queueService
+      .getMyQueues()
+      .then((applications) => {
+        if (!active) return;
+        setJoinedQueueIds(buildJoinedQueueIdSet(applications));
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Kunde inte hämta användarens köer:", err);
+        setJoinedQueueIds(new Set());
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user]);
+
   // Bygg ett HousingQueueDTO-liknande objekt från company-data för QueueHero
   const heroQueue: HousingQueueDTO = company
     ? {
@@ -100,16 +132,21 @@ export default function QueueDetailPage() {
       return;
     }
 
-    setJoining(true);
+    if (joinedQueueIds.has(queueId)) {
+      return;
+    }
+
+    setJoiningQueueId(queueId);
     try {
       await queueService.join(queueId);
+      setJoinedQueueIds((current) => new Set(current).add(queueId));
       alert("Du står nu i kön!");
     } catch (err: any) {
       alert(
         err.message || "Kunde inte gå med i kön. Kanske står du redan i den?"
       );
     } finally {
-      setJoining(false);
+      setJoiningQueueId(null);
     }
   };
 
@@ -150,17 +187,27 @@ export default function QueueDetailPage() {
                 </div>
                 <Button
                   onClick={() => handleJoinQueue(q.id)}
-                  disabled={joining}
-                  variant="default"
+                  isDisabled={
+                    joinedQueueIds.has(q.id) || joiningQueueId !== null
+                  }
+                  variant={joinedQueueIds.has(q.id) ? "secondary" : "default"}
                   size="sm"
-                  className="shrink-0"
+                  className={`shrink-0 ${
+                    joinedQueueIds.has(q.id)
+                      ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
+                      : ""
+                  }`}
                 >
-                  {joining ? (
+                  {joiningQueueId === q.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <>
                       <Bell className="h-4 w-4" />
-                      {user ? "Ställ dig i kön" : "Logga in"}
+                      {joinedQueueIds.has(q.id)
+                        ? "Du står redan i kön"
+                        : user
+                          ? "Ställ dig i kön"
+                          : "Logga in"}
                     </>
                   )}
                 </Button>

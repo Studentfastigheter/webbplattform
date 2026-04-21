@@ -10,8 +10,9 @@ import QueueFilterButton, {
   type QueueFilterState,
 } from "@/components/Listings/Search/QueueFilterButton";
 import { FieldSet } from "@/components/ui/field";
+import { useAuth } from "@/context/AuthContext";
 
-import { queueService } from "@/services/queue-service";
+import { buildJoinedQueueIdSet, queueService } from "@/services/queue-service";
 
 import { type AdvertisedHousingQueue } from "@/types/queue";
 import { type CompanyId } from "@/types";
@@ -40,6 +41,7 @@ const countByValue = (values: string[]) =>
 
 export default function Page() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [searchValues, setSearchValues] = useState<SearchValues>({
     queueName: "",
@@ -53,6 +55,7 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
+  const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -123,6 +126,41 @@ export default function Page() {
     };
   }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      setJoinedQueueIds(new Set());
+      return;
+    }
+
+    let active = true;
+
+    queueService
+      .getMyQueues()
+      .then((applications) => {
+        if (!active) return;
+
+        const nextJoinedQueueIds = buildJoinedQueueIdSet(applications);
+        setJoinedQueueIds(nextJoinedQueueIds);
+        setSelectedQueues((current) => {
+          const next = new Set(
+            [...current].filter((queueId) => !nextJoinedQueueIds.has(queueId))
+          );
+          return next.size === current.size ? current : next;
+        });
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Kunde inte hämta användarens köer:", err);
+        setJoinedQueueIds(new Set());
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user]);
+
   const cityFilterOptions = useMemo(
     () =>
       uniqueOnly(removeEmpty(queues.map((queue) => queue.city))).sort((a, b) =>
@@ -183,6 +221,7 @@ export default function Page() {
 
   const renderQueueCard = (queue: QueueWithUI) => {
     const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
+    const isAlreadyJoined = joinedQueueIds.has(queue.id);
 
     const queueCardProps = {
       ...queue,
@@ -207,8 +246,11 @@ export default function Page() {
           logoAlt={queueCardProps.logoAlt}
           tags={queueCardProps.tags}
           isSelected={selectedQueues.has(queue.id)}
+          isAlreadyJoined={isAlreadyJoined}
           onViewListings={() => openQueue(queue)}
           onToggleSelect={() => {
+            if (isAlreadyJoined) return;
+
             const next = new Set(selectedQueues);
             if (next.has(queue.id)) {
               next.delete(queue.id);

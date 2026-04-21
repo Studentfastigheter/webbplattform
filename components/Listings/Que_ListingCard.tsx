@@ -5,9 +5,13 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Building2, Check } from "lucide-react";
 import Tag from "../ui/Tag";
 import VerifiedTag from "../ui/VerifiedTag";
-import type { HousingQueueWithRelations, Tag as TagType } from "@/types";
+import type { Tag as TagType } from "@/types";
 
-type QueueSummary = Pick<HousingQueueWithRelations, "name" | "area" | "city" | "totalUnits"> & {
+type QueueSummary = {
+  name: string;
+  area?: string | null;
+  city?: string | null;
+  totalUnits?: number | null;
   unitsLabel?: string;
   isVerified?: boolean;
   logoUrl?: string | null;
@@ -17,6 +21,7 @@ type QueueSummary = Pick<HousingQueueWithRelations, "name" | "area" | "city" | "
 
 export type QueListingCardProps = QueueSummary & {
   isSelected?: boolean;
+  isAlreadyJoined?: boolean;
   onViewListings?: () => void;
   onToggleSelect?: () => void;
 };
@@ -39,6 +44,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     logoAlt,
     tags,
     isSelected = false,
+    isAlreadyJoined = false,
     onViewListings,
     onToggleSelect,
   } = props;
@@ -97,10 +103,10 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         // Enable keyboard navigation
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onViewListings();
+          onViewListings?.();
         }
       }}
-      onClick={e => onViewListings()}
+      onClick={e => onViewListings?.()}
       onMouseEnter={e => setIsHovering(true)}
       onMouseLeave={e => setIsHovering(false)}
       className={`relative flex w-full max-w-[320px] flex-col cursor-pointer group
@@ -226,13 +232,23 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           type="button"
           onClick={e => {
             e.stopPropagation();
+            if (isAlreadyJoined) return;
             onToggleSelect?.();
           }}
           size="xs"
           variant={isSelected ? "default" : "secondary"}
-          className="w-full text-xs transition-colors duration-150"
+          isDisabled={isAlreadyJoined}
+          className={`w-full text-xs transition-colors duration-150 ${
+            isAlreadyJoined
+              ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
+              : ""
+          }`}
         >
-          {isSelected ? "Ta bort" : "Lägg till"}
+          {isAlreadyJoined
+            ? "Du står redan i kön"
+            : isSelected
+              ? "Ta bort"
+              : "Lägg till"}
         </Button>
       </div>
 
