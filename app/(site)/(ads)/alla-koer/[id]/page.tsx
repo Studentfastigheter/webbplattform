@@ -40,7 +40,7 @@ export default function QueueDetailPage() {
     Promise.all([
       queueService.getCompany(companyId),
       queueService.getByCompany(companyId),
-      queueService.getCompanyListings(companyId),
+      queueService.getCompanyListings(companyId, 0, 6),
     ])
       .then(([companyData, companyQueues, companyListings]) => {
         if (!active) return;
@@ -122,13 +122,15 @@ export default function QueueDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white mx-12">
+    <main className="container mx-auto min-h-screen max-w-6xl bg-white px-4 pb-12 pt-6 lg:pt-10">
       {/* Hero: banner, logo, company info, about */}
-      <QueueHero queue={heroQueue} />
+      <div className="w-full">
+        <QueueHero queue={heroQueue} />
+      </div>
 
       {/* Köer */}
       {queues.length > 0 && (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-10">
+        <div className="mt-10 w-full">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Bostadsköer
           </h2>
@@ -169,7 +171,7 @@ export default function QueueDetailPage() {
       )}
 
       {/* Listings section */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-10 pb-16">
+      <div className="mt-10 w-full pb-4">
         {listings.length > 0 ? (
           <QueueListings
             listings={listings}

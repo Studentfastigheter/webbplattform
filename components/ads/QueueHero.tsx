@@ -119,6 +119,8 @@ export default function QueueHero({ queue }: QueueHeroProps) {
       avatarImage={logoImage}
       avatarShape="rounded"
       avatarFit="contain"
+      contentClassName="max-w-none px-0 sm:px-0"
+      avatarWrapperClassName="mx-auto max-w-5xl px-4 sm:px-6"
       meta={
         queue.city ? (
           <span className="inline-flex items-center gap-1.5">

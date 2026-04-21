@@ -43,6 +43,7 @@ type EntityHeroProps = {
   sections?: EntityHeroSection[];
   className?: string;
   contentClassName?: string;
+  avatarWrapperClassName?: string;
 };
 
 const badgeToneClassMap: Record<EntityHeroBadgeTone, string> = {
@@ -66,6 +67,7 @@ export default function EntityHero({
   sections = [],
   className,
   contentClassName,
+  avatarWrapperClassName,
 }: EntityHeroProps) {
   const hasActions = actionLinks.length > 0 || Boolean(headerActions);
 
@@ -88,7 +90,7 @@ export default function EntityHero({
           contentClassName
         )}
       >
-        <div className="relative -mt-14 mb-4 sm:-mt-24">
+        <div className={cn("relative -mt-14 mb-4 sm:-mt-24", avatarWrapperClassName)}>
           <div
             className={cn(
               "shrink-0 overflow-hidden border-4 border-white bg-white shadow-lg",
