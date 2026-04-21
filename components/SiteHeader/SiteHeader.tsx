@@ -19,56 +19,9 @@ import {
   type NavbarItem,
 } from "@/components/ui/resizable-navbar";
 import LanguageToggle from "./LanguageToggle";
+import { staticTranslate, useLang } from "@/context/LangContext";
 
 type NavItem = NavbarItem;
-
-const publicNavItems: NavItem[] = [
-  { name: "Bostäder", link: "/bostader" },
-  { name: "Alla köer", link: "/alla-koer" },
-  { name: "Kom igång", link: "/" },
-];
-
-const studentNavItems: NavItem[] = [
-  {
-    name: "Bostäder",
-    link: "/bostader",
-    dropdown: [
-      { name: "Sök bostäder", link: "/bostader" },
-      { name: "Mina ansökningar", link: "/ansokningar" },
-      { name: "Sparade", link: "/sparade" },
-    ],
-  },
-  {
-    name: "Alla köer",
-    link: "/alla-koer",
-    dropdown: [
-      { name: "Lägg till köer", link: "/alla-koer" },
-      { name: "Mina köer", link: "/koer" },
-    ],
-  },
-  { name: "Notiser", link: "/notiser" },
-];
-
-const landlordNavItems: NavItem[] = [
-  { name: "Bostäder", link: "/bostader" },
-  {
-    name: "Mina annonser",
-    link: "/mina-annonser",
-    dropdown: [
-      { name: "Skapa ny", link: "/mina-annonser/ny" },
-      { name: "Mina annonser", link: "/mina-annonser" },
-      { name: "Ansökningar", link: "/ansokningar" },
-    ],
-  },
-  { name: "Notiser", link: "/notiser" },
-];
-
-const getRoleLabel = (accountType?: string | null) => {
-  if (accountType === "student") return "Student";
-  if (accountType === "private_landlord") return "Privat uthyrare";
-  if (accountType === "company") return "Företag";
-  return null;
-};
 
 const getInitial = (value: string) => value.trim().charAt(0).toUpperCase() || "C";
 
@@ -116,9 +69,58 @@ function AccountAvatar({
 
 export default function SiteHeader() {
   const { user, logout, isLoading } = useAuth();
+  const { lang } = useLang();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const publicNavItems: NavItem[] = [
+    { name: staticTranslate({ "se-SE": "Bostäder", "en-US": "Apartments" }, lang), link: "/bostader" },
+    { name: staticTranslate({ "se-SE": "Alla köer", "en-US": "Queues" }, lang), link: "/alla-koer" },
+    { name: staticTranslate({ "se-SE": "Kom igång", "en-US": "Get started" }, lang), link: "/" },
+  ];
+  
+  const studentNavItems: NavItem[] = [
+    {
+      name: staticTranslate({ "se-SE": "Bostäder", "en-US": "Apartments" }, lang),
+      link: "/bostader",
+      dropdown: [
+        { name: staticTranslate({ "se-SE": "Sök bostäder", "en-US": "Find apartments" }, lang), link: "/bostader" },
+        { name: staticTranslate({ "se-SE": "Mina ansökningar", "en-US": "My applications" }, lang), link: "/ansokningar" },
+        { name: staticTranslate({ "se-SE": "Sparade", "en-US": "Savings" }, lang), link: "/sparade" },
+      ],
+    },
+    {
+      name: staticTranslate({ "se-SE": "Alla köer", "en-US": "Queues" }, lang),
+      link: "/alla-koer",
+      dropdown: [
+        { name: staticTranslate({ "se-SE": "Lägg till köer", "en-US": "Add queues" }, lang), link: "/alla-koer" },
+        { name: staticTranslate({ "se-SE": "Mina köer", "en-US": "My queues" }, lang), link: "/koer" },
+      ],
+    },
+    { name: staticTranslate({ "se-SE": "Notiser", "en-US": "Notifications" }, lang), link: "/notiser" },
+  ];
+  
+  const landlordNavItems: NavItem[] = [
+    { name: staticTranslate({ "se-SE": "Bostäder", "en-US": "Apartments" }, lang), link: "/bostader" },
+    {
+      name: staticTranslate({ "se-SE": "Mina annonser", "en-US": "My listings" }, lang),
+      link: "/mina-annonser",
+      dropdown: [
+        { name: staticTranslate({ "se-SE": "Skapa ny", "en-US": "New listing" }, lang), link: "/mina-annonser/ny" },
+        { name: staticTranslate({ "se-SE": "Mina annonser", "en-US": "My listings" }, lang), link: "/mina-annonser" },
+        { name: staticTranslate({ "se-SE": "Ansökningar", "en-US": "Applications" }, lang), link: "/ansokningar" },
+      ],
+    },
+    { name: staticTranslate({ "se-SE": "Notiser", "en-US": "Notifications" }, lang), link: "/notiser" },
+  ];
+  
+  const getRoleLabel = (accountType?: string | null) => {
+    if (accountType === "student") return "Student";
+    if (accountType === "private_landlord") return staticTranslate({ "se-SE": "Privat uthyrare", "en-US": "Private landlord" }, lang);
+    if (accountType === "company") return staticTranslate({ "se-SE": "Företag", "en-US": "Company" }, lang);
+    return null;
+  };
 
   const userType = user?.accountType;
   const roleLabel = getRoleLabel(userType);
@@ -132,26 +134,26 @@ export default function SiteHeader() {
   } else if (userType === "private_landlord" || userType === "company") {
     navItems = landlordNavItems;
   } else if (user) {
-    navItems = [{ name: "Bostadssök", link: "/bostader" }];
+    navItems = [{ name: staticTranslate({ "se-SE": "Bostadssök", "en-US": "Find apartments" }, lang), link: "/bostader" }];
   }
 
   let accountMenuItems: NavItem[] = [];
 
   if (userType === "student") {
     accountMenuItems = [
-      { name: "Mitt konto", link: "/profil" },
-      { name: "Inställningar", link: "/installningar" },
-      { name: "Hjälp", link: "/faq" },
+      { name: staticTranslate({ "se-SE": "Mitt konto", "en-US": "My account" }, lang), link: "/profil" },
+      { name: staticTranslate({ "se-SE": "Inställningar", "en-US": "Settings" }, lang), link: "/installningar" },
+      { name: staticTranslate({ "se-SE": "Hjälp", "en-US": "Help" }, lang), link: "/faq" },
     ];
   } else if (userType === "private_landlord" || userType === "company") {
     accountMenuItems = [
-      { name: "Mitt konto", link: "/profil" },
-      { name: "Inställningar", link: "/installningar" },
-      { name: "Fakturering", link: "/fakturering" },
-      { name: "Hjälp", link: "/faq" },
+      { name: staticTranslate({ "se-SE": "Mitt konto", "en-US": "" }, lang), link: "/profil" },
+      { name: staticTranslate({ "se-SE": "Inställningar", "en-US": "" }, lang), link: "/installningar" },
+      { name: staticTranslate({ "se-SE": "Fakturering", "en-US": "" }, lang), link: "/fakturering" },
+      { name: staticTranslate({ "se-SE": "Hjälp", "en-US": "" }, lang), link: "/faq" },
     ];
   } else if (user) {
-    accountMenuItems = [{ name: "Mitt konto", link: "/profil" }];
+    accountMenuItems = [{ name: staticTranslate({ "se-SE": "Mitt konto", "en-US": "My account" }, lang), link: "/profil" }];
   }
 
   const closeMenus = () => {
@@ -230,7 +232,10 @@ export default function SiteHeader() {
         <Link
           href="/"
           className="relative z-20 flex items-center gap-2 px-2 py-1 text-sm font-medium"
-          aria-label="Gå till startsidan"
+          aria-label={staticTranslate({ 
+              "se-SE": "Gå till startsidan", 
+              "en-US": "Go to the start page", 
+          }, lang)}
         >
           <Image
             src="/campuslyan-logo.svg"
@@ -252,13 +257,13 @@ export default function SiteHeader() {
                 href="/logga-in"
                 className="inline-flex rounded-full px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
               >
-                Logga in
+                {staticTranslate({ "se-SE": "Logga in", "en-US": "Log in" }, lang)}
               </Link>
               <Link
                 href="/registrera"
                 className="inline-flex rounded-full bg-[#004225] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00341d]"
               >
-                Skapa konto
+                {staticTranslate({ "se-SE": "Skapa konto", "en-US": "New account" }, lang)}
               </Link>
             </>
           ) : (
@@ -326,7 +331,7 @@ export default function SiteHeader() {
                     onClick={handleLogout}
                     className="mt-2 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
                   >
-                    Logga ut
+                    {staticTranslate({ "se-SE": "Logga ut", "en-US": "Log out"}, lang)}
                   </button>
                 </div>
               )}
@@ -388,13 +393,14 @@ export default function SiteHeader() {
                   onClick={closeMenus}
                   className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-neutral-200 px-5 py-3 text-base font-medium text-neutral-700 transition hover:bg-neutral-50"
                 >
-                  Logga in
+                    {staticTranslate({ "se-SE": "Logga in", "en-US": "Log in" }, lang)}
                 </Link>
                 <Link
                   href="/registrera"
                   onClick={closeMenus}
                   className="inline-flex w-full items-center justify-center rounded-full bg-[#004225] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
                 >
+                  {staticTranslate({ "se-SE": "Skapa konto", "en-US": "New account" }, lang)}
                   Skapa konto
                 </Link>
               </>
@@ -436,7 +442,7 @@ export default function SiteHeader() {
                   onClick={handleLogout}
                   className="mt-1 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
                 >
-                  Logga ut
+                    {staticTranslate({ "se-SE": "Logga ut", "en-US": "Log out" }, lang)}
                 </button>
               </div>
             )}

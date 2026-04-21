@@ -33,7 +33,7 @@
  */
 
 import React, { createContext, useContext, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useTranslation, UseTranslationResponse } from "react-i18next";
 
 
 export type Lang = "se-SE" | "en-US";
@@ -87,23 +87,11 @@ export function useLang() {
  * I.e "se-SE" for Swedish and "en-US" for English.
  *
  */
-export function staticTranslate(translations: Record<Lang, string>): string {
+export function staticTranslate(translations: Record<Lang, string>, lang: Lang): string {
     if (!translations[SWEDISH]) {
         throw new Error("The SWEDISH ('se-SE') language has to be provided.");
     }
-    const { lang } = useLang();
     return translations[lang] || translations[SWEDISH];
 }
 
-/**
- * Dynamically translate contents.
- *
- * Uses react-i18next to dynamically translate the given text by the enabled locale.
- */
-export function dynamicTranslate(text: string): string {
-    const { lang } = useLang();
-    const { t, i18n } = useTranslation();
-    i18n.changeLanguage(lang as string);
-    return t(text);
-}
 
