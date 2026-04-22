@@ -7,6 +7,7 @@ type RangeValue = [number, number];
 
 type ControlledRangeProps = {
   label?: string;
+  ariaLabel?: string;
   min?: number;
   max?: number;
   step?: number;
@@ -22,6 +23,7 @@ type ControlledRangeProps = {
 
 const ControlledRange: React.FC<ControlledRangeProps> = ({
   label,
+  ariaLabel,
   min = 0,
   max = 100,
   step = 1,
@@ -54,6 +56,7 @@ const ControlledRange: React.FC<ControlledRangeProps> = ({
       )}
 
       <Slider
+        aria-label={ariaLabel ?? label ?? "Intervall"}
         minValue={min}
         maxValue={max}
         step={step}

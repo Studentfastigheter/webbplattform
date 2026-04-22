@@ -140,6 +140,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
           </div>
           <div className="absolute inset-x-4 bottom-3">
             <ControlledRange
+              ariaLabel="Prisintervall"
               min={bounds.min}
               max={bounds.max}
               value={value}

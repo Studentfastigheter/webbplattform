@@ -106,9 +106,9 @@ const FilterButton: React.FC<FilterButtonProps> = ({
       </Button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center px-4 py-10 sm:px-6">
+        <div className="fixed inset-0 z-[1100] flex min-h-svh items-center justify-center px-3 py-4 sm:px-6 sm:py-8">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-[1px]"
+            className="absolute inset-0 bg-black/65 backdrop-blur-sm"
             onClick={close}
           />
 
@@ -116,18 +116,18 @@ const FilterButton: React.FC<FilterButtonProps> = ({
             role="dialog"
             aria-modal="true"
             className="
-              relative z-10 w-full max-w-[640px]
-              overflow-hidden rounded-[32px] bg-white text-black
-              shadow-[0_32px_80px_rgba(0,0,0,0.3)]
+              relative z-[1] flex max-h-[calc(100svh-2rem)] w-full max-w-[640px]
+              flex-col overflow-hidden rounded-3xl bg-white text-black
+              shadow-[0_32px_90px_rgba(0,0,0,0.35)] sm:max-h-[min(760px,calc(100svh-4rem))]
             "
           >
-            <header className="flex items-center justify-between border-b border-black/10 px-6 py-5">
+            <header className="flex shrink-0 items-center justify-between border-b border-black/10 px-5 py-4 sm:px-6 sm:py-5">
               <div className="h-6 w-6" />
               <h2 className="text-lg font-semibold">{title}</h2>
               <button
                 type="button"
                 onClick={close}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-black/5"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-black/5 transition hover:bg-black/10"
               >
                 <span className="sr-only">Stäng</span>
                 <CloseIcon />
@@ -136,7 +136,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
 
             <div
               className="
-                max-h-[calc(90vh-150px)] overflow-y-auto px-6 py-6
+                min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6
                 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-black/20
               "
             >
@@ -149,7 +149,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
               )}
             </div>
 
-            <footer className="flex flex-col gap-3 border-t border-black/10 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <footer className="flex shrink-0 flex-col gap-3 border-t border-black/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
               <Button
                 size="sm"
                 variant="text"

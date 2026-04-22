@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   Building2,
@@ -42,7 +42,7 @@ const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ),
 });
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 15;
 const priceBounds = { min: 0, max: 20000 };
 
 const propertyTypeOptions = [
@@ -87,41 +87,69 @@ const amenityOptions = [
   },
 ];
 
-const defaultListingsFilterState: ListingsFilterState = {
+const createDefaultListingsFilterState = (): ListingsFilterState => ({
   city: "",
   amenities: [],
   propertyType: null,
-  priceRange: priceBounds,
+  priceRange: { ...priceBounds },
   hostType: null,
   schoolId: null,
   schoolLat: null,
   schoolLng: null,
-};
+});
 
-const hasSchoolCoordinates = (school: School) =>
-  typeof school.lat === "number" && typeof school.lng === "number";
+const getPageFromParam = (value: string | null) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+};
 
 export default function ListingsPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const pageFromUrl = getPageFromParam(searchParams.get("page"));
 
   const [view, setView] = useState<SwitchSelectValue>("lista");
   const [searchInput, setSearchInput] = useState("");
   const [filters, setFilters] = useState<ListingsFilterState>(
-    defaultListingsFilterState
+    createDefaultListingsFilterState
   );
 
   const [schools, setSchools] = useState<School[]>([]);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(pageFromUrl);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const updatePageInUrl = useCallback(
+    (nextPage: number, mode: "push" | "replace" = "push") => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("page", String(Math.max(1, nextPage)));
+      const nextUrl = `${pathname}?${nextParams.toString()}`;
+
+      if (mode === "replace") {
+        router.replace(nextUrl, { scroll: false });
+        return;
+      }
+
+      router.push(nextUrl, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  useEffect(() => {
+    if (!searchParams.get("page")) {
+      updatePageInUrl(1, "replace");
+      return;
+    }
+
+    setPage(pageFromUrl);
+  }, [pageFromUrl, searchParams, updatePageInUrl]);
 
   useEffect(() => {
     let active = true;
@@ -208,14 +236,8 @@ export default function ListingsPage() {
     };
   }, [filters]);
 
-  const schoolsWithCoordinates = useMemo(
-    () => schools.filter(hasSchoolCoordinates),
-    [schools]
-  );
-
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (filters.city.trim()) count += 1;
     if (filters.propertyType) count += 1;
     if (filters.hostType) count += 1;
     if (
@@ -235,69 +257,72 @@ export default function ListingsPage() {
   }, [filters]);
 
   const loadListings = useCallback(
-    async (pageToLoad: number, replace = false) => {
+    async (pageToLoad: number) => {
       setError(null);
-
-      if (replace) {
-        setLoading(true);
-        setListings([]);
-      } else {
-        setLoadingMore(true);
-      }
+      setLoading(true);
+      setListings([]);
 
       try {
         console.log(`Filtering listings on ${JSON.stringify(currentFilters)}`);
         const res = await listingService.getAll({
           ...currentFilters,
-          page: pageToLoad,
+          page: pageToLoad - 1,
           size: PAGE_SIZE,
         });
 
         const newItems = res.content || [];
 
-        setTotalPages(
-          (res as any).totalPages ?? (res as any).page?.totalPages ?? 0
-        );
-        setPage((res as any).number ?? (res as any).page?.number ?? 0);
+        const nextTotalPages =
+          (res as any).totalPages ?? (res as any).page?.totalPages ?? 0;
+        const nextTotalElements =
+          (res as any).totalElements ?? (res as any).page?.totalElements ?? 0;
 
-        setListings((prev) => (replace ? newItems : [...prev, ...newItems]));
+        setTotalPages(nextTotalPages);
+        setTotalElements(nextTotalElements);
+        setListings(newItems);
       } catch (err: any) {
         console.error("Error loading listings:", err);
         setError("Kunde inte ladda bostäder.");
       } finally {
         setLoading(false);
-        setLoadingMore(false);
       }
     },
     [currentFilters]
   );
 
   useEffect(() => {
-    setPage(0);
-    loadListings(0, true);
-  }, [currentFilters, loadListings]);
+    loadListings(page);
+  }, [page, currentFilters, loadListings]);
 
   useEffect(() => {
-    const hasMore = page + 1 < totalPages;
-    if (!hasMore || loading || loadingMore) return;
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+      updatePageInUrl(totalPages, "replace");
+    }
+  }, [page, totalPages, updatePageInUrl]);
 
-    const target = loadMoreRef.current;
-    if (!target) return;
+  const paginationPages = useMemo(() => {
+    if (totalPages <= 1) return [];
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && !loadingMore) {
-          loadListings(page + 1, false);
-        }
-      },
-      { rootMargin: "200px" }
-    );
+    const start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, page + 2);
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  }, [page, totalPages]);
 
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [page, totalPages, loading, loadingMore, loadListings]);
+  const goToPage = useCallback(
+    (nextPage: number) => {
+      const clampedPage = Math.min(
+        Math.max(1, nextPage),
+        Math.max(totalPages, 1)
+      );
+      setPage(clampedPage);
+      updatePageInUrl(clampedPage);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [totalPages, updatePageInUrl]
+  );
 
-  const totalListingsCount = listings.length;
+  const totalListingsCount = totalElements || listings.length;
   const isMapView = view === "karta";
 
   const listingGridClasses = isMapView
@@ -336,6 +361,85 @@ export default function ListingsPage() {
     </div>
   );
 
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <nav
+        className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
+        aria-label="Sidnavigering för bostäder"
+      >
+        <button
+          type="button"
+          onClick={() => goToPage(page - 1)}
+          disabled={page <= 1 || loading}
+          className="h-10 rounded-full border border-black/15 px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Föregående
+        </button>
+
+        <div className="flex items-center gap-2">
+          {paginationPages[0] > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => goToPage(1)}
+                disabled={loading}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-black/15 text-sm font-semibold text-black transition hover:border-[#004225] hover:text-[#004225] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                1
+              </button>
+              <span className="px-1 text-sm text-black/45">...</span>
+            </>
+          )}
+
+          {paginationPages.map((pageNumber) => {
+            const isActive = pageNumber === page;
+            return (
+              <button
+                key={pageNumber}
+                type="button"
+                onClick={() => goToPage(pageNumber)}
+                disabled={isActive || loading}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition ${
+                  isActive
+                    ? "border-[#004225] bg-[#004225] text-white"
+                    : "border-black/15 text-black hover:border-[#004225] hover:text-[#004225]"
+                } disabled:cursor-not-allowed`}
+              >
+                {pageNumber}
+              </button>
+            );
+          })}
+
+          {paginationPages[paginationPages.length - 1] < totalPages && (
+            <>
+              <span className="px-1 text-sm text-black/45">...</span>
+              <button
+                type="button"
+                onClick={() => goToPage(totalPages)}
+                disabled={loading}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-black/15 text-sm font-semibold text-black transition hover:border-[#004225] hover:text-[#004225] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => goToPage(page + 1)}
+          disabled={page >= totalPages || loading}
+          className="h-10 rounded-full border border-black/15 px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Nästa
+        </button>
+      </nav>
+    );
+  };
+
   return (
     <main className="flex h-auto w-full flex-col gap-6 pb-12 pt-4 sm:gap-8">
       <div className="container mx-auto h-auto px-3 sm:px-4 md:px-6 lg:px-8">
@@ -347,6 +451,8 @@ export default function ListingsPage() {
                   className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:h-14 xl:pl-6 xl:pr-2"
                   onSubmit={(event) => {
                     event.preventDefault();
+                    setPage(1);
+                    updatePageInUrl(1);
                     setFilters((prev) => ({
                       ...prev,
                       city: searchInput.trim(),
@@ -367,6 +473,8 @@ export default function ListingsPage() {
                       aria-label="Rensa sökning"
                       onClick={() => {
                         setSearchInput("");
+                        setPage(1);
+                        updatePageInUrl(1);
                         setFilters((prev) => ({ ...prev, city: "" }));
                       }}
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#004225] transition-colors hover:bg-[#004225]/5 sm:h-8 sm:w-8"
@@ -397,14 +505,17 @@ export default function ListingsPage() {
                   propertyTypes={propertyTypeOptions}
                   hostTypes={hostTypeOptions}
                   priceBounds={priceBounds}
-                  schools={schoolsWithCoordinates}
+                  schools={schools}
                   initialState={filters}
                   onApply={(state) => {
+                    setPage(1);
+                    updatePageInUrl(1);
                     setFilters(state);
-                    setSearchInput(state.city);
                   }}
                   onClear={() => {
-                    setFilters(defaultListingsFilterState);
+                    setPage(1);
+                    updatePageInUrl(1);
+                    setFilters(createDefaultListingsFilterState());
                     setSearchInput("");
                   }}
                 />
@@ -449,7 +560,9 @@ export default function ListingsPage() {
                   ) : (
                     listings.map((listing) => renderListingCard(listing))
                   )}
-                  <div ref={loadMoreRef} className="col-span-full h-4 w-full" />
+                  <div className="col-span-full w-full">
+                    {renderPagination()}
+                  </div>
                 </div>
 
                 <div className="z-10 h-[280px] w-full shrink-0 overflow-hidden rounded-xl sm:h-[350px] lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:rounded-2xl 2xl:col-span-2">
@@ -474,15 +587,16 @@ export default function ListingsPage() {
                 </div>
 
                 <div
-                  ref={loadMoreRef}
                   className="flex min-h-[60px] w-full items-center justify-center py-6 sm:py-8"
                 >
-                  {(loadingMore || loading) && (
+                  {loading && (
                     <span className="animate-pulse text-xs text-gray-500 sm:text-sm">
-                      Hämtar fler bostäder...
+                      Hämtar bostäder...
                     </span>
                   )}
                 </div>
+
+                {renderPagination()}
               </>
             )}
           </FieldSet>

@@ -261,6 +261,7 @@ export function DataTable() {
             ref={tableContainerRef}
             style={{
               height: `400px`,
+              position: "relative",
               overflowY: "auto",
               overflowX: "hidden", // Prevent horizontal scrolling in the body
             }}
