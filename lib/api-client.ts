@@ -36,9 +36,26 @@ const STATUS_MESSAGES: Record<number, string> = {
   503: "Tjänsten är tillfälligt nere. Försök igen snart.",
 };
 
-export function buildQuery(params: Record<string, string | number | boolean | undefined | null>) {
+type QueryValue =
+  | string
+  | number
+  | boolean
+  | Array<string | number | boolean>
+  | undefined
+  | null;
+
+export function buildQuery(params: Record<string, QueryValue>) {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (String(item).length > 0) {
+          search.append(key, String(item));
+        }
+      });
+      return;
+    }
+
     if (value !== undefined && value !== null && String(value).length > 0) {
       search.set(key, String(value));
     }

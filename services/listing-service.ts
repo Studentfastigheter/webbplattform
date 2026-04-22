@@ -23,6 +23,20 @@ export type RollingAd = {
   data?: unknown;
 };
 
+export type ListingSearchParams = {
+  page?: number;
+  size?: number;
+  sort?: string | string[];
+  city?: string | null;
+  dwellingType?: string | null;
+  minRent?: number | null;
+  maxRent?: number | null;
+  hostType?: string | null;
+  school_lat?: number | null;
+  school_lng?: number | null;
+  amenities?: string[];
+};
+
 // --- Mock Coordinates Utility ---
 // En enkel fallback för att generera koordinater om backend inte levererar dem (t.ex. vid mock/demo-data).
 const addMockCoordinates = <T extends {
@@ -130,8 +144,8 @@ export const listingService = {
    * Anropar: GET /api/listings?page=0&size=12&city=...&dwellingType=... etc.
    */
   getAll: async (
-    page = 0, 
-    size = 12, 
+    pageOrParams: number | ListingSearchParams = 0,
+    size = 12,
     city?: string | null,
     dwellingType?: string | null,
     minRent?: number | null,
@@ -139,23 +153,32 @@ export const listingService = {
     hostType?: string | null
   ): Promise<PageResponse<ListingCardDTO>> => {
     // Bygg query-objektet med alla filter som skickas från ListingsPage
-    const queryParams: Record<string, any> = { 
-      page, 
-      size 
-    };
+    const params: ListingSearchParams =
+      typeof pageOrParams === "object"
+        ? { page: 0, size: 12, ...pageOrParams }
+        : {
+            page: pageOrParams,
+            size,
+            city,
+            dwellingType,
+            minRent,
+            maxRent,
+            hostType,
+          };
 
-    if (city)
-      queryParams.city = city;
-    if (dwellingType)
-      queryParams.dwellingType = dwellingType;
-    if (minRent !== null)
-      queryParams.minRent = minRent;
-    if (maxRent !== null)
-      queryParams.maxRent = maxRent;
-    if (hostType)
-      queryParams.hostType = hostType;
-
-    const query = buildQuery(queryParams);
+    const query = buildQuery({
+      page: params.page ?? 0,
+      size: params.size ?? 12,
+      sort: params.sort,
+      city: params.city?.trim(),
+      dwellingType: params.dwellingType,
+      minRent: params.minRent,
+      maxRent: params.maxRent,
+      hostType: params.hostType,
+      school_lat: params.school_lat,
+      school_lng: params.school_lng,
+      amenities: params.amenities,
+    });
     const res = await apiClient<PageResponse<ListingCardDTO>>(`/listings${query}`);
     if (res && res.content) {
       res.content = res.content.map(addMockCoordinates);

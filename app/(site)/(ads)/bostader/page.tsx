@@ -3,10 +3,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Search, X } from "lucide-react";
+import {
+  Building2,
+  Car,
+  Cat,
+  CookingPot,
+  Search,
+  Sofa,
+  Sparkles,
+  Wifi,
+  WashingMachine,
+  X,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-
-import { toSearchString } from "@/lib/utils";
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 import ListingsFilterButton, {
@@ -15,12 +24,13 @@ import ListingsFilterButton, {
 import { FieldSet } from "@/components/ui/field";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
-import { listingService } from "@/services/listing-service";
+import {
+  listingService,
+  type ListingSearchParams,
+} from "@/services/listing-service";
+import { schoolService } from "@/services/school-service";
 import { ListingCardDTO } from "@/types/listing";
-
-type SearchValues = {
-  location: string;
-};
+import type { School } from "@/types/school";
 
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
   ssr: false,
@@ -33,19 +43,63 @@ const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
 });
 
 const PAGE_SIZE = 12;
-const priceBounds = { min: 0, max: 12000 };
+const priceBounds = { min: 0, max: 20000 };
 
 const propertyTypeOptions = [
-  { id: "Rum", label: "Rum" },
-  { id: "Lagenhet", label: "Lägenhet" },
-  { id: "Korridor", label: "Korridor" },
+  { id: "APARTMENT", label: "Lägenhet" },
+  { id: "ROOM", label: "Rum" },
+  { id: "CORRIDOR_ROOM", label: "Korridorsrum" },
+];
+
+const hostTypeOptions = [
+  { id: "COMPANY", label: "Företag" },
+  { id: "PRIVATE", label: "Privat värd" },
+];
+
+const amenityOptions = [
+  { id: "BALCONY", label: "Balkong", icon: <Sparkles className="h-6 w-6" /> },
+  {
+    id: "DISHWASHER",
+    label: "Diskmaskin",
+    icon: <CookingPot className="h-6 w-6" />,
+  },
+  { id: "PARKING", label: "Parkering", icon: <Car className="h-6 w-6" /> },
+  {
+    id: "PET_FRIENDLY",
+    label: "Husdjur",
+    icon: <Cat className="h-6 w-6" />,
+  },
+  { id: "ELEVATOR", label: "Hiss", icon: <Building2 className="h-6 w-6" /> },
+  {
+    id: "LAUNDRY",
+    label: "Tvätt",
+    icon: <WashingMachine className="h-6 w-6" />,
+  },
+  {
+    id: "FURNISHED",
+    label: "Möblerad",
+    icon: <Sofa className="h-6 w-6" />,
+  },
+  {
+    id: "INTERNET_INCLUDED",
+    label: "Internet",
+    icon: <Wifi className="h-6 w-6" />,
+  },
 ];
 
 const defaultListingsFilterState: ListingsFilterState = {
+  city: "",
   amenities: [],
   propertyType: null,
   priceRange: priceBounds,
+  hostType: null,
+  schoolId: null,
+  schoolLat: null,
+  schoolLng: null,
 };
+
+const hasSchoolCoordinates = (school: School) =>
+  typeof school.lat === "number" && typeof school.lng === "number";
 
 export default function ListingsPage() {
   const router = useRouter();
@@ -53,13 +107,11 @@ export default function ListingsPage() {
 
   const [view, setView] = useState<SwitchSelectValue>("lista");
   const [searchInput, setSearchInput] = useState("");
-  const [searchValues, setSearchValues] = useState<SearchValues>({
-    location: "",
-  });
   const [filters, setFilters] = useState<ListingsFilterState>(
     defaultListingsFilterState
   );
 
+  const [schools, setSchools] = useState<School[]>([]);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -70,6 +122,23 @@ export default function ListingsPage() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    schoolService
+      .list()
+      .then((items) => {
+        if (active) setSchools(items);
+      })
+      .catch((err) => {
+        console.error("Failed to load schools:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -115,13 +184,55 @@ export default function ListingsPage() {
     [user]
   );
 
-  const currentFilters = useMemo(
-    () => ({
-      location: toSearchString(searchValues.location),
-      dwellingType: filters.propertyType,
-    }),
-    [searchValues, filters]
+  const currentFilters = useMemo<ListingSearchParams>(() => {
+    const city = filters.city.trim();
+    const hasSchoolFilter =
+      typeof filters.schoolLat === "number" &&
+      typeof filters.schoolLng === "number";
+
+    return {
+      city: city || undefined,
+      dwellingType: filters.propertyType ?? undefined,
+      minRent:
+        filters.priceRange.min > priceBounds.min
+          ? filters.priceRange.min
+          : undefined,
+      maxRent:
+        filters.priceRange.max < priceBounds.max
+          ? filters.priceRange.max
+          : undefined,
+      hostType: filters.hostType ?? undefined,
+      school_lat: hasSchoolFilter ? filters.schoolLat : undefined,
+      school_lng: hasSchoolFilter ? filters.schoolLng : undefined,
+      amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
+    };
+  }, [filters]);
+
+  const schoolsWithCoordinates = useMemo(
+    () => schools.filter(hasSchoolCoordinates),
+    [schools]
   );
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.city.trim()) count += 1;
+    if (filters.propertyType) count += 1;
+    if (filters.hostType) count += 1;
+    if (
+      filters.priceRange.min > priceBounds.min ||
+      filters.priceRange.max < priceBounds.max
+    ) {
+      count += 1;
+    }
+    if (
+      typeof filters.schoolLat === "number" &&
+      typeof filters.schoolLng === "number"
+    ) {
+      count += 1;
+    }
+    count += filters.amenities.length;
+    return count;
+  }, [filters]);
 
   const loadListings = useCallback(
     async (pageToLoad: number, replace = false) => {
@@ -136,12 +247,11 @@ export default function ListingsPage() {
 
       try {
         console.log(`Filtering listings on ${JSON.stringify(currentFilters)}`);
-        const res = await listingService.getAll(
-          pageToLoad,
-          PAGE_SIZE,
-          currentFilters.location,
-          currentFilters.dwellingType
-        );
+        const res = await listingService.getAll({
+          ...currentFilters,
+          page: pageToLoad,
+          size: PAGE_SIZE,
+        });
 
         const newItems = res.content || [];
 
@@ -203,7 +313,11 @@ export default function ListingsPage() {
         id={listing.id}
         title={listing.title}
         area={listing.location?.split(",")[0] || "Ej angivet"}
-        city={listing.location?.split(",")[1]?.trim() || listing.location || "Ej angivet"}
+        city={
+          listing.location?.split(",")[1]?.trim() ||
+          listing.location ||
+          "Ej angivet"
+        }
         dwellingType={listing.dwellingType || "Bostad"}
         rooms={listing.rooms || 0}
         sizeM2={listing.sizeM2 || 0}
@@ -233,9 +347,10 @@ export default function ListingsPage() {
                   className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:h-14 xl:pl-6 xl:pr-2"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    setSearchValues({
-                      location: toSearchString(searchInput),
-                    });
+                    setFilters((prev) => ({
+                      ...prev,
+                      city: searchInput.trim(),
+                    }));
                   }}
                 >
                   <Search className="h-[18px] w-[18px] shrink-0 text-black/55 sm:h-5 sm:w-5" />
@@ -243,7 +358,7 @@ export default function ListingsPage() {
                     type="text"
                     value={searchInput}
                     onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Sök på stad eller område"
+                    placeholder="Sök på stad"
                     className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/45 sm:text-base"
                   />
                   {searchInput && (
@@ -252,7 +367,7 @@ export default function ListingsPage() {
                       aria-label="Rensa sökning"
                       onClick={() => {
                         setSearchInput("");
-                        setSearchValues({ location: "" });
+                        setFilters((prev) => ({ ...prev, city: "" }));
                       }}
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#004225] transition-colors hover:bg-[#004225]/5 sm:h-8 sm:w-8"
                     >
@@ -272,13 +387,26 @@ export default function ListingsPage() {
                   variant="ghost"
                   size="icon-lg"
                   title="Avancerade filter"
-                  triggerLabel="Filtrera"
+                  triggerLabel={
+                    activeFilterCount > 0
+                      ? `Filtrera (${activeFilterCount})`
+                      : "Filtrera"
+                  }
                   className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-[#004225] shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
+                  amenities={amenityOptions}
                   propertyTypes={propertyTypeOptions}
-                  showPriceFilter={false}
-                  initialState={defaultListingsFilterState}
-                  onApply={(state) => setFilters(state)}
-                  onClear={() => setFilters(defaultListingsFilterState)}
+                  hostTypes={hostTypeOptions}
+                  priceBounds={priceBounds}
+                  schools={schoolsWithCoordinates}
+                  initialState={filters}
+                  onApply={(state) => {
+                    setFilters(state);
+                    setSearchInput(state.city);
+                  }}
+                  onClear={() => {
+                    setFilters(defaultListingsFilterState);
+                    setSearchInput("");
+                  }}
                 />
               </div>
             </div>
