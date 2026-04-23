@@ -43,11 +43,8 @@ const statusClassMap: Record<ListingStatusTone, string> = {
   neutral: "border-gray-200 bg-gray-100 text-gray-700",
 };
 
-const filterTriggerClassName =
-  "h-9 w-full rounded-md border-gray-200 bg-white px-3 text-sm text-gray-900 shadow-none transition-colors hover:border-gray-300 focus:border-[#004225] focus:ring-0";
-
-const sortTriggerClassName =
-  "h-8 w-full rounded-md border-gray-200 bg-white px-3 text-xs text-gray-800 shadow-none transition-colors hover:border-gray-300 focus:border-[#004225] focus:ring-0";
+const secondaryControlClassName =
+  "h-8 w-full rounded-full border border-gray-200 bg-gray-50 px-3 text-xs font-medium text-gray-700 shadow-none transition-colors hover:border-gray-300 hover:bg-white focus:border-[#004225] focus:ring-0";
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
   const parts = path.split(".");
@@ -241,6 +238,7 @@ export default function PortalAdsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ads, setAds] = useState<PortalListing[]>([]);
+  const hasActiveFilters = statusFilter !== "all" || cityFilter !== "all";
 
   const companyId =
     user?.accountType === "company" && Number.isFinite(Number(user.id))
@@ -419,14 +417,88 @@ export default function PortalAdsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <p className="text-theme-sm text-gray-500">Objekt</p>
-        <h1 className="text-2xl font-semibold text-gray-900">Mina annonser</h1>
-      </div>
-
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col items-stretch gap-3 lg:grid lg:grid-cols-[1fr_minmax(0,720px)_1fr] lg:items-start">
-          <div className="w-full lg:col-start-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-theme-sm text-gray-500">Objekt</p>
+            <h1 className="text-2xl font-semibold text-gray-900">Mina annonser</h1>
+          </div>
+
+          <Button
+            as="a"
+            href={`${dashboardRelPath}/annonser/ny/onboarding/1`}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Skapa annons
+          </Button>
+        </div>
+
+        <div className="flex flex-col gap-6 border-b border-gray-200 pb-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] lg:grid-rows-[auto_auto] lg:items-start">
+          <div className="order-2 w-full lg:col-start-1 lg:row-start-2">
+            <div className="w-full sm:max-w-md">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(value) =>
+                        setStatusFilter(value as StatusFilter)
+                      }
+                    >
+                      <SelectTrigger
+                        size="sm"
+                        aria-label="Filtrera på status"
+                        className={secondaryControlClassName}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Alla statusar</SelectItem>
+                        <SelectItem value="active">Aktiva</SelectItem>
+                        <SelectItem value="inactive">Inaktiva</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="min-w-0">
+                    <Select value={cityFilter} onValueChange={setCityFilter}>
+                      <SelectTrigger
+                        size="sm"
+                        aria-label="Filtrera på stad"
+                        className={secondaryControlClassName}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Alla städer</SelectItem>
+                        {availableCities.map((city) => (
+                          <SelectItem key={city} value={city}>
+                            {city}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter("all");
+                      setCityFilter("all");
+                    }}
+                    className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-[#004225]"
+                  >
+                    Rensa filter
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="order-1 w-full lg:col-start-2 lg:row-start-1">
             <form
               className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:h-14 xl:pl-6 xl:pr-2"
               onSubmit={(event) => {
@@ -463,35 +535,40 @@ export default function PortalAdsPage() {
               </button>
             </form>
 
-            <div className="mt-3 border-b border-gray-200 pb-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <div className="hidden">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+                Filtrera
+              </span>
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="min-w-0">
-                  <label className="mb-1.5 block text-xs font-medium text-gray-500">
-                    Status
-                  </label>
                   <Select
                     value={statusFilter}
                     onValueChange={(value) =>
                       setStatusFilter(value as StatusFilter)
                     }
                   >
-                    <SelectTrigger className={filterTriggerClassName}>
+                    <SelectTrigger
+                      size="sm"
+                      aria-label="Filtrera på status"
+                      className={secondaryControlClassName}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Alla</SelectItem>
-                      <SelectItem value="active">Aktiv</SelectItem>
-                      <SelectItem value="inactive">Inaktiv</SelectItem>
+                      <SelectItem value="all">Alla statusar</SelectItem>
+                      <SelectItem value="active">Aktiva</SelectItem>
+                      <SelectItem value="inactive">Inaktiva</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="min-w-0">
-                  <label className="mb-1.5 block text-xs font-medium text-gray-500">
-                    Stad
-                  </label>
                   <Select value={cityFilter} onValueChange={setCityFilter}>
-                    <SelectTrigger className={filterTriggerClassName}>
+                    <SelectTrigger
+                      size="sm"
+                      aria-label="Filtrera på stad"
+                      className={secondaryControlClassName}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -504,42 +581,34 @@ export default function PortalAdsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {(statusFilter !== "all" || cityFilter !== "all") && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setCityFilter("all");
-                    }}
-                    className="h-9 justify-self-start text-xs font-medium text-gray-500 transition-colors hover:text-[#004225] sm:justify-self-end"
-                  >
-                    Rensa
-                  </button>
-                )}
               </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setCityFilter("all");
+                  }}
+                  className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-[#004225]"
+                >
+                  Rensa filter
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="flex w-full flex-col gap-3 lg:col-start-3 lg:items-end">
-            <Button
-              as="a"
-              href={`${dashboardRelPath}/annonser/ny/onboarding/1`}
-              className="w-full lg:w-auto"
-            >
-              <Plus className="h-4 w-4" />
-              Skapa annons
-            </Button>
-
-            <div className="w-full sm:w-44">
-              <label className="mb-1.5 block text-xs font-medium text-gray-500 sm:text-right">
-                Sortera
-              </label>
+          <div className="order-3 w-full lg:col-start-3 lg:row-start-2">
+            <div className="w-full sm:ml-auto sm:w-44">
               <Select
                 value={dateSort}
                 onValueChange={(value) => setDateSort(value as DateSort)}
               >
-                <SelectTrigger className={sortTriggerClassName}>
+                <SelectTrigger
+                  size="sm"
+                  aria-label="Sortera annonser"
+                  className={secondaryControlClassName}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -553,21 +622,21 @@ export default function PortalAdsPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
           Hämtar företagets annonser...
         </div>
       ) : filteredAds.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+        <div className="mt-6 rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
           Inga annonser matchade ditt filter.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredAds.map((item) => {
             const { area, city } = splitLocation(item.listing.location);
             return (
