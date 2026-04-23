@@ -20,6 +20,8 @@ import {
 
 type QueueHeroProps = {
   queue: HousingQueueDTO;
+  showShareButton?: boolean;
+  disableShareButton?: boolean;
 };
 
 type QueueContactRow = {
@@ -29,7 +31,11 @@ type QueueContactRow = {
   external?: boolean;
 };
 
-export default function QueueHero({ queue }: QueueHeroProps) {
+export default function QueueHero({
+  queue,
+  showShareButton = true,
+  disableShareButton = false,
+}: QueueHeroProps) {
   const bannerImage = queue.bannerUrl || "/images/queue-default-banner.jpg";
   const logoImage = queue.logoUrl || "/logos/default-landlord-logo.svg";
   const description = queue.description?.trim() ?? "";
@@ -131,21 +137,35 @@ export default function QueueHero({ queue }: QueueHeroProps) {
       }
       actionLinks={socialItems}
       headerActions={
-        <ShareDialog
-          title="Dela kö"
-          description="Dela länken till den här bostadskön eller kopiera länken direkt."
-          mailSubject={`Kolla in ${queue.name}`}
-          mailBody="Jag hittade den här kön som kan vara intressant:"
-        >
-          <button
-            type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            aria-label="Dela"
-            title="Dela"
-          >
-            <Share2 className="h-[18px] w-[18px]" />
-          </button>
-        </ShareDialog>
+        showShareButton ? (
+          disableShareButton ? (
+            <button
+              type="button"
+              disabled
+              aria-label="Dela"
+              title="Dela"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-300"
+            >
+              <Share2 className="h-[18px] w-[18px]" />
+            </button>
+          ) : (
+            <ShareDialog
+              title="Dela kö"
+              description="Dela länken till den här bostadskön eller kopiera länken direkt."
+              mailSubject={`Kolla in ${queue.name}`}
+              mailBody="Jag hittade den här kön som kan vara intressant:"
+            >
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                aria-label="Dela"
+                title="Dela"
+              >
+                <Share2 className="h-[18px] w-[18px]" />
+              </button>
+            </ShareDialog>
+          )
+        ) : null
       }
       sections={sections}
     />

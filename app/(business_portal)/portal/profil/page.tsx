@@ -459,9 +459,12 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        <section className="h-fit overflow-hidden rounded-2xl border border-gray-200 bg-white">
-          <main className="bg-white pb-8">
-            <QueueHero queue={heroQueue} />
+        <section className="h-fit rounded-2xl border border-gray-200 bg-white p-3 sm:p-4">
+          <main className="overflow-hidden rounded-xl bg-white pb-8">
+            <QueueHero
+              queue={heroQueue}
+              disableShareButton
+            />
 
             <div className="mx-auto mt-10 max-w-4xl px-4 pb-16 sm:px-6">
               <h2 className="mb-4 text-lg font-semibold text-gray-900">
