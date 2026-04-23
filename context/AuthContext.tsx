@@ -62,6 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 3. Register
   const register = async (data: RegisterRequest) => {
     const res = await authService.register(data);
+    if ("authRef" in res) {
+      throw new Error("Studentregistrering behöver verifieras med Freja först.");
+    }
+
     localStorage.setItem("token", res.accessToken);
     setToken(res.accessToken); // Uppdatera token vid registrering
     setUser(res.user);

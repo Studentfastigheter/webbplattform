@@ -2,8 +2,10 @@ import { apiClient } from "@/lib/api-client";
 import {
   User,
   AuthResponse,
+  FrejaAuthStatus,
   LoginRequest,
   RegisterRequest,
+  RegisterResponse,
   UpdateUserRequest,
 } from "@/types";
 
@@ -23,12 +25,18 @@ export const authService = {
   },
 
   // Registrera (Ny endpoint!)
-  register: async (payload: RegisterRequest): Promise<AuthResponse> => {
-    const res = await apiClient<AuthResponse>("/auth/register", {
+  register: async (payload: RegisterRequest): Promise<RegisterResponse> => {
+    const res = await apiClient<RegisterResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(payload),
     });
     return res;
+  },
+
+  pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {
+    return await apiClient<FrejaAuthStatus>(
+      `/auth/poll/${encodeURIComponent(authRef)}`
+    );
   },
 
   // Uppdatera profil
