@@ -91,8 +91,8 @@ const settingsItems: PortalNavItem[] = [
     icon: <Settings className="h-5 w-5" />,
   },
   {
-    name: "Konton",
-    path: `${dashboardRelPath}/konton`,
+    name: "Användare",
+    path: `${dashboardRelPath}/anvandare`,
     icon: <Users className="h-5 w-5" />,
   },
   {
