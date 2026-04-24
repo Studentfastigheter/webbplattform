@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CalendarDays, Home, ImageIcon, MapPin, Tags } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Home, MapPin, Pencil } from "lucide-react";
 
-import BostadAbout from "@/components/ads/BostadAbout";
 import BostadImagePreviewGrid from "@/components/ads/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/components/Dashboard/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { listingService } from "@/services/listing-service";
 import { ListingDetailDTO, UpdateListingRequest } from "@/types/listing";
 
@@ -26,6 +22,9 @@ const emptySaveState: SaveState = {
   status: "idle",
   message: null,
 };
+
+const inlineInputClass =
+  "min-w-0 rounded-md border border-[#004225]/10 bg-[#004225]/[0.035] px-2 py-1 outline-none transition hover:border-[#004225]/25 hover:bg-white focus:border-[#004225] focus:bg-white focus:ring-4 focus:ring-[#004225]/10";
 
 function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : "";
@@ -53,48 +52,204 @@ function getEditableSnapshot(listing: ListingDetailDTO | null) {
   });
 }
 
-function FieldGroup({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: ReactNode;
-  className?: string;
-}) {
+function InlineLabel({ children }: { children: string }) {
   return (
-    <div className={className ? `grid gap-2 ${className}` : "grid gap-2"}>
-      <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-        {label}
-      </Label>
+    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
       {children}
-    </div>
+    </span>
   );
 }
 
-function FormSection({
-  title,
-  description,
-  icon,
-  children,
+function EditableListingPreview({
+  draft,
+  galleryImages,
+  onImageEdit,
+  onDraftChange,
+  onNumberChange,
 }: {
-  title: string;
-  description?: string;
-  icon: ReactNode;
-  children: ReactNode;
+  draft: ListingDetailDTO;
+  galleryImages: string[];
+  onImageEdit: () => void;
+  onDraftChange: (patch: Partial<ListingDetailDTO>) => void;
+  onNumberChange: (key: "rent" | "rooms" | "sizeM2", value: string) => void;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5">
-      <div className="mb-5 flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#004225]/5 text-[#004225]">
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-          {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
-        </div>
+    <section
+      aria-label="Förhandsvisning"
+      className="mx-auto flex w-full max-w-6xl flex-col gap-10"
+    >
+      <div className="relative">
+        {galleryImages.length > 0 ? (
+          <BostadImagePreviewGrid images={galleryImages} readOnly />
+        ) : (
+          <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+            Inga bilder visas i förhandsvisningen.
+          </div>
+        )}
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onImageEdit}
+          className="absolute right-4 top-4 bg-white/95 shadow-sm backdrop-blur"
+        >
+          <Pencil className="h-4 w-4" />
+          Bilder
+        </Button>
       </div>
-      {children}
+
+      <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <input
+                aria-label="Titel"
+                value={draft.title}
+                onChange={(event) => onDraftChange({ title: event.target.value })}
+                className={`${inlineInputClass} -mx-2 w-full text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl`}
+                placeholder="Titel"
+              />
+
+              <div className="mt-4 grid gap-3 text-sm text-gray-600">
+                <div className="grid gap-1">
+                  <InlineLabel>Plats</InlineLabel>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <MapPin className="h-4 w-4 shrink-0 text-green-700" />
+                    <input
+                      aria-label="Adress"
+                      value={draft.fullAddress ?? ""}
+                      onChange={(event) => onDraftChange({ fullAddress: event.target.value })}
+                      className={`${inlineInputClass} min-w-[220px] flex-1 font-medium`}
+                      placeholder="Adress"
+                    />
+                    <input
+                      aria-label="Område"
+                      value={draft.area}
+                      onChange={(event) => onDraftChange({ area: event.target.value })}
+                      className={`${inlineInputClass} w-40 font-medium`}
+                      placeholder="Område"
+                    />
+                    <input
+                      aria-label="Stad"
+                      value={draft.city}
+                      onChange={(event) => onDraftChange({ city: event.target.value })}
+                      className={`${inlineInputClass} w-40 font-medium`}
+                      placeholder="Stad"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <InlineLabel>Bostad</InlineLabel>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Home className="h-4 w-4 shrink-0 text-green-700" />
+                    <input
+                      aria-label="Bostadstyp"
+                      value={draft.dwellingType}
+                      onChange={(event) => onDraftChange({ dwellingType: event.target.value })}
+                      className={`${inlineInputClass} min-w-[150px] font-medium`}
+                      placeholder="Bostadstyp"
+                    />
+                    <input
+                      aria-label="Rum"
+                      type="number"
+                      value={draft.rooms ?? ""}
+                      onChange={(event) => onNumberChange("rooms", event.target.value)}
+                      className={`${inlineInputClass} w-20 font-medium`}
+                      placeholder="Rum"
+                    />
+                    <span className="font-medium">rum</span>
+                    <input
+                      aria-label="Storlek"
+                      type="number"
+                      value={draft.sizeM2 ?? ""}
+                      onChange={(event) => onNumberChange("sizeM2", event.target.value)}
+                      className={`${inlineInputClass} w-24 font-medium`}
+                      placeholder="m²"
+                    />
+                    <span className="font-medium">m²</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-y-4">
+                {[
+                  { label: "Tillgänglig från", key: "availableFrom" as const },
+                  { label: "Tillgänglig till", key: "availableTo" as const },
+                  { label: "Inflyttning", key: "moveIn" as const },
+                  { label: "Sista ansökan", key: "applyBy" as const },
+                ].map((item, index) => (
+                  <div
+                    key={item.key}
+                    className={`flex flex-col pr-4 ${
+                      index > 0 ? "border-l border-gray-200 pl-4" : ""
+                    }`}
+                  >
+                    <InlineLabel>{item.label}</InlineLabel>
+                    <input
+                      aria-label={item.label}
+                      type="date"
+                      value={toDateInputValue(draft[item.key])}
+                      onChange={(event) =>
+                        onDraftChange({
+                          [item.key]: event.target.value || null,
+                        } as Partial<ListingDetailDTO>)
+                      }
+                      className={`${inlineInputClass} -mx-2 mt-1 w-40 text-sm font-medium text-gray-900`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex shrink-0 flex-col items-start gap-1 lg:items-end">
+              <InlineLabel>Månadshyra</InlineLabel>
+              <div className="flex items-baseline gap-1.5">
+                <input
+                  aria-label="Månadshyra"
+                  type="number"
+                  value={draft.rent ?? ""}
+                  onChange={(event) => onNumberChange("rent", event.target.value)}
+                  className={`${inlineInputClass} w-40 text-right text-2xl font-bold tracking-tight text-gray-900`}
+                  placeholder="Hyra"
+                />
+                <span className="text-sm font-medium text-gray-400">kr/mån</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <InlineLabel>Taggar</InlineLabel>
+            <input
+              aria-label="Taggar"
+              value={(draft.tags ?? []).join(", ")}
+              onChange={(event) =>
+                onDraftChange({
+                  tags: event.target.value
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter(Boolean),
+                })
+              }
+              className={`${inlineInputClass} w-full text-sm font-medium text-gray-700`}
+              placeholder="Ex. Möblerat, Balkong, Poängfri"
+            />
+          </div>
+
+          <div className="mt-2">
+            <h2 className="mb-2 border-b border-gray-100 pb-2 text-lg font-semibold text-gray-900">
+              Om boendet
+            </h2>
+            <textarea
+              aria-label="Beskrivning"
+              value={draft.description ?? ""}
+              onChange={(event) => onDraftChange({ description: event.target.value })}
+              className={`${inlineInputClass} min-h-44 w-full resize-y text-[15px] leading-relaxed text-gray-700`}
+              placeholder="Beskriv bostaden"
+            />
+          </div>
+        </div>
+      </section>
     </section>
   );
 }
@@ -167,11 +322,16 @@ export default function Annons({ id }: AnnonsPageProps) {
 
     const payload: UpdateListingRequest = {
       title: draft.title,
+      city: draft.city,
+      area: draft.area,
+      address: draft.fullAddress ?? null,
+      dwellingType: draft.dwellingType,
       rent: draft.rent,
       rooms: draft.rooms,
       sizeM2: draft.sizeM2,
       availableFrom: toDateInputValue(draft.availableFrom) || null,
       availableTo: toDateInputValue(draft.availableTo) || null,
+      moveIn: toDateInputValue(draft.moveIn) || null,
       applyBy: toDateInputValue(draft.applyBy) || null,
       tags: draft.tags,
       description: draft.description,
@@ -228,215 +388,35 @@ export default function Annons({ id }: AnnonsPageProps) {
           <h1 className="text-2xl font-semibold text-gray-900">Redigera annons</h1>
         </div>
 
-        <div className="grid gap-8">
-          <section
-            aria-label="Förhandsvisning"
-            className="mx-auto flex w-full max-w-6xl flex-col gap-10"
-          >
-            {galleryImages.length > 0 ? (
-              <BostadImagePreviewGrid images={galleryImages} readOnly />
-            ) : (
-              <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
-                Inga bilder visas i förhandsvisningen.
-              </div>
-            )}
+        <form onSubmit={handleSave} className="grid gap-6">
+          <EditableListingPreview
+            draft={draft}
+            galleryImages={galleryImages}
+            onImageEdit={openImageEditor}
+            onDraftChange={updateDraft}
+            onNumberChange={updateNumber}
+          />
 
-            <BostadAbout listing={draft} hideStudentActions />
-          </section>
+          {saveState.message && (
+            <div
+              className={
+                saveState.status === "error"
+                  ? "mx-auto w-full max-w-6xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+                  : "mx-auto w-full max-w-6xl rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+              }
+            >
+              {saveState.message}
+            </div>
+          )}
 
-          <form onSubmit={handleSave} className="flex flex-col gap-5">
-            <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Korrigera information</h2>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Fälten uppdaterar förhandsvisningen direkt.
-                  </p>
-                </div>
-                {hasUnsavedChanges && (
-                  <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                    Osparade ändringar
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-                <div className="grid gap-5">
-                  <FormSection
-                    title="Grundinformation"
-                    description="Det som visas först i annonsen."
-                    icon={<Home className="h-4 w-4" />}
-                  >
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <FieldGroup label="Titel">
-                        <Input
-                          value={draft.title}
-                          onChange={(event) => updateDraft({ title: event.target.value })}
-                        />
-                      </FieldGroup>
-                      <FieldGroup label="Bostadstyp">
-                        <Input
-                          value={draft.dwellingType}
-                          onChange={(event) => updateDraft({ dwellingType: event.target.value })}
-                        />
-                      </FieldGroup>
-                      <FieldGroup label="Månadshyra">
-                        <Input
-                          type="number"
-                          value={draft.rent ?? ""}
-                          onChange={(event) => updateNumber("rent", event.target.value)}
-                        />
-                      </FieldGroup>
-                      <div className="grid grid-cols-2 gap-3">
-                        <FieldGroup label="Rum">
-                          <Input
-                            type="number"
-                            value={draft.rooms ?? ""}
-                            onChange={(event) => updateNumber("rooms", event.target.value)}
-                          />
-                        </FieldGroup>
-                        <FieldGroup label="Storlek">
-                          <Input
-                            type="number"
-                            value={draft.sizeM2 ?? ""}
-                            onChange={(event) => updateNumber("sizeM2", event.target.value)}
-                          />
-                        </FieldGroup>
-                      </div>
-                    </div>
-                  </FormSection>
-
-                  <FormSection
-                    title="Plats"
-                    description="Adress och geografisk information."
-                    icon={<MapPin className="h-4 w-4" />}
-                  >
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <FieldGroup label="Adress" className="lg:col-span-2">
-                        <Input
-                          value={draft.fullAddress ?? ""}
-                          onChange={(event) => updateDraft({ fullAddress: event.target.value })}
-                        />
-                      </FieldGroup>
-                      <FieldGroup label="Område">
-                        <Input
-                          value={draft.area}
-                          onChange={(event) => updateDraft({ area: event.target.value })}
-                        />
-                      </FieldGroup>
-                      <FieldGroup label="Stad">
-                        <Input
-                          value={draft.city}
-                          onChange={(event) => updateDraft({ city: event.target.value })}
-                        />
-                      </FieldGroup>
-                    </div>
-                  </FormSection>
-
-                  <FormSection
-                    title="Beskrivning"
-                    description="Texten som beskriver bostaden."
-                    icon={<Tags className="h-4 w-4" />}
-                  >
-                    <div className="grid gap-4">
-                      <FieldGroup label="Tags">
-                        <div className="grid gap-1.5">
-                          <Input
-                            value={(draft.tags ?? []).join(", ")}
-                            onChange={(event) =>
-                              updateDraft({
-                                tags: event.target.value
-                                  .split(",")
-                                  .map((tag) => tag.trim())
-                                  .filter(Boolean),
-                              })
-                            }
-                            placeholder="Ex. Möblerat, Balkong, Poängfri"
-                          />
-                          <p className="text-xs text-gray-500">
-                            Separera med komma tills tags kan väljas från databasen.
-                          </p>
-                        </div>
-                      </FieldGroup>
-
-                      <FieldGroup label="Beskrivning">
-                        <Textarea
-                          value={draft.description ?? ""}
-                          onChange={(event) => updateDraft({ description: event.target.value })}
-                          className="min-h-44 resize-y"
-                        />
-                      </FieldGroup>
-                    </div>
-                  </FormSection>
-                </div>
-
-                <div className="grid content-start gap-5">
-                  <FormSection
-                    title="Bilder"
-                    description="Ordning och huvudbild hanteras här."
-                    icon={<ImageIcon className="h-4 w-4" />}
-                  >
-                    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
-                      <span className="text-sm text-gray-700">
-                        {galleryImages.length > 0
-                          ? `${galleryImages.length} bilder uppladdade`
-                          : "Inga bilder uppladdade"}
-                      </span>
-                      <Button type="button" variant="outline" onClick={openImageEditor}>
-                        Redigera
-                      </Button>
-                    </div>
-                  </FormSection>
-
-                  <FormSection
-                    title="Datum"
-                    description="Publicerade datum i annonsinformationen."
-                    icon={<CalendarDays className="h-4 w-4" />}
-                  >
-                    <div className="grid gap-4">
-                      <FieldGroup label="Tillgänglig från">
-                        <Input
-                          type="date"
-                          value={toDateInputValue(draft.availableFrom)}
-                          onChange={(event) => updateDraft({ availableFrom: event.target.value || null })}
-                        />
-                      </FieldGroup>
-                      <FieldGroup label="Tillgänglig till">
-                        <Input
-                          type="date"
-                          value={toDateInputValue(draft.availableTo)}
-                          onChange={(event) => updateDraft({ availableTo: event.target.value || null })}
-                        />
-                      </FieldGroup>
-                      <FieldGroup label="Inflyttning">
-                        <Input
-                          type="date"
-                          value={toDateInputValue(draft.moveIn)}
-                          onChange={(event) => updateDraft({ moveIn: event.target.value || null })}
-                        />
-                      </FieldGroup>
-                      <FieldGroup label="Sista ansökan">
-                        <Input
-                          type="date"
-                          value={toDateInputValue(draft.applyBy)}
-                          onChange={(event) => updateDraft({ applyBy: event.target.value || null })}
-                        />
-                      </FieldGroup>
-                    </div>
-                  </FormSection>
-                </div>
-              </div>
-
-              {saveState.message && (
-                <div
-                  className={
-                    saveState.status === "error"
-                      ? "mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-                      : "mt-5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
-                  }
-                >
-                  {saveState.message}
-                </div>
+          <div className="sticky bottom-4 z-10 mx-auto flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              {hasUnsavedChanges ? (
+                <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                  Osparade ändringar
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500">Alla ändringar är sparade.</span>
               )}
             </div>
 
@@ -459,8 +439,8 @@ export default function Annons({ id }: AnnonsPageProps) {
                 </Button>
               )}
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </main>
 
       <ImageUploadGallery

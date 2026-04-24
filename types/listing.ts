@@ -76,6 +76,10 @@ export interface StudentApplicationDTO {
 
 export interface UpdateListingRequest {
   title?: string;
+  city?: string;
+  area?: string;
+  address?: string | null;
+  dwellingType?: string;
   rooms?: number | null;
   sizeM2?: number | null;
   rent?: number | null;
@@ -83,6 +87,7 @@ export interface UpdateListingRequest {
   tags?: string[];
   status?: string;
   images?: string[];
+  moveIn?: DateString | null;
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
