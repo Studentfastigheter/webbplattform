@@ -1,13 +1,22 @@
 "use client";
 
-import { useId, useMemo } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
+  Area,
+  AreaChart,
+  AreaSeries,
+  Gridline,
+  GridlineSeries,
+  LinearXAxis,
+  LinearXAxisTickLabel,
+  LinearXAxisTickSeries,
+  LinearYAxis,
+  LinearYAxisTickLabel,
+  LinearYAxisTickSeries,
+  Line,
+  PointSeries,
+  ScatterPoint,
+  type ChartNestedDataShape,
+} from "reaviz";
 import CardShell from "./CardShell";
 
 export type TrendSeries = {
@@ -16,6 +25,13 @@ export type TrendSeries = {
   color: string;
   fillOpacity?: number;
 };
+
+function toChartNumber(value: unknown) {
+  const numberValue =
+    typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
 
 export default function TrendAreaChartCard({
   title,
@@ -30,59 +46,77 @@ export default function TrendAreaChartCard({
   xKey?: string;
   series: TrendSeries[];
 }) {
-  const chartId = useId().replace(/:/g, "");
-  const chartConfig = useMemo<ChartConfig>(() => {
-    const config: ChartConfig = {};
-    series.forEach((item) => {
-      config[item.key] = {
-        label: item.label,
-        color: item.color,
-      };
-    });
-    return config;
-  }, [series]);
+  const categoryDomain = data.map((row) => String(row[xKey]));
+  const chartData: ChartNestedDataShape[] = series.map((item) => ({
+    key: item.label,
+    data: data.map((row) => ({
+      key: String(row[xKey]),
+      data: toChartNumber(row[item.key]),
+    })),
+  }));
 
   return (
     <CardShell className="xl:col-span-2" description={description} title={title}>
       <div className="max-w-full overflow-x-auto">
-        <ChartContainer className="h-[320px] min-w-[760px] xl:min-w-full" config={chartConfig}>
-          <AreaChart data={data} margin={{ left: 12, right: 12 }}>
-            <defs>
-              {series.map((item) => {
-                const gradientId = `${chartId}-${item.key}`;
-                const opacity = item.fillOpacity ?? 0.28;
+        <div className="h-[320px] min-w-[760px] xl:min-w-full">
+          <AreaChart
+            data={chartData}
+            gridlines={<GridlineSeries line={<Gridline direction="y" strokeColor="#e5e7eb" />} />}
+            margins={24}
+            series={
+              <AreaSeries
+                area={<Area gradient={null} />}
+                colorScheme={series.map((item) => item.color)}
+                interpolation="smooth"
+                line={<Line strokeWidth={2.5} />}
+                symbols={<PointSeries point={<ScatterPoint size={5} />} show />}
+                type="grouped"
+              />
+            }
+            xAxis={
+              <LinearXAxis
+                axisLine={null}
+                domain={categoryDomain}
+                tickSeries={
+                  <LinearXAxisTickSeries
+                    label={<LinearXAxisTickLabel fill="#667085" fontSize={12} />}
+                    line={null}
+                  />
+                }
+                type="category"
+              />
+            }
+            yAxis={
+              <LinearYAxis
+                axisLine={null}
+                scaled
+                tickSeries={
+                  <LinearYAxisTickSeries
+                    line={null}
+                    label={
+                      <LinearYAxisTickLabel
+                        fill="#667085"
+                        fontSize={12}
+                        format={(value) => toChartNumber(value).toLocaleString("sv-SE")}
+                      />
+                    }
+                  />
+                }
+                type="value"
+              />
+            }
+          />
+        </div>
+      </div>
 
-                return (
-                  <linearGradient id={gradientId} key={gradientId} x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="5%" stopColor={`var(--color-${item.key})`} stopOpacity={opacity} />
-                    <stop offset="95%" stopColor={`var(--color-${item.key})`} stopOpacity={0} />
-                  </linearGradient>
-                );
-              })}
-            </defs>
-            <CartesianGrid vertical={false} />
-            <XAxis axisLine={false} dataKey={xKey} tickLine={false} tickMargin={8} />
-            <YAxis axisLine={false} tickLine={false} tickMargin={8} />
-            <ChartTooltip content={<ChartTooltipContent indicator="line" />} cursor={false} />
-            {series.map((item, index) => {
-              const gradientId = `${chartId}-${item.key}`;
-              const isSecondary = index > 0;
-
-              return (
-                <Area
-                  dataKey={item.key}
-                  fill={isSecondary ? "transparent" : `url(#${gradientId})`}
-                  key={item.key}
-                  stroke={`var(--color-${item.key})`}
-                  strokeWidth={2}
-                  type="natural"
-                />
-              );
-            })}
-          </AreaChart>
-        </ChartContainer>
+      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+        {series.map((item) => (
+          <div className="flex items-center gap-2 text-theme-xs text-gray-600" key={item.key}>
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
+            <span>{item.label}</span>
+          </div>
+        ))}
       </div>
     </CardShell>
   );
 }
-

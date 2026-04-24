@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  FunnelArc,
+  FunnelAxis,
+  FunnelAxisLabel,
+  FunnelChart,
+  FunnelSeries,
+  type ChartShallowDataShape,
+} from "reaviz";
 import CardShell from "./CardShell";
 
 export type FunnelStep = {
@@ -7,7 +15,7 @@ export type FunnelStep = {
   value: number;
 };
 
-const barColors = ["bg-brand-300", "bg-brand-400", "bg-brand-500", "bg-brand-600"];
+const funnelColors = ["#3f9369", "#047857", "#004225"];
 
 export default function FunnelCard({
   title,
@@ -18,31 +26,42 @@ export default function FunnelCard({
   description?: string;
   steps: FunnelStep[];
 }) {
-  const maxValue = Math.max(...steps.map((step) => step.value), 1);
+  const data: ChartShallowDataShape<number>[] = steps.map((step) => ({
+    key: step.label,
+    data: step.value,
+  }));
 
   return (
     <CardShell description={description} title={title}>
-      <div className="grid gap-4">
-        {steps.map((step, index) => {
-          const width = `${Math.max(12, (step.value / maxValue) * 100)}%`;
-          const colorClass = barColors[index] ?? "bg-brand-500";
-
-          return (
-            <div key={step.label}>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-theme-sm font-medium text-gray-700">{step.label}</span>
-                <span className="text-theme-sm text-gray-500">
-                  {step.value.toLocaleString("sv-SE")}
-                </span>
-              </div>
-              <div className="h-2.5 rounded-full bg-gray-100">
-                <div className={`h-2.5 rounded-full ${colorClass}`} style={{ width }} />
-              </div>
-            </div>
-          );
-        })}
+      <div className="h-[260px]">
+        <FunnelChart
+          data={data}
+          margins={20}
+          series={
+            <FunnelSeries
+              arc={
+                <FunnelArc
+                  colorScheme={funnelColors}
+                  gradient={null}
+                  interpolation="smooth"
+                  variant="layered"
+                />
+              }
+              axis={
+                <FunnelAxis
+                  label={
+                    <FunnelAxisLabel
+                      fill="#344054"
+                      fontSize={12}
+                      showValue
+                    />
+                  }
+                />
+              }
+            />
+          }
+        />
       </div>
     </CardShell>
   );
 }
-

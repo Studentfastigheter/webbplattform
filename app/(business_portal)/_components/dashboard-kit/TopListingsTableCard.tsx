@@ -1,6 +1,20 @@
 "use client";
 
 import Image from "next/image";
+import {
+  Bar,
+  BarChart,
+  BarSeries,
+  Gridline,
+  GridlineSeries,
+  LinearXAxis,
+  LinearXAxisTickLabel,
+  LinearXAxisTickSeries,
+  LinearYAxis,
+  LinearYAxisTickLabel,
+  LinearYAxisTickSeries,
+  type ChartShallowDataShape,
+} from "reaviz";
 import CardShell from "./CardShell";
 import StatusBadge from "./StatusBadge";
 
@@ -24,8 +38,63 @@ export default function TopListingsTableCard({
   description?: string;
   rows: TopListingRow[];
 }) {
+  const chartRows: ChartShallowDataShape<number>[] = rows.slice(0, 6).map((row) => ({
+    key: row.name,
+    data: row.applications,
+  }));
+
   return (
     <CardShell className="xl:col-span-2" description={description} title={title}>
+      {chartRows.length > 0 ? (
+        <div className="mb-6 h-[260px]">
+          <BarChart
+            data={chartRows}
+            gridlines={<GridlineSeries line={<Gridline direction="x" strokeColor="#e5e7eb" />} />}
+            margins={28}
+            series={
+              <BarSeries
+                bar={<Bar gradient={null} rx={5} ry={5} />}
+                colorScheme={["#004225"]}
+                layout="horizontal"
+                padding={0.18}
+              />
+            }
+            xAxis={
+              <LinearXAxis
+                axisLine={null}
+                scaled
+                tickSeries={
+                  <LinearXAxisTickSeries
+                    label={
+                      <LinearXAxisTickLabel
+                        fill="#667085"
+                        fontSize={12}
+                        format={(value) => Number(value).toLocaleString("sv-SE")}
+                      />
+                    }
+                    line={null}
+                  />
+                }
+                type="value"
+              />
+            }
+            yAxis={
+              <LinearYAxis
+                axisLine={null}
+                tickSeries={
+                  <LinearYAxisTickSeries
+                    ellipsisLength={22}
+                    label={<LinearYAxisTickLabel fill="#344054" fontSize={12} />}
+                    line={null}
+                  />
+                }
+                type="category"
+              />
+            }
+          />
+        </div>
+      ) : null}
+
       <div className="max-w-full overflow-x-auto">
         <table className="w-full min-w-[700px] text-left">
           <thead className="border-y border-gray-100">
@@ -72,4 +141,3 @@ export default function TopListingsTableCard({
     </CardShell>
   );
 }
-

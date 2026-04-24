@@ -1,12 +1,6 @@
 "use client";
 
-import { Cell, Pie, PieChart } from "recharts";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
+import { PieArc, PieArcSeries, PieChart, type ChartShallowDataShape } from "reaviz";
 import CardShell from "./CardShell";
 
 export type DonutBreakdownItem = {
@@ -24,38 +18,45 @@ export default function DonutBreakdownCard({
   description?: string;
   items: DonutBreakdownItem[];
 }) {
-  const chartConfig: ChartConfig = items.reduce<ChartConfig>((acc, item, index) => {
-    acc[`segment_${index}`] = {
-      label: item.label,
-      color: item.color,
-    };
-    return acc;
-  }, {});
-
-  const data = items.map((item, index) => ({
-    ...item,
-    key: `segment_${index}`,
+  const data: ChartShallowDataShape<number>[] = items.map((item) => ({
+    key: item.label,
+    data: item.value,
   }));
+  const total = items.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <CardShell description={description} title={title}>
-      <ChartContainer className="h-[220px]" config={chartConfig}>
-        <PieChart>
-          <Pie data={data} dataKey="value" innerRadius={58} outerRadius={86} paddingAngle={3}>
-            {data.map((item) => (
-              <Cell fill={item.color} key={item.key} />
-            ))}
-          </Pie>
-          <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-        </PieChart>
-      </ChartContainer>
+      <div className="relative h-[230px]">
+        <PieChart
+          data={data}
+          margins={8}
+          series={
+            <PieArcSeries
+              arc={<PieArc gradient={null} />}
+              colorScheme={items.map((item) => item.color)}
+              cornerRadius={4}
+              doughnut
+              label={null}
+              padAngle={0.018}
+            />
+          }
+        />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-theme-xs text-gray-500">Totalt</p>
+            <p className="text-xl font-semibold text-gray-800">
+              {total.toLocaleString("sv-SE")}
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="mt-4 grid gap-3">
-        {data.map((item) => (
-          <div className="flex items-center justify-between" key={item.key}>
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
-              <span className="text-theme-sm text-gray-600">{item.label}</span>
+        {items.map((item) => (
+          <div className="flex items-center justify-between" key={item.label}>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: item.color }} />
+              <span className="truncate text-theme-sm text-gray-600">{item.label}</span>
             </div>
             <span className="text-theme-sm font-medium text-gray-800">
               {item.value.toLocaleString("sv-SE")}

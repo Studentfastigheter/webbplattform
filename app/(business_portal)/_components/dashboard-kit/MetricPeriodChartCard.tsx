@@ -1,14 +1,24 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
+  Bar,
+  BarChart,
+  BarSeries,
+  Gridline,
+  GridlineSeries,
+  LinearXAxis,
+  LinearXAxisTickLabel,
+  LinearXAxisTickSeries,
+  LinearYAxis,
+  LinearYAxisTickLabel,
+  LinearYAxisTickSeries,
+  Line,
+  LineChart,
+  LineSeries,
+  PointSeries,
+  ScatterPoint,
+  type ChartNestedDataShape,
+} from "reaviz";
 import CardShell from "./CardShell";
 
 export type MetricPeriodChartRow = {
@@ -21,30 +31,113 @@ export type MetricPeriodChartRow = {
 
 export type MetricPeriodChangeRow = MetricPeriodChartRow;
 
-const chartConfig = {
-  applications: {
-    label: "Ansökningar",
-    color: "#004225",
-  },
-  viewings: {
-    label: "Visningar",
-    color: "#2563eb",
-  },
-  interactions: {
-    label: "Interaktioner",
-    color: "#c2410c",
-  },
-  activeListings: {
-    label: "Aktiva annonser",
-    color: "#64748b",
-  },
-} satisfies ChartConfig;
+const metrics = [
+  { key: "viewings", label: "Visningar", color: "#2563eb" },
+  { key: "interactions", label: "Interaktioner", color: "#c2410c" },
+  { key: "applications", label: "Ansökningar", color: "#004225" },
+  { key: "activeListings", label: "Aktiva annonser", color: "#64748b" },
+] as const;
 
-export function MetricPeriodVolumeChartCard({
-  data,
-}: {
-  data: MetricPeriodChartRow[];
-}) {
+const chartColors = metrics.map((metric) => metric.color);
+
+function toChartNumber(value: unknown) {
+  const numberValue =
+    typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function getCategoryDomain(data: MetricPeriodChartRow[]) {
+  return data.map((row) => String(row.period));
+}
+
+function toMetricSeriesData(data: MetricPeriodChartRow[]): ChartNestedDataShape[] {
+  return metrics.map((metric) => ({
+    key: metric.label,
+    data: data.map((row) => ({
+      key: String(row.period),
+      data: toChartNumber(row[metric.key]),
+    })),
+  }));
+}
+
+function toPeriodGroupData(data: MetricPeriodChartRow[]): ChartNestedDataShape[] {
+  return data.map((row) => ({
+    key: String(row.period),
+    data: metrics.map((metric) => ({
+      key: metric.label,
+      data: toChartNumber(row[metric.key]),
+    })),
+  }));
+}
+
+function ReavizLegend() {
+  return (
+    <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+      {metrics.map((metric) => (
+        <div className="flex items-center gap-2 text-theme-xs text-gray-600" key={metric.key}>
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: metric.color }} />
+          <span>{metric.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function valueYAxis(percent = false) {
+  return (
+    <LinearYAxis
+      axisLine={null}
+      scaled
+      tickSeries={
+        <LinearYAxisTickSeries
+          line={null}
+          label={
+            <LinearYAxisTickLabel
+              fill="#667085"
+              fontSize={12}
+              format={(value) => {
+                const formattedValue = toChartNumber(value);
+
+                return percent
+                  ? `${formattedValue.toLocaleString("sv-SE", {
+                      maximumFractionDigits: 0,
+                    })}%`
+                  : formattedValue.toLocaleString("sv-SE");
+              }}
+            />
+          }
+        />
+      }
+      type="value"
+    />
+  );
+}
+
+function categoryXAxis(domain?: string[]) {
+  return (
+    <LinearXAxis
+      axisLine={null}
+      domain={domain}
+      tickSeries={
+        <LinearXAxisTickSeries
+          label={<LinearXAxisTickLabel fill="#667085" fontSize={12} />}
+          line={null}
+        />
+      }
+      type="category"
+    />
+  );
+}
+
+function gridLines() {
+  return <GridlineSeries line={<Gridline direction="y" strokeColor="#e5e7eb" />} />;
+}
+
+export function MetricPeriodVolumeChartCard({ data }: { data: MetricPeriodChartRow[] }) {
+  const chartData = toPeriodGroupData(data);
+  const categoryDomain = getCategoryDomain(data);
+
   return (
     <CardShell
       className="xl:col-span-2"
@@ -52,95 +145,58 @@ export function MetricPeriodVolumeChartCard({
       title="Volymer per period"
     >
       <div className="max-w-full overflow-x-auto">
-        <ChartContainer className="h-[320px] min-w-[760px] xl:min-w-full" config={chartConfig}>
-          <BarChart data={data} margin={{ left: 12, right: 12 }}>
-            <CartesianGrid vertical={false} />
-            <XAxis axisLine={false} dataKey="period" tickLine={false} tickMargin={8} />
-            <YAxis axisLine={false} tickLine={false} tickMargin={8} />
-            <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
-            <Bar dataKey="viewings" fill="var(--color-viewings)" radius={[5, 5, 0, 0]} />
-            <Bar dataKey="interactions" fill="var(--color-interactions)" radius={[5, 5, 0, 0]} />
-            <Bar dataKey="applications" fill="var(--color-applications)" radius={[5, 5, 0, 0]} />
-            <Bar dataKey="activeListings" fill="var(--color-activeListings)" radius={[5, 5, 0, 0]} />
-            <ChartLegend content={<ChartLegendContent />} />
-          </BarChart>
-        </ChartContainer>
+        <div className="h-[320px] min-w-[760px] xl:min-w-full">
+          <BarChart
+            data={chartData}
+            gridlines={gridLines()}
+            margins={24}
+            series={
+              <BarSeries
+                bar={<Bar gradient={null} rx={5} ry={5} />}
+                colorScheme={chartColors}
+                padding={0.35}
+                type="grouped"
+              />
+            }
+            xAxis={categoryXAxis(categoryDomain)}
+            yAxis={valueYAxis()}
+          />
+        </div>
       </div>
+      <ReavizLegend />
     </CardShell>
   );
 }
 
-export function MetricPeriodChangeChartCard({
-  data,
-}: {
-  data: MetricPeriodChangeRow[];
-}) {
+export function MetricPeriodChangeChartCard({ data }: { data: MetricPeriodChangeRow[] }) {
+  const chartData = toMetricSeriesData(data);
+  const categoryDomain = getCategoryDomain(data);
+
   return (
     <CardShell
       description="Procentuell förändring jämfört med föregående motsvarande period."
       title="Förändring"
     >
       <div className="max-w-full overflow-x-auto">
-        <ChartContainer className="h-[320px] min-w-[520px] xl:min-w-full" config={chartConfig}>
-          <LineChart data={data} margin={{ left: 12, right: 12 }}>
-            <CartesianGrid vertical={false} />
-            <XAxis axisLine={false} dataKey="period" tickLine={false} tickMargin={8} />
-            <YAxis
-              axisLine={false}
-              tickFormatter={(value) => `${value}%`}
-              tickLine={false}
-              tickMargin={8}
-            />
-            <ChartTooltip
-              content={<ChartTooltipContent />}
-              cursor={false}
-              formatter={(value, name, item, index, payload) => (
-                <div className="flex min-w-[150px] items-center justify-between gap-3">
-                  <span className="text-muted-foreground">
-                    {chartConfig[String(name) as keyof typeof chartConfig]?.label ?? name}
-                  </span>
-                  <span className="font-mono font-medium text-foreground tabular-nums">
-                    {Number(value).toLocaleString("sv-SE", {
-                      minimumFractionDigits: 1,
-                      maximumFractionDigits: 1,
-                    })}
-                    %
-                  </span>
-                </div>
-              )}
-            />
-            <Line
-              dataKey="applications"
-              dot
-              stroke="var(--color-applications)"
-              strokeWidth={2}
-              type="monotone"
-            />
-            <Line
-              dataKey="viewings"
-              dot
-              stroke="var(--color-viewings)"
-              strokeWidth={2}
-              type="monotone"
-            />
-            <Line
-              dataKey="interactions"
-              dot
-              stroke="var(--color-interactions)"
-              strokeWidth={2}
-              type="monotone"
-            />
-            <Line
-              dataKey="activeListings"
-              dot
-              stroke="var(--color-activeListings)"
-              strokeWidth={2}
-              type="monotone"
-            />
-            <ChartLegend content={<ChartLegendContent />} />
-          </LineChart>
-        </ChartContainer>
+        <div className="h-[320px] min-w-[520px] xl:min-w-full">
+          <LineChart
+            data={chartData}
+            gridlines={gridLines()}
+            margins={24}
+            series={
+              <LineSeries
+                colorScheme={chartColors}
+                line={<Line strokeWidth={2.5} />}
+                symbols={<PointSeries point={<ScatterPoint size={5} />} show />}
+                type="grouped"
+              />
+            }
+            xAxis={categoryXAxis(categoryDomain)}
+            yAxis={valueYAxis(true)}
+          />
+        </div>
       </div>
+      <ReavizLegend />
     </CardShell>
   );
 }

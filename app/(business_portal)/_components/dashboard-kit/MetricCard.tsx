@@ -2,18 +2,21 @@
 
 import type { ReactNode } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { Count } from "reaviz";
 import StatusBadge, { type BadgeTone } from "./StatusBadge";
 
 export default function MetricCard({
   label,
   value,
+  countValue,
   change,
   direction = "up",
   icon,
 }: {
   label: string;
-  value: string;
-  change: string;
+  value?: string;
+  countValue?: number;
+  change?: string;
   direction?: "up" | "down";
   icon: ReactNode;
 }) {
@@ -27,16 +30,24 @@ export default function MetricCard({
       <div className="mt-5 flex items-end justify-between gap-4">
         <div>
           <span className="text-sm text-gray-500">{label}</span>
-          <h4 className="mt-2 text-title-sm font-bold text-gray-800">{value}</h4>
+          <h4 className="mt-2 text-title-sm font-bold text-gray-800">
+            {typeof countValue === "number" ? (
+              <Count decimalPlaces={0} to={countValue} />
+            ) : (
+              value
+            )}
+          </h4>
         </div>
-        <StatusBadge tone={tone}>
-          {direction === "up" ? (
-            <ArrowUp className="h-3.5 w-3.5" />
-          ) : (
-            <ArrowDown className="h-3.5 w-3.5" />
-          )}
-          {change}
-        </StatusBadge>
+        {change ? (
+          <StatusBadge tone={tone}>
+            {direction === "up" ? (
+              <ArrowUp className="h-3.5 w-3.5" />
+            ) : (
+              <ArrowDown className="h-3.5 w-3.5" />
+            )}
+            {change}
+          </StatusBadge>
+        ) : null}
       </div>
     </div>
   );
