@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 import { queueService, type CompanyDTO } from "@/services/queue-service";
 import { type HousingQueueDTO } from "@/types/queue";
 import { Loader2, Save } from "lucide-react";
@@ -73,8 +74,7 @@ export default function ProfilePage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveWarning, setSaveWarning] = useState(false);
 
-  const companyId =
-    user && user.accountType !== "student" ? Number(user.id) : null;
+  const companyId = getActiveCompanyId(user);
 
   useEffect(() => {
     return () => {
@@ -89,7 +89,7 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    if (authLoading || !user || user.accountType === "student") {
+    if (authLoading || !user) {
       return;
     }
 
@@ -279,7 +279,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (user.accountType === "student") {
+  if (companyId == null) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
         Denna profilsida gäller bara för företagskonton.

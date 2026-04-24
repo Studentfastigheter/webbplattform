@@ -13,6 +13,22 @@ export type UserId = number; // Gemensamt ID från UserResponse
 
 export type AccountType = "student" | "company" | "private_landlord";
 
+export type UserCompanyLink = {
+  id?: CompanyId | string;
+  companyId?: CompanyId | string;
+  company_id?: CompanyId | string;
+  name?: string;
+  companyName?: string;
+  logoUrl?: UrlString;
+  role?: string;
+  company?: {
+    id?: CompanyId | string;
+    name?: string;
+    companyName?: string;
+    logoUrl?: UrlString;
+  } | null;
+};
+
 // --- Huvud-interface (Matchar Java UserResponse) ---
 export interface User {
   id: UserId;
@@ -41,6 +57,15 @@ export interface User {
   // Företag & Hyresvärd
   fullName?: string; // För privat hyresvärd
   companyName?: string; // För företag
+  companyId?: CompanyId | string;
+  activeCompanyId?: CompanyId | string;
+  selectedCompanyId?: CompanyId | string;
+  currentCompanyId?: CompanyId | string;
+  company?: UserCompanyLink | null;
+  companies?: UserCompanyLink[];
+  companyIds?: Array<CompanyId | string>;
+  companyMemberships?: UserCompanyLink[];
+  companyAccounts?: UserCompanyLink[];
   orgNumber?: string;
   website?: UrlString;
   subtitle?: string;
@@ -52,7 +77,11 @@ export interface User {
 
 // --- Auth Responses ---
 export interface AuthResponse {
-  accessToken: string;
+  accessToken?: string;
+  access_token?: string;
+  token?: string;
+  jwt?: string;
+  bearerToken?: string;
   user: User;
 }
 

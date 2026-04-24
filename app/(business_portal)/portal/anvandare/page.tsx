@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
 import { queueService } from "@/services/queue-service";
 
@@ -219,10 +220,7 @@ export default function UsersPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const hasActiveFilters = statusFilter !== "all" || roleFilter !== "all";
-  const companyId =
-    user?.accountType === "company" && Number.isFinite(Number(user.id))
-      ? Number(user.id)
-      : null;
+  const companyId = getActiveCompanyId(user);
 
   useEffect(() => {
     if (!companyId) {
@@ -428,7 +426,7 @@ export default function UsersPage() {
     );
   }
 
-  if (user.accountType !== "company") {
+  if (!companyId) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
         Denna sida är bara tillgänglig för företagskonton.

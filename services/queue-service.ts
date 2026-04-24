@@ -40,6 +40,7 @@ export type QueueApplicationDTO = {
   createdAt?: string;
   status?: string;
   queueDays?: number;
+  daysInQueue?: number;
   position?: number;
 };
 
@@ -127,7 +128,7 @@ export const queueService = {
     });
   },
 
-  getMyQueues: async (): Promise<any[]> => {
+  getMyQueues: async (): Promise<QueueApplicationDTO[]> => {
     const res = await apiClient<
       | QueueApplicationDTO[]
       | {
@@ -137,11 +138,13 @@ export const queueService = {
         }
     >("/queues/my");
 
-    if (Array.isArray(res)) {
-      return res;
-    }
+    const rows = Array.isArray(res) ? res : res?.content ?? res?.data ?? res?.queues ?? [];
 
-    return res?.content ?? res?.data ?? res?.queues ?? [];
+    return rows.map((row) => ({
+      ...row,
+      queueId: row.queueId != null ? String(row.queueId) : row.queueId,
+      queueDays: row.queueDays ?? row.daysInQueue ?? 0,
+    }));
   },
 
   getCompany: async (companyId: number): Promise<CompanyDTO> => {
@@ -161,26 +164,6 @@ export const queueService = {
         const embeddedApplications = readEmbeddedQueueApplications(queue);
         if (embeddedApplications.length > 0) {
           return embeddedApplications;
-        }
-
-        const endpoints = [
-          `/queues/${queue.id}/applications`,
-          `/queue/${queue.id}/applications`,
-          `/companies/${companyId}/queues/${queue.id}/applications`,
-        ];
-
-        for (const endpoint of endpoints) {
-          try {
-            const result = await apiClient<QueueApplicationDTO[] | { content?: QueueApplicationDTO[] }>(endpoint);
-            const rows = Array.isArray(result) ? result : result?.content ?? [];
-            return rows.map((application) => ({
-              ...application,
-              queueId: application.queueId ?? queue.id,
-              queueName: application.queueName ?? queue.name,
-            }));
-          } catch {
-            // Try the next known shape.
-          }
         }
 
         return [];

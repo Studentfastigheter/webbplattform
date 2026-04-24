@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Building2, Eye, MousePointerClick, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 import {
   Select,
   SelectContent,
@@ -331,6 +332,13 @@ export default function PortalOverview() {
       setIsLoading(true);
       setErrorMessage(null);
 
+      const companyId = getActiveCompanyId(user);
+      if (companyId == null) {
+        setErrorMessage("Kunde inte hitta ett företag kopplat till användaren.");
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const [
           generalAnalyticsResult,
@@ -339,11 +347,11 @@ export default function PortalOverview() {
           topObjectsResult,
           newApplicationsResult,
         ] = await Promise.allSettled([
-          companyService.generalAnalytics(user.id),
-          companyService.applicationCount(user.id),
-          companyService.applicationsTimeline(user.id),
-          companyService.applicationCountsPerObject(user.id, 8),
-          companyService.newApplications(user.id),
+          companyService.generalAnalytics(companyId),
+          companyService.applicationCount(companyId),
+          companyService.applicationsTimeline(companyId),
+          companyService.applicationCountsPerObject(companyId, 8),
+          companyService.newApplications(companyId),
         ]);
 
         const generalAnalytics = getFulfilledValue<AnalyticalQuantities | null>(

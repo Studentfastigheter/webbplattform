@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService } from "@/services/company";
 import { queueService } from "@/services/queue-service";
 import { type ListingCardDTO } from "@/types/listing";
@@ -240,10 +241,7 @@ export default function PortalAdsPage() {
   const [ads, setAds] = useState<PortalListing[]>([]);
   const hasActiveFilters = statusFilter !== "all" || cityFilter !== "all";
 
-  const companyId =
-    user?.accountType === "company" && Number.isFinite(Number(user.id))
-      ? Number(user.id)
-      : null;
+  const companyId = getActiveCompanyId(user);
 
   useEffect(() => {
     if (authLoading || !companyId) {
@@ -407,7 +405,7 @@ export default function PortalAdsPage() {
     );
   }
 
-  if (user.accountType !== "company") {
+  if (!companyId) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
         Denna sida är bara tillgänglig för företagskonton.

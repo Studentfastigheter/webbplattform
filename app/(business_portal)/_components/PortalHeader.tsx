@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 import { queueService } from "@/services/queue-service";
 import { dashboardRelPath } from "../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
@@ -21,12 +22,13 @@ export default function PortalHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = usePortalSidebar();
   const { user, logout } = useAuth();
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
-  const displayName = user?.displayName || user?.companyName || "SGS";
+  const activeCompany = getActiveCompanySummary(user);
+  const displayName = activeCompany?.name || user?.companyName || user?.displayName || "SGS";
   const email = user?.email || "test@sgs.se";
-  const role = user?.accountType === "company" ? "Företagskonto" : "Hyresvärd";
+  const role = activeCompany ? "Företagskonto" : "Hyresvärd";
   const avatarSrc =
-    user?.accountType === "company"
-      ? companyLogoUrl || user?.logoUrl || ""
+    activeCompany
+      ? companyLogoUrl || activeCompany.logoUrl || user?.logoUrl || ""
       : user?.logoUrl || "";
   const initials = displayName
     .split(" ")
@@ -38,12 +40,8 @@ export default function PortalHeader() {
   useEffect(() => {
     setCompanyLogoUrl(null);
 
-    if (!user || user.accountType !== "company") {
-      return;
-    }
-
-    const companyId = Number(user.id);
-    if (!Number.isFinite(companyId)) {
+    const companyId = getActiveCompanyId(user);
+    if (companyId == null) {
       return;
     }
 
@@ -63,7 +61,7 @@ export default function PortalHeader() {
     return () => {
       active = false;
     };
-  }, [user?.accountType, user?.id]);
+  }, [user]);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {

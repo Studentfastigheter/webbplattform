@@ -1,5 +1,6 @@
 import { authService } from "@/services/auth-service";
 import { apiClient, buildQuery } from "@/lib/api-client";
+import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 
 export type GraphEntry = {
 	category: string,
@@ -20,19 +21,19 @@ export type CompanyInfo = {
 
 export type NewApplication = {
   applicationId?: number;
-  id?: number;
+  id?: string | number;
   studentId: number,
   firstName: string,
   surname: string,
   address: string,
-  listingId?: number;
+  listingId?: string | number;
   listingTitle?: string;
   submittedAt?: string;
   createdAt?: string;
 };
 
 export type ObjectApplicationCount = {
-  listingId: number,
+  listingId: string | number,
   address: string,
   numApplications: number,
 };
@@ -80,10 +81,12 @@ export const companyService = {
     if (result.accountType === "student") {
       throw new Error("Denna funktion är inte tillgänglig för studenter. Försök att logga in som uthyrare istället.");
     }
-    if (result.id === null || result.companyName === null) {
+    const companyId = getActiveCompanyId(result);
+    const companyName = getActiveCompanySummary(result)?.name ?? result.companyName;
+    if (companyId === null || !companyName) {
       throw new Error("Oväntat svar från servern.");
     }
-    return { userId: result?.id, name: result.companyName as string };
+    return { userId: companyId, name: companyName };
   },
 
   newApplications: async (

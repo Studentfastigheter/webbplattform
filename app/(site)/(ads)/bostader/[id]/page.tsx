@@ -495,12 +495,7 @@ export default function ListingDetailPage() {
     setApplyError(null);
     setApplySuccess(null);
 
-    const isCompanyListing =
-      listing.ownerType.toLowerCase() === "company" || listing.ownerType === "Företag";
-
-    const action = isCompanyListing
-      ? listingService.applyToListing(listingId, "Hej! Jag är intresserad.")
-      : listingService.apply(listingId, "Hej! Jag är intresserad.");
+    const action = listingService.applyToListing(listingId, "Hej! Jag är intresserad.");
 
     action
       .then(() => {

@@ -20,8 +20,6 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         Authorization: authorization,
-        Host: "company.campuslyan.se",
-        "X-Forwarded-Host": "company.campuslyan.se",
       },
       body,
       cache: "no-store",

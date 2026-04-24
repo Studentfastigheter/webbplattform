@@ -35,6 +35,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
 import { companyService, type ObjectApplicationCount } from "@/services/company";
 import { listingService } from "@/services/listing-service";
@@ -798,10 +799,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const companyId =
-    user?.accountType === "company" && Number.isFinite(Number(user.id))
-      ? Number(user.id)
-      : null;
+  const companyId = getActiveCompanyId(user);
 
   useEffect(() => {
     if (authLoading) {
@@ -888,7 +886,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     );
   }
 
-  if (user.accountType !== "company") {
+  if (!companyId) {
     return (
       <main className="pb-12">
         <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-12 text-center text-gray-500">

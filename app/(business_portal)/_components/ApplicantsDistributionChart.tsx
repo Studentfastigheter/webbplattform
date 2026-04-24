@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { companyService, type ObjectApplicationCount } from "@/services/company";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 
 export const description = "A horizontal bar chart";
 
@@ -109,14 +110,19 @@ export default function ApplicantsDistributionChart({
             console.error("User was not present.");
             return;
           }
-          const results: ObjectApplicationCount[] = await companyService.applicationCountsPerObject(user.id);
+          const companyId = getActiveCompanyId(user);
+          if (companyId == null) {
+            console.error("No company was present for the current user.");
+            return;
+          }
+          const results: ObjectApplicationCount[] = await companyService.applicationCountsPerObject(companyId);
           setChartData(results.map(({ listingId, address, numApplications }) => ({
               object: address,
               applications: numApplications,
               href: `/portal/annonser/${listingId}`
           })));
       })();
-  }, [])
+  }, [user])
 
   return (
     <div className={className}>

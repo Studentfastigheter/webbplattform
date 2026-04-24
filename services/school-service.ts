@@ -1,12 +1,11 @@
 import { apiClient, buildQuery } from "@/lib/api-client";
+import { listingService } from "@/services/listing-service";
 import { School } from "@/types";
-// VIKTIGT: Vi importerar den nya DTO:n istället för den gamla Listing-typen
 import { ListingCardDTO } from "@/types/listing";
 
-// --- DTOs ---
-
 type ApiSchoolDto = {
-  id: number;
+  schoolId?: number;
+  id?: number;
   name: string;
   city?: string | null;
   lat?: number | null;
@@ -16,70 +15,68 @@ type ApiSchoolDto = {
 type ApiSchoolQueueDto = {
   companyId: number;
   companyName: string;
+  listingCount?: number | null;
+  queueId: string;
+  queueName: string;
   userQueueDays?: number | null;
-  listingsCount?: number | null;
 };
 
-// Lokal typ för kö-summering
 export type SchoolQueueSummary = {
   companyId: number;
   companyName: string;
+  listingCount: number;
+  queueId: string;
+  queueName: string;
   userQueueDays: number;
-  listingsCount: number;
 };
 
-// --- Mappers ---
-
 const mapSchoolDto = (dto: ApiSchoolDto): School => ({
-  id: dto.id,
+  id: dto.schoolId ?? dto.id ?? 0,
   name: dto.name,
   city: dto.city ?? null,
   lat: dto.lat ?? null,
   lng: dto.lng ?? null,
 });
 
-// --- Service Methods ---
-
 export const schoolService = {
-  // 1. Sök efter skolor
   list: async (q?: string): Promise<School[]> => {
     const res = await apiClient<ApiSchoolDto[]>(`/schools${buildQuery({ q })}`);
-    return res.map(mapSchoolDto);
+    return res.map(mapSchoolDto).filter((school) => school.id > 0);
   },
 
-  // 2. Hitta annonser nära en skola
-  // Vi returnerar nu ListingCardDTO[] istället för den gamla Listing[]
   getListingsNear: async (
     schoolId: number,
-    radiusKm = 10,
     size = 12
   ): Promise<ListingCardDTO[]> => {
-    const query = buildQuery({ radiusKm, size });
-    
-    // Vi antar att backend nu returnerar en lista av ListingCardDTO direkt
-    // (Om backend returnerar en PageResponse, ändra till <PageResponse<ListingCardDTO>> och returnera res.content)
-    const res = await apiClient<ListingCardDTO[]>(
-      `/schools/${schoolId}/listings${query}`
-    );
+    const schools = await schoolService.list();
+    const school = schools.find((item) => item.id === schoolId);
 
-    // Ingen mappning behövs längre, DTO:n är redo för kortet!
-    return res;
+    if (typeof school?.lat !== "number" || typeof school.lng !== "number") {
+      return [];
+    }
+
+    const res = await listingService.getAll({
+      page: 0,
+      size,
+      school_lat: school.lat,
+      school_lng: school.lng,
+    });
+
+    return res.content ?? [];
   },
 
-  // 3. Hitta bostadsköer relevanta för skolan
-  getQueues: async (
-    schoolId: number,
-    radiusKm = 10
-  ): Promise<SchoolQueueSummary[]> => {
+  getQueues: async (schoolId: number): Promise<SchoolQueueSummary[]> => {
     const res = await apiClient<ApiSchoolQueueDto[]>(
-      `/schools/${schoolId}/queues${buildQuery({ radiusKm })}`
+      `/schools/${schoolId}/queues`
     );
 
     return res.map((dto) => ({
       companyId: dto.companyId,
       companyName: dto.companyName,
+      listingCount: dto.listingCount ?? 0,
+      queueId: dto.queueId,
+      queueName: dto.queueName,
       userQueueDays: dto.userQueueDays ?? 0,
-      listingsCount: dto.listingsCount ?? 0,
     }));
   },
 };

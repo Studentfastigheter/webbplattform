@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api-client";
+import { apiClient, normalizeAuthToken } from "@/lib/api-client";
 import {
   User,
   AuthResponse,
@@ -9,10 +9,26 @@ import {
   UpdateUserRequest,
 } from "@/types";
 
+export function getAuthResponseToken(response: AuthResponse): string {
+  const source =
+    response.accessToken ??
+    response.token ??
+    response.access_token ??
+    response.jwt ??
+    response.bearerToken;
+
+  const token = normalizeAuthToken(source);
+  if (!token) {
+    throw new Error("Inloggningen lyckades men backend skickade ingen JWT-token.");
+  }
+
+  return token;
+}
+
 export const authService = {
   // Hämta nuvarande användare
-  me: async (): Promise<User> => {
-    return await apiClient<User>("/auth/me");
+  me: async (token?: string | null): Promise<User> => {
+    return await apiClient<User>("/auth/me", {}, token);
   },
 
   // Logga in
@@ -20,6 +36,7 @@ export const authService = {
     const res = await apiClient<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
+      auth: false,
     });
     return res;
   },
@@ -29,6 +46,7 @@ export const authService = {
     const res = await apiClient<RegisterResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(payload),
+      auth: false,
     });
     return res;
   },

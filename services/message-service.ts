@@ -17,12 +17,5 @@ export const messageService = {
       method: "POST",
       body: JSON.stringify({ body }),
     });
-  },
-
-  createConversation: async (recipientId: number, type: "company" | "private_landlord"): Promise<Conversation> => {
-    return await apiClient<Conversation>("/messages/conversations", {
-      method: "POST",
-      body: JSON.stringify({ recipientId, type }),
-    });
   }
 };

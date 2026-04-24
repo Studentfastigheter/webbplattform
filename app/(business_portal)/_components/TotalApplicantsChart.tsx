@@ -22,6 +22,7 @@ import { companyService, type Timeline } from "@/services/company";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 
 export const description = "A line chart"
 
@@ -106,8 +107,13 @@ export default function TotalApplicantsChart({
         console.error("Could not get user");
         return;
       }
+      const companyId = getActiveCompanyId(user);
+      if (companyId == null) {
+        console.error("No company was present for the current user.");
+        return;
+      }
       const timeline: Timeline = await companyService
-        .applicationsTimeline(user.id)
+        .applicationsTimeline(companyId)
         .catch(err => {
           console.error(err);
           return [];
@@ -162,9 +168,9 @@ export default function TotalApplicantsChart({
         .map(({ timestamp, value }) => ({ month: monthName(timestamp), queuers: value }));
       setChartData(translated);
       setTrend(growthThisMonth(filteredTimeline));
-      setStartDate(filteredTimeline[0].timestamp);
+      setStartDate(filteredTimeline[0]?.timestamp ?? now);
     })();
-  }, []);
+  }, [refreshUser, user]);
 
   const renderTrend = () => {
     console.log(`Trend=${trend}`);

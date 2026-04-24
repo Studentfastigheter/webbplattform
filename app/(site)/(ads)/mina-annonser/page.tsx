@@ -2,65 +2,61 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-// ÄNDRING: Importera listingService istället för backendApi
 import { listingService } from "@/services/listing-service";
-import { type ListingWithRelations } from "@/types";
+import { type ListingCardDTO } from "@/types/listing";
+
+function splitLocation(location?: string | null) {
+  const parts = location?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
+
+  return {
+    area: parts[0] ?? "",
+    city: parts[1] ?? parts[0] ?? "",
+  };
+}
 
 export default function Page() {
   const router = useRouter();
   const { user, token } = useAuth();
-  const [listings, setListings] = useState<ListingWithRelations[]>([]);
+  const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isPrivateLandlord = user?.type === "private_landlord";
-  const landlordId = user?.type === "private_landlord" ? user.landlordId : null;
+  const canManageListings =
+    user?.accountType === "company" || user?.accountType === "private_landlord";
 
   useEffect(() => {
-    if (!token || !isPrivateLandlord) {
+    if (!token || !canManageListings) {
       setListings([]);
       return;
     }
 
     let active = true;
     setLoading(true);
-    
-    // ÄNDRING: Använd listingService.list
+    setError(null);
+
     listingService
-      .list({ size: 200, secure: true }, token)
-      .then((res) => {
-        if (!active) return;
-        const items = res.items ?? [];
-        // Behåller din filtreringslogik för att säkerställa att vi bara visar rätt annonser
-        const filtered = items.filter(
-          (listing) =>
-            landlordId &&
-            listing.listingType === "private" &&
-            listing.landlordId === landlordId
-        );
-        setListings(filtered);
+      .getMyListings(0, 200)
+      .then((items) => {
+        if (active) setListings(items);
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (!active) return;
-        setError(err?.message ?? "Kunde inte ladda dina annonser.");
+        setError(err instanceof Error ? err.message : "Kunde inte ladda dina annonser.");
       })
       .finally(() => {
-        if (!active) return;
-        setLoading(false);
+        if (active) setLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, [token, isPrivateLandlord, landlordId]);
+  }, [token, canManageListings]);
 
   const gridListings = useMemo(() => listings ?? [], [listings]);
-
-  const listingGridClasses = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6";
 
   return (
     <main className="flex flex-col gap-6 pb-12 pt-6 lg:pt-8">
@@ -71,7 +67,7 @@ export default function Page() {
             Hantera och granska dina aktiva och kommande annonser.
           </p>
         </div>
-        {isPrivateLandlord && (
+        {canManageListings && (
           <Button
             type="button"
             size="sm"
@@ -85,7 +81,7 @@ export default function Page() {
 
       {!token && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Logga in för att se dina annonser.
+          Logga in for att se dina annonser.
         </div>
       )}
 
@@ -95,9 +91,9 @@ export default function Page() {
         </div>
       )}
 
-      {!isPrivateLandlord && token && (
+      {!canManageListings && token && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Denna sida är för hyresvärdskonton.
+          Denna sida ar for foretags- och hyresvardskonton.
         </div>
       )}
 
@@ -106,32 +102,31 @@ export default function Page() {
           <div className="py-12 text-center text-sm text-gray-500">Laddar annonser...</div>
         ) : gridListings.length === 0 ? (
           <div className="py-12 text-center text-sm text-gray-500">
-            {isPrivateLandlord ? "Du har inga annonser än." : "Ingen annons att visa just nu."}
+            {canManageListings ? "Du har inga annonser an." : "Ingen annons att visa just nu."}
           </div>
         ) : (
-          <div className={listingGridClasses}>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {gridListings.map((listing) => {
-              const primaryImage =
-                typeof listing.images?.[0] === "string"
-                  ? (listing.images?.[0] as string)
-                  : listing.images?.[0]?.imageUrl;
+              const { area, city } = splitLocation(listing.location);
 
               return (
                 <ListingCardSmall
-                  key={listing.listingId}
+                  key={listing.id}
                   title={listing.title}
-                  area={listing.area ?? ""}
-                  city={listing.city ?? ""}
+                  area={area}
+                  city={city}
                   dwellingType={listing.dwellingType ?? ""}
-                  rooms={listing.rooms ?? undefined}
-                  sizeM2={listing.sizeM2 ?? undefined}
-                  rent={listing.rent ?? undefined}
-                  landlordType={listing.advertiser?.displayName ?? "Hyresvärd"}
-                  isVerified={Boolean(listing.advertiser)}
-                  imageUrl={primaryImage}
+                  rooms={listing.rooms ?? 0}
+                  sizeM2={listing.sizeM2 ?? 0}
+                  rent={listing.rent ?? 0}
+                  landlordType={listing.hostType}
+                  hostName={listing.hostName}
+                  hostLogoUrl={listing.hostLogoUrl}
+                  isVerified={listing.verifiedHost}
+                  imageUrl={listing.imageUrl}
                   tags={listing.tags ?? undefined}
-                  images={listing.images}
-                  onClick={() => router.push(`/bostader/${listing.listingId}`)}
+                  showFavoriteButton={false}
+                  onClick={() => router.push(`/bostader/${listing.id}`)}
                   variant="default"
                 />
               );

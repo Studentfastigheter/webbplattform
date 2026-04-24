@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 
 type RouteGuardProps = {
   children: ReactNode;
@@ -25,7 +26,7 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
   useEffect(() => {
     if (isLoading || !user) return;
 
-    if (user.accountType === "company") {
+    if (getActiveCompanyId(user) != null) {
       router.replace("/portal");
       return;
     }
@@ -40,7 +41,7 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
     return <RouteFallback message="Laddar..." />;
   }
 
-  if (user && user.accountType !== "student") {
+  if (user && (user.accountType !== "student" || getActiveCompanyId(user) != null)) {
     return <RouteFallback message="Skickar dig vidare..." />;
   }
 
@@ -59,12 +60,14 @@ export function PortalAccountGuard({ children }: RouteGuardProps) {
       return;
     }
 
-    if (user.accountType === "student") {
+    const companyId = getActiveCompanyId(user);
+
+    if (user.accountType === "student" && companyId == null) {
       router.replace("/");
       return;
     }
 
-    if (user.accountType !== "company") {
+    if (companyId == null) {
       logout();
       router.replace("/logga-in");
     }
@@ -74,7 +77,7 @@ export function PortalAccountGuard({ children }: RouteGuardProps) {
     return <RouteFallback message="Laddar portal..." />;
   }
 
-  if (!user || user.accountType !== "company") {
+  if (!user || getActiveCompanyId(user) == null) {
     return <RouteFallback message="Kontrollerar behörighet..." />;
   }
 

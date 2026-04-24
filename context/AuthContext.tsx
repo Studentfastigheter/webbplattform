@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { authService } from "@/services/auth-service";
+import { normalizeAuthToken } from "@/lib/api-client";
+import { authService, getAuthResponseToken } from "@/services/auth-service";
 import { User, LoginRequest, RegisterRequest, UpdateUserRequest } from "@/types";
 
 type AuthCtx = {
@@ -26,16 +27,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 1. Initiera vid start
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const storedToken =
+        typeof window !== "undefined"
+          ? normalizeAuthToken(localStorage.getItem("token"))
+          : null;
       
       if (!storedToken) {
+        localStorage.removeItem("token");
         setIsLoading(false);
         return;
       }
 
       try {
+        localStorage.setItem("token", storedToken);
         setToken(storedToken); // Synka state med localStorage
-        const userData = await authService.me();
+        const userData = await authService.me(storedToken);
         setUser(userData);
       } catch (error) {
         console.error("Token ogiltig", error);
@@ -53,10 +59,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 2. Login
   const login = async (data: LoginRequest) => {
     const res = await authService.login(data);
-    localStorage.setItem("token", res.accessToken);
-    setToken(res.accessToken); // Uppdatera token vid inloggning
-    setUser(res.user);
-    return res.user;
+    const accessToken = getAuthResponseToken(res);
+    const userData = await authService.me(accessToken);
+    localStorage.setItem("token", accessToken);
+    setToken(accessToken); // Uppdatera token vid inloggning
+    setUser(userData);
+    return userData;
   };
 
   // 3. Register
@@ -66,10 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Studentregistrering behöver verifieras med Freja först.");
     }
 
-    localStorage.setItem("token", res.accessToken);
-    setToken(res.accessToken); // Uppdatera token vid registrering
-    setUser(res.user);
-    return res.user;
+    const accessToken = getAuthResponseToken(res);
+    const userData = await authService.me(accessToken);
+    localStorage.setItem("token", accessToken);
+    setToken(accessToken); // Uppdatera token vid registrering
+    setUser(userData);
+    return userData;
   };
 
   // 4. Logout

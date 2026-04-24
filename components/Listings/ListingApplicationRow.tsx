@@ -5,22 +5,20 @@ import Tag from "../ui/Tag";
 import type { ListFrameRow } from "../layout/ListFrame";
 import { Button } from "@/components/ui/button";
 import StatusTag, { type Status } from "../ui/statusTag";
-import type { DateString, ListingWithRelations } from "@/types";
+import type { AdvertiserSummary, DateString } from "@/types";
 
-type ListingSummary = Pick<
-  ListingWithRelations,
-  | "listingId"
-  | "title"
-  | "area"
-  | "city"
-  | "dwellingType"
-  | "rooms"
-  | "sizeM2"
-  | "rent"
-  | "tags"
-  | "images"
-  | "advertiser"
-> & {
+type ListingSummary = {
+  listingId: string;
+  title: string;
+  area?: string | null;
+  city?: string | null;
+  dwellingType?: string | null;
+  rooms?: number | null;
+  sizeM2?: number | null;
+  rent?: number | null;
+  tags?: string[] | null;
+  images?: Array<{ imageUrl?: string | null }> | null;
+  advertiser?: AdvertiserSummary | null;
   imageUrl?: string;
   landlordType?: string;
   isVerified?: boolean;

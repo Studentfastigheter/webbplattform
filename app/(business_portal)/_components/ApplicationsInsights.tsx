@@ -6,6 +6,7 @@ import { Building2, Clock3, Home, ListOrdered, MapPin, Users } from "lucide-reac
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type AnalyticalQuantities, type AnalyticalQuantity, type NewApplication, type ObjectApplicationCount, type Timeline } from "@/services/company";
 import { queueService, type QueueApplicationDTO } from "@/services/queue-service";
 import type { ListingCardDTO } from "@/types/listing";
@@ -433,14 +434,14 @@ export default function ApplicationsInsights({
         }
         return;
       }
-      if (user.accountType !== "company") {
+      setIsLoading(true);
+      setErrorMessage(null);
+      const companyId = getActiveCompanyId(user);
+      if (companyId == null) {
+        setErrorMessage("Kunde inte hitta ett företag kopplat till användaren.");
         setIsLoading(false);
         return;
       }
-
-      setIsLoading(true);
-      setErrorMessage(null);
-      const companyId = Number(user.id);
       const [generalResult, openApplicationsResult, timelineResult, newApplicationsResult, objectResult, listingsResult, queuesResult, queueApplicationsResult] = await Promise.allSettled([
         companyService.generalAnalytics(companyId),
         companyService.applicationCount(companyId),
@@ -489,7 +490,7 @@ export default function ApplicationsInsights({
   const queueTrendRows = React.useMemo(() => getRowsForPeriod(buildQueueTrendRows(queuePayload.queueApplications, queuePayload.queues), period), [queuePayload.queueApplications, queuePayload.queues, period]);
 
   if (authLoading || isLoading) return <LoadingState />;
-  if (!user || user.accountType !== "company") {
+  if (!user || getActiveCompanyId(user) == null) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
         <h1 className="text-xl font-semibold text-gray-900">Företagskonto krävs</h1>

@@ -82,7 +82,16 @@ export default function MyApplicationsPage() {
         .getMyQueues()
         .then((queues) => {
           if (!active) return;
-          setMyQueues(queues);
+          setMyQueues(
+            queues
+              .filter((queue) => queue.queueId != null)
+              .map((queue) => ({
+                queueId: String(queue.queueId),
+                queueName: queue.queueName ?? "",
+                queueDays: queue.queueDays ?? 0,
+                status: queue.status ?? "active",
+              }))
+          );
         })
         .catch((err: any) => {
           if (!active) return;

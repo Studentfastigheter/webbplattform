@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
+import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 import { listingService, type RollingAd } from "@/services/listing-service";
 import {
   companyService,
@@ -407,13 +408,15 @@ export default function Analytics() {
         return;
       }
 
-      if (user.accountType !== "company") {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      const companyId = getActiveCompanyId(user);
+      if (companyId == null) {
+        setErrorMessage("Kunde inte hitta ett företag kopplat till användaren.");
         setIsLoading(false);
         return;
       }
-
-      setIsLoading(true);
-      setErrorMessage(null);
 
       const [
         generalAnalyticsResult,
@@ -423,11 +426,11 @@ export default function Analytics() {
         applicationsByObjectResult,
         currentAdsResult,
       ] = await Promise.allSettled([
-        companyService.generalAnalytics(user.id),
-        companyService.applicationCount(user.id),
-        companyService.applicationsTimeline(user.id),
-        companyService.newApplications(user.id, { count: 12, since: "always" }),
-        companyService.applicationCountsPerObject(user.id, 12),
+        companyService.generalAnalytics(companyId),
+        companyService.applicationCount(companyId),
+        companyService.applicationsTimeline(companyId),
+        companyService.newApplications(companyId, { count: 12, since: "always" }),
+        companyService.applicationCountsPerObject(companyId, 12),
         listingService.getCurrentAds(),
       ]);
 
@@ -473,6 +476,7 @@ export default function Analytics() {
     () => getAvailablePeriods(payload.generalAnalytics),
     [payload.generalAnalytics]
   );
+  const activeCompany = getActiveCompanySummary(user);
 
   useEffect(() => {
     if (!availablePeriods.includes(selectedPeriod)) {
@@ -608,7 +612,7 @@ export default function Analytics() {
     return <SkeletonAnalytics />;
   }
 
-  if (!user || user.accountType !== "company") {
+  if (!user || activeCompany == null) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
         <h1 className="text-xl font-semibold text-gray-900">Ingen företagsportal hittades</h1>
@@ -625,7 +629,7 @@ export default function Analytics() {
         <div className="space-y-2">
           <p className="text-theme-sm text-gray-500">Analytics</p>
           <h1 className="text-2xl font-semibold text-gray-900">
-            Analys för {user.companyName || user.displayName || "företaget"}
+            Analys för {activeCompany?.name || user.companyName || user.displayName || "företaget"}
           </h1>
           <p className="text-theme-sm text-gray-500">
             Statistik för ansökningar, visningar, interaktioner och aktiva annonser.
@@ -761,7 +765,7 @@ export default function Analytics() {
           rows={topListingRows}
           title="Ansökningar per annons"
         />
-        <ActiveAdsCard ads={payload.currentAds} companyName={user.companyName} />
+        <ActiveAdsCard ads={payload.currentAds} companyName={activeCompany?.name || user.companyName} />
       </div>
     </div>
   );

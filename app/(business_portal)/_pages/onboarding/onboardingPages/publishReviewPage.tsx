@@ -19,6 +19,7 @@ import BostadImagePreviewGrid from "@/components/ads/BostadImagePreviewGrid";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api-client";
+import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 import { listingService } from "@/services/listing-service";
 import type { ListingDetailDTO, PublishListingRequest } from "@/types/listing";
 import { dashboardRelPath } from "@/app/(business_portal)/_statics/variables";
@@ -162,20 +163,25 @@ export default function PublishReviewPage() {
   const { draft, resetDraft } = useListingDraft();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const missingFields = useMemo(() => validateListingDraft(draft), [draft]);
-  const payload = useMemo(() => buildPublishListingRequest(draft), [draft]);
+  const companyId = getActiveCompanyId(user);
+  const activeCompany = getActiveCompanySummary(user);
+  const payload = useMemo(
+    () => buildPublishListingRequest(draft),
+    [draft]
+  );
   const canPublish = missingFields.length === 0 && !isSubmitting;
-  const ownerName = user?.companyName ?? user?.displayName ?? "CampusLyan";
+  const ownerName = activeCompany?.name ?? user?.companyName ?? user?.displayName ?? "CampusLyan";
   const previewListing = useMemo(
     () =>
       buildPreviewListing({
         draft,
-        ownerId: user?.id ?? 0,
-        ownerLogoUrl: user?.logoUrl ?? null,
+        ownerId: companyId ?? 0,
+        ownerLogoUrl: activeCompany?.logoUrl ?? user?.logoUrl ?? null,
         ownerName,
         payload,
         verifiedOwner: user?.verified ?? false,
       }),
-    [draft, ownerName, payload, user?.id, user?.logoUrl, user?.verified],
+    [activeCompany?.logoUrl, companyId, draft, ownerName, payload, user?.logoUrl, user?.verified],
   );
 
   const handlePublish = async () => {
@@ -190,11 +196,6 @@ export default function PublishReviewPage() {
       return;
     }
 
-    if (user?.accountType !== "company") {
-      toast.error("Endast företagskonton kan publicera annonser i portalen.");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       await refreshUser();
@@ -206,7 +207,7 @@ export default function PublishReviewPage() {
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {
         toast.error(
-          "Backend nekade publicering. Kontrollera att du är inloggad med ett företagskonto och att JWT-tokenen har COMPANY-behörighet.",
+          "Backend nekade publicering. Kontrollera att den inloggade användaren har behörighet att publicera annonser.",
         );
         return;
       }

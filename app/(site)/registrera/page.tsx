@@ -59,7 +59,7 @@ export default function RegisterPage() {
       surname: form.surname.trim(),
       email: form.email.trim(),
       password: form.password,
-      ssn: form.ssn.trim(),
+      ssn: form.ssn.trim().replace("-", ""),
       phone: form.phone.trim(),
       city: form.city.trim(),
     };
@@ -69,7 +69,7 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!ssnPattern.test(payload.ssn)) {
+    if (!ssnPattern.test(form.ssn.trim())) {
       setError("Personnummer måste anges i formatet yyyyMMdd-xxxx.");
       return;
     }

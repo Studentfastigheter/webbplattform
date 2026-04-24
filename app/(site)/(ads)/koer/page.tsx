@@ -48,19 +48,20 @@ export default function Page() {
           allQueues.map((q) => [q.id, q])
         );
         
-        const rows = userApplications.map((app) => {
-          const queueInfo = queueMap.get(app.queueId);
+        const rows = userApplications.filter((app) => app.queueId != null).map((app) => {
+          const queueId = String(app.queueId);
+          const queueInfo = queueMap.get(queueId);
           
           return {
-            id: app.queueId,
+            id: queueId,
             name: queueInfo?.name ?? "Okänd kö",
             logoUrl: queueInfo?.logoUrl ?? "/logos/campuslyan-logo.svg",
             cities: queueInfo?.city ? [queueInfo.city] : [],
             status: statusToRowStatus("open"), // Du kan styra detta via app.status om det finns
-            days: app.daysInQueue ?? 0, // Mappa mot rätt fält från din backend-DTO
+            days: app.queueDays ?? 0,
             onManage: () => {
               // Exempel: navigera till köns detaljsida
-              window.location.href = `/alla-koer/${app.queueId}`;
+              window.location.href = `/alla-koer/${queueId}`;
             },
           };
         });

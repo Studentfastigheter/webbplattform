@@ -44,6 +44,23 @@ type QueryValue =
   | undefined
   | null;
 
+type ApiClientOptions = RequestInit & {
+  auth?: boolean;
+};
+
+export function normalizeAuthToken(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "null" || trimmed === "undefined") {
+    return null;
+  }
+
+  return trimmed.replace(/^Bearer\s+/i, "").trim() || null;
+}
+
 export function buildQuery(params: Record<string, QueryValue>) {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -66,8 +83,8 @@ export function buildQuery(params: Record<string, QueryValue>) {
 
 export async function apiClient<T>(
   endpoint: string,
-  { headers, ...customOptions }: RequestInit = {},
-  token?: string
+  { headers, auth = true, ...customOptions }: ApiClientOptions = {},
+  token?: string | null
 ): Promise<T> {
   const isFormDataBody =
     typeof FormData !== "undefined" && customOptions.body instanceof FormData;
@@ -78,14 +95,14 @@ export async function apiClient<T>(
   };
 
   // 1. Automatisk Token-hantering
-  let authToken = token;
-  if (!authToken && typeof window !== "undefined") {
+  let authToken = normalizeAuthToken(token);
+  if (!authToken && auth !== false && typeof window !== "undefined") {
     const stored = localStorage.getItem("token");
-    if (stored) authToken = stored;
+    authToken = normalizeAuthToken(stored);
   }
 
   // Vi kollar så att authToken inte är strängen "null" eller "undefined"
-  if (authToken && authToken !== "null" && authToken !== "undefined") {
+  if (authToken) {
     defaultHeaders.Authorization = `Bearer ${authToken}`;
   }
 

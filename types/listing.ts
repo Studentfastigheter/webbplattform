@@ -74,8 +74,23 @@ export interface StudentApplicationDTO {
   hostType: string;
 }
 
+export interface UpdateListingRequest {
+  title?: string;
+  rooms?: number | null;
+  sizeM2?: number | null;
+  rent?: number | null;
+  description?: string;
+  tags?: string[];
+  status?: string;
+  images?: string[];
+  applyBy?: DateString | null;
+  availableFrom?: DateString | null;
+  availableTo?: DateString | null;
+}
+
 // Payload for POST /api/listings.
 export interface PublishListingRequest {
+  companyId?: number;
   title: string;
   city: string;
   area?: string;
@@ -94,8 +109,16 @@ export interface PublishListingRequest {
 
 // Generisk typ för Paginering från Spring Boot
 export interface PageResponse<T> {
+  totalPages?: number;
+  totalElements?: number;
+  numberOfElements?: number;
+  size?: number;
   content: T[];
-  page: {
+  number?: number;
+  first?: boolean;
+  last?: boolean;
+  empty?: boolean;
+  page?: {
     size: number;
     totalElements: number;
     totalPages: number;

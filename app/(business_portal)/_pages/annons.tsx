@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { apiClient } from "@/lib/api-client";
-import { ListingDetailDTO } from "@/types/listing";
+import { listingService } from "@/services/listing-service";
+import { ListingDetailDTO, UpdateListingRequest } from "@/types/listing";
 
 type AnnonsPageProps = {
   id: string;
@@ -116,7 +116,8 @@ export default function Annons({ id }: AnnonsPageProps) {
     setDraft(null);
     setSaveState(emptySaveState);
 
-    apiClient<ListingDetailDTO>(`/listings/${encodeURIComponent(id)}`)
+    listingService
+      .get(id)
       .then((res) => {
         if (!active) return;
         setListing(res);
@@ -164,34 +165,22 @@ export default function Annons({ id }: AnnonsPageProps) {
 
     setSaveState({ status: "saving", message: null });
 
-    const payload = {
+    const payload: UpdateListingRequest = {
       title: draft.title,
-      fullAddress: draft.fullAddress,
-      area: draft.area,
-      city: draft.city,
       rent: draft.rent,
-      dwellingType: draft.dwellingType,
       rooms: draft.rooms,
       sizeM2: draft.sizeM2,
-      availableFrom: draft.availableFrom,
-      availableTo: draft.availableTo,
-      moveIn: draft.moveIn,
-      applyBy: draft.applyBy,
+      availableFrom: toDateInputValue(draft.availableFrom) || null,
+      availableTo: toDateInputValue(draft.availableTo) || null,
+      applyBy: toDateInputValue(draft.applyBy) || null,
       tags: draft.tags,
       description: draft.description,
-      imageUrls: draft.imageUrls,
+      images: draft.imageUrls,
     };
 
     try {
-      const saved = await apiClient<ListingDetailDTO | undefined>(
-        `/listings/${encodeURIComponent(id)}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        },
-      );
-
-      const next = saved ?? draft;
+      await listingService.update(id, payload);
+      const next = await listingService.get(id).catch(() => draft);
       setListing(next);
       setDraft(next);
       setSaveState({ status: "success", message: "Ändringarna är sparade." });

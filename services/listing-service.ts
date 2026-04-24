@@ -1,10 +1,11 @@
-import { ApiError, apiClient, buildQuery } from "@/lib/api-client";
+import { apiClient, buildQuery } from "@/lib/api-client";
 import {
   ListingCardDTO,
   ListingDetailDTO,
   PageResponse,
   PublishListingRequest,
   StudentApplicationDTO,
+  UpdateListingRequest,
 } from "@/types/listing";
 
 // --- Lokala typer ---
@@ -93,49 +94,14 @@ const addMockCoordinates = <T extends {
 
 export const listingService = {
 
-  // Publicera en ny annons som inloggat företag eller privat hyresvärd.
+  // Publicera en ny annons som den inloggade användaren.
   publish: async (payload: PublishListingRequest): Promise<void> => {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
+    const { companyId: _companyId, ...requestPayload } = payload;
 
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      if (token && token !== "null" && token !== "undefined") {
-        headers.Authorization = `Bearer ${token}`;
-      }
-    }
-
-    const res = await fetch("/api/company/listings", {
+    await apiClient<void>("/listings", {
       method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-      cache: "no-store",
+      body: JSON.stringify(requestPayload),
     });
-
-    if (res.ok) {
-      return;
-    }
-
-    const rawBody = await res.text().catch(() => "");
-    let parsed: any = undefined;
-
-    if (rawBody) {
-      try {
-        parsed = JSON.parse(rawBody);
-      } catch {
-        parsed = rawBody;
-      }
-    }
-
-    const message =
-      parsed?.message ||
-      parsed?.error ||
-      (typeof parsed === "string" ? parsed : null) ||
-      res.statusText ||
-      `Kunde inte publicera annonsen (${res.status}).`;
-
-    throw new ApiError(String(message), res.status, parsed);
   },
 
   /**
@@ -193,6 +159,25 @@ export const listingService = {
     return detail ? addMockCoordinates(detail) : detail;
   },
 
+  update: async (id: string, payload: UpdateListingRequest): Promise<void> => {
+    await apiClient<void>(`/listings/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient<void>(`/listings/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  getMyListings: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<PageResponse<ListingCardDTO>>(`/listings/my${query}`);
+    return (res?.content ?? []).map(addMockCoordinates);
+  },
+
   // 3. HÄMTA MINA ANSÖKNINGAR
   // Anropar: GET /api/applications/my
   getMyApplications: async (page = 0, size = 50): Promise<StudentApplicationDTO[]> => {
@@ -226,9 +211,9 @@ export const listingService = {
     });
   },
 
-  getFavorites: async (): Promise<ListingCardDTO[]> => {
-    const res = await apiClient<any>("/listings/favorites");
-    console.log("FETCHED FAVORITES RESPONSE:", res);
+  getFavorites: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<any>(`/listings/favorites${query}`);
     
     // Check if it's returning a list of StudentLikedListing where the actual listing is embedded
     if (Array.isArray(res)) {
@@ -248,12 +233,11 @@ export const listingService = {
 
   // --- ÖVRIGA METODER ---
 
-  // Ansök till en privat annons
-  // Anropar: POST /api/applications/private/{id}
-  apply: async (listingId: string, message: string): Promise<void> => {
-    await apiClient(`/applications/private/${listingId}`, {
+  // Bakåtkompatibel alias-metod för ansökan.
+  // Anropar: POST /api/listings/{id}/applications
+  apply: async (listingId: string, _message?: string): Promise<void> => {
+    await apiClient(`/listings/${listingId}/applications`, {
       method: "POST",
-      body: JSON.stringify({ message }),
     });
   },
 
@@ -267,32 +251,13 @@ export const listingService = {
 
   // Ansök till en företagsannons
   // Anropar: POST /api/listings/{id}/applications
-  applyToListing: async (listingId: string, message?: string): Promise<void> => {
+  applyToListing: async (listingId: string, _message?: string): Promise<void> => {
     await apiClient(`/listings/${listingId}/applications`, {
       method: "POST",
-      body: JSON.stringify({ message: message ?? "" }),
     });
   },
 
   // Aktiviteter (karta/område)
-  getActivities: async (listingId: string, radiusKm = 1.5): Promise<ListingActivity[]> => {
-    try {
-      const res = await apiClient<any[]>(
-        `/listings/${listingId}/activities${buildQuery({ radiusKm })}`
-      );
-      
-      return res.map((a) => ({
-        id: a.id,
-        name: a.name,
-        category: a.category,
-        distanceKm: a.distanceKm
-      }));
-    } catch (e) {
-      console.error("Failed to load activities", e);
-      return [];
-    }
-  },
-
   /**
    * Rullande annonser (Ads)
    * Hämtar annonser som är aktiva just nu från backend.
