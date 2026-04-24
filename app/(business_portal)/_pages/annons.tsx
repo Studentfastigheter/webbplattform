@@ -397,14 +397,8 @@ export default function Annons({ id }: AnnonsPageProps) {
             onNumberChange={updateNumber}
           />
 
-          {saveState.message && (
-            <div
-              className={
-                saveState.status === "error"
-                  ? "mx-auto w-full max-w-6xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-                  : "mx-auto w-full max-w-6xl rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
-              }
-            >
+          {saveState.status === "error" && saveState.message && (
+            <div className="mx-auto w-full max-w-6xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
               {saveState.message}
             </div>
           )}
