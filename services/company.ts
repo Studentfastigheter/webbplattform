@@ -19,6 +19,26 @@ export type CompanyInfo = {
   name: string,
 };
 
+export type CompanyPrivateDTO = {
+  id: number;
+  name: string;
+  subtitle?: string | null;
+  description?: string | null;
+  website?: string | null;
+  rating?: number | null;
+  verified?: boolean | null;
+  bannerUrl?: string | null;
+  logoUrl?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  orgNumber?: string | null;
+  organisationNumber?: string | null;
+  organizationNumber?: string | null;
+  internalContactNote?: string | null;
+};
+
 export type NewApplication = {
   applicationId?: number;
   id?: string | number;
@@ -87,6 +107,10 @@ export const companyService = {
       throw new Error("Oväntat svar från servern.");
     }
     return { userId: companyId, name: companyName };
+  },
+
+  privateProfile: async (id: number): Promise<CompanyPrivateDTO> => {
+    return apiClient<CompanyPrivateDTO>(`/companies/${id}/private`);
   },
 
   newApplications: async (
