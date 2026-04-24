@@ -229,25 +229,19 @@ export default function Annons({ id }: AnnonsPageProps) {
         </div>
 
         <div className="grid gap-8">
-          <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-            <div className="mb-5">
-              <h2 className="text-lg font-semibold text-gray-900">Förhandsvisning</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Så här visas annonsen på plattformen.
-              </p>
-            </div>
+          <section
+            aria-label="Förhandsvisning"
+            className="mx-auto flex w-full max-w-6xl flex-col gap-10"
+          >
+            {galleryImages.length > 0 ? (
+              <BostadImagePreviewGrid images={galleryImages} readOnly />
+            ) : (
+              <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+                Inga bilder visas i förhandsvisningen.
+              </div>
+            )}
 
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
-              {galleryImages.length > 0 ? (
-                <BostadImagePreviewGrid images={galleryImages} readOnly />
-              ) : (
-                <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
-                  Inga bilder visas i förhandsvisningen.
-                </div>
-              )}
-
-              <BostadAbout listing={draft} hideStudentActions />
-            </div>
+            <BostadAbout listing={draft} hideStudentActions />
           </section>
 
           <form onSubmit={handleSave} className="flex flex-col gap-5">
