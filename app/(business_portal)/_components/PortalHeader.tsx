@@ -14,22 +14,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
+import { authService } from "@/services/auth-service";
 import { queueService } from "@/services/queue-service";
+import { type User } from "@/types";
 import { dashboardRelPath } from "../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
 export default function PortalHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = usePortalSidebar();
-  const { user, logout } = useAuth();
+  const { user, token, isLoading, logout } = useAuth();
+  const [headerUser, setHeaderUser] = useState<User | null>(user);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
-  const activeCompany = getActiveCompanySummary(user);
-  const displayName = activeCompany?.name || user?.companyName || user?.displayName || "SGS";
-  const email = user?.email || "test@sgs.se";
+  const currentUser = headerUser ?? user;
+  const activeCompany = getActiveCompanySummary(currentUser);
+  const displayName =
+    activeCompany?.name ||
+    currentUser?.companyName ||
+    currentUser?.displayName ||
+    currentUser?.email ||
+    "Konto";
+  const email = currentUser?.email || "";
   const role = activeCompany ? "Företagskonto" : "Hyresvärd";
   const avatarSrc =
     activeCompany
-      ? companyLogoUrl || activeCompany.logoUrl || user?.logoUrl || ""
-      : user?.logoUrl || "";
+      ? companyLogoUrl || activeCompany.logoUrl || currentUser?.logoUrl || ""
+      : currentUser?.logoUrl || "";
   const initials = displayName
     .split(" ")
     .map((part) => part[0])
@@ -38,9 +47,39 @@ export default function PortalHeader() {
     .toUpperCase();
 
   useEffect(() => {
+    setHeaderUser(user);
+  }, [user]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!token) {
+      setHeaderUser(null);
+      return;
+    }
+
+    let active = true;
+
+    authService
+      .me(token)
+      .then((meUser) => {
+        if (!active) return;
+        setHeaderUser(meUser);
+      })
+      .catch(() => {
+        if (!active) return;
+        setHeaderUser(user);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isLoading, token, user]);
+
+  useEffect(() => {
     setCompanyLogoUrl(null);
 
-    const companyId = getActiveCompanyId(user);
+    const companyId = getActiveCompanyId(currentUser);
     if (companyId == null) {
       return;
     }
@@ -61,7 +100,7 @@ export default function PortalHeader() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [currentUser]);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {

@@ -50,14 +50,14 @@ function buildInitialDraft(
 ): ProfileDraft {
   return {
     companyId,
-    name: companyData.name || "Företag",
+    name: companyData.name ?? "",
     subtitle: companyData.subtitle ?? "",
     description: companyData.description ?? "",
     website: companyData.website ?? "",
     contactEmail: companyData.contactEmail ?? companyData.email ?? "",
     contactPhone: companyData.contactPhone ?? companyData.phone ?? "",
-    logoUrl: companyData.logoUrl ?? "/logos/campuslyan-logo.svg",
-    bannerUrl: companyData.bannerUrl ?? "/appartment.jpg",
+    logoUrl: companyData.logoUrl ?? "",
+    bannerUrl: companyData.bannerUrl ?? "",
     facebook: firstQueue?.socialLinks?.facebook ?? "",
     linkedin: firstQueue?.socialLinks?.linkedin ?? "",
     orgNumber:
@@ -147,12 +147,16 @@ function EditableCompanyPreview({
       className="mx-auto flex w-full max-w-6xl flex-col gap-8"
     >
       <div className="relative">
-        <div className="relative h-[220px] w-full overflow-hidden rounded-2xl bg-gray-200 sm:h-[280px] md:h-[340px]">
-          <img
-            src={draft.bannerUrl || "/appartment.jpg"}
-            alt=""
-            className="h-full w-full object-cover"
-          />
+        <div className="relative h-[220px] w-full overflow-hidden rounded-2xl bg-gray-100 sm:h-[280px] md:h-[340px]">
+          {draft.bannerUrl ? (
+            <img
+              src={draft.bannerUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-[linear-gradient(135deg,#f8fafc_0%,#eef2f7_100%)]" />
+          )}
         </div>
 
         <UploadButton
@@ -169,11 +173,17 @@ function EditableCompanyPreview({
       <section className="relative rounded-3xl border border-black/5 bg-white/80 px-4 pb-8 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:px-6">
         <div className="relative -mt-14 mb-4 sm:-mt-24">
           <div className="relative h-28 w-28 overflow-hidden rounded-2xl border-4 border-white bg-white shadow-lg sm:h-36 sm:w-36">
-            <img
-              src={draft.logoUrl || "/logos/campuslyan-logo.svg"}
-              alt=""
-              className="h-full w-full object-contain p-2"
-            />
+            {draft.logoUrl ? (
+              <img
+                src={draft.logoUrl}
+                alt=""
+                className="h-full w-full object-contain p-2"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gray-50 text-4xl font-semibold text-gray-500 sm:text-5xl">
+                {draft.name.trim().charAt(0).toUpperCase() || "?"}
+              </div>
+            )}
 
             <UploadButton
               type="button"

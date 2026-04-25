@@ -26,13 +26,11 @@ import { dashboardRelPath } from "../../_statics/variables"
 import Link from "next/link"
 import { lowestCommonRoute, normalizeRoute } from "@/lib/utils"
 import { usePathname } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
+import { getActiveCompanySummary } from "@/lib/company-access"
+import { getUserDisplayName } from "@/lib/user-display"
 
 const data = {
-  user: {
-    name: "SGS",
-    email: "test@sgs.se",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: {
     heading: null,
     items: [
@@ -99,6 +97,19 @@ function getAllUrls(obj: any): string[] {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, logout } = useAuth()
+  const activeCompany = getActiveCompanySummary(user)
+  const navUser = {
+    name:
+      activeCompany?.name ||
+      user?.companyName ||
+      getUserDisplayName(user) ||
+      user?.email ||
+      "Konto",
+    email: user?.email || "",
+    avatar: activeCompany?.logoUrl || user?.logoUrl || null,
+  }
+
   // Combine all navigation items to determine single active link
   const allItems = [
     ...data.navMain.items,
@@ -149,7 +160,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={navUser} onLogout={logout} />
       </SidebarFooter>
     </Sidebar>
   )

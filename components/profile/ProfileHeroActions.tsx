@@ -5,6 +5,7 @@ import { PencilLine } from "lucide-react";
 
 type Props = {
   editHref?: string;
+  onEdit?: () => void;
   secondaryHref?: string;
   secondaryLabel?: string;
   messageHref?: string;
@@ -14,6 +15,7 @@ type Props = {
 
 export default function ProfileHeroActions({
   editHref,
+  onEdit,
   secondaryHref,
   secondaryLabel,
   messageHref,
@@ -37,7 +39,7 @@ export default function ProfileHeroActions({
       <Button
         as={editHref ? "a" : undefined}
         href={editHref}
-        onPress={editHref ? undefined : () => console.log("Redigera profil")}
+        onPress={editHref ? undefined : onEdit}
         size="sm"
         variant="default"
       >

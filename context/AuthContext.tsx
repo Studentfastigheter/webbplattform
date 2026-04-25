@@ -14,7 +14,7 @@ type AuthCtx = {
   register: (data: RegisterRequest) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>; 
-  updateUser: (data: UpdateUserRequest) => Promise<void>;
+  updateUser: (data: UpdateUserRequest) => Promise<User>;
 };
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
@@ -103,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUser = async (data: UpdateUserRequest) => {
     const updatedUser = await authService.updateProfile(data);
     setUser(updatedUser);
+    return updatedUser;
   };
 
   return (

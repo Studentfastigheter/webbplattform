@@ -30,9 +30,9 @@ export type EntityHeroSection = {
 
 type EntityHeroProps = {
   title: string;
-  bannerImage: string;
+  bannerImage?: string | null;
   bannerAlt?: string;
-  avatarImage: string;
+  avatarImage?: string | null;
   avatarAlt?: string;
   avatarShape?: "rounded" | "circle";
   avatarFit?: "cover" | "contain";
@@ -47,9 +47,12 @@ type EntityHeroProps = {
 };
 
 const badgeToneClassMap: Record<EntityHeroBadgeTone, string> = {
-  success: "border-emerald-200 bg-emerald-100 text-emerald-800",
-  warning: "border-amber-200 bg-amber-100 text-amber-800",
-  neutral: "border-slate-200 bg-slate-100 text-slate-700",
+  success:
+    "border-emerald-200/80 bg-white text-emerald-700 shadow-sm ring-1 ring-emerald-500/10",
+  warning:
+    "border-amber-200/80 bg-white text-amber-700 shadow-sm ring-1 ring-amber-500/10",
+  neutral:
+    "border-slate-200/80 bg-white text-slate-700 shadow-sm ring-1 ring-slate-500/10",
 };
 
 export default function EntityHero({
@@ -70,18 +73,23 @@ export default function EntityHero({
   avatarWrapperClassName,
 }: EntityHeroProps) {
   const hasActions = actionLinks.length > 0 || Boolean(headerActions);
+  const titleInitial = title.trim().charAt(0).toUpperCase() || "?";
 
   return (
     <section className={cn("w-full", className)}>
-      <div className="relative h-[220px] w-full overflow-hidden rounded-2xl bg-gray-200 sm:h-[280px] md:h-[340px]">
-        <Image
-          src={bannerImage}
-          alt={bannerAlt ?? title}
-          fill
-          className="object-cover"
-          priority
-          sizes="(min-width: 1024px) 896px, 100vw"
-        />
+      <div className="relative h-[220px] w-full overflow-hidden rounded-2xl bg-gray-100 sm:h-[280px] md:h-[340px]">
+        {bannerImage ? (
+          <Image
+            src={bannerImage}
+            alt={bannerAlt ?? title}
+            fill
+            className="object-cover"
+            priority
+            sizes="(min-width: 1024px) 896px, 100vw"
+          />
+        ) : (
+          <div className="h-full w-full bg-[linear-gradient(135deg,#f8fafc_0%,#eef2f7_100%)]" />
+        )}
       </div>
 
       <div
@@ -99,17 +107,23 @@ export default function EntityHero({
                 : "h-28 w-28 rounded-2xl sm:h-36 sm:w-36"
             )}
           >
-            <Image
-              src={avatarImage}
-              alt={avatarAlt ?? title}
-              width={144}
-              height={144}
-              className={cn(
-                "h-full w-full",
-                avatarFit === "contain" ? "object-contain p-2" : "object-cover"
-              )}
-              unoptimized={avatarFit === "contain"}
-            />
+            {avatarImage ? (
+              <Image
+                src={avatarImage}
+                alt={avatarAlt ?? title}
+                width={144}
+                height={144}
+                className={cn(
+                  "h-full w-full",
+                  avatarFit === "contain" ? "object-contain p-2" : "object-cover"
+                )}
+                unoptimized={avatarFit === "contain"}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gray-50 text-4xl font-semibold text-gray-500 sm:text-5xl">
+                {titleInitial}
+              </div>
+            )}
           </div>
         </div>
 
@@ -123,11 +137,15 @@ export default function EntityHero({
               {badge && (
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold",
+                    "inline-flex h-7 items-center gap-2 rounded-full border py-1 pl-2 pr-3 text-xs font-medium",
                     badgeToneClassMap[badge.tone ?? "neutral"]
                   )}
                 >
-                  {badge.icon}
+                  {badge.icon && (
+                    <span className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full bg-current/10">
+                      {badge.icon}
+                    </span>
+                  )}
                   <span>{badge.label}</span>
                 </span>
               )}

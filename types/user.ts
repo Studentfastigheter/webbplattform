@@ -45,6 +45,12 @@ export interface User {
   description?: string;
   verified: boolean;
   tags?: Tag[];
+  linkedInUrl?: UrlString;
+  instagramUrl?: UrlString;
+  facebookUrl?: UrlString;
+  studyProgram?: string;
+  studyPace?: string;
+  preferredArea?: string;
 
   // Student-specifika fält
   firstName?: string;
@@ -122,10 +128,22 @@ export interface RegisterRequest {
 }
 
 export interface UpdateUserRequest {
+  email?: string;
+  displayName?: string;
   firstName?: string;
   surname?: string;
   phone?: string;
   city?: string;
+  schoolName?: string;
+  tags?: string[];
+  logoUrl?: string;
+  bannerUrl?: string;
+  linkedInUrl?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  studyProgram?: string;
+  studyPace?: string;
+  preferredArea?: string;
   aboutText?: string; // Mappas till description för studenter i backend
   description?: string; // För hyresvärdar/företag
 }

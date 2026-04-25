@@ -31,6 +31,8 @@ export type ProfileStats = {
 export type StudentProfileExtended = StudentWithRelations & {
   headline?: string;
   stats?: ProfileStats;
+  bannerImage?: string;
+  avatarUrl?: string;
   cvUrl?: string | null;
   linkedInUrl?: string;
   instagramUrl?: string;
@@ -49,6 +51,7 @@ type InfoItem = {
 type ProfileHeroProps = {
   student: StudentProfileExtended;
   schoolsById?: Record<SchoolId, Pick<School, "name">>;
+  onEditProfile?: () => void;
 };
 
 type ProfileContactRow = {
@@ -60,6 +63,7 @@ type ProfileContactRow = {
 export default function ProfileHero({
   student,
   schoolsById,
+  onEditProfile,
 }: ProfileHeroProps) {
   const fullName =
     student.displayName ||
@@ -71,11 +75,9 @@ export default function ProfileHero({
       ? schoolsById[student.schoolId]?.name
       : undefined);
 
-  const bannerImage =
-    student.bannerUrl ?? "/appartment.jpg";
+  const bannerImage = student.bannerUrl ?? student.bannerImage ?? null;
 
-  const avatarImage =
-    student.logoUrl ?? "/team/Profilbild-Simon.jpg";
+  const avatarImage = student.logoUrl ?? student.avatarUrl ?? null;
 
   const verificationBadge = student.verifiedStudent
     ? {
@@ -188,6 +190,30 @@ export default function ProfileHero({
       ),
     },
     {
+      id: "seeking",
+      title: "Jag söker",
+      content: (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-100 bg-white/70 px-4 py-4 text-sm text-gray-700 sm:px-5 sm:py-5">
+            {preferenceText}
+          </div>
+
+          {student.tags && student.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {student.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-700"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
       id: "facts",
       title: "Snabbfakta",
       content: (
@@ -229,30 +255,6 @@ export default function ProfileHero({
         </ul>
       ),
     },
-    {
-      id: "seeking",
-      title: "Jag söker",
-      content: (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-gray-100 bg-white/70 px-4 py-4 text-sm text-gray-700 sm:px-5 sm:py-5">
-            {preferenceText}
-          </div>
-
-          {student.tags && student.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {student.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-700"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      ),
-    },
   ].filter(Boolean) as EntityHeroSection[];
 
   return (
@@ -286,7 +288,8 @@ export default function ProfileHero({
       actionLinks={socialItems}
       headerActions={
         <ProfileHeroActions
-          editHref="/installningar"
+          editHref={onEditProfile ? undefined : "/installningar"}
+          onEdit={onEditProfile}
           primaryLabel="Redigera profil"
         />
       }
