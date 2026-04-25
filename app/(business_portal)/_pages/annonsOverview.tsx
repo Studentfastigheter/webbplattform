@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   CalendarDays,
+  ChevronDown,
+  CircleCheck,
+  CirclePause,
   Edit3,
   FileUser,
   Home,
@@ -12,8 +17,27 @@ import {
   MapPin,
   Ruler,
   Tag as TagIcon,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Tag from "@/components/ui/Tag";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
@@ -30,6 +54,8 @@ type AnnonsOverviewProps = {
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
 type ListingStatusTone = "success" | "warning" | "neutral";
+type ListingStatusValue = "ACTIVE" | "INACTIVE" | "RENTED_OUT";
+type ListingActionState = "idle" | "status" | "delete";
 
 type ListingMeta = {
   applications: number;
@@ -37,6 +63,7 @@ type ListingMeta = {
   updatedAt: string;
   statusLabel: string;
   statusTone: ListingStatusTone;
+  statusValue: ListingStatusValue | null;
 };
 
 const emptyMeta: ListingMeta = {
@@ -45,6 +72,7 @@ const emptyMeta: ListingMeta = {
   updatedAt: "-",
   statusLabel: "Okänd",
   statusTone: "neutral",
+  statusValue: null,
 };
 
 const statusClassMap: Record<ListingStatusTone, string> = {
@@ -52,6 +80,16 @@ const statusClassMap: Record<ListingStatusTone, string> = {
   warning: "border-amber-200 bg-amber-50 text-amber-700",
   neutral: "border-gray-200 bg-gray-100 text-gray-700",
 };
+
+const listingStatusOptions: Array<{
+  value: ListingStatusValue;
+  label: string;
+  icon: typeof CircleCheck;
+}> = [
+  { value: "ACTIVE", label: "Aktiv", icon: CircleCheck },
+  { value: "INACTIVE", label: "Inaktiv", icon: CirclePause },
+  { value: "RENTED_OUT", label: "Uthyrd", icon: Home },
+];
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
   const parts = path.split(".");
@@ -106,6 +144,7 @@ function normalizeKey(value: string): string {
 function mapStatus(statusRaw?: string): {
   label: string;
   tone: ListingStatusTone;
+  value: ListingStatusValue | null;
 } {
   const status = (statusRaw ?? "published").toLowerCase().trim();
 
@@ -120,7 +159,11 @@ function mapStatus(statusRaw?: string): {
       "live",
     ].includes(status)
   ) {
-    return { label: "Aktiv", tone: "success" };
+    return { label: "Aktiv", tone: "success", value: "ACTIVE" };
+  }
+
+  if (["rented", "rentedout", "rented_out", "uthyrd"].includes(status)) {
+    return { label: "Uthyrd", tone: "neutral", value: "RENTED_OUT" };
   }
 
   if (
@@ -132,14 +175,12 @@ function mapStatus(statusRaw?: string): {
       "archived",
       "closed",
       "draft",
-      "rented",
-      "uthyrd",
     ].includes(status)
   ) {
-    return { label: "Inaktiv", tone: "warning" };
+    return { label: "Inaktiv", tone: "warning", value: "INACTIVE" };
   }
 
-  return { label: statusRaw ?? "Okänd", tone: "neutral" };
+  return { label: statusRaw ?? "Okänd", tone: "neutral", value: null };
 }
 
 function formatDate(value?: string | null): string {
@@ -246,7 +287,7 @@ function resolveListingMeta(
     (companyListing
       ? pickString(companyListing, ["updatedAt", "modifiedAt", "lastEditedAt"])
       : undefined) ?? pickString(rawDetail, ["updatedAt", "modifiedAt", "lastEditedAt"]);
-  const { label, tone } = mapStatus(
+  const { label, tone, value } = mapStatus(
     (companyListing
       ? pickString(companyListing, ["status", "listingStatus", "state"])
       : undefined) ?? pickString(rawDetail, ["status", "listingStatus", "state"])
@@ -258,6 +299,7 @@ function resolveListingMeta(
     updatedAt: formatDate(updatedAtRaw),
     statusLabel: label,
     statusTone: tone,
+    statusValue: value,
   };
 }
 
@@ -295,14 +337,43 @@ function FactTile({
 }
 
 export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
+  const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [listing, setListing] = useState<ListingDetailDTO | null>(null);
   const [meta, setMeta] = useState<ListingMeta>(emptyMeta);
   const [isOwnListing, setIsOwnListing] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [actionState, setActionState] = useState<ListingActionState>("idle");
 
   const companyId = getActiveCompanyId(user);
+
+  const fetchListingData = useCallback(async () => {
+    const companyListingsPromise = companyId
+      ? queueService.getCompanyListings(companyId, 0, 200)
+      : Promise.resolve<ListingCardDTO[]>([]);
+    const applicationsPromise = companyId
+      ? companyService.applicationCountsPerObject(companyId, 200).catch(() => [])
+      : Promise.resolve<ObjectApplicationCount[]>([]);
+
+    const [listingDetail, companyListings, applicationsByObject] = await Promise.all([
+      listingService.get(id),
+      companyListingsPromise,
+      applicationsPromise,
+    ]);
+
+    const matchedCompanyListing =
+      (companyListings as RawListing[]).find(
+        (item) => String(item.id) === String(listingDetail.id)
+      ) ?? null;
+
+    return {
+      listingDetail,
+      isOwnListing: Boolean(matchedCompanyListing),
+      meta: resolveListingMeta(listingDetail, matchedCompanyListing, applicationsByObject),
+    };
+  }, [companyId, id]);
 
   useEffect(() => {
     if (authLoading) {
@@ -316,25 +387,13 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     setMeta(emptyMeta);
     setIsOwnListing(true);
 
-    const companyListingsPromise = companyId
-      ? queueService.getCompanyListings(companyId, 0, 200)
-      : Promise.resolve<ListingCardDTO[]>([]);
-    const applicationsPromise = companyId
-      ? companyService.applicationCountsPerObject(companyId, 200).catch(() => [])
-      : Promise.resolve<ObjectApplicationCount[]>([]);
-
-    Promise.all([listingService.get(id), companyListingsPromise, applicationsPromise])
-      .then(([listingDetail, companyListings, applicationsByObject]) => {
+    fetchListingData()
+      .then(({ listingDetail, isOwnListing: ownListing, meta: listingMeta }) => {
         if (!active) return;
 
-        const matchedCompanyListing =
-          (companyListings as RawListing[]).find(
-            (item) => String(item.id) === String(listingDetail.id)
-          ) ?? null;
-
         setListing(listingDetail);
-        setIsOwnListing(Boolean(matchedCompanyListing));
-        setMeta(resolveListingMeta(listingDetail, matchedCompanyListing, applicationsByObject));
+        setIsOwnListing(ownListing);
+        setMeta(listingMeta);
       })
       .catch((requestError) => {
         if (!active) return;
@@ -351,11 +410,53 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return () => {
       active = false;
     };
-  }, [authLoading, companyId, id]);
+  }, [authLoading, fetchListingData]);
 
   const editHref = `${dashboardRelPath}/annonser/${encodeURIComponent(id)}/redigera`;
   const applicationsHref = `${dashboardRelPath}/ansokningar?listingId=${encodeURIComponent(id)}`;
   const image = useMemo(() => listing?.imageUrls?.find(Boolean), [listing]);
+
+  const handleStatusChange = async (status: ListingStatusValue) => {
+    const option = listingStatusOptions.find((item) => item.value === status);
+    setActionState("status");
+
+    try {
+      await listingService.update(id, { status });
+      const mapped = mapStatus(status);
+      setMeta((current) => ({
+        ...current,
+        statusLabel: option?.label ?? mapped.label,
+        statusTone: mapped.tone,
+        statusValue: status,
+      }));
+      toast.success("Annonsens status har uppdaterats.");
+    } catch (statusError) {
+      toast.error(
+        statusError instanceof Error
+          ? statusError.message
+          : "Kunde inte uppdatera annonsens status."
+      );
+    } finally {
+      setActionState("idle");
+    }
+  };
+
+  const handleDelete = async () => {
+    setActionState("delete");
+
+    try {
+      await listingService.delete(id);
+      toast.success("Annonsen har raderats.");
+      setDeleteDialogOpen(false);
+      router.push(`${dashboardRelPath}/annonser`);
+      router.refresh();
+    } catch (deleteError) {
+      toast.error(
+        deleteError instanceof Error ? deleteError.message : "Kunde inte radera annonsen."
+      );
+      setActionState("idle");
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -443,10 +544,65 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button as="a" className="w-full sm:w-auto" href={editHref}>
-              <Edit3 className="h-4 w-4" />
-              Redigera annons
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.18)] transition-colors hover:bg-[#004225]/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
+                  disabled={actionState !== "idle"}
+                >
+                  Hantera
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 border-gray-200 bg-white">
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href={editHref}>
+                    <Edit3 className="h-4 w-4" />
+                    Redigera information
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="cursor-pointer">
+                    <CircleCheck className="h-4 w-4" />
+                    Ändra status
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-44 border-gray-200 bg-white">
+                    {listingStatusOptions.map((option) => {
+                      const Icon = option.icon;
+                      const isCurrent = meta.statusValue === option.value;
+
+                      return (
+                        <DropdownMenuItem
+                          key={option.value}
+                          className="cursor-pointer"
+                          disabled={actionState !== "idle" || isCurrent}
+                          onSelect={() => handleStatusChange(option.value)}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {option.label}
+                          {isCurrent ? (
+                            <span className="ml-auto text-xs text-gray-400">Nuvarande</span>
+                          ) : null}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  disabled={actionState !== "idle"}
+                  onSelect={() => setDeleteDialogOpen(true)}
+                  variant="destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Radera annonsen
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               as="a"
               className="w-full sm:w-auto"
@@ -533,6 +689,40 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           )}
         </section>
       </div>
+
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (actionState === "delete") return;
+          setDeleteDialogOpen(open);
+        }}
+      >
+        <AlertDialogContent className="border-gray-200 bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Radera annons?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Annonsen tas bort permanent och kan inte återställas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              onPress={() => setDeleteDialogOpen(false)}
+              isDisabled={actionState === "delete"}
+            >
+              Avbryt
+            </Button>
+            <Button
+              variant="destructive"
+              onPress={handleDelete}
+              isLoading={actionState === "delete"}
+              isDisabled={actionState === "delete"}
+            >
+              Radera annonsen
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

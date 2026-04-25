@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import QueueHero from "@/components/ads/QueueHero";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type CompanyPrivateDTO } from "@/services/company";
 import { queueService } from "@/services/queue-service";
 import { type HousingQueueDTO } from "@/types/queue";
-import { Loader2, Save } from "lucide-react";
+import {
+  Facebook,
+  Globe,
+  Linkedin,
+  Loader2,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+  Save,
+  Share2,
+} from "lucide-react";
 import { UploadButton } from "../../_components/UploadButton";
 
 type ProfileDraft = {
@@ -30,6 +36,12 @@ type ProfileDraft = {
   orgNumber: string;
   internalContactNote: string;
 };
+
+const inlineInputClass =
+  "min-w-0 rounded-md border border-[#004225]/10 bg-[#004225]/[0.035] px-2 py-1 outline-none transition hover:border-[#004225]/25 hover:bg-white focus:border-[#004225] focus:bg-white focus:ring-4 focus:ring-[#004225]/10";
+
+const iconInputClass =
+  "min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition hover:border-[#004225]/30 focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10";
 
 function buildInitialDraft(
   companyId: number,
@@ -55,6 +67,236 @@ function buildInitialDraft(
       "",
     internalContactNote: companyData.internalContactNote ?? "",
   };
+}
+
+function getProfileSnapshot(draft: ProfileDraft | null) {
+  if (!draft) return "";
+
+  return JSON.stringify({
+    name: draft.name,
+    subtitle: draft.subtitle,
+    description: draft.description,
+    website: draft.website,
+    contactEmail: draft.contactEmail,
+    contactPhone: draft.contactPhone,
+    logoUrl: draft.logoUrl,
+    bannerUrl: draft.bannerUrl,
+    facebook: draft.facebook,
+    linkedin: draft.linkedin,
+    orgNumber: draft.orgNumber,
+    internalContactNote: draft.internalContactNote,
+  });
+}
+
+function InlineLabel({ children }: { children: string }) {
+  return (
+    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+      {children}
+    </span>
+  );
+}
+
+function EditableContactRow({
+  icon,
+  label,
+  value,
+  placeholder,
+  type = "text",
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  placeholder: string;
+  type?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2">
+      {icon}
+      <span className="sr-only">{label}</span>
+      <input
+        aria-label={label}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={iconInputClass}
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
+function EditableCompanyPreview({
+  draft,
+  companyQueue,
+  onDraftChange,
+  onImageSelect,
+}: {
+  draft: ProfileDraft;
+  companyQueue: HousingQueueDTO | null;
+  onDraftChange: <K extends keyof ProfileDraft>(
+    key: K,
+    value: ProfileDraft[K]
+  ) => void;
+  onImageSelect: (field: "logoUrl" | "bannerUrl", file: File) => void;
+}) {
+  return (
+    <section
+      aria-label="Förhandsvisning av företagsprofil"
+      className="mx-auto flex w-full max-w-6xl flex-col gap-8"
+    >
+      <div className="relative">
+        <div className="relative h-[220px] w-full overflow-hidden rounded-2xl bg-gray-200 sm:h-[280px] md:h-[340px]">
+          <img
+            src={draft.bannerUrl || "/appartment.jpg"}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        </div>
+
+        <UploadButton
+          type="button"
+          variant="outline"
+          onFileSelect={(file) => onImageSelect("bannerUrl", file)}
+          className="absolute right-4 top-4 bg-white/95 shadow-sm backdrop-blur"
+        >
+          <Pencil className="h-4 w-4" />
+          Omslagsbild
+        </UploadButton>
+      </div>
+
+      <section className="relative rounded-3xl border border-black/5 bg-white/80 px-4 pb-8 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:px-6">
+        <div className="relative -mt-14 mb-4 sm:-mt-24">
+          <div className="relative h-28 w-28 overflow-hidden rounded-2xl border-4 border-white bg-white shadow-lg sm:h-36 sm:w-36">
+            <img
+              src={draft.logoUrl || "/logos/campuslyan-logo.svg"}
+              alt=""
+              className="h-full w-full object-contain p-2"
+            />
+
+            <UploadButton
+              type="button"
+              size="icon-sm"
+              variant="outline"
+              aria-label="Redigera logga"
+              title="Redigera logga"
+              onFileSelect={(file) => onImageSelect("logoUrl", file)}
+              className="absolute right-1 top-1 min-w-0 bg-white/95 shadow-sm backdrop-blur"
+            >
+              <Pencil className="h-4 w-4" />
+            </UploadButton>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0 flex-1">
+            <input
+              aria-label="Profilnamn"
+              value={draft.name}
+              onChange={(event) => onDraftChange("name", event.target.value)}
+              className={`${inlineInputClass} -mx-2 w-full text-2xl font-bold text-gray-900 sm:text-3xl`}
+              placeholder="Profilnamn"
+            />
+
+            <input
+              aria-label="Underrubrik"
+              value={draft.subtitle}
+              onChange={(event) => onDraftChange("subtitle", event.target.value)}
+              className={`${inlineInputClass} -mx-2 mt-2 w-full text-sm font-medium text-gray-600 sm:text-base`}
+              placeholder="Kort underrubrik"
+            />
+
+            {companyQueue?.city && (
+              <div className="mt-3 flex items-center gap-1.5 text-sm text-gray-600">
+                <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                <span>{companyQueue.city}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400">
+              <Facebook className="h-[18px] w-[18px]" />
+            </span>
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400">
+              <Linkedin className="h-[18px] w-[18px]" />
+            </span>
+            <div className="mx-0.5 h-5 w-px bg-gray-200" />
+            <button
+              type="button"
+              disabled
+              aria-label="Dela"
+              title="Dela"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-300"
+            >
+              <Share2 className="h-[18px] w-[18px]" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-2">
+          <InlineLabel>Sociala länkar</InlineLabel>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <EditableContactRow
+              icon={<Facebook className="h-4 w-4 shrink-0 text-gray-400" />}
+              label="Facebook"
+              value={draft.facebook}
+              onChange={(value) => onDraftChange("facebook", value)}
+              placeholder="https://facebook.com/..."
+            />
+            <EditableContactRow
+              icon={<Linkedin className="h-4 w-4 shrink-0 text-gray-400" />}
+              label="LinkedIn"
+              value={draft.linkedin}
+              onChange={(value) => onDraftChange("linkedin", value)}
+              placeholder="https://linkedin.com/company/..."
+            />
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">Om oss</h2>
+          <textarea
+            aria-label="Om oss"
+            value={draft.description}
+            onChange={(event) => onDraftChange("description", event.target.value)}
+            className={`${inlineInputClass} min-h-40 w-full resize-y text-base leading-relaxed text-gray-600`}
+            placeholder="Beskriv företaget"
+          />
+        </div>
+
+        <div className="mt-8">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">Kontakt</h2>
+          <div className="grid gap-3 lg:grid-cols-3">
+            <EditableContactRow
+              icon={<Phone className="h-4 w-4 shrink-0 text-gray-400" />}
+              label="Kontakt telefon"
+              value={draft.contactPhone}
+              onChange={(value) => onDraftChange("contactPhone", value)}
+              placeholder="070-000 00 00"
+            />
+            <EditableContactRow
+              icon={<Mail className="h-4 w-4 shrink-0 text-gray-400" />}
+              label="Kontakt e-post"
+              type="email"
+              value={draft.contactEmail}
+              onChange={(value) => onDraftChange("contactEmail", value)}
+              placeholder="kontakt@foretag.se"
+            />
+            <EditableContactRow
+              icon={<Globe className="h-4 w-4 shrink-0 text-gray-400" />}
+              label="Hemsida"
+              type="url"
+              value={draft.website}
+              onChange={(value) => onDraftChange("website", value)}
+              placeholder="https://"
+            />
+          </div>
+        </div>
+      </section>
+    </section>
+  );
 }
 
 export default function ProfilePage() {
@@ -135,35 +377,17 @@ export default function ProfilePage() {
     };
   }, [authLoading, companyId, user]);
 
-  const heroQueue = useMemo(() => {
-    if (!draft) return null;
-
-    const facebook = draft.facebook.trim();
-    const linkedin = draft.linkedin.trim();
-
-    return {
-      id: String(company?.id ?? draft.companyId),
-      companyId: company?.id ?? draft.companyId,
-      name: draft.name || company?.name || "Företag",
-      city: "",
-      logoUrl: draft.logoUrl || company?.logoUrl || "/logos/campuslyan-logo.svg",
-      bannerUrl: draft.bannerUrl || company?.bannerUrl || "/appartment.jpg",
-      description: draft.description || company?.description || undefined,
-      website: draft.website || company?.website || undefined,
-      activeListings: 0,
-      totalUnits: companyQueue?.totalUnits,
-      waitDays: companyQueue?.waitDays,
-      contactEmail: draft.contactEmail || undefined,
-      contactPhone: draft.contactPhone || undefined,
-      socialLinks:
-        facebook || linkedin
-          ? {
-              facebook: facebook || undefined,
-              linkedin: linkedin || undefined,
-            }
-          : undefined,
-    } satisfies HousingQueueDTO;
+  const savedSnapshot = useMemo(() => {
+    if (!company || !draft) return "";
+    return getProfileSnapshot(
+      buildInitialDraft(draft.companyId, company, companyQueue ?? undefined)
+    );
   }, [company, companyQueue, draft]);
+
+  const hasUnsavedChanges = useMemo(
+    () => getProfileSnapshot(draft) !== savedSnapshot,
+    [draft, savedSnapshot]
+  );
 
   const updateDraftField = <K extends keyof ProfileDraft>(
     key: K,
@@ -175,10 +399,7 @@ export default function ProfilePage() {
     });
   };
 
-  const handleImageSelect = (
-    field: "logoUrl" | "bannerUrl",
-    file: File
-  ) => {
+  const handleImageSelect = (field: "logoUrl" | "bannerUrl", file: File) => {
     const previousPreview = previewImageUrlsRef.current[field];
     if (previousPreview) {
       URL.revokeObjectURL(previousPreview);
@@ -187,6 +408,24 @@ export default function ProfilePage() {
     const localPreviewUrl = URL.createObjectURL(file);
     previewImageUrlsRef.current[field] = localPreviewUrl;
     updateDraftField(field, localPreviewUrl);
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+  };
+
+  const resetDraft = () => {
+    if (!company || !draft) return;
+    const previewImageUrls = previewImageUrlsRef.current;
+    if (previewImageUrls.logoUrl) {
+      URL.revokeObjectURL(previewImageUrls.logoUrl);
+      previewImageUrls.logoUrl = null;
+    }
+    if (previewImageUrls.bannerUrl) {
+      URL.revokeObjectURL(previewImageUrls.bannerUrl);
+      previewImageUrls.bannerUrl = null;
+    }
+    setDraft(buildInitialDraft(draft.companyId, company, companyQueue ?? undefined));
   };
 
   if (authLoading) {
@@ -206,7 +445,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (companyId == null) {
+  if (companyId == null || Number.isNaN(companyId)) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
         Denna profilsida gäller bara för företagskonton.
@@ -214,7 +453,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (loading || !draft || !heroQueue) {
+  if (loading || !draft) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500">
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -224,226 +463,57 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-gray-900">Företagsprofil</h1>
-        <p className="text-sm text-gray-600">
-          Redigera fälten och förhandsgranska exakt hur profilen visas på
-          sidan för alla köer.
-        </p>
-        {error && (
-          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
-        )}
-      </header>
-
-      <div className="grid gap-6 xl:grid-cols-[460px_minmax(0,1fr)]">
-        <Card className="h-fit border-gray-200 bg-white xl:sticky xl:top-24">
-          <CardHeader>
-            <CardTitle>Redigera profil</CardTitle>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            <div className="space-y-3">
-              <Label htmlFor="profile-name">Profilnamn</Label>
-              <Input
-                id="profile-name"
-                value={draft.name}
-                onChange={(event) =>
-                  updateDraftField("name", event.target.value)
-                }
-                placeholder="Ange företagsnamn"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="profile-subtitle">Underrubrik</Label>
-              <Input
-                id="profile-subtitle"
-                value={draft.subtitle}
-                onChange={(event) =>
-                  updateDraftField("subtitle", event.target.value)
-                }
-                placeholder="Kort beskrivning av företaget"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="profile-description">Om oss</Label>
-              <Textarea
-                id="profile-description"
-                value={draft.description}
-                onChange={(event) =>
-                  updateDraftField("description", event.target.value)
-                }
-                placeholder="Beskriv företaget"
-                rows={5}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="profile-website">Hemsida</Label>
-              <Input
-                id="profile-website"
-                value={draft.website}
-                onChange={(event) =>
-                  updateDraftField("website", event.target.value)
-                }
-                placeholder="https://"
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-3">
-                <Label htmlFor="profile-email">Kontakt e-post</Label>
-                <Input
-                  id="profile-email"
-                  type="email"
-                  value={draft.contactEmail}
-                  onChange={(event) =>
-                    updateDraftField("contactEmail", event.target.value)
-                  }
-                  placeholder="kontakt@företag.se"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="profile-phone">Kontakt telefon</Label>
-                <Input
-                  id="profile-phone"
-                  value={draft.contactPhone}
-                  onChange={(event) =>
-                    updateDraftField("contactPhone", event.target.value)
-                  }
-                  placeholder="070-000 00 00"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="profile-org-number">Organisationsnummer</Label>
-              <Input
-                id="profile-org-number"
-                value={draft.orgNumber}
-                onChange={(event) =>
-                  updateDraftField("orgNumber", event.target.value)
-                }
-                placeholder="Organisationsnummer"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="profile-contact-note">Intern kontaktanteckning</Label>
-              <Textarea
-                id="profile-contact-note"
-                value={draft.internalContactNote}
-                onChange={(event) =>
-                  updateDraftField("internalContactNote", event.target.value)
-                }
-                placeholder="Intern anteckning"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-3">
-                <Label htmlFor="profile-facebook">Facebook</Label>
-                <Input
-                  id="profile-facebook"
-                  value={draft.facebook}
-                  onChange={(event) =>
-                    updateDraftField("facebook", event.target.value)
-                  }
-                  placeholder="https://facebook.com/..."
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="profile-linkedin">LinkedIn</Label>
-                <Input
-                  id="profile-linkedin"
-                  value={draft.linkedin}
-                  onChange={(event) =>
-                    updateDraftField("linkedin", event.target.value)
-                  }
-                  placeholder="https://linkedin.com/company/..."
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Bilder</Label>
-              <div className="flex flex-wrap gap-3">
-                <UploadButton
-                  variant="outline"
-                  size="sm"
-                  onFileSelect={(file) => handleImageSelect("logoUrl", file)}
-                >
-                  Byt logga
-                </UploadButton>
-
-                <UploadButton
-                  variant="outline"
-                  size="sm"
-                  onFileSelect={(file) => handleImageSelect("bannerUrl", file)}
-                >
-                  Byt omslagsbild
-                </UploadButton>
-              </div>
-            </div>
-
-            <Button isDisabled title="PUT-stöd för företagsprofilen är inte kopplat ännu.">
-              <Save className="h-4 w-4" />
-              Spara profil
-            </Button>
-          </CardContent>
-        </Card>
-
-        <section className="h-fit rounded-2xl border border-gray-200 bg-white p-3 sm:p-4">
-          <main className="overflow-hidden rounded-xl bg-white pb-8">
-            <QueueHero
-              queue={heroQueue}
-              disableShareButton
-            />
-
-            <div className="mx-auto mt-10 max-w-4xl px-4 pb-16 sm:px-6">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">
-                Bostadskö
-              </h2>
-
-              {companyQueue ? (
-                <article className="rounded-xl border border-gray-200 bg-white p-5">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <h3 className="text-base font-semibold text-gray-900">
-                        {companyQueue.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {companyQueue.city || "Stad saknas"}
-                        {companyQueue.waitDays != null &&
-                          ` | ca ${companyQueue.waitDays} dagars kötid`}
-                        {companyQueue.totalUnits != null &&
-                          ` | ${companyQueue.totalUnits} bostäder`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {companyQueue.description && (
-                    <p className="mt-4 text-sm leading-6 text-gray-600">
-                      {companyQueue.description}
-                    </p>
-                  )}
-                </article>
-              ) : (
-                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
-                  Ingen bostadskö hittades för företaget.
-                </div>
-              )}
-            </div>
-          </main>
-        </section>
+    <main className="pb-12">
+      <div className="mb-6">
+        <p className="text-sm font-medium text-gray-500">Företagsprofil</p>
+        <h1 className="text-2xl font-semibold text-gray-900">Redigera profil</h1>
       </div>
-    </div>
+
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="grid gap-6">
+        <EditableCompanyPreview
+          draft={draft}
+          companyQueue={companyQueue}
+          onDraftChange={updateDraftField}
+          onImageSelect={handleImageSelect}
+        />
+
+        <div className="sticky bottom-4 z-10 mx-auto flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+            {hasUnsavedChanges ? (
+              <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                Osparade ändringar
+              </span>
+            ) : (
+              <span className="text-sm text-gray-500">Inga lokala ändringar.</span>
+            )}
+            <span className="text-xs text-gray-400">
+              Sparande mot API är inte kopplat för företagsprofilen ännu.
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="submit"
+              isDisabled
+              title="PUT-stöd för företagsprofilen är inte kopplat ännu."
+            >
+              <Save className="h-4 w-4" />
+              Spara ändringar
+            </Button>
+            {hasUnsavedChanges && (
+              <Button type="button" variant="outline" onClick={resetDraft}>
+                Återställ
+              </Button>
+            )}
+          </div>
+        </div>
+      </form>
+    </main>
   );
 }
