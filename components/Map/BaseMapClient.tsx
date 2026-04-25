@@ -188,7 +188,7 @@ const [initialZoom] = useState<number>(() => {
     return () => window.removeEventListener("resize", handleResize);
   }, [applyFit, suppressAutoFit]);
 
-  const clusteringActive = zoomLevel < CLUSTER_ZOOM_THRESHOLD;
+  const clusteringActive = zoomLevel < CLUSTER_ZOOM_THRESHOLD && !hasActiveMarker;
 
   // Fly to active marker when it changes
   useEffect(() => {
@@ -196,6 +196,8 @@ const [initialZoom] = useState<number>(() => {
     if (!map || !activeMarkerId) return;
     const targetMarker = markers.find((m) => m.id === activeMarkerId);
     if (!targetMarker) return;
+    manualPopupRef.current = false;
+    setActivePopupId(activeMarkerId);
     if (lastFocusedMarkerId.current === activeMarkerId) return;
 
     const currentZoom = map.getZoom();
@@ -223,6 +225,9 @@ const [initialZoom] = useState<number>(() => {
   useEffect(() => {
     if (!activeMarkerId) {
       lastFocusedMarkerId.current = null;
+      if (!manualPopupRef.current) {
+        setActivePopupId(null);
+      }
     }
   }, [activeMarkerId]);
 
@@ -232,6 +237,10 @@ const [initialZoom] = useState<number>(() => {
     if (manualPopupRef.current) return;
     if (markers.length === 0) {
       setActivePopupId(null);
+      return;
+    }
+    if (activeMarkerId && markers.some((marker) => marker.id === activeMarkerId)) {
+      setActivePopupId(activeMarkerId);
       return;
     }
     if (clusteringActive) {
@@ -259,7 +268,7 @@ const [initialZoom] = useState<number>(() => {
     if (closestId && markerRefs.current[closestId]) {
       setActivePopupId(closestId);
     }
-  }, [markers, zoomLevel, clusteringActive]);
+  }, [markers, zoomLevel, clusteringActive, activeMarkerId]);
 
   // Sync popup visibility with activePopupId
   useEffect(() => {
