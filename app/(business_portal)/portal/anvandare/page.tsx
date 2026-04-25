@@ -20,13 +20,13 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
 import { queueService } from "@/services/queue-service";
+import { PortalControlSelectTrigger } from "../../_components/PortalControlSelectTrigger";
 
 type UserRole = "admin" | "editor" | "reviewer";
 type UserStatus = "active" | "invited" | "paused";
@@ -61,8 +61,6 @@ type UserForm = {
 type DialogMode = "add" | "manage";
 
 const STORAGE_PREFIX = "portal-company-users-v1";
-const secondaryControlClassName =
-  "h-8 w-full rounded-full border border-gray-200 bg-gray-50 px-3 text-xs font-medium text-gray-700 shadow-none transition-colors hover:border-gray-300 hover:bg-white focus:border-[#004225] focus:ring-0";
 
 const roleLabels: Record<UserRole, string> = {
   admin: "Administratör",
@@ -457,13 +455,11 @@ export default function UsersPage() {
                           setStatusFilter(value as "all" | UserStatus)
                         }
                       >
-                        <SelectTrigger
-                          size="sm"
+                        <PortalControlSelectTrigger
                           aria-label="Filtrera på status"
-                          className={secondaryControlClassName}
                         >
                           <SelectValue />
-                        </SelectTrigger>
+                        </PortalControlSelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Alla statusar</SelectItem>
                           <SelectItem value="active">Aktiva</SelectItem>
@@ -480,13 +476,11 @@ export default function UsersPage() {
                           setRoleFilter(value as "all" | UserRole)
                         }
                       >
-                        <SelectTrigger
-                          size="sm"
+                        <PortalControlSelectTrigger
                           aria-label="Filtrera på roll"
-                          className={secondaryControlClassName}
                         >
                           <SelectValue />
-                        </SelectTrigger>
+                        </PortalControlSelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Alla roller</SelectItem>
                           <SelectItem value="admin">Administratörer</SelectItem>

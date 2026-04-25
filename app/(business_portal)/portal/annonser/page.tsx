@@ -9,7 +9,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
@@ -17,6 +16,7 @@ import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService } from "@/services/company";
 import { queueService } from "@/services/queue-service";
 import { type ListingCardDTO } from "@/types/listing";
+import { PortalControlSelectTrigger } from "../../_components/PortalControlSelectTrigger";
 import { dashboardRelPath } from "../../_statics/variables";
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
@@ -43,9 +43,6 @@ const statusClassMap: Record<ListingStatusTone, string> = {
   warning: "border-amber-200 bg-amber-50 text-amber-700",
   neutral: "border-gray-200 bg-gray-100 text-gray-700",
 };
-
-const secondaryControlClassName =
-  "h-8 w-full rounded-full border border-gray-200 bg-gray-50 px-3 text-xs font-medium text-gray-700 shadow-none transition-colors hover:border-gray-300 hover:bg-white focus:border-[#004225] focus:ring-0";
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
   const parts = path.split(".");
@@ -444,13 +441,11 @@ export default function PortalAdsPage() {
                         setStatusFilter(value as StatusFilter)
                       }
                     >
-                      <SelectTrigger
-                        size="sm"
+                      <PortalControlSelectTrigger
                         aria-label="Filtrera på status"
-                        className={secondaryControlClassName}
                       >
                         <SelectValue />
-                      </SelectTrigger>
+                      </PortalControlSelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Alla statusar</SelectItem>
                         <SelectItem value="active">Aktiva</SelectItem>
@@ -461,13 +456,11 @@ export default function PortalAdsPage() {
 
                   <div className="min-w-0">
                     <Select value={cityFilter} onValueChange={setCityFilter}>
-                      <SelectTrigger
-                        size="sm"
+                      <PortalControlSelectTrigger
                         aria-label="Filtrera på stad"
-                        className={secondaryControlClassName}
                       >
                         <SelectValue />
-                      </SelectTrigger>
+                      </PortalControlSelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Alla städer</SelectItem>
                         {availableCities.map((city) => (
@@ -545,13 +538,11 @@ export default function PortalAdsPage() {
                       setStatusFilter(value as StatusFilter)
                     }
                   >
-                    <SelectTrigger
-                      size="sm"
+                    <PortalControlSelectTrigger
                       aria-label="Filtrera på status"
-                      className={secondaryControlClassName}
                     >
                       <SelectValue />
-                    </SelectTrigger>
+                    </PortalControlSelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Alla statusar</SelectItem>
                       <SelectItem value="active">Aktiva</SelectItem>
@@ -562,13 +553,11 @@ export default function PortalAdsPage() {
 
                 <div className="min-w-0">
                   <Select value={cityFilter} onValueChange={setCityFilter}>
-                    <SelectTrigger
-                      size="sm"
+                    <PortalControlSelectTrigger
                       aria-label="Filtrera på stad"
-                      className={secondaryControlClassName}
                     >
                       <SelectValue />
-                    </SelectTrigger>
+                    </PortalControlSelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Alla städer</SelectItem>
                       {availableCities.map((city) => (
@@ -602,13 +591,11 @@ export default function PortalAdsPage() {
                 value={dateSort}
                 onValueChange={(value) => setDateSort(value as DateSort)}
               >
-                <SelectTrigger
-                  size="sm"
+                <PortalControlSelectTrigger
                   aria-label="Sortera annonser"
-                  className={secondaryControlClassName}
                 >
                   <SelectValue />
-                </SelectTrigger>
+                </PortalControlSelectTrigger>
                 <SelectContent>
                   <SelectItem value="newest">Nyast först</SelectItem>
                   <SelectItem value="oldest">Äldst först</SelectItem>

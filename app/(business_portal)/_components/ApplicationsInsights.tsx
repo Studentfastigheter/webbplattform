@@ -3,7 +3,7 @@
 import * as React from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Building2, Clock3, Home, ListOrdered, MapPin, Users } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
@@ -12,6 +12,7 @@ import { queueService, type QueueApplicationDTO } from "@/services/queue-service
 import type { ListingCardDTO } from "@/types/listing";
 import type { HousingQueueDTO } from "@/types/queue";
 import type { ApplicantsTableProps } from "@/lib/definitions";
+import { PortalControlSelectTrigger } from "./PortalControlSelectTrigger";
 import { CardShell, DonutBreakdownCard, MetricCard, type DonutBreakdownItem } from "./dashboard-kit";
 
 export type ApplicationsMode = "interest" | "queue";
@@ -226,7 +227,7 @@ function LoadingState() {
 function PeriodSelect({ value, onChange }: { value: TimePeriod; onChange: (value: TimePeriod) => void }) {
   return (
     <Select value={value} onValueChange={(next) => onChange(next as TimePeriod)}>
-      <SelectTrigger className="h-10 w-[190px] rounded-lg border-gray-200 bg-white"><SelectValue /></SelectTrigger>
+      <PortalControlSelectTrigger className="w-[190px]"><SelectValue /></PortalControlSelectTrigger>
       <SelectContent>{periodOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
     </Select>
   );
