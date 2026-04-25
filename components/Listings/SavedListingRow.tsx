@@ -169,12 +169,14 @@ export default function SavedListingRow({
         {pills.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {pills.map((tag) => (
-              <span
+              <Tag
                 key={tag}
-                className="rounded-full border border-muted-foreground/20 bg-muted px-3 py-1 text-xs font-medium text-foreground"
-              >
-                {tag}
-              </span>
+                text={tag}
+                height={24}
+                horizontalPadding={12}
+                fontSize={12}
+                lineHeight={16}
+              />
             ))}
           </div>
         )}

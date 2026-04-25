@@ -205,8 +205,6 @@ function BostadAboutContent({
             <Tag
               key={tag}
               text={tag}
-              bgColor="#F3F4F6"
-              textColor="#1F2937"
               height={28}
               horizontalPadding={14}
               fontSize={13}

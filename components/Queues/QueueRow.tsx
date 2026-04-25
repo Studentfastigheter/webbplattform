@@ -30,8 +30,6 @@ const CitiesCell: React.FC<{ cities: string[] }> = ({ cities }) => (
       <Tag
         key={city}
         text={city}
-        bgColor="#F0F0F0"
-        textColor="#000000"
         height={22}
         horizontalPadding={12}
         className="text-[12px] leading-[14px]"

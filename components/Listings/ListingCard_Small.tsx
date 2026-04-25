@@ -130,10 +130,10 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
   const scaleValue = (value: number) => `${(value * scale).toFixed(2)}px`;
   const tagSize = {
-    height: 24 * scale,
-    horizontalPadding: 12 * scale,
-    fontSize: 13 * scale,
-    lineHeight: 18 * scale,
+    height: 20 * scale,
+    horizontalPadding: 9 * scale,
+    fontSize: 11.5 * scale,
+    lineHeight: 15 * scale,
   };
 
   const safeTags = tags ?? [];
@@ -330,8 +330,6 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
               <Tag
                 key={tag}
                 text={tag}
-                bgColor="#F3F4F6"
-                textColor="#374151"
                 height={tagSize.height}
                 horizontalPadding={tagSize.horizontalPadding}
                 fontSize={tagSize.fontSize}

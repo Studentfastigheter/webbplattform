@@ -215,8 +215,6 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
             <Tag
               key={tag}
               text={tag}
-              bgColor="#F3F4F6"
-              textColor="#374151"
               height={tagSize.height}
               horizontalPadding={tagSize.horizontalPadding}
               fontSize={tagSize.fontSize}

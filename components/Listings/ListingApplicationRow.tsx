@@ -120,8 +120,6 @@ const TagsCell: React.FC<{ tags?: ListingApplicationRowProps["tags"] }> = ({
         <Tag
           key={tag}
           text={tag}
-          bgColor="#F0F0F0"
-          textColor="#000000"
           height={20}
           horizontalPadding={10}
           className="text-[12px] leading-[14px]"

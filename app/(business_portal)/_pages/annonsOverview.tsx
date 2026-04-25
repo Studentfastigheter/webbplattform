@@ -674,13 +674,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
             <div className="mt-4 flex flex-wrap gap-2">
               {listing.tags.map((tag) => (
                 <Tag
-                  bgColor="#F3F4F6"
                   fontSize={13}
                   height={28}
                   horizontalPadding={14}
                   key={tag}
                   text={tag}
-                  textColor="#1F2937"
                 />
               ))}
             </div>

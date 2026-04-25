@@ -635,7 +635,6 @@ export default function PortalAdsPage() {
                   rooms={item.listing.rooms || 0}
                   sizeM2={item.listing.sizeM2 || 0}
                   rent={item.listing.rent || 0}
-                  tags={item.listing.tags}
                   imageUrl={item.listing.imageUrl}
                   landlordType={item.listing.hostType}
                   hostName={item.listing.hostName}
