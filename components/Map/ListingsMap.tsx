@@ -62,10 +62,11 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
   return (
     <BaseMap
       markers={markers}
-      zoom={6}
-      center={[59, 15]}
+      zoom={5}
+      center={[62, 15]}
       className={className}
       activeMarkerId={activeListingId}
+      autoFitMarkers={false}
     />
   );
 };

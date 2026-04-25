@@ -52,6 +52,7 @@ export type BaseMapProps = {
   markers?: BaseMarker[];
   className?: string;
   activeMarkerId?: string;
+  autoFitMarkers?: boolean;
 };
 
 const CLUSTER_ZOOM_THRESHOLD = 10;
@@ -81,6 +82,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
   markers = [],
   className,
   activeMarkerId,
+  autoFitMarkers = true,
 }) => {
   const [isClient, setIsClient] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(zoom);
@@ -92,6 +94,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
 
   // Frys initial center/zoom så de inte hoppar om props ändras
 const [initialCenter] = useState<[number, number]>(() => {
+  if (!autoFitMarkers) return center;
   if (markers.length === 0) return center;
   if (markers.length === 1) return markers[0].position;
   // Use median as a good starting center
@@ -108,6 +111,7 @@ const [initialCenter] = useState<[number, number]>(() => {
 });
 
 const [initialZoom] = useState<number>(() => {
+  if (!autoFitMarkers) return zoom;
   if (markers.length === 0) return zoom;
   if (markers.length === 1) return 13;
   return 12; // city-level starting point; applyFit refines it
@@ -171,22 +175,22 @@ const [initialZoom] = useState<number>(() => {
 
   // Auto-fit när markers ändras (t.ex. ny stad via sök)
   useEffect(() => {
-    if (!mapRef.current || suppressAutoFit) return;
+    if (!autoFitMarkers || !mapRef.current || suppressAutoFit) return;
     mapRef.current.invalidateSize();
     applyFit();
-  }, [applyFit, suppressAutoFit]);
+  }, [applyFit, autoFitMarkers, suppressAutoFit]);
 
   // Refits på resize
   useEffect(() => {
     const handleResize = () => {
-      if (!mapRef.current || suppressAutoFit) return;
+      if (!autoFitMarkers || !mapRef.current || suppressAutoFit) return;
       mapRef.current.invalidateSize();
       applyFit();
     };
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [applyFit, suppressAutoFit]);
+  }, [applyFit, autoFitMarkers, suppressAutoFit]);
 
   const clusteringActive = zoomLevel < CLUSTER_ZOOM_THRESHOLD && !hasActiveMarker;
 
