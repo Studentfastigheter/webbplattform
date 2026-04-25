@@ -228,14 +228,15 @@ img, svg, video, canvas {
 
 .map-popup .leaflet-popup-content-wrapper {
   padding: 0 !important;
-  border-radius: 12px !important;
+  border-radius: 32px !important;
   overflow: hidden;
-  box-shadow: none !important;
+  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.22) !important;
 }
 
 .map-popup .leaflet-popup-content {
   margin: 0 !important;
   width: auto !important;
+  max-width: calc(100vw - 48px) !important;
 }
 
 .leaflet-popup-content p {
@@ -248,8 +249,8 @@ img, svg, video, canvas {
 }
 
 .map-popup .leaflet-popup-close-button {
-  top: 8px;
-  right: 8px;
+  top: 12px;
+  right: 12px;
   width: 30px;
   height: 30px;
   line-height: 28px;
@@ -259,6 +260,7 @@ img, svg, video, canvas {
   border-radius: 9999px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  z-index: 20;
 }
 .leaflet-container {
   background: #f9fafb;
@@ -277,6 +279,68 @@ img, svg, video, canvas {
 }
 
 /* Rich markers */
+.leaflet-div-icon.map-listing-icon,
+.leaflet-div-icon.map-cluster-icon {
+  background: transparent;
+  border: 0;
+}
+
+.map-listing-marker {
+  position: relative;
+  display: flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #0a7a4a;
+  border: 3px solid rgba(255, 255, 255, 0.98);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.map-listing-marker span {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #fff;
+  opacity: 0.92;
+}
+
+.map-listing-icon:hover .map-listing-marker,
+.map-listing-marker.is-active {
+  background: #004225;
+  box-shadow: 0 7px 18px rgba(0, 66, 37, 0.24);
+}
+
+.map-listing-marker.is-active::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 66, 37, 0.22);
+}
+
+.map-cluster-marker {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #004225;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.map-cluster-marker.is-active {
+  background: #004225;
+  box-shadow: 0 10px 24px rgba(0, 66, 37, 0.26);
+}
+
 .leaflet-div-icon.price-marker { background: transparent; border: 0; }
 .price-marker-inner {
   background: #fff;

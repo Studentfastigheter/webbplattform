@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ListingCardDTO } from "@/types/listing";
-import ListingCardSmall from "@/components/Listings/ListingCard_Small";
+import ListingCardFromDTO from "@/components/Listings/ListingCardFromDTO";
 
 type ListingMapPopupProps = {
   listing: ListingCardDTO;
@@ -18,25 +18,12 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
   onOpen,
 }) => {
   return (
-    <div className="w-[300px]">
-      <ListingCardSmall
-        title={listing.title}
-        area={listing.location?.split(",")[0] || "Ej angivet"} 
-        city={listing.location?.split(",")[1]?.trim() || listing.location || "Ej angivet"} 
-        dwellingType={listing.dwellingType || "Bostad"}
-        rooms={listing.rooms || 0}
-        sizeM2={listing.sizeM2 || 0}
-        rent={listing.rent || 0}
-        landlordType={listing.hostType}
-        hostName={listing.hostName}
-        hostLogoUrl={listing.hostLogoUrl}
-        isVerified={listing.verifiedHost}
+    <div className="w-[320px] max-w-[calc(100vw-48px)]">
+      <ListingCardFromDTO
+        listing={listing}
         isFavorite={isFavorite}
         onFavoriteToggle={onFavoriteToggle}
-        imageUrl={listing.imageUrl}
-        tags={listing.tags}
-        onClick={() => onOpen?.(listing.id)}
-        variant="compact"
+        onOpen={onOpen}
       />
     </div>
   );

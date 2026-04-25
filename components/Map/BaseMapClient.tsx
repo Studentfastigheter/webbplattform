@@ -6,7 +6,6 @@ import {
   Marker,
   Popup,
   useMapEvents,
-  CircleMarker,
 } from "react-leaflet";
 import L from "leaflet";
 import {
@@ -58,6 +57,7 @@ export type BaseMapProps = {
 const CLUSTER_ZOOM_THRESHOLD = 10;
 const DETAIL_ZOOM_THRESHOLD = 14;
 const CLUSTER_RADIUS_PX = 48;
+const ACTIVE_POPUP_VERTICAL_OFFSET_PX = 150;
 
 // ========= HJÄLPKOMPONENTER =========
 
@@ -206,7 +206,14 @@ const [initialZoom] = useState<number>(() => {
     );
 
     // Mjukare rörelse mellan annonser
-    map.flyTo(targetMarker.position, targetZoom, {
+    const targetPoint = map.project(targetMarker.position, targetZoom);
+    const offsetCenterPoint = targetPoint.subtract([
+      0,
+      ACTIVE_POPUP_VERTICAL_OFFSET_PX,
+    ]);
+    const offsetCenter = map.unproject(offsetCenterPoint, targetZoom);
+
+    map.flyTo(offsetCenter, targetZoom, {
       duration: 0.45,
       easeLinearity: 0.22,
     });
@@ -315,16 +322,29 @@ const [initialZoom] = useState<number>(() => {
   const getClusterIcon = useCallback((size: number, isActive: boolean) => {
     const key = `${size}-${isActive ? "active" : "default"}`;
     if (!clusterIconCache.current[key]) {
-      const bg = isActive
-        ? "linear-gradient(135deg, rgba(249,115,22,0.95), rgba(234,88,12,0.95))"
-        : "rgba(59,130,246,0.92)";
       clusterIconCache.current[key] = L.divIcon({
-        html: `<div style="display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:9999px;background:${bg};color:#fff;font-weight:700;border:2px solid #e0ecff;box-shadow:0 6px 18px rgba(0,0,0,0.18);">${size}</div>`,
-        className: "",
-        iconSize: [46, 46],
+        html: `<div class="map-cluster-marker ${isActive ? "is-active" : ""}">${size}</div>`,
+        className: "map-cluster-icon",
+        iconSize: [44, 44],
+        iconAnchor: [22, 22],
       });
     }
     return clusterIconCache.current[key];
+  }, []);
+
+  const markerIconCache = useRef<Record<string, L.DivIcon>>({});
+  const getMarkerIcon = useCallback((isActive: boolean) => {
+    const key = isActive ? "active" : "default";
+    if (!markerIconCache.current[key]) {
+      markerIconCache.current[key] = L.divIcon({
+        html: `<div class="map-listing-marker ${isActive ? "is-active" : ""}"><span></span></div>`,
+        className: "map-listing-icon",
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+        popupAnchor: [0, -14],
+      });
+    }
+    return markerIconCache.current[key];
   }, []);
 
   const renderMarker = useCallback(
@@ -338,21 +358,9 @@ const [initialZoom] = useState<number>(() => {
 
       return (
         <Fragment key={marker.id}>
-          {isActive && (
-            <CircleMarker
-              center={marker.position}
-              radius={18}
-              pathOptions={{
-                color: "#2563eb",
-                weight: 3,
-                opacity: 0.9,
-                fillColor: "#60a5fa",
-                fillOpacity: 0.2,
-              }}
-            />
-          )}
           <Marker
             position={marker.position}
+            icon={getMarkerIcon(isActive)}
             zIndexOffset={isActive ? 500 : 0}
             riseOnHover
             ref={(ref) => {
@@ -372,6 +380,8 @@ const [initialZoom] = useState<number>(() => {
             {popupContent && (
               <Popup
                 className="map-popup"
+                minWidth={260}
+                maxWidth={360}
                 eventHandlers={{
                   remove: () => {
                     if (manualPopupRef.current && activePopupId === marker.id) {
@@ -384,7 +394,7 @@ const [initialZoom] = useState<number>(() => {
                     setActivePopupId((prev) => prev ?? marker.id);
                   },
                 }}
-                closeButton
+                closeButton={false}
                 autoPan={manualPopupRef.current}
                 autoPanPadding={[24, 24]}
               >
@@ -395,7 +405,7 @@ const [initialZoom] = useState<number>(() => {
         </Fragment>
       );
     },
-    [activeMarkerId, zoomLevel, activePopupId],
+    [activeMarkerId, zoomLevel, activePopupId, getMarkerIcon],
   );
 
   if (!isClient) {

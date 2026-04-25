@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-import ListingCardSmall from "@/components/Listings/ListingCard_Small";
+import ListingCardFromDTO from "@/components/Listings/ListingCardFromDTO";
 import ListingsFilterButton, {
   type ListingsFilterState,
 } from "@/components/Listings/Search/ListingsFilterButton";
@@ -125,6 +125,7 @@ export default function ListingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [hoveredListingId, setHoveredListingId] = useState<string | undefined>();
 
   const updatePageInUrl = useCallback(
     (nextPage: number, mode: "push" | "replace" = "push") => {
@@ -334,28 +335,19 @@ export default function ListingsPage() {
     variant: "default" | "compact" = "default"
   ) => (
     <div key={listing.id} className="flex w-full justify-center">
-      <ListingCardSmall
-        id={listing.id}
-        title={listing.title}
-        area={listing.location?.split(",")[0] || "Ej angivet"}
-        city={
-          listing.location?.split(",")[1]?.trim() ||
-          listing.location ||
-          "Ej angivet"
-        }
-        dwellingType={listing.dwellingType || "Bostad"}
-        rooms={listing.rooms || 0}
-        sizeM2={listing.sizeM2 || 0}
-        rent={listing.rent || 0}
-        landlordType={listing.hostType}
-        hostName={listing.hostName}
-        hostLogoUrl={listing.hostLogoUrl}
-        isVerified={listing.verifiedHost}
+      <ListingCardFromDTO
+        listing={listing}
         isFavorite={favoriteIds.has(listing.id)}
         onFavoriteToggle={handleFavoriteToggle}
-        imageUrl={listing.imageUrl}
-        tags={listing.tags}
-        onClick={() => router.push(`/bostader/${listing.id}`)}
+        onOpen={(id) => router.push(`/bostader/${id}`)}
+        onHoverChange={
+          isMapView
+            ? (hovering) =>
+                setHoveredListingId((current) =>
+                  hovering ? listing.id : current === listing.id ? undefined : current
+                )
+            : undefined
+        }
         variant={variant}
       />
     </div>
@@ -568,6 +560,7 @@ export default function ListingsPage() {
                 <div className="z-10 h-[280px] w-full shrink-0 overflow-hidden rounded-xl sm:h-[350px] lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:rounded-2xl 2xl:col-span-2">
                   <ListingsMap
                     listings={listings}
+                    activeListingId={hoveredListingId}
                     getIsFavorite={(id) => favoriteIds.has(id)}
                     onFavoriteToggle={handleFavoriteToggle}
                     onOpenListing={(id) => router.push(`/bostader/${id}`)}
