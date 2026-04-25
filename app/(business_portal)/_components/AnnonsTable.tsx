@@ -3,6 +3,9 @@
 import { ChevronDown, Delete, Edit, ExternalLink, Link2, SquareCheck, SquareCheckBig, SquareIcon } from "lucide-react"
 import React, { useState } from "react"
 import { twMerge } from "tailwind-merge"
+import PortalListingStatusTag, {
+  type PortalListingStatusTone,
+} from "./PortalListingStatusTag"
 
 const keys = ["Adress", "Status", "Antal rum", "Hyra", "Publicerad", "ID", "Åtgärder"]
 const nonExistingStates = {
@@ -20,6 +23,9 @@ const annonser = [
   {id: 4, address: "", rooms: 2, rent: 4000, status: "Uthyrd", published: "2024-07-12"},
 ]
 
+function getListingStatusTone(status: string): PortalListingStatusTone {
+  return status === "Ledig" ? "success" : "neutral"
+}
 
 function SelectionBox({
   isSelected,
@@ -111,9 +117,10 @@ export default function AnnonsTable() {
               {annons.address || nonExistingStates.address}
             </ItemWrapper>
             <ItemWrapper index={index}>
-              <div className={twMerge(annons.status === "Ledig" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800", "px-2 py-1 rounded-full text-sm font-medium")}>
-                {annons.status}
-              </div>
+              <PortalListingStatusTag
+                label={annons.status}
+                tone={getListingStatusTone(annons.status)}
+              />
             </ItemWrapper>
             <ItemWrapper index={index}>
               {annons.rooms || nonExistingStates.rooms}

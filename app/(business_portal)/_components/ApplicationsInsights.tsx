@@ -504,11 +504,7 @@ export default function ApplicationsInsights({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-theme-sm text-gray-500">Ansökningar</p>
           <h1 className="text-2xl font-semibold text-gray-900">{isQueue ? "Köansökningar" : "Intresseanmälningar"}</h1>
-          <p className="mt-1 max-w-3xl text-theme-sm text-gray-500">
-            {isQueue ? "Följ köantal, utveckling över tid och studenter som ställt sig i kön." : "Följ total efterfrågan, objekt som trendar och hur fastighetsbeståndets data fördelas."}
-          </p>
           {errorMessage ? <p className="mt-2 text-theme-xs text-error-700">{errorMessage}</p> : null}
         </div>
         <div className="flex flex-col gap-1"><span className="text-theme-xs font-medium text-gray-500">Period</span><PeriodSelect onChange={setPeriod} value={period} /></div>

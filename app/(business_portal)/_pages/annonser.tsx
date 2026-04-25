@@ -15,7 +15,6 @@ export default function Annonser() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-theme-sm text-gray-500">Objekt</p>
         <h1 className="text-2xl font-semibold text-gray-900">Annonser</h1>
       </div>
 

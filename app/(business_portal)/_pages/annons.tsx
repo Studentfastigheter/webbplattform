@@ -384,7 +384,6 @@ export default function Annons({ id }: AnnonsPageProps) {
     <>
       <main className="pb-12">
         <div className="mb-6">
-          <p className="text-sm font-medium text-gray-500">Annons</p>
           <h1 className="text-2xl font-semibold text-gray-900">Redigera annons</h1>
         </div>
 

@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, FileUser, MousePointerClick, Plus, Search, X } from "lucide-react";
+import {
+  Eye,
+  FileUser,
+  MousePointerClick,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +23,14 @@ import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService } from "@/services/company";
 import { queueService } from "@/services/queue-service";
 import { type ListingCardDTO } from "@/types/listing";
+import PortalListingStatusTag, {
+  type PortalListingStatusTone,
+} from "../../_components/PortalListingStatusTag";
 import { PortalControlSelectTrigger } from "../../_components/PortalControlSelectTrigger";
 import { dashboardRelPath } from "../../_statics/variables";
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
 
-type ListingStatusTone = "success" | "warning" | "neutral";
 type StatusFilter = "all" | "active" | "inactive";
 type DateSort = "newest" | "oldest";
 
@@ -33,16 +42,10 @@ type PortalListing = {
   publishedAt: string;
   publishedAtTime: number | null;
   statusLabel: string;
-  statusTone: ListingStatusTone;
+  statusTone: PortalListingStatusTone;
 };
 
 type StatsLookup = Map<string, number>;
-
-const statusClassMap: Record<ListingStatusTone, string> = {
-  success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  warning: "border-amber-200 bg-amber-50 text-amber-700",
-  neutral: "border-gray-200 bg-gray-100 text-gray-700",
-};
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
   const parts = path.split(".");
@@ -102,7 +105,7 @@ function normalizeKey(value: string): string {
 
 function mapStatus(statusRaw?: string): {
   label: string;
-  tone: ListingStatusTone;
+  tone: PortalListingStatusTone;
 } {
   const status = (statusRaw ?? "published").toLowerCase().trim();
 
@@ -414,8 +417,7 @@ export default function PortalAdsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-theme-sm text-gray-500">Objekt</p>
+          <div>
             <h1 className="text-2xl font-semibold text-gray-900">Mina annonser</h1>
           </div>
 
@@ -644,11 +646,10 @@ export default function PortalAdsPage() {
                   showFavoriteButton={false}
                   showHostLogo={false}
                   imageTopRightContent={
-                    <span
-                      className={`inline-flex rounded-full border px-3 py-2.5 text-[10px] font-semibold shadow-sm ${statusClassMap[item.statusTone]}`}
-                    >
-                      {item.statusLabel}
-                    </span>
+                    <PortalListingStatusTag
+                      label={item.statusLabel}
+                      tone={item.statusTone}
+                    />
                   }
                   footerContent={
                     <div className="flex items-end justify-between gap-3 text-[11px] text-gray-600">

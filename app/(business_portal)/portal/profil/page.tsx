@@ -465,7 +465,6 @@ export default function ProfilePage() {
   return (
     <main className="pb-12">
       <div className="mb-6">
-        <p className="text-sm font-medium text-gray-500">Företagsprofil</p>
         <h1 className="text-2xl font-semibold text-gray-900">Redigera profil</h1>
       </div>
 

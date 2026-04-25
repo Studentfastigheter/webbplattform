@@ -541,21 +541,11 @@ export default function DataDashboard({ view = "overview" }: { view?: DataView }
     finance: "Ekonomidata",
   }[view];
 
-  const description = {
-    overview: "Samlad portaldata för efterfrågan, annonser och konvertering.",
-    applications: "Följ ansökningar, statusflöden och studenternas beteende.",
-    listings: "Se vilka objekt som driver visningar, klick och ansökningar.",
-    market: "Jämför städer, områden och efterfrågan över tid.",
-    finance: "Följ intäktsmål, prognos och värde per publicerad annons.",
-  }[view];
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-theme-sm text-gray-500">Company portal</p>
           <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
-          <p className="mt-1 text-theme-sm text-gray-500">{description}</p>
         </div>
         <DataTabs activeView={view} />
       </div>

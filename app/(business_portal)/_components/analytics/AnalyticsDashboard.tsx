@@ -24,7 +24,7 @@ import {
   type ChartShallowDataShape,
 } from "reaviz";
 import { useAuth } from "@/context/AuthContext";
-import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
+import { getActiveCompanyId } from "@/lib/company-access";
 import {
   companyService,
   type AnalyticalQuantities,
@@ -49,12 +49,6 @@ type MetricSummary = {
 };
 
 const selectedGeneralPeriod = "P1M";
-const periodLabels: Record<string, string> = {
-  P7D: "7 dagar",
-  P1M: "1 månad",
-  P3M: "3 månader",
-  P1Y: "1 år",
-};
 const objectChartColor = "#004225";
 const trendColor = "#2563eb";
 
@@ -74,10 +68,6 @@ function formatChange(value: number) {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   })}%`;
-}
-
-function periodLabel(period: string) {
-  return periodLabels[period] ?? period;
 }
 
 function monthLabel(timestamp: Date) {
@@ -390,10 +380,8 @@ function NewApplicationsCard({ applications }: { applications: NewApplication[] 
 
 export default function AnalyticsDashboard({
   title = "Analytics",
-  description,
 }: {
   title?: string;
-  description?: string;
 }) {
   const { user, isLoading: authLoading, refreshUser } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -488,7 +476,6 @@ export default function AnalyticsDashboard({
     };
   }, [refreshUser, user]);
 
-  const activeCompany = getActiveCompanySummary(user);
   const metricValues = useMemo(() => {
     const applications = getMetric(payload.generalAnalytics?.applications);
     const viewings = getMetric(getViewingQuantities(payload.generalAnalytics));
@@ -516,16 +503,7 @@ export default function AnalyticsDashboard({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <p className="text-theme-sm text-gray-500">
-          {activeCompany?.name ?? user.companyName ?? user.displayName ?? "Företagsportalen"}
-        </p>
         <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
-        <p className="text-theme-sm text-gray-500">
-          {description ??
-            `Nyckeltal från analytics-endpoints. General-värden visas för ${periodLabel(
-              selectedGeneralPeriod
-            ).toLowerCase()}.`}
-        </p>
         {errorMessage ? <p className="text-theme-xs text-error-700">{errorMessage}</p> : null}
       </div>
 

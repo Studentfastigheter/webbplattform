@@ -5,22 +5,17 @@ import { dashboardRelPath } from "../_statics/variables";
 
 type PortalPlaceholderPageProps = {
   title: string;
-  description?: string;
   notes?: string[];
 };
 
 export default function PortalPlaceholderPage({
   title,
-  description,
   notes = [],
 }: PortalPlaceholderPageProps) {
   return (
     <div className="space-y-5">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
-        {description ? (
-          <p className="max-w-2xl text-sm text-gray-500">{description}</p>
-        ) : null}
       </header>
 
       <Card className="border-gray-200 bg-white shadow-sm">

@@ -41,11 +41,13 @@ import {
 import Tag from "@/components/ui/Tag";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { cn } from "@/lib/utils";
 import { companyService, type ObjectApplicationCount } from "@/services/company";
 import { listingService } from "@/services/listing-service";
 import { queueService } from "@/services/queue-service";
 import { type ListingCardDTO, type ListingDetailDTO } from "@/types/listing";
+import PortalListingStatusTag, {
+  type PortalListingStatusTone,
+} from "../_components/PortalListingStatusTag";
 import { dashboardRelPath } from "../_statics/variables";
 
 type AnnonsOverviewProps = {
@@ -53,7 +55,6 @@ type AnnonsOverviewProps = {
 };
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
-type ListingStatusTone = "success" | "warning" | "neutral";
 type ListingStatusValue = "ACTIVE" | "INACTIVE" | "RENTED_OUT";
 type ListingActionState = "idle" | "status" | "delete";
 
@@ -62,7 +63,7 @@ type ListingMeta = {
   publishedAt: string;
   updatedAt: string;
   statusLabel: string;
-  statusTone: ListingStatusTone;
+  statusTone: PortalListingStatusTone;
   statusValue: ListingStatusValue | null;
 };
 
@@ -73,12 +74,6 @@ const emptyMeta: ListingMeta = {
   statusLabel: "Okänd",
   statusTone: "neutral",
   statusValue: null,
-};
-
-const statusClassMap: Record<ListingStatusTone, string> = {
-  success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  warning: "border-amber-200 bg-amber-50 text-amber-700",
-  neutral: "border-gray-200 bg-gray-100 text-gray-700",
 };
 
 const listingStatusOptions: Array<{
@@ -143,7 +138,7 @@ function normalizeKey(value: string): string {
 
 function mapStatus(statusRaw?: string): {
   label: string;
-  tone: ListingStatusTone;
+  tone: PortalListingStatusTone;
   value: ListingStatusValue | null;
 } {
   const status = (statusRaw ?? "published").toLowerCase().trim();
@@ -525,17 +520,6 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
         <div className="flex flex-col gap-4 border-b border-gray-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-theme-sm text-gray-500">Annons</p>
-              <span
-                className={cn(
-                  "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
-                  statusClassMap[meta.statusTone]
-                )}
-              >
-                {meta.statusLabel}
-              </span>
-            </div>
             <h1 className="text-2xl font-semibold text-gray-900">{listing.title}</h1>
             <p className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
               <MapPin className="h-4 w-4" />
@@ -641,8 +625,13 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           )}
         </section>
 
-        <section className="rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="text-lg font-semibold text-gray-900">Detaljer</h2>
+        <section className="relative rounded-xl border border-gray-200 bg-white p-5">
+          <PortalListingStatusTag
+            label={meta.statusLabel}
+            tone={meta.statusTone}
+            className="absolute right-5 top-5"
+          />
+          <h2 className="pr-28 text-lg font-semibold text-gray-900">Detaljer</h2>
           <dl className="mt-4">
             <DetailRow label="Hyra" value={formatCurrency(listing.rent)} />
             <DetailRow label="Rum" value={listing.rooms || "-"} />
