@@ -15,7 +15,7 @@ export default function Home() {
         subtitle="Allt för studentboende i hela Sverige. Bostäder, köer, verifierade privatuthyrare och guider. Helt gratis."
         waitlistHref="#register-waitlist"
         businessHref="/for-foretag"
-        previewImageSrc="/platform-demo.png"
+        previewImageSrc="/CampusLyan-Mockup.svg"
         previewImageAlt="Preview av CampusLyan plattformen"
         backgroundClassName="bg-background"
       />
