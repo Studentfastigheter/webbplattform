@@ -55,7 +55,7 @@ type AnnonsOverviewProps = {
 };
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
-type ListingStatusValue = "ACTIVE" | "INACTIVE" | "RENTED_OUT";
+type ListingStatusValue = "AVAILABLE" | "HIDDEN" | "RENTED";
 type ListingActionState = "idle" | "status" | "delete";
 
 type ListingMeta = {
@@ -81,9 +81,9 @@ const listingStatusOptions: Array<{
   label: string;
   icon: typeof CircleCheck;
 }> = [
-  { value: "ACTIVE", label: "Aktiv", icon: CircleCheck },
-  { value: "INACTIVE", label: "Inaktiv", icon: CirclePause },
-  { value: "RENTED_OUT", label: "Uthyrd", icon: Home },
+  { value: "AVAILABLE", label: "Aktiv", icon: CircleCheck },
+  { value: "HIDDEN", label: "Gömd", icon: CirclePause },
+  { value: "RENTED", label: "Uthyrd", icon: Home },
 ];
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
@@ -154,11 +154,11 @@ function mapStatus(statusRaw?: string): {
       "live",
     ].includes(status)
   ) {
-    return { label: "Aktiv", tone: "success", value: "ACTIVE" };
+    return { label: "Aktiv", tone: "success", value: "AVAILABLE" };
   }
 
   if (["rented", "rentedout", "rented_out", "uthyrd"].includes(status)) {
-    return { label: "Uthyrd", tone: "neutral", value: "RENTED_OUT" };
+    return { label: "Uthyrd", tone: "neutral", value: "RENTED" };
   }
 
   if (
@@ -172,7 +172,7 @@ function mapStatus(statusRaw?: string): {
       "draft",
     ].includes(status)
   ) {
-    return { label: "Inaktiv", tone: "warning", value: "INACTIVE" };
+    return { label: "Inaktiv", tone: "warning", value: "HIDDEN" };
   }
 
   return { label: statusRaw ?? "Okänd", tone: "neutral", value: null };
