@@ -44,7 +44,7 @@ import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type ObjectApplicationCount } from "@/services/company";
 import { listingService } from "@/services/listing-service";
 import { queueService } from "@/services/queue-service";
-import { type ListingCardDTO, type ListingDetailDTO } from "@/types/listing";
+import { type ListingCardDTO, type ListingDetailDTO, type ListingStatus } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
 } from "../_components/PortalListingStatusTag";
@@ -55,7 +55,6 @@ type AnnonsOverviewProps = {
 };
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
-type ListingStatusValue = "AVAILABLE" | "HIDDEN" | "RENTED";
 type ListingActionState = "idle" | "status" | "delete";
 
 type ListingMeta = {
@@ -64,7 +63,7 @@ type ListingMeta = {
   updatedAt: string;
   statusLabel: string;
   statusTone: PortalListingStatusTone;
-  statusValue: ListingStatusValue | null;
+  statusValue: ListingStatus | null;
 };
 
 const emptyMeta: ListingMeta = {
@@ -77,7 +76,7 @@ const emptyMeta: ListingMeta = {
 };
 
 const listingStatusOptions: Array<{
-  value: ListingStatusValue;
+  value: ListingStatus;
   label: string;
   icon: typeof CircleCheck;
 }> = [
@@ -139,7 +138,7 @@ function normalizeKey(value: string): string {
 function mapStatus(statusRaw?: string): {
   label: string;
   tone: PortalListingStatusTone;
-  value: ListingStatusValue | null;
+  value: ListingStatus | null;
 } {
   const status = (statusRaw ?? "published").toLowerCase().trim();
 
@@ -172,7 +171,7 @@ function mapStatus(statusRaw?: string): {
       "draft",
     ].includes(status)
   ) {
-    return { label: "Inaktiv", tone: "warning", value: "HIDDEN" };
+    return { label: "Gömd", tone: "warning", value: "HIDDEN" };
   }
 
   return { label: statusRaw ?? "Okänd", tone: "neutral", value: null };
@@ -411,7 +410,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const applicationsHref = `${dashboardRelPath}/ansokningar?listingId=${encodeURIComponent(id)}`;
   const image = useMemo(() => listing?.imageUrls?.find(Boolean), [listing]);
 
-  const handleStatusChange = async (status: ListingStatusValue) => {
+  const handleStatusChange = async (status: ListingStatus) => {
     const option = listingStatusOptions.find((item) => item.value === status);
     setActionState("status");
 

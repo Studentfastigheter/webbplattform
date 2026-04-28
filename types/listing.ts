@@ -74,6 +74,9 @@ export interface StudentApplicationDTO {
   hostType: string;
 }
 
+export const LISTING_STATUS_VALUES = ["AVAILABLE", "HIDDEN", "RENTED"] as const;
+export type ListingStatus = (typeof LISTING_STATUS_VALUES)[number];
+
 export interface UpdateListingRequest {
   title?: string;
   city?: string;
@@ -85,7 +88,7 @@ export interface UpdateListingRequest {
   rent?: number | null;
   description?: string;
   tags?: string[];
-  status?: string;
+  status?: ListingStatus;
   images?: string[];
   moveIn?: DateString | null;
   applyBy?: DateString | null;
@@ -144,7 +147,6 @@ export type ListingApplicationId = number;
 export type WatchlistId = number;
 
 // Status
-export type ListingStatus = "available" | "rented" | "hidden";
 export type ListingApplicationStatus = "submitted" | "accepted" | "rejected";
 
 // Bilder

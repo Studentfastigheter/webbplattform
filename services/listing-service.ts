@@ -1,11 +1,13 @@
 import { apiClient, buildQuery } from "@/lib/api-client";
 import {
-  ListingCardDTO,
-  ListingDetailDTO,
-  PageResponse,
-  PublishListingRequest,
-  StudentApplicationDTO,
-  UpdateListingRequest,
+  LISTING_STATUS_VALUES,
+  type ListingCardDTO,
+  type ListingDetailDTO,
+  type PageResponse,
+  type PublishListingRequest,
+  type StudentApplicationDTO,
+  type ListingStatus,
+  type UpdateListingRequest,
 } from "@/types/listing";
 
 // --- Lokala typer ---
@@ -36,6 +38,14 @@ export type ListingSearchParams = {
   school_lat?: number | null;
   school_lng?: number | null;
   amenities?: string[];
+};
+
+const isListingStatus = (status: string): status is ListingStatus =>
+  (LISTING_STATUS_VALUES as readonly string[]).includes(status);
+
+const applicationBody = (message?: string) => {
+  const trimmed = message?.trim();
+  return trimmed ? JSON.stringify({ message: trimmed }) : undefined;
 };
 
 // --- Mock Coordinates Utility ---
@@ -160,6 +170,10 @@ export const listingService = {
   },
 
   update: async (id: string, payload: UpdateListingRequest): Promise<void> => {
+    if (payload.status && !isListingStatus(payload.status)) {
+      throw new Error("Ogiltig annonsstatus.");
+    }
+
     await apiClient<void>(`/listings/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),
@@ -193,7 +207,7 @@ export const listingService = {
 
   /**
    * Lägg till annons som favorit
-   * Anropar: POST /api/listings/{id}/favorite
+   * Anropar: POST /api/listings/{id}/favorites
    */
   addFavorite: async (listingId: string): Promise<void> => {
     await apiClient(`/listings/${listingId}/favorites`, {
@@ -235,9 +249,10 @@ export const listingService = {
 
   // Bakåtkompatibel alias-metod för ansökan.
   // Anropar: POST /api/listings/{id}/applications
-  apply: async (listingId: string, _message?: string): Promise<void> => {
+  apply: async (listingId: string, message?: string): Promise<void> => {
     await apiClient(`/listings/${listingId}/applications`, {
       method: "POST",
+      body: applicationBody(message),
     });
   },
 
@@ -251,9 +266,19 @@ export const listingService = {
 
   // Ansök till en företagsannons
   // Anropar: POST /api/listings/{id}/applications
-  applyToListing: async (listingId: string, _message?: string): Promise<void> => {
+  applyToListing: async (listingId: string, message?: string): Promise<void> => {
     await apiClient(`/listings/${listingId}/applications`, {
       method: "POST",
+      body: applicationBody(message),
+    });
+  },
+
+  // Ansök till en privat annons
+  // Anropar: POST /api/applications/private/{id}
+  applyToPrivateListing: async (listingId: string, message: string): Promise<void> => {
+    await apiClient(`/applications/private/${listingId}`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
     });
   },
 

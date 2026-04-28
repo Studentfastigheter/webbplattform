@@ -88,6 +88,20 @@ function readEmbeddedQueueApplications(queue: HousingQueueDTO): QueueApplication
 
 const DEFAULT_PAGE_SIZE = 12;
 
+function getQueueDays(row: QueueApplicationDTO): number {
+  if (typeof row.queueDays === "number") return row.queueDays;
+  if (typeof row.daysInQueue === "number") return row.daysInQueue;
+
+  const joinedAt = row.joinedAt ?? row.createdAt;
+  if (!joinedAt) return 0;
+
+  const joinedDate = new Date(joinedAt);
+  if (Number.isNaN(joinedDate.getTime())) return 0;
+
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.floor((Date.now() - joinedDate.getTime()) / millisecondsPerDay));
+}
+
 export const queueService = {
 
   list: async ({ id         = null,
@@ -140,11 +154,17 @@ export const queueService = {
 
     const rows = Array.isArray(res) ? res : res?.content ?? res?.data ?? res?.queues ?? [];
 
-    return rows.map((row) => ({
-      ...row,
-      queueId: row.queueId != null ? String(row.queueId) : row.queueId,
-      queueDays: row.queueDays ?? row.daysInQueue ?? 0,
-    }));
+    return rows.map((row) => {
+      const queueId = row.queueId ?? row.queue?.id;
+      const queueName = row.queueName ?? row.queue?.name;
+
+      return {
+        ...row,
+        queueId: queueId != null ? String(queueId) : queueId,
+        queueName,
+        queueDays: getQueueDays(row),
+      };
+    });
   },
 
   getCompany: async (companyId: number): Promise<CompanyDTO> => {

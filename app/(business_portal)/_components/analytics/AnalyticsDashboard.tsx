@@ -341,7 +341,7 @@ function ApplicationsByObjectCard({ rows }: { rows: ObjectApplicationCount[] }) 
 function NewApplicationsCard({ applications }: { applications: NewApplication[] }) {
   return (
     <CardShell
-      description="Direkt från /current_applications/new_applications."
+      description="Senaste inkomna ansökningar."
       title="Senaste ansökningar"
     >
       {applications.length > 0 ? (

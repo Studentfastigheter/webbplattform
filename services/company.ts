@@ -79,6 +79,7 @@ export type AnalyticalQuantities = {
   applications?: AnalyticalQuantity[];
   viewings?: AnalyticalQuantity[];
   views?: AnalyticalQuantity[];
+  likes?: AnalyticalQuantity[];
   interactions?: AnalyticalQuantity[];
   activeListings?: AnalyticalQuantity[];
   active_listings?: AnalyticalQuantity[];
@@ -148,11 +149,60 @@ function normalizeAnalyticalQuantities(value: unknown): AnalyticalQuantities {
     return {};
   }
 
+  const currentApplications = toNumber(value.currentApplications, Number.NaN);
+  const totalApplications = toNumber(value.totalApplications, Number.NaN);
+  const viewings = toNumber(value.viewings, Number.NaN);
+  const likes = toNumber(value.likes, Number.NaN);
+  const currentListings = toNumber(value.currentListings, Number.NaN);
+  const hasSwaggerShape = [
+    currentApplications,
+    totalApplications,
+    viewings,
+    likes,
+    currentListings,
+  ].some(Number.isFinite);
+
+  if (hasSwaggerShape) {
+    const quantity = (period: string, count: number): AnalyticalQuantity => ({
+      period,
+      count: Number.isFinite(count) ? count : 0,
+      percentChange: 0,
+    });
+
+    const periods = defaultGeneralAnalyticsPeriods;
+    const applicationCount = Number.isFinite(totalApplications)
+      ? totalApplications
+      : currentApplications;
+    const applicationQuantities = periods.map((period) =>
+      quantity(period, applicationCount)
+    );
+    const viewingQuantities = periods.map((period) => quantity(period, viewings));
+    const likesQuantities = periods.map((period) => quantity(period, likes));
+    const activeListingQuantities = periods.map((period) =>
+      quantity(period, currentListings)
+    );
+
+    return {
+      applications: applicationQuantities,
+      viewings: viewingQuantities,
+      views: viewingQuantities,
+      likes: likesQuantities,
+      interactions: likesQuantities,
+      activeListings: activeListingQuantities,
+      active_listings: activeListingQuantities,
+      activePosts: activeListingQuantities,
+      active_posts: activeListingQuantities,
+    };
+  }
+
   return {
     applications: toArray<unknown>(value.applications)
       .map(normalizeAnalyticalQuantity)
       .filter((item): item is AnalyticalQuantity => item !== null),
     viewings: toArray<unknown>(value.viewings)
+      .map(normalizeAnalyticalQuantity)
+      .filter((item): item is AnalyticalQuantity => item !== null),
+    likes: toArray<unknown>(value.likes)
       .map(normalizeAnalyticalQuantity)
       .filter((item): item is AnalyticalQuantity => item !== null),
     interactions: toArray<unknown>(value.interactions)
@@ -200,6 +250,71 @@ function normalizeObjectApplicationCount(value: unknown): ObjectApplicationCount
   };
 }
 
+function normalizeNewApplication(value: unknown): NewApplication | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const listing = isRecord(value.listing) ? value.listing : null;
+  const student = isRecord(value.student) ? value.student : null;
+  const listingSummary = isRecord(value.listingSummary) ? value.listingSummary : null;
+  const studentSummary = isRecord(value.studentSummary) ? value.studentSummary : null;
+  const id = value.applicationId ?? value.id;
+  const studentId = value.studentId ?? student?.id ?? studentSummary?.id;
+
+  return {
+    applicationId:
+      typeof id === "number" ? id : Number.isFinite(Number(id)) ? Number(id) : undefined,
+    id: typeof id === "string" || typeof id === "number" ? id : undefined,
+    studentId: Number.isFinite(Number(studentId)) ? Number(studentId) : 0,
+    firstName:
+      typeof value.firstName === "string"
+        ? value.firstName
+        : typeof student?.firstName === "string"
+          ? student.firstName
+          : typeof studentSummary?.firstName === "string"
+            ? studentSummary.firstName
+            : "",
+    surname:
+      typeof value.surname === "string"
+        ? value.surname
+        : typeof student?.surname === "string"
+          ? student.surname
+          : typeof studentSummary?.surname === "string"
+            ? studentSummary.surname
+            : "",
+    address:
+      typeof value.address === "string"
+        ? value.address
+        : typeof listing?.fullAddress === "string"
+          ? listing.fullAddress
+          : typeof listing?.address === "string"
+            ? listing.address
+            : "",
+    listingId:
+      typeof value.listingId === "string" || typeof value.listingId === "number"
+        ? value.listingId
+        : typeof listing?.id === "string" || typeof listing?.id === "number"
+          ? listing.id
+          : undefined,
+    listingTitle:
+      typeof value.listingTitle === "string"
+        ? value.listingTitle
+        : typeof listing?.title === "string"
+          ? listing.title
+          : typeof listingSummary?.title === "string"
+            ? listingSummary.title
+            : undefined,
+    submittedAt:
+      typeof value.submittedAt === "string"
+        ? value.submittedAt
+        : typeof value.appliedAt === "string"
+          ? value.appliedAt
+          : undefined,
+    createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined,
+  };
+}
+
 export const companyService = {
 
   myCompany: async (): Promise<CompanyInfo> => {
@@ -224,18 +339,22 @@ export const companyService = {
     options: { count?: number; since?: string } = {}
   ): Promise<NewApplication[]> => {
     const query = buildQuery({
-      count: options.count ?? 10,
-      since: options.since ?? "always",
+      page: 0,
+      size: options.count ?? 10,
     });
-    const result = await apiClient<unknown>(
-      `/analytics/${id}/current_applications/new_applications${query}`
-    );
+    const result = await apiClient<unknown>(`/applications${query}`);
 
-    return toArray<NewApplication>(result, true);
+    return toArray<unknown>(result, true)
+      .map(normalizeNewApplication)
+      .filter((application): application is NewApplication => application !== null);
   }, 
 
   applicationCount: async (id: number): Promise<number> => {
-    const result = await apiClient<unknown>(`/analytics/${id}/current_applications`);
+    const result = await apiClient<unknown>(`/analytics/${id}/general`);
+
+    if (isRecord(result)) {
+      return toNumber(result.currentApplications);
+    }
 
     return toNumber(result);
   },

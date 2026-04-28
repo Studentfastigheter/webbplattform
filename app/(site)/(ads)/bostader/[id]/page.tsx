@@ -495,7 +495,11 @@ export default function ListingDetailPage() {
     setApplyError(null);
     setApplySuccess(null);
 
-    const action = listingService.applyToListing(listingId, "Hej! Jag är intresserad.");
+    const message = "Hej! Jag är intresserad.";
+    const action =
+      listing.ownerType.toLowerCase() === "company"
+        ? listingService.applyToListing(listingId, message)
+        : listingService.applyToPrivateListing(listingId, message);
 
     action
       .then(() => {
