@@ -1,6 +1,13 @@
 import Tag from "./Tag";
 
-export type Status = "Antagen" | "Under granskning" | "Nekad" | "Aktiv" | "Inaktiv" | "Bearbetas";
+export type Status =
+  | "Antagen"
+  | "Under granskning"
+  | "Nekad"
+  | "Aktiv"
+  | "Inaktiv"
+  | "Bearbetas"
+  | "Erbjudande";
 
 type StatusTagProps = {
   status: Status;
@@ -17,6 +24,7 @@ const colorMap: Record<Status, string> = {
   Aktiv: "#008000",
   "Under granskning": "#FFD32C",
   Bearbetas: "#FFD32C",
+  Erbjudande: "#2563EB",
   Nekad: "#FF3333",
   Inaktiv: "#FF3333",
 };

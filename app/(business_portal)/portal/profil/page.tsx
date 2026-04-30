@@ -4,7 +4,11 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { companyService, type CompanyPrivateDTO } from "@/services/company";
+import {
+  companyService,
+  type CompanyChangeableDataDTO,
+  type CompanyPrivateDTO,
+} from "@/services/company";
 import { queueService } from "@/services/queue-service";
 import { type HousingQueueDTO } from "@/types/queue";
 import {
@@ -86,6 +90,52 @@ function getProfileSnapshot(draft: ProfileDraft | null) {
     orgNumber: draft.orgNumber,
     internalContactNote: draft.internalContactNote,
   });
+}
+
+function toNullableString(value: string) {
+  return value.trim();
+}
+
+function isLocalObjectUrl(value: string) {
+  return value.startsWith("blob:");
+}
+
+function buildCompanyChangePayload(draft: ProfileDraft): CompanyChangeableDataDTO {
+  return {
+    logoUrl: isLocalObjectUrl(draft.logoUrl) ? undefined : toNullableString(draft.logoUrl),
+    bannerUrl: isLocalObjectUrl(draft.bannerUrl) ? undefined : toNullableString(draft.bannerUrl),
+    companyDescription: toNullableString(draft.description),
+    phone: toNullableString(draft.contactPhone),
+    contactEmail: toNullableString(draft.contactEmail),
+    companyUrl: toNullableString(draft.website),
+    socialLinkByPlatform: {
+      facebook: toNullableString(draft.facebook),
+      linkedin: toNullableString(draft.linkedin),
+    },
+  };
+}
+
+function mergeSavedCompany(
+  company: CompanyPrivateDTO | null,
+  draft: ProfileDraft
+): CompanyPrivateDTO {
+  return {
+    ...(company ?? {
+      id: draft.companyId,
+      name: draft.name,
+    }),
+    description: draft.description,
+    website: draft.website,
+    contactEmail: draft.contactEmail,
+    contactPhone: draft.contactPhone,
+    phone: draft.contactPhone,
+    logoUrl: isLocalObjectUrl(draft.logoUrl)
+      ? company?.logoUrl ?? ""
+      : draft.logoUrl,
+    bannerUrl: isLocalObjectUrl(draft.bannerUrl)
+      ? company?.bannerUrl ?? ""
+      : draft.bannerUrl,
+  };
 }
 
 function InlineLabel({ children }: { children: string }) {
@@ -201,21 +251,15 @@ function EditableCompanyPreview({
 
         <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
-            <input
-              aria-label="Profilnamn"
-              value={draft.name}
-              onChange={(event) => onDraftChange("name", event.target.value)}
-              className={`${inlineInputClass} -mx-2 w-full text-2xl font-bold text-gray-900 sm:text-3xl`}
-              placeholder="Profilnamn"
-            />
+            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+              {draft.name || "Företagsprofil"}
+            </h2>
 
-            <input
-              aria-label="Underrubrik"
-              value={draft.subtitle}
-              onChange={(event) => onDraftChange("subtitle", event.target.value)}
-              className={`${inlineInputClass} -mx-2 mt-2 w-full text-sm font-medium text-gray-600 sm:text-base`}
-              placeholder="Kort underrubrik"
-            />
+            {draft.subtitle ? (
+              <p className="mt-2 text-sm font-medium text-gray-600 sm:text-base">
+                {draft.subtitle}
+              </p>
+            ) : null}
 
             {companyQueue?.city && (
               <div className="mt-3 flex items-center gap-1.5 text-sm text-gray-600">
@@ -324,7 +368,9 @@ export default function ProfilePage() {
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const companyId = getActiveCompanyId(user);
 
@@ -403,6 +449,7 @@ export default function ProfilePage() {
     key: K,
     value: ProfileDraft[K]
   ) => {
+    setSaveMessage(null);
     setDraft((current) => {
       if (!current) return current;
       return { ...current, [key]: value };
@@ -420,8 +467,45 @@ export default function ProfilePage() {
     updateDraftField(field, localPreviewUrl);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!draft || saving) return;
+
+    setSaving(true);
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      await companyService.updateCompanyData(
+        draft.companyId,
+        buildCompanyChangePayload(draft)
+      );
+
+      const savedCompany = mergeSavedCompany(company, draft);
+      const savedQueue = companyQueue
+        ? {
+            ...companyQueue,
+            socialLinks: {
+              ...companyQueue.socialLinks,
+              facebook: draft.facebook,
+              linkedin: draft.linkedin,
+            },
+          }
+        : companyQueue;
+
+      setCompany(savedCompany);
+      setCompanyQueue(savedQueue);
+      setDraft(buildInitialDraft(draft.companyId, savedCompany, savedQueue ?? undefined));
+      setSaveMessage("Företagsprofilen har sparats.");
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Kunde inte spara företagsprofilen."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const resetDraft = () => {
@@ -484,6 +568,12 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {saveMessage && (
+        <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          {saveMessage}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="grid gap-6">
         <EditableCompanyPreview
           draft={draft}
@@ -499,27 +589,34 @@ export default function ProfilePage() {
                 Osparade ändringar
               </span>
             ) : (
-              <span className="text-sm text-gray-500">Inga lokala ändringar.</span>
+              <span className="text-sm text-gray-500">Inga ändringar.</span>
             )}
-            <span className="text-xs text-gray-400">
-              Sparande mot API är inte kopplat för företagsprofilen ännu.
-            </span>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              type="submit"
-              isDisabled
-              title="PUT-stöd för företagsprofilen är inte kopplat ännu."
-            >
-              <Save className="h-4 w-4" />
-              Spara ändringar
-            </Button>
+          <div className="ml-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
             {hasUnsavedChanges && (
-              <Button type="button" variant="outline" onClick={resetDraft}>
+              <Button
+                type="button"
+                variant="outline"
+                isDisabled={saving}
+                onClick={resetDraft}
+              >
                 Återställ
               </Button>
             )}
+            <Button
+              type="submit"
+              isDisabled={!hasUnsavedChanges || saving}
+              isLoading={saving}
+              title={
+                hasUnsavedChanges
+                  ? "Spara företagsprofilen"
+                  : "Det finns inga ändringar att spara."
+              }
+            >
+              {!saving && <Save className="h-4 w-4" />}
+              {saving ? "Sparar..." : "Spara ändringar"}
+            </Button>
           </div>
         </div>
       </form>

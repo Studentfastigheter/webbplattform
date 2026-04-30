@@ -25,8 +25,13 @@ type ListingSummary = {
 };
 
 export type ListingApplicationRowProps = ListingSummary & {
+  applicationId?: number | string;
   status: Status;
   applicationDate: DateString;
+  hasOffer?: boolean;
+  isProcessingOffer?: boolean;
+  onAcceptOffer?: () => void;
+  onRejectOffer?: () => void;
   onWithdraw?: () => void;
   onOpen?: () => void;
 };
@@ -55,7 +60,7 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
     advertiser,
   } = listing;
 
-  const resolvedImage = imageUrl ?? images?.[0]?.imageUrl;
+  const resolvedImage = imageUrl || images?.find((image) => image.imageUrl)?.imageUrl;
   const resolvedRent = formatCurrency(rent);
   const locationLabel = [area, city].filter(Boolean).join(", ") || "-";
   const landlordLabel = landlordType ?? advertiser?.displayName ?? "Hyresvärd";
@@ -64,16 +69,23 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
     <button
       type="button"
       onClick={onOpen}
-      className="flex items-start gap-4 text-left transition hover:opacity-95"
+      className="flex min-w-0 items-start gap-4 text-left transition hover:opacity-95"
     >
-      <div className="h-[120px] w-[120px] flex-shrink-0 overflow-hidden rounded-[15px] bg-gray-100">
+      <div className="relative h-[104px] w-[136px] flex-shrink-0 overflow-hidden rounded-2xl bg-gray-100 ring-1 ring-black/5">
         {resolvedImage ? (
-          <img src={resolvedImage} alt={title} className="h-full w-full object-cover" />
+          <img
+            src={resolvedImage}
+            alt={title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
         ) : (
-          <div className="h-full w-full bg-gray-200" />
+          <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
+            <Home className="h-7 w-7" />
+          </div>
         )}
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex min-w-0 flex-col gap-1">
         {isVerified && (
           <div className="mb-1">
             <Tag
@@ -86,9 +98,11 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
             />
           </div>
         )}
-        <div className="text-[16px] font-semibold leading-[18px] text-black">{title}</div>
+        <div className="line-clamp-2 text-[16px] font-semibold leading-[18px] text-black">
+          {title}
+        </div>
         <div className="text-[15px] font-semibold leading-[18px] text-black">
-          {resolvedRent ? `${resolvedRent} kr/manad` : "-"}
+          {resolvedRent ? `${resolvedRent} kr/månad` : "-"}
         </div>
         <div className="flex flex-col gap-1 text-[12px] leading-[14px] text-[#5b5b5b]">
           <span className="flex items-center gap-1.5">
@@ -140,8 +154,23 @@ const DateCell: React.FC<{ date: DateString }> = ({ date }) => (
 );
 
 const ActionsCell: React.FC<
-  Pick<ListingApplicationRowProps, "onWithdraw" | "onOpen">
-> = ({ onWithdraw, onOpen }) => (
+  Pick<
+    ListingApplicationRowProps,
+    | "hasOffer"
+    | "isProcessingOffer"
+    | "onAcceptOffer"
+    | "onRejectOffer"
+    | "onWithdraw"
+    | "onOpen"
+  >
+> = ({
+  hasOffer,
+  isProcessingOffer,
+  onAcceptOffer,
+  onRejectOffer,
+  onWithdraw,
+  onOpen,
+}) => (
   <div className="flex flex-col items-center gap-2">
     <Button
       type="button"
@@ -153,7 +182,27 @@ const ActionsCell: React.FC<
     >
       Visa annons
     </Button>
-    {onWithdraw && (
+    {hasOffer ? (
+      <div className="flex flex-col items-center gap-1.5">
+        <Button
+          type="button"
+          size="sm"
+          isDisabled={isProcessingOffer}
+          onClick={onAcceptOffer}
+          className="h-8 min-w-[104px] rounded-full bg-emerald-600 px-3 text-[12px] font-medium text-white transition hover:bg-emerald-700"
+        >
+          Acceptera
+        </Button>
+        <button
+          type="button"
+          disabled={isProcessingOffer}
+          onClick={onRejectOffer}
+          className="text-[12px] text-red-600 transition hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Neka
+        </button>
+      </div>
+    ) : onWithdraw ? (
       <button
         type="button"
         onClick={onWithdraw}
@@ -162,7 +211,7 @@ const ActionsCell: React.FC<
         <Trash2 size={14} />
         Dra tillbaka
       </button>
-    )}
+    ) : null}
   </div>
 );
 
@@ -172,6 +221,10 @@ export const buildListingApplicationRow = (props: ListingApplicationRowProps): L
     tags,
     status,
     applicationDate,
+    hasOffer,
+    isProcessingOffer,
+    onAcceptOffer,
+    onRejectOffer,
     onWithdraw,
     onOpen,
   } = props;
@@ -185,6 +238,10 @@ export const buildListingApplicationRow = (props: ListingApplicationRowProps): L
       <DateCell key={`${listingId}-date`} date={applicationDate} />,
       <ActionsCell
         key={`${listingId}-actions`}
+        hasOffer={hasOffer}
+        isProcessingOffer={isProcessingOffer}
+        onAcceptOffer={onAcceptOffer}
+        onRejectOffer={onRejectOffer}
         onWithdraw={onWithdraw}
         onOpen={onOpen}
       />,
