@@ -269,7 +269,7 @@ export const TooltipButton = React.forwardRef<HTMLButtonElement, TooltipButtonPr
     ])
 
     const handleClick = React.useCallback(
-      (e: React.MouseEvent<HTMLButtonElement>) => {
+      (e: any) => {
         if (loading || disabled) return
 
         // Confirm mode: first click arms; second click executes

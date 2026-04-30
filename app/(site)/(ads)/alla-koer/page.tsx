@@ -63,7 +63,7 @@ export default function Page() {
     setLoading(true);
 
     queueService
-      .list()
+      .getAll()
       .then(async (res) => {
         if (!active) return;
 

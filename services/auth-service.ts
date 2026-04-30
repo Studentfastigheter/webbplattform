@@ -53,15 +53,25 @@ export const authService = {
 
   pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {
     return await apiClient<FrejaAuthStatus>(
-      `/auth/poll/${encodeURIComponent(authRef)}`
+      `/auth/poll/${encodeURIComponent(authRef)}`,
+      { auth: false }
     );
   },
 
   // Uppdatera profil
   updateProfile: async (data: UpdateUserRequest): Promise<User> => {
+    const payload: UpdateUserRequest = {
+      firstName: data.firstName,
+      surname: data.surname,
+      phone: data.phone,
+      city: data.city,
+      aboutText: data.aboutText,
+      description: data.description,
+    };
+
     return await apiClient<User>("/auth/me", {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   },
 

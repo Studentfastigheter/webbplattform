@@ -25,6 +25,10 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
+import {
+  companyService,
+  type CompanyUserDTO,
+} from "@/services/company";
 import { queueService } from "@/services/queue-service";
 import { PortalControlSelectTrigger } from "../../_components/PortalControlSelectTrigger";
 
@@ -45,7 +49,7 @@ type CompanyPortalUser = {
   status: UserStatus;
   role: UserRole;
   permissions: PermissionKey[];
-  source: "seed" | "local";
+  source: "backend" | "seed" | "local";
 };
 
 type UserForm = {
@@ -144,7 +148,59 @@ function sanitizeUser(
     role,
     status,
     permissions: permissions.length > 0 ? permissions : fallbackPermissions,
-    source: entry.source === "seed" ? "seed" : "local",
+    source:
+      entry.source === "backend" || entry.source === "seed"
+        ? entry.source
+        : "local",
+  };
+}
+
+function mapBackendRole(role?: CompanyUserDTO["role"] | null): UserRole {
+  const roleName = role?.name?.trim().toLowerCase() ?? "";
+  const accessLevel = role?.accessLevel ?? 0;
+
+  if (
+    roleName.includes("admin") ||
+    roleName.includes("manager") ||
+    roleName.includes("owner") ||
+    accessLevel >= 80
+  ) {
+    return "admin";
+  }
+
+  if (
+    roleName.includes("review") ||
+    roleName.includes("viewer") ||
+    roleName.includes("read") ||
+    accessLevel <= 20
+  ) {
+    return "reviewer";
+  }
+
+  return "editor";
+}
+
+function mapBackendUser(dto: CompanyUserDTO): CompanyPortalUser | null {
+  const email = dto.email?.trim();
+  if (!dto.id || !email) {
+    return null;
+  }
+
+  const name = [dto.firstName, dto.surname]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .join(" ")
+    .trim();
+  const role = mapBackendRole(dto.role);
+
+  return {
+    id: `backend-${dto.id}`,
+    companyId: dto.companyId,
+    name: name || email,
+    email,
+    status: "active",
+    role,
+    permissions: [...rolePermissions[role]],
+    source: "backend",
   };
 }
 
@@ -210,6 +266,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<CompanyPortalUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersHydrated, setUsersHydrated] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | UserStatus>("all");
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -224,12 +281,14 @@ export default function UsersPage() {
     if (!companyId) {
       setUsers([]);
       setUsersHydrated(false);
+      setUsersError(null);
       return;
     }
 
     let active = true;
     setLoadingUsers(true);
     setUsersHydrated(false);
+    setUsersError(null);
 
     const fallbackName =
       user?.displayName?.trim() ||
@@ -237,20 +296,34 @@ export default function UsersPage() {
       "Företagsadmin";
     const fallbackEmail = user?.email?.trim() || "kontakt@foretag.se";
 
-    queueService
-      .getCompany(companyId)
-      .then((company) => {
+    Promise.allSettled([
+      queueService.getCompany(companyId),
+      companyService.users(companyId),
+    ])
+      .then(([companyResult, usersResult]) => {
         if (!active) return;
-        setCompanyName(company.name || user?.companyName || "Företaget");
-      })
-      .catch(() => {
-        if (!active) return;
-        setCompanyName(user?.companyName || "Företaget");
-      })
-      .finally(() => {
-        if (!active) return;
+        if (companyResult.status === "fulfilled") {
+          setCompanyName(companyResult.value.name || user?.companyName || "Företaget");
+        } else {
+          setCompanyName(user?.companyName || "Företaget");
+        }
 
         const seedUser = buildSeedUser(companyId, fallbackName, fallbackEmail);
+        const backendUsers =
+          usersResult.status === "fulfilled"
+            ? usersResult.value
+                .map(mapBackendUser)
+                .filter((entry): entry is CompanyPortalUser => Boolean(entry))
+            : [];
+
+        if (usersResult.status === "rejected") {
+          setUsersError(
+            usersResult.reason instanceof Error
+              ? usersResult.reason.message
+              : "Kunde inte hämta användare från backend."
+          );
+        }
+
         let localUsers: CompanyPortalUser[] = [];
 
         if (typeof window !== "undefined") {
@@ -269,7 +342,8 @@ export default function UsersPage() {
           }
         }
 
-        setUsers(dedupeUsers([seedUser, ...localUsers]));
+        const fallbackUsers = backendUsers.length > 0 ? backendUsers : [seedUser];
+        setUsers(dedupeUsers([...localUsers, ...fallbackUsers]));
         setUsersHydrated(true);
         setLoadingUsers(false);
       });
@@ -533,6 +607,11 @@ export default function UsersPage() {
               </div>
             ) : (
               <>
+                {usersError ? (
+                  <div className="border-b border-amber-100 bg-amber-50 px-6 py-3 text-sm text-amber-800">
+                    {usersError}
+                  </div>
+                ) : null}
                 <div className="hidden grid-cols-[minmax(0,1.25fr)_minmax(0,1.3fr)_150px_160px_120px] gap-4 border-b border-gray-100 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
                   <span>Namn</span>
                   <span>E-post</span>

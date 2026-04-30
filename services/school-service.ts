@@ -40,7 +40,9 @@ const mapSchoolDto = (dto: ApiSchoolDto): School => ({
 
 export const schoolService = {
   list: async (q?: string): Promise<School[]> => {
-    const res = await apiClient<ApiSchoolDto[]>(`/schools${buildQuery({ q })}`);
+    const res = await apiClient<ApiSchoolDto[]>(`/schools${buildQuery({ q })}`, {
+      auth: false,
+    });
     return res.map(mapSchoolDto).filter((school) => school.id > 0);
   },
 
@@ -67,7 +69,8 @@ export const schoolService = {
 
   getQueues: async (schoolId: number): Promise<SchoolQueueSummary[]> => {
     const res = await apiClient<ApiSchoolQueueDto[]>(
-      `/schools/${schoolId}/queues`
+      `/schools/${schoolId}/queues`,
+      { auth: false }
     );
 
     return res.map((dto) => ({

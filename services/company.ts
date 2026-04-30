@@ -33,10 +33,56 @@ export type CompanyPrivateDTO = {
   phone?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
+  contactNote?: string | null;
   orgNumber?: string | null;
   organisationNumber?: string | null;
   organizationNumber?: string | null;
   internalContactNote?: string | null;
+};
+
+export type CompanyPublicDTO = {
+  id: number;
+  name: string;
+  subtitle?: string | null;
+  description?: string | null;
+  website?: string | null;
+  rating?: number | null;
+  verified?: boolean | null;
+  bannerUrl?: string | null;
+  logoUrl?: string | null;
+};
+
+export type CompanyRole = {
+  name?: string;
+  description?: string;
+  accessLevel?: number;
+};
+
+export type CompanyUserDTO = {
+  id: number;
+  companyId: number;
+  role?: CompanyRole | null;
+  firstName?: string | null;
+  surname?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  bannerUrl?: string | null;
+  logoUrl?: string | null;
+};
+
+export type CompanyChangeableDataDTO = {
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  companyDescription?: string | null;
+  phone?: string | null;
+  contactEmail?: string | null;
+  companyUrl?: string | null;
+  socialLinkByPlatform?: Record<string, string>;
+};
+
+export type ResidentsSchoolCount = {
+  school?: unknown;
+  residents?: number;
 };
 
 export type NewApplication = {
@@ -317,6 +363,14 @@ function normalizeNewApplication(value: unknown): NewApplication | null {
 
 export const companyService = {
 
+  listCompanies: async (): Promise<CompanyPublicDTO[]> => {
+    return apiClient<CompanyPublicDTO[]>("/companies", { auth: false });
+  },
+
+  publicProfile: async (id: number): Promise<CompanyPublicDTO> => {
+    return apiClient<CompanyPublicDTO>(`/companies/${id}`, { auth: false });
+  },
+
   myCompany: async (): Promise<CompanyInfo> => {
     const result = await authService.me();
     if (result.accountType === "student") {
@@ -332,6 +386,26 @@ export const companyService = {
 
   privateProfile: async (id: number): Promise<CompanyPrivateDTO> => {
     return apiClient<CompanyPrivateDTO>(`/companies/${id}/private`);
+  },
+
+  updateCompanyData: async (
+    id: number,
+    payload: CompanyChangeableDataDTO
+  ): Promise<void> => {
+    await apiClient<void>(`/companies/${id}/changeData`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  users: async (id: number): Promise<CompanyUserDTO[]> => {
+    return apiClient<CompanyUserDTO[]>(`/companies/${id}/users`);
+  },
+
+  verifyUser: async (id: number, userId: number): Promise<void> => {
+    await apiClient<void>(`/companies/${id}/verify/${userId}`, {
+      method: "PUT",
+    });
   },
 
   newApplications: async (
@@ -385,14 +459,31 @@ export const companyService = {
   },
 
   generalAnalytics: async (
-    id: number,
-    over: string | string[] = defaultGeneralAnalyticsPeriods
+    id: number
   ): Promise<AnalyticalQuantities> => {
-    const periods = Array.isArray(over) ? over.join(",") : over;
-    const query = buildQuery({ over: periods });
-
-    const result = await apiClient<unknown>(`/analytics/${id}/general${query}`);
+    const result = await apiClient<unknown>(`/analytics/${id}/general`);
 
     return normalizeAnalyticalQuantities(result);
+  },
+
+  residentAnalyticsData: async (id: number): Promise<unknown[]> => {
+    return toArray<unknown>(await apiClient<unknown>(`/analytics/${id}/residents/data`));
+  },
+
+  residentsByTown: async (id: number): Promise<unknown[]> => {
+    return toArray<unknown>(await apiClient<unknown>(`/analytics/${id}/residents/by_town`));
+  },
+
+  residentsBySchool: async (id: number): Promise<ResidentsSchoolCount[]> => {
+    return toArray<ResidentsSchoolCount>(
+      await apiClient<unknown>(`/analytics/${id}/residents/by_school`),
+      true
+    );
+  },
+
+  landlordKickback: async (companyId: number): Promise<unknown> => {
+    return apiClient<unknown>(`/landlord/${companyId}/kickback`, {
+      auth: false,
+    });
   },
 };

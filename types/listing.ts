@@ -22,6 +22,10 @@ export interface ListingCardDTO {
   verifiedHost: boolean;
   lat?: number | null;
   lng?: number | null;
+  status?: ListingStatus | string | null;
+  applyBy?: DateString | null;
+  availableFrom?: DateString | null;
+  availableTo?: DateString | null;
 }
 
 // 2. DETALJVYN (Single Listing) - Matchar Java ListingDetailDTO
@@ -55,6 +59,7 @@ export interface ListingDetailDTO {
   ownerLogoUrl?: string | null;
   ownerId: number;
   provider?: string | null;
+  status?: ListingStatus | string | null;
   verifiedOwner: boolean;
 }
 

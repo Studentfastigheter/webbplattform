@@ -123,16 +123,21 @@ export const queueService = {
       query.city = city;
     }
     const request = `/queues${buildQuery(query)}`;
-    console.log(`GET /api${request}`)
-    return await apiClient<HousingQueueDTO[]>(request);
+    return await apiClient<HousingQueueDTO[]>(request, { auth: false });
+  },
+
+  getAll: async (): Promise<HousingQueueDTO[]> => {
+    return await apiClient<HousingQueueDTO[]>("/queues/all", { auth: false });
   },
 
   get: async (id: string): Promise<HousingQueueDTO> => {
-    return await apiClient<HousingQueueDTO>(`/queues/${id}`);
+    return await apiClient<HousingQueueDTO>(`/queues/${id}`, { auth: false });
   },
 
   getByCompany: async (companyId: number): Promise<HousingQueueDTO[]> => {
-    return await apiClient<HousingQueueDTO[]>(`/companies/${companyId}/queues`);
+    return await apiClient<HousingQueueDTO[]>(`/companies/${companyId}/queues`, {
+      auth: false,
+    });
   },
 
   join: async (queueId: string): Promise<void> => {
@@ -168,12 +173,14 @@ export const queueService = {
   },
 
   getCompany: async (companyId: number): Promise<CompanyDTO> => {
-    return await apiClient<CompanyDTO>(`/companies/${companyId}`);
+    return await apiClient<CompanyDTO>(`/companies/${companyId}`, { auth: false });
   },
 
   getCompanyListings: async (companyId: number, page = 0, size = 12): Promise<ListingCardDTO[]> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<any>(`/companies/${companyId}/listings${query}`);
+    const res = await apiClient<any>(`/companies/${companyId}/listings${query}`, {
+      auth: false,
+    });
     return res?.content ?? [];
   },
 

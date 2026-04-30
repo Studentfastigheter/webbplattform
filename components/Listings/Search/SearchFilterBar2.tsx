@@ -18,6 +18,7 @@ import SearchFilterBar, {
   FilterField,
   Option
 } from "@/components/Listings/Search/SearchFilterBar";
+import type React from "react";
 
 export type SingleOptionSearchField2 = {
   id: string;
@@ -52,19 +53,21 @@ const SearchFilterBar2: React.FC<SearchFilterBarProps2> = ({
       placeholder: placeholder,
       searchable: true,
       multiple: false,
-    }) as SelectField;
+    }) as FilterField;
   });
 
   return (
   <SearchFilterBar
       fields={translatedFields}
       onSubmit={selected => {
-        if (onSubmit === null) {
+        if (!onSubmit) {
           return;
         }
         const mapped: Record<string, string> = {};
         for (const [key, value] of Object.entries(selected)) {
-          mapped[key] = fieldsById[key].options[value];
+          if (typeof value === "string" && fieldsById[key]) {
+            mapped[key] = fieldsById[key].options[value] ?? value;
+          }
         }
         onSubmit(mapped);
       }}

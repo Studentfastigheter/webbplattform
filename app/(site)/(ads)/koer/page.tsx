@@ -39,7 +39,7 @@ export default function Page() {
     setError(null);
 
     // Hämta både användarens specifika köansökningar och alla tillgängliga köer
-    Promise.all([queueService.getMyQueues(), queueService.list()])
+    Promise.all([queueService.getMyQueues(), queueService.getAll()])
       .then(([userApplications, allQueues]) => {
         if (!active) return;
         

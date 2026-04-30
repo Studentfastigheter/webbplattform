@@ -1,6 +1,8 @@
 import { apiClient, buildQuery } from "@/lib/api-client";
 
-export type DocumentPropagationCompanyResult = {
+export type DocumentPropagationCompanyResult =
+  | string
+  | {
   companyId?: string | number;
   companyName?: string;
   name?: string;

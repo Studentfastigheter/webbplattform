@@ -45,7 +45,7 @@ const isListingStatus = (status: string): status is ListingStatus =>
 
 const applicationBody = (message?: string) => {
   const trimmed = message?.trim();
-  return trimmed ? JSON.stringify({ message: trimmed }) : undefined;
+  return JSON.stringify(trimmed ? { message: trimmed } : {});
 };
 
 // --- Mock Coordinates Utility ---
@@ -99,6 +99,99 @@ const addMockCoordinates = <T extends {
 
   return { ...dto, lat, lng };
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const firstString = (...values: unknown[]) =>
+  values.find(
+    (value): value is string => typeof value === "string" && value.trim().length > 0
+  )?.trim();
+
+const firstNumber = (...values: unknown[]) => {
+  for (const value of values) {
+    const numberValue =
+      typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
+    if (Number.isFinite(numberValue)) {
+      return numberValue;
+    }
+  }
+
+  return 0;
+};
+
+const firstStringArray = (...values: unknown[]) => {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      return value.filter(
+        (item): item is string => typeof item === "string" && item.trim().length > 0
+      );
+    }
+  }
+
+  return [];
+};
+
+const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
+  const source = isRecord(value) && isRecord(value.listing) ? value.listing : value;
+  if (!isRecord(source)) {
+    return null;
+  }
+
+  const id = firstString(source.id, source.listingId);
+  const title = firstString(source.title, source.listingTitle);
+  if (!id || !title) {
+    return null;
+  }
+
+  const images = firstStringArray(source.imageUrls, source.images);
+  const area = firstString(source.area);
+  const city = firstString(source.city);
+  const location = firstString(source.location) ?? [area, city].filter(Boolean).join(", ");
+
+  return {
+    id,
+    imageUrl: firstString(source.imageUrl, source.listingImage, images[0]) ?? "",
+    title,
+    location: location || "Ej angivet",
+    rent: firstNumber(source.rent),
+    dwellingType: firstString(source.dwellingType) ?? "Bostad",
+    rooms: firstNumber(source.rooms),
+    sizeM2: firstNumber(source.sizeM2),
+    tags: firstStringArray(source.tags),
+    hostType: firstString(source.hostType, source.ownerType) ?? "",
+    hostName: firstString(source.hostName, source.ownerName),
+    hostLogoUrl: firstString(source.hostLogoUrl, source.ownerLogoUrl),
+    verifiedHost:
+      typeof source.verifiedHost === "boolean"
+        ? source.verifiedHost
+        : typeof source.verifiedOwner === "boolean"
+          ? source.verifiedOwner
+          : false,
+    lat:
+      typeof source.lat === "number"
+        ? source.lat
+        : typeof source.latitude === "number"
+          ? source.latitude
+          : null,
+    lng:
+      typeof source.lng === "number"
+        ? source.lng
+        : typeof source.longitude === "number"
+          ? source.longitude
+          : null,
+    status: firstString(source.status),
+    applyBy: firstString(source.applyBy) ?? null,
+    availableFrom: firstString(source.availableFrom) ?? null,
+    availableTo: firstString(source.availableTo) ?? null,
+  };
+};
+
+const normalizeListingCards = (items: unknown[]): ListingCardDTO[] =>
+  items
+    .map(normalizeListingCard)
+    .filter((item): item is ListingCardDTO => item !== null)
+    .map(addMockCoordinates);
 
 // --- Service ---
 
@@ -155,9 +248,12 @@ export const listingService = {
       school_lng: params.school_lng,
       amenities: params.amenities,
     });
-    const res = await apiClient<PageResponse<ListingCardDTO>>(`/listings${query}`);
+    const res = await apiClient<PageResponse<ListingCardDTO>>(
+      `/listings${query}`,
+      { auth: false }
+    );
     if (res && res.content) {
-      res.content = res.content.map(addMockCoordinates);
+      res.content = normalizeListingCards(res.content);
     }
     return res;
   },
@@ -165,7 +261,9 @@ export const listingService = {
   // 2. HÄMTA EN ANNONS (Detaljvy)
   // Anropar: GET /api/listings/{id}
   get: async (id: string): Promise<ListingDetailDTO> => {
-    const detail = await apiClient<ListingDetailDTO>(`/listings/${id}`);
+    const detail = await apiClient<ListingDetailDTO>(`/listings/${id}`, {
+      auth: false,
+    });
     return detail ? addMockCoordinates(detail) : detail;
   },
 
@@ -189,7 +287,23 @@ export const listingService = {
   getMyListings: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<PageResponse<ListingCardDTO>>(`/listings/my${query}`);
-    return (res?.content ?? []).map(addMockCoordinates);
+    return normalizeListingCards(res?.content ?? []);
+  },
+
+  getQueueListings: async (
+    queueId: string,
+    page = 0,
+    size = 12
+  ): Promise<PageResponse<ListingCardDTO>> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<PageResponse<ListingCardDTO>>(
+      `/listings/queue/${queueId}${query}`,
+      { auth: false }
+    );
+    if (res?.content) {
+      res.content = normalizeListingCards(res.content);
+    }
+    return res;
   },
 
   // 3. HÄMTA MINA ANSÖKNINGAR
@@ -231,15 +345,12 @@ export const listingService = {
     
     // Check if it's returning a list of StudentLikedListing where the actual listing is embedded
     if (Array.isArray(res)) {
-      if (res.length > 0 && res[0].listing) {
-        return res.map((r: any) => addMockCoordinates(r.listing));
-      }
-      return res.map((r: any) => addMockCoordinates(r));
+      return normalizeListingCards(res);
     }
     
     // Check if it's a page response
     if (res && res.content) {
-      return res.content.map((r: any) => addMockCoordinates(r.listing ? r.listing : r));
+      return normalizeListingCards(res.content);
     }
     
     return [];
@@ -273,12 +384,35 @@ export const listingService = {
     });
   },
 
+  getListingApplications: async (
+    listingId: string,
+    page = 0,
+    size = 50
+  ): Promise<StudentApplicationDTO[]> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<any>(`/listings/${listingId}/applications${query}`);
+    if (Array.isArray(res)) return res;
+    return res?.content ?? [];
+  },
+
   // Ansök till en privat annons
   // Anropar: POST /api/applications/private/{id}
   applyToPrivateListing: async (listingId: string, message: string): Promise<void> => {
     await apiClient(`/applications/private/${listingId}`, {
       method: "POST",
       body: JSON.stringify({ message }),
+    });
+  },
+
+  acceptOffer: async (applicationId: number): Promise<void> => {
+    await apiClient<void>(`/applications/${applicationId}/offer-accept`, {
+      method: "POST",
+    });
+  },
+
+  rejectOffer: async (applicationId: number): Promise<void> => {
+    await apiClient<void>(`/applications/${applicationId}/offer-reject`, {
+      method: "POST",
     });
   },
 
@@ -289,7 +423,7 @@ export const listingService = {
    */
   getCurrentAds: async (): Promise<RollingAd[]> => {
     try {
-      const ads = await apiClient<unknown[]>("/ads/current");
+      const ads = await apiClient<unknown[]>("/ads/current", { auth: false });
       if (!Array.isArray(ads)) {
         return [];
       }
