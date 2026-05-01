@@ -11,7 +11,7 @@ export default function PortalOverview() {
       </div>
 
       <AnalyticsGrid>
-        <AnalyticsBlock size="1x4" title="Generell statistik">
+        <AnalyticsBlock size="1x4">
           <AnalyticsGeneralStats />
         </AnalyticsBlock>
 

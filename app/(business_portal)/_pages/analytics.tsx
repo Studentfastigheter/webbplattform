@@ -20,7 +20,7 @@ export default function Analytics() {
             showSummary={false}
           />
         </AnalyticsBlock>
-        <AnalyticsBlock size="1x4" title="Generell statistik">
+        <AnalyticsBlock size="1x4">
           <AnalyticsGeneralStats />
         </AnalyticsBlock>
         <AnalyticsBlock size="2x2" title="Traffic source" />

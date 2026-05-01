@@ -17,35 +17,44 @@ const intervals: TrendBarChartInterval[] = [
   { value: "all", label: "Alla" },
 ];
 
-function withPreviousYearComparison(
+function parseTrendDate(entry: TrendBarChartPoint) {
+  const date =
+    entry.timestamp instanceof Date ? entry.timestamp : new Date(entry.timestamp);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getMonthKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth()}`;
+}
+
+function completeCalendarYearTrend(
   timeline: TrendBarChartPoint[]
 ): TrendBarChartPoint[] {
   const valueByMonth = new Map<string, number>();
+  const validDates: Date[] = [];
 
   timeline.forEach((entry) => {
-    const date =
-      entry.timestamp instanceof Date ? entry.timestamp : new Date(entry.timestamp);
+    const date = parseTrendDate(entry);
 
-    if (!Number.isNaN(date.getTime())) {
-      valueByMonth.set(`${date.getFullYear()}-${date.getMonth()}`, entry.value);
+    if (date && Number.isFinite(entry.value)) {
+      valueByMonth.set(getMonthKey(date), entry.value);
+      validDates.push(date);
     }
   });
 
-  return timeline.map((entry) => {
-    const date =
-      entry.timestamp instanceof Date ? entry.timestamp : new Date(entry.timestamp);
+  const latestDate = validDates.sort((a, b) => b.getTime() - a.getTime())[0];
+  const year = latestDate?.getFullYear() ?? new Date().getFullYear();
 
-    if (Number.isNaN(date.getTime())) {
-      return entry;
-    }
+  return Array.from({ length: 12 }, (_, monthIndex) => {
+    const timestamp = new Date(year, monthIndex, 1);
+    const comparisonTimestamp = new Date(year - 1, monthIndex, 1);
 
-    const comparisonValue = valueByMonth.get(
-      `${date.getFullYear() - 1}-${date.getMonth()}`
-    );
-
-    return comparisonValue !== undefined
-      ? { ...entry, comparisonValue }
-      : entry;
+    return {
+      timestamp,
+      value: valueByMonth.get(getMonthKey(timestamp)) ?? 0,
+      comparisonValue: valueByMonth.get(getMonthKey(comparisonTimestamp)) ?? 0,
+    };
   });
 }
 
@@ -90,7 +99,7 @@ export default function AnalyticsApplicationsTrend({
       .applicationsTimeline(companyId)
       .then((timeline) => {
         if (!cancelled) {
-          setTrend(withPreviousYearComparison(timeline));
+          setTrend(completeCalendarYearTrend(timeline));
         }
       })
       .catch((err: unknown) => {
