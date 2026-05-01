@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Tag from "@/components/ui/Tag";
 import type { AdvertiserSummary } from "@/types";
-import { Star, Building2, User, ArrowRight } from "lucide-react";
+import { ArrowRight, Check, Star } from "lucide-react";
 
 type Props = {
   advertiser: AdvertiserSummary & {
@@ -15,105 +15,137 @@ type Props = {
 };
 
 export default function BostadLandlord({ advertiser }: Props) {
-  const isCompany = advertiser.type === "company";
+  const requirements =
+    advertiser.requirements && advertiser.requirements.length > 0
+      ? advertiser.requirements
+      : [
+          "Aktiv studentstatus kan krävas",
+          "Inga betalningsanmärkningar",
+          "Studieintyg kan behöva bifogas",
+          "Personnummer eller samordningsnummer kan krävas",
+        ];
+
+  const highlights = advertiser.highlights ?? [];
+  const hasRating = advertiser.rating != null;
+  const hasApartments = advertiser.totalApartments != null;
+  const hasStats = hasApartments || hasRating;
 
   return (
     <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-      <div className="flex flex-col gap-4 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-gray-50 shadow-sm">
-            {advertiser.logoUrl ? (
-              <Image
-                src={advertiser.logoUrl}
-                alt={advertiser.displayName}
-                fill
-                sizes="64px"
-                className="object-contain p-1.5"
-              />
-            ) : isCompany ? (
-              <Building2 className="h-6 w-6 text-gray-400" />
-            ) : (
-              <User className="h-6 w-6 text-gray-400" />
-            )}
-          </div>
-          <div className="flex flex-col gap-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-green-900">
-              Din hyresvärd
-            </p>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {advertiser.displayName}
-            </h2>
-            {advertiser.subtitle && (
-              <p className="text-sm text-gray-700">{advertiser.subtitle}</p>
-            )}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <Tag
-                text="Verifierad hyresvärd"
-                bgColor="#0F4D0F"
-                textColor="#FFFFFF"
-                height={20}
-                horizontalPadding={10}
-                fontSize={11}
-              />
-              {advertiser.rating && (
-                <span className="flex items-center gap-1 text-sm text-amber-700">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span>
-                    {advertiser.rating.toFixed(1)} (
-                    {advertiser.reviewCount ?? 0} omdömen)
-                  </span>
-                </span>
-              )}
+      <div className="flex flex-col gap-7">
+        <header className="border-b border-gray-100 pb-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="relative h-24 w-28 shrink-0 overflow-hidden sm:w-32">
+                {advertiser.logoUrl ? (
+                  <Image
+                    src={advertiser.logoUrl}
+                    alt={advertiser.displayName}
+                    fill
+                    sizes="160px"
+                    className="object-contain object-left"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-50 text-2xl font-semibold text-gray-300">
+                    {advertiser.displayName?.charAt(0)}
+                  </div>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-[28px]">
+                  {advertiser.displayName}
+                </h2>
+
+                {hasStats && (
+                  <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                    {hasApartments && (
+                      <div>
+                        <span className="font-semibold text-gray-900">
+                          {advertiser.totalApartments?.toLocaleString("sv-SE")}
+                        </span>
+                        <span className="ml-1 text-gray-500">
+                          studentbostäder
+                        </span>
+                      </div>
+                    )}
+
+                    {hasRating && (
+                      <div className="flex items-center gap-1.5">
+                        <Star className="h-4 w-4 fill-gray-900 text-gray-900" />
+                        <span className="font-semibold text-gray-900">
+                          {advertiser.rating?.toFixed(1)}
+                        </span>
+                        <span className="text-gray-500">
+                          ({advertiser.reviewCount ?? 0} omdömen)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {advertiser.companyPageUrl && (
+              <Link
+                href={advertiser.companyPageUrl}
+                className="group inline-flex h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#00331b] hover:shadow-md active:scale-[0.98]"
+              >
+                Visa profil
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            )}
           </div>
-        </div>
-      </div>
+        </header>
 
-      <div className="mt-6 flex flex-col lg:flex-row gap-6 lg:gap-12 text-sm text-gray-800">
+        <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_330px] lg:gap-8">
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Beskrivning
+            </h3>
 
-        {/* Left: Description & Total Apartments */}
-        <div className="flex-1 flex flex-col gap-4">
-          <div className="flex flex-col mb-2">
-            <h3 className="font-semibold text-gray-900 text-base mb-1">Beskrivning av värden</h3>
-            <p className="text-gray-700 leading-relaxed italic">
-              {advertiser.description || "Vi erbjuder moderna och trygga studentbostäder nära campus. Vårt mål är att göra studentlivet enklare för dig."}
+            <p className="mt-3 max-w-3xl text-[15px] leading-7 text-gray-700">
+              {advertiser.description ||
+                "Här visas information om bostäderna, området och annat som kan vara relevant för dig som söker boende."}
             </p>
+
+            {highlights.length > 0 && (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                {highlights.map((highlight) => (
+                  <Tag
+                    key={highlight}
+                    text={highlight}
+                    height={28}
+                    horizontalPadding={14}
+                    fontSize={13}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 bg-green-50/50 p-3 py-2.5 rounded-xl border border-green-100/50 w-fit">
-            <Building2 className="w-5 h-5 text-green-700" />
-            <span className="font-medium text-green-900">
-              {advertiser.totalApartments ?? 145} studentbostäder i beståndet
-            </span>
-          </div>
-        </div>
+          <aside className="border-t border-gray-100 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <h3 className="text-base font-semibold text-gray-900">
+              Krav på hyresgäst
+            </h3>
 
-        {/* Right: Requirements & Highlights */}
-        <div className="flex-1 bg-gray-50/70 p-5 rounded-2xl border border-gray-100">
-          <h3 className="font-semibold text-gray-900 text-base mb-4">Krav på hyresgäst</h3>
+            <ul className="mt-4 grid gap-3.5">
+              {requirements.map((requirement) => (
+                <li
+                  key={requirement}
+                  className="flex items-start gap-3 text-sm text-gray-700"
+                >
+                  <span className="mt-[3px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-white text-[#004225]">
+                    <Check className="h-3 w-3 stroke-[2.4]" />
+                  </span>
 
-          <ul className="grid gap-3 list-none p-0 m-0">
-            {(advertiser.requirements || ["Kräver aktivt medlemskap i studentkår", "Inga betalningsanmärkningar", "Maxinkomst enligt CSN-gräns", "Svenskt personnummer eller samordningsnummer"]).map((req, idx) => (
-              <li key={idx} className="flex items-start gap-2.5">
-                <div className="min-w-1.5 min-h-1.5 mt-2 rounded-full bg-green-700/80" />
-                <span className="text-gray-700">{req}</span>
-              </li>
-            ))}
-          </ul>
+                  <span className="leading-6">{requirement}</span>
+                </li>
+              ))}
+            </ul>
+          </aside>
         </div>
       </div>
-
-      {advertiser.companyPageUrl && (
-        <div className="mt-6 pt-5 border-t border-gray-100">
-          <Link
-            href={advertiser.companyPageUrl}
-            className="inline-flex items-center gap-2 rounded-xl bg-green-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-800"
-          >
-            Läs mer om {advertiser.displayName}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      )}
     </section>
   );
 }

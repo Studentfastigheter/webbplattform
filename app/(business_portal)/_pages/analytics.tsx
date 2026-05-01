@@ -11,6 +11,9 @@ export default function Analytics() {
       </div>
 
       <AnalyticsGrid>
+        <AnalyticsBlock size="1x2">
+          <AnalyticsGeneralStats />
+        </AnalyticsBlock>
         <AnalyticsBlock size="1x1" title="Ansökningar" />
         <AnalyticsBlock size="1x1" title="Konvertering" />
         <AnalyticsBlock size="2x2" title="Ansökningstrend">
@@ -19,9 +22,6 @@ export default function Analytics() {
             showHeader={false}
             showSummary={false}
           />
-        </AnalyticsBlock>
-        <AnalyticsBlock size="1x4">
-          <AnalyticsGeneralStats />
         </AnalyticsBlock>
         <AnalyticsBlock size="2x2" title="Traffic source" />
         <AnalyticsApplicationsByObjectBlock />
