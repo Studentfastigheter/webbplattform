@@ -32,6 +32,7 @@ export type ListingCardSmallProps = {
   variant?: "default" | "compact";
   footerContent?: React.ReactNode;
   showFavoriteButton?: boolean;
+  imageOverlayContent?: React.ReactNode;
   imageTopRightContent?: React.ReactNode;
   showHostLogo?: boolean;
   contentTopRightContent?: React.ReactNode;
@@ -74,6 +75,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     variant = "default",
     footerContent,
     showFavoriteButton = true,
+    imageOverlayContent,
     imageTopRightContent,
     showHostLogo = true,
     contentTopRightContent,
@@ -176,6 +178,12 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
       >
         {imageTopRightContent && (
           <div className="absolute right-3 top-3 z-10">{imageTopRightContent}</div>
+        )}
+
+        {imageOverlayContent && (
+          <div className="pointer-events-none absolute inset-0 z-20">
+            {imageOverlayContent}
+          </div>
         )}
 
         {/* Favorite Button (Only visible if logged in and enabled) */}

@@ -615,7 +615,11 @@ export default function ListingDetailPage() {
           <section className="w-full">
             <h2 className="text-2xl font-bold text-gray-900 mb-5 tracking-tight">Karta</h2>
             <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-              <ListingsMap listings={mapListings} className="h-full w-full" />
+              <ListingsMap
+                listings={mapListings}
+                className="h-full w-full"
+                activeListingId={listing.id}
+              />
             </div>
           </section>
 

@@ -9,6 +9,7 @@ type ListingMapPopupProps = {
   isFavorite?: boolean;
   onFavoriteToggle?: (id: string, isFav: boolean) => void;
   onOpen?: (id: string) => void;
+  imageOverlayContent?: React.ReactNode;
 };
 
 const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
@@ -16,6 +17,7 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
   isFavorite,
   onFavoriteToggle,
   onOpen,
+  imageOverlayContent,
 }) => {
   return (
     <div className="w-[320px] max-w-[calc(100vw-48px)]">
@@ -24,6 +26,7 @@ const ListingMapPopup: React.FC<ListingMapPopupProps> = ({
         isFavorite={isFavorite}
         onFavoriteToggle={onFavoriteToggle}
         onOpen={onOpen}
+        imageOverlayContent={imageOverlayContent}
       />
     </div>
   );

@@ -43,6 +43,7 @@ const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
 });
 
 const PAGE_SIZE = 15;
+const MAP_PAGE_SIZE = 500;
 const priceBounds = { min: 0, max: 20000 };
 
 const propertyTypeOptions = [
@@ -103,6 +104,34 @@ const getPageFromParam = (value: string | null) => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
 };
 
+const getTotalPagesFromResponse = (res: unknown) => {
+  const response = res as {
+    totalPages?: number;
+    totalElements?: number;
+    page?: { totalPages?: number; totalElements?: number };
+  };
+
+  return (
+    response.totalPages ??
+    response.page?.totalPages ??
+    (response.totalElements != null
+      ? Math.ceil(response.totalElements / MAP_PAGE_SIZE)
+      : response.page?.totalElements != null
+        ? Math.ceil(response.page.totalElements / MAP_PAGE_SIZE)
+        : 1)
+  );
+};
+
+const uniqueListingsById = (items: ListingCardDTO[]) => {
+  const byId = new Map<string, ListingCardDTO>();
+  items.forEach((item) => {
+    if (!byId.has(item.id)) {
+      byId.set(item.id, item);
+    }
+  });
+  return Array.from(byId.values());
+};
+
 export default function ListingsPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -118,6 +147,7 @@ export default function ListingsPage() {
 
   const [schools, setSchools] = useState<School[]>([]);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
+  const [mapListings, setMapListings] = useState<ListingCardDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(pageFromUrl);
   const [totalPages, setTotalPages] = useState(0);
@@ -257,6 +287,8 @@ export default function ListingsPage() {
     return count;
   }, [filters]);
 
+  const isMapView = view === "karta";
+
   const loadListings = useCallback(
     async (pageToLoad: number) => {
       setError(null);
@@ -291,9 +323,63 @@ export default function ListingsPage() {
     [currentFilters]
   );
 
+  const loadMapListings = useCallback(async () => {
+    const firstPage = await listingService.getAll({
+      ...currentFilters,
+      page: 0,
+      size: MAP_PAGE_SIZE,
+    });
+
+    const pageCount = Math.max(1, getTotalPagesFromResponse(firstPage));
+    const pages = [firstPage.content || []];
+
+    if (pageCount > 1) {
+      const remainingPages = await Promise.all(
+        Array.from({ length: pageCount - 1 }, (_, index) =>
+          listingService.getAll({
+            ...currentFilters,
+            page: index + 1,
+            size: MAP_PAGE_SIZE,
+          })
+        )
+      );
+
+      pages.push(...remainingPages.map((res) => res.content || []));
+    }
+
+    return uniqueListingsById(pages.flat());
+  }, [currentFilters]);
+
   useEffect(() => {
     loadListings(page);
   }, [page, currentFilters, loadListings]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!isMapView) {
+      setMapListings([]);
+      return () => {
+        active = false;
+      };
+    }
+
+    setMapListings([]);
+
+    loadMapListings()
+      .then((items) => {
+        if (active) setMapListings(items);
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Error loading map listings:", err);
+        setMapListings([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isMapView, loadMapListings]);
 
   useEffect(() => {
     if (totalPages > 0 && page > totalPages) {
@@ -324,8 +410,6 @@ export default function ListingsPage() {
   );
 
   const totalListingsCount = totalElements || listings.length;
-  const isMapView = view === "karta";
-
   const listingGridClasses = isMapView
     ? "grid grid-cols-1 gap-3 justify-items-center"
     : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-3 md:gap-6 justify-items-center";
@@ -559,7 +643,7 @@ export default function ListingsPage() {
 
                 <div className="z-10 h-[280px] w-full shrink-0 overflow-hidden rounded-xl sm:h-[350px] lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:rounded-2xl 2xl:col-span-2">
                   <ListingsMap
-                    listings={listings}
+                    listings={mapListings}
                     activeListingId={hoveredListingId}
                     getIsFavorite={(id) => favoriteIds.has(id)}
                     onFavoriteToggle={handleFavoriteToggle}

@@ -29,13 +29,14 @@ const createListingPopupRenderer =
     onFavoriteToggle?: (id: string, isFav: boolean) => void,
     onOpenListing?: (id: string) => void,
   ): PopupRenderer =>
-  () =>
+  ({ imageOverlayContent }) =>
     (
       <ListingMapPopup
         listing={listing}
         isFavorite={isFavorite}
         onFavoriteToggle={onFavoriteToggle}
         onOpen={onOpenListing}
+        imageOverlayContent={imageOverlayContent}
       />
     );
 
@@ -68,7 +69,6 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
       center={[62, 15]}
       className={className}
       activeMarkerId={activeListingId}
-      autoFitMarkers={false}
       fillContainer={fillContainer}
     />
   );

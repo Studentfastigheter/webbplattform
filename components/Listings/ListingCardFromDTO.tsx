@@ -17,6 +17,7 @@ type ListingCardFromDTOProps = {
   | "onHoverChange"
   | "footerContent"
   | "showFavoriteButton"
+  | "imageOverlayContent"
   | "imageTopRightContent"
   | "showHostLogo"
   | "contentTopRightContent"
