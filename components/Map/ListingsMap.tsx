@@ -14,6 +14,7 @@ type ListingsMapProps = {
   className?: string;
   activeListingId?: string;
   fillContainer?: boolean;
+  showPopups?: boolean;
   getIsFavorite?: (id: string) => boolean;
   onFavoriteToggle?: (id: string, isFav: boolean) => void;
   onOpenListing?: (id: string) => void;
@@ -45,6 +46,7 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
   className,
   activeListingId,
   fillContainer,
+  showPopups = true,
   getIsFavorite,
   onFavoriteToggle,
   onOpenListing,
@@ -57,9 +59,16 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
         .map((l) => ({
           id: l.id,
           position: [l.lat as number, l.lng as number],
-          popup: createListingPopupRenderer(l, getIsFavorite?.(l.id), onFavoriteToggle, onOpenListing),
+          popup: showPopups
+            ? createListingPopupRenderer(
+                l,
+                getIsFavorite?.(l.id),
+                onFavoriteToggle,
+                onOpenListing,
+              )
+            : undefined,
         })),
-    [listings, getIsFavorite, onFavoriteToggle, onOpenListing],
+    [listings, getIsFavorite, onFavoriteToggle, onOpenListing, showPopups],
   );
 
   return (

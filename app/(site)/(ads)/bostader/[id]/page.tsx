@@ -618,7 +618,8 @@ export default function ListingDetailPage() {
               <ListingsMap
                 listings={mapListings}
                 className="h-full w-full"
-                activeListingId={listing.id}
+                fillContainer
+                showPopups={false}
               />
             </div>
           </section>
