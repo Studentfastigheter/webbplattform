@@ -1,28 +1,29 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/components/Queues/QueueRow";
 import { useAuth } from "@/context/AuthContext";
 import { queueService } from "@/services/queue-service";
-import { type HousingQueueDTO } from "@/types/queue";
 
 const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
-  // HousingQueueDTO använder oftast 'open' som standard
-  if (status === "open") return "Aktiv";
+  const normalized = status?.toLowerCase();
+  if (normalized === "active" || normalized === "open") return "Aktiv";
+  if (normalized === "offered") return "Erbjudande";
   return "Inaktiv";
 };
 
 export default function Page() {
   const columns: ListFrameColumn[] = [
-    { id: "name", label: "Namn", width: "2.4fr" },
+    { id: "name", label: "Kö", width: "2.4fr" },
     { id: "city", label: "Stad", width: "1.6fr" },
     { id: "status", label: "Status", align: "center", width: "1.2fr" },
-    { id: "days", label: "Dagar", align: "left", width: "1fr" },
+    { id: "days", label: "Kötid", align: "left", width: "1fr" },
     { id: "hantera", label: " ", align: "center", width: "1.1fr" },
   ];
 
-  const { user } = useAuth(); // Använd user för att se om vi är inloggade
+  const { user } = useAuth();
   const [queueRows, setQueueRows] = useState<QueueRowProps[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,36 +39,41 @@ export default function Page() {
     setLoading(true);
     setError(null);
 
-    // Hämta både användarens specifika köansökningar och alla tillgängliga köer
-    Promise.all([queueService.getMyQueues(), queueService.getAll()])
-      .then(([userApplications, allQueues]) => {
+    queueService
+      .getMyQueues()
+      .then((userApplications) => {
         if (!active) return;
-        
-        // Skapa en Map för snabb uppslagning av kö-detaljer baserat på ID
-        const queueMap = new Map<string, HousingQueueDTO>(
-          allQueues.map((q) => [q.id, q])
-        );
-        
-        const rows = userApplications.filter((app) => app.queueId != null).map((app) => {
-          const queueId = String(app.queueId);
-          const queueInfo = queueMap.get(queueId);
-          
-          return {
-            id: queueId,
-            name: queueInfo?.name ?? "Okänd kö",
-            logoUrl: queueInfo?.logoUrl ?? "/logos/campuslyan-logo.svg",
-            cities: queueInfo?.city ? [queueInfo.city] : [],
-            status: statusToRowStatus("open"), // Du kan styra detta via app.status om det finns
-            days: app.queueDays ?? 0,
-            onManage: () => {
-              // Exempel: navigera till köns detaljsida
-              window.location.href = `/alla-koer/${queueId}`;
-            },
-          };
-        });
+
+        const rows = userApplications
+          .filter((app) => app.queueId != null)
+          .map((app) => {
+            const queueId = String(app.queueId);
+            const queue = app.queue;
+            const company = queue?.company;
+            const companyId = company?.id;
+            const city = queue?.city ?? company?.city ?? null;
+
+            return {
+              id: queueId,
+              name: app.queueName ?? queue?.name ?? "Okänd kö",
+              logoUrl:
+                queue?.logoUrl ??
+                company?.logoUrl ??
+                "/logos/campuslyan-logo.svg",
+              cities: city ? [city] : [],
+              status: statusToRowStatus(app.status ?? queue?.status ?? undefined),
+              days: app.queueDays ?? 0,
+              onManage: () => {
+                window.location.href = companyId != null
+                  ? `/alla-koer/${companyId}`
+                  : "/alla-koer";
+              },
+            };
+          });
+
         setQueueRows(rows);
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (!active) return;
         console.error(err);
         setError("Kunde inte ladda dina köer.");
@@ -100,6 +106,13 @@ export default function Page() {
         <ListFrame
           columns={columns}
           rows={rows}
+          className={clsx(
+            "overflow-hidden rounded-xl border-gray-200 shadow-sm",
+            "[&_header]:bg-gray-50/80 [&_header]:px-6 [&_header]:py-3",
+            "[&_header_span]:text-xs [&_header_span]:font-semibold [&_header_span]:uppercase [&_header_span]:tracking-normal [&_header_span]:text-gray-500",
+            "[&_div.mx-8]:mx-0 [&_div.mx-8]:bg-gray-200",
+            "[&_div.divide-y]:divide-gray-100 [&_div.grid]:px-6 [&_div.grid]:py-4"
+          )}
           emptyState={
             <div className="py-16 text-center text-sm text-gray-400">
               {loading

@@ -29,6 +29,21 @@ export type QueueApplicationDTO = {
   queue?: {
     id?: string | number;
     name?: string;
+    area?: string | null;
+    city?: string | null;
+    logoUrl?: string | null;
+    bannerUrl?: string | null;
+    description?: string | null;
+    status?: string | null;
+    totalUnits?: number | null;
+    approximateWaitDays?: number | null;
+    company?: {
+      id?: number;
+      name?: string;
+      logoUrl?: string | null;
+      bannerUrl?: string | null;
+      city?: string | null;
+    } | null;
   };
   studentId?: number;
   firstName?: string;
@@ -43,6 +58,17 @@ export type QueueApplicationDTO = {
   daysInQueue?: number;
   position?: number;
 };
+
+type MyQueuesResponse =
+  | QueueApplicationDTO
+  | QueueApplicationDTO[]
+  | {
+      content?: QueueApplicationDTO[];
+      data?: QueueApplicationDTO[];
+      queues?: QueueApplicationDTO[];
+      memberships?: QueueApplicationDTO[];
+      queueMemberships?: QueueApplicationDTO[];
+    };
 
 export function getQueueApplicationQueueId(
   application: QueueApplicationDTO
@@ -102,6 +128,28 @@ function getQueueDays(row: QueueApplicationDTO): number {
   return Math.max(0, Math.floor((Date.now() - joinedDate.getTime()) / millisecondsPerDay));
 }
 
+function getMyQueuesRows(res: MyQueuesResponse): QueueApplicationDTO[] {
+  if (Array.isArray(res)) return res;
+  if (!res || typeof res !== "object") return [];
+
+  const wrappedRows =
+    "content" in res && Array.isArray(res.content)
+      ? res.content
+      : "data" in res && Array.isArray(res.data)
+      ? res.data
+      : "queues" in res && Array.isArray(res.queues)
+      ? res.queues
+      : "memberships" in res && Array.isArray(res.memberships)
+      ? res.memberships
+      : "queueMemberships" in res && Array.isArray(res.queueMemberships)
+      ? res.queueMemberships
+      : null;
+
+  if (wrappedRows) return wrappedRows;
+
+  return "queue" in res || "queueId" in res ? [res as QueueApplicationDTO] : [];
+}
+
 export const queueService = {
 
   list: async ({ id         = null,
@@ -148,16 +196,8 @@ export const queueService = {
   },
 
   getMyQueues: async (): Promise<QueueApplicationDTO[]> => {
-    const res = await apiClient<
-      | QueueApplicationDTO[]
-      | {
-          content?: QueueApplicationDTO[];
-          data?: QueueApplicationDTO[];
-          queues?: QueueApplicationDTO[];
-        }
-    >("/queues/my");
-
-    const rows = Array.isArray(res) ? res : res?.content ?? res?.data ?? res?.queues ?? [];
+    const res = await apiClient<MyQueuesResponse>("/queues/my");
+    const rows = getMyQueuesRows(res);
 
     return rows.map((row) => {
       const queueId = row.queueId ?? row.queue?.id;
