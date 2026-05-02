@@ -53,6 +53,7 @@ export type BaseMapProps = {
   className?: string;
   activeMarkerId?: string;
   autoFitMarkers?: boolean;
+  fillContainer?: boolean;
 };
 
 const CLUSTER_ZOOM_THRESHOLD = 10;
@@ -83,6 +84,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
   className,
   activeMarkerId,
   autoFitMarkers = true,
+  fillContainer = false,
 }) => {
   const [isClient, setIsClient] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(zoom);
@@ -441,8 +443,8 @@ const [initialZoom] = useState<number>(() => {
       className={className ?? "w-full rounded-2xl"}
       ref={mapRef}
       style={{
-        height: "min(72vh, 760px)",
-        minHeight: 600,
+        height: fillContainer ? "100%" : "min(72vh, 760px)",
+        minHeight: fillContainer ? 0 : 600,
         width: "100%",
       }}
     >

@@ -13,6 +13,7 @@ type ListingsMapProps = {
   listings: ListingCardDTO[]; // <-- Uppdaterad typ
   className?: string;
   activeListingId?: string;
+  fillContainer?: boolean;
   getIsFavorite?: (id: string) => boolean;
   onFavoriteToggle?: (id: string, isFav: boolean) => void;
   onOpenListing?: (id: string) => void;
@@ -42,6 +43,7 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
   listings,
   className,
   activeListingId,
+  fillContainer,
   getIsFavorite,
   onFavoriteToggle,
   onOpenListing,
@@ -67,6 +69,7 @@ const ListingsMap: React.FC<ListingsMapProps> = ({
       className={className}
       activeMarkerId={activeListingId}
       autoFitMarkers={false}
+      fillContainer={fillContainer}
     />
   );
 };
