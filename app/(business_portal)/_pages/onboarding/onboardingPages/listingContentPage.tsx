@@ -2,7 +2,7 @@
 
 import { FormGroup, FormShell, MultiSelectCard, TextAreaField } from "@/components/Dashboard/Form";
 import { useListingDraft } from "../listingDraftContext";
-import { FieldRow, FieldStack } from "./listingFormUi";
+import { FieldRow, FieldStack, StepFormLayout } from "./listingFormUi";
 
 const tagOptions = [
   { id: "BALCONY", label: "Balkong" },
@@ -27,7 +27,7 @@ export default function ListingContentPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <StepFormLayout>
       <FormShell
         className="m-0 max-w-none"
         heading="Text och taggar"
@@ -68,6 +68,6 @@ export default function ListingContentPage() {
           </div>
         </FieldStack>
       </FormShell>
-    </div>
+    </StepFormLayout>
   );
 }

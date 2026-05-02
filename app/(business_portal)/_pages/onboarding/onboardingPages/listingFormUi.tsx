@@ -58,7 +58,7 @@ export function FieldGrid({
 }
 
 export function StepFormLayout({ children }: { children: ReactNode }) {
-  return <div className="mx-auto w-full max-w-4xl">{children}</div>;
+  return <div className="w-full">{children}</div>;
 }
 
 export function StepFormShell({
@@ -75,7 +75,7 @@ export function StepFormShell({
   className?: string;
 }) {
   return (
-    <div className={cn("mx-auto w-full max-w-4xl", className)}>
+    <div className={cn("mx-auto w-full max-w-7xl", className)}>
       <div className="mb-4">
         <div className="max-w-2xl">
           <p className="text-xs font-medium uppercase text-gray-500">

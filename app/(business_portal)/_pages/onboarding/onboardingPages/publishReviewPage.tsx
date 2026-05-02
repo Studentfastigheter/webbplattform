@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import BostadAbout from "@/components/ads/BostadAbout";
 import BostadImagePreviewGrid from "@/components/ads/BostadImagePreviewGrid";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api-client";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
@@ -162,6 +163,7 @@ export default function PublishReviewPage() {
   const { refreshUser, token, user } = useAuth();
   const { draft, resetDraft } = useListingDraft();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const missingFields = useMemo(() => validateListingDraft(draft), [draft]);
   const companyId = getActiveCompanyId(user);
   const activeCompany = getActiveCompanySummary(user);
@@ -169,7 +171,7 @@ export default function PublishReviewPage() {
     () => buildPublishListingRequest(draft),
     [draft]
   );
-  const canPublish = missingFields.length === 0 && !isSubmitting;
+  const canPublish = missingFields.length === 0 && isVerified && !isSubmitting;
   const ownerName = activeCompany?.name ?? user?.companyName ?? user?.displayName ?? "CampusLyan";
   const previewListing = useMemo(
     () =>
@@ -193,6 +195,11 @@ export default function PublishReviewPage() {
 
     if (!token) {
       toast.error("Du behöver logga in igen innan annonsen kan publiceras.");
+      return;
+    }
+
+    if (!isVerified) {
+      toast.error("Verifiera previewn innan annonsen publiceras.");
       return;
     }
 
@@ -309,6 +316,22 @@ export default function PublishReviewPage() {
             </dl>
 
             <div className="mt-6 grid gap-3">
+              <label
+                className="flex cursor-pointer items-start gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-700"
+                htmlFor="verify-listing-preview"
+              >
+                <Checkbox
+                  checked={isVerified}
+                  className="mt-0.5 data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225] data-[state=checked]:text-white"
+                  id="verify-listing-preview"
+                  onCheckedChange={(checked) => setIsVerified(checked === true)}
+                />
+                <span>
+                  Jag har kontrollerat previewn och verifierar att annonsen kan
+                  publiceras.
+                </span>
+              </label>
+
               <Button
                 type="button"
                 onClick={handlePublish}
@@ -321,7 +344,10 @@ export default function PublishReviewPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={resetDraft}
+                onClick={() => {
+                  resetDraft();
+                  setIsVerified(false);
+                }}
                 isDisabled={isSubmitting}
                 fullWidth
               >

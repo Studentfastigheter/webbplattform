@@ -4,29 +4,17 @@ import { use } from "react";
 import { notFound } from "next/navigation";
 
 import Onboarding from "@/app/(business_portal)/_pages/onboarding/onboarding";
-import AddObjectInfo from "@/app/(business_portal)/_pages/onboarding/onboardingPages/addObjectInfo";
-import HousingDetailsPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/housingDetailsPage";
-import ObjectTimespan from "@/app/(business_portal)/_pages/onboarding/onboardingPages/objectTimespan";
-import ListingContentPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/listingContentPage";
-import ImagePublishPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/imagePublishPage";
+import CreateListingPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/createListingPage";
 import PublishReviewPage from "@/app/(business_portal)/_pages/onboarding/onboardingPages/publishReviewPage";
 
 const stepPagesList = [
-  [AddObjectInfo],
-  [HousingDetailsPage],
-  [ObjectTimespan],
-  [ListingContentPage],
-  [ImagePublishPage],
+  [CreateListingPage],
   [PublishReviewPage],
 ];
 
 const stepLabels = [
-  "Grunddata",
-  "Hyra",
-  "Datum",
-  "Text",
-  "Bilder",
-  "Publicera",
+  "Annonsuppgifter",
+  "Förhandsgranska",
 ];
 
 const MAX_PAGE = stepPagesList.reduce((total, stage) => total + stage.length, 0);
