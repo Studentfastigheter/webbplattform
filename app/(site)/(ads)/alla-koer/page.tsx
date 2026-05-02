@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Check, MapPin, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import Que_ListingCard from "@/components/Listings/Que_ListingCard";
@@ -38,6 +38,100 @@ const countByValue = (values: string[]) =>
     counts[value] = (counts[value] ?? 0) + 1;
     return counts;
   }, {});
+
+interface CityFilterContainerProps {
+  cities: string[];
+  cityCounts: Record<string, number>;
+  activeCities: string[];
+  onSelect: (city: string | null) => void;
+}
+
+const CityFilterContainer = ({
+  cities,
+  cityCounts,
+  activeCities,
+  onSelect,
+}: CityFilterContainerProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const INITIAL_VISIBLE_COUNT = 8;
+
+  const sortedCities = useMemo(() => {
+    return [...cities].sort(
+      (a, b) => (cityCounts[b] || 0) - (cityCounts[a] || 0)
+    );
+  }, [cities, cityCounts]);
+
+  const visibleCities = isExpanded
+    ? sortedCities
+    : sortedCities.slice(0, INITIAL_VISIBLE_COUNT);
+  const hasMore = sortedCities.length > INITIAL_VISIBLE_COUNT;
+
+  return (
+    <div className="mt-6 flex flex-col items-center gap-5">
+      <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3.5">
+        <button
+          type="button"
+          onClick={() => onSelect(null)}
+          className={`group flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${
+            activeCities.length === 0
+              ? "bg-[#004225] text-white shadow-[0_8px_20px_-6px_rgba(0,66,37,0.4)] scale-105"
+              : "bg-white text-gray-700 ring-1 ring-black/[0.08] hover:ring-black/20 hover:bg-gray-50"
+          }`}
+        >
+          <MapPin
+            className={`h-4 w-4 transition-transform group-hover:scale-110 ${
+              activeCities.length === 0 ? "text-white" : "text-[#004225]"
+            }`}
+          />
+          Alla städer
+        </button>
+        {visibleCities.map((city) => {
+          const isSelected =
+            activeCities.includes(city) && activeCities.length === 1;
+          return (
+            <button
+              key={city}
+              type="button"
+              onClick={() => onSelect(isSelected ? null : city)}
+              className={`flex shrink-0 items-center gap-2.5 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                isSelected
+                  ? "bg-[#004225] text-white shadow-[0_8px_20px_-6px_rgba(0,66,37,0.4)] scale-105"
+                  : "bg-white text-gray-700 ring-1 ring-black/[0.08] hover:ring-black/20 hover:bg-gray-50"
+              }`}
+            >
+              <span className="leading-none">{city}</span>
+              <span
+                className={`flex h-5 min-w-[22px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold transition-colors ${
+                  isSelected
+                    ? "bg-white/20 text-white"
+                    : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {cityCounts[city] || 0}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-1.5 text-sm font-bold text-[#004225] transition-opacity hover:opacity-80"
+        >
+          <span className="underline underline-offset-4 decoration-2 decoration-[#004225]/30 hover:decoration-[#004225]">
+            {isExpanded
+              ? "Visa färre städer"
+              : `Visa alla ${cities.length} städer`}
+          </span>
+          <div
+            className={`h-1.5 w-1.5 rounded-full bg-[#004225] transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
+          />
+        </button>
+      )}
+    </div>
+  );
+};
 
 export default function Page() {
   const router = useRouter();
@@ -200,6 +294,26 @@ export default function Page() {
     });
   }, [queues, searchValues, filters]);
 
+  const unjoinedFilteredQueues = useMemo(
+    () => filteredQueues.filter((q) => !joinedQueueIds.has(q.id)),
+    [filteredQueues, joinedQueueIds]
+  );
+
+  const allFilteredSelected = useMemo(() => {
+    if (unjoinedFilteredQueues.length === 0) return false;
+    return unjoinedFilteredQueues.every((q) => selectedQueues.has(q.id));
+  }, [unjoinedFilteredQueues, selectedQueues]);
+
+  const toggleSelectAllInCity = () => {
+    const next = new Set(selectedQueues);
+    if (allFilteredSelected) {
+      unjoinedFilteredQueues.forEach((q) => next.delete(q.id));
+    } else {
+      unjoinedFilteredQueues.forEach((q) => next.add(q.id));
+    }
+    setSelectedQueues(next);
+  };
+
   useEffect(() => {
     setVisibleCount(Math.min(PAGE_SIZE, filteredQueues.length));
   }, [filteredQueues.length]);
@@ -351,19 +465,68 @@ export default function Page() {
                 />
               </div>
             </div>
+
+            {/* City filter pills — wrapped flex container for better accessibility and no horizontal scrolling */}
+            {cityFilterOptions.length > 0 && (
+              <CityFilterContainer
+                cities={cityFilterOptions}
+                cityCounts={cityCounts}
+                activeCities={filters.cities}
+                onSelect={(city) =>
+                  setFilters({
+                    ...filters,
+                    cities: city === null ? [] : [city],
+                  })
+                }
+              />
+            )}
           </div>
         </section>
 
         <section className="mt-6 w-full sm:mt-8">
-          <div className="flex w-full flex-col gap-3 sm:gap-4">
-            <h2
-              id="koer-heading"
-              className="text-base font-semibold text-black sm:text-lg"
-            >
-              {loading && queues.length === 0
-                ? "Laddar köer..."
-                : `Över ${totalQueues.toLocaleString("sv-SE")} köer`}
-            </h2>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
+              <h2
+                id="koer-heading"
+                className="text-base font-semibold text-black sm:text-lg"
+              >
+                {loading && queues.length === 0
+                  ? "Laddar köer..."
+                  : filters.cities.length === 1
+                    ? `${totalQueues.toLocaleString("sv-SE")} köer i ${filters.cities[0]}`
+                    : `Över ${totalQueues.toLocaleString("sv-SE")} köer`}
+              </h2>
+              {filters.cities.length === 1 &&
+                unjoinedFilteredQueues.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={toggleSelectAllInCity}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#004225] transition-opacity hover:opacity-80 sm:text-sm"
+                  >
+                    {allFilteredSelected ? (
+                      <>
+                        <X className="h-3.5 w-3.5" />
+                        Avmarkera alla
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Välj alla i {filters.cities[0]}
+                      </>
+                    )}
+                  </button>
+                )}
+            </div>
+            {filters.cities.length === 1 && (
+              <button
+                type="button"
+                onClick={() => setFilters({ ...filters, cities: [] })}
+                className="inline-flex items-center gap-1 self-start text-xs font-medium text-gray-500 hover:text-black sm:text-sm"
+              >
+                <X className="h-3.5 w-3.5" />
+                Rensa stadsfilter
+              </button>
+            )}
           </div>
         </section>
 
