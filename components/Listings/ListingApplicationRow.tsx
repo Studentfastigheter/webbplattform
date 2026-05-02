@@ -1,6 +1,6 @@
 import React from "react";
 import clsx from "clsx";
-import { Trash2, Home, MapPin, Building2 } from "lucide-react";
+import { ChevronRight, Home, MapPin, Ruler, Trash2 } from "lucide-react";
 import Tag from "../ui/Tag";
 import type { ListFrameRow } from "../layout/ListFrame";
 import { Button } from "@/components/ui/button";
@@ -53,17 +53,20 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
     dwellingType,
     rooms,
     sizeM2,
-    landlordType,
     images,
     imageUrl,
-    isVerified,
     advertiser,
+    landlordType,
   } = listing;
 
   const resolvedImage = imageUrl || images?.find((image) => image.imageUrl)?.imageUrl;
   const resolvedRent = formatCurrency(rent);
   const locationLabel = [area, city].filter(Boolean).join(", ") || "-";
-  const landlordLabel = landlordType ?? advertiser?.displayName ?? "Hyresvärd";
+  const landlordName = advertiser?.displayName ?? landlordType ?? "Hyresvärd";
+  const landlordLogo = advertiser?.logoUrl;
+  const details = [dwellingType, rooms != null ? `${rooms} rum` : null, sizeM2 != null ? `${sizeM2} m²` : null]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <button
@@ -71,12 +74,12 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
       onClick={onOpen}
       className="flex min-w-0 items-start gap-4 text-left transition hover:opacity-95"
     >
-      <div className="relative h-[104px] w-[136px] flex-shrink-0 overflow-hidden rounded-2xl bg-gray-100 ring-1 ring-black/5">
+      <div className="relative h-32 w-44 flex-shrink-0 overflow-hidden rounded-2xl bg-gray-100 ring-1 ring-black/5">
         {resolvedImage ? (
           <img
             src={resolvedImage}
             alt={title}
-            className="h-full w-full object-cover"
+            className="block h-full min-h-full w-full min-w-full object-cover object-center"
             loading="lazy"
           />
         ) : (
@@ -85,37 +88,36 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
           </div>
         )}
       </div>
-      <div className="flex min-w-0 flex-col gap-1">
-        {isVerified && (
-          <div className="mb-1">
-            <Tag
-              text="Verifierad hyresvärd"
-              bgColor="#0F4D0F"
-              textColor="#FFFFFF"
-              height={18}
-              horizontalPadding={10}
-              className="text-[11px] leading-[13px]"
-            />
-          </div>
-        )}
-        <div className="line-clamp-2 text-[16px] font-semibold leading-[18px] text-black">
+      <div className="flex min-h-32 min-w-0 flex-col justify-start py-1">
+        <div className="truncate text-[15px] font-semibold leading-5 text-gray-950">
           {title}
         </div>
-        <div className="text-[15px] font-semibold leading-[18px] text-black">
-          {resolvedRent ? `${resolvedRent} kr/månad` : "-"}
+        <div className="mt-1.5 inline-flex min-w-0 items-center gap-1.5 text-xs leading-4 text-gray-500">
+          <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+          <span className="truncate">{locationLabel}</span>
         </div>
-        <div className="flex flex-col gap-1 text-[12px] leading-[14px] text-[#5b5b5b]">
-          <span className="flex items-center gap-1.5">
-            <MapPin size={14} strokeWidth={2} />
-            {locationLabel}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Home size={14} strokeWidth={2} />
-            {dwellingType ?? "-"} / {rooms ?? "-"} rum / {sizeM2 ?? "-"} m{"\u00b2"}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Building2 size={14} strokeWidth={2} />
-            {landlordLabel}
+        <div className="mt-1 inline-flex min-w-0 items-center gap-1.5 text-xs leading-4 text-gray-500">
+          <Ruler className="h-3.5 w-3.5 flex-shrink-0" />
+          <span className="truncate">{details || "Bostadsinfo saknas"}</span>
+        </div>
+        <div className="mt-2 text-sm font-semibold leading-5 text-gray-950">
+          {resolvedRent ? `${resolvedRent} kr/månad` : landlordName}
+        </div>
+        <div className="mt-auto flex min-w-0 items-center gap-2 pt-2">
+          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-50">
+            {landlordLogo ? (
+              <img
+                src={landlordLogo}
+                alt={landlordName}
+                className="h-full w-full object-contain"
+                loading="lazy"
+              />
+            ) : (
+              <Home className="h-3.5 w-3.5 text-gray-400" />
+            )}
+          </div>
+          <span className="truncate text-xs font-medium leading-4 text-gray-600">
+            {landlordName}
           </span>
         </div>
       </div>
@@ -126,31 +128,46 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
 const TagsCell: React.FC<{ tags?: ListingApplicationRowProps["tags"] }> = ({
   tags,
 }) => {
-  const safeTags = tags ?? [];
+  const safeTags = (tags ?? []).slice(0, 2);
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {safeTags.map((tag) => (
-        <Tag
-          key={tag}
-          text={tag}
-          height={20}
-          horizontalPadding={10}
-          className="text-[12px] leading-[14px]"
-        />
-      ))}
+    <div className="flex min-h-16 items-center">
+      {safeTags.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {safeTags.map((tag) => (
+            <Tag
+              key={tag}
+              text={tag}
+              height={24}
+              horizontalPadding={10}
+              fontSize={12}
+              fontWeight={500}
+              className="border-gray-200 bg-gray-50 text-gray-700"
+            />
+          ))}
+        </div>
+      ) : (
+        <span className="text-sm text-gray-400">-</span>
+      )}
     </div>
   );
 };
 
 const StatusCell: React.FC<{ status: Status }> = ({ status }) => (
-  <div className="flex justify-center">
-    <StatusTag status={status} />
+  <div className="flex min-h-16 items-center justify-center">
+    <StatusTag
+      status={status}
+      height={24}
+      horizontalPadding={12}
+      className="text-[12px] font-medium"
+    />
   </div>
 );
 
 const DateCell: React.FC<{ date: DateString }> = ({ date }) => (
-  <div className="text-sm text-left text-black">{date}</div>
+  <div className="flex min-h-16 items-center text-left text-sm text-gray-700">
+    {date}
+  </div>
 );
 
 const ActionsCell: React.FC<
@@ -171,25 +188,26 @@ const ActionsCell: React.FC<
   onWithdraw,
   onOpen,
 }) => (
-  <div className="flex flex-col items-center gap-2">
+  <div className="flex min-h-16 flex-col items-center justify-center gap-2">
     <Button
       type="button"
       onClick={onOpen}
       className={clsx(
-        "h-9 w-25 rounded-full bg-[#004225] text-[12px] font-medium text-white",
-        "transition hover:bg-[#00331b]"
+        "h-8 rounded-full border border-gray-200 bg-white px-2.5 text-[12px] font-medium text-gray-900 shadow-sm",
+        "transition hover:border-gray-300 hover:bg-gray-50"
       )}
     >
-      Visa annons
+      Visa
+      <ChevronRight className="ml-1 h-3.5 w-3.5" />
     </Button>
     {hasOffer ? (
-      <div className="flex flex-col items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <Button
           type="button"
           size="sm"
           isDisabled={isProcessingOffer}
           onClick={onAcceptOffer}
-          className="h-8 min-w-[104px] rounded-full bg-emerald-600 px-3 text-[12px] font-medium text-white transition hover:bg-emerald-700"
+          className="h-8 rounded-full bg-emerald-600 px-3 text-[12px] font-medium text-white transition hover:bg-emerald-700"
         >
           Acceptera
         </Button>
@@ -206,7 +224,7 @@ const ActionsCell: React.FC<
       <button
         type="button"
         onClick={onWithdraw}
-        className="flex items-center gap-1.5 text-[12px] text-red-600 hover:text-red-800 transition"
+        className="flex items-center gap-1.5 text-[12px] text-red-600 transition hover:text-red-800"
       >
         <Trash2 size={14} />
         Dra tillbaka
@@ -215,7 +233,9 @@ const ActionsCell: React.FC<
   </div>
 );
 
-export const buildListingApplicationRow = (props: ListingApplicationRowProps): ListFrameRow => {
+export const buildListingApplicationRow = (
+  props: ListingApplicationRowProps
+): ListFrameRow => {
   const {
     listingId,
     tags,
@@ -231,6 +251,7 @@ export const buildListingApplicationRow = (props: ListingApplicationRowProps): L
 
   return {
     id: listingId,
+    className: "items-center transition-colors hover:bg-gray-50/70",
     cells: [
       <AdCell key={`${listingId}-ad`} listing={props} onOpen={onOpen} />,
       <TagsCell key={`${listingId}-tags`} tags={tags} />,
