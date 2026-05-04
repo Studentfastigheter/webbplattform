@@ -80,9 +80,35 @@ export type CompanyChangeableDataDTO = {
   socialLinkByPlatform?: Record<string, string>;
 };
 
+export type ResidentTrendEntry = {
+  year: number;
+  month: number;
+  day: number;
+  numResidents: number;
+};
+
+export type ResidentSchool = {
+  id?: number;
+  name?: string;
+  city?: string;
+  lat?: number;
+  lng?: number;
+};
+
 export type ResidentsSchoolCount = {
-  school?: unknown;
-  residents?: number;
+  school?: ResidentSchool | null;
+  residents: number;
+};
+
+export type ResidentsTownCount = {
+  town: string;
+  residents: number;
+};
+
+export type ResidentAnalyticsData = {
+  residentTrend: ResidentTrendEntry[];
+  residentSchools: ResidentsSchoolCount[];
+  residentTowns: ResidentsTownCount[];
 };
 
 export type NewApplication = {
@@ -296,6 +322,118 @@ function normalizeObjectApplicationCount(value: unknown): ObjectApplicationCount
   };
 }
 
+function normalizeResidentTrendEntry(value: unknown): ResidentTrendEntry | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const year = toNumber(value.year, Number.NaN);
+  const month = toNumber(value.month, Number.NaN);
+  const day = toNumber(value.day, Number.NaN);
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day)
+  ) {
+    return null;
+  }
+
+  return {
+    year,
+    month,
+    day,
+    numResidents: toNumber(value.numResidents ?? value.residents),
+  };
+}
+
+function normalizeResidentSchool(value: unknown): ResidentSchool | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return {
+    id:
+      Number.isFinite(Number(value.id ?? value.schoolId))
+        ? Number(value.id ?? value.schoolId)
+        : undefined,
+    name:
+      typeof value.name === "string"
+        ? value.name
+        : typeof value.schoolName === "string"
+          ? value.schoolName
+          : undefined,
+    city: typeof value.city === "string" ? value.city : undefined,
+    lat: Number.isFinite(Number(value.lat)) ? Number(value.lat) : undefined,
+    lng: Number.isFinite(Number(value.lng)) ? Number(value.lng) : undefined,
+  };
+}
+
+function normalizeResidentsSchoolCount(value: unknown): ResidentsSchoolCount | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const school = normalizeResidentSchool(value.school);
+  const fallbackName =
+    typeof value.schoolName === "string"
+      ? value.schoolName
+      : typeof value.name === "string"
+        ? value.name
+        : undefined;
+
+  return {
+    school: school ?? (fallbackName ? { name: fallbackName } : null),
+    residents: toNumber(value.residents ?? value.numResidents ?? value.count),
+  };
+}
+
+function normalizeResidentsTownCount(value: unknown): ResidentsTownCount | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const town =
+    typeof value.town === "string"
+      ? value.town
+      : typeof value.city === "string"
+        ? value.city
+        : "";
+
+  return {
+    town: town || "Okänd stad",
+    residents: toNumber(value.residents ?? value.numResidents ?? value.count),
+  };
+}
+
+function normalizeResidentAnalyticsData(value: unknown): ResidentAnalyticsData {
+  if (!isRecord(value)) {
+    return {
+      residentTrend: [],
+      residentSchools: [],
+      residentTowns: [],
+    };
+  }
+
+  return {
+    residentTrend: toArray<unknown>(
+      value.residentTrend ?? value.trend ?? value.residentsTrend
+    )
+      .map(normalizeResidentTrendEntry)
+      .filter((entry): entry is ResidentTrendEntry => entry !== null),
+    residentSchools: toArray<unknown>(
+      value.residentSchools ?? value.schools ?? value.residentsBySchool
+    )
+      .map(normalizeResidentsSchoolCount)
+      .filter((entry): entry is ResidentsSchoolCount => entry !== null),
+    residentTowns: toArray<unknown>(
+      value.residentTowns ?? value.towns ?? value.residentsByTown
+    )
+      .map(normalizeResidentsTownCount)
+      .filter((entry): entry is ResidentsTownCount => entry !== null),
+  };
+}
+
 function normalizeNewApplication(value: unknown): NewApplication | null {
   if (!isRecord(value)) {
     return null;
@@ -466,8 +604,10 @@ export const companyService = {
     return normalizeAnalyticalQuantities(result);
   },
 
-  residentAnalyticsData: async (id: number): Promise<unknown[]> => {
-    return toArray<unknown>(await apiClient<unknown>(`/analytics/${id}/residents/data`));
+  residentAnalyticsData: async (id: number): Promise<ResidentAnalyticsData> => {
+    const result = await apiClient<unknown>(`/analytics/${id}/residents/data`);
+
+    return normalizeResidentAnalyticsData(result);
   },
 
   residentsByTown: async (id: number): Promise<unknown[]> => {

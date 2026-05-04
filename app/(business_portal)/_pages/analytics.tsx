@@ -2,6 +2,7 @@ import { AnalyticsBlock, AnalyticsGrid } from "@/components/analytics/AnalyticsB
 import AnalyticsApplicationsByObjectBlock from "../_components/AnalyticsApplicationsByObjectBlock";
 import AnalyticsApplicationsTrend from "../_components/AnalyticsApplicationsTrend";
 import AnalyticsGeneralStats from "../_components/AnalyticsGeneralStats";
+import AnalyticsResidentsOverview from "../_components/AnalyticsResidentsOverview";
 
 export default function Analytics() {
   return (
@@ -14,8 +15,7 @@ export default function Analytics() {
         <AnalyticsBlock size="1x2">
           <AnalyticsGeneralStats />
         </AnalyticsBlock>
-        <AnalyticsBlock size="1x1" title="Ansökningar" />
-        <AnalyticsBlock size="1x1" title="Konvertering" />
+        <AnalyticsResidentsOverview />
         <AnalyticsBlock size="2x2" title="Ansökningstrend">
           <AnalyticsApplicationsTrend
             embedded
@@ -23,10 +23,7 @@ export default function Analytics() {
             showSummary={false}
           />
         </AnalyticsBlock>
-        <AnalyticsBlock size="2x2" title="Traffic source" />
         <AnalyticsApplicationsByObjectBlock />
-        <AnalyticsBlock size="1x1" title="Svarstid" />
-        <AnalyticsBlock size="1x1" title="Kvalitet" />
       </AnalyticsGrid>
     </div>
   );
