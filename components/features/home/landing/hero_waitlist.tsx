@@ -2,6 +2,7 @@
 
 import React, { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SectionBadge } from "@/components/ui/section-badge";
 
@@ -119,6 +120,17 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
                 inputMode="email"
               />
             </div>
+
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Genom att gå med i väntelistan godkänner du CampusLyans{" "}
+              <Link
+                href="/integritetspolicy"
+                className="font-medium text-[#004225] underline underline-offset-4 hover:text-[#00341d]"
+              >
+                integritetspolicy
+              </Link>
+              .
+            </p>
 
             <div aria-live="polite" className="mt-4 space-y-2">
               {errorMessage && (

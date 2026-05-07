@@ -27,6 +27,7 @@ const PARTNER_LINKS = [
 
 const COMPANY_LINKS = [
   { href: "/om", label: "Om Oss" },
+  { href: "/integritetspolicy", label: "Integritetspolicy" },
 ];
 
 const SOCIAL_LINKS = [
