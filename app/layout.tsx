@@ -15,7 +15,7 @@ const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
 export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
-
+ 
 export const metadata: Metadata = {
   // Viktigt för korrekta absoluta URL:er i OG/Twitter
   metadataBase: new URL("https://www.campuslyan.se"),
