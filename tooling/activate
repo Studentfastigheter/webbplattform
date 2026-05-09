@@ -2,5 +2,21 @@
 
 export PATH="$PATH:$(pwd)/tooling"
 export SITE=http://localhost:3000
-export BACKEND=http://localhost:8080
-export SWAGGER=http://localhost:8080/swagger-ui/index.html
+
+if [[ -f .env.local ]]; then
+  set -a
+  source .env.local
+  set +a
+fi
+
+if [[ -z "${NEXT_PUBLIC_API_URL:-}" ]]; then
+  echo "NEXT_PUBLIC_API_URL saknas. Satt den i .env.local eller din shell-miljo." >&2
+else
+  API_ROOT="${NEXT_PUBLIC_API_URL%/}"
+  if [[ "$API_ROOT" == */api ]]; then
+    API_ROOT="${API_ROOT%/api}"
+  fi
+
+  export BACKEND="$API_ROOT"
+  export SWAGGER="$API_ROOT/swagger-ui/index.html"
+fi

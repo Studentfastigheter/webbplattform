@@ -26,15 +26,30 @@ command_exists() {
   type "$1" &>/dev/null
 }
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." &>/dev/null && pwd)"
+
 if ! command_exists jq; then
   echo "This script requires jq to run."
   echo "See https://jqlang.org/"
   exit 1
 fi
 
-HOST="http://localhost:8080/api"
+if [[ -f "$ROOT_DIR/.env.local" ]]; then
+  set -a
+  source "$ROOT_DIR/.env.local"
+  set +a
+fi
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+if [[ -z "${NEXT_PUBLIC_API_URL:-}" ]]; then
+  echo "NEXT_PUBLIC_API_URL saknas. Satt den i .env.local eller din shell-miljo." >&2
+  exit 1
+fi
+
+HOST="${NEXT_PUBLIC_API_URL%/}"
+if [[ "$HOST" != */api ]]; then
+  HOST="$HOST/api"
+fi
 
 JWT=""
 if [[ -f "$SCRIPT_DIR/.jwt" ]]; then

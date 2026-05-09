@@ -1,16 +1,18 @@
 // src/lib/api-client.ts
 
-const normalizeApiBase = (value: string): string => {
-  const trimmed = value.replace(/\/+$/, "");
+export const normalizeApiBase = (value: string): string => {
+  const trimmed = value.trim().replace(/\/+$/, "");
   return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
 };
 
 // Vi sätter bas-URL till .../api eftersom din backend använder den prefixen
-export const API_BASE = normalizeApiBase(
-  typeof window === "undefined"
-    ? process.env.API_BASE ?? "http://localhost:8080/api"
-    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api"
-);
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+if (!apiUrl) {
+  throw new Error("NEXT_PUBLIC_API_URL saknas. Satt den i .env.local och i Vercel.");
+}
+
+export const API_BASE = normalizeApiBase(apiUrl);
 
 export class ApiError extends Error {
   status: number;

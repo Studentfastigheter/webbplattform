@@ -1,5 +1,17 @@
-import { image } from "motion/react-client";
 import type { NextConfig } from "next";
+
+const normalizeApiBase = (value: string): string => {
+  const trimmed = value.trim().replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+};
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+if (!apiUrl) {
+  throw new Error("NEXT_PUBLIC_API_URL saknas. Satt den i .env.local och i Vercel.");
+}
+
+const API_BASE = normalizeApiBase(apiUrl);
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: [
@@ -35,7 +47,7 @@ const nextConfig: NextConfig = {
 
   async rewrites() {
     return [
-      { source: "/api/:path*", destination: "http://localhost:8080/api/:path*" },
+      { source: "/api/:path*", destination: `${API_BASE}/:path*` },
     ];
   },
 
