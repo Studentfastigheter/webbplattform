@@ -11,6 +11,7 @@ import {
   CircleCheck,
   CirclePause,
   Edit3,
+  FileText,
   FileUser,
   Home,
   ImageIcon,
@@ -44,7 +45,12 @@ import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type ObjectApplicationCount } from "@/services/company";
 import { listingService } from "@/services/listing-service";
 import { queueService } from "@/services/queue-service";
-import { type ListingCardDTO, type ListingDetailDTO, type ListingStatus } from "@/types/listing";
+import {
+  type ListingCardDTO,
+  type ListingDetailDTO,
+  type ListingStatus,
+  type RequirementsProfileDTO,
+} from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
 } from "../_components/PortalListingStatusTag";
@@ -330,10 +336,95 @@ function FactTile({
   );
 }
 
+function formatAgeRange(profile: RequirementsProfileDTO): string {
+  const parts = [
+    typeof profile.minAge === "number" ? `Min ${profile.minAge} år` : null,
+    typeof profile.maxAge === "number" ? `Max ${profile.maxAge} år` : null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" / ") : "Inga ålderskrav";
+}
+
+function RequirementProfileCard({
+  profile,
+  profileId,
+}: {
+  profile: RequirementsProfileDTO | null;
+  profileId?: string | null;
+}) {
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              Kravprofil
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-gray-900">
+              {profile?.title || (profileId ? "Kopplad kravprofil" : "Ingen kravprofil")}
+            </h2>
+          </div>
+        </div>
+      </div>
+
+      {!profile ? (
+        <p className="mt-4 text-sm leading-6 text-gray-500">
+          {profileId
+            ? "Kravprofilen kunde inte laddas från backend."
+            : "Annonsen har ingen kravprofil kopplad."}
+        </p>
+      ) : (
+        <div className="mt-4 space-y-4">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              Ålderskrav
+            </p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {formatAgeRange(profile)}
+            </p>
+          </div>
+
+          {profile.description ? (
+            <p className="text-sm leading-6 text-gray-600">{profile.description}</p>
+          ) : null}
+
+          {profile.requiredDocuments?.length ? (
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Obligatoriska dokument</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {profile.requiredDocuments.map((document, index) => (
+                  <div
+                    className="rounded-lg border border-gray-200 bg-white px-4 py-3"
+                    key={`${document.documentType}-${document.documentName}-${index}`}
+                  >
+                    <p className="text-sm font-medium text-gray-900">
+                      {document.documentName}
+                    </p>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-400">
+                      {document.documentType}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">Inga dokumentkrav angivna.</p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [listing, setListing] = useState<ListingDetailDTO | null>(null);
+  const [requirementsProfile, setRequirementsProfile] =
+    useState<RequirementsProfileDTO | null>(null);
   const [meta, setMeta] = useState<ListingMeta>(emptyMeta);
   const [isOwnListing, setIsOwnListing] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -356,6 +447,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       companyListingsPromise,
       applicationsPromise,
     ]);
+    const requirementsProfile = listingDetail.requirementsProfileId
+      ? await listingService
+          .getRequirementsProfile(listingDetail.requirementsProfileId)
+          .catch(() => null)
+      : null;
 
     const matchedCompanyListing =
       (companyListings as RawListing[]).find(
@@ -364,6 +460,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
     return {
       listingDetail,
+      requirementsProfile,
       isOwnListing: Boolean(matchedCompanyListing),
       meta: resolveListingMeta(listingDetail, matchedCompanyListing, applicationsByObject),
     };
@@ -378,14 +475,21 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     setLoading(true);
     setError(null);
     setListing(null);
+    setRequirementsProfile(null);
     setMeta(emptyMeta);
     setIsOwnListing(true);
 
     fetchListingData()
-      .then(({ listingDetail, isOwnListing: ownListing, meta: listingMeta }) => {
+      .then(({
+        listingDetail,
+        requirementsProfile,
+        isOwnListing: ownListing,
+        meta: listingMeta,
+      }) => {
         if (!active) return;
 
         setListing(listingDetail);
+        setRequirementsProfile(requirementsProfile);
         setIsOwnListing(ownListing);
         setMeta(listingMeta);
       })
@@ -640,10 +744,22 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
             <DetailRow label="Tillgänglig från" value={listing.availableFrom || "-"} />
             <DetailRow label="Tillgänglig till" value={listing.availableTo || "-"} />
             <DetailRow label="Sista ansökan" value={listing.applyBy || "-"} />
+            <DetailRow
+              label="Kravprofil"
+              value={
+                requirementsProfile?.title ||
+                (listing.requirementsProfileId ? "Kopplad" : "-")
+              }
+            />
             <DetailRow label="Senast ändrad" value={meta.updatedAt} />
           </dl>
         </section>
       </div>
+
+      <RequirementProfileCard
+        profile={requirementsProfile}
+        profileId={listing.requirementsProfileId}
+      />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(340px,0.8fr)]">
         <section className="rounded-xl border border-gray-200 bg-white p-5">

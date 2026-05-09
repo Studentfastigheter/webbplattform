@@ -12,7 +12,11 @@ import BostadLandlord from "@/components/ads/BostadLandlord";
 
 import { listingService } from "@/services/listing-service";
 import { queueService } from "@/services/queue-service";
-import { ListingDetailDTO, ListingCardDTO } from "@/types/listing";
+import {
+  ListingDetailDTO,
+  ListingCardDTO,
+  RequirementsProfileDTO,
+} from "@/types/listing";
 import { AdvertiserSummary } from "@/types";
 
 const ListingsMap = dynamic(() => import("@/components/Map/ListingsMap"), {
@@ -302,6 +306,74 @@ function ImageSlideshow({ images, title }: { images: string[]; title: string }) 
   );
 }
 
+function RequirementsProfileSection({
+  profile,
+  loading,
+}: {
+  profile: RequirementsProfileDTO | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+          Kravprofil
+        </h2>
+        <p className="mt-3 text-sm text-gray-500">Hämtar kravprofil...</p>
+      </section>
+    );
+  }
+
+  if (!profile) return null;
+
+  const ageRange =
+    profile.minAge || profile.maxAge
+      ? [
+          profile.minAge ? `Min ${profile.minAge} år` : null,
+          profile.maxAge ? `Max ${profile.maxAge} år` : null,
+        ]
+          .filter(Boolean)
+          .join(" / ")
+      : null;
+
+  return (
+    <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-green-900">
+          Ansökningskrav
+        </p>
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+          {profile.title || "Kravprofil"}
+        </h2>
+        {ageRange && <p className="text-sm font-medium text-gray-700">{ageRange}</p>}
+        {profile.description && (
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-700">
+            {profile.description}
+          </p>
+        )}
+      </div>
+
+      {profile.requiredDocuments?.length ? (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {profile.requiredDocuments.map((document, index) => (
+            <div
+              className="rounded-2xl border border-gray-200 bg-white px-4 py-3"
+              key={`${document.documentType}-${document.documentName}-${index}`}
+            >
+              <p className="text-sm font-semibold text-gray-900">
+                {document.documentName}
+              </p>
+              <p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-gray-500">
+                {document.documentType}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
@@ -312,6 +384,9 @@ export default function ListingDetailPage() {
   const [listing, setListing] = useState<ListingDetailDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [requirementsProfile, setRequirementsProfile] =
+    useState<RequirementsProfileDTO | null>(null);
+  const [requirementsLoading, setRequirementsLoading] = useState(false);
 
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
@@ -400,6 +475,33 @@ export default function ListingDetailPage() {
 
     return () => { active = false; };
   }, [listingId]);
+
+  useEffect(() => {
+    if (!listing?.requirementsProfileId) {
+      setRequirementsProfile(null);
+      setRequirementsLoading(false);
+      return;
+    }
+
+    let active = true;
+    setRequirementsLoading(true);
+
+    listingService
+      .getRequirementsProfile(listing.requirementsProfileId)
+      .then((profile) => {
+        if (active) setRequirementsProfile(profile);
+      })
+      .catch(() => {
+        if (active) setRequirementsProfile(null);
+      })
+      .finally(() => {
+        if (active) setRequirementsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [listing?.requirementsProfileId]);
 
   useEffect(() => {
     if (!listing) {
@@ -609,6 +711,11 @@ export default function ListingDetailPage() {
             onApplyClick={handleApply}
             applyDisabled={applying || hasApplied}
             hasApplied={hasApplied}
+          />
+
+          <RequirementsProfileSection
+            profile={requirementsProfile}
+            loading={requirementsLoading}
           />
 
           {/* 3. Map — own dedicated section */}

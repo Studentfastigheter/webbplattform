@@ -611,14 +611,13 @@ export const companyService = {
   },
 
   residentsByTown: async (id: number): Promise<unknown[]> => {
-    return toArray<unknown>(await apiClient<unknown>(`/analytics/${id}/residents/by_town`));
+    const data = await companyService.residentAnalyticsData(id);
+    return data.residentTowns;
   },
 
   residentsBySchool: async (id: number): Promise<ResidentsSchoolCount[]> => {
-    return toArray<ResidentsSchoolCount>(
-      await apiClient<unknown>(`/analytics/${id}/residents/by_school`),
-      true
-    );
+    const data = await companyService.residentAnalyticsData(id);
+    return data.residentSchools;
   },
 
   landlordKickback: async (companyId: number): Promise<unknown> => {

@@ -26,6 +26,7 @@ export interface ListingCardDTO {
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
+  requirementsProfileId?: string | null;
 }
 
 // 2. DETALJVYN (Single Listing) - Matchar Java ListingDetailDTO
@@ -61,6 +62,25 @@ export interface ListingDetailDTO {
   provider?: string | null;
   status?: ListingStatus | string | null;
   verifiedOwner: boolean;
+  requirementsProfileId?: string | null;
+}
+
+export interface ListingTagDTO {
+  displayName: string;
+  icon?: string | null;
+}
+
+export interface RequiredDocument {
+  documentType: "PDF" | "TXT" | "PICTURE" | "DOCX" | string;
+  documentName: string;
+}
+
+export interface RequirementsProfileDTO {
+  title?: string | null;
+  minAge?: number | null;
+  maxAge?: number | null;
+  description?: string | null;
+  requiredDocuments?: RequiredDocument[];
 }
 
 // 3. MINA ANSÖKNINGAR (My Applications) - Matchar Java StudentApplicationDTO

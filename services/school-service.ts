@@ -46,6 +46,19 @@ export const schoolService = {
     return res.map(mapSchoolDto).filter((school) => school.id > 0);
   },
 
+  add: async (school: Omit<School, "id"> & { id?: number }): Promise<void> => {
+    await apiClient<void>("/schools/add", {
+      method: "POST",
+      body: JSON.stringify({
+        schoolId: school.id,
+        name: school.name,
+        city: school.city,
+        lat: school.lat,
+        lng: school.lng,
+      }),
+    });
+  },
+
   getListingsNear: async (
     schoolId: number,
     size = 12

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
@@ -88,6 +88,51 @@ const amenityOptions = [
   },
 ];
 
+type AmenityOption = {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+};
+
+const amenityIconByKey: Record<string, ReactNode> = {
+  balcony: <Sparkles className="h-6 w-6" />,
+  balkong: <Sparkles className="h-6 w-6" />,
+  dishwasher: <CookingPot className="h-6 w-6" />,
+  diskmaskin: <CookingPot className="h-6 w-6" />,
+  parking: <Car className="h-6 w-6" />,
+  parkering: <Car className="h-6 w-6" />,
+  pet_friendly: <Cat className="h-6 w-6" />,
+  husdjur: <Cat className="h-6 w-6" />,
+  elevator: <Building2 className="h-6 w-6" />,
+  hiss: <Building2 className="h-6 w-6" />,
+  laundry: <WashingMachine className="h-6 w-6" />,
+  tvätt: <WashingMachine className="h-6 w-6" />,
+  furnished: <Sofa className="h-6 w-6" />,
+  möblerad: <Sofa className="h-6 w-6" />,
+  internet_included: <Wifi className="h-6 w-6" />,
+  internet: <Wifi className="h-6 w-6" />,
+};
+
+function toAmenityOptions(tags: { displayName: string; icon?: string | null }[]) {
+  const mapped = tags
+    .map<AmenityOption | null>((tag) => {
+      const label = tag.displayName.trim();
+      if (!label) return null;
+
+      const normalizedKey = label.toLowerCase().replace(/\s+/g, "_");
+      return {
+        id: label,
+        label,
+        icon:
+          amenityIconByKey[normalizedKey] ??
+          amenityIconByKey[tag.icon?.toLowerCase() ?? ""],
+      };
+    })
+    .filter((item): item is AmenityOption => item !== null);
+
+  return mapped.length > 0 ? mapped : amenityOptions;
+}
+
 const createDefaultListingsFilterState = (): ListingsFilterState => ({
   city: "",
   amenities: [],
@@ -146,6 +191,8 @@ export default function ListingsPage() {
   );
 
   const [schools, setSchools] = useState<School[]>([]);
+  const [availableAmenities, setAvailableAmenities] =
+    useState<AmenityOption[]>(amenityOptions);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [mapListings, setMapListings] = useState<ListingCardDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,6 +239,24 @@ export default function ListingsPage() {
       })
       .catch((err) => {
         console.error("Failed to load schools:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    listingService
+      .getListingTags()
+      .then((tags) => {
+        if (active) setAvailableAmenities(toAmenityOptions(tags));
+      })
+      .catch((err) => {
+        console.error("Failed to load listing tags:", err);
+        if (active) setAvailableAmenities(amenityOptions);
       });
 
     return () => {
@@ -577,7 +642,7 @@ export default function ListingsPage() {
                       : "Filtrera"
                   }
                   className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-[#004225] shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
-                  amenities={amenityOptions}
+                  amenities={availableAmenities}
                   propertyTypes={propertyTypeOptions}
                   hostTypes={hostTypeOptions}
                   priceBounds={priceBounds}

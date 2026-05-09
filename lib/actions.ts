@@ -64,7 +64,7 @@ export async function submitRequirementProfile(
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Here you would make the actual API call:
-    // const response = await apiFetch(`/api/requirement-profiles${itemId ? `/${itemId}` : ''}`, {
+    // const response = await apiFetch(`/api/requirements-profiles${itemId ? `/${itemId}` : ''}`, {
     //     method: itemId ? 'PUT' : 'POST',
     //     body: JSON.stringify({ name, description, minimumAge, maximumAge }),
     // });

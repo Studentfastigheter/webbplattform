@@ -6,7 +6,9 @@ import {
   type PageResponse,
   type PublishListingRequest,
   type StudentApplicationDTO,
+  type ListingTagDTO,
   type ListingStatus,
+  type RequirementsProfileDTO,
   type UpdateListingRequest,
 } from "@/types/listing";
 
@@ -132,6 +134,41 @@ const firstStringArray = (...values: unknown[]) => {
   return [];
 };
 
+const normalizeListingTag = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return (
+    firstString(
+      value.displayName,
+      value.name,
+      value.label,
+      value.key,
+      value.icon
+    ) ?? null
+  );
+};
+
+const normalizeListingTags = (...values: unknown[]): string[] => {
+  for (const value of values) {
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    return value
+      .map(normalizeListingTag)
+      .filter((tag): tag is string => tag !== null);
+  }
+
+  return [];
+};
+
 const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
   const source = isRecord(value) && isRecord(value.listing) ? value.listing : value;
   if (!isRecord(source)) {
@@ -158,7 +195,7 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
     dwellingType: firstString(source.dwellingType) ?? "Bostad",
     rooms: firstNumber(source.rooms),
     sizeM2: firstNumber(source.sizeM2),
-    tags: firstStringArray(source.tags),
+    tags: normalizeListingTags(source.tags),
     hostType: firstString(source.hostType, source.ownerType) ?? "",
     hostName: firstString(source.hostName, source.ownerName),
     hostLogoUrl: firstString(source.hostLogoUrl, source.ownerLogoUrl),
@@ -184,6 +221,7 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
     applyBy: firstString(source.applyBy) ?? null,
     availableFrom: firstString(source.availableFrom) ?? null,
     availableTo: firstString(source.availableTo) ?? null,
+    requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
   };
 };
 
@@ -192,6 +230,17 @@ const normalizeListingCards = (items: unknown[]): ListingCardDTO[] =>
     .map(normalizeListingCard)
     .filter((item): item is ListingCardDTO => item !== null)
     .map(addMockCoordinates);
+
+const normalizeListingDetail = (dto: ListingDetailDTO): ListingDetailDTO => {
+  const source = dto as ListingDetailDTO & Record<string, unknown>;
+
+  return {
+    ...dto,
+    tags: normalizeListingTags(source.tags),
+    imageUrls: firstStringArray(source.imageUrls, source.images),
+    requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
+  };
+};
 
 // --- Service ---
 
@@ -264,7 +313,7 @@ export const listingService = {
     const detail = await apiClient<ListingDetailDTO>(`/listings/${id}`, {
       auth: false,
     });
-    return detail ? addMockCoordinates(detail) : detail;
+    return detail ? addMockCoordinates(normalizeListingDetail(detail)) : detail;
   },
 
   update: async (id: string, payload: UpdateListingRequest): Promise<void> => {
@@ -393,6 +442,30 @@ export const listingService = {
     const res = await apiClient<any>(`/listings/${listingId}/applications${query}`);
     if (Array.isArray(res)) return res;
     return res?.content ?? [];
+  },
+
+  // Hämta tillgängliga annonstaggar.
+  // Anropar: GET /api/listingtags
+  getListingTags: async (): Promise<ListingTagDTO[]> => {
+    const res = await apiClient<unknown>("/listingtags", { auth: false });
+    if (!Array.isArray(res)) return [];
+
+    return res
+      .filter((tag): tag is Record<string, unknown> => isRecord(tag))
+      .map((tag) => ({
+        displayName: firstString(tag.displayName, tag.name, tag.label) ?? "",
+        icon: firstString(tag.icon) ?? null,
+      }))
+      .filter((tag) => tag.displayName.length > 0);
+  },
+
+  getRequirementsProfile: async (
+    requirementsProfileId: string
+  ): Promise<RequirementsProfileDTO> => {
+    return await apiClient<RequirementsProfileDTO>(
+      `/requirements-profiles/${requirementsProfileId}`,
+      { auth: false }
+    );
   },
 
   // Ansök till en privat annons
