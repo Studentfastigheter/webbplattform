@@ -1,6 +1,7 @@
 import { apiClient, buildQuery } from "@/lib/api-client";
+import { normalizeListingCards } from "@/services/listing-service";
 import { HousingQueueDTO } from "@/types/queue";
-import { ListingCardDTO } from "@/types/listing";
+import { ListingCardDTO, type PageResponse } from "@/types/listing";
 
 export interface CompanyDTO {
   id: number;
@@ -216,12 +217,58 @@ export const queueService = {
     return await apiClient<CompanyDTO>(`/companies/${companyId}`, { auth: false });
   },
 
-  getCompanyListings: async (companyId: number, page = 0, size = 12): Promise<ListingCardDTO[]> => {
+  getCompanyListingsPage: async (
+    companyId: number,
+    page = 0,
+    size = 12,
+  ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<any>(`/companies/${companyId}/listings${query}`, {
       auth: false,
     });
-    return res?.content ?? [];
+
+    const content = normalizeListingCards(
+      Array.isArray(res) ? res : res?.content ?? [],
+    );
+
+    if (Array.isArray(res)) {
+      return {
+        content,
+        totalPages: 1,
+        totalElements: content.length,
+        numberOfElements: content.length,
+        size,
+        number: page,
+        first: true,
+        last: true,
+        empty: content.length === 0,
+      };
+    }
+
+    const totalElements =
+      res?.totalElements ?? res?.page?.totalElements ?? content.length;
+    const totalPages =
+      res?.totalPages ??
+      res?.page?.totalPages ??
+      Math.max(1, Math.ceil(totalElements / size));
+
+    return {
+      ...res,
+      content,
+      totalPages,
+      totalElements,
+      numberOfElements: res?.numberOfElements ?? content.length,
+      size: res?.size ?? res?.page?.size ?? size,
+      number: res?.number ?? res?.page?.number ?? page,
+      first: res?.first ?? page <= 0,
+      last: res?.last ?? page >= totalPages - 1,
+      empty: res?.empty ?? content.length === 0,
+    };
+  },
+
+  getCompanyListings: async (companyId: number, page = 0, size = 12): Promise<ListingCardDTO[]> => {
+    const res = await queueService.getCompanyListingsPage(companyId, page, size);
+    return res.content ?? [];
   },
 
   getCompanyQueueApplications: async (companyId: number): Promise<QueueApplicationDTO[]> => {

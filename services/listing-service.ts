@@ -225,7 +225,7 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
   };
 };
 
-const normalizeListingCards = (items: unknown[]): ListingCardDTO[] =>
+export const normalizeListingCards = (items: unknown[]): ListingCardDTO[] =>
   items
     .map(normalizeListingCard)
     .filter((item): item is ListingCardDTO => item !== null)

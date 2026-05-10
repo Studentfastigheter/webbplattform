@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Play, Sparkles } from "lucide-react";
+import { Play } from "lucide-react";
 
 type CompanyVideoProps = {
   videoUrl: string | null | undefined;
@@ -48,23 +48,6 @@ export default function CompanyVideo({ videoUrl, companyName }: CompanyVideoProp
 
   return (
     <section className="w-full">
-      {/* Section header — matches the visual rhythm of the rest of the page */}
-      <div className="mb-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#004225]/10 text-[#004225]">
-            <Sparkles className="h-[18px] w-[18px]" />
-          </span>
-          <div className="flex flex-col">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Presentationsvideo
-            </h2>
-            <p className="text-xs text-gray-500">
-              {companyName ? `Lär känna ${companyName}` : "En snabb introduktion"}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Player frame — soft brand-tinted shell with a subtle glow */}
       <div className="relative">
         {/* Decorative ambient glow behind the frame */}

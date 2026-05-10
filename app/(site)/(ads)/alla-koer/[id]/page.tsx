@@ -12,19 +12,31 @@ import {
   queueService,
   type CompanyDTO,
 } from "@/services/queue-service";
+import { listingService } from "@/services/listing-service";
 import { useAuth } from "@/context/AuthContext";
 import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Dummy media data — TODO: replace with backend-provided video / gallery / map
-// data once endpoints exist. Kept colocated under [id]/_dummy/ so the cleanup is
-// a single import + a single folder removal.
-import {
-  getCompanyMedia,
-  type CompanyMapListing,
-} from "./_dummy/companyMediaData";
+// Dummy media data — TODO: replace with backend-provided video / gallery data
+// once endpoints exist. Kept colocated under [id]/_dummy/ so the cleanup is a
+// single import + a single folder removal.
+import { getCompanyMedia } from "./_dummy/companyMediaData";
+
+const COMPANY_LISTINGS_PAGE_SIZE = 6;
+const COMPANY_LISTINGS_FETCH_SIZE = 500;
+const companyListingsCache = new Map<number, ListingCardDTO[]>();
+
+const uniqueListingsById = (items: ListingCardDTO[]) => {
+  const byId = new Map<string, ListingCardDTO>();
+  items.forEach((item) => {
+    if (!byId.has(item.id)) {
+      byId.set(item.id, item);
+    }
+  });
+  return Array.from(byId.values());
+};
 
 export default function QueueDetailPage() {
   const params = useParams<{ id: string }>();
@@ -34,7 +46,10 @@ export default function QueueDetailPage() {
 
   const [company, setCompany] = useState<CompanyDTO | null>(null);
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
-  const [listings, setListings] = useState<ListingCardDTO[]>([]);
+  const [allCompanyListings, setAllCompanyListings] = useState<ListingCardDTO[]>([]);
+  const [listingsPage, setListingsPage] = useState(1);
+  const [listingsLoading, setListingsLoading] = useState(false);
+  const [listingsError, setListingsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Why true initially: avoids a flash of "Okänt företag" before the
   // effect has had a chance to start fetching on the very first render.
@@ -46,6 +61,7 @@ export default function QueueDetailPage() {
   const [hasFetched, setHasFetched] = useState(false);
   const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
   const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   // Resolve the parsed company id once so we can drive both the fetch and
   // the dummy media lookup off the same number.
@@ -71,13 +87,11 @@ export default function QueueDetailPage() {
     Promise.all([
       queueService.getCompany(companyIdNumber),
       queueService.getByCompany(companyIdNumber),
-      queueService.getCompanyListings(companyIdNumber, 0, 6),
     ])
-      .then(([companyData, companyQueues, companyListings]) => {
+      .then(([companyData, companyQueues]) => {
         if (!active) return;
         setCompany(companyData);
         setQueues(Array.isArray(companyQueues) ? companyQueues : []);
-        setListings(Array.isArray(companyListings) ? companyListings : []);
       })
       .catch((err) => {
         if (!active) return;
@@ -98,6 +112,52 @@ export default function QueueDetailPage() {
       active = false;
     };
   }, [companyIdRaw, companyIdNumber]);
+
+  useEffect(() => {
+    setListingsPage(1);
+    setAllCompanyListings([]);
+    setListingsError(null);
+    if (companyIdNumber === null) {
+      setListingsLoading(false);
+      return;
+    }
+
+    const cachedListings = companyListingsCache.get(companyIdNumber);
+    if (cachedListings) {
+      setAllCompanyListings(cachedListings);
+      setListingsLoading(false);
+      return;
+    }
+
+    let active = true;
+    setListingsLoading(true);
+
+    queueService
+      .getCompanyListings(
+        companyIdNumber,
+        0,
+        COMPANY_LISTINGS_FETCH_SIZE,
+      )
+      .then((items) => {
+        if (!active) return;
+        const uniqueListings = uniqueListingsById(items);
+        companyListingsCache.set(companyIdNumber, uniqueListings);
+        setAllCompanyListings(uniqueListings);
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Kunde inte hämta företagets annonser:", err);
+        setAllCompanyListings([]);
+        setListingsError("Kunde inte ladda företagets bostäder.");
+      })
+      .finally(() => {
+        if (active) setListingsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [companyIdNumber]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -126,6 +186,49 @@ export default function QueueDetailPage() {
     };
   }, [authLoading, user]);
 
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      setFavoriteIds(new Set());
+      return;
+    }
+
+    let active = true;
+
+    listingService
+      .getFavorites()
+      .then((favorites) => {
+        if (!active) return;
+        setFavoriteIds(new Set(favorites.map((favorite) => favorite.id)));
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Kunde inte hämta favoritannonser:", err);
+        setFavoriteIds(new Set());
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user]);
+
+  const listingsTotalElements = allCompanyListings.length;
+  const listingsTotalPages = Math.max(
+    1,
+    Math.ceil(listingsTotalElements / COMPANY_LISTINGS_PAGE_SIZE),
+  );
+  const listings = useMemo(() => {
+    const start = (listingsPage - 1) * COMPANY_LISTINGS_PAGE_SIZE;
+    return allCompanyListings.slice(start, start + COMPANY_LISTINGS_PAGE_SIZE);
+  }, [allCompanyListings, listingsPage]);
+
+  useEffect(() => {
+    if (listingsPage > listingsTotalPages) {
+      setListingsPage(listingsTotalPages);
+    }
+  }, [listingsPage, listingsTotalPages]);
+
   // Bygg ett HousingQueueDTO-liknande objekt från company-data för QueueHero
   const heroQueue: HousingQueueDTO = company
     ? {
@@ -137,7 +240,8 @@ export default function QueueDetailPage() {
         bannerUrl: company.bannerUrl,
         description: company.description,
         website: company.website,
-        activeListings: listings.length,
+        activeListings:
+          listingsTotalElements || allCompanyListings.length || listings.length,
         totalUnits: queues.reduce((sum, q) => sum + (q.totalUnits ?? 0), 0),
         waitDays:
           queues.length > 0
@@ -160,15 +264,20 @@ export default function QueueDetailPage() {
         activeListings: 0,
       };
 
-  // Dummy media (video, gallery, map listings). Pulls per-company entries when
+  // Dummy media (video and gallery). Pulls per-company entries when
   // available, otherwise a sensible default — see _dummy/companyMediaData.ts.
   const media = useMemo(() => {
     return getCompanyMedia(companyIdNumber ?? 0);
   }, [companyIdNumber]);
 
-  // Map listings: when the backend later exposes coordinates on listings we'll
-  // build this from `listings` instead. Until then, use the dummy block.
-  const mapListings: CompanyMapListing[] = media.mapListings;
+  const mapListings = useMemo(
+    () =>
+      allCompanyListings.filter(
+        (listing) =>
+          typeof listing.lat === "number" && typeof listing.lng === "number",
+      ),
+    [allCompanyListings],
+  );
 
   const handleJoinQueue = async (queueId: string) => {
     if (!user) {
@@ -192,6 +301,47 @@ export default function QueueDetailPage() {
     } finally {
       setJoiningQueueId(null);
     }
+  };
+
+  const handleFavoriteToggle = (id: string, isFav: boolean) => {
+    if (!user) {
+      router.push("/logga-in");
+      return;
+    }
+
+    setFavoriteIds((current) => {
+      const next = new Set(current);
+      if (isFav) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+
+    const action = isFav
+      ? listingService.addFavorite(id)
+      : listingService.removeFavorite(id);
+
+    action.catch((err) => {
+      console.error("Kunde inte uppdatera favoritannons:", err);
+      setFavoriteIds((current) => {
+        const next = new Set(current);
+        if (isFav) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return next;
+      });
+    });
+  };
+
+  const handleListingPageChange = (nextPage: number) => {
+    setListingsPage(nextPage);
+    document
+      .getElementById("company-listings")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   if (error) {
@@ -279,23 +429,38 @@ export default function QueueDetailPage() {
         </div>
       )}
 
-      {/* Map — visualises the company's listings across cities */}
+      {/* Map — visualises the company's listings */}
       {mapListings.length > 0 && (
         <div className="mt-12 w-full">
           <CompanyMap
             listings={mapListings}
-            companyName={company?.name}
+            getIsFavorite={(id) => favoriteIds.has(id)}
+            onFavoriteToggle={handleFavoriteToggle}
           />
         </div>
       )}
 
       {/* Listings section */}
-      <div className="mt-10 w-full pb-4">
+      <div id="company-listings" className="mt-10 scroll-mt-24 w-full pb-4">
+        {listingsError && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {listingsError}
+          </div>
+        )}
+
         {listings.length > 0 ? (
           <QueueListings
             listings={listings}
-            title={`Lediga bostäder hos ${company?.name ?? "företaget"}`}
+            title="Våra bostäder"
+            page={listingsPage}
+            totalPages={listingsTotalPages}
+            isLoading={listingsLoading}
+            onPageChange={handleListingPageChange}
           />
+        ) : listingsLoading ? (
+          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
+            Hämtar bostäder...
+          </div>
         ) : (
           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
             Det finns inga lediga bostäder publicerade just nu.
