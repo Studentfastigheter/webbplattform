@@ -259,25 +259,11 @@ export default function QueueDetailPage() {
         </div>
       )}
 
-      {/* Listings section */}
-      <div className="mt-10 w-full pb-4">
-        {listings.length > 0 ? (
-          <QueueListings
-            listings={listings}
-            title={`Lediga bostäder hos ${company?.name ?? "företaget"}`}
-          />
-        ) : (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
-            Det finns inga lediga bostäder publicerade just nu.
-          </div>
-        )}
-      </div>
-
-      {/* Map — visualises the company's listings across cities */}
-      {mapListings.length > 0 && (
+      {/* Image gallery */}
+      {media.galleryImages.length > 0 && (
         <div className="mt-12 w-full">
-          <CompanyMap
-            listings={mapListings}
+          <CompanyGallery
+            images={media.galleryImages}
             companyName={company?.name}
           />
         </div>
@@ -293,15 +279,29 @@ export default function QueueDetailPage() {
         </div>
       )}
 
-      {/* Image gallery */}
-      {media.galleryImages.length > 0 && (
+      {/* Map — visualises the company's listings across cities */}
+      {mapListings.length > 0 && (
         <div className="mt-12 w-full">
-          <CompanyGallery
-            images={media.galleryImages}
+          <CompanyMap
+            listings={mapListings}
             companyName={company?.name}
           />
         </div>
       )}
+
+      {/* Listings section */}
+      <div className="mt-10 w-full pb-4">
+        {listings.length > 0 ? (
+          <QueueListings
+            listings={listings}
+            title={`Lediga bostäder hos ${company?.name ?? "företaget"}`}
+          />
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
+            Det finns inga lediga bostäder publicerade just nu.
+          </div>
+        )}
+      </div>
     </main>
   );
 }
