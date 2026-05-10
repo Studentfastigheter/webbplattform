@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
+import CompanyVideo from "@/components/ads/CompanyVideo";
+import CompanyGallery from "@/components/ads/CompanyGallery";
+import CompanyMap from "@/components/ads/CompanyMap";
 import {
   buildJoinedQueueIdSet,
   queueService,
@@ -15,6 +18,14 @@ import { type HousingQueueDTO } from "@/types/queue";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Dummy media data — TODO: replace with backend-provided video / gallery / map
+// data once endpoints exist. Kept colocated under [id]/_dummy/ so the cleanup is
+// a single import + a single folder removal.
+import {
+  getCompanyMedia,
+  type CompanyMapListing,
+} from "./_dummy/companyMediaData";
+
 export default function QueueDetailPage() {
   const params = useParams<{ id: string }>();
   const companyIdRaw = params?.id;
@@ -25,16 +36,31 @@ export default function QueueDetailPage() {
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Why true initially: avoids a flash of "Okänt företag" before the
+  // effect has had a chance to start fetching on the very first render.
+  const [loading, setLoading] = useState(true);
+  // Why a separate flag: `loading` flips back to false on each refetch,
+  // but we only want the "Laddar..." placeholder during the very first
+  // load — once we've attempted at least once we know whether to show
+  // the real name or the unknown-company fallback.
+  const [hasFetched, setHasFetched] = useState(false);
   const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
   const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
 
+  // Resolve the parsed company id once so we can drive both the fetch and
+  // the dummy media lookup off the same number.
+  const companyIdNumber = useMemo(() => {
+    if (!companyIdRaw) return null;
+    const parsed = Number(companyIdRaw);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [companyIdRaw]);
+
   useEffect(() => {
     if (!companyIdRaw) return;
-
-    const companyId = Number(companyIdRaw);
-    if (Number.isNaN(companyId)) {
+    if (companyIdNumber === null) {
       setError("Ogiltigt företags-ID.");
+      setLoading(false);
+      setHasFetched(true);
       return;
     }
 
@@ -43,9 +69,9 @@ export default function QueueDetailPage() {
     setError(null);
 
     Promise.all([
-      queueService.getCompany(companyId),
-      queueService.getByCompany(companyId),
-      queueService.getCompanyListings(companyId, 0, 6),
+      queueService.getCompany(companyIdNumber),
+      queueService.getByCompany(companyIdNumber),
+      queueService.getCompanyListings(companyIdNumber, 0, 6),
     ])
       .then(([companyData, companyQueues, companyListings]) => {
         if (!active) return;
@@ -59,14 +85,19 @@ export default function QueueDetailPage() {
         setError("Kunde inte ladda företagsinformation.");
       })
       .finally(() => {
-        if (!active) return;
+        // Why no `active` guard here: we want loading/hasFetched to settle
+        // even if the effect was cancelled by a remount in the meantime.
+        // React 18+ no-ops sets on unmounted components, and the fresh
+        // effect run will flip loading back to true synchronously, so
+        // there's no spurious "not loading" flash.
         setLoading(false);
+        setHasFetched(true);
       });
 
     return () => {
       active = false;
     };
-  }, [companyIdRaw]);
+  }, [companyIdRaw, companyIdNumber]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -112,19 +143,32 @@ export default function QueueDetailPage() {
           queues.length > 0
             ? Math.round(
                 queues.reduce((sum, q) => sum + (q.waitDays ?? 0), 0) /
-                  queues.length
+                  queues.length,
               )
             : undefined,
       }
     : {
-        // Placeholder medan data laddas — sidan renderas ändå
+        // Placeholder medan data laddas — sidan renderas ändå.
+        // Show "Laddar..." only while we're actively fetching for the first
+        // time. After at least one attempt has resolved (success or fail)
+        // we know to fall back to "Okänt företag".
         id: companyIdRaw ?? "",
         companyId: 0,
-        name: loading ? "Laddar..." : "Okänt företag",
+        name: hasFetched ? "Okänt företag" : "Laddar...",
         city: "",
         logoUrl: "",
         activeListings: 0,
       };
+
+  // Dummy media (video, gallery, map listings). Pulls per-company entries when
+  // available, otherwise a sensible default — see _dummy/companyMediaData.ts.
+  const media = useMemo(() => {
+    return getCompanyMedia(companyIdNumber ?? 0);
+  }, [companyIdNumber]);
+
+  // Map listings: when the backend later exposes coordinates on listings we'll
+  // build this from `listings` instead. Until then, use the dummy block.
+  const mapListings: CompanyMapListing[] = media.mapListings;
 
   const handleJoinQueue = async (queueId: string) => {
     if (!user) {
@@ -143,7 +187,7 @@ export default function QueueDetailPage() {
       alert("Du står nu i kön!");
     } catch (err: any) {
       alert(
-        err.message || "Kunde inte gå med i kön. Kanske står du redan i den?"
+        err.message || "Kunde inte gå med i kön. Kanske står du redan i den?",
       );
     } finally {
       setJoiningQueueId(null);
@@ -152,9 +196,7 @@ export default function QueueDetailPage() {
 
   if (error) {
     return (
-      <div className="py-20 text-center text-red-500 font-medium">
-        {error}
-      </div>
+      <div className="py-20 text-center text-red-500 font-medium">{error}</div>
     );
   }
 
@@ -230,6 +272,36 @@ export default function QueueDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Map — visualises the company's listings across cities */}
+      {mapListings.length > 0 && (
+        <div className="mt-12 w-full">
+          <CompanyMap
+            listings={mapListings}
+            companyName={company?.name}
+          />
+        </div>
+      )}
+
+      {/* Video presentation */}
+      {media.videoUrl && (
+        <div className="mt-12 w-full">
+          <CompanyVideo
+            videoUrl={media.videoUrl}
+            companyName={company?.name}
+          />
+        </div>
+      )}
+
+      {/* Image gallery */}
+      {media.galleryImages.length > 0 && (
+        <div className="mt-12 w-full">
+          <CompanyGallery
+            images={media.galleryImages}
+            companyName={company?.name}
+          />
+        </div>
+      )}
     </main>
   );
 }
