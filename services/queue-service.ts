@@ -1,4 +1,4 @@
-import { apiClient, buildQuery } from "@/lib/api-client";
+import { apiClient, arrayFromApiResponse, buildQuery } from "@/lib/api-client";
 import { normalizeListingCards } from "@/services/listing-service";
 import { HousingQueueDTO } from "@/types/queue";
 import { ListingCardDTO, type PageResponse } from "@/types/listing";
@@ -151,6 +151,51 @@ function getMyQueuesRows(res: MyQueuesResponse): QueueApplicationDTO[] {
   return "queue" in res || "queueId" in res ? [res as QueueApplicationDTO] : [];
 }
 
+function normalizeListingPageResponse(
+  res: unknown,
+  page: number,
+  size: number
+): PageResponse<ListingCardDTO> {
+  const raw = res as any;
+  const content = normalizeListingCards(
+    Array.isArray(res) ? res : arrayFromApiResponse<unknown>(res)
+  );
+
+  if (Array.isArray(res)) {
+    return {
+      content,
+      totalPages: 1,
+      totalElements: content.length,
+      numberOfElements: content.length,
+      size,
+      number: page,
+      first: true,
+      last: true,
+      empty: content.length === 0,
+    };
+  }
+
+  const totalElements =
+    raw?.totalElements ?? raw?.page?.totalElements ?? content.length;
+  const totalPages =
+    raw?.totalPages ??
+    raw?.page?.totalPages ??
+    Math.max(1, Math.ceil(totalElements / size));
+
+  return {
+    ...raw,
+    content,
+    totalPages,
+    totalElements,
+    numberOfElements: raw?.numberOfElements ?? content.length,
+    size: raw?.size ?? raw?.page?.size ?? size,
+    number: raw?.number ?? raw?.page?.number ?? page,
+    first: raw?.first ?? page <= 0,
+    last: raw?.last ?? page >= totalPages - 1,
+    empty: raw?.empty ?? content.length === 0,
+  };
+}
+
 export const queueService = {
 
   list: async ({ id         = null,
@@ -172,11 +217,13 @@ export const queueService = {
       query.city = city;
     }
     const request = `/queues${buildQuery(query)}`;
-    return await apiClient<HousingQueueDTO[]>(request, { auth: false });
+    const queues = await apiClient<unknown>(request, { auth: false });
+    return arrayFromApiResponse<HousingQueueDTO>(queues);
   },
 
   getAll: async (): Promise<HousingQueueDTO[]> => {
-    return await apiClient<HousingQueueDTO[]>("/queues/all", { auth: false });
+    const queues = await apiClient<unknown>("/queues/all", { auth: false });
+    return arrayFromApiResponse<HousingQueueDTO>(queues);
   },
 
   get: async (id: string): Promise<HousingQueueDTO> => {
@@ -184,9 +231,10 @@ export const queueService = {
   },
 
   getByCompany: async (companyId: number): Promise<HousingQueueDTO[]> => {
-    return await apiClient<HousingQueueDTO[]>(`/companies/${companyId}/queues`, {
+    const queues = await apiClient<unknown>(`/companies/${companyId}/queues`, {
       auth: false,
     });
+    return arrayFromApiResponse<HousingQueueDTO>(queues);
   },
 
   join: async (queueId: string): Promise<void> => {
@@ -223,51 +271,37 @@ export const queueService = {
     size = 12,
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<any>(`/companies/${companyId}/listings${query}`, {
+    const res = await apiClient<unknown>(`/companies/${companyId}/listings${query}`, {
       auth: false,
     });
 
-    const content = normalizeListingCards(
-      Array.isArray(res) ? res : res?.content ?? [],
-    );
-
-    if (Array.isArray(res)) {
-      return {
-        content,
-        totalPages: 1,
-        totalElements: content.length,
-        numberOfElements: content.length,
-        size,
-        number: page,
-        first: true,
-        last: true,
-        empty: content.length === 0,
-      };
-    }
-
-    const totalElements =
-      res?.totalElements ?? res?.page?.totalElements ?? content.length;
-    const totalPages =
-      res?.totalPages ??
-      res?.page?.totalPages ??
-      Math.max(1, Math.ceil(totalElements / size));
-
-    return {
-      ...res,
-      content,
-      totalPages,
-      totalElements,
-      numberOfElements: res?.numberOfElements ?? content.length,
-      size: res?.size ?? res?.page?.size ?? size,
-      number: res?.number ?? res?.page?.number ?? page,
-      first: res?.first ?? page <= 0,
-      last: res?.last ?? page >= totalPages - 1,
-      empty: res?.empty ?? content.length === 0,
-    };
+    return normalizeListingPageResponse(res, page, size);
   },
 
   getCompanyListings: async (companyId: number, page = 0, size = 12): Promise<ListingCardDTO[]> => {
     const res = await queueService.getCompanyListingsPage(companyId, page, size);
+    return res.content ?? [];
+  },
+
+  getAllCompanyListingsPage: async (
+    companyId: number,
+    page = 0,
+    size = 12,
+  ): Promise<PageResponse<ListingCardDTO>> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<unknown>(
+      `/companies/${companyId}/all-listings${query}`
+    );
+
+    return normalizeListingPageResponse(res, page, size);
+  },
+
+  getAllCompanyListings: async (
+    companyId: number,
+    page = 0,
+    size = 12
+  ): Promise<ListingCardDTO[]> => {
+    const res = await queueService.getAllCompanyListingsPage(companyId, page, size);
     return res.content ?? [];
   },
 

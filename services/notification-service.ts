@@ -1,10 +1,11 @@
-import { apiClient } from "@/lib/api-client";
+import { apiClient, arrayFromApiResponse } from "@/lib/api-client";
 import { NotificationItem } from "@/types";
 
 export const notificationService = {
   // GET /api/notifications
   getAll: async (): Promise<NotificationItem[]> => {
-    return await apiClient<NotificationItem[]>("/notifications");
+    const notifications = await apiClient<unknown>("/notifications");
+    return arrayFromApiResponse<NotificationItem>(notifications);
   },
 
   // PATCH /api/notifications/{id}/open

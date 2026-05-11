@@ -253,7 +253,7 @@ export default function PortalAdsPage() {
     setError(null);
 
     Promise.all([
-      queueService.getCompanyListings(companyId, 0, 200),
+      queueService.getAllCompanyListings(companyId, 0, 200),
       companyService.applicationCountsPerObject(companyId, 200).catch(() => []),
     ])
       .then(([companyListings, applicationsByObject]) => {

@@ -35,16 +35,11 @@ function getEditableSnapshot(listing: ListingDetailDTO | null) {
 
   return JSON.stringify({
     title: listing.title,
-    fullAddress: listing.fullAddress ?? "",
-    area: listing.area,
-    city: listing.city,
     rent: listing.rent,
-    dwellingType: listing.dwellingType,
     rooms: listing.rooms,
     sizeM2: listing.sizeM2,
     availableFrom: toDateInputValue(listing.availableFrom),
     availableTo: toDateInputValue(listing.availableTo),
-    moveIn: toDateInputValue(listing.moveIn),
     applyBy: toDateInputValue(listing.applyBy),
     tags: listing.tags ?? [],
     description: listing.description ?? "",
@@ -118,21 +113,21 @@ function EditableListingPreview({
                     <input
                       aria-label="Adress"
                       value={draft.fullAddress ?? ""}
-                      onChange={(event) => onDraftChange({ fullAddress: event.target.value })}
+                      readOnly
                       className={`${inlineInputClass} min-w-[220px] flex-1 font-medium`}
                       placeholder="Adress"
                     />
                     <input
                       aria-label="Område"
                       value={draft.area}
-                      onChange={(event) => onDraftChange({ area: event.target.value })}
+                      readOnly
                       className={`${inlineInputClass} w-40 font-medium`}
                       placeholder="Område"
                     />
                     <input
                       aria-label="Stad"
                       value={draft.city}
-                      onChange={(event) => onDraftChange({ city: event.target.value })}
+                      readOnly
                       className={`${inlineInputClass} w-40 font-medium`}
                       placeholder="Stad"
                     />
@@ -146,7 +141,7 @@ function EditableListingPreview({
                     <input
                       aria-label="Bostadstyp"
                       value={draft.dwellingType}
-                      onChange={(event) => onDraftChange({ dwellingType: event.target.value })}
+                      readOnly
                       className={`${inlineInputClass} min-w-[150px] font-medium`}
                       placeholder="Bostadstyp"
                     />
@@ -176,7 +171,6 @@ function EditableListingPreview({
                 {[
                   { label: "Tillgänglig från", key: "availableFrom" as const },
                   { label: "Tillgänglig till", key: "availableTo" as const },
-                  { label: "Inflyttning", key: "moveIn" as const },
                   { label: "Sista ansökan", key: "applyBy" as const },
                 ].map((item, index) => (
                   <div
@@ -322,16 +316,11 @@ export default function Annons({ id }: AnnonsPageProps) {
 
     const payload: UpdateListingRequest = {
       title: draft.title,
-      city: draft.city,
-      area: draft.area,
-      address: draft.fullAddress ?? null,
-      dwellingType: draft.dwellingType,
       rent: draft.rent,
       rooms: draft.rooms,
       sizeM2: draft.sizeM2,
       availableFrom: toDateInputValue(draft.availableFrom) || null,
       availableTo: toDateInputValue(draft.availableTo) || null,
-      moveIn: toDateInputValue(draft.moveIn) || null,
       applyBy: toDateInputValue(draft.applyBy) || null,
       tags: draft.tags,
       description: draft.description,

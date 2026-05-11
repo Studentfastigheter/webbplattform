@@ -1,4 +1,4 @@
-import { apiClient, buildQuery } from "@/lib/api-client";
+import { apiClient, arrayFromApiResponse, buildQuery } from "@/lib/api-client";
 import { listingService } from "@/services/listing-service";
 import { School } from "@/types";
 import { ListingCardDTO } from "@/types/listing";
@@ -40,10 +40,12 @@ const mapSchoolDto = (dto: ApiSchoolDto): School => ({
 
 export const schoolService = {
   list: async (q?: string): Promise<School[]> => {
-    const res = await apiClient<ApiSchoolDto[]>(`/schools${buildQuery({ q })}`, {
+    const res = await apiClient<unknown>(`/schools${buildQuery({ q })}`, {
       auth: false,
     });
-    return res.map(mapSchoolDto).filter((school) => school.id > 0);
+    return arrayFromApiResponse<ApiSchoolDto>(res)
+      .map(mapSchoolDto)
+      .filter((school) => school.id > 0);
   },
 
   add: async (school: Omit<School, "id"> & { id?: number }): Promise<void> => {
@@ -81,12 +83,12 @@ export const schoolService = {
   },
 
   getQueues: async (schoolId: number): Promise<SchoolQueueSummary[]> => {
-    const res = await apiClient<ApiSchoolQueueDto[]>(
+    const res = await apiClient<unknown>(
       `/schools/${schoolId}/queues`,
       { auth: false }
     );
 
-    return res.map((dto) => ({
+    return arrayFromApiResponse<ApiSchoolQueueDto>(res).map((dto) => ({
       companyId: dto.companyId,
       companyName: dto.companyName,
       listingCount: dto.listingCount ?? 0,
