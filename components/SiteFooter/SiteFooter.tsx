@@ -3,29 +3,33 @@
 import Image from "next/image";
 import type { ComponentType } from "react";
 import { Typography, type TypographyProps } from "@material-tailwind/react";
-import { FaLinkedin, FaInstagram, FaFacebook, FaTiktok } from "react-icons/fa6";
+import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa6";
+import { HiGlobeAlt } from "react-icons/hi";
 import { SiThreads } from "react-icons/si";
 
 const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 
-// Här styr du exakt vilka länkar som hamnar under vilken rubrik
-const LINK_SECTIONS = [
-  {
-    title: "Resurser",
-    items: [
-      { href: "/om-oss", label: "Om CampusLyan" },
-      { href: "/partners", label: "Samarbetspartners" },
-      { href: "/for-foretag", label: "För företag" },
-    ],
-  },
-  {
-    title: "Support",
-    items: [
-      { href: "/anvandarvillkor", label: "Användarvillkor" },
-      { href: "/personuppgiftspolicy", label: "Personuppgiftspolicy" },
-      { href: "/cookiepolicy", label: "Cookiepolicy" },
-    ],
-  },
+const COLORS = {
+  primary: "#004225",
+  lightestText: "#EFEFEF",
+  accent: "#708A83",
+};
+
+const PLATTFORM_LINKS = [
+  { href: "/bostader", label: "Bostäder" },
+  { href: "/alla-koer", label: "Alla köer" },
+  { href: "/for-foretag", label: "För företag" },
+];
+
+const PARTNER_LINKS = [
+  { href: "/partners", label: "Våra partners" },
+];
+
+const COMPANY_LINKS = [
+  { href: "/om-oss", label: "Om oss" },
+  { href: "/anvandarvillkor", label: "Användarvillkor" },
+  { href: "/integritetspolicy", label: "Integritetspolicy" },
+  { href: "/cookiepolicy", label: "Cookiepolicy" },
 ];
 
 const SOCIAL_LINKS = [
@@ -40,77 +44,103 @@ export default function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative mt-16 w-full overflow-hidden border-t border-slate-100 bg-gradient-to-b text-slate-700">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute left-[-15%] top-[-10%] h-72 w-72 rounded-full blur-[140px]" />
-        <div className="absolute right-[-10%] bottom-[-15%] h-72 w-72 rounded-full blur-[140px]" />
+    <footer className="relative mt-40 w-full sm:mt-48 lg:mt-56" style={{ backgroundColor: COLORS.primary }}>
+      <div className="absolute left-0 right-0 top-0 z-10 w-full -translate-y-[88%] overflow-hidden leading-[0]">
+        <div className="relative h-[72px] w-full sm:h-[104px] lg:h-[136px]">
+          <Image
+            src="/footer-decoration.svg"
+            alt=""
+            fill
+            className="object-fill"
+            priority
+          />
+        </div>
       </div>
 
-      <div className="mx-auto w-full max-w-7xl px-6 py-16 sm:px-8">
-        <div className="grid grid-cols-1 gap-10 border-b border-slate-200 pb-10 md:grid-cols-2">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
-              <Image
-                src="/campuslyan-logo.svg"
-                alt="CampusLyan logotyp"
-                width={40}
-                height={40}
-                className="h-10 w-10 object-contain"
-                priority
-              />
+      <div className="relative z-20 mx-auto w-full max-w-[1400px] px-6 pb-16 pt-8 sm:px-10 lg:px-16">
+        <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
+          <div className="flex flex-col gap-8 lg:col-span-5">
+            <div className="flex flex-row items-center gap-5">
+              <a href="/" className="relative block h-14 w-14 shrink-0" aria-label="CampusLyan startsida">
+                <Image
+                  src="/campuslyan-logo.svg"
+                  alt="CampusLyan"
+                  fill
+                  className="object-contain brightness-0 invert"
+                />
+              </a>
+
+              <div className="border-l-2 py-1 pl-5" style={{ borderColor: COLORS.accent }}>
+                <Text
+                  className="max-w-md text-sm font-light leading-relaxed"
+                  style={{ color: COLORS.lightestText }}
+                >
+                  Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.
+                </Text>
+              </div>
             </div>
-            <div>
-              <Text variant="h5" className="mb-3 text-slate-900">
-                CampusLyan
-              </Text>
-              <Text variant="small" color="gray" className="max-w-lg text-base leading-relaxed text-slate-600">
-                Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.
-              </Text>
+
+            <div className="flex gap-4 text-lg">
+              {SOCIAL_LINKS.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="transition-colors hover:opacity-80"
+                  style={{ color: COLORS.lightestText }}
+                >
+                  {social.icon}
+                </a>
+              ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {LINK_SECTIONS.map(({ title, items }) => (
-              <ul key={title}>
-                <Text variant="small" color="gray" className="mb-3 font-semibold uppercase tracking-wide text-slate-700">
-                  {title}
-                </Text>
-                {items.map((item) => (
-                  <li key={item.href}>
-                    <Text
-                      as="a"
-                      href={item.href}
-                      variant="small"
-                      color="gray"
-                      className="py-1.5 font-medium text-slate-600 transition-colors hover:text-slate-900"
-                    >
-                      {item.label}
-                    </Text>
-                  </li>
-                ))}
-              </ul>
-            ))}
+
+          <div className="flex flex-col gap-10 pt-4 lg:col-span-7 lg:pl-10">
+            <div className="grid grid-cols-2 gap-10 md:grid-cols-3">
+              {[
+                { title: "Plattform", links: PLATTFORM_LINKS },
+                { title: "Partners", links: PARTNER_LINKS },
+                { title: "CampusLyan", links: COMPANY_LINKS },
+              ].map((section) => (
+                <div key={section.title}>
+                  <div
+                    className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest"
+                    style={{ color: COLORS.lightestText }}
+                  >
+                    <span className="h-4 w-[2px]" style={{ backgroundColor: COLORS.accent }} />
+                    {section.title}
+                  </div>
+                  <ul className="flex flex-col gap-3">
+                    {section.links.map((link) => (
+                      <li key={link.href}>
+                        <a
+                          href={link.href}
+                          className="text-xs font-bold uppercase tracking-wide transition-colors hover:underline hover:underline-offset-4"
+                          style={{ color: COLORS.lightestText }}
+                        >
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="flex w-full flex-col items-center gap-6 pt-6 text-slate-500 md:flex-row md:justify-between">
-          <Text variant="small" className="text-center text-slate-500">
-            © {year} CampusLyan. Alla rättigheter reserverade.
-          </Text>
-          <div className="flex flex-wrap gap-3">
-            {SOCIAL_LINKS.map((social) => (
-              <Text
-                key={social.label}
-                as="a"
-                href={social.href}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={social.label}
-                variant="small"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-lg text-slate-500 transition hover:border-slate-400 hover:text-slate-900"
-              >
-                {social.icon}
-              </Text>
-            ))}
+        <div
+          className="mt-20 flex flex-col items-start justify-between border-t pt-6 text-xs font-medium sm:flex-row sm:items-center"
+          style={{ borderColor: COLORS.accent, color: COLORS.lightestText }}
+        >
+          <div>Copyright © {year} CampusLyan. Alla rättigheter förbehållna.</div>
+
+          <div className="mt-4 flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-80 sm:mt-0">
+            <HiGlobeAlt className="text-lg" />
+            <span className="uppercase tracking-wide">Svenska</span>
+            <span className="text-[10px]">▼</span>
           </div>
         </div>
       </div>

@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import { Theme } from "@radix-ui/themes";
 import { Toaster } from "@/components/ui/sonner";
 import ScrollToTop from "@/components/layout/ScrollToTop";
@@ -13,22 +13,27 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#efefef",
 };
- 
+
 export const metadata: Metadata = {
-  // Viktigt för korrekta absoluta URL:er i OG/Twitter
   metadataBase: new URL("https://www.campuslyan.se"),
   title: {
     default: "CampusLyan - Gratis studentbostäder samlade på ett ställe",
-    template: "%s | CampusLyan"
+    template: "%s | CampusLyan",
   },
   description:
     "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag.",
   keywords: [
-    "studentbostad", "studentlägenhet", "studentboende",
-    "bostad student", "hyra rum student", "CampusLyan",
-    "andrahand student", "gratis bostadsplattform", "StudentLyan",
+    "studentbostad",
+    "studentlägenhet",
+    "studentboende",
+    "bostad student",
+    "hyra rum student",
+    "CampusLyan",
+    "andrahand student",
+    "gratis bostadsplattform",
+    "StudentLyan",
   ],
   alternates: {
     canonical: "/",
@@ -47,7 +52,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@campuslyan",           // ta bort/ändra om du inte har X-konto
+    site: "@campuslyan",
     title: "CampusLyan - Gratis plattform för studentbostäder",
     description:
       "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
@@ -56,9 +61,13 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large" },
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+    },
   },
-  // Favicon + app-ikoner
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -70,34 +79,34 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   verification: {
-    // Google Search Console
-    google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes"
+    google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes",
   },
 };
-
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sv">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans bg-background text-foreground`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans bg-background text-foreground`}
+      >
         <SpeedInsights />
         <Analytics />
         <AuthProvider>
-            <Theme>
-              <ScrollToTop />
-              <main>{children}</main>
-              <Toaster 
-                position="bottom-right" 
-                richColors 
-                toastOptions={{ 
-                  duration: 4000,
-                  classNames: {
-                    actionButton: "", // Ångra-knapp
-                  },
-                }}
-                theme="light"
-              />
-            </Theme>
+          <Theme>
+            <ScrollToTop />
+            {children}
+            <Toaster
+              position="bottom-right"
+              richColors
+              toastOptions={{
+                duration: 4000,
+                classNames: {
+                  actionButton: "",
+                },
+              }}
+              theme="light"
+            />
+          </Theme>
         </AuthProvider>
       </body>
     </html>
