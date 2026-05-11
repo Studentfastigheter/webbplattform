@@ -276,24 +276,8 @@ function resolveListingMeta(
 ): ListingMeta {
   const rawDetail = listing as unknown as Record<string, unknown>;
   const publishedAtRaw =
-    (companyListing
-      ? pickString(companyListing, [
-          "publishedAt",
-          "publishDate",
-          "publishedDate",
-          "createdAt",
-          "postedAt",
-          "uploadedAt",
-        ])
-      : undefined) ??
-    pickString(rawDetail, [
-      "publishedAt",
-      "publishDate",
-      "publishedDate",
-      "createdAt",
-      "postedAt",
-      "uploadedAt",
-    ]);
+  (companyListing ? pickString(companyListing, ["published"]) : undefined) ??
+  pickString(rawDetail, ["published"]);
   const updatedAtRaw =
     (companyListing
       ? pickString(companyListing, ["updatedAt", "modifiedAt", "lastEditedAt"])

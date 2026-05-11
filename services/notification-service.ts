@@ -1,4 +1,4 @@
-import { apiClient, arrayFromApiResponse } from "@/lib/api-client";
+import { apiClient, arrayFromApiResponse, pathSegment } from "@/lib/api-client";
 import { NotificationItem } from "@/types";
 
 export const notificationService = {
@@ -10,7 +10,7 @@ export const notificationService = {
 
   // PATCH /api/notifications/{id}/open
   markAsRead: async (id: number): Promise<void> => {
-    await apiClient(`/notifications/${id}/open`, {
+    await apiClient(`/notifications/${pathSegment(id)}/open`, {
       method: "PATCH",
     });
   },

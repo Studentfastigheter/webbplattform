@@ -1,4 +1,9 @@
-import { apiClient, arrayFromApiResponse, buildQuery } from "@/lib/api-client";
+import {
+  apiClient,
+  arrayFromApiResponse,
+  buildQuery,
+  pathSegment,
+} from "@/lib/api-client";
 import { listingService } from "@/services/listing-service";
 import { School } from "@/types";
 import { ListingCardDTO } from "@/types/listing";
@@ -84,7 +89,7 @@ export const schoolService = {
 
   getQueues: async (schoolId: number): Promise<SchoolQueueSummary[]> => {
     const res = await apiClient<unknown>(
-      `/schools/${schoolId}/queues`,
+      `/schools/${pathSegment(schoolId)}/queues`,
       { auth: false }
     );
 

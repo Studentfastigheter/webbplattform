@@ -333,14 +333,7 @@ export default function PortalAdsPage() {
           );
 
           const applications = resolveApplicationCount(raw, applicationsLookup) ?? 0;
-          const publishedAtRaw = pickString(raw, [
-            "publishedAt",
-            "publishDate",
-            "publishedDate",
-            "createdAt",
-            "postedAt",
-            "uploadedAt",
-          ]);
+          const publishedAtRaw = pickString(raw, ["published"]);
           const { label, tone } = mapStatus(
             pickString(raw, ["status", "listingStatus", "state"])
           );

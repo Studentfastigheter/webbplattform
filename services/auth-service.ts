@@ -1,4 +1,4 @@
-import { apiClient, normalizeAuthToken } from "@/lib/api-client";
+import { apiClient, normalizeAuthToken, pathSegment } from "@/lib/api-client";
 import {
   User,
   AuthResponse,
@@ -53,7 +53,7 @@ export const authService = {
 
   pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {
     return await apiClient<FrejaAuthStatus>(
-      `/auth/poll/${encodeURIComponent(authRef)}`,
+      `/auth/poll/${pathSegment(authRef)}`,
       { auth: false }
     );
   },
