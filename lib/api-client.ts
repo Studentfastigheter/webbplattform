@@ -105,6 +105,10 @@ export function buildQuery(params: Record<string, QueryValue>) {
   return qs ? `?${qs}` : "";
 }
 
+export function pathSegment(value: string | number | boolean): string {
+  return encodeURIComponent(String(value));
+}
+
 export async function apiClient<T>(
   endpoint: string,
   { headers, auth = true, ...customOptions }: ApiClientOptions = {},

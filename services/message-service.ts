@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api-client";
+import { apiClient, pathSegment } from "@/lib/api-client";
 import { Conversation, Message } from "@/types";
 
 export const messageService = {
@@ -9,13 +9,18 @@ export const messageService = {
 
   getMessages: async (conversationId: number): Promise<Message[]> => {
     // Matcha GetMapping("/conversations/{id}") i Java
-    return await apiClient<Message[]>(`/messages/conversations/${conversationId}`);
+    return await apiClient<Message[]>(
+      `/messages/conversations/${pathSegment(conversationId)}`
+    );
   },
 
   sendMessage: async (conversationId: number, body: string): Promise<Message> => {
-    return await apiClient<Message>(`/messages/conversations/${conversationId}`, {
-      method: "POST",
-      body: JSON.stringify({ body }),
-    });
+    return await apiClient<Message>(
+      `/messages/conversations/${pathSegment(conversationId)}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ body }),
+      }
+    );
   }
 };

@@ -1,5 +1,12 @@
-import { apiClient, arrayFromApiResponse, buildQuery } from "@/lib/api-client";
 import {
+  apiClient,
+  arrayFromApiResponse,
+  buildQuery,
+  pathSegment,
+} from "@/lib/api-client";
+import {
+  DWELLING_TYPE_VALUES,
+  HOST_TYPE_VALUES,
   LISTING_STATUS_VALUES,
   type ListingCardDTO,
   type ListingDetailDTO,
@@ -8,6 +15,8 @@ import {
   type StudentApplicationDTO,
   type ListingTagDTO,
   type ListingStatus,
+  type DwellingType,
+  type HostType,
   type RequirementsProfileDTO,
   type UpdateListingRequest,
 } from "@/types/listing";
@@ -33,10 +42,10 @@ export type ListingSearchParams = {
   size?: number;
   sort?: string | string[];
   city?: string | null;
-  dwellingType?: string | null;
+  dwellingType?: DwellingType | string | null;
   minRent?: number | null;
   maxRent?: number | null;
-  hostType?: string | null;
+  hostType?: HostType | string | null;
   school_lat?: number | null;
   school_lng?: number | null;
   amenities?: string[];
@@ -47,10 +56,26 @@ export type ListingViewIncrementType = "QUICK" | "DETAILED";
 const isListingStatus = (status: string): status is ListingStatus =>
   (LISTING_STATUS_VALUES as readonly string[]).includes(status);
 
+const isDwellingType = (value: string): value is DwellingType =>
+  (DWELLING_TYPE_VALUES as readonly string[]).includes(value);
+
+const isHostType = (value: string): value is HostType =>
+  (HOST_TYPE_VALUES as readonly string[]).includes(value);
+
 const applicationBody = (message?: string) => {
   const trimmed = message?.trim();
   return JSON.stringify(trimmed ? { message: trimmed } : {});
 };
+
+function assertListingSearchEnums(params: ListingSearchParams) {
+  if (params.dwellingType && !isDwellingType(params.dwellingType)) {
+    throw new Error("Ogiltig bostadstyp.");
+  }
+
+  if (params.hostType && !isHostType(params.hostType)) {
+    throw new Error("Ogiltig hyresvardstyp.");
+  }
+}
 
 // --- Mock Coordinates Utility ---
 // En enkel fallback för att generera koordinater om backend inte levererar dem (t.ex. vid mock/demo-data).
@@ -224,6 +249,7 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
     availableFrom: firstString(source.availableFrom) ?? null,
     availableTo: firstString(source.availableTo) ?? null,
     requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
+    published: firstString(source.published) ?? null,
   };
 };
 
@@ -241,6 +267,7 @@ const normalizeListingDetail = (dto: ListingDetailDTO): ListingDetailDTO => {
     tags: normalizeListingTags(source.tags),
     imageUrls: firstStringArray(source.imageUrls, source.images),
     requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
+    published: firstString(source.published) ?? null,
   };
 };
 
@@ -311,6 +338,8 @@ export const listingService = {
             hostType,
           };
 
+    assertListingSearchEnums(params);
+
     const query = buildQuery({
       page: params.page ?? 0,
       size: params.size ?? 12,
@@ -337,7 +366,7 @@ export const listingService = {
   // 2. HÄMTA EN ANNONS (Detaljvy)
   // Anropar: GET /api/listings/{id}
   get: async (id: string): Promise<ListingDetailDTO> => {
-    const detail = await apiClient<ListingDetailDTO>(`/listings/${id}`, {
+    const detail = await apiClient<ListingDetailDTO>(`/listings/${pathSegment(id)}`, {
       auth: false,
     });
     return detail ? addMockCoordinates(normalizeListingDetail(detail)) : detail;
@@ -347,7 +376,7 @@ export const listingService = {
     id: string,
     type: ListingViewIncrementType
   ): Promise<void> => {
-    await apiClient<void>(`/listings/${id}/increment`, {
+    await apiClient<void>(`/listings/${pathSegment(id)}/increment`, {
       method: "PUT",
       auth: false,
       body: JSON.stringify({ type }),
@@ -359,14 +388,14 @@ export const listingService = {
       throw new Error("Ogiltig annonsstatus.");
     }
 
-    await apiClient<void>(`/listings/${id}`, {
+    await apiClient<void>(`/listings/${pathSegment(id)}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
   },
 
   delete: async (id: string): Promise<void> => {
-    await apiClient<void>(`/listings/${id}`, {
+    await apiClient<void>(`/listings/${pathSegment(id)}`, {
       method: "DELETE",
     });
   },
@@ -384,7 +413,7 @@ export const listingService = {
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<PageResponse<ListingCardDTO>>(
-      `/listings/queue/${queueId}${query}`,
+      `/listings/queue/${pathSegment(queueId)}${query}`,
       { auth: false }
     );
     if (res?.content) {
@@ -411,7 +440,7 @@ export const listingService = {
    * Anropar: POST /api/listings/{id}/favorites
    */
   addFavorite: async (listingId: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/favorites`, {
+    await apiClient(`/listings/${pathSegment(listingId)}/favorites`, {
       method: "POST",
     });
   },
@@ -421,7 +450,7 @@ export const listingService = {
    * Anropar: DELETE /api/listings/{id}/favorites
    */
   removeFavorite: async (listingId: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/favorites`, {
+    await apiClient(`/listings/${pathSegment(listingId)}/favorites`, {
       method: "DELETE",
     });
   },
@@ -448,7 +477,7 @@ export const listingService = {
   // Bakåtkompatibel alias-metod för ansökan.
   // Anropar: POST /api/listings/{id}/applications
   apply: async (listingId: string, message?: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/applications`, {
+    await apiClient(`/listings/${pathSegment(listingId)}/applications`, {
       method: "POST",
       body: applicationBody(message),
     });
@@ -457,7 +486,7 @@ export const listingService = {
   // Dra tillbaka en ansökan
   // Anropar: DELETE /api/applications/{id}
   withdrawApplication: async (applicationId: number): Promise<void> => {
-    await apiClient(`/applications/${applicationId}`, {
+    await apiClient(`/applications/${pathSegment(applicationId)}`, {
       method: "DELETE",
     });
   },
@@ -465,7 +494,7 @@ export const listingService = {
   // Ansök till en företagsannons
   // Anropar: POST /api/listings/{id}/applications
   applyToListing: async (listingId: string, message?: string): Promise<void> => {
-    await apiClient(`/listings/${listingId}/applications`, {
+    await apiClient(`/listings/${pathSegment(listingId)}/applications`, {
       method: "POST",
       body: applicationBody(message),
     });
@@ -477,7 +506,9 @@ export const listingService = {
     size = 50
   ): Promise<StudentApplicationDTO[]> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<any>(`/listings/${listingId}/applications${query}`);
+    const res = await apiClient<any>(
+      `/listings/${pathSegment(listingId)}/applications${query}`
+    );
     if (Array.isArray(res)) return res;
     return res?.content ?? [];
   },
@@ -500,7 +531,7 @@ export const listingService = {
     requirementsProfileId: string
   ): Promise<RequirementsProfileDTO> => {
     const profile = await apiClient<unknown>(
-      `/requirements-profiles/${requirementsProfileId}`,
+      `/requirements-profiles/${pathSegment(requirementsProfileId)}`,
       { auth: false }
     );
     return normalizeRequirementsProfile(profile) ?? {};
@@ -519,7 +550,7 @@ export const listingService = {
     companyId: number
   ): Promise<RequirementsProfileDTO[]> => {
     const profiles = await apiClient<unknown>(
-      `/requirements-profiles/company/${companyId}`,
+      `/requirements-profiles/company/${pathSegment(companyId)}`,
       { auth: false }
     );
     return arrayFromApiResponse<unknown>(profiles)
@@ -530,20 +561,20 @@ export const listingService = {
   // Ansök till en privat annons
   // Anropar: POST /api/applications/private/{id}
   applyToPrivateListing: async (listingId: string, message: string): Promise<void> => {
-    await apiClient(`/applications/private/${listingId}`, {
+    await apiClient(`/applications/private/${pathSegment(listingId)}`, {
       method: "POST",
       body: JSON.stringify({ message }),
     });
   },
 
   acceptOffer: async (applicationId: number): Promise<void> => {
-    await apiClient<void>(`/applications/${applicationId}/offer-accept`, {
+    await apiClient<void>(`/applications/${pathSegment(applicationId)}/offer-accept`, {
       method: "POST",
     });
   },
 
   rejectOffer: async (applicationId: number): Promise<void> => {
-    await apiClient<void>(`/applications/${applicationId}/offer-reject`, {
+    await apiClient<void>(`/applications/${pathSegment(applicationId)}/offer-reject`, {
       method: "POST",
     });
   },

@@ -1,5 +1,10 @@
 import { authService } from "@/services/auth-service";
-import { apiClient, arrayFromApiResponse, buildQuery } from "@/lib/api-client";
+import {
+  apiClient,
+  arrayFromApiResponse,
+  buildQuery,
+  pathSegment,
+} from "@/lib/api-client";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 
 export type GraphEntry = {
@@ -551,7 +556,9 @@ export const companyService = {
   },
 
   publicProfile: async (id: number): Promise<CompanyPublicDTO> => {
-    return apiClient<CompanyPublicDTO>(`/companies/${id}`, { auth: false });
+    return apiClient<CompanyPublicDTO>(`/companies/${pathSegment(id)}`, {
+      auth: false,
+    });
   },
 
   myCompany: async (): Promise<CompanyInfo> => {
@@ -568,28 +575,31 @@ export const companyService = {
   },
 
   privateProfile: async (id: number): Promise<CompanyPrivateDTO> => {
-    return apiClient<CompanyPrivateDTO>(`/companies/${id}/private`);
+    return apiClient<CompanyPrivateDTO>(`/companies/${pathSegment(id)}/private`);
   },
 
   updateCompanyData: async (
     id: number,
     payload: CompanyChangeableDataDTO
   ): Promise<void> => {
-    await apiClient<void>(`/companies/${id}/changeData`, {
+    await apiClient<void>(`/companies/${pathSegment(id)}/changeData`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
   },
 
   users: async (id: number): Promise<CompanyUserDTO[]> => {
-    const users = await apiClient<unknown>(`/companies/${id}/users`);
+    const users = await apiClient<unknown>(`/companies/${pathSegment(id)}/users`);
     return arrayFromApiResponse<CompanyUserDTO>(users);
   },
 
   verifyUser: async (id: number, userId: number): Promise<void> => {
-    await apiClient<void>(`/companies/${id}/verify/${userId}`, {
-      method: "PUT",
-    });
+    await apiClient<void>(
+      `/companies/${pathSegment(id)}/verify/${pathSegment(userId)}`,
+      {
+        method: "PUT",
+      }
+    );
   },
 
   newApplications: async (
@@ -608,7 +618,7 @@ export const companyService = {
   }, 
 
   applicationCount: async (id: number): Promise<number> => {
-    const result = await apiClient<unknown>(`/analytics/${id}/general`);
+    const result = await apiClient<unknown>(`/analytics/${pathSegment(id)}/general`);
 
     if (isRecord(result)) {
       return toNumber(result.currentApplications);
@@ -618,7 +628,9 @@ export const companyService = {
   },
   
   applicationsTimeline: async (id: number): Promise<Timeline> => {
-    const entries = await apiClient<unknown>(`/analytics/${id}/current_applications/trend`);
+    const entries = await apiClient<unknown>(
+      `/analytics/${pathSegment(id)}/current_applications/trend`
+    );
     const rows = toArray<unknown>(entries, true)
       .map(normalizeApplicationTrendEntry)
       .filter((entry): entry is ApplicationStatisticEntry => entry !== null);
@@ -634,7 +646,7 @@ export const companyService = {
   applicationCountsPerObject: async (id: number, limit: number = 5): Promise<ObjectApplicationCount[]> => {
     const query = buildQuery({ limit: limit === null ? 5 : limit });
     const result = await apiClient<unknown>(
-      `/analytics/${id}/current_applications/by_object${query}`
+      `/analytics/${pathSegment(id)}/current_applications/by_object${query}`
     );
 
     return toArray<unknown>(result, true)
@@ -647,7 +659,7 @@ export const companyService = {
     listingId: string | number
   ): Promise<ListingViewCounts> => {
     const result = await apiClient<unknown>(
-      `/analytics/${id}/listing/${encodeURIComponent(String(listingId))}/`
+      `/analytics/${pathSegment(id)}/listing/${pathSegment(listingId)}/`
     );
 
     return normalizeListingViewCounts(result);
@@ -656,13 +668,15 @@ export const companyService = {
   generalAnalytics: async (
     id: number
   ): Promise<AnalyticalQuantities> => {
-    const result = await apiClient<unknown>(`/analytics/${id}/general`);
+    const result = await apiClient<unknown>(`/analytics/${pathSegment(id)}/general`);
 
     return normalizeAnalyticalQuantities(result);
   },
 
   residentAnalyticsData: async (id: number): Promise<ResidentAnalyticsData> => {
-    const result = await apiClient<unknown>(`/analytics/${id}/residents/data`);
+    const result = await apiClient<unknown>(
+      `/analytics/${pathSegment(id)}/residents/data`
+    );
 
     return normalizeResidentAnalyticsData(result);
   },
@@ -678,7 +692,7 @@ export const companyService = {
   },
 
   landlordKickback: async (companyId: number): Promise<unknown> => {
-    return apiClient<unknown>(`/landlord/${companyId}/kickback`, {
+    return apiClient<unknown>(`/landlord/${pathSegment(companyId)}/kickback`, {
       auth: false,
     });
   },

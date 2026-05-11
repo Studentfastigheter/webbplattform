@@ -1,4 +1,9 @@
-import { apiClient, arrayFromApiResponse, buildQuery } from "@/lib/api-client";
+import {
+  apiClient,
+  arrayFromApiResponse,
+  buildQuery,
+  pathSegment,
+} from "@/lib/api-client";
 import { normalizeListingCards } from "@/services/listing-service";
 import { HousingQueueDTO } from "@/types/queue";
 import { ListingCardDTO, type PageResponse } from "@/types/listing";
@@ -227,19 +232,22 @@ export const queueService = {
   },
 
   get: async (id: string): Promise<HousingQueueDTO> => {
-    return await apiClient<HousingQueueDTO>(`/queues/${id}`, { auth: false });
+    return await apiClient<HousingQueueDTO>(`/queues/${pathSegment(id)}`, {
+      auth: false,
+    });
   },
 
   getByCompany: async (companyId: number): Promise<HousingQueueDTO[]> => {
-    const queues = await apiClient<unknown>(`/companies/${companyId}/queues`, {
-      auth: false,
-    });
+    const queues = await apiClient<unknown>(
+      `/companies/${pathSegment(companyId)}/queues`,
+      { auth: false }
+    );
     return arrayFromApiResponse<HousingQueueDTO>(queues);
   },
 
   join: async (queueId: string): Promise<void> => {
     // Vi förväntar oss text/plain svar från backend
-    await apiClient<string>(`/queues/${queueId}/join`, {
+    await apiClient<string>(`/queues/${pathSegment(queueId)}/join`, {
       method: "POST"
     });
   },
@@ -262,7 +270,9 @@ export const queueService = {
   },
 
   getCompany: async (companyId: number): Promise<CompanyDTO> => {
-    return await apiClient<CompanyDTO>(`/companies/${companyId}`, { auth: false });
+    return await apiClient<CompanyDTO>(`/companies/${pathSegment(companyId)}`, {
+      auth: false,
+    });
   },
 
   getCompanyListingsPage: async (
@@ -271,9 +281,10 @@ export const queueService = {
     size = 12,
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<unknown>(`/companies/${companyId}/listings${query}`, {
-      auth: false,
-    });
+    const res = await apiClient<unknown>(
+      `/companies/${pathSegment(companyId)}/listings${query}`,
+      { auth: false }
+    );
 
     return normalizeListingPageResponse(res, page, size);
   },
@@ -290,7 +301,7 @@ export const queueService = {
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<unknown>(
-      `/companies/${companyId}/all-listings${query}`
+      `/companies/${pathSegment(companyId)}/all-listings${query}`
     );
 
     return normalizeListingPageResponse(res, page, size);

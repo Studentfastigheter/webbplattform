@@ -27,6 +27,7 @@ export interface ListingCardDTO {
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
   requirementsProfileId?: string | null;
+  published?: TimestampString | null;
 }
 
 // 2. DETALJVYN (Single Listing) - Matchar Java ListingDetailDTO
@@ -63,6 +64,7 @@ export interface ListingDetailDTO {
   status?: ListingStatus | string | null;
   verifiedOwner: boolean;
   requirementsProfileId?: string | null;
+  published?: TimestampString | null;
 }
 
 export interface ListingTagDTO {
@@ -103,6 +105,12 @@ export interface StudentApplicationDTO {
 export const LISTING_STATUS_VALUES = ["AVAILABLE", "HIDDEN", "RENTED"] as const;
 export type ListingStatus = (typeof LISTING_STATUS_VALUES)[number];
 
+export const DWELLING_TYPE_VALUES = ["APARTMENT", "ROOM", "CORRIDOR_ROOM"] as const;
+export type DwellingType = (typeof DWELLING_TYPE_VALUES)[number];
+
+export const HOST_TYPE_VALUES = ["COMPANY", "PRIVATE"] as const;
+export type HostType = (typeof HOST_TYPE_VALUES)[number];
+
 export interface UpdateListingRequest {
   title?: string;
   rooms?: number | null;
@@ -124,7 +132,7 @@ export interface PublishListingRequest {
   city: string;
   area?: string;
   address: string;
-  dwellingType: string;
+  dwellingType: DwellingType | string;
   rooms?: number;
   sizeM2?: number;
   rent?: number;
