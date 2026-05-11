@@ -1,6 +1,5 @@
 
 import Image from 'next/image';
-import { SectionBadge } from '@/components/ui/section-badge';
 
 export const Implementation = () => {
   const steps = [
@@ -33,12 +32,6 @@ export const Implementation = () => {
           <div className="lg:w-5/12">
             <div className="sticky top-32">
               <div className="border-l-2 border-white/10 pl-8 md:pl-12">
-                <SectionBadge
-                  text="Implementation"
-                  color="text-brand-green-light"
-                  className="tracking-[0.12em]"
-                />
-
                 <h2 className="mb-8 text-4xl font-bold leading-[1.1] text-primary-foreground md:text-5xl lg:text-6xl">
                   Från dialog till full räckvidd
                 </h2>

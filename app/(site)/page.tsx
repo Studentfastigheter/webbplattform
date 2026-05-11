@@ -21,7 +21,6 @@ export default function Home() {
       />
 
       <StickyCards
-        badge="CampusLyan"
         sectionClassName="bg-background"
         heading={
           <>
@@ -34,7 +33,6 @@ export default function Home() {
       />
 
       <StepsTimeline
-        badge="Så funkar det"
         heading={
           <>
             Från registrering till <span className="text-pop-contrast">inflytt</span> i tre steg
@@ -44,7 +42,6 @@ export default function Home() {
       />
 
       <Features
-        badge="Mer än en söksida"
         sectionClassName="bg-background"
         heading={
           <>

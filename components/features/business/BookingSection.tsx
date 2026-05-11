@@ -1,11 +1,9 @@
 "use client";
 
 import Script from "next/script";
-import { SectionBadge } from "@/components/ui/section-badge";
 
 type BookingSectionProps = {
   id?: string;
-  badgeText?: string;
   title: string;
   description: string;
   calendarUrl?: string;
@@ -16,7 +14,6 @@ const DEFAULT_CALENDAR_URL =
 
 export function BookingSection({
   id = "bokning",
-  badgeText = "Boka möte",
   title,
   description,
   calendarUrl = DEFAULT_CALENDAR_URL,
@@ -24,7 +21,6 @@ export function BookingSection({
   return (
     <section id={id} className="scroll-mt-24 py-24">
       <div className="mx-auto mb-0 max-w-7xl px-6">
-        <SectionBadge text={badgeText} />
         <h2 className="text-3xl font-bold text-foreground lg:text-4xl">{title}</h2>
         <p className="mt-2 text-lg text-muted-foreground">{description}</p>
       </div>

@@ -1,7 +1,6 @@
 import React from "react";
 // Vi behöver inte importera Link här längre för mail-funktionen
 import { Button } from "@heroui/button";
-import { SectionBadge } from "@/components/ui/section-badge";
 
 interface CtaSectionProps {
   title: string;
@@ -26,7 +25,6 @@ export const CtaSection = ({
           
           <div className="space-y-6 text-left">
             <div className="space-y-2">
-              <SectionBadge text="Nästa steg" color="text-primary-foreground" />
               <h2 className="text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight">
                 {title}
               </h2>

@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { SectionBadge } from "@/components/ui/section-badge";
 import {
   ShieldCheck,
   Users2,
@@ -153,23 +152,16 @@ const TEAM_CATEGORIES = [
 // --- KOMPONENTER ---
 
 function SectionHeading({ 
-  eyebrow, 
   title, 
   description,
   center = false 
 }: { 
-  eyebrow?: string; 
   title: string; 
   description?: string;
   center?: boolean;
 }) {
   return (
     <div className={`max-w-3xl mb-16 ${center ? "mx-auto text-center" : ""}`}>
-      {eyebrow && (
-        <div className={center ? "flex justify-center" : ""}>
-          <SectionBadge text={eyebrow} />
-        </div>
-      )}
       <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6 tracking-tight">
         {title}
       </h2>
@@ -294,10 +286,7 @@ export default function OmPage() {
       <section className="py-24 px-6 bg-background">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-4xl mx-auto text-center mb-16 flex flex-col">
-            <div className="order-1 flex justify-center">
-              <SectionBadge text="Vår resa" />
-            </div>
-            <h1 className="order-2 text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-8 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-8 leading-tight">
               Byggt på Chalmers <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-pop-contrast">för studenter i hela Sverige</span>
             </h1>

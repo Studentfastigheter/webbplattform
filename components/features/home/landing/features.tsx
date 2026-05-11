@@ -1,5 +1,4 @@
 import React from 'react';
-import { SectionBadge } from '@/components/ui/section-badge';
 
 // 1. Definiera hur ett feature-objekt ser ut
 interface FeatureItem {
@@ -12,14 +11,12 @@ interface FeatureItem {
 
 // 2. Definiera props för komponenten
 interface FeaturesProps {
-  badge?: string;
   heading?: React.ReactNode; // Gör att vi kan skicka in HTML/JSX för rubriken
   features?: FeatureItem[];
   sectionClassName?: string;
 }
 
 export const Features = ({ 
-  badge = "Plattformen",
   heading,
   features = [],
   sectionClassName = "bg-brand-beige-200",
@@ -34,8 +31,6 @@ export const Features = ({
         
         {/* Header */}
         <div className="mb-10 text-center sm:mb-12 lg:mb-16">
-          <SectionBadge text={badge} />
-          
           {heading ? (
             <div className="text-3xl font-bold leading-[1.1] text-foreground sm:text-4xl md:text-6xl">
               {heading}

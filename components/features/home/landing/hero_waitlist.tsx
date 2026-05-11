@@ -4,12 +4,10 @@ import React, { type ChangeEvent, type FormEvent, useMemo, useState } from "reac
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { SectionBadge } from "@/components/ui/section-badge";
 
 type HeroWaitlistProps = {
   id?: string;
   backgroundClassName?: string;
-  badge?: string;
   heading?: React.ReactNode;
   subtitle?: string;
 };
@@ -23,6 +21,8 @@ type WaitlistResponse = {
   alreadyRegistered?: boolean;
 };
 
+const waitlistRequestTimeoutMs = 12_000;
+
 const initialWaitlistForm: WaitlistFormValues = {
   email: "",
 };
@@ -30,7 +30,6 @@ const initialWaitlistForm: WaitlistFormValues = {
 export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
   id = "register-waitlist",
   backgroundClassName = "bg-background",
-  badge = "Väntelistan",
   heading = "Redo att hitta din nästa lya?",
   subtitle = "Anmäl dig till väntelistan så får du ett mail så fort vi lanserar.",
 }) => {
@@ -58,6 +57,10 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
     if (email.length > 254) return setErrorMessage("E-postadressen är för lång.");
 
     setIsSubmitting(true);
+    const abortController = new AbortController();
+    const timeout = window.setTimeout(() => {
+      abortController.abort();
+    }, waitlistRequestTimeoutMs);
 
     try {
       const response = await fetch("/api/waitlist", {
@@ -66,6 +69,7 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
+        signal: abortController.signal,
       });
 
       const payload = (await response.json().catch(() => null)) as WaitlistResponse | null;
@@ -83,9 +87,14 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
     } catch (error) {
       console.error("Waitlist submit failed", error);
       setErrorMessage(
-        error instanceof Error ? error.message : "Något gick fel vid registreringen. Försök igen.",
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Registreringen tog för lång tid. Försök igen om en liten stund."
+          : error instanceof Error
+            ? error.message
+            : "Något gick fel vid registreringen. Försök igen.",
       );
     } finally {
+      window.clearTimeout(timeout);
       setIsSubmitting(false);
     }
   };
@@ -94,7 +103,6 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
     <section id={id} className={`relative overflow-hidden pb-8 sm:pb-18 md:pb-32 ${backgroundClassName}`}>
       <div className="container relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-10 text-center sm:mb-12 md:mb-16">
-          {badge ? <SectionBadge text={badge} /> : null}
           <h2 className="text-3xl font-bold leading-[1.1] text-foreground sm:text-4xl md:text-6xl">{heading}</h2>
           {subtitle ? (
             <p className="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground sm:mt-4 sm:text-base md:text-lg">{subtitle}</p>

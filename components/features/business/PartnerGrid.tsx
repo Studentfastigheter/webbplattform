@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { SectionBadge } from "@/components/ui/section-badge";
 
 export interface PartnerItem {
   name: string;
@@ -18,7 +17,6 @@ interface PartnerGridProps {
   description: string;
   subDescription?: string;
   partners: PartnerItem[];
-  badgeText?: string;
   columns?: 3 | 4;
   variant?: "default" | "founding";
 }
@@ -28,7 +26,6 @@ export const PartnerGrid = ({
   description,
   subDescription,
   partners,
-  badgeText = "Våra partners",
   columns = 3,
   variant = "default",
 }: PartnerGridProps) => {

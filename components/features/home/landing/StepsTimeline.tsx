@@ -1,6 +1,5 @@
 import React from 'react';
 import Reveal from "@/lib/reveal";
-import { SectionBadge } from '@/components/ui/section-badge'; // Vi använder din gemensamma badge
 
 interface StepItem {
   icon: React.ElementType;
@@ -9,13 +8,11 @@ interface StepItem {
 }
 
 interface StepsTimelineProps {
-  badge?: string;
   heading?: React.ReactNode;
   steps?: StepItem[];
 }
 
 export default function StepsTimeline({ 
-  badge = "Så funkar det",
   heading,
   steps = []
 }: StepsTimelineProps) {
@@ -29,10 +26,7 @@ export default function StepsTimeline({
         
         {/* Header Section */}
         <Reveal variant="up">
-          <div className="mb-10 flex flex-col items-center space-y-4 text-center sm:mb-14 sm:space-y-6 lg:mb-24">
-             {/* Vi använder din SectionBadge här för konsekvent stil */}
-            <SectionBadge text={badge} />
-            
+          <div className="mb-10 flex flex-col items-center text-center sm:mb-14 lg:mb-24">
             {heading ? (
                <h2 className="text-3xl font-bold leading-[1.1] text-foreground sm:text-4xl md:text-6xl">
                  {heading}

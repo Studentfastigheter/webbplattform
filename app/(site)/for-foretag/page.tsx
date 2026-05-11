@@ -14,11 +14,9 @@ import { BookingSection } from "@/components/features/business/BookingSection";
 import { Hero } from "@/components/features/business/Hero";
 import { Testimonials } from "@/components/features/business/Testimonial";
 import { Implementation } from "@/components/features/business/Implementation";
-import { SectionBadge } from "@/components/ui/section-badge";
 
 type FeatureRowProps = {
   flipped?: boolean;
-  tag: string;
   title: string;
   description: string;
   children: React.ReactNode;
@@ -26,7 +24,6 @@ type FeatureRowProps = {
 
 const FeatureRow = ({
   flipped = false,
-  tag,
   title,
   description,
   children,
@@ -34,7 +31,6 @@ const FeatureRow = ({
   return (
     <div className={`flex flex-col items-center gap-8 ${flipped ? "lg:flex-row-reverse" : "lg:flex-row"} lg:gap-16`}>
       <div className="flex-1 space-y-4 text-left">
-        <SectionBadge text={tag} className="mb-2" />
         <h2 className="text-3xl font-bold leading-tight text-foreground lg:text-4xl">{title}</h2>
         <p className="text-lg leading-relaxed text-muted-foreground">{description}</p>
       </div>
@@ -61,7 +57,6 @@ export default function ForForetagPage() {
       <section className="relative z-10 mx-auto max-w-7xl space-y-24 px-6 py-16 lg:space-y-32 lg:py-32">
         <FeatureRow
           flipped
-          tag="Räckvidd"
           title="Den optimala marknadskanalen"
           description="Med CampusLyan når ni ut till alla studenter i Sverige på ett och samma ställe. Vi samlar studenterna i en gemensam plattform, vilket ger er maximal exponering mot rätt målgrupp utan onödigt spill."
         >
@@ -111,7 +106,6 @@ export default function ForForetagPage() {
         </FeatureRow>
 
         <FeatureRow
-          tag="Kvalitetssäkring"
           title="Verifierade studenter – inga spökanvändare"
           description="Vi säkerställer att alla registrerade användare är aktiva studenter genom strikt verifiering. Detta eliminerar spökanvändare i era bostadsköer och garanterar att ni enbart hanterar ansökningar från behöriga sökande."
         >
@@ -150,7 +144,6 @@ export default function ForForetagPage() {
 
         <FeatureRow
           flipped
-          tag="Integration"
           title="Sömlös systemkoppling"
           description="Arbeta kvar i era befintliga processer. Tack vare våra färdiga integrationer kopplar ni enkelt ihop CampusLyan direkt med ert nuvarande fastighetssystem för automatiserad publicering och hantering."
         >

@@ -1,5 +1,4 @@
 import React from 'react';
-import { SectionBadge } from '@/components/ui/section-badge';
 
 // 1. Definiera hur ett "Kort" ser ut
 interface CardItem {
@@ -11,14 +10,12 @@ interface CardItem {
 
 // 2. Definiera vad komponenten tar emot (Props)
 interface StickyCardsProps {
-  badge?: string;           // Texten i badgen
   heading?: React.ReactNode; // Rubriken (kan vara text eller HTML/JSX)
   cards?: CardItem[];       // Listan med kort
   sectionClassName?: string;
 }
 
 export const StickyCards = ({ 
-  badge = "Vårt Erbjudande", // Defaultvärde
   heading, 
   cards = [],
   sectionClassName = "bg-brand-beige-200",
@@ -30,8 +27,6 @@ export const StickyCards = ({
     <section className={`py-16 sm:py-20 lg:py-24 ${sectionClassName}`}>
       <div className="container mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-10 text-center sm:mb-12 lg:mb-16">
-          {badge && <SectionBadge text={badge} />}
-          
           {/* Om heading finns, rendera den. Annars visa en default. */}
           {heading ? (
             <h2 className="text-3xl font-bold leading-[1.1] text-foreground sm:text-4xl md:text-6xl">

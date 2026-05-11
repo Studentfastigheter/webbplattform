@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowDown } from "lucide-react";
-import { SectionBadge } from "@/components/ui/section-badge";
 
 export const TrustHero = () => {
   return (
@@ -14,10 +13,6 @@ export const TrustHero = () => {
       <div className="absolute top-0 inset-x-0 h-px"></div>
 
       <div className="relative container mx-auto px-6 max-w-5xl py-20 text-center">
-        <div className="flex justify-center">
-          <SectionBadge text="Partnerskap" />
-        </div>
-        
         {/* --- Top Badge --- 
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <span className="relative flex h-2 w-2">
