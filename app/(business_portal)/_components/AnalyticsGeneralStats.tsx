@@ -5,10 +5,13 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
+  Eye,
   FileUser,
   Heart,
   Home,
   Minus,
+  MousePointerClick,
+  Percent,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
@@ -21,6 +24,7 @@ import {
 } from "@/services/company";
 
 type MetricTone = "brand" | "blue" | "rose" | "amber";
+type AnalyticsGeneralStatsVariant = "overview" | "analytics";
 
 type MetricConfig = {
   key: keyof AnalyticalQuantities;
@@ -33,6 +37,7 @@ type MetricConfig = {
 type MetricItem = {
   label: string;
   value: number;
+  valueLabel?: string;
   change: number | null;
   icon: React.ComponentType<{ className?: string }>;
   tone: MetricTone;
@@ -47,7 +52,7 @@ const metrics: MetricConfig[] = [
   },
   {
     key: "views",
-    fallbackKeys: ["viewings"],
+    fallbackKeys: ["viewings", "quickViews", "detailedViews"],
     label: "Visningar",
     icon: BarChart3,
     tone: "blue",
@@ -117,7 +122,17 @@ function pickQuantity(
   analytics: AnalyticalQuantities,
   metric: MetricConfig
 ): AnalyticalQuantity | null {
-  const entries = [metric.key, ...(metric.fallbackKeys ?? [])]
+  return pickQuantityFromKeys(analytics, [
+    metric.key,
+    ...(metric.fallbackKeys ?? []),
+  ]);
+}
+
+function pickQuantityFromKeys(
+  analytics: AnalyticalQuantities,
+  keys: Array<keyof AnalyticalQuantities>
+): AnalyticalQuantity | null {
+  const entries = keys
     .flatMap((key) => analytics[key] ?? [])
     .filter(Boolean);
 
@@ -167,18 +182,96 @@ function getMetricChange(quantity: AnalyticalQuantity | null) {
   );
 }
 
-function buildMetricItems(analytics: AnalyticalQuantities): MetricItem[] {
+function buildBaseMetricItem(
+  analytics: AnalyticalQuantities,
+  metric: MetricConfig
+): MetricItem {
+  const quantity = pickQuantity(analytics, metric);
+
+  return {
+    label: metric.label,
+    value: getMetricValue(quantity),
+    change: getMetricChange(quantity),
+    icon: metric.icon,
+    tone: metric.tone,
+  };
+}
+
+function buildOverviewMetricItems(analytics: AnalyticalQuantities): MetricItem[] {
   return metrics.map((metric) => {
     const quantity = pickQuantity(analytics, metric);
 
-    return {
-      label: metric.label,
-      value: getMetricValue(quantity),
-      change: getMetricChange(quantity),
-      icon: metric.icon,
-      tone: metric.tone,
-    };
+    if (metric.key === "views") {
+      const detailedQuantity = pickQuantityFromKeys(analytics, ["detailedViews"]);
+      const fallbackQuantity = pickQuantityFromKeys(analytics, ["views", "viewings"]);
+      const resolvedQuantity = detailedQuantity ?? fallbackQuantity ?? quantity;
+
+      return {
+        label: metric.label,
+        value: getMetricValue(resolvedQuantity),
+        change: getMetricChange(resolvedQuantity),
+        icon: metric.icon,
+        tone: metric.tone,
+      };
+    }
+
+    return buildBaseMetricItem(analytics, metric);
   });
+}
+
+function buildAnalyticsMetricItems(analytics: AnalyticalQuantities): MetricItem[] {
+  const applicationMetric = metrics.find((metric) => metric.key === "applications");
+  const interactionMetric = metrics.find((metric) => metric.key === "interactions");
+  const activeListingsMetric = metrics.find((metric) => metric.key === "activeListings");
+  const quickQuantity = pickQuantityFromKeys(analytics, ["quickViews"]);
+  const detailedQuantity = pickQuantityFromKeys(analytics, ["detailedViews"]);
+  const fallbackViewsQuantity = pickQuantityFromKeys(analytics, ["views", "viewings"]);
+  const quickValue = getMetricValue(quickQuantity);
+  const detailedValue = getMetricValue(detailedQuantity ?? fallbackViewsQuantity);
+  const detailRatio = quickValue > 0 ? (detailedValue / quickValue) * 100 : 0;
+
+  return [
+    applicationMetric ? buildBaseMetricItem(analytics, applicationMetric) : null,
+    {
+      label: "Detaljvisningar",
+      value: detailedValue,
+      change: getMetricChange(detailedQuantity ?? fallbackViewsQuantity),
+      icon: Eye,
+      tone: "blue",
+    },
+    {
+      label: "Snabbvisningar",
+      value: quickValue,
+      change: getMetricChange(quickQuantity),
+      icon: MousePointerClick,
+      tone: "brand",
+    },
+    {
+      label: "Detaljratio",
+      value: detailRatio,
+      valueLabel: `${detailRatio.toLocaleString("sv-SE", {
+        maximumFractionDigits: 1,
+      })}%`,
+      change: null,
+      icon: Percent,
+      tone: "amber",
+    },
+    interactionMetric ? buildBaseMetricItem(analytics, interactionMetric) : null,
+    activeListingsMetric ? buildBaseMetricItem(analytics, activeListingsMetric) : null,
+  ].filter((item): item is MetricItem => item !== null);
+}
+
+function buildMetricItems(
+  analytics: AnalyticalQuantities,
+  variant: AnalyticsGeneralStatsVariant
+): MetricItem[] {
+  return variant === "analytics"
+    ? buildAnalyticsMetricItems(analytics)
+    : buildOverviewMetricItems(analytics);
+}
+
+function formatMetricValue(item: MetricItem) {
+  return item.valueLabel ?? item.value.toLocaleString("sv-SE");
 }
 
 function formatChange(change: number | null) {
@@ -223,7 +316,11 @@ function TrendBadge({ change }: { change: number | null }) {
   );
 }
 
-export default function AnalyticsGeneralStats() {
+export default function AnalyticsGeneralStats({
+  variant = "overview",
+}: {
+  variant?: AnalyticsGeneralStatsVariant;
+}) {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [items, setItems] = React.useState<MetricItem[]>([]);
@@ -250,7 +347,7 @@ export default function AnalyticsGeneralStats() {
       .generalAnalytics(companyId)
       .then((analytics) => {
         if (!cancelled) {
-          setItems(buildMetricItems(analytics));
+          setItems(buildMetricItems(analytics, variant));
         }
       })
       .catch((err: unknown) => {
@@ -272,15 +369,21 @@ export default function AnalyticsGeneralStats() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId]);
+  }, [authLoading, companyId, variant]);
+
+  const skeletonCount = variant === "analytics" ? 6 : metrics.length;
+  const gridClassName =
+    variant === "analytics"
+      ? "grid h-full grid-cols-2 gap-3 xl:grid-cols-3"
+      : "grid h-full grid-cols-2 gap-3 xl:grid-cols-4";
 
   if (authLoading || isLoading) {
     return (
-      <div className="grid h-full grid-cols-2 gap-3 xl:grid-cols-4">
-        {metrics.map((metric) => (
+      <div className={gridClassName}>
+        {Array.from({ length: skeletonCount }).map((_, index) => (
           <div
             className="relative min-h-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50/70 p-4"
-            key={metric.key}
+            key={index}
           >
             <div className="flex items-start justify-between gap-3">
               <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
@@ -305,7 +408,7 @@ export default function AnalyticsGeneralStats() {
   }
 
   return (
-    <div className="grid h-full grid-cols-2 gap-3 xl:grid-cols-4">
+    <div className={gridClassName}>
       {items.map((item) => {
         const Icon = item.icon;
         const tone = metricToneClass[item.tone];
@@ -343,7 +446,7 @@ export default function AnalyticsGeneralStats() {
                 {item.label}
               </p>
               <p className="mt-1 truncate text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums">
-                {item.value.toLocaleString("sv-SE")}
+                {formatMetricValue(item)}
               </p>
             </div>
           </div>

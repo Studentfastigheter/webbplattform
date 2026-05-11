@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
@@ -203,6 +203,7 @@ export default function ListingsPage() {
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [hoveredListingId, setHoveredListingId] = useState<string | undefined>();
+  const quickViewIncrementedIds = useRef<Set<string>>(new Set());
 
   const updatePageInUrl = useCallback(
     (nextPage: number, mode: "push" | "replace" = "push") => {
@@ -378,6 +379,16 @@ export default function ListingsPage() {
         setTotalPages(nextTotalPages);
         setTotalElements(nextTotalElements);
         setListings(newItems);
+        newItems.forEach((listing) => {
+          if (quickViewIncrementedIds.current.has(listing.id)) {
+            return;
+          }
+
+          quickViewIncrementedIds.current.add(listing.id);
+          listingService
+            .incrementViews(listing.id, "QUICK")
+            .catch((err) => console.error("Failed to increment quick view:", err));
+        });
       } catch (err: any) {
         console.error("Error loading listings:", err);
         setError("Kunde inte ladda bostäder.");
