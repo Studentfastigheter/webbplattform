@@ -76,6 +76,7 @@ export interface RequiredDocument {
 }
 
 export interface RequirementsProfileDTO {
+  id?: string | null;
   title?: string | null;
   minAge?: number | null;
   maxAge?: number | null;
@@ -104,10 +105,6 @@ export type ListingStatus = (typeof LISTING_STATUS_VALUES)[number];
 
 export interface UpdateListingRequest {
   title?: string;
-  city?: string;
-  area?: string;
-  address?: string | null;
-  dwellingType?: string;
   rooms?: number | null;
   sizeM2?: number | null;
   rent?: number | null;
@@ -115,7 +112,6 @@ export interface UpdateListingRequest {
   tags?: string[];
   status?: ListingStatus;
   images?: string[];
-  moveIn?: DateString | null;
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;

@@ -1,5 +1,5 @@
 import { authService } from "@/services/auth-service";
-import { apiClient, buildQuery } from "@/lib/api-client";
+import { apiClient, arrayFromApiResponse, buildQuery } from "@/lib/api-client";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 
 export type GraphEntry = {
@@ -502,7 +502,8 @@ function normalizeNewApplication(value: unknown): NewApplication | null {
 export const companyService = {
 
   listCompanies: async (): Promise<CompanyPublicDTO[]> => {
-    return apiClient<CompanyPublicDTO[]>("/companies", { auth: false });
+    const companies = await apiClient<unknown>("/companies", { auth: false });
+    return arrayFromApiResponse<CompanyPublicDTO>(companies);
   },
 
   publicProfile: async (id: number): Promise<CompanyPublicDTO> => {
@@ -537,7 +538,8 @@ export const companyService = {
   },
 
   users: async (id: number): Promise<CompanyUserDTO[]> => {
-    return apiClient<CompanyUserDTO[]>(`/companies/${id}/users`);
+    const users = await apiClient<unknown>(`/companies/${id}/users`);
+    return arrayFromApiResponse<CompanyUserDTO>(users);
   },
 
   verifyUser: async (id: number, userId: number): Promise<void> => {

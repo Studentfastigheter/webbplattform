@@ -50,6 +50,28 @@ type ApiClientOptions = RequestInit & {
   auth?: boolean;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+export function arrayFromApiResponse<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  for (const key of ["content", "items", "data", "results"]) {
+    const nested = value[key];
+    if (Array.isArray(nested)) {
+      return nested as T[];
+    }
+  }
+
+  return [];
+}
+
 export function normalizeAuthToken(value: unknown): string | null {
   if (typeof value !== "string") {
     return null;

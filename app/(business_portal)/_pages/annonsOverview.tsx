@@ -436,7 +436,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
   const fetchListingData = useCallback(async () => {
     const companyListingsPromise = companyId
-      ? queueService.getCompanyListings(companyId, 0, 200)
+      ? queueService.getAllCompanyListings(companyId, 0, 200)
       : Promise.resolve<ListingCardDTO[]>([]);
     const applicationsPromise = companyId
       ? companyService.applicationCountsPerObject(companyId, 200).catch(() => [])

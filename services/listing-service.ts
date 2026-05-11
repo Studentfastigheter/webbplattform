@@ -1,4 +1,4 @@
-import { apiClient, buildQuery } from "@/lib/api-client";
+import { apiClient, arrayFromApiResponse, buildQuery } from "@/lib/api-client";
 import {
   LISTING_STATUS_VALUES,
   type ListingCardDTO,
@@ -242,6 +242,31 @@ const normalizeListingDetail = (dto: ListingDetailDTO): ListingDetailDTO => {
   };
 };
 
+const normalizeRequirementsProfile = (
+  value: unknown
+): RequirementsProfileDTO | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return {
+    id: firstString(value.id) ?? null,
+    title: firstString(value.title) ?? null,
+    minAge: Number.isFinite(Number(value.minAge)) ? Number(value.minAge) : null,
+    maxAge: Number.isFinite(Number(value.maxAge)) ? Number(value.maxAge) : null,
+    description: firstString(value.description) ?? null,
+    requiredDocuments: Array.isArray(value.requiredDocuments)
+      ? value.requiredDocuments
+          .filter((document): document is Record<string, unknown> => isRecord(document))
+          .map((document) => ({
+            documentType: firstString(document.documentType) ?? "",
+            documentName: firstString(document.documentName) ?? "",
+          }))
+          .filter((document) => document.documentName.length > 0)
+      : [],
+  };
+};
+
 // --- Service ---
 
 export const listingService = {
@@ -448,9 +473,8 @@ export const listingService = {
   // Anropar: GET /api/listingtags
   getListingTags: async (): Promise<ListingTagDTO[]> => {
     const res = await apiClient<unknown>("/listingtags", { auth: false });
-    if (!Array.isArray(res)) return [];
 
-    return res
+    return arrayFromApiResponse<unknown>(res)
       .filter((tag): tag is Record<string, unknown> => isRecord(tag))
       .map((tag) => ({
         displayName: firstString(tag.displayName, tag.name, tag.label) ?? "",
@@ -462,10 +486,32 @@ export const listingService = {
   getRequirementsProfile: async (
     requirementsProfileId: string
   ): Promise<RequirementsProfileDTO> => {
-    return await apiClient<RequirementsProfileDTO>(
+    const profile = await apiClient<unknown>(
       `/requirements-profiles/${requirementsProfileId}`,
       { auth: false }
     );
+    return normalizeRequirementsProfile(profile) ?? {};
+  },
+
+  getRequirementsProfiles: async (): Promise<RequirementsProfileDTO[]> => {
+    const profiles = await apiClient<unknown>("/requirements-profiles", {
+      auth: false,
+    });
+    return arrayFromApiResponse<unknown>(profiles)
+      .map(normalizeRequirementsProfile)
+      .filter((profile): profile is RequirementsProfileDTO => profile !== null);
+  },
+
+  getRequirementsProfilesByCompany: async (
+    companyId: number
+  ): Promise<RequirementsProfileDTO[]> => {
+    const profiles = await apiClient<unknown>(
+      `/requirements-profiles/company/${companyId}`,
+      { auth: false }
+    );
+    return arrayFromApiResponse<unknown>(profiles)
+      .map(normalizeRequirementsProfile)
+      .filter((profile): profile is RequirementsProfileDTO => profile !== null);
   },
 
   // Ansök till en privat annons
@@ -496,12 +542,9 @@ export const listingService = {
    */
   getCurrentAds: async (): Promise<RollingAd[]> => {
     try {
-      const ads = await apiClient<unknown[]>("/ads/current", { auth: false });
-      if (!Array.isArray(ads)) {
-        return [];
-      }
-      
-      return ads
+      const ads = await apiClient<unknown>("/ads/current", { auth: false });
+
+      return arrayFromApiResponse<unknown>(ads)
         .filter((ad): ad is { id: number | string; company?: string; data?: unknown } => (
           typeof ad === "object" &&
           ad !== null &&
