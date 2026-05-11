@@ -42,6 +42,8 @@ export type ListingSearchParams = {
   amenities?: string[];
 };
 
+export type ListingViewIncrementType = "QUICK" | "DETAILED";
+
 const isListingStatus = (status: string): status is ListingStatus =>
   (LISTING_STATUS_VALUES as readonly string[]).includes(status);
 
@@ -339,6 +341,17 @@ export const listingService = {
       auth: false,
     });
     return detail ? addMockCoordinates(normalizeListingDetail(detail)) : detail;
+  },
+
+  incrementViews: async (
+    id: string,
+    type: ListingViewIncrementType
+  ): Promise<void> => {
+    await apiClient<void>(`/listings/${id}/increment`, {
+      method: "PUT",
+      auth: false,
+      body: JSON.stringify({ type }),
+    });
   },
 
   update: async (id: string, payload: UpdateListingRequest): Promise<void> => {

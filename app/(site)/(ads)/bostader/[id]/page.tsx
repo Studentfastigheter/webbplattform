@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -312,6 +312,7 @@ export default function ListingDetailPage() {
   const [requirementsProfile, setRequirementsProfile] =
     useState<RequirementsProfileDTO | null>(null);
   const [requirementsLoading, setRequirementsLoading] = useState(false);
+  const detailedViewIncrementedIds = useRef<Set<string>>(new Set());
 
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
@@ -400,6 +401,17 @@ export default function ListingDetailPage() {
 
     return () => { active = false; };
   }, [listingId]);
+
+  useEffect(() => {
+    if (!listing?.id || detailedViewIncrementedIds.current.has(listing.id)) {
+      return;
+    }
+
+    detailedViewIncrementedIds.current.add(listing.id);
+    listingService
+      .incrementViews(listing.id, "DETAILED")
+      .catch((err) => console.error("Failed to increment detailed view:", err));
+  }, [listing?.id]);
 
   useEffect(() => {
     if (!listing?.requirementsProfileId) {
