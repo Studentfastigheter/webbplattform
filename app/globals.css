@@ -16,6 +16,13 @@
   --border: oklch(0.922 0 0);
   --muted: oklch(0.97 0 0);
   --muted-bg: #ffffff;
+  --pop: #476e66;
+  --pop-contrast: #059669;
+  --brand-beige-100: #efefef;
+  --brand-beige-200: #f4f4f4;
+  --brand-green-light: #708a83;
+  --brand-orange: #dfdfe2;
+  --brand-dark: var(--brand);
 
   /* Lås sajten till light mode */
   color-scheme: light;
@@ -51,6 +58,56 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+.main-marketing-theme {
+  --brand: #004225;
+  --brand-600: #476e66;
+  --brand-50: #eef7f2;
+  --white-heaven: #ffffff;
+  --lighthouse: #ffffff;
+  --wayward-wind: #ffffff;
+  --rough-asphalt: #d6e6de;
+  --misty-moor: #708a83;
+  --pond-newt: #476e66;
+  --pop: var(--pond-newt);
+  --pop-contrast: #059669;
+  --brand-beige-100: #ffffff;
+  --brand-beige-200: #ffffff;
+  --brand-green-light: var(--misty-moor);
+  --brand-orange: var(--wayward-wind);
+  --brand-dark: var(--brand);
+  --border: var(--rough-asphalt);
+  --muted: var(--wayward-wind);
+  --muted-bg: #ffffff;
+  --background: oklch(1 0 0);
+  --foreground: #111111;
+  --card: var(--lighthouse);
+  --card-foreground: #111111;
+  --popover: var(--lighthouse);
+  --popover-foreground: #111111;
+  --primary: var(--brand);
+  --primary-foreground: var(--white-heaven);
+  --secondary: var(--wayward-wind);
+  --secondary-foreground: #111111;
+  --muted-foreground: #2f2f2f;
+  --accent: var(--misty-moor);
+  --accent-foreground: var(--white-heaven);
+  --input: var(--rough-asphalt);
+  --ring: var(--misty-moor);
+  --chart-1: var(--brand);
+  --chart-2: var(--pond-newt);
+  --chart-3: var(--misty-moor);
+  --chart-4: var(--rough-asphalt);
+  --chart-5: var(--wayward-wind);
+  --sidebar: var(--lighthouse);
+  --sidebar-foreground: #111111;
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--white-heaven);
+  --sidebar-accent: var(--wayward-wind);
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: var(--rough-asphalt);
+  --sidebar-ring: var(--misty-moor);
+}
+
 /* ─────────────────────────────────────────────
    Koppla variablerna till Tailwind tokens
 ────────────────────────────────────────────── */
@@ -58,6 +115,13 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
+  --color-pop: var(--pop);
+  --color-pop-contrast: var(--pop-contrast);
+  --color-brand-beige-100: var(--brand-beige-100);
+  --color-brand-beige-200: var(--brand-beige-200);
+  --color-brand-green-light: var(--brand-green-light);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-dark: var(--brand-dark);
   --color-border: var(--border);
   --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
@@ -552,6 +616,47 @@ img, svg, video, canvas {
 @keyframes scroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  20%,
+  65% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.96);
+  }
+}
+
+@keyframes scan {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(180px);
+  }
+}
+
+@keyframes moveRight {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
 }
 
 .eyebrow {
