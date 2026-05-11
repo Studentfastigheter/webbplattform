@@ -11,11 +11,13 @@ import {
   CircleCheck,
   CirclePause,
   Edit3,
+  Eye,
   FileText,
   FileUser,
   Home,
   ImageIcon,
   MapPin,
+  MousePointerClick,
   Ruler,
   Tag as TagIcon,
   Trash2,
@@ -42,7 +44,11 @@ import {
 import Tag from "@/components/ui/Tag";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { companyService, type ObjectApplicationCount } from "@/services/company";
+import {
+  companyService,
+  type ListingViewCounts,
+  type ObjectApplicationCount,
+} from "@/services/company";
 import { listingService } from "@/services/listing-service";
 import { queueService } from "@/services/queue-service";
 import {
@@ -65,6 +71,8 @@ type ListingActionState = "idle" | "status" | "delete";
 
 type ListingMeta = {
   applications: number;
+  quickViews: number;
+  detailedViews: number;
   publishedAt: string;
   updatedAt: string;
   statusLabel: string;
@@ -74,6 +82,8 @@ type ListingMeta = {
 
 const emptyMeta: ListingMeta = {
   applications: 0,
+  quickViews: 0,
+  detailedViews: 0,
   publishedAt: "-",
   updatedAt: "-",
   statusLabel: "Okänd",
@@ -261,7 +271,8 @@ function resolveApplicationCount(
 function resolveListingMeta(
   listing: ListingDetailDTO,
   companyListing: RawListing | null,
-  applicationsByObject: ObjectApplicationCount[]
+  applicationsByObject: ObjectApplicationCount[],
+  viewCounts: ListingViewCounts | null
 ): ListingMeta {
   const rawDetail = listing as unknown as Record<string, unknown>;
   const publishedAtRaw =
@@ -295,6 +306,40 @@ function resolveListingMeta(
 
   return {
     applications: resolveApplicationCount(listing, companyListing, applicationsByObject),
+    quickViews:
+      viewCounts?.quickViews ??
+      (companyListing
+        ? pickNumber(companyListing, [
+            "quickViews",
+            "quickViewCount",
+            "quickViewsCount",
+            "stats.quickViews",
+            "analytics.quickViews",
+            "statistics.quickViews",
+            "views",
+            "viewCount",
+            "viewsCount",
+            "viewings",
+            "viewingsCount",
+          ])
+        : undefined) ??
+      0,
+    detailedViews:
+      viewCounts?.detailedViews ??
+      (companyListing
+        ? pickNumber(companyListing, [
+            "detailedViews",
+            "detailedViewCount",
+            "detailedViewsCount",
+            "stats.detailedViews",
+            "analytics.detailedViews",
+            "statistics.detailedViews",
+            "clicks",
+            "clickCount",
+            "clicksCount",
+          ])
+        : undefined) ??
+      0,
     publishedAt: formatDate(publishedAtRaw),
     updatedAt: formatDate(updatedAtRaw),
     statusLabel: label,
@@ -441,11 +486,15 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     const applicationsPromise = companyId
       ? companyService.applicationCountsPerObject(companyId, 200).catch(() => [])
       : Promise.resolve<ObjectApplicationCount[]>([]);
+    const viewCountsPromise = companyId
+      ? companyService.listingViewCounts(companyId, id).catch(() => null)
+      : Promise.resolve<ListingViewCounts | null>(null);
 
-    const [listingDetail, companyListings, applicationsByObject] = await Promise.all([
+    const [listingDetail, companyListings, applicationsByObject, viewCounts] = await Promise.all([
       listingService.get(id),
       companyListingsPromise,
       applicationsPromise,
+      viewCountsPromise,
     ]);
     const requirementsProfile = listingDetail.requirementsProfileId
       ? await listingService
@@ -462,7 +511,12 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       listingDetail,
       requirementsProfile,
       isOwnListing: Boolean(matchedCompanyListing),
-      meta: resolveListingMeta(listingDetail, matchedCompanyListing, applicationsByObject),
+      meta: resolveListingMeta(
+        listingDetail,
+        matchedCompanyListing,
+        applicationsByObject,
+        viewCounts
+      ),
     };
   }, [companyId, id]);
 
@@ -708,6 +762,16 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           icon={<FileUser className="h-5 w-5" />}
           label="Ansökningar"
           value={formatNumber(meta.applications)}
+        />
+        <FactTile
+          icon={<Eye className="h-5 w-5" />}
+          label="Snabbvisningar"
+          value={formatNumber(meta.quickViews)}
+        />
+        <FactTile
+          icon={<MousePointerClick className="h-5 w-5" />}
+          label="Detaljvisningar"
+          value={formatNumber(meta.detailedViews)}
         />
         <FactTile icon={<Home className="h-5 w-5" />} label="Bostadstyp" value={listing.dwellingType || "-"} />
         <FactTile icon={<Ruler className="h-5 w-5" />} label="Yta" value={formatArea(listing.sizeM2)} />

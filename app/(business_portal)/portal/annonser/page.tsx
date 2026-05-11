@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { companyService } from "@/services/company";
+import { companyService, type ListingViewCounts } from "@/services/company";
 import { queueService } from "@/services/queue-service";
 import { type ListingCardDTO } from "@/types/listing";
 import PortalListingStatusTag, {
@@ -36,8 +36,8 @@ type DateSort = "newest" | "oldest";
 
 type PortalListing = {
   listing: ListingCardDTO;
-  views: number;
-  clicks: number;
+  quickViews: number;
+  detailedViews: number;
   applications: number;
   publishedAt: string;
   publishedAtTime: number | null;
@@ -46,6 +46,7 @@ type PortalListing = {
 };
 
 type StatsLookup = Map<string, number>;
+type ListingViewCountsLookup = Map<string, ListingViewCounts>;
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
   const parts = path.split(".");
@@ -208,6 +209,45 @@ function resolveApplicationCount(
   return undefined;
 }
 
+function resolveListingViewCounts(
+  listing: RawListing,
+  lookup: ListingViewCountsLookup
+): ListingViewCounts {
+  const fromEndpoint = lookup.get(String(listing.id));
+  if (fromEndpoint) {
+    return fromEndpoint;
+  }
+
+  return {
+    quickViews:
+      pickNumber(listing, [
+        "quickViews",
+        "quickViewCount",
+        "quickViewsCount",
+        "stats.quickViews",
+        "analytics.quickViews",
+        "statistics.quickViews",
+        "views",
+        "viewCount",
+        "viewsCount",
+        "viewings",
+        "viewingsCount",
+      ]) ?? 0,
+    detailedViews:
+      pickNumber(listing, [
+        "detailedViews",
+        "detailedViewCount",
+        "detailedViewsCount",
+        "stats.detailedViews",
+        "analytics.detailedViews",
+        "statistics.detailedViews",
+        "clicks",
+        "clickCount",
+        "clicksCount",
+      ]) ?? 0,
+  };
+}
+
 function splitLocation(location?: string): { area: string; city: string } {
   if (!location) {
     return { area: "Ej angivet", city: "Ej angivet" };
@@ -252,46 +292,45 @@ export default function PortalAdsPage() {
     setLoading(true);
     setError(null);
 
-    Promise.all([
-      queueService.getAllCompanyListings(companyId, 0, 200),
-      companyService.applicationCountsPerObject(companyId, 200).catch(() => []),
-    ])
-      .then(([companyListings, applicationsByObject]) => {
+    const loadListings = async () => {
+      const [companyListings, applicationsByObject] = await Promise.all([
+        queueService.getAllCompanyListings(companyId, 0, 200),
+        companyService.applicationCountsPerObject(companyId, 200).catch(() => []),
+      ]);
+
+      const viewCountsEntries = await Promise.all(
+        companyListings.map(async (listing) => {
+          const counts = await companyService
+            .listingViewCounts(companyId, listing.id)
+            .catch(() => null);
+
+          return [String(listing.id), counts] as const;
+        })
+      );
+
+      return {
+        companyListings,
+        applicationsByObject,
+        viewCountsByListingId: new Map(
+          viewCountsEntries.filter(
+            (entry): entry is readonly [string, ListingViewCounts] =>
+              entry[1] !== null
+          )
+        ),
+      };
+    };
+
+    loadListings()
+      .then(({ companyListings, applicationsByObject, viewCountsByListingId }) => {
         if (!active) return;
 
         const applicationsLookup = createApplicationLookup(applicationsByObject);
         const normalized = companyListings.map((dto) => {
           const raw = dto as RawListing;
-          const views =
-            pickNumber(raw, [
-              "views",
-              "viewCount",
-              "viewsCount",
-              "viewings",
-              "viewingsCount",
-              "impressions",
-              "stats.views",
-              "stats.viewings",
-              "analytics.views",
-              "analytics.viewings",
-              "statistics.views",
-              "statistics.viewings",
-            ]) ?? 0;
-          const clicks =
-            pickNumber(raw, [
-              "clicks",
-              "clickCount",
-              "clicksCount",
-              "interactions",
-              "interactionCount",
-              "interactionsCount",
-              "stats.clicks",
-              "stats.interactions",
-              "analytics.clicks",
-              "analytics.interactions",
-              "statistics.clicks",
-              "statistics.interactions",
-            ]) ?? 0;
+          const { quickViews, detailedViews } = resolveListingViewCounts(
+            raw,
+            viewCountsByListingId
+          );
 
           const applications = resolveApplicationCount(raw, applicationsLookup) ?? 0;
           const publishedAtRaw = pickString(raw, [
@@ -308,8 +347,8 @@ export default function PortalAdsPage() {
 
           return {
             listing: dto,
-            views,
-            clicks,
+            quickViews,
+            detailedViews,
             applications,
             publishedAt: formatDate(publishedAtRaw),
             publishedAtTime: parseDateTime(publishedAtRaw),
@@ -656,11 +695,11 @@ export default function PortalAdsPage() {
                       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
                           <Eye className="h-3 w-3 text-gray-500" />
-                          {item.views.toLocaleString("sv-SE")} visn.
+                          {item.quickViews.toLocaleString("sv-SE")} snabb
                         </span>
                         <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
                           <MousePointerClick className="h-3 w-3 text-gray-500" />
-                          {item.clicks.toLocaleString("sv-SE")} klick
+                          {item.detailedViews.toLocaleString("sv-SE")} detalj
                         </span>
                         <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
                           <FileUser className="h-3 w-3 text-gray-500" />

@@ -130,6 +130,11 @@ export type ObjectApplicationCount = {
   numApplications: number,
 };
 
+export type ListingViewCounts = {
+  quickViews: number;
+  detailedViews: number;
+};
+
 export type AnalyticalQuantity = {
   period: string;
   absoluteCount?: number;
@@ -344,6 +349,20 @@ function normalizeObjectApplicationCount(value: unknown): ObjectApplicationCount
         : String(listingId ?? ""),
     address: typeof value.address === "string" ? value.address : "",
     numApplications: toNumber(value.numApplications),
+  };
+}
+
+function normalizeListingViewCounts(value: unknown): ListingViewCounts {
+  if (!isRecord(value)) {
+    return {
+      quickViews: 0,
+      detailedViews: 0,
+    };
+  }
+
+  return {
+    quickViews: toNumber(value.quickViews ?? value.quick_views),
+    detailedViews: toNumber(value.detailedViews ?? value.detailed_views),
   };
 }
 
@@ -621,6 +640,17 @@ export const companyService = {
     return toArray<unknown>(result, true)
       .map(normalizeObjectApplicationCount)
       .filter((entry): entry is ObjectApplicationCount => entry !== null);
+  },
+
+  listingViewCounts: async (
+    id: number,
+    listingId: string | number
+  ): Promise<ListingViewCounts> => {
+    const result = await apiClient<unknown>(
+      `/analytics/${id}/listing/${encodeURIComponent(String(listingId))}/`
+    );
+
+    return normalizeListingViewCounts(result);
   },
 
   generalAnalytics: async (
