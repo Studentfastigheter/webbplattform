@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 import BostadAbout from "@/components/ads/BostadAbout";
 import BostadLandlord from "@/components/ads/BostadLandlord";
+import ImageSlideshow from "@/components/ads/ImageSlideshow";
 
 import { listingService } from "@/services/listing-service";
 import { queueService } from "@/services/queue-service";
@@ -227,82 +228,6 @@ function ImagePreviewGrid({
         })}
       </div>
     </div>
-  );
-}
-
-// ─── Full image slideshow ─────────────────────────────────────────────────────
-function ImageSlideshow({ images, title }: { images: string[]; title: string }) {
-  const [current, setCurrent] = useState(0);
-  const sliderRef = useRef<HTMLDivElement>(null);
-
-  if (images.length === 0) return null;
-
-  const scrollTo = (index: number) => {
-    setCurrent(index);
-    const el = sliderRef.current;
-    if (el) {
-      const child = el.children[index] as HTMLElement;
-      if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-    }
-  };
-
-  return (
-    <section className="w-full">
-      <h2 className="text-2xl font-bold text-gray-900 mb-5 tracking-tight">Alla bilder</h2>
-
-      {/* Main display */}
-      <div className="relative w-full rounded-3xl overflow-hidden bg-gray-100 aspect-video mb-3">
-        <img
-          src={images[current]}
-          alt={`${title} – bild ${current + 1}`}
-          className="h-full w-full object-cover transition-all duration-300"
-        />
-        <span className="absolute bottom-4 right-4 bg-black/50 text-white text-sm font-medium px-3 py-1 rounded-full">
-          {current + 1} / {images.length}
-        </span>
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={() => scrollTo((current - 1 + images.length) % images.length)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 hover:bg-white shadow transition"
-              aria-label="Föregående"
-            >
-              <ChevronLeft className="h-5 w-5 text-gray-700" />
-            </button>
-            <button
-              onClick={() => scrollTo((current + 1) % images.length)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 hover:bg-white shadow transition"
-              aria-label="Nästa"
-            >
-              <ChevronRight className="h-5 w-5 text-gray-700" />
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Thumbnail strip */}
-      {images.length > 1 && (
-        <div
-          ref={sliderRef}
-          className="flex gap-2 overflow-x-auto pb-2"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {images.map((src, i) => (
-            <button
-              key={i}
-              onClick={() => scrollTo(i)}
-              className={`shrink-0 h-20 w-28 overflow-hidden rounded-xl border-2 transition ${
-                i === current
-                  ? "border-gray-900 opacity-100"
-                  : "border-transparent opacity-60 hover:opacity-90"
-              }`}
-            >
-              <img src={src} alt="" className="h-full w-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-    </section>
   );
 }
 

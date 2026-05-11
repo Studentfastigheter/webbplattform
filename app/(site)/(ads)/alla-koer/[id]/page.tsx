@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
 import CompanyVideo from "@/components/ads/CompanyVideo";
-import CompanyGallery from "@/components/ads/CompanyGallery";
+import ImageSlideshow from "@/components/ads/ImageSlideshow";
 import CompanyMap from "@/components/ads/CompanyMap";
 import {
   buildJoinedQueueIdSet,
@@ -412,9 +412,9 @@ export default function QueueDetailPage() {
       {/* Image gallery */}
       {media.galleryImages.length > 0 && (
         <div className="mt-12 w-full">
-          <CompanyGallery
+          <ImageSlideshow
             images={media.galleryImages}
-            companyName={company?.name}
+            title={company?.name ?? "Företaget"}
           />
         </div>
       )}
