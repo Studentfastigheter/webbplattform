@@ -23,8 +23,8 @@ import { queueService } from "@/services/queue-service";
 import { type ListingCardDTO } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
-} from "../../_components/PortalListingStatusTag";
-import { PortalControlSelectTrigger } from "../../_components/PortalControlSelectTrigger";
+} from "../../_components/shared/PortalListingStatusTag";
+import { PortalControlSelectTrigger } from "../../_components/shared/PortalControlSelectTrigger";
 import { dashboardRelPath } from "../../_statics/variables";
 
 type RawListing = ListingCardDTO & Record<string, unknown>;

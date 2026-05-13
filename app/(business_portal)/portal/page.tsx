@@ -1,6 +1,6 @@
 "use client"
 
-import Home from "../_pages/home"
+import Home from "../_views/home"
 
 import { useEffect } from "react";
 import { companyService } from "@/services/company";

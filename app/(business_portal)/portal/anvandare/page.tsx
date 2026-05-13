@@ -30,7 +30,7 @@ import {
   type CompanyUserDTO,
 } from "@/services/company";
 import { queueService } from "@/services/queue-service";
-import { PortalControlSelectTrigger } from "../../_components/PortalControlSelectTrigger";
+import { PortalControlSelectTrigger } from "../../_components/shared/PortalControlSelectTrigger";
 
 type UserRole = "admin" | "editor" | "reviewer";
 type UserStatus = "active" | "invited" | "paused";

@@ -1,8 +1,8 @@
 import { AnalyticsBlock, AnalyticsGrid } from "@/components/analytics/AnalyticsBlocks";
-import AnalyticsApplicationsByObjectBlock from "../_components/AnalyticsApplicationsByObjectBlock";
-import AnalyticsApplicationsTrend from "../_components/AnalyticsApplicationsTrend";
-import AnalyticsGeneralStats from "../_components/AnalyticsGeneralStats";
-import AnalyticsResidentsOverview from "../_components/AnalyticsResidentsOverview";
+import AnalyticsApplicationsByObjectBlock from "../_components/analytics/AnalyticsApplicationsByObjectBlock";
+import AnalyticsApplicationsTrend from "../_components/analytics/AnalyticsApplicationsTrend";
+import AnalyticsGeneralStats from "../_components/analytics/AnalyticsGeneralStats";
+import AnalyticsResidentsOverview from "../_components/analytics/AnalyticsResidentsOverview";
 
 export default function Analytics() {
   return (

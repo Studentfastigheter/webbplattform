@@ -1,4 +1,4 @@
-import AnnonsOverview from "@/app/(business_portal)/_pages/annonsOverview";
+import AnnonsOverview from "@/app/(business_portal)/_views/annonsOverview";
 
 
 type AnnonsPageProps = {

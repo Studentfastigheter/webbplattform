@@ -59,7 +59,7 @@ import {
 } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
-} from "../_components/PortalListingStatusTag";
+} from "../_components/shared/PortalListingStatusTag";
 import { dashboardRelPath } from "../_statics/variables";
 
 type AnnonsOverviewProps = {

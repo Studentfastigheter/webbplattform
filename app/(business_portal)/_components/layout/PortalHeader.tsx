@@ -17,7 +17,7 @@ import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-acces
 import { authService } from "@/services/auth-service";
 import { queueService } from "@/services/queue-service";
 import { type User } from "@/types";
-import { dashboardRelPath } from "../_statics/variables";
+import { dashboardRelPath } from "../../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
 export default function PortalHeader() {

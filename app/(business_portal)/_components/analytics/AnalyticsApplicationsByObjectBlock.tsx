@@ -13,7 +13,7 @@ import {
 } from "@/services/company";
 import { listingService } from "@/services/listing-service";
 import type { ListingDetailDTO } from "@/types/listing";
-import { dashboardRelPath } from "../_statics/variables";
+import { dashboardRelPath } from "../../_statics/variables";
 
 type Limit = 5 | 10;
 

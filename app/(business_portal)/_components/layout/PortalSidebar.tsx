@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import CampusLyanLogo from "@/public/campuslyan-logo.svg";
 import { cn, normalizeRoute } from "@/lib/utils";
-import { dashboardRelPath } from "../_statics/variables";
+import { dashboardRelPath } from "../../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
 type PortalNavItem = {

@@ -1,4 +1,4 @@
-import Annons from "@/app/(business_portal)/_pages/annons";
+import Annons from "@/app/(business_portal)/_views/annons";
 
 type AnnonsEditPageProps = {
   params: Promise<{ id: string }>;

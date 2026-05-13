@@ -1,7 +1,7 @@
 import { AnalyticsBlock, AnalyticsGrid } from "@/components/analytics/AnalyticsBlocks";
-import AnalyticsApplicationsByObjectBlock from "../AnalyticsApplicationsByObjectBlock";
-import AnalyticsApplicationsTrend from "../AnalyticsApplicationsTrend";
-import AnalyticsGeneralStats from "../AnalyticsGeneralStats";
+import AnalyticsApplicationsByObjectBlock from "../analytics/AnalyticsApplicationsByObjectBlock";
+import AnalyticsApplicationsTrend from "../analytics/AnalyticsApplicationsTrend";
+import AnalyticsGeneralStats from "../analytics/AnalyticsGeneralStats";
 
 export default function PortalOverview() {
   return (

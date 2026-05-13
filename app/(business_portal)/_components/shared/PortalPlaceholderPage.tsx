@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Clock3 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { dashboardRelPath } from "../_statics/variables";
+import { dashboardRelPath } from "../../_statics/variables";
 
 type PortalPlaceholderPageProps = {
   title: string;

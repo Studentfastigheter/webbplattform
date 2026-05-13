@@ -1,7 +1,7 @@
 // app/(dashboard)/layout.tsx
 import type { ReactNode } from "react";
 import { PortalAccountGuard } from "@/components/auth/AccountRouteGuards";
-import { DashboardShell } from "../_components/DashboardShell";
+import { DashboardShell } from "../_components/layout/DashboardShell";
 
 export default function DashboardLayout({
   children,
