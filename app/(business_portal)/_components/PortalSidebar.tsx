@@ -54,11 +54,7 @@ const portalItems: PortalNavItem[] = [
     path: `${dashboardRelPath}/ansokningar?filter=ko`,
     icon: <Building2 className="h-5 w-5" />,
   },
-  {
-    name: "Kravprofiler",
-    path: `${dashboardRelPath}/kravprofiler`,
-    icon: <FileCheck2 className="h-5 w-5" />,
-  },
+
 ];
 
 const insightItems: PortalNavItem[] = [
@@ -84,6 +80,11 @@ const settingsItems: PortalNavItem[] = [
     name: "Mina inst\u00E4llningar",
     path: `${dashboardRelPath}/installningar`,
     icon: <Settings className="h-5 w-5" />,
+  },
+  {
+    name: "Kravprofiler",
+    path: `${dashboardRelPath}/kravprofiler`,
+    icon: <FileCheck2 className="h-5 w-5" />,
   },
   {
     name: "Användare",
