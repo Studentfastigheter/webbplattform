@@ -6,12 +6,10 @@ import {
   Eye,
   FileUser,
   MousePointerClick,
-  Plus,
   Search,
   X,
 } from "lucide-react";
 import ListingCardSmall from "@/components/Listings/ListingCard_Small";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -448,19 +446,10 @@ export default function PortalAdsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Mina annonser</h1>
           </div>
-
-          <Button
-            as="a"
-            href={`${dashboardRelPath}/annonser/ny/onboarding/1`}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4" />
-            Skapa annons
-          </Button>
         </div>
 
         <div className="flex flex-col gap-6 border-b border-gray-200 pb-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] lg:grid-rows-[auto_auto] lg:items-start">

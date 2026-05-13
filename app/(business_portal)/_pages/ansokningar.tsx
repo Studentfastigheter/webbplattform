@@ -5,7 +5,7 @@ export default function Ansokningar({
 }: {
   mode?: ApplicationsMode;
 }) {
-  const title = mode === "queue" ? "Köansökningar" : "Intresseanmälningar";
+  const title = mode === "queue" ? "Bostadskö" : "Ansökningar";
 
   return (
     <div className="space-y-6">

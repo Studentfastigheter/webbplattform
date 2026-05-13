@@ -11,7 +11,6 @@ import {
   type ListingCardDTO,
   type ListingDetailDTO,
   type PageResponse,
-  type PublishListingRequest,
   type StudentApplicationDTO,
   type ListingTagDTO,
   type ListingStatus,
@@ -299,16 +298,6 @@ const normalizeRequirementsProfile = (
 // --- Service ---
 
 export const listingService = {
-
-  // Publicera en ny annons som den inloggade användaren.
-  publish: async (payload: PublishListingRequest): Promise<void> => {
-    const { companyId: _companyId, ...requestPayload } = payload;
-
-    await apiClient<void>("/listings", {
-      method: "POST",
-      body: JSON.stringify(requestPayload),
-    });
-  },
 
   /**
    * 1. HÄMTA FILTRERAT FLÖDE (Feed)
