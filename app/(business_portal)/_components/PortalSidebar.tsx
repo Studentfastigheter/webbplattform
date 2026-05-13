@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   BookOpen,
+  Building2,
   ChevronDown,
   FileText,
   Home,
@@ -41,28 +42,16 @@ const portalItems: PortalNavItem[] = [
     name: "Annonser",
     path: `${dashboardRelPath}/annonser`,
     icon: <FileText className="h-5 w-5" />,
-    subItems: [
-      { name: "Mina annonser", path: `${dashboardRelPath}/annonser` },
-      {
-        name: "Skapa annons",
-        path: `${dashboardRelPath}/annonser/ny/onboarding/1`,
-      },
-    ],
   },
   {
     name: "Ans\u00F6kningar",
     path: `${dashboardRelPath}/ansokningar`,
     icon: <Users className="h-5 w-5" />,
-    subItems: [
-      {
-        name: "Intresseanm\u00E4lningar",
-        path: `${dashboardRelPath}/ansokningar`,
-      },
-      {
-        name: "K\u00F6 ans\u00F6kningar",
-        path: `${dashboardRelPath}/ansokningar?filter=ko`,
-      },
-    ],
+  },
+  {
+    name: "Bostadsk\u00F6",
+    path: `${dashboardRelPath}/ansokningar?filter=ko`,
+    icon: <Building2 className="h-5 w-5" />,
   },
 ];
 

@@ -125,25 +125,6 @@ export interface UpdateListingRequest {
   availableTo?: DateString | null;
 }
 
-// Payload for POST /api/listings.
-export interface PublishListingRequest {
-  companyId?: number;
-  title: string;
-  city: string;
-  area?: string;
-  address: string;
-  dwellingType: DwellingType | string;
-  rooms?: number;
-  sizeM2?: number;
-  rent?: number;
-  description: string;
-  tags: string[];
-  images: string[];
-  applyBy?: DateString;
-  availableFrom?: DateString;
-  availableTo?: DateString;
-}
-
 // Generisk typ för Paginering från Spring Boot
 export interface PageResponse<T> {
   totalPages?: number;

@@ -1,12 +1,6 @@
 import Search from "../_components/Search"
-import { dashboardRelPath } from "../_statics/variables"
-import NormalButton from "../_components/CTAButton"
 import { AnnonsPreview } from "../_components/Annons"
 import FilterButton from "../_components/FilterButton"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { TooltipButton } from "@/components/Dashboard/TooltipButton"
-import { FolderDown, Plus } from "lucide-react"
 
 
 
@@ -20,18 +14,6 @@ export default function Annonser() {
 
       <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-theme-xs lg:flex-row lg:items-center lg:justify-between">
         <Search />
-
-        <div className="flex gap-2">
-
-          <TooltipButton
-            leftIcon={<Plus size={16} />}
-            variant={"default"}
-          >
-            <Link href={`${dashboardRelPath}/annonser/ny/onboarding/1`}>
-              Skapa annons
-            </Link>
-          </TooltipButton>
-        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
