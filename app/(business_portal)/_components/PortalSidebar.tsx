@@ -9,6 +9,7 @@ import {
   BookOpen,
   Building2,
   ChevronDown,
+  FileCheck2,
   FileText,
   Home,
   MoreHorizontal,
@@ -52,6 +53,11 @@ const portalItems: PortalNavItem[] = [
     name: "Bostadsk\u00F6",
     path: `${dashboardRelPath}/ansokningar?filter=ko`,
     icon: <Building2 className="h-5 w-5" />,
+  },
+  {
+    name: "Kravprofiler",
+    path: `${dashboardRelPath}/kravprofiler`,
+    icon: <FileCheck2 className="h-5 w-5" />,
   },
 ];
 

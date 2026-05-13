@@ -278,17 +278,22 @@ const normalizeRequirementsProfile = (
   }
 
   return {
-    id: firstString(value.id) ?? null,
-    title: firstString(value.title) ?? null,
-    minAge: Number.isFinite(Number(value.minAge)) ? Number(value.minAge) : null,
-    maxAge: Number.isFinite(Number(value.maxAge)) ? Number(value.maxAge) : null,
+    id: firstString(value.id) ?? (value.id != null ? String(value.id) : null),
+    title: firstString(value.title, value.displayName, value.name) ?? null,
+    minAge: Number.isFinite(Number(value.minAge ?? value.minimumAge))
+      ? Number(value.minAge ?? value.minimumAge)
+      : null,
+    maxAge: Number.isFinite(Number(value.maxAge ?? value.maximumAge))
+      ? Number(value.maxAge ?? value.maximumAge)
+      : null,
     description: firstString(value.description) ?? null,
     requiredDocuments: Array.isArray(value.requiredDocuments)
       ? value.requiredDocuments
           .filter((document): document is Record<string, unknown> => isRecord(document))
           .map((document) => ({
             documentType: firstString(document.documentType) ?? "",
-            documentName: firstString(document.documentName) ?? "",
+            documentName:
+              firstString(document.documentName, document.displayName, document.name) ?? "",
           }))
           .filter((document) => document.documentName.length > 0)
       : [],
@@ -539,8 +544,7 @@ export const listingService = {
     companyId: number
   ): Promise<RequirementsProfileDTO[]> => {
     const profiles = await apiClient<unknown>(
-      `/requirements-profiles/company/${pathSegment(companyId)}`,
-      { auth: false }
+      `/requirements-profiles/company/${pathSegment(companyId)}`
     );
     return arrayFromApiResponse<unknown>(profiles)
       .map(normalizeRequirementsProfile)

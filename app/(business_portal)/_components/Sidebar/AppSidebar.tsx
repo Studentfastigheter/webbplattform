@@ -3,6 +3,7 @@
 import * as React from "react"
 import {
   Building2,
+  FileCheck2,
   LayoutDashboard,
   FileText,
   Settings,
@@ -54,6 +55,11 @@ const data = {
         title: "Bostadskö",
         url: `${dashboardRelPath}/ansokningar?filter=ko`,
         icon: Building2,
+      },
+      {
+        title: "Kravprofiler",
+        url: `${dashboardRelPath}/kravprofiler`,
+        icon: FileCheck2,
       },
   ],},
   navSecondary: {
