@@ -1,4 +1,4 @@
-import Ansokningar from "../../_pages/ansokningar"
+import Ansokningar from "../../_views/ansokningar"
 
 
 

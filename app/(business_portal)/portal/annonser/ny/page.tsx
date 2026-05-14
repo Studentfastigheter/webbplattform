@@ -1,7 +1,6 @@
-import NyAnnons from "../../../_pages/nyAnnons";
+import { redirect } from "next/navigation";
+import { dashboardRelPath } from "../../../_statics/variables";
 
 export default function NyAnnonsPage() {
-  return (
-    <NyAnnons />
-  )
+  redirect(`${dashboardRelPath}/annonser`);
 }

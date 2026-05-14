@@ -1,4 +1,4 @@
-import PortalPlaceholderPage from "../../_components/PortalPlaceholderPage";
+import PortalPlaceholderPage from "../../_components/shared/PortalPlaceholderPage";
 
 export default function ProductNewsPage() {
   return (

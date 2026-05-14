@@ -23,7 +23,7 @@ import {
   Save,
   Share2,
 } from "lucide-react";
-import { UploadButton } from "../../_components/UploadButton";
+import { UploadButton } from "../../_components/shared/UploadButton";
 
 type ProfileDraft = {
   companyId: number;
