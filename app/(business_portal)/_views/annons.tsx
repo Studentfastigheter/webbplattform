@@ -7,7 +7,11 @@ import BostadImagePreviewGrid from "@/components/ads/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/components/Dashboard/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
 import { listingService } from "@/services/listing-service";
-import { ListingDetailDTO, UpdateListingRequest } from "@/types/listing";
+import {
+  ListingDetailDTO,
+  ListingTagDTO,
+  UpdateListingRequest,
+} from "@/types/listing";
 
 type AnnonsPageProps = {
   id: string;
@@ -28,6 +32,50 @@ const inlineInputClass =
 
 function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : "";
+}
+
+function normalizeTagKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function getSelectableTags(tags: ListingTagDTO[]) {
+  const seen = new Set<string>();
+
+  return tags.filter((tag) => {
+    const label = tag.displayName.trim();
+    const key = normalizeTagKey(label);
+
+    if (!label || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
+function isTagSelected(selectedTags: string[], tag: ListingTagDTO) {
+  const selectedKeys = new Set(selectedTags.map(normalizeTagKey));
+  return selectedKeys.has(normalizeTagKey(tag.displayName));
+}
+
+function filterTagsByAvailableOptions(
+  selectedTags: string[] | undefined,
+  availableTags: ListingTagDTO[]
+) {
+  if (availableTags.length === 0) {
+    return [];
+  }
+
+  const availableByKey = new Map(
+    availableTags.map(
+      (tag) => [normalizeTagKey(tag.displayName), tag.displayName] as const
+    )
+  );
+
+  return (selectedTags ?? [])
+    .map((tag) => availableByKey.get(normalizeTagKey(tag)))
+    .filter((tag): tag is string => Boolean(tag));
 }
 
 function getEditableSnapshot(listing: ListingDetailDTO | null) {
@@ -58,16 +106,36 @@ function InlineLabel({ children }: { children: string }) {
 function EditableListingPreview({
   draft,
   galleryImages,
+  availableTags,
+  tagsLoading,
+  tagsError,
   onImageEdit,
   onDraftChange,
   onNumberChange,
 }: {
   draft: ListingDetailDTO;
   galleryImages: string[];
+  availableTags: ListingTagDTO[];
+  tagsLoading: boolean;
+  tagsError: string | null;
   onImageEdit: () => void;
   onDraftChange: (patch: Partial<ListingDetailDTO>) => void;
   onNumberChange: (key: "rent" | "rooms" | "sizeM2", value: string) => void;
 }) {
+  const selectedTags = draft.tags ?? [];
+  const toggleTag = (tag: ListingTagDTO) => {
+    const selected = isTagSelected(selectedTags, tag);
+
+    onDraftChange({
+      tags: selected
+        ? selectedTags.filter(
+            (selectedTag) =>
+              normalizeTagKey(selectedTag) !== normalizeTagKey(tag.displayName)
+          )
+        : [...selectedTags, tag.displayName],
+    });
+  };
+
   return (
     <section
       aria-label="Förhandsvisning"
@@ -99,7 +167,7 @@ function EditableListingPreview({
             <div className="min-w-0 flex-1">
               <input
                 aria-label="Titel"
-                value={draft.title}
+                value={draft.title ?? ""}
                 onChange={(event) => onDraftChange({ title: event.target.value })}
                 className={`${inlineInputClass} -mx-2 w-full text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl`}
                 placeholder="Titel"
@@ -119,14 +187,14 @@ function EditableListingPreview({
                     />
                     <input
                       aria-label="Område"
-                      value={draft.area}
+                      value={draft.area ?? ""}
                       readOnly
                       className={`${inlineInputClass} w-40 font-medium`}
                       placeholder="Område"
                     />
                     <input
                       aria-label="Stad"
-                      value={draft.city}
+                      value={draft.city ?? ""}
                       readOnly
                       className={`${inlineInputClass} w-40 font-medium`}
                       placeholder="Stad"
@@ -140,7 +208,7 @@ function EditableListingPreview({
                     <Home className="h-4 w-4 shrink-0 text-green-700" />
                     <input
                       aria-label="Bostadstyp"
-                      value={draft.dwellingType}
+                      value={draft.dwellingType ?? ""}
                       readOnly
                       className={`${inlineInputClass} min-w-[150px] font-medium`}
                       placeholder="Bostadstyp"
@@ -214,7 +282,43 @@ function EditableListingPreview({
 
           <div className="grid gap-2">
             <InlineLabel>Taggar</InlineLabel>
+            {tagsLoading ? (
+              <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500">
+                Laddar taggar...
+              </div>
+            ) : tagsError ? (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-800">
+                {tagsError}
+              </div>
+            ) : availableTags.length === 0 ? (
+              <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500">
+                Inga taggar finns tillgangliga.
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2" aria-label="Taggar">
+                {availableTags.map((tag) => {
+                  const selected = isTagSelected(selectedTags, tag);
+
+                  return (
+                    <button
+                      key={tag.displayName}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => toggleTag(tag)}
+                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                        selected
+                          ? "border-[#004225] bg-[#004225] text-white"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-[#004225]/35 hover:bg-[#004225]/[0.035]"
+                      }`}
+                    >
+                      {tag.displayName}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <input
+              type="hidden"
               aria-label="Taggar"
               value={(draft.tags ?? []).join(", ")}
               onChange={(event) =>
@@ -255,6 +359,10 @@ export default function Annons({ id }: AnnonsPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>(emptySaveState);
   const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
+  const [listingTags, setListingTags] = useState<ListingTagDTO[]>([]);
+  const [listingTagsLoaded, setListingTagsLoaded] = useState(false);
+  const [listingTagsLoading, setListingTagsLoading] = useState(true);
+  const [listingTagsError, setListingTagsError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -264,6 +372,10 @@ export default function Annons({ id }: AnnonsPageProps) {
     setListing(null);
     setDraft(null);
     setSaveState(emptySaveState);
+    setListingTags([]);
+    setListingTagsLoaded(false);
+    setListingTagsLoading(true);
+    setListingTagsError(null);
 
     listingService
       .get(id)
@@ -281,6 +393,24 @@ export default function Annons({ id }: AnnonsPageProps) {
         if (active) setLoading(false);
       });
 
+    listingService
+      .getListingTags()
+      .then((tags) => {
+        if (!active) return;
+        setListingTags(tags);
+        setListingTagsLoaded(true);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        console.error("Kunde inte hamta annonstaggar:", err);
+        setListingTagsError(
+          err instanceof Error ? err.message : "Kunde inte ladda taggar."
+        );
+      })
+      .finally(() => {
+        if (active) setListingTagsLoading(false);
+      });
+
     return () => {
       active = false;
     };
@@ -290,6 +420,8 @@ export default function Annons({ id }: AnnonsPageProps) {
     () => draft?.imageUrls?.filter(Boolean) ?? [],
     [draft],
   );
+
+  const availableTags = useMemo(() => getSelectableTags(listingTags), [listingTags]);
 
   const hasUnsavedChanges = useMemo(
     () => getEditableSnapshot(draft) !== getEditableSnapshot(listing),
@@ -311,6 +443,20 @@ export default function Annons({ id }: AnnonsPageProps) {
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!draft) return;
+    if (listingTagsLoading) {
+      setSaveState({
+        status: "error",
+        message: "Taggar laddas fortfarande. Forsok igen om en stund.",
+      });
+      return;
+    }
+    if (listingTagsError) {
+      setSaveState({
+        status: "error",
+        message: "Kunde inte spara eftersom taggarna inte kunde laddas.",
+      });
+      return;
+    }
 
     setSaveState({ status: "saving", message: null });
 
@@ -322,7 +468,9 @@ export default function Annons({ id }: AnnonsPageProps) {
       availableFrom: toDateInputValue(draft.availableFrom) || null,
       availableTo: toDateInputValue(draft.availableTo) || null,
       applyBy: toDateInputValue(draft.applyBy) || null,
-      tags: draft.tags,
+      tags: listingTagsLoaded
+        ? filterTagsByAvailableOptions(draft.tags, availableTags)
+        : [],
       description: draft.description,
       images: draft.imageUrls,
     };
@@ -380,6 +528,9 @@ export default function Annons({ id }: AnnonsPageProps) {
           <EditableListingPreview
             draft={draft}
             galleryImages={galleryImages}
+            availableTags={availableTags}
+            tagsLoading={listingTagsLoading}
+            tagsError={listingTagsError}
             onImageEdit={openImageEditor}
             onDraftChange={updateDraft}
             onNumberChange={updateNumber}
@@ -406,7 +557,11 @@ export default function Annons({ id }: AnnonsPageProps) {
               <Button
                 type="submit"
                 isLoading={saveState.status === "saving"}
-                isDisabled={saveState.status === "saving"}
+                isDisabled={
+                  saveState.status === "saving" ||
+                  listingTagsLoading ||
+                  Boolean(listingTagsError)
+                }
               >
                 Spara ändringar
               </Button>
