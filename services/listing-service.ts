@@ -544,7 +544,8 @@ export const listingService = {
     companyId: number
   ): Promise<RequirementsProfileDTO[]> => {
     const profiles = await apiClient<unknown>(
-      `/requirements-profiles/company/${pathSegment(companyId)}`
+      `/requirements-profiles/company/${pathSegment(companyId)}`,
+      { auth: false }
     );
     return arrayFromApiResponse<unknown>(profiles)
       .map(normalizeRequirementsProfile)

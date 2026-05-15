@@ -626,6 +626,13 @@ function normalizeNewApplication(value: unknown): NewApplication | null {
   };
 }
 
+function companyApplicationsEndpoint(id: number, page: number, size: number): string {
+  return `/companies/${pathSegment(id)}/all-applications${buildQuery({
+    page,
+    size,
+  })}`;
+}
+
 export const companyService = {
 
   listCompanies: async (): Promise<CompanyPublicDTO[]> => {
@@ -684,11 +691,9 @@ export const companyService = {
     id: number,
     options: { count?: number; since?: string } = {}
   ): Promise<NewApplication[]> => {
-    const query = buildQuery({
-      page: 0,
-      size: options.count ?? 10,
-    });
-    const result = await apiClient<unknown>(`/applications${query}`);
+    const result = await apiClient<unknown>(
+      companyApplicationsEndpoint(id, 0, options.count ?? 10)
+    );
 
     return toArray<unknown>(result, true)
       .map(normalizeNewApplication)
@@ -704,8 +709,9 @@ export const companyService = {
     const applications: NewApplication[] = [];
 
     for (let page = 0; page < maxPages; page += 1) {
-      const query = buildQuery({ page, size: pageSize });
-      const result = await apiClient<unknown>(`/applications${query}`);
+      const result = await apiClient<unknown>(
+        companyApplicationsEndpoint(id, page, pageSize)
+      );
       const rows = toArray<unknown>(result, true);
 
       applications.push(
