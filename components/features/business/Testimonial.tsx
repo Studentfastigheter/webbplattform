@@ -1,19 +1,26 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Quote } from 'lucide-react';
 
-export const Testimonials = () => {
-  const testimonials = [
-    {
-      text: "CampusLyan är ett mycket efterfrågat initiativ som har potential att stärka studenters möjligheter att hitta boende i hela Sverige. Jag ser med stor förväntan på den fortsatta utvecklingen av plattformen och vilka värden den kan skapa för både studenter och uthyrare!",
-      author: "Gabriella Näslund",
-      role: "Vice Ordförande, SGS",
-      logo: "https://data.maglr.com/3591/issues/38791/710263/assets/media/742c16fffc590c8be19450e83b031937d78d2a55a4c6ed72894c5080b7e133c2.jpg",
-      alt: "Gabriella Näslund"
-    },
-  ];
+const testimonials = [
+  {
+    text: "CampusLyan är ett mycket efterfrågat initiativ som har potential att stärka studenters möjligheter att hitta boende i hela Sverige. Jag ser med stor förväntan på den fortsatta utvecklingen av plattformen och vilka värden den kan skapa för både studenter och uthyrare!",
+    author: "Gabriella Näslund",
+    role: "Vice Ordförande, SGS",
+    image: "/testimonials/Gabriella_Naslund.jpg",
+    alt: "Gabriella Näslund",
+  },
+  {
+    text: "Vi ser CampusLyan som ett värdefullt initiativ för Göteborgs studenter. Genom att stödja arbetet vill vi bidra till att fler studenter får en enklare och tydligare väg till boende.",
+    author: "Nils Geeraedts",
+    role: "Ordförande, Göteborgs förenade studentkårer",
+    image: "/testimonials/nils.png",
+    alt: "Nils Geeraedts",
+  },
+];
 
+export const Testimonials = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextSlide = () => {
@@ -23,6 +30,14 @@ export const Testimonials = () => {
   const prevSlide = () => {
     setCurrentIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
   };
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setCurrentIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
+    }, 6000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   return (
     <section className="py-24 bg-background overflow-hidden">
@@ -86,7 +101,7 @@ export const Testimonials = () => {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 pt-2">
                     <div className="flex items-center gap-5 pl-6 border-l-4 border-brand-orange">
                       <img
-                        src={item.logo}
+                        src={item.image}
                         alt={item.alt}
                         className="shrink-0 h-20 w-20 md:h-24 md:w-24 lg:h-38 lg:w-38 rounded-full object-cover border-4 border-white"
                       />
