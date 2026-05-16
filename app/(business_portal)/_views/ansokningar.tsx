@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import Link from "next/link";
 import {
   BarChart3,
   CalendarDays,
-  ChevronDown,
-  ChevronRight,
   ExternalLink,
   FileUser,
   Home,
+  MapPin,
   TrendingUp,
 } from "lucide-react";
 import { AnalyticsBlock, AnalyticsGrid } from "@/components/analytics/AnalyticsBlocks";
@@ -32,12 +31,8 @@ type AnsokningarProps = {
 };
 
 type PortalApplication = NewApplication & {
-  rowId: string;
   listingName: string;
-  submittedAtLabel: string;
   submittedAtTime: number;
-  statusLabel: string;
-  statusTone: "neutral" | "success" | "warning" | "danger" | "info";
 };
 
 type ListingApplicationGroup = {
@@ -61,19 +56,6 @@ const dayFormatter = new Intl.DateTimeFormat("sv-SE", {
   year: "numeric",
 });
 
-const monthFormatter = new Intl.DateTimeFormat("sv-SE", {
-  month: "short",
-});
-
-function formatDate(value?: string) {
-  if (!value) return "-";
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "-";
-
-  return dayFormatter.format(parsed);
-}
-
 function formatTimestamp(value: number) {
   if (!Number.isFinite(value) || value <= 0) return "-";
   return dayFormatter.format(new Date(value));
@@ -91,66 +73,14 @@ function parseApplicationDate(application: NewApplication) {
   return timestamp > 0 ? new Date(timestamp) : null;
 }
 
-function normalizeStatus(status?: string): {
-  label: string;
-  tone: PortalApplication["statusTone"];
-} {
-  const normalized = status?.trim().toLowerCase() ?? "";
-
-  if (["accepted", "approved", "antagen", "offer_accepted"].includes(normalized)) {
-    return { label: "Antagen", tone: "success" };
-  }
-
-  if (["rejected", "denied", "declined", "nekad", "offer_rejected"].includes(normalized)) {
-    return { label: "Nekad", tone: "danger" };
-  }
-
-  if (["offer", "offered", "erbjudande", "pending_offer"].includes(normalized)) {
-    return { label: "Erbjudande", tone: "info" };
-  }
-
-  if (["processing", "in_progress", "bearbetas"].includes(normalized)) {
-    return { label: "Bearbetas", tone: "warning" };
-  }
-
-  return { label: "Under granskning", tone: "neutral" };
-}
-
-function toPortalApplication(
-  application: NewApplication,
-  index: number
-): PortalApplication {
+function toPortalApplication(application: NewApplication): PortalApplication {
   const submittedAt = application.submittedAt ?? application.createdAt;
-  const status = normalizeStatus(application.status);
 
   return {
     ...application,
-    rowId: String(
-      application.applicationId ??
-        application.id ??
-        `${application.listingId ?? "application"}-${submittedAt ?? index}`
-    ),
     listingName: application.listingTitle || application.address || "Okänd annons",
-    submittedAtLabel: formatDate(submittedAt),
     submittedAtTime: parseDate(submittedAt),
-    statusLabel: status.label,
-    statusTone: status.tone,
   };
-}
-
-function statusClassName(tone: PortalApplication["statusTone"]) {
-  switch (tone) {
-    case "success":
-      return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-    case "warning":
-      return "bg-amber-50 text-amber-700 ring-amber-200";
-    case "danger":
-      return "bg-red-50 text-red-700 ring-red-200";
-    case "info":
-      return "bg-blue-50 text-blue-700 ring-blue-200";
-    default:
-      return "bg-gray-50 text-gray-700 ring-gray-200";
-  }
 }
 
 function getMonthStart(date: Date) {
@@ -210,13 +140,11 @@ function getListingGroupKey(application: PortalApplication) {
     return String(application.listingId);
   }
 
-  return [
-    application.listingTitle,
-    application.address,
-    application.listingCity,
-  ]
-    .filter(Boolean)
-    .join("|") || application.listingName;
+  return (
+    [application.listingTitle, application.address, application.listingCity]
+      .filter(Boolean)
+      .join("|") || application.listingName
+  );
 }
 
 function buildListingGroups(
@@ -258,6 +186,12 @@ function buildListingGroups(
     });
 }
 
+function formatRent(value?: number) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? `${value.toLocaleString("sv-SE")} kr/mån`
+    : null;
+}
+
 function getRecentCount(applications: PortalApplication[], start: Date, end: Date) {
   return applications.filter((application) => {
     const timestamp = application.submittedAtTime;
@@ -278,38 +212,6 @@ function formatPercentChange(current: number, previous: number) {
   })}%`;
 }
 
-function formatRent(value?: number) {
-  return typeof value === "number" && Number.isFinite(value)
-    ? `${value.toLocaleString("sv-SE")} kr/mån`
-    : null;
-}
-
-function buildApplicationDateCounts(applications: PortalApplication[]) {
-  const countsByDate = new Map<
-    string,
-    { label: string; count: number; timestamp: number }
-  >();
-
-  applications.forEach((application) => {
-    const timestamp = application.submittedAtTime;
-    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-
-    const date = new Date(timestamp);
-    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-    const existing = countsByDate.get(key);
-
-    countsByDate.set(key, {
-      label: application.submittedAtLabel,
-      count: (existing?.count ?? 0) + 1,
-      timestamp: Math.max(existing?.timestamp ?? 0, timestamp),
-    });
-  });
-
-  return Array.from(countsByDate.values()).sort(
-    (a, b) => b.timestamp - a.timestamp
-  );
-}
-
 function StatTile({
   label,
   value,
@@ -320,7 +222,7 @@ function StatTile({
   label: string;
   value: string;
   detail?: string | null;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   tone: "brand" | "blue" | "rose" | "amber";
 }) {
   const toneClass = {
@@ -404,63 +306,93 @@ function ApplicationStatsGrid({
   );
 }
 
-function LoadingDashboard() {
+function LoadingApplicationsLayout() {
   return (
-    <AnalyticsGrid>
-      <AnalyticsBlock size="1x4">
-        <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton className="h-full min-h-[120px] rounded-xl" key={index} />
-          ))}
+    <div className="space-y-4">
+      <AnalyticsGrid>
+        <AnalyticsBlock size="1x4">
+          <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton className="h-full min-h-[120px] rounded-xl" key={index} />
+            ))}
+          </div>
+        </AnalyticsBlock>
+        <AnalyticsBlock size="2x2" title="Ansökningstrend">
+          <Skeleton className="h-full min-h-[220px] rounded-md" />
+        </AnalyticsBlock>
+        <AnalyticsBlock size="2x2" title="Trending annonser">
+          <Skeleton className="h-full min-h-[220px] rounded-md" />
+        </AnalyticsBlock>
+      </AnalyticsGrid>
+
+      <div className="grid min-h-[520px] gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4">
+          <Skeleton className="h-5 w-40 rounded" />
+          <div className="mt-5 grid gap-3">
+            {[0, 1, 2, 3, 4].map((item) => (
+              <Skeleton className="h-20 rounded-xl" key={item} />
+            ))}
+          </div>
         </div>
-      </AnalyticsBlock>
-      <AnalyticsBlock size="2x2" title="Ansökningar över tid">
-        <Skeleton className="h-full min-h-[220px] rounded-md" />
-      </AnalyticsBlock>
-      <AnalyticsBlock size="2x2" title="Trending annonser">
-        <Skeleton className="h-full min-h-[220px] rounded-md" />
-      </AnalyticsBlock>
-    </AnalyticsGrid>
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
+          <Skeleton className="h-7 w-64 rounded" />
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+          </div>
+          <Skeleton className="mt-6 h-28 rounded-xl" />
+          <div className="mt-6 grid gap-3">
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function MiniTrendBars({ data }: { data: TrendBarChartPoint[] }) {
-  const visibleData = data.slice(-6);
-  const maxValue = Math.max(1, ...visibleData.map((point) => point.value));
-
-  if (visibleData.length === 0) {
-    return (
-      <div className="flex h-16 items-center justify-center rounded-md border border-dashed border-gray-200 text-xs text-gray-400">
-        Ingen tidsdata
-      </div>
-    );
-  }
-
+function ListingApplicationsLayout({
+  groups,
+  selectedGroup,
+  onSelect,
+}: {
+  groups: ListingApplicationGroup[];
+  selectedGroup: ListingApplicationGroup | null;
+  onSelect: (key: string) => void;
+}) {
   return (
-    <div className="grid h-16 grid-cols-6 items-end gap-1">
-      {visibleData.map((point) => {
-        const date =
-          point.timestamp instanceof Date
-            ? point.timestamp
-            : new Date(point.timestamp);
-        const height = Math.max(8, (point.value / maxValue) * 56);
-
-        return (
-          <div
-            className="flex h-16 min-w-0 flex-col justify-end gap-1"
-            key={String(point.timestamp)}
-          >
-            <div
-              className="rounded-t bg-brand-500/80"
-              style={{ height }}
-              title={`${monthFormatter.format(date)}: ${point.value} ansökningar`}
-            />
-            <span className="truncate text-center text-[10px] leading-none text-gray-400">
-              {monthFormatter.format(date).replace(".", "")}
-            </span>
+    <div className="grid min-h-[520px] gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-[340px_minmax(0,1fr)]">
+      <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        {groups.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center px-5 py-10 text-center text-theme-sm text-gray-500">
+            Det finns inga annonser med ansökningar att visa ännu.
           </div>
-        );
-      })}
+        ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <div className="grid gap-1">
+              {groups.map((group) => (
+                <ListingListItem
+                  group={group}
+                  isSelected={selectedGroup?.key === group.key}
+                  key={group.key}
+                  onSelect={() => onSelect(group.key)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </aside>
+
+      <section className="min-h-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        {selectedGroup ? (
+          <SelectedListingDetails group={selectedGroup} />
+        ) : (
+          <div className="flex h-full min-h-[360px] items-center justify-center px-6 py-10 text-center text-theme-sm text-gray-500">
+            Välj en annons i listan för att visa ansökningarna.
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -479,204 +411,147 @@ function TrendingListings({ groups }: { groups: ListingApplicationGroup[] }) {
   return (
     <div className="space-y-3 overflow-y-auto pr-1">
       {topGroups.map((group, index) => (
-        <ListingRankingRow group={group} index={index} key={group.key} />
+        <div
+          className="flex min-w-0 items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+          key={group.key}
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-50 text-sm font-semibold text-gray-700">
+            {index + 1}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-gray-950">
+              {group.title}
+            </p>
+            <p className="mt-0.5 truncate text-xs text-gray-500">
+              {group.address}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-lg font-semibold leading-6 text-gray-950 tabular-nums">
+              {group.total.toLocaleString("sv-SE")}
+            </p>
+            <p className="text-xs text-gray-500">ans.</p>
+          </div>
+        </div>
       ))}
     </div>
   );
 }
 
-function ListingRankingRow({
+function ListingListItem({
   group,
-  index,
+  isSelected,
+  onSelect,
 }: {
   group: ListingApplicationGroup;
-  index: number;
+  isSelected: boolean;
+  onSelect: () => void;
 }) {
-  const href =
-    group.listingId != null
-      ? `${dashboardRelPath}/annonser/${encodeURIComponent(String(group.listingId))}`
-      : null;
-  const content = (
-    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:border-brand-100 hover:bg-brand-25/40">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-50 text-sm font-semibold text-gray-700">
-        {index + 1}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-gray-950">{group.title}</p>
-        <p className="mt-0.5 truncate text-xs text-gray-500">{group.address}</p>
-      </div>
-      <div className="shrink-0 text-right">
-        <p className="text-lg font-semibold leading-6 text-gray-950 tabular-nums">
-          {group.total.toLocaleString("sv-SE")}
-        </p>
-        <p className="text-xs text-gray-500">ans.</p>
-      </div>
-    </div>
-  );
-
-  return href ? <Link href={href}>{content}</Link> : content;
-}
-
-function ListingApplicationsBlock({
-  groups,
-  expandedKey,
-  onToggle,
-}: {
-  groups: ListingApplicationGroup[];
-  expandedKey: string | null;
-  onToggle: (key: string) => void;
-}) {
-  if (groups.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-sm text-gray-500">
-        Det finns inga annonser med ansökningar att visa ännu.
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full overflow-y-auto pr-1">
-      <div className="overflow-hidden rounded-xl border border-gray-100 bg-white">
-        {groups.map((group) => (
-          <ListingApplicationListRow
-            expanded={expandedKey === group.key}
-            group={group}
-            key={group.key}
-            onToggle={() => onToggle(group.key)}
-          />
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      aria-pressed={isSelected}
+      className={cn(
+        "relative w-full rounded-lg px-3 py-3 pl-4 text-left transition-colors",
+        isSelected
+          ? "bg-[#004225]/5 text-[#004225]"
+          : "text-gray-700 hover:bg-gray-50"
+      )}
+      onClick={onSelect}
+    >
+      {isSelected ? (
+        <span className="absolute bottom-2 left-1.5 top-2 w-1 rounded-full bg-[#004225]" />
+      ) : null}
+
+      <span className="block truncate text-sm font-semibold">{group.title}</span>
+      <span className="mt-1 block truncate text-xs text-gray-500">
+        {group.city || "Stad saknas"}
+      </span>
+    </button>
   );
 }
 
-function ListingApplicationListRow({
-  group,
-  expanded,
-  onToggle,
-}: {
-  group: ListingApplicationGroup;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
+function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
   const href =
     group.listingId != null
       ? `${dashboardRelPath}/annonser/${encodeURIComponent(String(group.listingId))}`
       : null;
   const rent = formatRent(group.rent);
-  const facts = [group.city, rent].filter(Boolean).join(" · ") || "Ingen extra annonsdata";
-  const dateCounts = buildApplicationDateCounts(group.applications).slice(0, 5);
+  const facts = [group.city, rent].filter(Boolean).join(" · ");
 
   return (
-    <div className="border-b border-gray-100 last:border-b-0">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        className="grid w-full grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 text-left transition hover:bg-brand-25/40 md:grid-cols-[76px_minmax(0,1.5fr)_minmax(0,1fr)_120px_28px]"
-        onClick={onToggle}
-      >
-        <div className="relative h-14 w-16 overflow-hidden rounded-md bg-gray-100 md:h-16 md:w-20">
-          {group.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-              src={group.imageUrl}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-brand-50 text-[10px] font-semibold text-brand-500">
-              Ingen bild
-            </div>
-          )}
-        </div>
+    <div className="h-full min-h-0 overflow-y-auto px-5 py-5 sm:px-6">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex min-w-0 flex-col gap-4 border-b border-gray-100 pb-5 md:flex-row md:items-start">
+          <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-xl bg-gray-100 md:w-44">
+            {group.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                src={group.imageUrl}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-brand-50 text-xs font-semibold text-brand-500">
+                Ingen bild
+              </div>
+            )}
+          </div>
 
-        <div className="min-w-0">
-          <h3 className="truncate text-sm font-semibold text-gray-950">
-            {group.title}
-          </h3>
-          <p className="mt-1 truncate text-xs text-gray-500">{group.address}</p>
-          <p className="mt-1 truncate text-xs text-gray-400 md:hidden">{facts}</p>
-        </div>
-
-        <div className="hidden min-w-0 md:block">
-          <p className="truncate text-sm text-gray-700">{facts}</p>
-          <p className="mt-1 truncate text-xs text-gray-500">
-            Senaste {formatTimestamp(group.lastSubmittedAt)}
-          </p>
-        </div>
-
-        <div className="shrink-0 text-right">
-          <p className="text-lg font-semibold leading-6 text-gray-950 tabular-nums">
-            {group.total.toLocaleString("sv-SE")}
-          </p>
-          <p className="text-xs text-gray-500">ans.</p>
-        </div>
-
-        <div className="hidden justify-end text-gray-400 md:flex">
-          {expanded ? (
-            <ChevronDown className="h-5 w-5" />
-          ) : (
-            <ChevronRight className="h-5 w-5" />
-          )}
-        </div>
-      </button>
-
-      {expanded && (
-        <div className="bg-gray-50 px-4 py-4">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
-            <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="flex min-w-0 items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h4 className="truncate text-sm font-semibold text-gray-950">
-                    Ansökningar över tid
-                  </h4>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {formatTimestamp(group.firstSubmittedAt)} till {formatTimestamp(group.lastSubmittedAt)}
-                  </p>
-                </div>
-                {href ? (
-                  <Link
-                    className="inline-flex h-8 shrink-0 items-center gap-2 rounded-md border border-gray-200 bg-white px-3 text-xs font-medium text-gray-900 transition hover:bg-gray-50"
-                    href={href}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Öppna
-                  </Link>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <h2 className="break-words text-xl font-semibold text-gray-900">
+                  {group.title}
+                </h2>
+                <p className="mt-2 flex min-w-0 items-center gap-2 text-theme-sm text-gray-500">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{group.address}</span>
+                </p>
+                {facts ? (
+                  <p className="mt-1 text-theme-sm text-gray-500">{facts}</p>
                 ) : null}
               </div>
-              <div className="mt-4">
-                <MiniTrendBars data={group.trend} />
-              </div>
-            </div>
 
-            <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <h4 className="text-sm font-semibold text-gray-950">
-                Senaste ansökningstillfällen
-              </h4>
-              <div className="mt-3 space-y-2">
-                {dateCounts.map((entry) => (
-                  <div
-                    className="flex min-w-0 items-center justify-between gap-3 rounded-md bg-gray-50 px-3 py-2"
-                    key={entry.label}
+              <div className="shrink-0 sm:text-right">
+                {href ? (
+                  <Link
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 text-sm font-medium text-gray-900 transition hover:bg-gray-50"
+                    href={href}
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-gray-900">
-                        {entry.label}
-                      </p>
-                      <p className="truncate text-xs text-gray-500">
-                        Ansökningar mottagna
-                      </p>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 ring-1 ring-gray-200">
-                      {entry.count.toLocaleString("sv-SE")} st
-                    </span>
-                  </div>
-                ))}
+                    <ExternalLink className="h-4 w-4" />
+                    Öppna annons
+                  </Link>
+                ) : null}
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500">
+                    Totalt antal ansökningar
+                  </p>
+                  <p className="mt-0.5 text-xl font-semibold leading-7 text-gray-950 tabular-nums">
+                    {group.total.toLocaleString("sv-SE")}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+
+        <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5">
+          <div className="h-[320px] min-h-0">
+            <TrendBarChart
+              data={group.trend}
+              defaultInterval="all"
+              embedded
+              emptyMessage="Det finns inga ansökningar registrerade för annonsen ännu."
+              intervals={[{ value: "all", label: "Alla" }]}
+              showHeader={false}
+              showSummary={false}
+              title="Ansökningar över tid"
+              valueLabel="Ansökningar"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -688,7 +563,7 @@ export default function Ansokningar({
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [applications, setApplications] = useState<PortalApplication[]>([]);
-  const [expandedListingKey, setExpandedListingKey] = useState<string | null>(null);
+  const [selectedListingKey, setSelectedListingKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -699,6 +574,7 @@ export default function Ansokningar({
 
     if (!companyId) {
       setApplications([]);
+      setSelectedListingKey(null);
       return;
     }
 
@@ -721,6 +597,7 @@ export default function Ansokningar({
         if (!active) return;
 
         setApplications([]);
+        setSelectedListingKey(null);
         setError(
           requestError instanceof Error
             ? requestError.message
@@ -746,6 +623,7 @@ export default function Ansokningar({
       (application) => String(application.listingId ?? "") === String(listingId)
     );
   }, [applications, listingId]);
+
   const listingGroups = useMemo(
     () => buildListingGroups(visibleApplications),
     [visibleApplications]
@@ -754,6 +632,30 @@ export default function Ansokningar({
     () => buildMonthlyTrend(visibleApplications, 12),
     [visibleApplications]
   );
+
+  useEffect(() => {
+    if (listingGroups.length === 0) {
+      setSelectedListingKey(null);
+      return;
+    }
+
+    setSelectedListingKey((current) => {
+      if (current && listingGroups.some((group) => group.key === current)) {
+        return current;
+      }
+
+      return listingGroups[0].key;
+    });
+  }, [listingGroups]);
+
+  const selectedGroup = useMemo(() => {
+    if (!selectedListingKey) return listingGroups[0] ?? null;
+    return (
+      listingGroups.find((group) => group.key === selectedListingKey) ??
+      listingGroups[0] ??
+      null
+    );
+  }, [listingGroups, selectedListingKey]);
 
   if (authLoading) {
     return (
@@ -803,60 +705,52 @@ export default function Ansokningar({
       )}
 
       {loading ? (
-        <LoadingDashboard />
+        <LoadingApplicationsLayout />
       ) : (
-        <AnalyticsGrid>
-          <AnalyticsBlock size="1x4">
-            <ApplicationStatsGrid
-              applications={visibleApplications}
-              groups={listingGroups}
-            />
-          </AnalyticsBlock>
+        <>
+          <AnalyticsGrid>
+            <AnalyticsBlock size="1x4">
+              <ApplicationStatsGrid
+                applications={visibleApplications}
+                groups={listingGroups}
+              />
+            </AnalyticsBlock>
 
-          <AnalyticsBlock size="2x2" title="Ansökningstrend">
-            <TrendBarChart
-              data={applicationTrend}
-              defaultInterval="12m"
-              embedded
-              emptyMessage="Det finns inga ansökningar registrerade ännu."
-              intervals={[
-                { value: "6m", label: "6 mån", months: 6 },
-                { value: "12m", label: "12 mån", months: 12 },
-                { value: "24m", label: "24 mån", months: 24 },
-                { value: "all", label: "Alla" },
-              ]}
-              showHeader={false}
-              showSummary={false}
-              title="Ansökningstrend"
-              valueLabel="Ansökningar"
-            />
-          </AnalyticsBlock>
+            <AnalyticsBlock size="2x2" title="Ansökningstrend">
+              <TrendBarChart
+                data={applicationTrend}
+                defaultInterval="12m"
+                embedded
+                emptyMessage="Det finns inga ansökningar registrerade ännu."
+                intervals={[
+                  { value: "6m", label: "6 mån", months: 6 },
+                  { value: "12m", label: "12 mån", months: 12 },
+                  { value: "24m", label: "24 mån", months: 24 },
+                  { value: "all", label: "Alla" },
+                ]}
+                showHeader={false}
+                showSummary={false}
+                title="Ansökningstrend"
+                valueLabel="Ansökningar"
+              />
+            </AnalyticsBlock>
 
-          <AnalyticsBlock
-            action={<TrendingUp className="h-5 w-5 text-brand-500" />}
-            contentClassName="overflow-hidden"
-            size="2x2"
-            title="Trending annonser"
-          >
-            <TrendingListings groups={listingGroups} />
-          </AnalyticsBlock>
+            <AnalyticsBlock
+              action={<TrendingUp className="h-5 w-5 text-brand-500" />}
+              contentClassName="overflow-hidden"
+              size="2x2"
+              title="Trending annonser"
+            >
+              <TrendingListings groups={listingGroups} />
+            </AnalyticsBlock>
+          </AnalyticsGrid>
 
-          <AnalyticsBlock
-            contentClassName="overflow-hidden"
-            description="Alla annonser som har minst en ansökan, grupperade från /all-applications."
-            size="4x4"
-            title="Annonser med ansökningar"
-          >
-            <ListingApplicationsBlock
-              expandedKey={expandedListingKey}
-              groups={listingGroups}
-              onToggle={(key) =>
-                setExpandedListingKey((current) => (current === key ? null : key))
-              }
-            />
-          </AnalyticsBlock>
-
-        </AnalyticsGrid>
+          <ListingApplicationsLayout
+            groups={listingGroups}
+            selectedGroup={selectedGroup}
+            onSelect={setSelectedListingKey}
+          />
+        </>
       )}
     </div>
   );

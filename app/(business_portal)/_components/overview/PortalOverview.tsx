@@ -1,5 +1,4 @@
 import { AnalyticsBlock, AnalyticsGrid } from "@/components/analytics/AnalyticsBlocks";
-import AnalyticsApplicationsByObjectBlock from "../analytics/AnalyticsApplicationsByObjectBlock";
 import AnalyticsApplicationsTrend from "../analytics/AnalyticsApplicationsTrend";
 import AnalyticsGeneralStats from "../analytics/AnalyticsGeneralStats";
 
@@ -22,8 +21,6 @@ export default function PortalOverview() {
             showSummary={false}
           />
         </AnalyticsBlock>
-
-        <AnalyticsApplicationsByObjectBlock />
       </AnalyticsGrid>
     </div>
   );

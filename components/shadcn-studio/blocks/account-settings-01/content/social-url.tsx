@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { forwardRef, useImperativeHandle, useState } from 'react'
 
-import { PlusIcon, SaveIcon, XIcon } from 'lucide-react'
+import { PlusIcon, XIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,7 +40,11 @@ const initialRows: SocialProfileRow[] = [
   },
 ]
 
-const SocialUrl = () => {
+export type SocialUrlHandle = {
+  save: () => Promise<void>
+}
+
+const SocialUrl = forwardRef<SocialUrlHandle>((_, ref) => {
   const [rows, setRows] = useState<SocialProfileRow[]>(initialRows)
 
   const getAvailablePlatforms = (currentId: string) => {
@@ -99,6 +103,10 @@ const SocialUrl = () => {
       }))
     )
   }
+
+  useImperativeHandle(ref, () => ({
+    save: async () => saveChanges(),
+  }))
 
   const canAddMore = rows.length < socialPlatforms.length
 
@@ -180,15 +188,11 @@ const SocialUrl = () => {
           ) : null}
         </div>
 
-        <div className='flex justify-end'>
-          <Button type='button' onClick={saveChanges}>
-            <SaveIcon className='size-4' />
-            Save Changes
-          </Button>
-        </div>
       </div>
     </div>
   )
-}
+})
+
+SocialUrl.displayName = 'SocialUrl'
 
 export default SocialUrl

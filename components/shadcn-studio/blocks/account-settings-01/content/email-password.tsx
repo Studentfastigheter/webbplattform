@@ -70,7 +70,7 @@ const EmailPass = () => {
       </div>
 
       <div className='lg:col-span-2'>
-        <form className='mx-auto space-y-6'>
+        <div className='mx-auto space-y-6'>
           <div className='w-full space-y-2'>
             <Label htmlFor='email' className='gap-1'>
               Email<span className='text-destructive'>*</span>
@@ -192,12 +192,7 @@ const EmailPass = () => {
             </ul>
           </div>
 
-          <div className='mt-6 flex justify-end'>
-            <Button type='submit' className='max-sm:w-full rounded-md'>
-              Save Changes
-            </Button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   )
