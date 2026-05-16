@@ -369,7 +369,7 @@ function ApplicationStatsGrid({
   const average = groups.length > 0 ? applications.length / groups.length : 0;
 
   return (
-    <div className="grid h-full grid-cols-2 gap-3 xl:grid-cols-4">
+    <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
       <StatTile
         detail="alla öppna"
         icon={FileUser}
@@ -408,7 +408,7 @@ function LoadingDashboard() {
   return (
     <AnalyticsGrid>
       <AnalyticsBlock size="1x4">
-        <div className="grid h-full grid-cols-2 gap-3 xl:grid-cols-4">
+        <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton className="h-full min-h-[120px] rounded-xl" key={index} />
           ))}

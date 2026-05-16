@@ -31,14 +31,14 @@ function DashboardFrame({
       : "lg:ml-[90px]";
 
   return (
-    <div className="portal-admin min-h-screen bg-gray-50 xl:flex">
+    <div className="portal-admin min-h-screen overflow-x-clip bg-gray-50 xl:flex">
       <PortalSidebar />
       <PortalBackdrop />
       <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
+        className={`min-w-0 flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
       >
         <PortalHeader />
-        <div className="mx-auto w-full max-w-[1536px] p-4 md:p-6">
+        <div className="mx-auto w-full max-w-[1536px] min-w-0 px-3 py-4 sm:px-4 md:p-6">
           {children}
         </div>
       </div>

@@ -182,21 +182,21 @@ function EditableListingPreview({
                       aria-label="Adress"
                       value={draft.fullAddress ?? ""}
                       readOnly
-                      className={`${inlineInputClass} min-w-[220px] flex-1 font-medium`}
+                      className={`${inlineInputClass} w-full flex-1 font-medium sm:min-w-[220px]`}
                       placeholder="Adress"
                     />
                     <input
                       aria-label="Område"
                       value={draft.area ?? ""}
                       readOnly
-                      className={`${inlineInputClass} w-40 font-medium`}
+                      className={`${inlineInputClass} w-full font-medium sm:w-40`}
                       placeholder="Område"
                     />
                     <input
                       aria-label="Stad"
                       value={draft.city ?? ""}
                       readOnly
-                      className={`${inlineInputClass} w-40 font-medium`}
+                      className={`${inlineInputClass} w-full font-medium sm:w-40`}
                       placeholder="Stad"
                     />
                   </div>
@@ -210,7 +210,7 @@ function EditableListingPreview({
                       aria-label="Bostadstyp"
                       value={draft.dwellingType ?? ""}
                       readOnly
-                      className={`${inlineInputClass} min-w-[150px] font-medium`}
+                      className={`${inlineInputClass} w-full font-medium sm:w-auto sm:min-w-[150px]`}
                       placeholder="Bostadstyp"
                     />
                     <input
@@ -243,8 +243,8 @@ function EditableListingPreview({
                 ].map((item, index) => (
                   <div
                     key={item.key}
-                    className={`flex flex-col pr-4 ${
-                      index > 0 ? "border-l border-gray-200 pl-4" : ""
+                    className={`flex min-w-[150px] flex-1 flex-col pr-4 sm:flex-none ${
+                      index > 0 ? "sm:border-l sm:border-gray-200 sm:pl-4" : ""
                     }`}
                   >
                     <InlineLabel>{item.label}</InlineLabel>
@@ -257,7 +257,7 @@ function EditableListingPreview({
                           [item.key]: event.target.value || null,
                         } as Partial<ListingDetailDTO>)
                       }
-                      className={`${inlineInputClass} -mx-2 mt-1 w-40 text-sm font-medium text-gray-900`}
+                      className={`${inlineInputClass} mt-1 w-full text-sm font-medium text-gray-900 sm:-mx-2 sm:w-40`}
                     />
                   </div>
                 ))}

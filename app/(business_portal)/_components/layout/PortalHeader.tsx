@@ -78,8 +78,8 @@ export default function PortalHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex w-full border-gray-200 bg-white lg:border-b">
-      <div className="flex grow items-center justify-between gap-3 px-3 py-3 sm:gap-4 lg:px-6 lg:py-4">
+    <header className="sticky top-0 z-30 flex w-full min-w-0 border-gray-200 bg-white lg:border-b">
+      <div className="flex min-w-0 grow items-center justify-between gap-3 px-3 py-3 sm:gap-4 lg:px-6 lg:py-4">
         <div className="flex min-w-0 items-center gap-3">
           <button
             aria-label="Växla sidomeny"

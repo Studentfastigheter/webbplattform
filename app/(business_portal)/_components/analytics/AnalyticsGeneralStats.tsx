@@ -374,15 +374,15 @@ export default function AnalyticsGeneralStats({
   const skeletonCount = variant === "analytics" ? 6 : metrics.length;
   const gridClassName =
     variant === "analytics"
-      ? "grid h-full grid-cols-2 gap-3 xl:grid-cols-3"
-      : "grid h-full grid-cols-2 gap-3 xl:grid-cols-4";
+      ? "grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-3"
+      : "grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4";
 
   if (authLoading || isLoading) {
     return (
       <div className={gridClassName}>
         {Array.from({ length: skeletonCount }).map((_, index) => (
           <div
-            className="relative min-h-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50/70 p-4"
+            className="relative min-h-[116px] min-w-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50/70 p-4"
             key={index}
           >
             <div className="flex items-start justify-between gap-3">
@@ -416,7 +416,7 @@ export default function AnalyticsGeneralStats({
         return (
           <div
             className={cn(
-              "relative min-h-0 min-w-0 overflow-hidden rounded-xl border p-4 transition-colors",
+              "relative min-h-[116px] min-w-0 overflow-hidden rounded-xl border p-4 transition-colors",
               tone.tile
             )}
             key={item.label}

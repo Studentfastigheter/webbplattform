@@ -137,7 +137,7 @@ function ListingApplicationPreviewRow({
       ? `${dashboardRelPath}/annonser/${encodeURIComponent(String(item.listingId))}`
       : null;
   const content = (
-    <div className="grid min-h-[118px] min-w-0 grid-cols-[132px_minmax(0,1fr)]">
+    <div className="grid min-h-[118px] min-w-0 grid-cols-[96px_minmax(0,1fr)] sm:grid-cols-[132px_minmax(0,1fr)]">
       <div className="relative h-full min-h-[118px] overflow-hidden bg-gray-100">
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -157,8 +157,8 @@ function ListingApplicationPreviewRow({
         </span>
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center gap-4 px-4 py-4">
-        <div className="min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-4">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-xs leading-5 text-gray-500">
             {location || "Annons"}
           </p>
@@ -180,11 +180,11 @@ function ListingApplicationPreviewRow({
           </div>
         </div>
 
-        <div className="ml-auto flex w-[86px] shrink-0 flex-col items-center justify-center rounded-2xl bg-gray-50 px-3 py-3 text-center">
-          <span className="text-3xl font-semibold leading-8 tracking-normal text-gray-900 tabular-nums">
+        <div className="flex w-full shrink-0 items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-center sm:ml-auto sm:w-[86px] sm:flex-col sm:justify-center sm:rounded-2xl sm:py-3">
+          <span className="text-xl font-semibold leading-7 tracking-normal text-gray-900 tabular-nums sm:text-3xl sm:leading-8">
             {item.numApplications.toLocaleString("sv-SE")}
           </span>
-          <span className="mt-1 text-xs font-medium leading-4 text-gray-500">
+          <span className="text-xs font-medium leading-4 text-gray-500 sm:mt-1">
             ans.
           </span>
         </div>
@@ -246,7 +246,7 @@ function LoadingList() {
           className="min-h-[118px] overflow-hidden rounded-2xl border border-gray-100 bg-white"
           key={index}
         >
-          <div className="grid min-h-[118px] grid-cols-[132px_minmax(0,1fr)]">
+          <div className="grid min-h-[118px] grid-cols-[96px_minmax(0,1fr)] sm:grid-cols-[132px_minmax(0,1fr)]">
             <Skeleton className="h-full min-h-[118px] rounded-none" />
             <div className="min-w-0 flex-1 space-y-2 p-4">
               <div className="flex items-start justify-between gap-3">

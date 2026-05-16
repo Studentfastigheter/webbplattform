@@ -334,9 +334,9 @@ function resolveListingMeta(
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0">
+    <div className="grid grid-cols-1 gap-1 border-b border-gray-100 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-4">
       <dt className="text-sm text-gray-500">{label}</dt>
-      <dd className="max-w-[64%] text-right text-sm font-medium text-gray-900">{value}</dd>
+      <dd className="min-w-0 break-words text-sm font-medium text-gray-900 sm:text-right">{value}</dd>
     </div>
   );
 }
@@ -777,12 +777,14 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         </section>
 
         <section className="relative rounded-xl border border-gray-200 bg-white p-5">
-          <PortalListingStatusTag
-            label={meta.statusLabel}
-            tone={meta.statusTone}
-            className="absolute right-5 top-5"
-          />
-          <h2 className="pr-28 text-lg font-semibold text-gray-900">Detaljer</h2>
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Detaljer</h2>
+            <PortalListingStatusTag
+              label={meta.statusLabel}
+              tone={meta.statusTone}
+              className="w-fit shrink-0"
+            />
+          </div>
           <dl className="mt-4">
             <DetailRow label="Hyra" value={formatCurrency(listing.rent)} />
             <DetailRow label="Rum" value={listing.rooms || "-"} />
