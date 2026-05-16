@@ -119,12 +119,24 @@ export type ResidentAnalyticsData = {
 export type NewApplication = {
   applicationId?: number;
   id?: string | number;
-  studentId: number,
-  firstName: string,
-  surname: string,
-  address: string,
+  studentId: number;
+  firstName: string;
+  surname: string;
+  studentEmail?: string;
+  studentCity?: string;
+  studentSchool?: string;
+  studentProgram?: string;
+  address: string;
   listingId?: string | number;
   listingTitle?: string;
+  listingCity?: string;
+  listingRent?: number;
+  listingImage?: string;
+  listingDwellingType?: string;
+  listingRooms?: number;
+  listingSizeM2?: number;
+  status?: string;
+  message?: string;
   submittedAt?: string;
   createdAt?: string;
 };
@@ -188,6 +200,40 @@ function toNumber(value: unknown, fallback = 0) {
     typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
 
   return Number.isFinite(numberValue) ? numberValue : fallback;
+}
+
+function firstString(...values: unknown[]): string | undefined {
+  return values.find(
+    (value): value is string => typeof value === "string" && value.trim().length > 0
+  )?.trim();
+}
+
+function firstNumber(...values: unknown[]): number | undefined {
+  for (const value of values) {
+    const numberValue =
+      typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
+
+    if (Number.isFinite(numberValue)) {
+      return numberValue;
+    }
+  }
+
+  return undefined;
+}
+
+function readPath(source: Record<string, unknown> | null, path: string): unknown {
+  const parts = path.split(".");
+  let current: unknown = source;
+
+  for (const part of parts) {
+    if (!isRecord(current)) {
+      return undefined;
+    }
+
+    current = current[part];
+  }
+
+  return current;
 }
 
 function toArray<T>(value: unknown, includeSingleObject = false): T[] {
@@ -494,28 +540,60 @@ function normalizeNewApplication(value: unknown): NewApplication | null {
   const studentSummary = isRecord(value.studentSummary) ? value.studentSummary : null;
   const id = value.applicationId ?? value.id;
   const studentId = value.studentId ?? student?.id ?? studentSummary?.id;
+  const listingCity = firstString(
+    value.city,
+    value.listingCity,
+    listing?.city,
+    listing?.location,
+    listingSummary?.city,
+    listingSummary?.location
+  );
+  const imageUrls = Array.isArray(listing?.imageUrls) ? listing.imageUrls : null;
 
   return {
     applicationId:
       typeof id === "number" ? id : Number.isFinite(Number(id)) ? Number(id) : undefined,
     id: typeof id === "string" || typeof id === "number" ? id : undefined,
     studentId: Number.isFinite(Number(studentId)) ? Number(studentId) : 0,
-    firstName:
-      typeof value.firstName === "string"
-        ? value.firstName
-        : typeof student?.firstName === "string"
-          ? student.firstName
-          : typeof studentSummary?.firstName === "string"
-            ? studentSummary.firstName
-            : "",
-    surname:
-      typeof value.surname === "string"
-        ? value.surname
-        : typeof student?.surname === "string"
-          ? student.surname
-          : typeof studentSummary?.surname === "string"
-            ? studentSummary.surname
-            : "",
+    firstName: firstString(
+      value.firstName,
+      student?.firstName,
+      studentSummary?.firstName,
+      readPath(value, "applicant.firstName")
+    ) ?? "",
+    surname: firstString(
+      value.surname,
+      student?.surname,
+      studentSummary?.surname,
+      readPath(value, "applicant.surname"),
+      readPath(value, "applicant.lastName")
+    ) ?? "",
+    studentEmail: firstString(
+      value.email,
+      value.studentEmail,
+      student?.email,
+      studentSummary?.email,
+      readPath(value, "applicant.email")
+    ),
+    studentCity: firstString(
+      value.studentCity,
+      student?.city,
+      studentSummary?.city,
+      readPath(value, "applicant.city")
+    ),
+    studentSchool: firstString(
+      value.schoolName,
+      student?.schoolName,
+      studentSummary?.schoolName,
+      readPath(student, "school.name"),
+      readPath(value, "applicant.schoolName")
+    ),
+    studentProgram: firstString(
+      value.studyProgram,
+      student?.studyProgram,
+      studentSummary?.studyProgram,
+      readPath(value, "applicant.studyProgram")
+    ),
     address:
       typeof value.address === "string"
         ? value.address
@@ -530,22 +608,68 @@ function normalizeNewApplication(value: unknown): NewApplication | null {
         : typeof listing?.id === "string" || typeof listing?.id === "number"
           ? listing.id
           : undefined,
-    listingTitle:
-      typeof value.listingTitle === "string"
-        ? value.listingTitle
-        : typeof listing?.title === "string"
-          ? listing.title
-          : typeof listingSummary?.title === "string"
-            ? listingSummary.title
-            : undefined,
-    submittedAt:
-      typeof value.submittedAt === "string"
-        ? value.submittedAt
-        : typeof value.appliedAt === "string"
-          ? value.appliedAt
-          : undefined,
-    createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined,
+    listingTitle: firstString(
+      value.listingTitle,
+      listing?.title,
+      listingSummary?.title
+    ),
+    listingCity,
+    listingRent: firstNumber(value.rent, listing?.rent, listingSummary?.rent),
+    listingImage: firstString(
+      value.listingImage,
+      value.imageUrl,
+      listing?.imageUrl,
+      listingSummary?.imageUrl,
+      imageUrls?.[0]
+    ),
+    listingDwellingType: firstString(
+      value.dwellingType,
+      listing?.dwellingType,
+      listingSummary?.dwellingType
+    ),
+    listingRooms: firstNumber(value.rooms, listing?.rooms, listingSummary?.rooms),
+    listingSizeM2: firstNumber(
+      value.sizeM2,
+      listing?.sizeM2,
+      listingSummary?.sizeM2
+    ),
+    status: firstString(value.status, value.applicationStatus),
+    message: firstString(value.message, value.applicationMessage),
+    submittedAt: firstString(value.submittedAt, value.appliedAt, value.createdAt),
+    createdAt: firstString(value.createdAt),
   };
+}
+
+function expandCompanyApplicationRows(value: unknown): unknown[] {
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  const nestedApplications = toArray<unknown>(value.applications);
+
+  if (nestedApplications.length === 0) {
+    return [value];
+  }
+
+  const listing = value.listing;
+
+  return nestedApplications.map((application) => {
+    if (!isRecord(application)) {
+      return application;
+    }
+
+    return {
+      ...application,
+      listing,
+    };
+  });
+}
+
+function companyApplicationsEndpoint(id: number, page: number, size: number): string {
+  return `/companies/${pathSegment(id)}/all-applications${buildQuery({
+    page,
+    size,
+  })}`;
 }
 
 export const companyService = {
@@ -606,16 +730,56 @@ export const companyService = {
     id: number,
     options: { count?: number; since?: string } = {}
   ): Promise<NewApplication[]> => {
-    const query = buildQuery({
-      page: 0,
-      size: options.count ?? 10,
-    });
-    const result = await apiClient<unknown>(`/applications${query}`);
+    const result = await apiClient<unknown>(
+      companyApplicationsEndpoint(id, 0, options.count ?? 10)
+    );
 
     return toArray<unknown>(result, true)
+      .flatMap(expandCompanyApplicationRows)
       .map(normalizeNewApplication)
       .filter((application): application is NewApplication => application !== null);
   }, 
+
+  applications: async (
+    id: number,
+    options: { pageSize?: number; maxPages?: number } = {}
+  ): Promise<NewApplication[]> => {
+    const pageSize = options.pageSize ?? 200;
+    const maxPages = options.maxPages ?? 25;
+    const applications: NewApplication[] = [];
+
+    for (let page = 0; page < maxPages; page += 1) {
+      const result = await apiClient<unknown>(
+        companyApplicationsEndpoint(id, page, pageSize)
+      );
+      const rows = toArray<unknown>(result, true);
+
+      applications.push(
+        ...rows
+          .flatMap(expandCompanyApplicationRows)
+          .map(normalizeNewApplication)
+          .filter((application): application is NewApplication => application !== null)
+      );
+
+      if (!isRecord(result)) {
+        break;
+      }
+
+      const pageMetadata = isRecord(result.page) ? result.page : result;
+      const totalPages = toNumber(pageMetadata.totalPages, Number.NaN);
+      const isLastPage = result.last === true;
+
+      if (
+        isLastPage ||
+        rows.length < pageSize ||
+        (Number.isFinite(totalPages) && page >= totalPages - 1)
+      ) {
+        break;
+      }
+    }
+
+    return applications;
+  },
 
   applicationCount: async (id: number): Promise<number> => {
     const result = await apiClient<unknown>(`/analytics/${pathSegment(id)}/general`);

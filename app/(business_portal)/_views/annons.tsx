@@ -1,0 +1,591 @@
+"use client";
+
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Home, MapPin, Pencil } from "lucide-react";
+
+import BostadImagePreviewGrid from "@/components/ads/BostadImagePreviewGrid";
+import ImageUploadGallery from "@/components/Dashboard/ImageUploadGallery";
+import { Button } from "@/components/ui/button";
+import { listingService } from "@/services/listing-service";
+import {
+  ListingDetailDTO,
+  ListingTagDTO,
+  UpdateListingRequest,
+} from "@/types/listing";
+
+type AnnonsPageProps = {
+  id: string;
+};
+
+type SaveState = {
+  status: "idle" | "saving" | "success" | "error";
+  message: string | null;
+};
+
+const emptySaveState: SaveState = {
+  status: "idle",
+  message: null,
+};
+
+const inlineInputClass =
+  "min-w-0 rounded-md border border-[#004225]/10 bg-[#004225]/[0.035] px-2 py-1 outline-none transition hover:border-[#004225]/25 hover:bg-white focus:border-[#004225] focus:bg-white focus:ring-4 focus:ring-[#004225]/10";
+
+function toDateInputValue(value?: string | null) {
+  return value ? value.slice(0, 10) : "";
+}
+
+function normalizeTagKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function getSelectableTags(tags: ListingTagDTO[]) {
+  const seen = new Set<string>();
+
+  return tags.filter((tag) => {
+    const label = tag.displayName.trim();
+    const key = normalizeTagKey(label);
+
+    if (!label || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
+function isTagSelected(selectedTags: string[], tag: ListingTagDTO) {
+  const selectedKeys = new Set(selectedTags.map(normalizeTagKey));
+  return selectedKeys.has(normalizeTagKey(tag.displayName));
+}
+
+function filterTagsByAvailableOptions(
+  selectedTags: string[] | undefined,
+  availableTags: ListingTagDTO[]
+) {
+  if (availableTags.length === 0) {
+    return [];
+  }
+
+  const availableByKey = new Map(
+    availableTags.map(
+      (tag) => [normalizeTagKey(tag.displayName), tag.displayName] as const
+    )
+  );
+
+  return (selectedTags ?? [])
+    .map((tag) => availableByKey.get(normalizeTagKey(tag)))
+    .filter((tag): tag is string => Boolean(tag));
+}
+
+function getEditableSnapshot(listing: ListingDetailDTO | null) {
+  if (!listing) return "";
+
+  return JSON.stringify({
+    title: listing.title,
+    rent: listing.rent,
+    rooms: listing.rooms,
+    sizeM2: listing.sizeM2,
+    availableFrom: toDateInputValue(listing.availableFrom),
+    availableTo: toDateInputValue(listing.availableTo),
+    applyBy: toDateInputValue(listing.applyBy),
+    tags: listing.tags ?? [],
+    description: listing.description ?? "",
+    imageUrls: listing.imageUrls ?? [],
+  });
+}
+
+function InlineLabel({ children }: { children: string }) {
+  return (
+    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+      {children}
+    </span>
+  );
+}
+
+function EditableListingPreview({
+  draft,
+  galleryImages,
+  availableTags,
+  tagsLoading,
+  tagsError,
+  onImageEdit,
+  onDraftChange,
+  onNumberChange,
+}: {
+  draft: ListingDetailDTO;
+  galleryImages: string[];
+  availableTags: ListingTagDTO[];
+  tagsLoading: boolean;
+  tagsError: string | null;
+  onImageEdit: () => void;
+  onDraftChange: (patch: Partial<ListingDetailDTO>) => void;
+  onNumberChange: (key: "rent" | "rooms" | "sizeM2", value: string) => void;
+}) {
+  const selectedTags = draft.tags ?? [];
+  const toggleTag = (tag: ListingTagDTO) => {
+    const selected = isTagSelected(selectedTags, tag);
+
+    onDraftChange({
+      tags: selected
+        ? selectedTags.filter(
+            (selectedTag) =>
+              normalizeTagKey(selectedTag) !== normalizeTagKey(tag.displayName)
+          )
+        : [...selectedTags, tag.displayName],
+    });
+  };
+
+  return (
+    <section
+      aria-label="Förhandsvisning"
+      className="mx-auto flex w-full max-w-6xl flex-col gap-10"
+    >
+      <div className="relative">
+        {galleryImages.length > 0 ? (
+          <BostadImagePreviewGrid images={galleryImages} readOnly />
+        ) : (
+          <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+            Inga bilder visas i förhandsvisningen.
+          </div>
+        )}
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onImageEdit}
+          className="absolute right-4 top-4 bg-white/95 shadow-sm backdrop-blur"
+        >
+          <Pencil className="h-4 w-4" />
+          Bilder
+        </Button>
+      </div>
+
+      <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <input
+                aria-label="Titel"
+                value={draft.title ?? ""}
+                onChange={(event) => onDraftChange({ title: event.target.value })}
+                className={`${inlineInputClass} -mx-2 w-full text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl`}
+                placeholder="Titel"
+              />
+
+              <div className="mt-4 grid gap-3 text-sm text-gray-600">
+                <div className="grid gap-1">
+                  <InlineLabel>Plats</InlineLabel>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <MapPin className="h-4 w-4 shrink-0 text-green-700" />
+                    <input
+                      aria-label="Adress"
+                      value={draft.fullAddress ?? ""}
+                      readOnly
+                      className={`${inlineInputClass} w-full flex-1 font-medium sm:min-w-[220px]`}
+                      placeholder="Adress"
+                    />
+                    <input
+                      aria-label="Område"
+                      value={draft.area ?? ""}
+                      readOnly
+                      className={`${inlineInputClass} w-full font-medium sm:w-40`}
+                      placeholder="Område"
+                    />
+                    <input
+                      aria-label="Stad"
+                      value={draft.city ?? ""}
+                      readOnly
+                      className={`${inlineInputClass} w-full font-medium sm:w-40`}
+                      placeholder="Stad"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <InlineLabel>Bostad</InlineLabel>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Home className="h-4 w-4 shrink-0 text-green-700" />
+                    <input
+                      aria-label="Bostadstyp"
+                      value={draft.dwellingType ?? ""}
+                      readOnly
+                      className={`${inlineInputClass} w-full font-medium sm:w-auto sm:min-w-[150px]`}
+                      placeholder="Bostadstyp"
+                    />
+                    <input
+                      aria-label="Rum"
+                      type="number"
+                      value={draft.rooms ?? ""}
+                      onChange={(event) => onNumberChange("rooms", event.target.value)}
+                      className={`${inlineInputClass} w-20 font-medium`}
+                      placeholder="Rum"
+                    />
+                    <span className="font-medium">rum</span>
+                    <input
+                      aria-label="Storlek"
+                      type="number"
+                      value={draft.sizeM2 ?? ""}
+                      onChange={(event) => onNumberChange("sizeM2", event.target.value)}
+                      className={`${inlineInputClass} w-24 font-medium`}
+                      placeholder="m²"
+                    />
+                    <span className="font-medium">m²</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-y-4">
+                {[
+                  { label: "Tillgänglig från", key: "availableFrom" as const },
+                  { label: "Tillgänglig till", key: "availableTo" as const },
+                  { label: "Sista ansökan", key: "applyBy" as const },
+                ].map((item, index) => (
+                  <div
+                    key={item.key}
+                    className={`flex min-w-[150px] flex-1 flex-col pr-4 sm:flex-none ${
+                      index > 0 ? "sm:border-l sm:border-gray-200 sm:pl-4" : ""
+                    }`}
+                  >
+                    <InlineLabel>{item.label}</InlineLabel>
+                    <input
+                      aria-label={item.label}
+                      type="date"
+                      value={toDateInputValue(draft[item.key])}
+                      onChange={(event) =>
+                        onDraftChange({
+                          [item.key]: event.target.value || null,
+                        } as Partial<ListingDetailDTO>)
+                      }
+                      className={`${inlineInputClass} mt-1 w-full text-sm font-medium text-gray-900 sm:-mx-2 sm:w-40`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex shrink-0 flex-col items-start gap-1 lg:items-end">
+              <InlineLabel>Månadshyra</InlineLabel>
+              <div className="flex items-baseline gap-1.5">
+                <input
+                  aria-label="Månadshyra"
+                  type="number"
+                  value={draft.rent ?? ""}
+                  onChange={(event) => onNumberChange("rent", event.target.value)}
+                  className={`${inlineInputClass} w-40 text-right text-2xl font-bold tracking-tight text-gray-900`}
+                  placeholder="Hyra"
+                />
+                <span className="text-sm font-medium text-gray-400">kr/mån</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <InlineLabel>Taggar</InlineLabel>
+            {tagsLoading ? (
+              <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500">
+                Laddar taggar...
+              </div>
+            ) : tagsError ? (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-800">
+                {tagsError}
+              </div>
+            ) : availableTags.length === 0 ? (
+              <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500">
+                Inga taggar finns tillgangliga.
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2" aria-label="Taggar">
+                {availableTags.map((tag) => {
+                  const selected = isTagSelected(selectedTags, tag);
+
+                  return (
+                    <button
+                      key={tag.displayName}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => toggleTag(tag)}
+                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                        selected
+                          ? "border-[#004225] bg-[#004225] text-white"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-[#004225]/35 hover:bg-[#004225]/[0.035]"
+                      }`}
+                    >
+                      {tag.displayName}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <input
+              type="hidden"
+              aria-label="Taggar"
+              value={(draft.tags ?? []).join(", ")}
+              onChange={(event) =>
+                onDraftChange({
+                  tags: event.target.value
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter(Boolean),
+                })
+              }
+              className={`${inlineInputClass} w-full text-sm font-medium text-gray-700`}
+              placeholder="Ex. Möblerat, Balkong, Poängfri"
+            />
+          </div>
+
+          <div className="mt-2">
+            <h2 className="mb-2 border-b border-gray-100 pb-2 text-lg font-semibold text-gray-900">
+              Om boendet
+            </h2>
+            <textarea
+              aria-label="Beskrivning"
+              value={draft.description ?? ""}
+              onChange={(event) => onDraftChange({ description: event.target.value })}
+              className={`${inlineInputClass} min-h-44 w-full resize-y text-[15px] leading-relaxed text-gray-700`}
+              placeholder="Beskriv bostaden"
+            />
+          </div>
+        </div>
+      </section>
+    </section>
+  );
+}
+
+export default function Annons({ id }: AnnonsPageProps) {
+  const [listing, setListing] = useState<ListingDetailDTO | null>(null);
+  const [draft, setDraft] = useState<ListingDetailDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<SaveState>(emptySaveState);
+  const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
+  const [listingTags, setListingTags] = useState<ListingTagDTO[]>([]);
+  const [listingTagsLoaded, setListingTagsLoaded] = useState(false);
+  const [listingTagsLoading, setListingTagsLoading] = useState(true);
+  const [listingTagsError, setListingTagsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    setLoading(true);
+    setError(null);
+    setListing(null);
+    setDraft(null);
+    setSaveState(emptySaveState);
+    setListingTags([]);
+    setListingTagsLoaded(false);
+    setListingTagsLoading(true);
+    setListingTagsError(null);
+
+    listingService
+      .get(id)
+      .then((res) => {
+        if (!active) return;
+        setListing(res);
+        setDraft(res);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        console.error("Kunde inte hämta annonsen:", err);
+        setError(err instanceof Error ? err.message : "Kunde inte ladda annonsen.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    listingService
+      .getListingTags()
+      .then((tags) => {
+        if (!active) return;
+        setListingTags(tags);
+        setListingTagsLoaded(true);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        console.error("Kunde inte hamta annonstaggar:", err);
+        setListingTagsError(
+          err instanceof Error ? err.message : "Kunde inte ladda taggar."
+        );
+      })
+      .finally(() => {
+        if (active) setListingTagsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  const galleryImages = useMemo(
+    () => draft?.imageUrls?.filter(Boolean) ?? [],
+    [draft],
+  );
+
+  const availableTags = useMemo(() => getSelectableTags(listingTags), [listingTags]);
+
+  const hasUnsavedChanges = useMemo(
+    () => getEditableSnapshot(draft) !== getEditableSnapshot(listing),
+    [draft, listing],
+  );
+
+  const updateDraft = (patch: Partial<ListingDetailDTO>) => {
+    setDraft((current) => (current ? { ...current, ...patch } : current));
+    setSaveState(emptySaveState);
+  };
+
+  const updateNumber = (key: "rent" | "rooms" | "sizeM2", value: string) => {
+    const parsed = value === "" ? null : Number(value);
+    updateDraft({
+      [key]: Number.isFinite(parsed) ? parsed : null,
+    } as Partial<ListingDetailDTO>);
+  };
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!draft) return;
+    if (listingTagsLoading) {
+      setSaveState({
+        status: "error",
+        message: "Taggar laddas fortfarande. Forsok igen om en stund.",
+      });
+      return;
+    }
+    if (listingTagsError) {
+      setSaveState({
+        status: "error",
+        message: "Kunde inte spara eftersom taggarna inte kunde laddas.",
+      });
+      return;
+    }
+
+    setSaveState({ status: "saving", message: null });
+
+    const payload: UpdateListingRequest = {
+      title: draft.title,
+      rent: draft.rent,
+      rooms: draft.rooms,
+      sizeM2: draft.sizeM2,
+      availableFrom: toDateInputValue(draft.availableFrom) || null,
+      availableTo: toDateInputValue(draft.availableTo) || null,
+      applyBy: toDateInputValue(draft.applyBy) || null,
+      tags: listingTagsLoaded
+        ? filterTagsByAvailableOptions(draft.tags, availableTags)
+        : [],
+      description: draft.description,
+      images: draft.imageUrls,
+    };
+
+    try {
+      await listingService.update(id, payload);
+      const next = await listingService.get(id).catch(() => draft);
+      setListing(next);
+      setDraft(next);
+      setSaveState({ status: "success", message: "Ändringarna är sparade." });
+    } catch (err) {
+      setSaveState({
+        status: "error",
+        message: err instanceof Error ? err.message : "Kunde inte spara ändringarna.",
+      });
+    }
+  };
+
+  const resetDraft = () => {
+    if (!listing) return;
+    setDraft(listing);
+    setSaveState(emptySaveState);
+  };
+
+  const openImageEditor = () => setUploadGalleryVisible(true);
+
+  if (loading) {
+    return (
+      <main className="pb-12">
+        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-12 text-center text-gray-500 shadow-theme-xs">
+          Laddar annons...
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !draft) {
+    return (
+      <main className="pb-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center text-red-800">
+          {error ?? "Annonsen kunde inte hittas."}
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <>
+      <main className="pb-12">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">Redigera annons</h1>
+        </div>
+
+        <form onSubmit={handleSave} className="grid gap-6">
+          <EditableListingPreview
+            draft={draft}
+            galleryImages={galleryImages}
+            availableTags={availableTags}
+            tagsLoading={listingTagsLoading}
+            tagsError={listingTagsError}
+            onImageEdit={openImageEditor}
+            onDraftChange={updateDraft}
+            onNumberChange={updateNumber}
+          />
+
+          {saveState.status === "error" && saveState.message && (
+            <div className="mx-auto w-full max-w-6xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              {saveState.message}
+            </div>
+          )}
+
+          <div className="sticky bottom-4 z-10 mx-auto flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              {hasUnsavedChanges ? (
+                <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                  Osparade ändringar
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500">Alla ändringar är sparade.</span>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="submit"
+                isLoading={saveState.status === "saving"}
+                isDisabled={
+                  saveState.status === "saving" ||
+                  listingTagsLoading ||
+                  Boolean(listingTagsError)
+                }
+              >
+                Spara ändringar
+              </Button>
+              {hasUnsavedChanges && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetDraft}
+                  isDisabled={saveState.status === "saving"}
+                >
+                  Återställ
+                </Button>
+              )}
+            </div>
+          </div>
+        </form>
+      </main>
+
+      <ImageUploadGallery
+        open={uploadGalleryVisible}
+        setOpen={setUploadGalleryVisible}
+        imageUrls={draft.imageUrls}
+        onSave={(imageUrls) => updateDraft({ imageUrls })}
+      />
+    </>
+  );
+}

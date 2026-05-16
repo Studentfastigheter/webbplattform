@@ -39,8 +39,6 @@ export type ListingCardSmallProps = {
 };
 
 const BASE_WIDTH = 380;
-const CARD_MIN_WIDTH = 280;
-const COMPACT_CARD_MIN_WIDTH = 260;
 const IMAGE_ASPECT_RATIO = "16 / 10";
 const MIN_SCALE = 0.55;
 const MAX_SCALE = 1;
@@ -163,7 +161,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
       className="flex w-full flex-col bg-white shadow-md cursor-pointer group hover:shadow-lg transition-shadow duration-200"
       style={{
         maxWidth,
-        minWidth: variant === "compact" ? COMPACT_CARD_MIN_WIDTH : CARD_MIN_WIDTH,
+        minWidth: 0,
         borderRadius: scaleValue(32),
         overflow: "hidden"
       }}

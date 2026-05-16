@@ -1,4 +1,4 @@
-import Analytics from "../../_pages/analytics";
+import Analytics from "../../_views/analytics";
 
 export default function AnalyticsPage() {
   return (

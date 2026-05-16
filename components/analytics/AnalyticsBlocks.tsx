@@ -40,10 +40,10 @@ const colSpanClass: Record<AnalyticsBlockColumns, string> = {
 };
 
 const rowSpanClass: Record<AnalyticsBlockRows, string> = {
-  1: "row-span-1",
-  2: "row-span-2",
-  3: "row-span-3",
-  4: "row-span-4",
+  1: "xl:row-span-1",
+  2: "xl:row-span-2",
+  3: "xl:row-span-3",
+  4: "xl:row-span-4",
 };
 
 function isAnalyticsBlockColumn(value: number): value is AnalyticsBlockColumns {
@@ -79,7 +79,7 @@ export function useAnalyticsBlock() {
 
 export function AnalyticsGrid({
   className,
-  rowHeightClassName = "auto-rows-[var(--analytics-block-unit)]",
+  rowHeightClassName = "xl:auto-rows-[var(--analytics-block-unit)]",
   style,
   ...props
 }: AnalyticsGridProps) {
@@ -125,7 +125,7 @@ export function AnalyticsGrid({
     <div
       ref={gridRef}
       className={cn(
-        "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4",
+        "grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:[grid-auto-flow:dense]",
         rowHeightClassName,
         className
       )}
@@ -157,7 +157,7 @@ export function AnalyticsBlock({
     <AnalyticsBlockContext.Provider value={{ rows, columns, size: resolvedSize }}>
       <section
         className={cn(
-          "flex min-h-0 flex-col overflow-hidden rounded-[20px] border border-[#eceef2] bg-white text-[#1f2937] shadow-[0_1px_2px_rgba(16,24,40,0.06),0_1px_3px_rgba(16,24,40,0.10)]",
+          "flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#eceef2] bg-white text-[#1f2937] shadow-[0_1px_2px_rgba(16,24,40,0.06),0_1px_3px_rgba(16,24,40,0.10)]",
           colSpanClass[columns],
           rowSpanClass[rows],
           className
@@ -168,7 +168,7 @@ export function AnalyticsBlock({
         {...props}
       >
         {hasHeader ? (
-          <div className="flex min-h-[64px] items-center justify-between gap-3 px-5 py-4">
+          <div className="flex min-h-[64px] min-w-0 flex-col items-start justify-between gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
             <div className="min-w-0">
               {title ? (
                 <h2 className="truncate text-base font-semibold leading-6 text-[#111827]">
@@ -181,14 +181,14 @@ export function AnalyticsBlock({
                 </p>
               ) : null}
             </div>
-            {action ? <div className="shrink-0">{action}</div> : null}
+            {action ? <div className="max-w-full shrink-0">{action}</div> : null}
           </div>
         ) : null}
 
         <div
           className={cn(
-            "min-h-0 flex-1 bg-white",
-            hasHeader ? "px-5 pb-5 pt-1" : "p-5",
+            "min-h-0 min-w-0 flex-1 bg-white",
+            hasHeader ? "px-4 pb-4 pt-1 sm:px-5 sm:pb-5" : "p-4 sm:p-5",
             contentClassName
           )}
         >

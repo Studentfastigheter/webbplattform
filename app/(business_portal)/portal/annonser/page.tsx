@@ -23,8 +23,8 @@ import { queueService } from "@/services/queue-service";
 import { type ListingCardDTO } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
-} from "../../_components/PortalListingStatusTag";
-import { PortalControlSelectTrigger } from "../../_components/PortalControlSelectTrigger";
+} from "../../_components/shared/PortalListingStatusTag";
+import { PortalControlSelectTrigger } from "../../_components/shared/PortalControlSelectTrigger";
 import { dashboardRelPath } from "../../_statics/variables";
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
@@ -644,11 +644,11 @@ export default function PortalAdsPage() {
           Inga annonser matchade ditt filter.
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-6 grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredAds.map((item) => {
             const { area, city } = splitLocation(item.listing.location);
             return (
-              <div key={item.listing.id} className="flex w-full justify-center">
+              <div key={item.listing.id} className="flex min-w-0 w-full justify-center">
                 <ListingCardSmall
                   id={item.listing.id}
                   title={item.listing.title}
