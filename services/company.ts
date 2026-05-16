@@ -132,6 +132,9 @@ export type NewApplication = {
   listingCity?: string;
   listingRent?: number;
   listingImage?: string;
+  listingDwellingType?: string;
+  listingRooms?: number;
+  listingSizeM2?: number;
   status?: string;
   message?: string;
   submittedAt?: string;
@@ -619,11 +622,47 @@ function normalizeNewApplication(value: unknown): NewApplication | null {
       listingSummary?.imageUrl,
       imageUrls?.[0]
     ),
+    listingDwellingType: firstString(
+      value.dwellingType,
+      listing?.dwellingType,
+      listingSummary?.dwellingType
+    ),
+    listingRooms: firstNumber(value.rooms, listing?.rooms, listingSummary?.rooms),
+    listingSizeM2: firstNumber(
+      value.sizeM2,
+      listing?.sizeM2,
+      listingSummary?.sizeM2
+    ),
     status: firstString(value.status, value.applicationStatus),
     message: firstString(value.message, value.applicationMessage),
     submittedAt: firstString(value.submittedAt, value.appliedAt, value.createdAt),
     createdAt: firstString(value.createdAt),
   };
+}
+
+function expandCompanyApplicationRows(value: unknown): unknown[] {
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  const nestedApplications = toArray<unknown>(value.applications);
+
+  if (nestedApplications.length === 0) {
+    return [value];
+  }
+
+  const listing = value.listing;
+
+  return nestedApplications.map((application) => {
+    if (!isRecord(application)) {
+      return application;
+    }
+
+    return {
+      ...application,
+      listing,
+    };
+  });
 }
 
 function companyApplicationsEndpoint(id: number, page: number, size: number): string {
@@ -696,6 +735,7 @@ export const companyService = {
     );
 
     return toArray<unknown>(result, true)
+      .flatMap(expandCompanyApplicationRows)
       .map(normalizeNewApplication)
       .filter((application): application is NewApplication => application !== null);
   }, 
@@ -716,6 +756,7 @@ export const companyService = {
 
       applications.push(
         ...rows
+          .flatMap(expandCompanyApplicationRows)
           .map(normalizeNewApplication)
           .filter((application): application is NewApplication => application !== null)
       );

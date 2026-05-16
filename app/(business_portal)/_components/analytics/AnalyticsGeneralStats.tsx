@@ -60,7 +60,7 @@ const metrics: MetricConfig[] = [
   {
     key: "interactions",
     fallbackKeys: ["likes"],
-    label: "Interaktioner",
+    label: "Favoritiseringar",
     icon: Heart,
     tone: "rose",
   },

@@ -7,17 +7,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
-import {
-  companyService,
-  type ObjectApplicationCount,
-} from "@/services/company";
-import { listingService } from "@/services/listing-service";
-import type { ListingDetailDTO } from "@/types/listing";
+import { companyService, type NewApplication } from "@/services/company";
 import { dashboardRelPath } from "../../_statics/variables";
 
 type Limit = 5 | 10;
 
-type ListingPreview = {
+type ObjectApplicationRow = {
+  listingId?: string | number;
   title: string;
   imageUrl?: string;
   address?: string;
@@ -26,17 +22,14 @@ type ListingPreview = {
   dwellingType?: string;
   rooms?: number | null;
   sizeM2?: number | null;
+  numApplications: number;
 };
 
-type ObjectApplicationRow = ObjectApplicationCount & {
-  preview?: ListingPreview;
-};
-
-function formatListingFacts(preview: ListingPreview) {
+function formatListingFacts(item: ObjectApplicationRow) {
   return [
-    preview.dwellingType,
-    preview.rooms ? `${preview.rooms} rum` : null,
-    preview.sizeM2 ? `${preview.sizeM2} m²` : null,
+    item.dwellingType,
+    item.rooms ? `${item.rooms} rum` : null,
+    item.sizeM2 ? `${item.sizeM2} m²` : null,
   ]
     .filter(Boolean)
     .join(" • ");
@@ -48,19 +41,48 @@ function formatRent(rent?: number) {
     : null;
 }
 
-function toListingPreview(listing: ListingDetailDTO): ListingPreview {
-  const location = [listing.area, listing.city].filter(Boolean).join(", ");
+function getApplicationListingKey(application: NewApplication) {
+  if (application.listingId != null) {
+    return String(application.listingId);
+  }
 
-  return {
-    title: listing.title,
-    imageUrl: listing.imageUrls?.[0],
-    address: listing.fullAddress || location || undefined,
-    location,
-    rent: listing.rent,
-    dwellingType: listing.dwellingType,
-    rooms: listing.rooms,
-    sizeM2: listing.sizeM2,
-  };
+  return [
+    application.listingTitle,
+    application.address,
+    application.listingCity,
+  ]
+    .filter(Boolean)
+    .join("|") || "unknown";
+}
+
+function buildApplicationRows(applications: NewApplication[], limit: Limit) {
+  const grouped = new Map<string, NewApplication[]>();
+
+  applications.forEach((application) => {
+    const key = getApplicationListingKey(application);
+    grouped.set(key, [...(grouped.get(key) ?? []), application]);
+  });
+
+  return Array.from(grouped.values())
+    .map((rows) => {
+      const first = rows[0];
+      const location = first.listingCity;
+
+      return {
+        listingId: first.listingId,
+        title: first.listingTitle || first.address || "Okänd annons",
+        imageUrl: first.listingImage,
+        address: first.address || location || undefined,
+        location,
+        rent: first.listingRent,
+        dwellingType: first.listingDwellingType,
+        rooms: first.listingRooms,
+        sizeM2: first.listingSizeM2,
+        numApplications: rows.length,
+      } satisfies ObjectApplicationRow;
+    })
+    .sort((a, b) => b.numApplications - a.numApplications)
+    .slice(0, limit);
 }
 
 function LimitToggle({
@@ -106,73 +128,84 @@ function ListingApplicationPreviewRow({
   item: ObjectApplicationRow;
   index: number;
 }) {
-  const title = item.preview?.title || item.address || `Annons ${index + 1}`;
-  const location = item.preview?.location || item.preview?.address || item.address;
-  const imageUrl = item.preview?.imageUrl;
-  const rent = item.preview ? formatRent(item.preview.rent) : null;
-  const facts = item.preview ? formatListingFacts(item.preview) : null;
-  const href = `${dashboardRelPath}/annonser/${encodeURIComponent(
-    String(item.listingId)
-  )}`;
+  const title = item.title || item.address || `Annons ${index + 1}`;
+  const location = item.location || item.address;
+  const rent = formatRent(item.rent);
+  const facts = formatListingFacts(item);
+  const href =
+    item.listingId != null
+      ? `${dashboardRelPath}/annonser/${encodeURIComponent(String(item.listingId))}`
+      : null;
+  const content = (
+    <div className="grid min-h-[118px] min-w-0 grid-cols-[132px_minmax(0,1fr)]">
+      <div className="relative h-full min-h-[118px] overflow-hidden bg-gray-100">
+        {item.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt=""
+            className="absolute inset-0 block !h-full !w-full max-w-none object-cover object-center"
+            src={item.imageUrl}
+          />
+        ) : (
+          <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-brand-50 text-xs font-semibold text-brand-500">
+            Ingen bild
+          </div>
+        )}
+
+        <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-white/95 px-1.5 text-[11px] font-semibold text-gray-900 shadow-sm">
+          {index + 1}
+        </span>
+      </div>
+
+      <div className="flex min-w-0 flex-1 items-center gap-4 px-4 py-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs leading-5 text-gray-500">
+            {location || "Annons"}
+          </p>
+          <h3 className="truncate text-base font-semibold leading-6 text-gray-900">
+            {title}
+          </h3>
+
+          <div className="mt-1.5 flex min-w-0 items-center gap-2">
+            {rent ? (
+              <span className="truncate text-sm font-semibold leading-5 text-gray-900">
+                {rent}
+              </span>
+            ) : null}
+            {facts ? (
+              <span className="truncate text-sm leading-5 text-gray-500">
+                {facts}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="ml-auto flex w-[86px] shrink-0 flex-col items-center justify-center rounded-2xl bg-gray-50 px-3 py-3 text-center">
+          <span className="text-3xl font-semibold leading-8 tracking-normal text-gray-900 tabular-nums">
+            {item.numApplications.toLocaleString("sv-SE")}
+          </span>
+          <span className="mt-1 text-xs font-medium leading-4 text-gray-500">
+            ans.
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!href) {
+    return (
+      <div className="min-h-[118px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+        {content}
+      </div>
+    );
+  }
 
   return (
     <Link
       className="group block min-h-[118px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:border-brand-100 hover:bg-brand-25/40 hover:shadow-[0_6px_18px_rgba(16,24,40,0.08)]"
       href={href}
     >
-      <div className="grid min-h-[118px] min-w-0 grid-cols-[132px_minmax(0,1fr)]">
-        <div className="relative h-full min-h-[118px] overflow-hidden bg-gray-100">
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              alt=""
-              className="absolute inset-0 block !h-full !w-full max-w-none object-cover object-center"
-              src={imageUrl}
-            />
-          ) : (
-            <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-brand-50 text-xs font-semibold text-brand-500">
-              Ingen bild
-            </div>
-          )}
-
-          <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-white/95 px-1.5 text-[11px] font-semibold text-gray-900 shadow-sm">
-            {index + 1}
-          </span>
-        </div>
-
-        <div className="flex min-w-0 flex-1 items-center gap-4 px-4 py-4">
-          <div className="min-w-0">
-            <p className="truncate text-xs leading-5 text-gray-500">
-              {location || "Annons"}
-            </p>
-            <h3 className="truncate text-base font-semibold leading-6 text-gray-900">
-              {title}
-            </h3>
-
-            <div className="mt-1.5 flex min-w-0 items-center gap-2">
-              {rent ? (
-                <span className="truncate text-sm font-semibold leading-5 text-gray-900">
-                  {rent}
-                </span>
-              ) : null}
-              {facts ? (
-                <span className="truncate text-sm leading-5 text-gray-500">
-                  {facts}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="ml-auto flex w-[86px] shrink-0 flex-col items-center justify-center rounded-2xl bg-gray-50 px-3 py-3 text-center">
-            <span className="text-3xl font-semibold leading-8 tracking-normal text-gray-900 tabular-nums">
-              {item.numApplications.toLocaleString("sv-SE")}
-            </span>
-            <span className="mt-1 text-xs font-medium leading-4 text-gray-500">
-              ans.
-            </span>
-          </div>
-        </div>
-      </div>
+      {content}
     </Link>
   );
 }
@@ -197,7 +230,7 @@ function ApplicationsByObjectList({
           <ListingApplicationPreviewRow
             index={index}
             item={item}
-            key={`${item.listingId}-${index}`}
+            key={`${item.listingId ?? item.title}-${index}`}
           />
         ))}
       </div>
@@ -254,45 +287,14 @@ export default function AnalyticsApplicationsByObjectBlock() {
     }
 
     let cancelled = false;
-    const activeCompanyId = companyId;
     setIsLoading(true);
     setError(null);
 
-    async function loadApplicationsByObject() {
-      const result = await companyService.applicationCountsPerObject(
-        activeCompanyId,
-        limit
-      );
-      const previewResults = await Promise.allSettled(
-        result.map(async (item) => {
-          const listing = await listingService.get(String(item.listingId));
-          return {
-            listingId: item.listingId,
-            preview: toListingPreview(listing),
-          };
-        })
-      );
-      const previewByListingId = new Map<string, ListingPreview>();
-
-      previewResults.forEach((previewResult) => {
-        if (previewResult.status === "fulfilled") {
-          previewByListingId.set(
-            String(previewResult.value.listingId),
-            previewResult.value.preview
-          );
-        }
-      });
-
-      return result.map((item) => ({
-        ...item,
-        preview: previewByListingId.get(String(item.listingId)),
-      }));
-    }
-
-    loadApplicationsByObject()
+    companyService
+      .applications(companyId)
       .then((result) => {
         if (!cancelled) {
-          setItems(result);
+          setItems(buildApplicationRows(result, limit));
         }
       })
       .catch((err: unknown) => {
