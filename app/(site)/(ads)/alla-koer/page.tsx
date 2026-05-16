@@ -340,7 +340,7 @@ export default function Page() {
   const totalQueues = filteredQueues.length;
 
   const queueGridClasses =
-    "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-3 md:gap-6 justify-items-center";
+    "grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3";
 
   const openQueue = (queue: QueueWithUI) => {
     router.push(`/alla-koer/${queue.companyId}`);
@@ -362,7 +362,7 @@ export default function Page() {
     };
 
     return (
-      <div key={queue.id} className="flex w-full justify-center">
+      <div key={queue.id} className="flex h-full min-w-0 w-full">
         <Que_ListingCard
           name={queueCardProps.name}
           area={queueCardProps.area}

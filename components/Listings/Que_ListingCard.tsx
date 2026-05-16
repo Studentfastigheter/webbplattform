@@ -51,12 +51,12 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
 
   return (
     <div
-      className={`relative flex h-[320px] w-full max-w-[480px] flex-col gap-4 overflow-hidden rounded-[32px] border border-black/[0.04] bg-white px-4 py-4 shadow-md transition-shadow duration-200 hover:shadow-lg sm:h-[250px] sm:px-5 sm:py-5 ${
+      className={`relative flex h-full min-h-[300px] w-full max-w-none flex-col gap-4 overflow-hidden rounded-[32px] border border-black/[0.04] bg-white px-4 pb-3 pt-4 shadow-md transition-shadow duration-200 hover:shadow-lg sm:min-h-[248px] sm:px-5 sm:pb-4 sm:pt-5 md:min-h-[258px] lg:min-h-[248px] ${
         isSelected ? "ring-2 ring-[#004225]/20" : ""
       }`}
     >
-      <div className="grid h-[180px] shrink-0 gap-3 sm:h-[88px] sm:grid-cols-[132px_1fr] sm:items-center sm:gap-3">
-        <div className="flex h-[76px] items-center justify-center border-black/[0.04] sm:border-r sm:pr-3">
+      <div className="grid shrink-0 gap-3 sm:grid-cols-[112px_minmax(0,1fr)] sm:items-start sm:gap-4 md:grid-cols-[124px_minmax(0,1fr)]">
+        <div className="flex h-20 items-center justify-center border-black/[0.04] sm:h-24 sm:border-r sm:pr-4">
           {logoUrl ? (
             <img
               src={logoUrl}
@@ -68,9 +68,9 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           )}
         </div>
 
-        <div className="flex min-w-0 flex-col items-start gap-2 sm:text-left">
+        <div className="flex min-w-0 flex-col items-start gap-2 pt-3 sm:pt-4 sm:text-left">
           <div className="flex min-w-0 flex-col items-start gap-1">
-            <div className="flex min-h-[46px] min-w-0 flex-wrap items-start justify-start gap-2 overflow-hidden">
+            <div className="flex min-h-[30px] min-w-0 flex-wrap items-start justify-start gap-2 overflow-hidden">
               <h3
                 className="text-[18px] font-normal leading-[23px] text-[#111111]"
                 style={{
@@ -88,7 +88,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
 
             <nav
               aria-label={`${name} policy-länkar`}
-              className="flex h-[17px] flex-wrap items-center gap-x-4 gap-y-1 overflow-hidden text-[13px] font-medium leading-[17px] text-[#004225]"
+              className="flex min-h-[17px] flex-wrap items-center gap-x-4 gap-y-1 overflow-hidden text-[13px] font-medium leading-[17px] text-[#004225]"
             >
               {policyLinks.map((link, index) => (
                 <React.Fragment key={link.label}>
@@ -115,7 +115,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
       </div>
 
       <p
-        className="h-[38px] shrink-0 text-left text-[14px] font-normal leading-[19px] text-[#202020]"
+        className="min-h-[38px] shrink-0 text-left text-[14px] font-normal leading-[19px] text-[#202020]"
         style={{
           display: "-webkit-box",
           WebkitLineClamp: 2,
@@ -128,7 +128,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         {description || fallbackDescription}
       </p>
 
-      <div className="mt-auto flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-6">
+      <div className="mt-1 grid shrink-0 grid-cols-1 gap-2.5 sm:mt-2 sm:grid-cols-2 sm:gap-3">
         <Button
           type="button"
           onClick={e => {
@@ -139,7 +139,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           size="lg"
           variant="default"
           isDisabled={isAlreadyJoined}
-          className={`h-9 w-full min-w-0 rounded-full px-5 text-sm font-semibold shadow-[0_6px_14px_rgba(0,0,0,0.18)] sm:w-auto sm:min-w-[150px] ${
+          className={`h-auto min-h-9 w-full min-w-0 whitespace-normal rounded-full px-4 py-2 text-center text-sm font-semibold leading-tight shadow-[0_6px_14px_rgba(0,0,0,0.18)] ${
             isAlreadyJoined
               ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
               : isSelected
@@ -167,7 +167,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           }}
           size="lg"
           variant="ghost"
-          className="h-9 w-full min-w-0 px-4 text-sm font-semibold text-[#004225] shadow-none hover:bg-transparent hover:opacity-75 sm:w-auto"
+          className="h-auto min-h-9 w-full min-w-0 whitespace-normal px-4 py-2 text-center text-sm font-semibold leading-tight text-[#004225] shadow-none hover:bg-transparent hover:opacity-75"
         >
           Läs mer
         </Button>
