@@ -36,12 +36,13 @@ export type ListingCardSmallProps = {
   imageTopRightContent?: React.ReactNode;
   showHostLogo?: boolean;
   contentTopRightContent?: React.ReactNode;
+  reserveTagSpace?: boolean;
 };
 
 const BASE_WIDTH = 380;
 const IMAGE_ASPECT_RATIO = "16 / 10";
-const MIN_SCALE = 0.55;
-const MAX_SCALE = 1;
+const MIN_SCALE = 0.42;
+const MAX_SCALE = 1.26;
 
 const formatRent = (rent?: number | null) =>
   typeof rent === "number"
@@ -77,6 +78,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     imageTopRightContent,
     showHostLogo = true,
     contentTopRightContent,
+    reserveTagSpace = true,
   } = props;
 
   const { user } = useAuth();
@@ -129,18 +131,18 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   }, [baseWidth]);
 
   const scaleValue = (value: number) => `${(value * scale).toFixed(2)}px`;
+  const isCompact = variant === "compact";
   const tagSize = {
-    height: 20 * scale,
-    horizontalPadding: 9 * scale,
-    fontSize: 11.5 * scale,
-    lineHeight: 15 * scale,
+    height: (isCompact ? 20 : 22) * scale,
+    horizontalPadding: (isCompact ? 8 : 10) * scale,
+    fontSize: (isCompact ? 9.5 : 10.5) * scale,
+    lineHeight: (isCompact ? 12 : 13) * scale,
   };
-
   const safeTags = tags ?? [];
   const locationText = [area, city].filter(Boolean).join(", ") || "Ej angivet";
   const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
   const logoSize = variant === "compact" ? 50 : 64;
-  const contentPadding = 13;
+  const contentPadding = isCompact ? 12 : 14;
   const logoRightOffset = showHostLogo ? 16 : 0;
   const hasContentTopRight = Boolean(contentTopRightContent);
   const contentRightPadding = showHostLogo
@@ -172,6 +174,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
         style={{
           aspectRatio: IMAGE_ASPECT_RATIO,
           lineHeight: 0,
+          minHeight: 0,
         }}
       >
         {imageTopRightContent && (
@@ -192,7 +195,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             className="absolute top-3 right-3 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all shadow-sm"
             aria-label={isLiked ? "Ta bort från sparade" : "Spara bostad"}
           >
-            <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+            <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
           </button>
         )}
 
@@ -201,6 +204,10 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             src={imageUrl}
             alt={title}
             className="absolute inset-0 block h-full w-full object-cover object-center transition-transform duration-500"
+            style={{
+              minWidth: "100%",
+              minHeight: "100%",
+            }}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400">
@@ -218,11 +225,11 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
       {/* CONTENT */}
       <div
-        className="relative flex flex-col"
+        className="relative flex flex-col overflow-hidden"
         style={{
           padding: scaleValue(contentPadding),
           paddingRight: scaleValue(contentRightPadding),
-          gap: scaleValue(8),
+          gap: scaleValue(isCompact ? 7 : 8),
         }}
       >
         {contentTopRightContent && (
@@ -263,21 +270,21 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
         {/* Listing facts + host logo */}
         <div
-          className="min-w-0"
+          className="min-w-0 overflow-hidden"
         >
           <div
             className="min-w-0"
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: scaleValue(3),
+              gap: scaleValue(isCompact ? 2 : 3),
             }}
           >
             <p
-              className="text-gray-500"
+              className="font-semibold text-[#6f6f6f]"
               style={{
-                fontSize: scaleValue(11.5),
-                lineHeight: scaleValue(15),
+                fontSize: scaleValue(isCompact ? 11.5 : 12.5),
+                lineHeight: scaleValue(isCompact ? 15 : 16),
                 display: "-webkit-box",
                 WebkitLineClamp: 1,
                 WebkitBoxOrient: "vertical",
@@ -289,10 +296,10 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             </p>
 
             <h3
-              className="font-medium text-gray-900"
+              className="font-normal text-[#111111]"
               style={{
-                fontSize: scaleValue(17),
-                lineHeight: scaleValue(22),
+                fontSize: scaleValue(isCompact ? 16.5 : 18),
+                lineHeight: scaleValue(isCompact ? 21 : 23),
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
@@ -304,21 +311,21 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             </h3>
 
             <p
-              className="font-medium text-gray-900"
+              className="font-normal text-[#202020]"
               style={{
-                marginTop: scaleValue(3),
-                fontSize: scaleValue(14.5),
-                lineHeight: scaleValue(19),
+                marginTop: scaleValue(isCompact ? 2 : 3),
+                fontSize: scaleValue(isCompact ? 14.5 : 16),
+                lineHeight: scaleValue(isCompact ? 19 : 21),
               }}
             >
               {formatRent(rent)}
             </p>
 
             <p
-              className="text-gray-500"
+              className="font-normal text-[#6f6f6f]"
               style={{
-                fontSize: scaleValue(12),
-                lineHeight: scaleValue(16),
+                fontSize: scaleValue(isCompact ? 11.5 : 13),
+                lineHeight: scaleValue(isCompact ? 15 : 17),
                 wordBreak: "break-word",
               }}
             >
@@ -329,8 +336,12 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
         {safeTags.length > 0 && (
           <div
-            className="flex flex-wrap"
-            style={{ gap: scaleValue(6) }}
+            className="flex min-w-0 flex-nowrap overflow-x-hidden overflow-y-visible"
+            style={{
+              alignItems: "center",
+              gap: scaleValue(6),
+              minHeight: scaleValue(tagSize.height),
+            }}
           >
             {safeTags.slice(0, 3).map((tag) => (
               <Tag
@@ -340,9 +351,23 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
                 horizontalPadding={tagSize.horizontalPadding}
                 fontSize={tagSize.fontSize}
                 lineHeight={tagSize.lineHeight}
+                fontWeight={700}
+                bgColor="#f7f7f7"
+                textColor="#6f6f6f"
+                borderColor="#d7d7d7"
+                className="min-w-0"
               />
             ))}
           </div>
+        )}
+
+        {reserveTagSpace && safeTags.length === 0 && (
+          <div
+            aria-hidden="true"
+            style={{
+              height: scaleValue(tagSize.height),
+            }}
+          />
         )}
 
         {footerContent && (

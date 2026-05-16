@@ -162,7 +162,7 @@ const firstStringArray = (...values: unknown[]) => {
 
 const normalizeListingTag = (value: unknown): string | null => {
   if (typeof value === "string") {
-    const trimmed = value.trim();
+    const trimmed = value.normalize("NFC").trim();
     return trimmed.length > 0 ? trimmed : null;
   }
 
@@ -267,6 +267,34 @@ const normalizeListingDetail = (dto: ListingDetailDTO): ListingDetailDTO => {
     imageUrls: firstStringArray(source.imageUrls, source.images),
     requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
     published: firstString(source.published) ?? null,
+  };
+};
+
+const normalizeListingTagDTO = (value: unknown): ListingTagDTO | null => {
+  if (typeof value === "string") {
+    const displayName = value.normalize("NFC").trim();
+    return displayName ? { displayName, icon: null } : null;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const displayName = firstString(
+    value.displayName,
+    value.name,
+    value.label,
+    value.value,
+    value.key
+  )?.normalize("NFC");
+
+  if (!displayName) {
+    return null;
+  }
+
+  return {
+    displayName,
+    icon: firstString(value.icon) ?? null,
   };
 };
 
@@ -513,12 +541,8 @@ export const listingService = {
     const res = await apiClient<unknown>("/listingtags", { auth: false });
 
     return arrayFromApiResponse<unknown>(res)
-      .filter((tag): tag is Record<string, unknown> => isRecord(tag))
-      .map((tag) => ({
-        displayName: firstString(tag.displayName, tag.name, tag.label) ?? "",
-        icon: firstString(tag.icon) ?? null,
-      }))
-      .filter((tag) => tag.displayName.length > 0);
+      .map(normalizeListingTagDTO)
+      .filter((tag): tag is ListingTagDTO => tag !== null);
   },
 
   getRequirementsProfile: async (

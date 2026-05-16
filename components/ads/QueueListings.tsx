@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import ListingCardSmall from "@/components/Listings/ListingCard_Small";
+import ListingCardFromDTO from "@/components/Listings/ListingCardFromDTO";
 import { type ListingCardDTO } from "@/types/listing";
 
 type Props = {
@@ -16,17 +16,6 @@ type Props = {
 const ROWS = 2;
 const COLS = 3;
 const MAX_VISIBLE_LISTINGS = ROWS * COLS;
-
-const splitListingLocation = (location?: string | null) => {
-  const [area, ...cityParts] = (location ?? "").split(",");
-  const trimmedArea = area?.trim();
-  const trimmedCity = cityParts.join(",").trim();
-
-  return {
-    area: trimmedArea || "Ej angivet",
-    city: trimmedCity || trimmedArea || "Ej angivet",
-  };
-};
 
 export default function QueueListings({
   listings,
@@ -61,33 +50,16 @@ export default function QueueListings({
         <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
       </div>
 
-      <div className="grid grid-cols-1 justify-items-center gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {visible.map((listing) => {
-          const { area, city } = splitListingLocation(listing.location);
-
-          return (
-            <div key={listing.id} className="flex w-full justify-center">
-              <ListingCardSmall
-                id={listing.id}
-                title={listing.title}
-                area={area}
-                city={city}
-                dwellingType={listing.dwellingType || "Bostad"}
-                rooms={listing.rooms || 0}
-                sizeM2={listing.sizeM2 || 0}
-                rent={listing.rent || 0}
-                landlordType={listing.hostType}
-                hostName={listing.hostName}
-                hostLogoUrl={listing.hostLogoUrl}
-                isVerified={listing.verifiedHost}
-                imageUrl={listing.imageUrl}
-                tags={listing.tags}
-                showFavoriteButton={false}
-                onClick={() => router.push(`/bostader/${listing.id}`)}
-              />
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-1 justify-items-center gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {visible.map((listing) => (
+          <div key={listing.id} className="flex w-full justify-center">
+            <ListingCardFromDTO
+              listing={listing}
+              showFavoriteButton={false}
+              onOpen={() => router.push(`/bostader/${listing.id}`)}
+            />
+          </div>
+        ))}
       </div>
 
       {isLoading && (

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Eye,
-  FileUser,
   MousePointerClick,
   Search,
   X,
@@ -666,6 +665,7 @@ export default function PortalAdsPage() {
                   variant="compact"
                   showFavoriteButton={false}
                   showHostLogo={false}
+                  reserveTagSpace={false}
                   imageTopRightContent={
                     <PortalListingStatusTag
                       label={item.statusLabel}
@@ -681,11 +681,7 @@ export default function PortalAdsPage() {
                         </span>
                         <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
                           <MousePointerClick className="h-3 w-3 text-gray-500" />
-                          {item.detailedViews.toLocaleString("sv-SE")} detalj
-                        </span>
-                        <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
-                          <FileUser className="h-3 w-3 text-gray-500" />
-                          {item.applications.toLocaleString("sv-SE")} ans.
+                          {item.detailedViews.toLocaleString("sv-SE")} klicks
                         </span>
                       </div>
                       <span className="shrink-0 whitespace-nowrap text-right">

@@ -6,6 +6,7 @@ import {
   LoginRequest,
   RegisterRequest,
   RegisterResponse,
+  ChangePasswordRequest,
   UpdateUserRequest,
 } from "@/types";
 
@@ -61,6 +62,7 @@ export const authService = {
   // Uppdatera profil
   updateProfile: async (data: UpdateUserRequest): Promise<User> => {
     const payload: UpdateUserRequest = {
+      email: data.email,
       firstName: data.firstName,
       surname: data.surname,
       phone: data.phone,
@@ -72,6 +74,13 @@ export const authService = {
     return await apiClient<User>("/auth/me", {
       method: "PUT",
       body: JSON.stringify(payload),
+    });
+  },
+
+  changePassword: async (data: ChangePasswordRequest): Promise<void> => {
+    await apiClient<void>("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   },
 

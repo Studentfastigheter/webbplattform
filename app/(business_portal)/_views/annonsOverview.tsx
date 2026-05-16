@@ -18,10 +18,10 @@ import {
   ImageIcon,
   MapPin,
   MousePointerClick,
-  Ruler,
-  Tag as TagIcon,
   Trash2,
 } from "lucide-react";
+import BostadAbout from "@/components/ads/BostadAbout";
+import BostadImagePreviewGrid from "@/components/ads/BostadImagePreviewGrid";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -41,7 +41,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Tag from "@/components/ui/Tag";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
@@ -225,6 +224,25 @@ function formatArea(value?: number | null): string {
   return `${value.toLocaleString("sv-SE")} m²`;
 }
 
+function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return "-";
+  return `${value.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}%`;
+}
+
+function formatDwellingType(value?: string | null): string {
+  const labels: Record<string, string> = {
+    APARTMENT: "Lägenhet",
+    ROOM: "Rum",
+    CORRIDOR_ROOM: "Korridorsrum",
+    apartment: "Lägenhet",
+    room: "Rum",
+    corridor_room: "Korridorsrum",
+  };
+
+  if (!value) return "-";
+  return labels[value] ?? value;
+}
+
 function resolveApplicationCount(
   listing: ListingDetailDTO,
   companyListing: RawListing | null,
@@ -345,20 +363,23 @@ function FactTile({
   icon,
   label,
   value,
+  detail,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
+  detail?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
-          {icon}
-        </div>
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
-          <p className="mt-1 truncate text-sm font-semibold text-gray-900">{value}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-950">{value}</p>
+          {detail ? <p className="mt-1 text-sm text-gray-500">{detail}</p> : null}
+        </div>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-700">
+          {icon}
         </div>
       </div>
     </div>
@@ -444,6 +465,69 @@ function RequirementProfileCard({
           )}
         </div>
       )}
+    </section>
+  );
+}
+
+function ListingDetailsCard({
+  listing,
+  meta,
+  requirementsProfile,
+}: {
+  listing: ListingDetailDTO;
+  meta: ListingMeta;
+  requirementsProfile: RequirementsProfileDTO | null;
+}) {
+  return (
+    <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="mt-1 text-base font-semibold text-gray-950">Översikt</h2>
+        </div>
+        <PortalListingStatusTag
+          label={meta.statusLabel}
+          tone={meta.statusTone}
+          className="w-fit shrink-0"
+        />
+      </div>
+      <dl className="mt-4">
+        <DetailRow label="Hyra" value={formatCurrency(listing.rent)} />
+        <DetailRow label="Rum" value={listing.rooms || "-"} />
+        <DetailRow label="Yta" value={formatArea(listing.sizeM2)} />
+        <DetailRow label="Bostadstyp" value={formatDwellingType(listing.dwellingType)} />
+        <DetailRow label="Område" value={listing.area || "-"} />
+        <DetailRow label="Stad" value={listing.city || "-"} />
+        <DetailRow label="Tillgänglig från" value={listing.availableFrom || "-"} />
+        <DetailRow label="Tillgänglig till" value={listing.availableTo || "-"} />
+        <DetailRow label="Sista ansökan" value={listing.applyBy || "-"} />
+        <DetailRow label="Publicerad" value={meta.publishedAt} />
+        <DetailRow label="Senast ändrad" value={meta.updatedAt} />
+      </dl>
+    </section>
+  );
+}
+
+function ListingPreview({
+  listing,
+  images,
+}: {
+  listing: ListingDetailDTO;
+  images: string[];
+}) {
+  return (
+    <section className="space-y-4">
+      {images.length ? (
+        <BostadImagePreviewGrid images={images} readOnly />
+      ) : (
+        <div className="flex h-[320px] items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+          <div className="flex flex-col items-center gap-2">
+            <ImageIcon className="h-8 w-8 text-gray-300" />
+            Ingen bild uppladdad
+          </div>
+        </div>
+      )}
+
+      <BostadAbout listing={listing} hideStudentActions />
     </section>
   );
 }
@@ -550,7 +634,10 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
   const editHref = `${dashboardRelPath}/annonser/${encodeURIComponent(id)}/redigera`;
   const applicationsHref = `${dashboardRelPath}/ansokningar?listingId=${encodeURIComponent(id)}`;
-  const image = useMemo(() => listing?.imageUrls?.find(Boolean), [listing]);
+  const galleryImages = useMemo(
+    () => listing?.imageUrls?.filter(Boolean) ?? [],
+    [listing]
+  );
 
   const handleStatusChange = async (status: ListingStatus) => {
     const option = listingStatusOptions.find((item) => item.value === status);
@@ -746,100 +833,42 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           icon={<FileUser className="h-5 w-5" />}
           label="Ansökningar"
           value={formatNumber(meta.applications)}
+          detail="Mottagna via annonsen"
         />
         <FactTile
           icon={<Eye className="h-5 w-5" />}
-          label="Snabbvisningar"
-          value={formatNumber(meta.quickViews)}
+          label="Visningar"
+          value={formatNumber(meta.quickViews + meta.detailedViews)}
+          detail={`${formatNumber(meta.quickViews)} snabba, ${formatNumber(meta.detailedViews)} detaljerade`}
         />
         <FactTile
           icon={<MousePointerClick className="h-5 w-5" />}
-          label="Detaljvisningar"
-          value={formatNumber(meta.detailedViews)}
+          label="Konvertering"
+          value={meta.detailedViews ? formatPercent((meta.applications / meta.detailedViews) * 100) : "-"}
+          detail="Ansökningar per detaljvisning"
         />
-        <FactTile icon={<Home className="h-5 w-5" />} label="Bostadstyp" value={listing.dwellingType || "-"} />
-        <FactTile icon={<Ruler className="h-5 w-5" />} label="Yta" value={formatArea(listing.sizeM2)} />
-        <FactTile icon={<CalendarDays className="h-5 w-5" />} label="Publicerad" value={meta.publishedAt} />
+        <FactTile
+          icon={<CalendarDays className="h-5 w-5" />}
+          label="Publicerad"
+          value={meta.publishedAt}
+          detail={`Senast ändrad ${meta.updatedAt}`}
+        />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(340px,0.8fr)]">
-        <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          {image ? (
-            <img alt="" className="h-[320px] w-full object-cover" src={image} />
-          ) : (
-            <div className="flex h-[320px] items-center justify-center bg-gray-50 text-sm text-gray-500">
-              <div className="flex flex-col items-center gap-2">
-                <ImageIcon className="h-8 w-8 text-gray-300" />
-                Ingen bild uppladdad
-              </div>
-            </div>
-          )}
-        </section>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <ListingPreview listing={listing} images={galleryImages} />
 
-        <section className="relative rounded-xl border border-gray-200 bg-white p-5">
-          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Detaljer</h2>
-            <PortalListingStatusTag
-              label={meta.statusLabel}
-              tone={meta.statusTone}
-              className="w-fit shrink-0"
-            />
-          </div>
-          <dl className="mt-4">
-            <DetailRow label="Hyra" value={formatCurrency(listing.rent)} />
-            <DetailRow label="Rum" value={listing.rooms || "-"} />
-            <DetailRow label="Yta" value={formatArea(listing.sizeM2)} />
-            <DetailRow label="Område" value={listing.area || "-"} />
-            <DetailRow label="Stad" value={listing.city || "-"} />
-            <DetailRow label="Tillgänglig från" value={listing.availableFrom || "-"} />
-            <DetailRow label="Tillgänglig till" value={listing.availableTo || "-"} />
-            <DetailRow label="Sista ansökan" value={listing.applyBy || "-"} />
-            <DetailRow
-              label="Kravprofil"
-              value={
-                requirementsProfile?.title ||
-                (listing.requirementsProfileId ? "Kopplad" : "-")
-              }
-            />
-            <DetailRow label="Senast ändrad" value={meta.updatedAt} />
-          </dl>
-        </section>
-      </div>
-
-      <RequirementProfileCard
-        profile={requirementsProfile}
-        profileId={listing.requirementsProfileId}
-      />
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(340px,0.8fr)]">
-        <section className="rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="text-lg font-semibold text-gray-900">Beskrivning</h2>
-          <p className="mt-3 whitespace-pre-line text-sm leading-6 text-gray-600">
-            {listing.description || "Ingen beskrivning angiven."}
-          </p>
-        </section>
-
-        <section className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="flex items-center gap-2">
-            <TagIcon className="h-5 w-5 text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-900">Taggar</h2>
-          </div>
-          {listing.tags?.length ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {listing.tags.map((tag) => (
-                <Tag
-                  fontSize={13}
-                  height={28}
-                  horizontalPadding={14}
-                  key={tag}
-                  text={tag}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-gray-500">Inga taggar angivna.</p>
-          )}
-        </section>
+        <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+          <ListingDetailsCard
+            listing={listing}
+            meta={meta}
+            requirementsProfile={requirementsProfile}
+          />
+          <RequirementProfileCard
+            profile={requirementsProfile}
+            profileId={listing.requirementsProfileId}
+          />
+        </aside>
       </div>
 
       <AlertDialog
