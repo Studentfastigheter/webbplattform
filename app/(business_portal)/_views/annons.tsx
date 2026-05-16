@@ -31,27 +31,76 @@ const inlineInputClass =
   "min-w-0 rounded-md border border-[#004225]/10 bg-[#004225]/[0.035] px-2 py-1 outline-none transition hover:border-[#004225]/25 hover:bg-white focus:border-[#004225] focus:bg-white focus:ring-4 focus:ring-[#004225]/10";
 
 function toDateInputValue(value?: string | null) {
-  return value ? value.slice(0, 10) : "";
+  if (!value) return "";
+
+  const match = value.match(/^\d{4}-\d{2}-\d{2}/);
+  return match?.[0] ?? "";
+}
+
+function toNullableDateInputValue(value?: string | null) {
+  return toDateInputValue(value) || null;
+}
+
+function cloneEditableListing(listing: ListingDetailDTO): ListingDetailDTO {
+  return {
+    ...listing,
+    availableFrom: toNullableDateInputValue(listing.availableFrom),
+    availableTo: toNullableDateInputValue(listing.availableTo),
+    applyBy: toNullableDateInputValue(listing.applyBy),
+    tags: normalizeTagList(listing.tags),
+    imageUrls: [...(listing.imageUrls ?? [])],
+    description: listing.description ?? "",
+  };
+}
+
+function normalizeNumberValue(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeTagValue(value: string) {
+  return value.normalize("NFC").trim();
 }
 
 function normalizeTagKey(value: string) {
-  return value.trim().toLowerCase();
+  return normalizeTagValue(value).toLocaleLowerCase("sv-SE");
+}
+
+function normalizeTagList(tags: string[] | undefined) {
+  const seen = new Set<string>();
+  const normalizedTags: string[] = [];
+
+  (tags ?? []).forEach((tag) => {
+    const normalizedTag = normalizeTagValue(tag);
+    const key = normalizeTagKey(normalizedTag);
+
+    if (!normalizedTag || seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    normalizedTags.push(normalizedTag);
+  });
+
+  return normalizedTags;
 }
 
 function getSelectableTags(tags: ListingTagDTO[]) {
   const seen = new Set<string>();
+  const selectableTags: ListingTagDTO[] = [];
 
-  return tags.filter((tag) => {
-    const label = tag.displayName.trim();
+  tags.forEach((tag) => {
+    const label = normalizeTagValue(tag.displayName);
     const key = normalizeTagKey(label);
 
     if (!label || seen.has(key)) {
-      return false;
+      return;
     }
 
     seen.add(key);
-    return true;
+    selectableTags.push({ ...tag, displayName: label });
   });
+
+  return selectableTags;
 }
 
 function isTagSelected(selectedTags: string[], tag: ListingTagDTO) {
@@ -59,40 +108,117 @@ function isTagSelected(selectedTags: string[], tag: ListingTagDTO) {
   return selectedKeys.has(normalizeTagKey(tag.displayName));
 }
 
-function filterTagsByAvailableOptions(
+function areStringArraysEqual(left: string[] | undefined, right: string[] | undefined) {
+  const normalizedLeft = left ?? [];
+  const normalizedRight = right ?? [];
+
+  if (normalizedLeft.length !== normalizedRight.length) {
+    return false;
+  }
+
+  return normalizedLeft.every((value, index) => value === normalizedRight[index]);
+}
+
+function getEndpointTagsFromSelection(
   selectedTags: string[] | undefined,
   availableTags: ListingTagDTO[]
 ) {
+  const selectedKeys = new Set(normalizeTagList(selectedTags).map(normalizeTagKey));
+
   if (availableTags.length === 0) {
-    return [];
+    return normalizeTagList(selectedTags);
   }
 
-  const availableByKey = new Map(
-    availableTags.map(
-      (tag) => [normalizeTagKey(tag.displayName), tag.displayName] as const
-    )
-  );
-
-  return (selectedTags ?? [])
-    .map((tag) => availableByKey.get(normalizeTagKey(tag)))
-    .filter((tag): tag is string => Boolean(tag));
+  return availableTags
+    .map((tag) => normalizeTagValue(tag.displayName))
+    .filter((tag) => tag && selectedKeys.has(normalizeTagKey(tag)));
 }
 
-function getEditableSnapshot(listing: ListingDetailDTO | null) {
+function getEditableSnapshot(
+  listing: ListingDetailDTO | null,
+  availableTags: ListingTagDTO[] = []
+) {
   if (!listing) return "";
 
   return JSON.stringify({
     title: listing.title,
-    rent: listing.rent,
-    rooms: listing.rooms,
-    sizeM2: listing.sizeM2,
-    availableFrom: toDateInputValue(listing.availableFrom),
-    availableTo: toDateInputValue(listing.availableTo),
-    applyBy: toDateInputValue(listing.applyBy),
-    tags: listing.tags ?? [],
+    rent: normalizeNumberValue(listing.rent),
+    rooms: normalizeNumberValue(listing.rooms),
+    sizeM2: normalizeNumberValue(listing.sizeM2),
+    availableFrom: toNullableDateInputValue(listing.availableFrom),
+    availableTo: toNullableDateInputValue(listing.availableTo),
+    applyBy: toNullableDateInputValue(listing.applyBy),
+    tags: getEndpointTagsFromSelection(listing.tags, availableTags),
     description: listing.description ?? "",
     imageUrls: listing.imageUrls ?? [],
   });
+}
+
+function createUpdatePayload(
+  draft: ListingDetailDTO,
+  listing: ListingDetailDTO | null,
+  availableTags: ListingTagDTO[]
+): UpdateListingRequest {
+  const baseline = listing ? cloneEditableListing(listing) : null;
+  const payload: UpdateListingRequest = {};
+
+  if (!baseline || draft.title !== baseline.title) {
+    payload.title = draft.title;
+  }
+
+  if (!baseline || normalizeNumberValue(draft.rent) !== normalizeNumberValue(baseline.rent)) {
+    payload.rent = normalizeNumberValue(draft.rent);
+  }
+
+  if (!baseline || normalizeNumberValue(draft.rooms) !== normalizeNumberValue(baseline.rooms)) {
+    payload.rooms = normalizeNumberValue(draft.rooms);
+  }
+
+  if (
+    !baseline ||
+    normalizeNumberValue(draft.sizeM2) !== normalizeNumberValue(baseline.sizeM2)
+  ) {
+    payload.sizeM2 = normalizeNumberValue(draft.sizeM2);
+  }
+
+  if (
+    !baseline ||
+    toNullableDateInputValue(draft.availableFrom) !==
+      toNullableDateInputValue(baseline.availableFrom)
+  ) {
+    payload.availableFrom = toNullableDateInputValue(draft.availableFrom);
+  }
+
+  if (
+    !baseline ||
+    toNullableDateInputValue(draft.availableTo) !==
+      toNullableDateInputValue(baseline.availableTo)
+  ) {
+    payload.availableTo = toNullableDateInputValue(draft.availableTo);
+  }
+
+  if (
+    !baseline ||
+    toNullableDateInputValue(draft.applyBy) !== toNullableDateInputValue(baseline.applyBy)
+  ) {
+    payload.applyBy = toNullableDateInputValue(draft.applyBy);
+  }
+
+  const draftTags = getEndpointTagsFromSelection(draft.tags, availableTags);
+  const baselineTags = getEndpointTagsFromSelection(baseline?.tags, availableTags);
+  if (!baseline || !areStringArraysEqual(draftTags, baselineTags)) {
+    payload.tags = draftTags;
+  }
+
+  if (!baseline || (draft.description ?? "") !== (baseline.description ?? "")) {
+    payload.description = draft.description ?? "";
+  }
+
+  if (!baseline || !areStringArraysEqual(draft.imageUrls, baseline.imageUrls)) {
+    payload.images = draft.imageUrls ?? [];
+  }
+
+  return payload;
 }
 
 function InlineLabel({ children }: { children: string }) {
@@ -292,7 +418,7 @@ function EditableListingPreview({
               </div>
             ) : availableTags.length === 0 ? (
               <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500">
-                Inga taggar finns tillgangliga.
+                Inga taggar finns tillgängliga.
               </div>
             ) : (
               <div className="flex flex-wrap gap-2" aria-label="Taggar">
@@ -321,16 +447,7 @@ function EditableListingPreview({
               type="hidden"
               aria-label="Taggar"
               value={(draft.tags ?? []).join(", ")}
-              onChange={(event) =>
-                onDraftChange({
-                  tags: event.target.value
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter(Boolean),
-                })
-              }
-              className={`${inlineInputClass} w-full text-sm font-medium text-gray-700`}
-              placeholder="Ex. Möblerat, Balkong, Poängfri"
+              readOnly
             />
           </div>
 
@@ -360,7 +477,6 @@ export default function Annons({ id }: AnnonsPageProps) {
   const [saveState, setSaveState] = useState<SaveState>(emptySaveState);
   const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
   const [listingTags, setListingTags] = useState<ListingTagDTO[]>([]);
-  const [listingTagsLoaded, setListingTagsLoaded] = useState(false);
   const [listingTagsLoading, setListingTagsLoading] = useState(true);
   const [listingTagsError, setListingTagsError] = useState<string | null>(null);
 
@@ -373,7 +489,6 @@ export default function Annons({ id }: AnnonsPageProps) {
     setDraft(null);
     setSaveState(emptySaveState);
     setListingTags([]);
-    setListingTagsLoaded(false);
     setListingTagsLoading(true);
     setListingTagsError(null);
 
@@ -381,8 +496,10 @@ export default function Annons({ id }: AnnonsPageProps) {
       .get(id)
       .then((res) => {
         if (!active) return;
-        setListing(res);
-        setDraft(res);
+
+        const normalized = cloneEditableListing(res);
+        setListing(normalized);
+        setDraft(cloneEditableListing(normalized));
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -398,11 +515,10 @@ export default function Annons({ id }: AnnonsPageProps) {
       .then((tags) => {
         if (!active) return;
         setListingTags(tags);
-        setListingTagsLoaded(true);
       })
       .catch((err: unknown) => {
         if (!active) return;
-        console.error("Kunde inte hamta annonstaggar:", err);
+        console.error("Kunde inte hämta annonstaggar:", err);
         setListingTagsError(
           err instanceof Error ? err.message : "Kunde inte ladda taggar."
         );
@@ -418,14 +534,16 @@ export default function Annons({ id }: AnnonsPageProps) {
 
   const galleryImages = useMemo(
     () => draft?.imageUrls?.filter(Boolean) ?? [],
-    [draft],
+    [draft]
   );
 
   const availableTags = useMemo(() => getSelectableTags(listingTags), [listingTags]);
 
   const hasUnsavedChanges = useMemo(
-    () => getEditableSnapshot(draft) !== getEditableSnapshot(listing),
-    [draft, listing],
+    () =>
+      getEditableSnapshot(draft, availableTags) !==
+      getEditableSnapshot(listing, availableTags),
+    [availableTags, draft, listing]
   );
 
   const updateDraft = (patch: Partial<ListingDetailDTO>) => {
@@ -436,50 +554,45 @@ export default function Annons({ id }: AnnonsPageProps) {
   const updateNumber = (key: "rent" | "rooms" | "sizeM2", value: string) => {
     const parsed = value === "" ? null : Number(value);
     updateDraft({
-      [key]: Number.isFinite(parsed) ? parsed : null,
+      [key]: normalizeNumberValue(parsed),
     } as Partial<ListingDetailDTO>);
   };
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!draft) return;
-    if (listingTagsLoading) {
+
+    const payload = createUpdatePayload(draft, listing, availableTags);
+
+    if (Object.keys(payload).length === 0) {
+      setSaveState({ status: "success", message: "Inga ändringar att spara." });
+      return;
+    }
+
+    if (payload.tags && listingTagsLoading) {
       setSaveState({
         status: "error",
-        message: "Taggar laddas fortfarande. Forsok igen om en stund.",
+        message: "Taggar laddas fortfarande. Försök igen om en stund.",
       });
       return;
     }
-    if (listingTagsError) {
+
+    if (payload.tags && listingTagsError) {
       setSaveState({
         status: "error",
-        message: "Kunde inte spara eftersom taggarna inte kunde laddas.",
+        message: "Kunde inte spara taggar eftersom de inte kunde laddas.",
       });
       return;
     }
 
     setSaveState({ status: "saving", message: null });
 
-    const payload: UpdateListingRequest = {
-      title: draft.title,
-      rent: draft.rent,
-      rooms: draft.rooms,
-      sizeM2: draft.sizeM2,
-      availableFrom: toDateInputValue(draft.availableFrom) || null,
-      availableTo: toDateInputValue(draft.availableTo) || null,
-      applyBy: toDateInputValue(draft.applyBy) || null,
-      tags: listingTagsLoaded
-        ? filterTagsByAvailableOptions(draft.tags, availableTags)
-        : [],
-      description: draft.description,
-      images: draft.imageUrls,
-    };
-
     try {
       await listingService.update(id, payload);
       const next = await listingService.get(id).catch(() => draft);
-      setListing(next);
-      setDraft(next);
+      const normalized = cloneEditableListing(next);
+      setListing(normalized);
+      setDraft(cloneEditableListing(normalized));
       setSaveState({ status: "success", message: "Ändringarna är sparade." });
     } catch (err) {
       setSaveState({
@@ -491,7 +604,7 @@ export default function Annons({ id }: AnnonsPageProps) {
 
   const resetDraft = () => {
     if (!listing) return;
-    setDraft(listing);
+    setDraft(cloneEditableListing(listing));
     setSaveState(emptySaveState);
   };
 
@@ -557,11 +670,7 @@ export default function Annons({ id }: AnnonsPageProps) {
               <Button
                 type="submit"
                 isLoading={saveState.status === "saving"}
-                isDisabled={
-                  saveState.status === "saving" ||
-                  listingTagsLoading ||
-                  Boolean(listingTagsError)
-                }
+                isDisabled={saveState.status === "saving"}
               >
                 Spara ändringar
               </Button>
