@@ -1,9 +1,8 @@
- "use client";
+"use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { MapPin, Building2, Check } from "lucide-react";
-import Tag from "../ui/Tag";
+import { Building2, Plus } from "lucide-react";
 import VerifiedTag from "../ui/VerifiedTag";
 import type { Tag as TagType } from "@/types";
 
@@ -16,6 +15,9 @@ type QueueSummary = {
   isVerified?: boolean;
   logoUrl?: string | null;
   logoAlt?: string;
+  description?: string | null;
+  termsUrl?: string | null;
+  privacyUrl?: string | null;
   tags?: TagType[];
 };
 
@@ -26,206 +28,107 @@ export type QueListingCardProps = QueueSummary & {
   onToggleSelect?: () => void;
 };
 
-const BASE_WIDTH = 360;
-const MIN_SCALE = 0.7;
-const MAX_SCALE = 1;
-const BADGE_MIN_SCALE = 0.95;
-const BADGE_MAX_SCALE = 1.25;
-
 const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
   const {
     name,
-    area,
-    city,
-    totalUnits,
-    unitsLabel,
     isVerified = false,
     logoUrl,
     logoAlt,
-    tags,
+    description,
+    termsUrl,
+    privacyUrl,
     isSelected = false,
     isAlreadyJoined = false,
     onViewListings,
     onToggleSelect,
   } = props;
-  const cardRef = useRef<HTMLDivElement | null>(null);
-  const [scale, setScale] = useState(1);
-  const [isHovering, setIsHovering] = useState(false);
-
-  useEffect(() => {
-    const node = cardRef.current;
-    if (!node) return;
-
-    const updateScale = (width: number) => {
-      const nextScale = Math.min(
-        Math.max(width / BASE_WIDTH, MIN_SCALE),
-        MAX_SCALE
-      );
-      setScale(Number(nextScale.toFixed(3)));
-    };
-
-    updateScale(node.getBoundingClientRect().width);
-
-    const observer = new ResizeObserver((entries) => {
-      entries.forEach((entry) => {
-        updateScale(entry.contentRect.width);
-      });
-    });
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  const unitsText = unitsLabel ?? (totalUnits ? `${totalUnits} bostäder` : undefined);
-
-  const scaleValue = (value: number) => `${(value * scale).toFixed(2)}px`;
-
-  const badgeScale = Math.min(
-    Math.max(scale, BADGE_MIN_SCALE),
-    BADGE_MAX_SCALE
-  );
-
-  const tagSize = {
-    height: 26 * scale,
-    horizontalPadding: 14 * scale,
-    fontSize: 14 * scale,
-    lineHeight: 20 * scale,
-  };
-
-  const safeTags = tags ?? [];
-  const locationLabel = [area, city].filter(Boolean).join(", ");
+  const fallbackDescription =
+    "Vi hjälper dig hitta studentboende på ett enkelt och tryggt sätt.";
+  const policyLinks = [
+    { label: "Villkor", href: termsUrl },
+    { label: "Integritetspolicy", href: privacyUrl },
+  ];
 
   return (
     <div
-      role="button"
-      ref={cardRef}
-      onKeyDown={e => {
-        // Enable keyboard navigation
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onViewListings?.();
-        }
-      }}
-      onClick={e => onViewListings?.()}
-      onMouseEnter={e => setIsHovering(true)}
-      onMouseLeave={e => setIsHovering(false)}
-      className={`relative flex w-full max-w-[320px] flex-col cursor-pointer group
-        shadow-md hover:shadow-lg transition-all duration-200 border border-gray-100
-        ${isSelected ? "bg-green-50/60" : "bg-white"}`}
-      style={{
-        padding: scaleValue(20),
-        borderRadius: scaleValue(20),
-        gap: scaleValue(16),
-        minHeight: scaleValue(340),
-        transform: isHovering ? "translateY(-2px)" : "translateY(0)",
-      }}
+      className={`relative flex h-[320px] w-full max-w-[480px] flex-col gap-4 overflow-hidden rounded-[32px] border border-black/[0.04] bg-white px-4 py-4 shadow-md transition-shadow duration-200 hover:shadow-lg sm:h-[250px] sm:px-5 sm:py-5 ${
+        isSelected ? "ring-2 ring-[#004225]/20" : ""
+      }`}
     >
-      {/* Logo — large, centered, hero element */}
-      <div
-        className="flex items-center justify-center shrink-0 self-center"
+      <div className="grid h-[180px] shrink-0 gap-3 sm:h-[88px] sm:grid-cols-[132px_1fr] sm:items-center sm:gap-3">
+        <div className="flex h-[76px] items-center justify-center border-black/[0.04] sm:border-r sm:pr-3">
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={logoAlt ?? name}
+              className="max-h-[76px] w-full max-w-[128px] object-contain"
+            />
+          ) : (
+            <Building2 className="h-10 w-10 text-gray-400" strokeWidth={1.6} />
+          )}
+        </div>
+
+        <div className="flex min-w-0 flex-col items-start gap-2 sm:text-left">
+          <div className="flex min-w-0 flex-col items-start gap-1">
+            <div className="flex min-h-[46px] min-w-0 flex-wrap items-start justify-start gap-2 overflow-hidden">
+              <h3
+                className="text-[18px] font-normal leading-[23px] text-[#111111]"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  wordBreak: "break-word",
+                }}
+              >
+                {name}
+              </h3>
+              {isVerified && <VerifiedTag />}
+            </div>
+
+            <nav
+              aria-label={`${name} policy-länkar`}
+              className="flex h-[17px] flex-wrap items-center gap-x-4 gap-y-1 overflow-hidden text-[13px] font-medium leading-[17px] text-[#004225]"
+            >
+              {policyLinks.map((link, index) => (
+                <React.Fragment key={link.label}>
+                  {index > 0 && (
+                    <span className="hidden h-5 w-px bg-[#004225]/70 sm:block" />
+                  )}
+                  <a
+                    href={link.href ?? "#"}
+                    aria-disabled={!link.href}
+                    onClick={(event) => {
+                      if (!link.href) {
+                        event.preventDefault();
+                      }
+                    }}
+                    className="rounded-sm underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]"
+                  >
+                    {link.label}
+                  </a>
+                </React.Fragment>
+              ))}
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <p
+        className="h-[38px] shrink-0 text-left text-[14px] font-normal leading-[19px] text-[#202020]"
         style={{
-          width: "100%",
-          minHeight: scaleValue(80),
-          flexGrow: 1,
-          padding: scaleValue(4),
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          wordBreak: "break-word",
         }}
       >
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt={logoAlt ?? name}
-            className="object-contain"
-            style={{
-              maxWidth: "100%",
-              maxHeight: scaleValue(180),
-              borderRadius: scaleValue(6),
-            }}
-          />
-        ) : (
-          <Building2 size={48 * scale} className="text-gray-400" />
-        )}
-      </div>
+        {description || fallbackDescription}
+      </p>
 
-      {/* Text content — left-aligned, grows to fill space */}
-      <div className="flex flex-col" style={{ gap: scaleValue(6) }}>
-        {/* Verified badge */}
-        {isVerified && (
-          <div
-            style={{
-              transform: `scale(${badgeScale})`,
-              transformOrigin: "left center",
-            }}
-          >
-            <VerifiedTag />
-          </div>
-        )}
-
-        {/* Name — left-aligned, clamp to 2 lines */}
-        <h3
-          className="font-bold text-gray-900"
-          style={{
-            fontSize: scaleValue(20),
-            lineHeight: scaleValue(26),
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {name}
-        </h3>
-
-        {/* Location + units on one row */}
-        <div
-          className="flex items-center flex-wrap text-gray-500"
-          style={{
-            gap: scaleValue(6),
-            fontSize: scaleValue(15),
-            lineHeight: scaleValue(20),
-          }}
-        >
-          {locationLabel && (
-            <div className="flex items-center" style={{ gap: scaleValue(4) }}>
-              <MapPin size={13 * scale} strokeWidth={1.8} className="shrink-0" />
-              <span>{locationLabel}</span>
-            </div>
-          )}
-          {locationLabel && unitsText && (
-            <span className="text-gray-300">{"\u00b7"}</span>
-          )}
-          {unitsText && (
-            <div className="flex items-center" style={{ gap: scaleValue(4) }}>
-              <Building2 size={13 * scale} strokeWidth={1.8} className="shrink-0" />
-              <span>{unitsText}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* TAGS */}
-      {safeTags.length > 0 && (
-        <div
-          className="flex flex-wrap"
-          style={{
-            gap: scaleValue(6),
-            minHeight: scaleValue(28),
-          }}
-        >
-          {safeTags.map((tag) => (
-            <Tag
-              key={tag}
-              text={tag}
-              height={tagSize.height}
-              horizontalPadding={tagSize.horizontalPadding}
-              fontSize={tagSize.fontSize}
-              lineHeight={tagSize.lineHeight}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Select button */}
-      <div className="flex">
+      <div className="mt-auto flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-6">
         <Button
           type="button"
           onClick={e => {
@@ -233,35 +136,41 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
             if (isAlreadyJoined) return;
             onToggleSelect?.();
           }}
-          size="xs"
-          variant={isSelected ? "default" : "secondary"}
+          size="lg"
+          variant="default"
           isDisabled={isAlreadyJoined}
-          className={`w-full text-xs transition-colors duration-150 ${
+          className={`h-9 w-full min-w-0 rounded-full px-5 text-sm font-semibold shadow-[0_6px_14px_rgba(0,0,0,0.18)] sm:w-auto sm:min-w-[150px] ${
             isAlreadyJoined
               ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
+              : isSelected
+                ? "bg-[#004225] text-white"
               : ""
           }`}
         >
           {isAlreadyJoined
             ? "Du står redan i kön"
             : isSelected
-              ? "Ta bort"
-              : "Lägg till"}
+              ? "Tillagd"
+              : (
+                <>
+                  <Plus className="h-4 w-4" strokeWidth={2.1} />
+                  Gå med
+                </>
+              )}
         </Button>
-      </div>
 
-      {/* Selection checkmark — top-left to avoid logo */}
-      <div
-        className={`absolute top-3 left-3 flex items-center justify-center rounded-full transition-all duration-200
-          ${isSelected
-            ? "bg-green-500 text-white scale-100 opacity-100"
-            : "bg-gray-100 text-transparent scale-75 opacity-0 group-hover:opacity-40 group-hover:scale-100"}`}
-        style={{
-          width: scaleValue(26),
-          height: scaleValue(26),
-        }}
-      >
-        <Check size={14 * scale} strokeWidth={2.5} />
+        <Button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onViewListings?.();
+          }}
+          size="lg"
+          variant="ghost"
+          className="h-9 w-full min-w-0 px-4 text-sm font-semibold text-[#004225] shadow-none hover:bg-transparent hover:opacity-75 sm:w-auto"
+        >
+          Läs mer
+        </Button>
       </div>
     </div>
   );

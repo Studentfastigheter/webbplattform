@@ -23,7 +23,10 @@ type SearchValues = {
   queueName: string;
 };
 
-type QueueWithUI = AdvertisedHousingQueue;
+type QueueWithUI = AdvertisedHousingQueue & {
+  termsUrl?: string | null;
+  privacyUrl?: string | null;
+};
 
 const PAGE_SIZE = 6;
 
@@ -164,13 +167,20 @@ export default function Page() {
         const uniqueCompanyIds = [
           ...new Set(res.map((dto) => dto.companyId).filter(Boolean)),
         ];
-        const companyMap = new Map<number, { logoUrl?: string }>();
+        const companyMap = new Map<
+          number,
+          { logoUrl?: string; termsUrl?: string | null; privacyUrl?: string | null }
+        >();
 
         await Promise.all(
           uniqueCompanyIds.map(async (companyId) => {
             try {
               const company = await queueService.getCompany(companyId);
-              companyMap.set(companyId, company);
+              companyMap.set(companyId, {
+                logoUrl: company.logoUrl,
+                termsUrl: company.termsUrl,
+                privacyUrl: company.privacyUrl,
+              });
             } catch {
               // If the company request fails, keep the queue's own logo.
             }
@@ -178,10 +188,13 @@ export default function Page() {
         );
 
         const mapped: QueueWithUI[] = res.map((dto) => {
-          const companyLogo = companyMap.get(dto.companyId)?.logoUrl;
+          const companyData = companyMap.get(dto.companyId);
+          const companyLogo = companyData?.logoUrl;
           return {
             ...dto,
             logoUrl: companyLogo || dto.logoUrl,
+            termsUrl: companyData?.termsUrl ?? null,
+            privacyUrl: companyData?.privacyUrl ?? null,
             advertiser: {
               type: "company",
               id: dto.companyId as unknown as CompanyId,
@@ -327,7 +340,7 @@ export default function Page() {
   const totalQueues = filteredQueues.length;
 
   const queueGridClasses =
-    "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-5 justify-items-center";
+    "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-3 md:gap-6 justify-items-center";
 
   const openQueue = (queue: QueueWithUI) => {
     router.push(`/alla-koer/${queue.companyId}`);
@@ -358,6 +371,9 @@ export default function Page() {
           unitsLabel={queueCardProps.unitsLabel}
           logoUrl={queueCardProps.logoUrl}
           logoAlt={queueCardProps.logoAlt}
+          description={queue.description}
+          termsUrl={queue.termsUrl}
+          privacyUrl={queue.privacyUrl}
           tags={queueCardProps.tags}
           isSelected={selectedQueues.has(queue.id)}
           isAlreadyJoined={isAlreadyJoined}

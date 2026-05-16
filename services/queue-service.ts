@@ -18,6 +18,8 @@ export interface CompanyDTO {
   verified: boolean;
   bannerUrl: string;
   logoUrl: string;
+  termsUrl?: string | null;
+  privacyUrl?: string | null;
 };
 
 export type QueueFilters = {
