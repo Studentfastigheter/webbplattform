@@ -36,6 +36,7 @@ export type ListingCardSmallProps = {
   imageTopRightContent?: React.ReactNode;
   showHostLogo?: boolean;
   contentTopRightContent?: React.ReactNode;
+  reserveTagSpace?: boolean;
 };
 
 const BASE_WIDTH = 380;
@@ -77,6 +78,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     imageTopRightContent,
     showHostLogo = true,
     contentTopRightContent,
+    reserveTagSpace = true,
   } = props;
 
   const { user } = useAuth();
@@ -359,7 +361,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           </div>
         )}
 
-        {safeTags.length === 0 && (
+        {reserveTagSpace && safeTags.length === 0 && (
           <div
             aria-hidden="true"
             style={{

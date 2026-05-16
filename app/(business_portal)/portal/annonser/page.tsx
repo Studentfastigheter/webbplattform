@@ -665,6 +665,7 @@ export default function PortalAdsPage() {
                   variant="compact"
                   showFavoriteButton={false}
                   showHostLogo={false}
+                  reserveTagSpace={false}
                   imageTopRightContent={
                     <PortalListingStatusTag
                       label={item.statusLabel}
