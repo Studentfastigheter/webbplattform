@@ -40,8 +40,8 @@ export type ListingCardSmallProps = {
 
 const BASE_WIDTH = 380;
 const IMAGE_ASPECT_RATIO = "16 / 10";
-const MIN_SCALE = 0.55;
-const MAX_SCALE = 1;
+const MIN_SCALE = 0.42;
+const MAX_SCALE = 1.26;
 
 const formatRent = (rent?: number | null) =>
   typeof rent === "number"
@@ -136,8 +136,6 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     fontSize: (isCompact ? 9.5 : 10.5) * scale,
     lineHeight: (isCompact ? 12 : 13) * scale,
   };
-  const contentMinHeight = isCompact ? 126 : 148;
-
   const safeTags = tags ?? [];
   const locationText = [area, city].filter(Boolean).join(", ") || "Ej angivet";
   const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
@@ -225,12 +223,11 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
       {/* CONTENT */}
       <div
-        className="relative flex flex-col"
+        className="relative flex flex-col overflow-hidden"
         style={{
           padding: scaleValue(contentPadding),
           paddingRight: scaleValue(contentRightPadding),
           gap: scaleValue(isCompact ? 7 : 8),
-          minHeight: scaleValue(contentMinHeight),
         }}
       >
         {contentTopRightContent && (
@@ -271,7 +268,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
         {/* Listing facts + host logo */}
         <div
-          className="min-w-0"
+          className="min-w-0 overflow-hidden"
         >
           <div
             className="min-w-0"
@@ -337,10 +334,11 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
 
         {safeTags.length > 0 && (
           <div
-            className="flex flex-nowrap overflow-hidden"
+            className="flex min-w-0 flex-nowrap overflow-x-hidden overflow-y-visible"
             style={{
+              alignItems: "center",
               gap: scaleValue(6),
-              height: scaleValue(tagSize.height),
+              minHeight: scaleValue(tagSize.height),
             }}
           >
             {safeTags.slice(0, 3).map((tag) => (
@@ -355,6 +353,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
                 bgColor="#f7f7f7"
                 textColor="#6f6f6f"
                 borderColor="#d7d7d7"
+                className="min-w-0"
               />
             ))}
           </div>

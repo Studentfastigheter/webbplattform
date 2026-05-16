@@ -549,7 +549,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
             {popupContent && (
               <Popup
                 className="map-popup"
-                minWidth={260}
+                minWidth={300}
                 maxWidth={360}
                 eventHandlers={{
                   remove: () => {

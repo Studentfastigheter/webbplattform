@@ -733,7 +733,10 @@ export default function ListingDetailPage() {
                   const { area, city } = splitListingLocation(nearby.location);
 
                   return (
-                    <div key={nearby.id} className="snap-start shrink-0">
+                    <div
+                      key={nearby.id}
+                      className="w-[380px] max-w-[calc(100vw-2rem)] shrink-0 snap-start"
+                    >
                       <ListingCardSmall
                         id={nearby.id}
                         title={nearby.title}

@@ -44,7 +44,7 @@ export default function Tag({
   return (
     <div
       className={cn(
-        "inline-flex shrink-0 items-center justify-center whitespace-nowrap border align-middle",
+        "inline-flex min-w-0 items-center justify-center whitespace-nowrap border align-middle",
         "transition-colors duration-150",
         className
       )}
