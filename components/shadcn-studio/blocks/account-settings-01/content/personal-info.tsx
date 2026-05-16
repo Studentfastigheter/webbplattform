@@ -9,7 +9,13 @@ import {
   useState,
 } from 'react'
 
-import { ImageIcon, Loader2Icon, TrashIcon, UploadCloudIcon } from 'lucide-react'
+import {
+  ImageIcon,
+  Loader2Icon,
+  MailIcon,
+  TrashIcon,
+  UploadCloudIcon,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +34,37 @@ export type PersonalInfoHandle = {
   save: () => Promise<void>
 }
 
+function isEmailLike(value: string) {
+  const normalized = value.trim().toLowerCase()
+
+  return normalized.startsWith('mailto:') || normalized.includes('@')
+}
+
+function normalizePhone(
+  value: string | null | undefined,
+  blockedValues: Array<string | null | undefined> = []
+) {
+  const phone = value?.trim() ?? ''
+  if (!phone || isEmailLike(phone)) return ''
+
+  const normalizedPhone = phone.toLowerCase()
+  const isBlockedValue = blockedValues.some(
+    blockedValue => blockedValue?.trim().toLowerCase() === normalizedPhone
+  )
+
+  if (isBlockedValue || !/\d/.test(phone)) return ''
+
+  return phone
+}
+
+function sanitizePhoneInput(value: string) {
+  return isEmailLike(value) ? '' : value
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
 const PersonalInfo = forwardRef<
   PersonalInfoHandle,
   { options?: PersonalInfoOptions }
@@ -44,6 +81,7 @@ const PersonalInfo = forwardRef<
   const [firstName, setFirstName] = useState('')
   const [surname, setSurname] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
   const [aboutText, setAboutText] = useState('')
 
@@ -54,6 +92,7 @@ const PersonalInfo = forwardRef<
     setFirstName(user.firstName ?? '')
     setSurname(user.surname ?? '')
     setPhone(user.phone ?? '')
+    setEmail(user.email ?? '')
     setCity(user.city ?? '')
     setAboutText(user.description ?? '')
   }, [user])
@@ -103,10 +142,16 @@ const PersonalInfo = forwardRef<
     setError(null)
 
     try {
+      const trimmedEmail = email.trim()
+      if (trimmedEmail && !isValidEmail(trimmedEmail)) {
+        throw new Error('Ange en giltig e-postadress.')
+      }
+
       const payload: UpdateUserRequest = {
+        email: trimmedEmail || undefined,
         firstName: firstName.trim() || undefined,
         surname: surname.trim() || undefined,
-        phone: phone.trim() || undefined,
+        phone: normalizePhone(phone, [user?.email]),
       }
 
       if (showCity) {
@@ -130,6 +175,7 @@ const PersonalInfo = forwardRef<
     firstName,
     surname,
     phone,
+    email,
     city,
     aboutText,
     showCity,
@@ -156,9 +202,6 @@ const PersonalInfo = forwardRef<
     <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
         <h3 className='font-semibold'>Personlig information</h3>
-        <p className='text-muted-foreground text-sm'>
-          Hantera din personliga information.
-        </p>
       </div>
 
       <div className='space-y-6 lg:col-span-2'>
@@ -248,11 +291,35 @@ const PersonalInfo = forwardRef<
               <Label htmlFor='personal-info-mobile'>Telefon</Label>
               <Input
                 id='personal-info-mobile'
+                name='phone'
                 type='tel'
                 placeholder='070-123 45 67'
+                autoComplete='tel'
+                inputMode='tel'
                 value={phone}
-                onChange={e => setPhone(e.target.value)}
+                onChange={e => setPhone(sanitizePhoneInput(e.target.value))}
               />
+            </div>
+
+            <div className='flex flex-col items-start gap-2'>
+              <Label htmlFor='personal-info-email'>E-post</Label>
+              <div className='relative w-full'>
+                <Input
+                  id='personal-info-email'
+                  name='email'
+                  type='email'
+                  placeholder='namn@exempel.se'
+                  autoComplete='email'
+                  inputMode='email'
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className='pr-9'
+                />
+                <div className='text-muted-foreground pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-3'>
+                  <MailIcon className='size-4' />
+                  <span className='sr-only'>E-post</span>
+                </div>
+              </div>
             </div>
 
             {showCity ? (

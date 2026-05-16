@@ -148,6 +148,11 @@ export interface UpdateUserRequest {
   description?: string; // För hyresvärdar/företag
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 // --- Komplexa typer (Behåll denna om du bygger ut objektet på frontend) ---
 export type StudentWithRelations = User & {
   school?: School | null;

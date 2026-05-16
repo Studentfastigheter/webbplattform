@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
 import DangerZone from '@/components/shadcn-studio/blocks/account-settings-01/content/danger-zone'
-import EmailPass from '@/components/shadcn-studio/blocks/account-settings-01/content/email-password'
+import PasswordSection, {
+  type PasswordSectionHandle,
+} from '@/components/shadcn-studio/blocks/account-settings-01/content/email-password'
 import PersonalInfo, {
   type PersonalInfoHandle,
   type PersonalInfoOptions,
@@ -27,6 +29,7 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
   const showDangerZone = options.showDangerZone ?? true
   const personalInfoRef = useRef<PersonalInfoHandle>(null)
   const socialUrlRef = useRef<SocialUrlHandle>(null)
+  const passwordSectionRef = useRef<PasswordSectionHandle>(null)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,6 +48,8 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
         await socialUrlRef.current?.save()
       }
 
+      await passwordSectionRef.current?.save()
+
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
@@ -60,12 +65,18 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
     <section className='py-3'>
       <div className='mx-auto max-w-7xl'>
         <PersonalInfo ref={personalInfoRef} options={options.personalInfo} />
-        <Separator className='my-10' />
-        <EmailPass />
         {showSocialUrls ? (
           <>
             <Separator className='my-10' />
             <SocialUrl ref={socialUrlRef} />
+          </>
+        ) : null}
+        <Separator className='my-10' />
+        <PasswordSection ref={passwordSectionRef} />
+        {showDangerZone ? (
+          <>
+            <Separator className='my-10' />
+            <DangerZone />
           </>
         ) : null}
         <Separator className='my-10' />
@@ -96,12 +107,6 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
             )}
           </Button>
         </div>
-        {showDangerZone ? (
-          <>
-            <Separator className='my-10' />
-            <DangerZone />
-          </>
-        ) : null}
       </div>
     </section>
   )
