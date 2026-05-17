@@ -183,7 +183,8 @@ export type AnalyticalQuantities = {
   active_posts?: AnalyticalQuantity[];
 };
 
-type ApplicationStatisticEntry = {
+export type ApplicationStatisticEntry = {
+  day?: number,
   year: number,
   month: number,
   numApplications: number,
@@ -380,6 +381,9 @@ function normalizeApplicationTrendEntry(value: unknown): ApplicationStatisticEnt
   }
 
   return {
+    day: Number.isInteger(toNumber(value.day, Number.NaN))
+      ? toNumber(value.day)
+      : undefined,
     year,
     month,
     numApplications: toNumber(value.numApplications),
@@ -805,6 +809,39 @@ export const companyService = {
         value: numApplications,
       };
     });
+  },
+
+  timedApplications: async (
+    id: number,
+    from: string | Date,
+    to: string | Date
+  ): Promise<ApplicationStatisticEntry[]> => {
+    const fromValue = from instanceof Date ? from.toISOString() : from;
+    const toValue = to instanceof Date ? to.toISOString() : to;
+    const result = await apiClient<unknown>(
+      `/analytics/${pathSegment(id)}/timed-applications/${pathSegment(fromValue)}/${pathSegment(toValue)}`
+    );
+
+    return toArray<unknown>(result, true)
+      .map(normalizeApplicationTrendEntry)
+      .filter((entry): entry is ApplicationStatisticEntry => entry !== null);
+  },
+
+  timedApplicationsForListing: async (
+    id: number,
+    from: string | Date,
+    to: string | Date,
+    listingId: string | number
+  ): Promise<ApplicationStatisticEntry[]> => {
+    const fromValue = from instanceof Date ? from.toISOString() : from;
+    const toValue = to instanceof Date ? to.toISOString() : to;
+    const result = await apiClient<unknown>(
+      `/analytics/${pathSegment(id)}/timed-applications/${pathSegment(fromValue)}/${pathSegment(toValue)}/${pathSegment(listingId)}`
+    );
+
+    return toArray<unknown>(result, true)
+      .map(normalizeApplicationTrendEntry)
+      .filter((entry): entry is ApplicationStatisticEntry => entry !== null);
   },
 
   applicationCountsPerObject: async (id: number, limit: number = 5): Promise<ObjectApplicationCount[]> => {

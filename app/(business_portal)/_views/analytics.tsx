@@ -1,4 +1,5 @@
 import { AnalyticsBlock, AnalyticsGrid } from "@/components/analytics/AnalyticsBlocks";
+import ApplicationIntervalStats from "../_components/analytics/ApplicationIntervalStats";
 import AnalyticsApplicationsByObjectBlock from "../_components/analytics/AnalyticsApplicationsByObjectBlock";
 import AnalyticsApplicationsTrend from "../_components/analytics/AnalyticsApplicationsTrend";
 import AnalyticsGeneralStats from "../_components/analytics/AnalyticsGeneralStats";
@@ -12,6 +13,7 @@ export default function Analytics() {
       </div>
 
       <AnalyticsGrid>
+        <ApplicationIntervalStats />
         <AnalyticsBlock size="2x2">
           <AnalyticsGeneralStats variant="analytics" />
         </AnalyticsBlock>

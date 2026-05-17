@@ -59,6 +59,13 @@ import {
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
 } from "../_components/shared/PortalListingStatusTag";
+import {
+  ApplicationIntervalToggle,
+  getApplicationInterval,
+  getApplicationIntervalRange,
+  sumApplicationStatistics,
+  type ApplicationIntervalValue,
+} from "../_components/analytics/ApplicationIntervalStats";
 import { dashboardRelPath } from "../_statics/variables";
 
 type AnnonsOverviewProps = {
@@ -544,6 +551,12 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionState, setActionState] = useState<ListingActionState>("idle");
+  const [applicationInterval, setApplicationInterval] =
+    useState<ApplicationIntervalValue>("1m");
+  const [timedApplicationCount, setTimedApplicationCount] = useState(0);
+  const [timedApplicationsLoading, setTimedApplicationsLoading] = useState(false);
+  const [timedApplicationsError, setTimedApplicationsError] =
+    useState<string | null>(null);
 
   const companyId = getActiveCompanyId(user);
 
@@ -631,6 +644,43 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       active = false;
     };
   }, [authLoading, fetchListingData]);
+
+  useEffect(() => {
+    if (authLoading || !companyId || !id) {
+      return;
+    }
+
+    const { from, to } = getApplicationIntervalRange(applicationInterval);
+    let active = true;
+
+    setTimedApplicationsLoading(true);
+    setTimedApplicationsError(null);
+
+    companyService
+      .timedApplicationsForListing(companyId, from, to, id)
+      .then((entries) => {
+        if (!active) return;
+        setTimedApplicationCount(sumApplicationStatistics(entries));
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        setTimedApplicationCount(0);
+        setTimedApplicationsError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Kunde inte hämta ansökningar för perioden."
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setTimedApplicationsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [applicationInterval, authLoading, companyId, id]);
 
   const editHref = `${dashboardRelPath}/annonser/${encodeURIComponent(id)}/redigera`;
   const applicationsHref = `${dashboardRelPath}/ansokningar?listingId=${encodeURIComponent(id)}`;
@@ -734,6 +784,12 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const locationLabel = listing.fullAddress
     ? `${listing.fullAddress}, ${listing.city}`
     : [listing.area, listing.city].filter(Boolean).join(", ");
+  const selectedApplicationInterval = getApplicationInterval(applicationInterval);
+  const applicationsDetail = timedApplicationsLoading
+    ? "Hämtar ansökningar..."
+    : timedApplicationsError
+      ? timedApplicationsError
+      : `${selectedApplicationInterval.detailLabel}. Totalt ${formatNumber(meta.applications)} mottagna.`;
 
   return (
     <main className="space-y-6 pb-12">
@@ -828,12 +884,27 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium text-gray-700">
+            Ansökningar för vald period
+          </p>
+          <ApplicationIntervalToggle
+            onChange={setApplicationInterval}
+            value={applicationInterval}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <FactTile
           icon={<FileUser className="h-5 w-5" />}
           label="Ansökningar"
-          value={formatNumber(meta.applications)}
-          detail="Mottagna via annonsen"
+          value={
+            timedApplicationsLoading
+              ? "..."
+              : formatNumber(timedApplicationCount)
+          }
+          detail={applicationsDetail}
         />
         <FactTile
           icon={<Eye className="h-5 w-5" />}
@@ -844,7 +915,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         <FactTile
           icon={<MousePointerClick className="h-5 w-5" />}
           label="Konvertering"
-          value={meta.detailedViews ? formatPercent((meta.applications / meta.detailedViews) * 100) : "-"}
+          value={meta.detailedViews ? formatPercent((timedApplicationCount / meta.detailedViews) * 100) : "-"}
           detail="Ansökningar per detaljvisning"
         />
         <FactTile
@@ -853,6 +924,8 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           value={meta.publishedAt}
           detail={`Senast ändrad ${meta.updatedAt}`}
         />
+      </div>
+
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
