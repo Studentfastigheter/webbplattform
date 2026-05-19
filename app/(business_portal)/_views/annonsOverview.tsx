@@ -6,23 +6,31 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowLeft,
-  CalendarDays,
-  ChevronDown,
+  BarChart3,
   CircleCheck,
   CirclePause,
   Edit3,
-  Eye,
   FileText,
   FileUser,
   Home,
   ImageIcon,
   MapPin,
-  MousePointerClick,
   Trash2,
 } from "lucide-react";
 import BostadAbout from "@/components/ads/BostadAbout";
 import BostadImagePreviewGrid from "@/components/ads/BostadImagePreviewGrid";
+import { AnalyticsBlock, AnalyticsGrid } from "@/components/analytics/AnalyticsBlocks";
+import {
+  TrendBarChart,
+  type TrendBarChartPoint,
+} from "@/components/analytics/TrendBarChart";
 import { Button } from "@/components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -31,20 +39,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
   companyService,
+  type ApplicationStatisticEntry,
   type ListingViewCounts,
   type ObjectApplicationCount,
 } from "@/services/company";
@@ -66,6 +65,7 @@ import {
   sumApplicationStatistics,
   type ApplicationIntervalValue,
 } from "../_components/analytics/ApplicationIntervalStats";
+import ListingDemographicsPanel from "../_components/analytics/ListingDemographicsPanel";
 import { dashboardRelPath } from "../_statics/variables";
 
 type AnnonsOverviewProps = {
@@ -236,6 +236,24 @@ function formatPercent(value: number): string {
   return `${value.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}%`;
 }
 
+function applicationStatisticsToTrendPoints(
+  entries: ApplicationStatisticEntry[]
+): TrendBarChartPoint[] {
+  return entries
+    .flatMap((entry) => {
+      const timestamp = new Date(entry.year, entry.month - 1, entry.day ?? 1);
+
+      if (Number.isNaN(timestamp.getTime())) {
+        return [];
+      }
+
+      return [{ timestamp, value: entry.numApplications }];
+    })
+    .sort((left, right) => {
+      return new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime();
+    });
+}
+
 function formatDwellingType(value?: string | null): string {
   const labels: Record<string, string> = {
     APARTMENT: "Lägenhet",
@@ -362,33 +380,6 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
     <div className="grid grid-cols-1 gap-1 border-b border-gray-100 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-4">
       <dt className="text-sm text-gray-500">{label}</dt>
       <dd className="min-w-0 break-words text-sm font-medium text-gray-900 sm:text-right">{value}</dd>
-    </div>
-  );
-}
-
-function FactTile({
-  icon,
-  label,
-  value,
-  detail,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  detail?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-950">{value}</p>
-          {detail ? <p className="mt-1 text-sm text-gray-500">{detail}</p> : null}
-        </div>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-700">
-          {icon}
-        </div>
-      </div>
     </div>
   );
 }
@@ -557,6 +548,12 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const [timedApplicationsLoading, setTimedApplicationsLoading] = useState(false);
   const [timedApplicationsError, setTimedApplicationsError] =
     useState<string | null>(null);
+  const [applicationTrendPoints, setApplicationTrendPoints] = useState<
+    TrendBarChartPoint[]
+  >([]);
+  const [applicationTrendLoading, setApplicationTrendLoading] = useState(false);
+  const [applicationTrendError, setApplicationTrendError] =
+    useState<string | null>(null);
 
   const companyId = getActiveCompanyId(user);
 
@@ -600,6 +597,15 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       ),
     };
   }, [companyId, id]);
+
+  const selectedApplicationInterval = useMemo(
+    () => getApplicationInterval(applicationInterval),
+    [applicationInterval]
+  );
+  const analyticsRange = useMemo(
+    () => getApplicationIntervalRange(applicationInterval),
+    [applicationInterval]
+  );
 
   useEffect(() => {
     if (authLoading) {
@@ -650,37 +656,45 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       return;
     }
 
-    const { from, to } = getApplicationIntervalRange(applicationInterval);
+    const { from, to } = analyticsRange;
     let active = true;
 
     setTimedApplicationsLoading(true);
     setTimedApplicationsError(null);
+    setApplicationTrendLoading(true);
+    setApplicationTrendError(null);
 
     companyService
       .timedApplicationsForListing(companyId, from, to, id)
       .then((entries) => {
         if (!active) return;
         setTimedApplicationCount(sumApplicationStatistics(entries));
+        setApplicationTrendPoints(applicationStatisticsToTrendPoints(entries));
       })
       .catch((requestError) => {
         if (!active) return;
         setTimedApplicationCount(0);
-        setTimedApplicationsError(
+        setApplicationTrendPoints([]);
+        const message =
           requestError instanceof Error
             ? requestError.message
-            : "Kunde inte hämta ansökningar för perioden."
+            : "Kunde inte hämta ansökningar för perioden.";
+        setTimedApplicationsError(
+          message
         );
+        setApplicationTrendError(message);
       })
       .finally(() => {
         if (active) {
           setTimedApplicationsLoading(false);
+          setApplicationTrendLoading(false);
         }
       });
 
     return () => {
       active = false;
     };
-  }, [applicationInterval, authLoading, companyId, id]);
+  }, [analyticsRange, authLoading, companyId, id]);
 
   const editHref = `${dashboardRelPath}/annonser/${encodeURIComponent(id)}/redigera`;
   const applicationsHref = `${dashboardRelPath}/ansokningar?listingId=${encodeURIComponent(id)}`;
@@ -784,165 +798,260 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const locationLabel = listing.fullAddress
     ? `${listing.fullAddress}, ${listing.city}`
     : [listing.area, listing.city].filter(Boolean).join(", ");
-  const selectedApplicationInterval = getApplicationInterval(applicationInterval);
   const applicationsDetail = timedApplicationsLoading
     ? "Hämtar ansökningar..."
     : timedApplicationsError
       ? timedApplicationsError
       : `${selectedApplicationInterval.detailLabel}. Totalt ${formatNumber(meta.applications)} mottagna.`;
+  const totalViews = meta.quickViews + meta.detailedViews;
+  const detailShare =
+    totalViews > 0 ? (meta.detailedViews / totalViews) * 100 : Number.NaN;
+  const applicationRate =
+    meta.detailedViews > 0 ? (meta.applications / meta.detailedViews) * 100 : Number.NaN;
 
   return (
-    <main className="space-y-6 pb-12">
-      <div className="flex flex-col gap-4">
-        <Link
-          href={`${dashboardRelPath}/annonser`}
-          className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Tillbaka till annonser
-        </Link>
+    <main className="pb-12">
+      <Tabs defaultValue="info" className="space-y-6">
+        <header className="space-y-5 border-b border-gray-200 pb-5">
+          <Link
+            href={`${dashboardRelPath}/annonser`}
+            className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Tillbaka till annonser
+          </Link>
 
-        <div className="flex flex-col gap-4 border-b border-gray-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 space-y-2">
-            <h1 className="text-2xl font-semibold text-gray-900">{listing.title}</h1>
-            <p className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
-              <MapPin className="h-4 w-4" />
-              {locationLabel || "Plats saknas"}
-            </p>
-          </div>
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+            <div className="min-w-0 space-y-3">
+              <div className="min-w-0 space-y-2">
+                <h1 className="text-2xl font-semibold leading-tight text-gray-900">
+                  {listing.title}
+                </h1>
+                <p className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  {locationLabel || "Plats saknas"}
+                </p>
+              </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.18)] transition-colors hover:bg-[#004225]/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
-                  disabled={actionState !== "idle"}
+              <div className="flex flex-wrap items-center gap-2">
+                <PortalListingStatusTag
+                  label={meta.statusLabel}
+                  tone={meta.statusTone}
+                  className="w-fit shrink-0"
+                />
+                <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
+                  {formatNumber(meta.applications)} ansökningar
+                </span>
+                <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
+                  {formatNumber(totalViews)} visningar
+                </span>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-3 xl:items-end">
+              <TabsList className="h-10 w-full justify-start rounded-xl border border-gray-200 bg-white p-1 shadow-theme-xs sm:w-fit">
+                <TabsTrigger
+                  className="h-8 flex-1 rounded-lg px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
+                  value="info"
                 >
-                  Hantera
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 border-gray-200 bg-white">
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href={editHref}>
+                  <FileText className="h-4 w-4" />
+                  Info
+                </TabsTrigger>
+                <TabsTrigger
+                  className="h-8 flex-1 rounded-lg px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
+                  value="analys"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Analys
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex w-full flex-col gap-2 lg:w-auto">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
+                  <Button
+                    as="a"
+                    className="w-full lg:w-auto"
+                    href={editHref}
+                    variant="default"
+                  >
                     <Edit3 className="h-4 w-4" />
-                    Redigera information
-                  </Link>
-                </DropdownMenuItem>
+                    Redigera
+                  </Button>
+                  <Button
+                    as="a"
+                    className="w-full lg:w-auto"
+                    href={applicationsHref}
+                    variant="outline"
+                  >
+                    <FileUser className="h-4 w-4" />
+                    Ansökningar
+                  </Button>
+                  <Button
+                    className="w-full lg:w-auto"
+                    isDisabled={actionState !== "idle"}
+                    onPress={() => setDeleteDialogOpen(true)}
+                    variant="destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Radera
+                  </Button>
+                </div>
 
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger className="cursor-pointer">
-                    <CircleCheck className="h-4 w-4" />
-                    Ändra status
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-44 border-gray-200 bg-white">
+                <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-2 sm:flex-row sm:items-center">
+                  <span className="px-1 text-xs font-semibold uppercase tracking-wide text-gray-400 sm:px-2">
+                    Status
+                  </span>
+                  <div className="grid flex-1 grid-cols-3 gap-1.5">
                     {listingStatusOptions.map((option) => {
                       const Icon = option.icon;
                       const isCurrent = meta.statusValue === option.value;
 
                       return (
-                        <DropdownMenuItem
+                        <button
                           key={option.value}
-                          className="cursor-pointer"
+                          type="button"
+                          className={[
+                            "inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
+                            isCurrent
+                              ? "border-[#004225] bg-[#004225] text-white"
+                              : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#004225]/30 hover:bg-[#004225]/5 hover:text-[#004225]",
+                          ].join(" ")}
                           disabled={actionState !== "idle" || isCurrent}
-                          onSelect={() => handleStatusChange(option.value)}
+                          onClick={() => handleStatusChange(option.value)}
                         >
-                          <Icon className="h-4 w-4" />
-                          {option.label}
-                          {isCurrent ? (
-                            <span className="ml-auto text-xs text-gray-400">Nuvarande</span>
-                          ) : null}
-                        </DropdownMenuItem>
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{option.label}</span>
+                        </button>
                       );
                     })}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  disabled={actionState !== "idle"}
-                  onSelect={() => setDeleteDialogOpen(true)}
-                  variant="destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Radera annonsen
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              as="a"
-              className="w-full sm:w-auto"
-              href={applicationsHref}
-              variant="outline"
-            >
-              <FileUser className="h-4 w-4" />
-              Ansökningar
-            </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium text-gray-700">
-            Ansökningar för vald period
-          </p>
-          <ApplicationIntervalToggle
-            onChange={setApplicationInterval}
-            value={applicationInterval}
+        <TabsContent className="mt-0" value="info">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <ListingPreview listing={listing} images={galleryImages} />
+
+            <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+              <ListingDetailsCard
+                listing={listing}
+                meta={meta}
+                requirementsProfile={requirementsProfile}
+              />
+              <RequirementProfileCard
+                profile={requirementsProfile}
+                profileId={listing.requirementsProfileId}
+              />
+            </aside>
+          </div>
+        </TabsContent>
+
+        <TabsContent className="mt-0 space-y-5" value="analys">
+          <section className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-950">Annonsanalys</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Statistik och demografi för just den här annonsen.
+                </p>
+              </div>
+              <ApplicationIntervalToggle
+                onChange={setApplicationInterval}
+                value={applicationInterval}
+              />
+            </div>
+
+            <AnalyticsGrid rowHeightClassName="xl:auto-rows-[132px]">
+              <AnalyticsBlock size="1x1" title="Ansökningar">
+                <div className="flex h-full min-h-[72px] flex-col justify-between">
+                  <p className="text-[13px] font-medium leading-5 text-gray-500">
+                    {selectedApplicationInterval.detailLabel}
+                  </p>
+                  <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
+                    {timedApplicationsLoading
+                      ? "..."
+                      : formatNumber(timedApplicationCount)}
+                  </p>
+                  <p className="mt-2 line-clamp-2 text-xs leading-4 text-gray-500">
+                    {applicationsDetail}
+                  </p>
+                </div>
+              </AnalyticsBlock>
+
+              <AnalyticsBlock size="1x1" title="Visningar">
+                <div className="flex h-full min-h-[72px] flex-col justify-between">
+                  <p className="text-[13px] font-medium leading-5 text-gray-500">
+                    Totalt för annonsen
+                  </p>
+                  <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
+                    {formatNumber(totalViews)}
+                  </p>
+                  <p className="mt-2 text-xs leading-4 text-gray-500">
+                    {formatNumber(meta.quickViews)} snabba,{" "}
+                    {formatNumber(meta.detailedViews)} detaljerade
+                  </p>
+                </div>
+              </AnalyticsBlock>
+
+              <AnalyticsBlock size="1x1" title="Detaljratio">
+                <div className="flex h-full min-h-[72px] flex-col justify-between">
+                  <p className="text-[13px] font-medium leading-5 text-gray-500">
+                    Detaljvisningar av alla visningar
+                  </p>
+                  <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
+                    {formatPercent(detailShare)}
+                  </p>
+                  <p className="mt-2 text-xs leading-4 text-gray-500">
+                    Visar hur många som öppnar annonsen.
+                  </p>
+                </div>
+              </AnalyticsBlock>
+
+              <AnalyticsBlock size="1x1" title="Ansökningsgrad">
+                <div className="flex h-full min-h-[72px] flex-col justify-between">
+                  <p className="text-[13px] font-medium leading-5 text-gray-500">
+                    Totala ansökningar per detaljvisning
+                  </p>
+                  <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
+                    {formatPercent(applicationRate)}
+                  </p>
+                  <p className="mt-2 text-xs leading-4 text-gray-500">
+                    Baserat på {formatNumber(meta.applications)} ansökningar.
+                  </p>
+                </div>
+              </AnalyticsBlock>
+
+              <AnalyticsBlock
+                size="2x2"
+                title="Ansökningstrend"
+                description={`Mottagna ansökningar ${selectedApplicationInterval.detailLabel}.`}
+              >
+                <TrendBarChart
+                  chartClassName="min-h-[210px]"
+                  data={applicationTrendPoints}
+                  embedded
+                  emptyMessage="Det finns inga ansökningar registrerade för perioden."
+                  error={applicationTrendError}
+                  intervals={[]}
+                  loading={applicationTrendLoading}
+                  showHeader={false}
+                  title="Ansökningstrend"
+                  valueLabel="Ansökningar"
+                />
+              </AnalyticsBlock>
+            </AnalyticsGrid>
+          </section>
+
+          <ListingDemographicsPanel
+            from={analyticsRange.from}
+            listingId={listing.id}
+            periodLabel={selectedApplicationInterval.detailLabel}
+            to={analyticsRange.to}
           />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <FactTile
-          icon={<FileUser className="h-5 w-5" />}
-          label="Ansökningar"
-          value={
-            timedApplicationsLoading
-              ? "..."
-              : formatNumber(timedApplicationCount)
-          }
-          detail={applicationsDetail}
-        />
-        <FactTile
-          icon={<Eye className="h-5 w-5" />}
-          label="Visningar"
-          value={formatNumber(meta.quickViews + meta.detailedViews)}
-          detail={`${formatNumber(meta.quickViews)} snabba, ${formatNumber(meta.detailedViews)} detaljerade`}
-        />
-        <FactTile
-          icon={<MousePointerClick className="h-5 w-5" />}
-          label="Konvertering"
-          value={meta.detailedViews ? formatPercent((timedApplicationCount / meta.detailedViews) * 100) : "-"}
-          detail="Ansökningar per detaljvisning"
-        />
-        <FactTile
-          icon={<CalendarDays className="h-5 w-5" />}
-          label="Publicerad"
-          value={meta.publishedAt}
-          detail={`Senast ändrad ${meta.updatedAt}`}
-        />
-      </div>
-
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <ListingPreview listing={listing} images={galleryImages} />
-
-        <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-          <ListingDetailsCard
-            listing={listing}
-            meta={meta}
-            requirementsProfile={requirementsProfile}
-          />
-          <RequirementProfileCard
-            profile={requirementsProfile}
-            profileId={listing.requirementsProfileId}
-          />
-        </aside>
-      </div>
+        </TabsContent>
+      </Tabs>
 
       <AlertDialog
         open={deleteDialogOpen}

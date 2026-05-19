@@ -28,6 +28,10 @@ import {
   listingService,
   type ListingSearchParams,
 } from "@/services/listing-service";
+import {
+  demographicsService,
+  getClientDeviceType,
+} from "@/services/demographics-service";
 import { schoolService } from "@/services/school-service";
 import { ListingCardDTO } from "@/types/listing";
 import type { School } from "@/types/school";
@@ -204,6 +208,7 @@ export default function ListingsPage() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [hoveredListingId, setHoveredListingId] = useState<string | undefined>();
   const quickViewIncrementedIds = useRef<Set<string>>(new Set());
+  const quickViewDemographicsRecordedIds = useRef<Set<string>>(new Set());
 
   const updatePageInUrl = useCallback(
     (nextPage: number, mode: "push" | "replace" = "push") => {
@@ -293,7 +298,15 @@ export default function ListingsPage() {
       });
 
       const action = isFav
-        ? listingService.addFavorite(id)
+        ? listingService.addFavorite(id).then(() =>
+            demographicsService.recordListingView(id, {
+              deviceType: getClientDeviceType(),
+              viewType: "QUICK",
+              resultedInLike: true,
+            }).catch((err) =>
+              console.error("Failed to record favorite demographics:", err)
+            )
+          )
         : listingService.removeFavorite(id);
 
       action.catch((err) => {
@@ -327,8 +340,8 @@ export default function ListingsPage() {
           ? filters.priceRange.max
           : undefined,
       hostType: filters.hostType ?? undefined,
-      school_lat: hasSchoolFilter ? filters.schoolLat : undefined,
-      school_lng: hasSchoolFilter ? filters.schoolLng : undefined,
+      schoolTargetLat: hasSchoolFilter ? filters.schoolLat : undefined,
+      schoolTargetLng: hasSchoolFilter ? filters.schoolLng : undefined,
       amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
     };
   }, [filters]);
@@ -380,14 +393,25 @@ export default function ListingsPage() {
         setTotalElements(nextTotalElements);
         setListings(newItems);
         newItems.forEach((listing) => {
-          if (quickViewIncrementedIds.current.has(listing.id)) {
-            return;
+          if (!quickViewIncrementedIds.current.has(listing.id)) {
+            quickViewIncrementedIds.current.add(listing.id);
+            listingService
+              .incrementViews(listing.id, "QUICK")
+              .catch((err) => console.error("Failed to increment quick view:", err));
           }
 
-          quickViewIncrementedIds.current.add(listing.id);
-          listingService
-            .incrementViews(listing.id, "QUICK")
-            .catch((err) => console.error("Failed to increment quick view:", err));
+          if (user && !quickViewDemographicsRecordedIds.current.has(listing.id)) {
+            quickViewDemographicsRecordedIds.current.add(listing.id);
+            demographicsService
+              .recordListingView(listing.id, {
+                deviceType: getClientDeviceType(),
+                viewType: "QUICK",
+                resultedInLike: false,
+              })
+              .catch((err) =>
+                console.error("Failed to record quick-view demographics:", err)
+              );
+          }
         });
       } catch (err: any) {
         console.error("Error loading listings:", err);
@@ -396,7 +420,7 @@ export default function ListingsPage() {
         setLoading(false);
       }
     },
-    [currentFilters]
+    [currentFilters, user]
   );
 
   const loadMapListings = useCallback(async () => {

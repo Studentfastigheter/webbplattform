@@ -22,6 +22,7 @@ export type TrendBarChartPoint = {
 export type TrendBarChartInterval = {
   value: string;
   label: string;
+  days?: number;
   months?: number;
 };
 
@@ -52,10 +53,12 @@ type TrendBarChartProps = {
 };
 
 const defaultIntervals: TrendBarChartInterval[] = [
-  { value: "6m", label: "6 mån", months: 6 },
-  { value: "12m", label: "12 mån", months: 12 },
-  { value: "24m", label: "24 mån", months: 24 },
-  { value: "all", label: "Alla" },
+  { value: "1d", label: "1 dag", days: 1 },
+  { value: "1w", label: "1 vecka", days: 7 },
+  { value: "1m", label: "1 månad", months: 1 },
+  { value: "3m", label: "3 månader", months: 3 },
+  { value: "6m", label: "6 månader", months: 6 },
+  { value: "1y", label: "1 år", months: 12 },
 ];
 
 const monthFormatter = new Intl.DateTimeFormat("sv-SE", {
@@ -129,18 +132,21 @@ function normalizeData(data: TrendBarChartPoint[]): ChartDatum[] {
 }
 
 function filterByInterval(data: ChartDatum[], interval?: TrendBarChartInterval) {
-  if (!interval?.months || data.length === 0) {
+  if ((!interval?.months && !interval?.days) || data.length === 0) {
     return data;
   }
 
   const lastTimestamp = data[data.length - 1].timestamp;
-  const firstIncludedMonth = new Date(
-    lastTimestamp.getFullYear(),
-    lastTimestamp.getMonth() - interval.months + 1,
-    1
-  );
+  const firstIncluded = new Date(lastTimestamp);
 
-  return data.filter((entry) => entry.timestamp >= firstIncludedMonth);
+  if (interval.days) {
+    firstIncluded.setDate(firstIncluded.getDate() - interval.days + 1);
+  } else if (interval.months) {
+    firstIncluded.setMonth(firstIncluded.getMonth() - interval.months + 1);
+    firstIncluded.setDate(1);
+  }
+
+  return data.filter((entry) => entry.timestamp >= firstIncluded);
 }
 
 function formatAxisValue(value: string | number) {
@@ -170,7 +176,7 @@ export function TrendBarChart({
   className,
   chartClassName,
 }: TrendBarChartProps) {
-  const initialInterval = defaultInterval ?? intervals[0]?.value ?? "all";
+  const initialInterval = defaultInterval ?? intervals[2]?.value ?? intervals[0]?.value ?? "all";
   const [selectedInterval, setSelectedInterval] =
     React.useState(initialInterval);
 

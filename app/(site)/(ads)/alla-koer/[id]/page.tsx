@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
@@ -13,6 +13,10 @@ import {
   type CompanyDTO,
 } from "@/services/queue-service";
 import { listingService } from "@/services/listing-service";
+import {
+  demographicsService,
+  getClientDeviceType,
+} from "@/services/demographics-service";
 import { useAuth } from "@/context/AuthContext";
 import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
@@ -62,6 +66,8 @@ export default function QueueDetailPage() {
   const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
   const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const companyViewDemographicsRecordedIds = useRef<Set<number>>(new Set());
+  const listingQuickDemographicsRecordedIds = useRef<Set<string>>(new Set());
 
   // Resolve the parsed company id once so we can drive both the fetch and
   // the dummy media lookup off the same number.
@@ -112,6 +118,27 @@ export default function QueueDetailPage() {
       active = false;
     };
   }, [companyIdRaw, companyIdNumber]);
+
+  useEffect(() => {
+    if (
+      authLoading ||
+      !user ||
+      companyIdNumber === null ||
+      companyViewDemographicsRecordedIds.current.has(companyIdNumber)
+    ) {
+      return;
+    }
+
+    companyViewDemographicsRecordedIds.current.add(companyIdNumber);
+    demographicsService
+      .recordCompanyView(companyIdNumber, {
+        deviceType: getClientDeviceType(),
+        viewType: "DETAILED",
+      })
+      .catch((err) =>
+        console.error("Kunde inte registrera f\u00f6retagsvisning:", err)
+      );
+  }, [authLoading, companyIdNumber, user]);
 
   useEffect(() => {
     setListingsPage(1);
@@ -229,6 +256,29 @@ export default function QueueDetailPage() {
     }
   }, [listingsPage, listingsTotalPages]);
 
+  useEffect(() => {
+    if (authLoading || !user || listings.length === 0) {
+      return;
+    }
+
+    listings.forEach((listing) => {
+      if (listingQuickDemographicsRecordedIds.current.has(listing.id)) {
+        return;
+      }
+
+      listingQuickDemographicsRecordedIds.current.add(listing.id);
+      demographicsService
+        .recordListingView(listing.id, {
+          deviceType: getClientDeviceType(),
+          viewType: "QUICK",
+          resultedInLike: favoriteIds.has(listing.id),
+        })
+        .catch((err) =>
+          console.error("Kunde inte registrera annonsvisning:", err)
+        );
+    });
+  }, [authLoading, favoriteIds, listings, user]);
+
   // Bygg ett HousingQueueDTO-liknande objekt från company-data för QueueHero
   const heroQueue: HousingQueueDTO = company
     ? {
@@ -320,7 +370,17 @@ export default function QueueDetailPage() {
     });
 
     const action = isFav
-      ? listingService.addFavorite(id)
+      ? listingService.addFavorite(id).then(() =>
+          demographicsService
+            .recordListingView(id, {
+              deviceType: getClientDeviceType(),
+              viewType: "QUICK",
+              resultedInLike: true,
+            })
+            .catch((err) =>
+              console.error("Kunde inte registrera favoritdemografi:", err)
+            )
+        )
       : listingService.removeFavorite(id);
 
     action.catch((err) => {

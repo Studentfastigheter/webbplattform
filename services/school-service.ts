@@ -80,8 +80,8 @@ export const schoolService = {
     const res = await listingService.getAll({
       page: 0,
       size,
-      school_lat: school.lat,
-      school_lng: school.lng,
+      schoolTargetLat: school.lat,
+      schoolTargetLng: school.lng,
     });
 
     return res.content ?? [];

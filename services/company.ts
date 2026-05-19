@@ -795,17 +795,26 @@ export const companyService = {
     return toNumber(result);
   },
   
-  applicationsTimeline: async (id: number): Promise<Timeline> => {
-    const entries = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/current_applications/trend`
+  applicationsTimeline: async (
+    id: number,
+    options: { from?: string | Date; to?: string | Date } = {}
+  ): Promise<Timeline> => {
+    const now = new Date();
+    const defaultFrom = new Date(now);
+    defaultFrom.setFullYear(defaultFrom.getFullYear() - 2);
+
+    const entries = await companyService.timedApplications(
+      id,
+      options.from ?? defaultFrom,
+      options.to ?? now
     );
     const rows = toArray<unknown>(entries, true)
       .map(normalizeApplicationTrendEntry)
       .filter((entry): entry is ApplicationStatisticEntry => entry !== null);
 
-    return rows.map(({ year, month, numApplications }) => {
+    return rows.map(({ year, month, day, numApplications }) => {
       return {
-        timestamp: new Date(year, month - 1, 1),
+        timestamp: new Date(year, month - 1, day ?? 1),
         value: numApplications,
       };
     });

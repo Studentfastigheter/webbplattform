@@ -14,6 +14,10 @@ import ImageSlideshow from "@/components/ads/ImageSlideshow";
 import { listingService } from "@/services/listing-service";
 import { queueService } from "@/services/queue-service";
 import {
+  demographicsService,
+  getClientDeviceType,
+} from "@/services/demographics-service";
+import {
   ListingDetailDTO,
   ListingCardDTO,
   RequirementsProfileDTO,
@@ -313,6 +317,7 @@ export default function ListingDetailPage() {
     useState<RequirementsProfileDTO | null>(null);
   const [requirementsLoading, setRequirementsLoading] = useState(false);
   const detailedViewIncrementedIds = useRef<Set<string>>(new Set());
+  const detailedViewDemographicsRecordedIds = useRef<Set<string>>(new Set());
 
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
@@ -347,7 +352,7 @@ export default function ListingDetailPage() {
     }
   }, [user, listingId]);
 
-  const handleFavoriteToggle = useCallback((id: string, isFav: boolean) => {
+  const handleFavoriteToggle = useCallback(async (id: string, isFav: boolean) => {
     if (!user) {
       alert("Du måste vara inloggad för att spara bostäder");
       return;
@@ -360,8 +365,21 @@ export default function ListingDetailPage() {
       return next;
     });
 
-    const action = isFav ? listingService.addFavorite(id) : listingService.removeFavorite(id);
-    action.catch(err => {
+    const action = isFav
+      ? listingService.addFavorite(id).then(() =>
+          demographicsService
+            .recordListingView(id, {
+              deviceType: getClientDeviceType(),
+              viewType: "DETAILED",
+              resultedInLike: true,
+            })
+            .catch((err) =>
+              console.error("Failed to record favorite demographics:", err)
+            )
+        )
+      : listingService.removeFavorite(id);
+
+    return action.catch(err => {
       console.error("Failed to toggle favorite:", err);
       setFavoriteIds(prev => {
         const next = new Set(prev);
@@ -403,15 +421,30 @@ export default function ListingDetailPage() {
   }, [listingId]);
 
   useEffect(() => {
-    if (!listing?.id || detailedViewIncrementedIds.current.has(listing.id)) {
+    if (!listing?.id) {
       return;
     }
 
-    detailedViewIncrementedIds.current.add(listing.id);
-    listingService
-      .incrementViews(listing.id, "DETAILED")
-      .catch((err) => console.error("Failed to increment detailed view:", err));
-  }, [listing?.id]);
+    if (!detailedViewIncrementedIds.current.has(listing.id)) {
+      detailedViewIncrementedIds.current.add(listing.id);
+      listingService
+        .incrementViews(listing.id, "DETAILED")
+        .catch((err) => console.error("Failed to increment detailed view:", err));
+    }
+
+    if (user && !detailedViewDemographicsRecordedIds.current.has(listing.id)) {
+      detailedViewDemographicsRecordedIds.current.add(listing.id);
+      demographicsService
+        .recordListingView(listing.id, {
+          deviceType: getClientDeviceType(),
+          viewType: "DETAILED",
+          resultedInLike: favoriteIds.has(listing.id),
+        })
+        .catch((err) =>
+          console.error("Failed to record detailed-view demographics:", err)
+        );
+    }
+  }, [favoriteIds, listing?.id, user]);
 
   useEffect(() => {
     if (!listing?.requirementsProfileId) {
@@ -645,6 +678,7 @@ export default function ListingDetailPage() {
           <BostadAbout
             listing={listing}
             isFavorite={favoriteIds.has(listing.id)}
+            onFavoriteToggle={handleFavoriteToggle}
             onApplyClick={handleApply}
             applyDisabled={applying || hasApplied}
             hasApplied={hasApplied}

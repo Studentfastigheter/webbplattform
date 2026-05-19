@@ -421,7 +421,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
           {state.schoolId && (
             <p className="text-xs text-black/55">
-              Den valda skolans position skickas som school_lat och school_lng.
+              Den valda skolans position skickas som schoolTargetLat och schoolTargetLng.
             </p>
           )}
         </div>
