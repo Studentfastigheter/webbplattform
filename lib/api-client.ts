@@ -48,6 +48,7 @@ type QueryValue =
 
 type ApiClientOptions = RequestInit & {
   auth?: boolean;
+  responseType?: "json" | "text" | "blob";
 };
 
 const READ_DEDUPE_CACHE_MS = 1000;
@@ -79,14 +80,15 @@ function cloneApiResult<T>(value: T): T {
 function createReadRequestKey(
   method: string,
   url: string,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  responseType: ApiClientOptions["responseType"]
 ): string {
   const headerKey = Object.entries(headers)
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${key}:${value}`)
     .join("|");
 
-  return `${method} ${url} ${headerKey}`;
+  return `${method} ${url} ${responseType ?? "json"} ${headerKey}`;
 }
 
 export function arrayFromApiResponse<T>(value: unknown): T[] {
@@ -147,7 +149,12 @@ export function pathSegment(value: string | number | boolean): string {
 
 export async function apiClient<T>(
   endpoint: string,
-  { headers, auth = true, ...customOptions }: ApiClientOptions = {},
+  {
+    headers,
+    auth = true,
+    responseType = "json",
+    ...customOptions
+  }: ApiClientOptions = {},
   token?: string | null
 ): Promise<T> {
   const hasBody =
@@ -192,6 +199,10 @@ export async function apiClient<T>(
       return {} as T;
     }
 
+    if (responseType === "blob" && res.ok) {
+      return (await res.blob()) as T;
+    }
+
     const rawBody = await res.text().catch(() => "");
     let parsed: any = undefined;
 
@@ -221,6 +232,7 @@ export async function apiClient<T>(
     }
 
     if (!rawBody) return undefined as T;
+    if (responseType === "text") return rawBody as T;
     return parsed as T;
   };
 
@@ -235,7 +247,7 @@ export async function apiClient<T>(
     return request();
   }
 
-  const requestKey = createReadRequestKey(method, url, defaultHeaders);
+  const requestKey = createReadRequestKey(method, url, defaultHeaders, responseType);
   const completedRequest = completedReadRequests.get(requestKey);
 
   if (completedRequest) {

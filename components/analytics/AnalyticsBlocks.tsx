@@ -157,7 +157,7 @@ export function AnalyticsBlock({
     <AnalyticsBlockContext.Provider value={{ rows, columns, size: resolvedSize }}>
       <section
         className={cn(
-          "flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#eceef2] bg-white text-[#1f2937] shadow-[0_1px_2px_rgba(16,24,40,0.06),0_1px_3px_rgba(16,24,40,0.10)]",
+          "flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-[#1f2937] shadow-theme-xs",
           colSpanClass[columns],
           rowSpanClass[rows],
           className
@@ -168,7 +168,7 @@ export function AnalyticsBlock({
         {...props}
       >
         {hasHeader ? (
-          <div className="flex min-h-[64px] min-w-0 flex-col items-start justify-between gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+          <div className="flex min-h-[64px] min-w-0 flex-col items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
             <div className="min-w-0">
               {title ? (
                 <h2 className="truncate text-base font-semibold leading-6 text-[#111827]">

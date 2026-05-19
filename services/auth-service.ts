@@ -62,7 +62,6 @@ export const authService = {
   // Uppdatera profil
   updateProfile: async (data: UpdateUserRequest): Promise<User> => {
     const payload: UpdateUserRequest = {
-      email: data.email,
       firstName: data.firstName,
       surname: data.surname,
       phone: data.phone,

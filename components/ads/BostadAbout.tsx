@@ -34,6 +34,7 @@ function BostadAboutContent({
   hasApplied,
   dwellingLabel,
   hideStudentActions = false,
+  onFavoriteToggle,
 }: {
   listing: ListingDetailDTO;
   isFavorite?: boolean;
@@ -42,6 +43,7 @@ function BostadAboutContent({
   hasApplied?: boolean;
   dwellingLabel: string;
   hideStudentActions?: boolean;
+  onFavoriteToggle?: (id: string, isFav: boolean) => void | Promise<void>;
 }) {
   const { user } = useAuth();
   const [isFav, setIsFav] = useState(isFavorite ?? false);
@@ -60,8 +62,13 @@ function BostadAboutContent({
     setIsFav(!prev);
     setIsLoadingFav(true);
     try {
-      if (!prev) await listingService.addFavorite(listing.id);
-      else await listingService.removeFavorite(listing.id);
+      if (onFavoriteToggle) {
+        await onFavoriteToggle(listing.id, !prev);
+      } else if (!prev) {
+        await listingService.addFavorite(listing.id);
+      } else {
+        await listingService.removeFavorite(listing.id);
+      }
     } catch {
       setIsFav(prev);
     } finally {
@@ -238,6 +245,7 @@ type Props = {
   isEditable?: boolean;
   isFavorite?: boolean;
   hideStudentActions?: boolean;
+  onFavoriteToggle?: (id: string, isFav: boolean) => void | Promise<void>;
 };
 
 export default function BostadAbout({
@@ -248,6 +256,7 @@ export default function BostadAbout({
   isEditable = false,
   isFavorite,
   hideStudentActions = false,
+  onFavoriteToggle,
 }: Props) {
   const dwellingLabel = [
     listing.dwellingType ? formatDwellingType(listing.dwellingType) : null,
@@ -266,6 +275,7 @@ export default function BostadAbout({
       hasApplied={hasApplied}
       dwellingLabel={dwellingLabel}
       hideStudentActions={hideStudentActions}
+      onFavoriteToggle={onFavoriteToggle}
     />
   );
 

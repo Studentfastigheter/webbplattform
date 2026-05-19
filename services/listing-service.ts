@@ -36,6 +36,32 @@ export type RollingAd = {
   data?: unknown;
 };
 
+export type ListingSearchFacetsDTO = {
+  totalCount?: number;
+  priceDistribution?: {
+    minRentObserved?: number;
+    maxRentObserved?: number;
+    histogram?: Array<{
+      minRent?: number;
+      maxRent?: number;
+      count?: number;
+    }>;
+  };
+  companyCounts?: Array<{
+    company?: {
+      id?: number;
+      name?: string;
+      logoUrl?: string;
+    };
+    listingCount?: number;
+  }>;
+  privateLandlordCount?: number;
+  dwellingTypeCounts?: Array<{
+    dwellingType?: DwellingType | string;
+    count?: number;
+  }>;
+};
+
 export type ListingSearchParams = {
   page?: number;
   size?: number;
@@ -44,8 +70,18 @@ export type ListingSearchParams = {
   dwellingType?: DwellingType | string | null;
   minRent?: number | null;
   maxRent?: number | null;
+  minLivingArea?: number | null;
+  maxLivingArea?: number | null;
+  exactRooms?: number | null;
+  minRooms?: number | null;
+  maxRooms?: number | null;
   hostType?: HostType | string | null;
+  schoolTargetLat?: number | null;
+  schoolTargetLng?: number | null;
+  maxDistanceToSchool?: number | null;
+  /** @deprecated Use schoolTargetLat. Kept so older UI call sites still map to the current backend query name. */
   school_lat?: number | null;
+  /** @deprecated Use schoolTargetLng. Kept so older UI call sites still map to the current backend query name. */
   school_lng?: number | null;
   amenities?: string[];
 };
@@ -74,6 +110,35 @@ function assertListingSearchEnums(params: ListingSearchParams) {
   if (params.hostType && !isHostType(params.hostType)) {
     throw new Error("Ogiltig hyresvardstyp.");
   }
+}
+
+function buildListingSearchQuery(
+  params: ListingSearchParams,
+  includePageable = true
+) {
+  return buildQuery({
+    ...(includePageable
+      ? {
+          page: params.page ?? 0,
+          size: params.size ?? 12,
+          sort: params.sort,
+        }
+      : {}),
+    city: params.city?.trim(),
+    dwellingType: params.dwellingType,
+    minRent: params.minRent,
+    maxRent: params.maxRent,
+    minLivingArea: params.minLivingArea,
+    maxLivingArea: params.maxLivingArea,
+    exactRooms: params.exactRooms,
+    minRooms: params.minRooms,
+    maxRooms: params.maxRooms,
+    hostType: params.hostType,
+    schoolTargetLat: params.schoolTargetLat ?? params.school_lat,
+    schoolTargetLng: params.schoolTargetLng ?? params.school_lng,
+    maxDistanceToSchool: params.maxDistanceToSchool,
+    amenities: params.amenities,
+  });
 }
 
 // --- Mock Coordinates Utility ---
@@ -362,19 +427,7 @@ export const listingService = {
 
     assertListingSearchEnums(params);
 
-    const query = buildQuery({
-      page: params.page ?? 0,
-      size: params.size ?? 12,
-      sort: params.sort,
-      city: params.city?.trim(),
-      dwellingType: params.dwellingType,
-      minRent: params.minRent,
-      maxRent: params.maxRent,
-      hostType: params.hostType,
-      school_lat: params.school_lat,
-      school_lng: params.school_lng,
-      amenities: params.amenities,
-    });
+    const query = buildListingSearchQuery(params);
     const res = await apiClient<PageResponse<ListingCardDTO>>(
       `/listings${query}`,
       { auth: false }
@@ -383,6 +436,16 @@ export const listingService = {
       res.content = normalizeListingCards(res.content);
     }
     return res;
+  },
+
+  getFacets: async (
+    params: ListingSearchParams = {}
+  ): Promise<ListingSearchFacetsDTO> => {
+    assertListingSearchEnums(params);
+    return apiClient<ListingSearchFacetsDTO>(
+      `/listings/facets${buildListingSearchQuery(params, false)}`,
+      { auth: false }
+    );
   },
 
   // 2. HÄMTA EN ANNONS (Detaljvy)

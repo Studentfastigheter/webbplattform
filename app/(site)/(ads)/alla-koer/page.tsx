@@ -13,6 +13,10 @@ import { FieldSet } from "@/components/ui/field";
 import { useAuth } from "@/context/AuthContext";
 
 import { buildJoinedQueueIdSet, queueService } from "@/services/queue-service";
+import {
+  demographicsService,
+  getClientDeviceType,
+} from "@/services/demographics-service";
 
 import { type AdvertisedHousingQueue } from "@/types/queue";
 import { type CompanyId } from "@/types";
@@ -154,6 +158,7 @@ export default function Page() {
   const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
   const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const companyQuickDemographicsRecordedIds = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -336,6 +341,36 @@ export default function Page() {
     () => filteredQueues.slice(0, visibleCount),
     [filteredQueues, visibleCount]
   );
+
+  useEffect(() => {
+    if (authLoading || !user || visibleQueues.length === 0) {
+      return;
+    }
+
+    const visibleCompanyIds = new Set(
+      visibleQueues
+        .map((queue) => queue.companyId)
+        .filter((companyId): companyId is number => (
+          typeof companyId === "number" && Number.isFinite(companyId)
+        ))
+    );
+
+    visibleCompanyIds.forEach((companyId) => {
+      if (companyQuickDemographicsRecordedIds.current.has(companyId)) {
+        return;
+      }
+
+      companyQuickDemographicsRecordedIds.current.add(companyId);
+      demographicsService
+        .recordCompanyView(companyId, {
+          deviceType: getClientDeviceType(),
+          viewType: "QUICK",
+        })
+        .catch((err) =>
+          console.error("Kunde inte registrera snabb företagsvisning:", err)
+        );
+    });
+  }, [authLoading, user, visibleQueues]);
 
   const totalQueues = filteredQueues.length;
 

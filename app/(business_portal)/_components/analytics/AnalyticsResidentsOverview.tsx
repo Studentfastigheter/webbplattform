@@ -25,6 +25,7 @@ import {
 type Interval = {
   value: string;
   label: string;
+  days?: number;
   months?: number;
 };
 
@@ -42,11 +43,12 @@ type DistributionItem = {
 };
 
 const intervals: Interval[] = [
-  { value: "3m", label: "3 mån", months: 3 },
-  { value: "6m", label: "6 mån", months: 6 },
-  { value: "12m", label: "12 mån", months: 12 },
-  { value: "24m", label: "24 mån", months: 24 },
-  { value: "all", label: "Alla" },
+  { value: "1d", label: "1 dag", days: 1 },
+  { value: "1w", label: "1 vecka", days: 7 },
+  { value: "1m", label: "1 månad", months: 1 },
+  { value: "3m", label: "3 månader", months: 3 },
+  { value: "6m", label: "6 månader", months: 6 },
+  { value: "1y", label: "1 år", months: 12 },
 ];
 
 const monthFormatter = new Intl.DateTimeFormat("sv-SE", {
@@ -60,7 +62,7 @@ const monthYearFormatter = new Intl.DateTimeFormat("sv-SE", {
 
 const residentChartConfig = {
   residents: {
-    label: "Residents",
+    label: "Boende",
     color: "var(--color-brand-500)",
   },
 } satisfies ChartConfig;
@@ -125,18 +127,21 @@ function toResidentTrend(data: ResidentAnalyticsData | null): TrendDatum[] {
 }
 
 function filterTrendByInterval(trend: TrendDatum[], interval: Interval) {
-  if (!interval.months || trend.length === 0) {
+  if ((!interval.months && !interval.days) || trend.length === 0) {
     return trend;
   }
 
   const latestTimestamp = trend[trend.length - 1].timestamp;
-  const firstIncludedMonth = new Date(
-    latestTimestamp.getFullYear(),
-    latestTimestamp.getMonth() - interval.months + 1,
-    1
-  );
+  const firstIncluded = new Date(latestTimestamp);
 
-  return trend.filter((entry) => entry.timestamp >= firstIncludedMonth);
+  if (interval.days) {
+    firstIncluded.setDate(firstIncluded.getDate() - interval.days + 1);
+  } else if (interval.months) {
+    firstIncluded.setMonth(firstIncluded.getMonth() - interval.months + 1);
+    firstIncluded.setDate(1);
+  }
+
+  return trend.filter((entry) => entry.timestamp >= firstIncluded);
 }
 
 function formatAxisValue(value: string | number) {
@@ -237,7 +242,7 @@ function ResidentsTrendChart({
     chartData.length > 0 ? Math.round(total / chartData.length) : 0;
 
   if (chartData.length === 0) {
-    return <EmptyState message="Det finns ingen residentdata för perioden ännu." />;
+    return <EmptyState message="Det finns ingen boendedata för perioden ännu." />;
   }
 
   return (
@@ -291,7 +296,7 @@ function ResidentsTrendChart({
               dataKey="residents"
               fill="var(--color-residents)"
               fillOpacity={0.16}
-              name="Residents"
+              name="Boende"
               stroke="var(--color-residents)"
               strokeWidth={2}
               type="monotone"
@@ -340,7 +345,7 @@ function DistributionList({
       </div>
 
       {items.length === 0 ? (
-        <EmptyState message={`Det finns inga residents per ${title.toLowerCase()} ännu.`} />
+        <EmptyState message={`Det finns inga boende per ${title.toLowerCase()} ännu.`} />
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           <div className="space-y-3">
@@ -409,7 +414,7 @@ export default function AnalyticsResidentsOverview() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [data, setData] = React.useState<ResidentAnalyticsData | null>(null);
-  const [intervalValue, setIntervalValue] = React.useState("12m");
+  const [intervalValue, setIntervalValue] = React.useState("1m");
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -420,7 +425,7 @@ export default function AnalyticsResidentsOverview() {
 
     if (!companyId) {
       setData(null);
-      setError("Kunde inte hitta ett aktivt företag för residentstatistiken.");
+      setError("Kunde inte hitta ett aktivt företag för boendestatistiken.");
       setIsLoading(false);
       return;
     }
@@ -442,7 +447,7 @@ export default function AnalyticsResidentsOverview() {
           setError(
             err instanceof Error
               ? err.message
-              : "Kunde inte hämta residentstatistik."
+              : "Kunde inte hämta boendestatistik."
           );
         }
       })
@@ -473,7 +478,7 @@ export default function AnalyticsResidentsOverview() {
         action={
           <IntervalToggle onChange={setIntervalValue} value={intervalValue} />
         }
-        description="Nya residents grupperade per månad."
+        description="Nya boende grupperade per månad."
         size="2x2"
         title="Residenttrend"
       >
@@ -487,9 +492,9 @@ export default function AnalyticsResidentsOverview() {
       </AnalyticsBlock>
 
       <AnalyticsBlock
-        description="Totalt antal residents uppdelat på stad och skola."
+        description="Totalt antal boende uppdelat på stad och skola."
         size="2x2"
-        title="Residents per stad och skola"
+        title="Boende per stad och skola"
       >
         {loading ? (
           <DistributionSkeleton />

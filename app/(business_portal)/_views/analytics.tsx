@@ -1,8 +1,15 @@
 import { AnalyticsBlock, AnalyticsGrid } from "@/components/analytics/AnalyticsBlocks";
+import ApplicationIntervalStats from "../_components/analytics/ApplicationIntervalStats";
 import AnalyticsApplicationsByObjectBlock from "../_components/analytics/AnalyticsApplicationsByObjectBlock";
 import AnalyticsApplicationsTrend from "../_components/analytics/AnalyticsApplicationsTrend";
 import AnalyticsGeneralStats from "../_components/analytics/AnalyticsGeneralStats";
 import AnalyticsResidentsOverview from "../_components/analytics/AnalyticsResidentsOverview";
+import {
+  CompanyDemographyBatchBlock,
+  CompanyDemographyBlock,
+  ListingDemographyBatchBlock,
+  ListingDemographyDrilldownBlock,
+} from "../_components/analytics/DemographicsEndpointBlocks";
 
 export default function Analytics() {
   return (
@@ -12,6 +19,7 @@ export default function Analytics() {
       </div>
 
       <AnalyticsGrid>
+        <ApplicationIntervalStats />
         <AnalyticsBlock size="2x2">
           <AnalyticsGeneralStats variant="analytics" />
         </AnalyticsBlock>
@@ -24,6 +32,10 @@ export default function Analytics() {
           />
         </AnalyticsBlock>
         <AnalyticsApplicationsByObjectBlock />
+        <CompanyDemographyBlock />
+        <CompanyDemographyBatchBlock />
+        <ListingDemographyBatchBlock />
+        <ListingDemographyDrilldownBlock />
       </AnalyticsGrid>
     </div>
   );

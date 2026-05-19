@@ -540,10 +540,9 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
           <div className="h-[320px] min-h-0">
             <TrendBarChart
               data={group.trend}
-              defaultInterval="all"
+              defaultInterval="1m"
               embedded
               emptyMessage="Det finns inga ansökningar registrerade för annonsen ännu."
-              intervals={[{ value: "all", label: "Alla" }]}
               showHeader={false}
               showSummary={false}
               title="Ansökningar över tid"
@@ -719,15 +718,9 @@ export default function Ansokningar({
             <AnalyticsBlock size="2x2" title="Ansökningstrend">
               <TrendBarChart
                 data={applicationTrend}
-                defaultInterval="12m"
+                defaultInterval="1m"
                 embedded
                 emptyMessage="Det finns inga ansökningar registrerade ännu."
-                intervals={[
-                  { value: "6m", label: "6 mån", months: 6 },
-                  { value: "12m", label: "12 mån", months: 12 },
-                  { value: "24m", label: "24 mån", months: 24 },
-                  { value: "all", label: "Alla" },
-                ]}
                 showHeader={false}
                 showSummary={false}
                 title="Ansökningstrend"
