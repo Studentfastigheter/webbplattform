@@ -362,6 +362,13 @@ export default function ProfilePage() {
     logoUrl: null,
     bannerUrl: null,
   });
+  const selectedImageFilesRef = useRef<{
+    logoUrl: File | null;
+    bannerUrl: File | null;
+  }>({
+    logoUrl: null,
+    bannerUrl: null,
+  });
 
   const [company, setCompany] = useState<CompanyPrivateDTO | null>(null);
   const [companyQueue, setCompanyQueue] = useState<HousingQueueDTO | null>(null);
@@ -464,6 +471,7 @@ export default function ProfilePage() {
 
     const localPreviewUrl = URL.createObjectURL(file);
     previewImageUrlsRef.current[field] = localPreviewUrl;
+    selectedImageFilesRef.current[field] = file;
     updateDraftField(field, localPreviewUrl);
   };
 
@@ -476,26 +484,56 @@ export default function ProfilePage() {
     setSaveMessage(null);
 
     try {
+      const selectedImages = selectedImageFilesRef.current;
+      const uploadedLogoUrl = selectedImages.logoUrl
+        ? await companyService.uploadLogo(draft.companyId, selectedImages.logoUrl)
+        : null;
+      const uploadedBannerUrl = selectedImages.bannerUrl
+        ? await companyService.uploadBanner(draft.companyId, selectedImages.bannerUrl)
+        : null;
+      const uploadResolvedDraft: ProfileDraft = {
+        ...draft,
+        logoUrl: uploadedLogoUrl ?? draft.logoUrl,
+        bannerUrl: uploadedBannerUrl ?? draft.bannerUrl,
+      };
+
       await companyService.updateCompanyData(
-        draft.companyId,
-        buildCompanyChangePayload(draft)
+        uploadResolvedDraft.companyId,
+        buildCompanyChangePayload(uploadResolvedDraft)
       );
 
-      const savedCompany = mergeSavedCompany(company, draft);
+      const previewImageUrls = previewImageUrlsRef.current;
+      if (uploadedLogoUrl && previewImageUrls.logoUrl) {
+        URL.revokeObjectURL(previewImageUrls.logoUrl);
+        previewImageUrls.logoUrl = null;
+      }
+      if (uploadedBannerUrl && previewImageUrls.bannerUrl) {
+        URL.revokeObjectURL(previewImageUrls.bannerUrl);
+        previewImageUrls.bannerUrl = null;
+      }
+      selectedImageFilesRef.current = { logoUrl: null, bannerUrl: null };
+
+      const savedCompany = mergeSavedCompany(company, uploadResolvedDraft);
       const savedQueue = companyQueue
         ? {
             ...companyQueue,
             socialLinks: {
               ...companyQueue.socialLinks,
-              facebook: draft.facebook,
-              linkedin: draft.linkedin,
+              facebook: uploadResolvedDraft.facebook,
+              linkedin: uploadResolvedDraft.linkedin,
             },
           }
         : companyQueue;
 
       setCompany(savedCompany);
       setCompanyQueue(savedQueue);
-      setDraft(buildInitialDraft(draft.companyId, savedCompany, savedQueue ?? undefined));
+      setDraft(
+        buildInitialDraft(
+          uploadResolvedDraft.companyId,
+          savedCompany,
+          savedQueue ?? undefined
+        )
+      );
       setSaveMessage("Företagsprofilen har sparats.");
     } catch (saveError) {
       setError(
@@ -519,6 +557,7 @@ export default function ProfilePage() {
       URL.revokeObjectURL(previewImageUrls.bannerUrl);
       previewImageUrls.bannerUrl = null;
     }
+    selectedImageFilesRef.current = { logoUrl: null, bannerUrl: null };
     setDraft(buildInitialDraft(draft.companyId, company, companyQueue ?? undefined));
   };
 

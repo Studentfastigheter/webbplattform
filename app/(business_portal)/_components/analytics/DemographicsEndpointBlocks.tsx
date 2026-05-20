@@ -61,6 +61,17 @@ type ListingRow = {
   topShare: number;
 };
 
+type PortfolioSummary = {
+  rows: ListingRow[];
+  totalViews: number;
+  quickViews: number;
+  detailedViews: number;
+  likes: number;
+  listingsWithViews: number;
+  deviceData: BucketDatum[];
+  cityData: BucketDatum[];
+};
+
 const colors = [
   "#004225",
   "#0ea5e9",
@@ -182,6 +193,86 @@ function mapListingRows(
     .filter((row) => row.totalViews > 0)
     .sort((left, right) => right.totalViews - left.totalViews)
     .slice(0, 8);
+}
+
+function mergeBuckets(
+  values: Array<ListingDemography | null | undefined>,
+  limit = 8
+): BucketDatum[] {
+  const counts = new Map<string, { key: unknown; totalViews: number }>();
+
+  values.forEach((value) => {
+    value?.buckets?.forEach((bucket) => {
+      const label = keyLabel(bucket.key);
+      const current = counts.get(label);
+      counts.set(label, {
+        key: bucket.key,
+        totalViews: (current?.totalViews ?? 0) + Number(bucket.totalViews ?? 0),
+      });
+    });
+  });
+
+  const total = Array.from(counts.values()).reduce(
+    (sum, bucket) => sum + bucket.totalViews,
+    0
+  );
+
+  return Array.from(counts.values())
+    .map((bucket, index) => ({
+      key: `${keyLabel(bucket.key)}-${index}`,
+      label: keyLabel(bucket.key),
+      value: bucket.totalViews,
+      share: total > 0 ? (bucket.totalViews / total) * 100 : 0,
+      fill: colors[index % colors.length],
+    }))
+    .filter((item) => item.value > 0)
+    .sort((left, right) => right.value - left.value)
+    .slice(0, limit);
+}
+
+function bucketValue(
+  value: ListingDemography | null | undefined,
+  bucketKey: unknown
+): number {
+  return (
+    value?.buckets
+      ?.filter((bucket) => String(bucket.key) === String(bucketKey))
+      .reduce((sum, bucket) => sum + Number(bucket.totalViews ?? 0), 0) ?? 0
+  );
+}
+
+function buildPortfolioSummary(
+  data: Record<DemographyCategory, Record<string, ListingDemography>>,
+  listings: ListingCardDTO[]
+): PortfolioSummary {
+  const viewTypeByListing = data.VIEW_TYPE ?? {};
+  const rows = mapListingRows(viewTypeByListing, listings);
+  const viewTypeValues = Object.values(viewTypeByListing);
+  const resultedInLikeValues = Object.values(data.RESULTED_IN_LIKE ?? {});
+
+  return {
+    rows,
+    totalViews: viewTypeValues.reduce(
+      (sum, demography) => sum + totalViews(demography),
+      0
+    ),
+    quickViews: viewTypeValues.reduce(
+      (sum, demography) => sum + bucketValue(demography, "QUICK"),
+      0
+    ),
+    detailedViews: viewTypeValues.reduce(
+      (sum, demography) => sum + bucketValue(demography, "DETAILED"),
+      0
+    ),
+    likes: resultedInLikeValues.reduce(
+      (sum, demography) => sum + bucketValue(demography, true),
+      0
+    ),
+    listingsWithViews: viewTypeValues.filter((demography) => totalViews(demography) > 0)
+      .length,
+    deviceData: mergeBuckets(Object.values(data.DEVICE_TYPE ?? {}), 6),
+    cityData: mergeBuckets(Object.values(data.CITY ?? {}), 6),
+  };
 }
 
 function categoryOptions<TCategory extends string>(
@@ -423,6 +514,75 @@ function ListingPortfolioChart({ rows }: { rows: ListingRow[] }) {
   );
 }
 
+function SummaryMetric({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: number;
+  helper?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+      <p className="text-xs font-medium text-gray-500">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-gray-950">
+        {formatNumber(value)}
+      </p>
+      {helper ? (
+        <p className="mt-1 truncate text-xs text-gray-500">{helper}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function ListingPortfolioSummary({ summary }: { summary: PortfolioSummary }) {
+  const hasData = summary.totalViews > 0 || summary.rows.length > 0;
+
+  if (!hasData) {
+    return <EmptyState message="Ingen annonsdata för perioden." />;
+  }
+
+  return (
+    <div className="grid h-full min-h-0 gap-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <SummaryMetric label="Totala visningar" value={summary.totalViews} />
+        <SummaryMetric label="Snabbvisningar" value={summary.quickViews} />
+        <SummaryMetric label="Detaljvisningar" value={summary.detailedViews} />
+        <SummaryMetric label="Favoriter" value={summary.likes} />
+        <SummaryMetric
+          helper="Med minst en visning"
+          label="Aktiva annonser"
+          value={summary.listingsWithViews}
+        />
+      </div>
+
+      <div className="grid min-h-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.8fr)]">
+        <div className="rounded-xl border border-gray-100 bg-white p-4">
+          <div className="mb-2 flex items-baseline justify-between gap-3">
+            <h3 className="text-sm font-semibold text-gray-900">
+              Toppannonser
+            </h3>
+            <span className="text-xs text-gray-500">Visningar och toppsegment</span>
+          </div>
+          <ListingPortfolioChart rows={summary.rows} />
+        </div>
+
+        <div className="grid gap-4">
+          <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <h3 className="mb-2 text-sm font-semibold text-gray-900">Enheter</h3>
+            <PieDistribution data={summary.deviceData} />
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <h3 className="mb-2 text-sm font-semibold text-gray-900">Städer</h3>
+            <HorizontalBars data={summary.cityData} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CompanyDemographyBlock() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -574,9 +734,7 @@ export function ListingDemographyBatchBlock() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
-  const [category, setCategory] =
-    React.useState<DemographyCategory>("VIEW_TYPE");
-  const [rows, setRows] = React.useState<ListingRow[]>([]);
+  const [summary, setSummary] = React.useState<PortfolioSummary | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -595,30 +753,26 @@ export function ListingDemographyBatchBlock() {
     setError(null);
 
     async function load() {
-      const listings = await queueService.getAllCompanyListings(companyId!, 0, 200);
-      const listingIds = listings.map((listing) => listing.id).filter(Boolean);
-      const result =
-        listingIds.length > 0
-          ? await demographicsService.getListingsBatch(
-              companyId!,
-              listingIds,
-              from,
-              to,
-              category
-            )
-          : {};
+      const [listings, result] = await Promise.all([
+        queueService.getAllCompanyListings(companyId!, 0, 200),
+        demographicsService.getFullCompanyListingsByAllCategories(
+          companyId!,
+          from,
+          to
+        ),
+      ]);
 
-      if (!cancelled) setRows(mapListingRows(result, listings));
+      if (!cancelled) setSummary(buildPortfolioSummary(result, listings));
     }
 
     load()
       .catch((requestError) => {
         if (!cancelled) {
-          setRows([]);
+          setSummary(null);
           setError(
             requestError instanceof Error
               ? requestError.message
-              : "Kunde inte hämta annonsbatch."
+              : "Kunde inte hämta annonsportfölj."
           );
         }
       })
@@ -629,31 +783,24 @@ export function ListingDemographyBatchBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, category, companyId, range]);
+  }, [authLoading, companyId, range]);
 
   return (
     <AnalyticsBlock
-      action={
-        <div className="flex max-w-full flex-col gap-2 sm:flex-row">
-          <CategorySelect
-            categories={LISTING_DEMOGRAPHY_CATEGORIES}
-            onChange={setCategory}
-            value={category}
-          />
-          <ApplicationIntervalToggle onChange={setRange} value={range} />
-        </div>
-      }
-      contentClassName="overflow-hidden"
-      size="3x2"
+      action={<ApplicationIntervalToggle onChange={setRange} value={range} />}
+      contentClassName="overflow-hidden p-4"
+      size="4x4"
       title="Annonsportfölj"
-      description="Visningar och toppsegment per annons."
+      description="Summerad demografi för alla företagets annonser."
     >
       {authLoading || isLoading ? (
-        <BlockSkeleton rows={3} />
+        <BlockSkeleton rows={4} />
       ) : error ? (
         <ErrorState message={error} />
+      ) : summary ? (
+        <ListingPortfolioSummary summary={summary} />
       ) : (
-        <ListingPortfolioChart rows={rows} />
+        <EmptyState message="Ingen annonsdata för perioden." />
       )}
     </AnalyticsBlock>
   );

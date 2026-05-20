@@ -18,6 +18,7 @@ export interface CompanyDTO {
   verified: boolean;
   bannerUrl: string;
   logoUrl: string;
+  housingQueueId?: string | null;
   termsUrl?: string | null;
   privacyUrl?: string | null;
 };

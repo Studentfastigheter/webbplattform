@@ -18,6 +18,7 @@ import {
   type HostType,
   type RequirementsProfileDTO,
   type UpdateListingRequest,
+  type PublishListingRequest,
 } from "@/types/listing";
 
 // --- Lokala typer ---
@@ -32,8 +33,16 @@ export type ListingActivity = {
 
 export type RollingAd = {
   id: number | string;
+  start?: string;
+  stop?: string;
   company?: string;
-  data?: unknown;
+  data?: {
+    imageUrl?: string;
+    linkUrl?: string;
+    headline?: string;
+    ctaText?: string;
+    [key: string]: unknown;
+  } | null;
 };
 
 export type ListingSearchFacetsDTO = {
@@ -96,6 +105,12 @@ const isDwellingType = (value: string): value is DwellingType =>
 
 const isHostType = (value: string): value is HostType =>
   (HOST_TYPE_VALUES as readonly string[]).includes(value);
+
+const assertPublishListingEnums = (payload: PublishListingRequest) => {
+  if (payload.dwellingType && !isDwellingType(payload.dwellingType)) {
+    throw new Error("Ogiltig bostadstyp.");
+  }
+};
 
 const applicationBody = (message?: string) => {
   const trimmed = message?.trim();
@@ -358,6 +373,7 @@ const normalizeListingTagDTO = (value: unknown): ListingTagDTO | null => {
   }
 
   return {
+    tagKey: firstString(value.tagKey, value.key) ?? null,
     displayName,
     icon: firstString(value.icon) ?? null,
   };
@@ -446,6 +462,15 @@ export const listingService = {
       `/listings/facets${buildListingSearchQuery(params, false)}`,
       { auth: false }
     );
+  },
+
+  create: async (payload: PublishListingRequest): Promise<void> => {
+    assertPublishListingEnums(payload);
+
+    await apiClient<void>("/listings", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   // 2. HÄMTA EN ANNONS (Detaljvy)
@@ -670,7 +695,13 @@ export const listingService = {
       const ads = await apiClient<unknown>("/ads/current", { auth: false });
 
       return arrayFromApiResponse<unknown>(ads)
-        .filter((ad): ad is { id: number | string; company?: string; data?: unknown } => (
+        .filter((ad): ad is {
+          id: number | string;
+          start?: unknown;
+          stop?: unknown;
+          company?: unknown;
+          data?: unknown;
+        } => (
           typeof ad === "object" &&
           ad !== null &&
           "id" in ad &&
@@ -678,8 +709,13 @@ export const listingService = {
         ))
         .map((ad) => ({
           id: ad.id,
-          company: ad.company, // Matchar 'company' i Java-modellen
-          data: ad.data,       // Innehåller JsonNode (JSONB)
+          start: typeof ad.start === "string" ? ad.start : undefined,
+          stop: typeof ad.stop === "string" ? ad.stop : undefined,
+          company: typeof ad.company === "string" ? ad.company : undefined,
+          data:
+            typeof ad.data === "object" && ad.data !== null
+              ? (ad.data as RollingAd["data"])
+              : null,
         }));
     } catch (e) {
       console.error("Kunde inte hämta annonser:", e);

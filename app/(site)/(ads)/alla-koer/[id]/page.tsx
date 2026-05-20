@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
-import CompanyVideo from "@/components/ads/CompanyVideo";
 import ImageSlideshow from "@/components/ads/ImageSlideshow";
 import CompanyMap from "@/components/ads/CompanyMap";
 import {
@@ -17,20 +16,17 @@ import {
   demographicsService,
   getClientDeviceType,
 } from "@/services/demographics-service";
+import { mediaService } from "@/services/media-service";
 import { useAuth } from "@/context/AuthContext";
 import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Dummy media data — TODO: replace with backend-provided video / gallery data
-// once endpoints exist. Kept colocated under [id]/_dummy/ so the cleanup is a
-// single import + a single folder removal.
-import { getCompanyMedia } from "./_dummy/companyMediaData";
-
 const COMPANY_LISTINGS_PAGE_SIZE = 6;
 const COMPANY_LISTINGS_FETCH_SIZE = 500;
 const companyListingsCache = new Map<number, ListingCardDTO[]>();
+const imageFilenamePattern = /\.(avif|gif|jpe?g|png|webp)$/i;
 
 const uniqueListingsById = (items: ListingCardDTO[]) => {
   const byId = new Map<string, ListingCardDTO>();
@@ -66,6 +62,7 @@ export default function QueueDetailPage() {
   const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
   const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const companyViewDemographicsRecordedIds = useRef<Set<number>>(new Set());
   const listingQuickDemographicsRecordedIds = useRef<Set<string>>(new Set());
 
@@ -314,11 +311,37 @@ export default function QueueDetailPage() {
         activeListings: 0,
       };
 
-  // Dummy media (video and gallery). Pulls per-company entries when
-  // available, otherwise a sensible default — see _dummy/companyMediaData.ts.
-  const media = useMemo(() => {
-    return getCompanyMedia(companyIdNumber ?? 0);
+  useEffect(() => {
+    if (companyIdNumber === null) {
+      setGalleryImages([]);
+      return;
+    }
+
+    let active = true;
+
+    mediaService
+      .listCompanyPublic(companyIdNumber)
+      .then((filenames) => {
+        if (!active) return;
+        setGalleryImages(
+          filenames
+            .filter((filename) => imageFilenamePattern.test(filename))
+            .map((filename) =>
+              mediaService.companyPublicUrl(companyIdNumber, filename)
+            )
+        );
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Kunde inte hämta företagsmedia:", err);
+        setGalleryImages([]);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [companyIdNumber]);
+
 
   const mapListings = useMemo(
     () =>
@@ -470,21 +493,11 @@ export default function QueueDetailPage() {
       )}
 
       {/* Image gallery */}
-      {media.galleryImages.length > 0 && (
+      {galleryImages.length > 0 && (
         <div className="mt-12 w-full">
           <ImageSlideshow
-            images={media.galleryImages}
+            images={galleryImages}
             title={company?.name ?? "Företaget"}
-          />
-        </div>
-      )}
-
-      {/* Video presentation */}
-      {media.videoUrl && (
-        <div className="mt-12 w-full">
-          <CompanyVideo
-            videoUrl={media.videoUrl}
-            companyName={company?.name}
           />
         </div>
       )}

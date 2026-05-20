@@ -68,6 +68,7 @@ export interface ListingDetailDTO {
 }
 
 export interface ListingTagDTO {
+  tagKey?: string | null;
   displayName: string;
   icon?: string | null;
 }
@@ -119,6 +120,23 @@ export interface UpdateListingRequest {
   description?: string;
   tags?: string[];
   status?: ListingStatus;
+  images?: string[];
+  applyBy?: DateString | null;
+  availableFrom?: DateString | null;
+  availableTo?: DateString | null;
+}
+
+export interface PublishListingRequest {
+  title?: string;
+  city?: string;
+  area?: string;
+  address?: string;
+  dwellingType?: DwellingType | string;
+  rooms?: number | null;
+  sizeM2?: number | null;
+  rent?: number | null;
+  description?: string;
+  tags?: string[];
   images?: string[];
   applyBy?: DateString | null;
   availableFrom?: DateString | null;

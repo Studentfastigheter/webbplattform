@@ -55,6 +55,8 @@ export type CompanyPublicDTO = {
   verified?: boolean | null;
   bannerUrl?: string | null;
   logoUrl?: string | null;
+  housingQueueId?: string | null;
+  privacyUrl?: string | null;
 };
 
 export type CompanyRole = {
@@ -533,6 +535,19 @@ function normalizeResidentAnalyticsData(value: unknown): ResidentAnalyticsData {
   };
 }
 
+function normalizeUploadedUrl(value: string): string {
+  const trimmed = value.trim();
+
+  if (
+    (trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+
+  return trimmed;
+}
+
 function normalizeNewApplication(value: unknown): NewApplication | null {
   if (!isRecord(value)) {
     return null;
@@ -714,6 +729,30 @@ export const companyService = {
       method: "PUT",
       body: JSON.stringify(payload),
     });
+  },
+
+  uploadLogo: async (id: number, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+
+    const url = await apiClient<string>(`/companies/${pathSegment(id)}/changeData/logo`, {
+      method: "POST",
+      body: formData,
+      responseType: "text",
+    });
+    return normalizeUploadedUrl(url);
+  },
+
+  uploadBanner: async (id: number, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+
+    const url = await apiClient<string>(`/companies/${pathSegment(id)}/changeData/banner`, {
+      method: "POST",
+      body: formData,
+      responseType: "text",
+    });
+    return normalizeUploadedUrl(url);
   },
 
   users: async (id: number): Promise<CompanyUserDTO[]> => {
