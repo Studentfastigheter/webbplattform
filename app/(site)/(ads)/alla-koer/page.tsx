@@ -12,6 +12,11 @@ import QueueFilterButton, {
 import { FieldSet } from "@/components/ui/field";
 
 import { companyService, type CompanyPublicDTO } from "@/services/company";
+import {
+  buildJoinedQueueIdSet,
+  queueService,
+} from "@/services/queue-service";
+import { useAuth } from "@/context/AuthContext";
 import { type CompanyId } from "@/types";
 
 import { removeEmpty, toSearchString, uniqueOnly } from "@/lib/utils";
@@ -92,6 +97,7 @@ function mapCompanyToCard(company: CompanyPublicDTO): CompanyQueueCard {
 
 export default function Page() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [searchValues, setSearchValues] = useState<SearchValues>({
     queueName: "",
@@ -105,6 +111,10 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
+  const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
+  const [myQueuesLoading, setMyQueuesLoading] = useState(false);
+  const [joiningSelectedQueues, setJoiningSelectedQueues] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -133,6 +143,49 @@ export default function Page() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      setJoinedQueueIds(new Set());
+      setMyQueuesLoading(false);
+      return;
+    }
+
+    let active = true;
+    setMyQueuesLoading(true);
+
+    queueService
+      .getMyQueues()
+      .then((applications) => {
+        if (!active) return;
+        setJoinedQueueIds(buildJoinedQueueIdSet(applications));
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Kunde inte hÃ¤mta anvÃ¤ndarens kÃ¶er:", err);
+        setJoinedQueueIds(new Set());
+      })
+      .finally(() => {
+        if (active) setMyQueuesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    if (joinedQueueIds.size === 0) return;
+
+    setSelectedQueues((current) => {
+      const next = new Set(
+        Array.from(current).filter((queueId) => !joinedQueueIds.has(queueId))
+      );
+      return next.size === current.size ? current : next;
+    });
+  }, [joinedQueueIds]);
 
   const cityFilterOptions = useMemo(() => [], []);
   const landlordFilterOptions = useMemo(
@@ -165,8 +218,8 @@ export default function Page() {
   }, [queues, searchValues, filters]);
 
   const unjoinedFilteredQueues = useMemo(
-    () => filteredQueues,
-    [filteredQueues]
+    () => filteredQueues.filter((queue) => !joinedQueueIds.has(queue.id)),
+    [filteredQueues, joinedQueueIds]
   );
 
   const allFilteredSelected = useMemo(() => {
@@ -203,8 +256,62 @@ export default function Page() {
     router.push(`/alla-koer/${queue.companyId}`);
   };
 
+  const handleJoinSelectedQueues = async () => {
+    if (!user) {
+      router.push("/logga-in");
+      return;
+    }
+
+    const queueIdsToJoin = Array.from(selectedQueues).filter(
+      (queueId) => !joinedQueueIds.has(queueId)
+    );
+
+    if (queueIdsToJoin.length === 0) {
+      setSelectedQueues(new Set());
+      return;
+    }
+
+    setJoiningSelectedQueues(true);
+    setJoinError(null);
+
+    try {
+      const results = await Promise.allSettled(
+        queueIdsToJoin.map((queueId) => queueService.join(queueId))
+      );
+      const joinedIds = queueIdsToJoin.filter(
+        (_queueId, index) => results[index]?.status === "fulfilled"
+      );
+      const failedCount = results.length - joinedIds.length;
+
+      if (joinedIds.length > 0) {
+        setJoinedQueueIds((current) => {
+          const next = new Set(current);
+          joinedIds.forEach((queueId) => next.add(queueId));
+          return next;
+        });
+        setSelectedQueues((current) => {
+          const next = new Set(current);
+          joinedIds.forEach((queueId) => next.delete(queueId));
+          return next;
+        });
+      }
+
+      if (failedCount > 0) {
+        setJoinError(
+          failedCount === 1
+            ? "Kunde inte stÃ¤lla dig i en av de valda kÃ¶erna."
+            : `Kunde inte stÃ¤lla dig i ${failedCount} av de valda kÃ¶erna.`
+        );
+      }
+    } finally {
+      setJoiningSelectedQueues(false);
+    }
+  };
+
   const renderQueueCard = (queue: CompanyQueueCard) => {
     const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
+    const isAlreadyJoined = joinedQueueIds.has(queue.id);
+    const isJoinStatusLoading = authLoading || myQueuesLoading;
 
     const queueCardProps = {
       ...queue,
@@ -231,16 +338,20 @@ export default function Page() {
           termsUrl={queue.termsUrl}
           privacyUrl={queue.privacyUrl}
           tags={queueCardProps.tags}
-          isSelected={selectedQueues.has(queue.id)}
-          isAlreadyJoined={false}
+          isSelected={selectedQueues.has(queue.id) && !isAlreadyJoined}
+          isAlreadyJoined={isAlreadyJoined}
+          isJoinStatusLoading={isJoinStatusLoading}
           onViewListings={() => openQueue(queue)}
           onToggleSelect={() => {
+            if (isAlreadyJoined || isJoinStatusLoading) return;
+
             const next = new Set(selectedQueues);
             if (next.has(queue.id)) {
               next.delete(queue.id);
             } else {
               next.add(queue.id);
             }
+            setJoinError(null);
             setSelectedQueues(next);
           }}
         />
@@ -392,6 +503,12 @@ export default function Page() {
               </div>
             )}
 
+            {joinError && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-800 sm:px-4 sm:text-sm">
+                {joinError}
+              </div>
+            )}
+
             {loading ? (
               <div className="py-12 text-center text-sm text-gray-500">
                 Laddar köer...
@@ -439,7 +556,14 @@ export default function Page() {
             >
               Rensa val
             </Button>
-            <Button type="button" size="sm" variant="default">
+            <Button
+              type="button"
+              size="sm"
+              variant="default"
+              isLoading={joiningSelectedQueues}
+              isDisabled={joiningSelectedQueues || selectedQueues.size === 0}
+              onClick={handleJoinSelectedQueues}
+            >
               Ställ mig i kö
             </Button>
           </div>
