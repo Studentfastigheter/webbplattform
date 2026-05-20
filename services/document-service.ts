@@ -31,6 +31,80 @@ export type DocumentPropagationResult = {
   message?: string;
 };
 
+export type UploadedDocument = {
+  name: string;
+  title?: string;
+  note?: string;
+  size?: number;
+  contentType?: string;
+  mimeType?: string;
+  uploadedAt?: string;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const stringValue = (value: unknown) =>
+  typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+
+const numberValue = (value: unknown) =>
+  typeof value === "number" && Number.isFinite(value) ? value : undefined;
+
+function normalizeUploadedDocument(value: unknown): UploadedDocument | null {
+  if (typeof value === "string") {
+    return value.trim().length > 0 ? { name: value.trim() } : null;
+  }
+
+  if (!isRecord(value)) return null;
+
+  const name =
+    stringValue(value.name) ??
+    stringValue(value.fileName) ??
+    stringValue(value.filename) ??
+    stringValue(value.documentName) ??
+    stringValue(value.originalName);
+
+  if (!name) return null;
+
+  return {
+    name,
+    title: stringValue(value.title),
+    note: stringValue(value.note),
+    size:
+      numberValue(value.size) ??
+      numberValue(value.fileSize) ??
+      numberValue(value.contentLength),
+    contentType: stringValue(value.contentType),
+    mimeType: stringValue(value.mimeType),
+    uploadedAt:
+      stringValue(value.uploadedAt) ??
+      stringValue(value.createdAt) ??
+      stringValue(value.lastModified),
+  };
+}
+
+function normalizeUploadedDocuments(value: unknown): UploadedDocument[] {
+  if (Array.isArray(value)) {
+    return value
+      .map(normalizeUploadedDocument)
+      .filter((document): document is UploadedDocument => document !== null);
+  }
+
+  if (!isRecord(value)) return [];
+
+  for (const key of ["documents", "content", "items", "data", "results"]) {
+    const nested = value[key];
+    if (Array.isArray(nested)) {
+      return nested
+        .map(normalizeUploadedDocument)
+        .filter((document): document is UploadedDocument => document !== null);
+    }
+  }
+
+  const singleDocument = normalizeUploadedDocument(value);
+  return singleDocument ? [singleDocument] : [];
+}
+
 export const documentService = {
   upload: async (
     file: File,
@@ -58,11 +132,9 @@ export const documentService = {
     );
   },
 
-  list: async (): Promise<string[]> => {
+  list: async (): Promise<UploadedDocument[]> => {
     const documents = await apiClient<unknown>("/documents/list");
-    return Array.isArray(documents)
-      ? documents.filter((document): document is string => typeof document === "string")
-      : [];
+    return normalizeUploadedDocuments(documents);
   },
 
   download: async (
