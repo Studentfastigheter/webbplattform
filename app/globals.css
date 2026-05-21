@@ -340,6 +340,76 @@ img, svg, video, canvas {
   border-top: 1px solid var(--border);
 }
 
+/* Legal policy tables */
+.policy-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.policy-table th,
+.policy-table td {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.policy-table tbody tr + tr {
+  border-top: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+}
+
+@media (max-width: 767px) {
+  .policy-table {
+    min-width: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .policy-table thead {
+    display: none;
+  }
+
+  .policy-table tbody {
+    display: grid;
+    gap: 0.875rem;
+  }
+
+  .policy-table tbody tr + tr {
+    border-top: 0;
+  }
+
+  .policy-table tr {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    background: var(--card);
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+
+  .policy-table td {
+    display: block;
+    width: 100% !important;
+    padding: 0.85rem 1rem !important;
+    border-top: 1px solid color-mix(in oklab, var(--border) 45%, transparent);
+  }
+
+  .policy-table td:first-child {
+    border-top: 0;
+    background: color-mix(in oklab, var(--muted) 38%, transparent);
+  }
+
+  .policy-table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--muted-foreground);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+}
+
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }

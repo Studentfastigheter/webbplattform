@@ -28,6 +28,8 @@ const PARTNER_LINKS = [
 const COMPANY_LINKS = [
   { href: "/om", label: "Om Oss" },
   { href: "/integritetspolicy", label: "Integritetspolicy" },
+  { href: "/anvandarvillkor", label: "Användarvillkor" },
+  { href: "/cookiepolicy", label: "Cookiepolicy" },
 ];
 
 const SOCIAL_LINKS = [
