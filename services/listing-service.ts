@@ -667,9 +667,14 @@ export const listingService = {
   // Ansök till en privat annons
   // Anropar: POST /api/applications/private/{id}
   applyToPrivateListing: async (listingId: string, message: string): Promise<void> => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
+      throw new Error("Meddelande krävs för privata annonser.");
+    }
+
     await apiClient(`/applications/private/${pathSegment(listingId)}`, {
       method: "POST",
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message: trimmedMessage }),
     });
   },
 

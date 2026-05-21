@@ -77,10 +77,10 @@ export const authService = {
   },
 
   changePassword: async (data: ChangePasswordRequest): Promise<void> => {
-    await apiClient<void>("/auth/change-password", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+    void data;
+    throw new Error(
+      "Lösenordsbyte stöds inte av den aktuella API-versionen."
+    );
   },
 
   // Logga ut (Frontend only)

@@ -163,42 +163,20 @@ export const documentService = {
       file: File,
       options: { contentType?: string; signal?: AbortSignal } = {}
     ): Promise<DocumentPropagationResult> => {
-      const formData = new FormData();
-      formData.append("file", file, file.name);
-
-      const query = buildQuery({
-        contentType: options.contentType ?? file.type ?? "application/octet-stream",
-      });
-
-      return apiClient<DocumentPropagationResult>(
-        `/documents/legacy/upload${query}`,
-        {
-          method: "POST",
-          body: formData,
-          signal: options.signal,
-        }
-      );
+      return documentService.upload(file, options);
     },
 
     list: async (): Promise<string[]> => {
-      const documents = await apiClient<unknown>("/documents/legacy/list");
-      return Array.isArray(documents)
-        ? documents.filter((document): document is string => typeof document === "string")
-        : [];
+      const documents = await documentService.list();
+      return documents.map((document) => document.name);
     },
 
     download: async (documentName: string): Promise<Blob> => {
-      return apiClient<Blob>(
-        `/documents/legacy/byname/${pathSegment(documentName)}`,
-        { responseType: "blob" }
-      );
+      return documentService.download(documentName);
     },
 
     delete: async (documentName: string): Promise<void> => {
-      await apiClient<void>(
-        `/documents/legacy/byname/${pathSegment(documentName)}`,
-        { method: "DELETE" }
-      );
+      await documentService.delete(documentName);
     },
   },
 };

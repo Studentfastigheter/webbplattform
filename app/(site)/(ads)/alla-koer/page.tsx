@@ -30,6 +30,8 @@ type CompanyQueueCard = {
   companyId: number;
   housingQueueId?: string | null;
   name: string;
+  cities?: string[];
+  description?: string | null;
   subtitle?: string | null;
   logoUrl?: string | null;
   termsUrl?: string | null;
@@ -48,7 +50,7 @@ type CompanyQueueCard = {
     subtitle?: string | null;
     description?: string | null;
     website: null;
-    city: null;
+    city: string | null;
   };
 };
 
@@ -66,15 +68,24 @@ const countByValue = (values: string[]) =>
     return counts;
   }, {});
 
+const cleanStrings = (values: Array<string | null | undefined>) =>
+  removeEmpty(values).filter(
+    (value): value is string => typeof value === "string" && value.length > 0
+  );
+
 function mapCompanyToCard(company: CompanyPublicDTO): CompanyQueueCard {
+  const cities = Array.isArray(company.cities) ? company.cities : [];
+
   return {
-    id: String(company.housingQueueId ?? company.id),
+    id: String(company.id),
     companyId: company.id,
     housingQueueId: company.housingQueueId ?? null,
     name: company.name,
+    cities,
+    description: company.description ?? null,
     subtitle: company.subtitle ?? null,
     logoUrl: company.logoUrl ?? null,
-    termsUrl: null,
+    termsUrl: company.termsUrl ?? null,
     privacyUrl: company.privacyUrl ?? null,
     advertiser: {
       type: "company",
@@ -88,12 +99,15 @@ function mapCompanyToCard(company: CompanyPublicDTO): CompanyQueueCard {
       contactNote: null,
       rating: null,
       subtitle: company.subtitle ?? null,
-      description: company.subtitle ?? null,
+      description: company.description ?? company.subtitle ?? null,
       website: null,
-      city: null,
+      city: cities[0] ?? null,
     },
   };
 }
+
+const getJoinQueueId = (queue: CompanyQueueCard): string | null =>
+  queue.housingQueueId ? String(queue.housingQueueId) : null;
 
 export default function Page() {
   const router = useRouter();
@@ -157,7 +171,7 @@ export default function Page() {
     setMyQueuesLoading(true);
 
     queueService
-      .getMyQueues()
+      .getMyQueues({ hydrateQueues: false })
       .then((applications) => {
         if (!active) return;
         setJoinedQueueIds(buildJoinedQueueIdSet(applications));
@@ -176,18 +190,33 @@ export default function Page() {
     };
   }, [authLoading, user]);
 
-  useEffect(() => {
-    if (joinedQueueIds.size === 0) return;
+  const isCompanyQueueJoined = (queue: CompanyQueueCard) => {
+    const joinQueueId = getJoinQueueId(queue);
+    return joinQueueId !== null && joinedQueueIds.has(joinQueueId);
+  };
 
+  useEffect(() => {
     setSelectedQueues((current) => {
       const next = new Set(
-        Array.from(current).filter((queueId) => !joinedQueueIds.has(queueId))
+        Array.from(current).filter((queueId) => {
+          if (joinedQueueIds.has(queueId)) {
+            return false;
+          }
+
+          return true;
+        })
       );
       return next.size === current.size ? current : next;
     });
   }, [joinedQueueIds]);
 
-  const cityFilterOptions = useMemo(() => [], []);
+  const cityFilterOptions = useMemo(
+    () =>
+      uniqueOnly(cleanStrings(queues.flatMap((queue) => queue.cities ?? []))).sort(
+        (a, b) => a.localeCompare(b, "sv")
+      ),
+    [queues]
+  );
   const landlordFilterOptions = useMemo(
     () =>
       uniqueOnly(removeEmpty(queues.map((queue) => queue.name))).sort((a, b) =>
@@ -195,7 +224,10 @@ export default function Page() {
       ),
     [queues]
   );
-  const cityCounts = useMemo(() => ({}), []);
+  const cityCounts = useMemo(
+    () => countByValue(cleanStrings(queues.flatMap((queue) => queue.cities ?? []))),
+    [queues]
+  );
   const landlordCounts = useMemo(
     () => countByValue(removeEmpty(queues.map((queue) => queue.name))),
     [queues]
@@ -212,27 +244,42 @@ export default function Page() {
       const matchesLandlord =
         filters.landlords.length === 0 ||
         filters.landlords.includes(queue.name);
+      const matchesCity =
+        filters.cities.length === 0 ||
+        (queue.cities ?? []).some((city) => filters.cities.includes(city));
 
-      return matchesSearch && matchesLandlord;
+      return matchesSearch && matchesLandlord && matchesCity;
     });
   }, [queues, searchValues, filters]);
 
   const unjoinedFilteredQueues = useMemo(
-    () => filteredQueues.filter((queue) => !joinedQueueIds.has(queue.id)),
+    () =>
+      filteredQueues.filter(
+        (queue) => getJoinQueueId(queue) !== null && !isCompanyQueueJoined(queue)
+      ),
     [filteredQueues, joinedQueueIds]
   );
 
   const allFilteredSelected = useMemo(() => {
     if (unjoinedFilteredQueues.length === 0) return false;
-    return unjoinedFilteredQueues.every((q) => selectedQueues.has(q.id));
+    return unjoinedFilteredQueues.every((q) => {
+      const joinQueueId = getJoinQueueId(q);
+      return joinQueueId !== null && selectedQueues.has(joinQueueId);
+    });
   }, [unjoinedFilteredQueues, selectedQueues]);
 
   const toggleSelectAllInCity = () => {
     const next = new Set(selectedQueues);
     if (allFilteredSelected) {
-      unjoinedFilteredQueues.forEach((q) => next.delete(q.id));
+      unjoinedFilteredQueues.forEach((q) => {
+        const joinQueueId = getJoinQueueId(q);
+        if (joinQueueId) next.delete(joinQueueId);
+      });
     } else {
-      unjoinedFilteredQueues.forEach((q) => next.add(q.id));
+      unjoinedFilteredQueues.forEach((q) => {
+        const joinQueueId = getJoinQueueId(q);
+        if (joinQueueId) next.add(joinQueueId);
+      });
     }
     setSelectedQueues(next);
   };
@@ -310,13 +357,14 @@ export default function Page() {
 
   const renderQueueCard = (queue: CompanyQueueCard) => {
     const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
-    const isAlreadyJoined = joinedQueueIds.has(queue.id);
+    const joinQueueId = getJoinQueueId(queue);
+    const isAlreadyJoined = isCompanyQueueJoined(queue);
     const isJoinStatusLoading = authLoading || myQueuesLoading;
 
     const queueCardProps = {
       ...queue,
       area: "",
-      city: "",
+      city: (queue.cities ?? []).join(", "),
       totalUnits: undefined,
       unitsLabel: undefined,
       logoUrl,
@@ -334,22 +382,30 @@ export default function Page() {
           unitsLabel={queueCardProps.unitsLabel}
           logoUrl={queueCardProps.logoUrl}
           logoAlt={queueCardProps.logoAlt}
-          description={queue.subtitle}
+          description={queue.description ?? queue.subtitle}
           termsUrl={queue.termsUrl}
           privacyUrl={queue.privacyUrl}
           tags={queueCardProps.tags}
-          isSelected={selectedQueues.has(queue.id) && !isAlreadyJoined}
+          isSelected={
+            joinQueueId !== null &&
+            selectedQueues.has(joinQueueId) &&
+            !isAlreadyJoined
+          }
           isAlreadyJoined={isAlreadyJoined}
           isJoinStatusLoading={isJoinStatusLoading}
           onViewListings={() => openQueue(queue)}
           onToggleSelect={() => {
             if (isAlreadyJoined || isJoinStatusLoading) return;
+            if (joinQueueId === null) {
+              setJoinError("Företaget saknar en publicerad bostadskö.");
+              return;
+            }
 
             const next = new Set(selectedQueues);
-            if (next.has(queue.id)) {
-              next.delete(queue.id);
+            if (next.has(joinQueueId)) {
+              next.delete(joinQueueId);
             } else {
-              next.add(queue.id);
+              next.add(joinQueueId);
             }
             setJoinError(null);
             setSelectedQueues(next);

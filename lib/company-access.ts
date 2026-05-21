@@ -125,7 +125,7 @@ export function getUserCompanies(user: User | null | undefined): CompanySummary[
     if (id != null) {
       companies.push({
         id,
-        name: firstString(source.companyName),
+        name: firstString(source.companyName, source.displayName),
         logoUrl: firstString(source.logoUrl),
       });
     }
@@ -179,7 +179,7 @@ export function getActiveCompanySummary(user: User | null | undefined) {
   return (
     getUserCompanies(user).find((company) => company.id === activeCompanyId) ?? {
       id: activeCompanyId,
-      name: user?.companyName,
+      name: user?.companyName ?? user?.displayName,
       logoUrl: user?.logoUrl,
     }
   );

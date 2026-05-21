@@ -57,6 +57,9 @@ export type CompanyPublicDTO = {
   logoUrl?: string | null;
   housingQueueId?: string | null;
   privacyUrl?: string | null;
+  termsUrl?: string | null;
+  cities?: string[];
+  schools?: ResidentSchool[];
 };
 
 export type CompanyRole = {
@@ -710,7 +713,10 @@ export const companyService = {
       throw new Error("Denna funktion är inte tillgänglig för studenter. Försök att logga in som uthyrare istället.");
     }
     const companyId = getActiveCompanyId(result);
-    const companyName = getActiveCompanySummary(result)?.name ?? result.companyName;
+    const companyName =
+      getActiveCompanySummary(result)?.name ??
+      result.companyName ??
+      result.displayName;
     if (companyId === null || !companyName) {
       throw new Error("Oväntat svar från servern.");
     }

@@ -24,8 +24,6 @@ import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const COMPANY_LISTINGS_PAGE_SIZE = 6;
-const COMPANY_LISTINGS_FETCH_SIZE = 500;
-const companyListingsCache = new Map<number, ListingCardDTO[]>();
 const imageFilenamePattern = /\.(avif|gif|jpe?g|png|webp)$/i;
 
 const uniqueListingsById = (items: ListingCardDTO[]) => {
@@ -38,6 +36,16 @@ const uniqueListingsById = (items: ListingCardDTO[]) => {
   return Array.from(byId.values());
 };
 
+const firstNonEmptyString = (...values: unknown[]) => {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed) return trimmed;
+  }
+
+  return null;
+};
+
 export default function QueueDetailPage() {
   const params = useParams<{ id: string }>();
   const companyIdRaw = params?.id;
@@ -46,10 +54,13 @@ export default function QueueDetailPage() {
 
   const [company, setCompany] = useState<CompanyDTO | null>(null);
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
-  const [allCompanyListings, setAllCompanyListings] = useState<ListingCardDTO[]>([]);
+  const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [listingsPage, setListingsPage] = useState(1);
+  const [listingsTotalPages, setListingsTotalPages] = useState(1);
+  const [listingsTotalElements, setListingsTotalElements] = useState(0);
   const [listingsLoading, setListingsLoading] = useState(false);
   const [listingsError, setListingsError] = useState<string | null>(null);
+  const [queuesError, setQueuesError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Why true initially: avoids a flash of "Okänt företag" before the
   // effect has had a chance to start fetching on the very first render.
@@ -61,6 +72,7 @@ export default function QueueDetailPage() {
   const [hasFetched, setHasFetched] = useState(false);
   const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
   const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
+  const [joinedQueuesLoading, setJoinedQueuesLoading] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const companyViewDemographicsRecordedIds = useRef<Set<number>>(new Set());
@@ -85,21 +97,34 @@ export default function QueueDetailPage() {
 
     let active = true;
     setLoading(true);
+    setHasFetched(false);
     setError(null);
+    setCompany(null);
+    setQueues([]);
+    setQueuesError(null);
 
-    Promise.all([
+    Promise.allSettled([
       queueService.getCompany(companyIdNumber),
       queueService.getByCompany(companyIdNumber),
     ])
-      .then(([companyData, companyQueues]) => {
+      .then(([companyResult, queuesResult]) => {
         if (!active) return;
-        setCompany(companyData);
-        setQueues(Array.isArray(companyQueues) ? companyQueues : []);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error("Fetch error:", err);
-        setError("Kunde inte ladda företagsinformation.");
+
+        if (companyResult.status === "fulfilled") {
+          setCompany(companyResult.value);
+        } else {
+          console.error("Kunde inte hämta företaget:", companyResult.reason);
+          setError("Kunde inte ladda företagsinformation.");
+        }
+
+        if (queuesResult.status === "fulfilled") {
+          setQueues(Array.isArray(queuesResult.value) ? queuesResult.value : []);
+          setQueuesError(null);
+        } else {
+          console.error("Kunde inte hämta företagets köer:", queuesResult.reason);
+          setQueues([]);
+          setQueuesError("Kunde inte ladda företagets köinformation.");
+        }
       })
       .finally(() => {
         // Why no `active` guard here: we want loading/hasFetched to settle
@@ -139,39 +164,41 @@ export default function QueueDetailPage() {
 
   useEffect(() => {
     setListingsPage(1);
-    setAllCompanyListings([]);
+    setListings([]);
+    setListingsTotalPages(1);
+    setListingsTotalElements(0);
     setListingsError(null);
-    if (companyIdNumber === null) {
-      setListingsLoading(false);
-      return;
-    }
+  }, [companyIdNumber]);
 
-    const cachedListings = companyListingsCache.get(companyIdNumber);
-    if (cachedListings) {
-      setAllCompanyListings(cachedListings);
+  useEffect(() => {
+    if (companyIdNumber === null) {
       setListingsLoading(false);
       return;
     }
 
     let active = true;
     setListingsLoading(true);
+    setListingsError(null);
 
     queueService
-      .getCompanyListings(
+      .getCompanyListingsPage(
         companyIdNumber,
-        0,
-        COMPANY_LISTINGS_FETCH_SIZE,
+        listingsPage - 1,
+        COMPANY_LISTINGS_PAGE_SIZE,
       )
-      .then((items) => {
+      .then((page) => {
         if (!active) return;
-        const uniqueListings = uniqueListingsById(items);
-        companyListingsCache.set(companyIdNumber, uniqueListings);
-        setAllCompanyListings(uniqueListings);
+        const uniqueListings = uniqueListingsById(page.content ?? []);
+        setListings(uniqueListings);
+        setListingsTotalPages(Math.max(1, page.totalPages ?? 1));
+        setListingsTotalElements(page.totalElements ?? uniqueListings.length);
       })
       .catch((err) => {
         if (!active) return;
         console.error("Kunde inte hämta företagets annonser:", err);
-        setAllCompanyListings([]);
+        setListings([]);
+        setListingsTotalPages(1);
+        setListingsTotalElements(0);
         setListingsError("Kunde inte ladda företagets bostäder.");
       })
       .finally(() => {
@@ -181,20 +208,22 @@ export default function QueueDetailPage() {
     return () => {
       active = false;
     };
-  }, [companyIdNumber]);
+  }, [companyIdNumber, listingsPage]);
 
   useEffect(() => {
     if (authLoading) return;
 
     if (!user) {
       setJoinedQueueIds(new Set());
+      setJoinedQueuesLoading(false);
       return;
     }
 
     let active = true;
+    setJoinedQueuesLoading(true);
 
     queueService
-      .getMyQueues()
+      .getMyQueues({ hydrateQueues: false })
       .then((applications) => {
         if (!active) return;
         setJoinedQueueIds(buildJoinedQueueIdSet(applications));
@@ -203,6 +232,9 @@ export default function QueueDetailPage() {
         if (!active) return;
         console.error("Kunde inte hämta användarens köer:", err);
         setJoinedQueueIds(new Set());
+      })
+      .finally(() => {
+        if (active) setJoinedQueuesLoading(false);
       });
 
     return () => {
@@ -237,16 +269,6 @@ export default function QueueDetailPage() {
     };
   }, [authLoading, user]);
 
-  const listingsTotalElements = allCompanyListings.length;
-  const listingsTotalPages = Math.max(
-    1,
-    Math.ceil(listingsTotalElements / COMPANY_LISTINGS_PAGE_SIZE),
-  );
-  const listings = useMemo(() => {
-    const start = (listingsPage - 1) * COMPANY_LISTINGS_PAGE_SIZE;
-    return allCompanyListings.slice(start, start + COMPANY_LISTINGS_PAGE_SIZE);
-  }, [allCompanyListings, listingsPage]);
-
   useEffect(() => {
     if (listingsPage > listingsTotalPages) {
       setListingsPage(listingsTotalPages);
@@ -277,18 +299,25 @@ export default function QueueDetailPage() {
   }, [authLoading, favoriteIds, listings, user]);
 
   // Bygg ett HousingQueueDTO-liknande objekt från company-data för QueueHero
+  const companyRecord = company as (CompanyDTO & Record<string, unknown>) | null;
+  const companyName =
+    firstNonEmptyString(
+      companyRecord?.name,
+      companyRecord?.companyName,
+      companyRecord?.displayName,
+    ) ?? "Okänt företag";
+
   const heroQueue: HousingQueueDTO = company
     ? {
         id: String(company.id),
         companyId: company.id,
-        name: company.name,
-        city: "",
-        logoUrl: company.logoUrl,
-        bannerUrl: company.bannerUrl,
-        description: company.description,
-        website: company.website,
-        activeListings:
-          listingsTotalElements || allCompanyListings.length || listings.length,
+        name: companyName,
+        city: company.cities?.[0] ?? "",
+        logoUrl: company.logoUrl ?? "",
+        bannerUrl: company.bannerUrl ?? undefined,
+        description: company.description ?? undefined,
+        website: company.website ?? undefined,
+        activeListings: listingsTotalElements || listings.length,
         totalUnits: queues.reduce((sum, q) => sum + (q.totalUnits ?? 0), 0),
         waitDays:
           queues.length > 0
@@ -345,11 +374,11 @@ export default function QueueDetailPage() {
 
   const mapListings = useMemo(
     () =>
-      allCompanyListings.filter(
+      listings.filter(
         (listing) =>
           typeof listing.lat === "number" && typeof listing.lng === "number",
       ),
-    [allCompanyListings],
+    [listings],
   );
 
   const handleJoinQueue = async (queueId: string) => {
@@ -441,6 +470,12 @@ export default function QueueDetailPage() {
       </div>
 
       {/* Köer */}
+      {queuesError && (
+        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {queuesError}
+        </div>
+      )}
+
       {queues.length > 0 && (
         <div className="mt-10 w-full">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -463,7 +498,10 @@ export default function QueueDetailPage() {
                 <Button
                   onClick={() => handleJoinQueue(q.id)}
                   isDisabled={
-                    joinedQueueIds.has(q.id) || joiningQueueId !== null
+                    authLoading ||
+                    joinedQueuesLoading ||
+                    joinedQueueIds.has(q.id) ||
+                    joiningQueueId !== null
                   }
                   variant={joinedQueueIds.has(q.id) ? "secondary" : "default"}
                   size="sm"
@@ -478,7 +516,9 @@ export default function QueueDetailPage() {
                   ) : (
                     <>
                       <Bell className="h-4 w-4" />
-                      {joinedQueueIds.has(q.id)
+                      {authLoading || joinedQueuesLoading
+                        ? "Kontrollerar..."
+                        : joinedQueueIds.has(q.id)
                         ? "Du står redan i kön"
                         : user
                           ? "Ställ dig i kön"

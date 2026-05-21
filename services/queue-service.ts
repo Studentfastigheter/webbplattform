@@ -11,16 +11,25 @@ import { ListingCardDTO, type PageResponse } from "@/types/listing";
 export interface CompanyDTO {
   id: number;
   name: string;
-  subtitle: string;
-  description: string;
-  website: string;
-  rating: number;
-  verified: boolean;
-  bannerUrl: string;
-  logoUrl: string;
+  subtitle?: string | null;
+  description?: string | null;
+  website?: string | null;
+  rating?: number | null;
+  verified?: boolean | null;
+  bannerUrl?: string | null;
+  logoUrl?: string | null;
   housingQueueId?: string | null;
   termsUrl?: string | null;
   privacyUrl?: string | null;
+  cities?: string[];
+  schools?: Array<{
+    id?: number;
+    schoolId?: number;
+    name?: string;
+    city?: string | null;
+    lat?: number | null;
+    lng?: number | null;
+  }>;
 };
 
 export type QueueFilters = {
@@ -35,7 +44,7 @@ export type QueueApplicationDTO = {
   id?: string | number;
   queueId?: string | number;
   queueName?: string;
-  queue?: {
+  queue?: (Partial<HousingQueueDTO> & {
     id?: string | number;
     name?: string;
     area?: string | null;
@@ -53,7 +62,7 @@ export type QueueApplicationDTO = {
       bannerUrl?: string | null;
       city?: string | null;
     } | null;
-  };
+  });
   studentId?: number;
   firstName?: string;
   surname?: string;
@@ -212,8 +221,10 @@ export const queueService = {
                  pageSize   = DEFAULT_PAGE_SIZE,
                  pageCount  = 1,
                }: QueueFilters = {}): Promise<HousingQueueDTO[]> => {
-    const drop = pageSize * (pageNumber - 1);
-    const take = pageSize;
+    const normalizedPageNumber = Math.max(1, pageNumber);
+    const normalizedPageSize = Math.max(1, pageSize);
+    const drop = normalizedPageSize * (normalizedPageNumber - 1);
+    const take = normalizedPageSize;
     const query: Record<string, any> = {
       drop: drop,
       take: take,
@@ -255,18 +266,53 @@ export const queueService = {
     });
   },
 
-  getMyQueues: async (): Promise<QueueApplicationDTO[]> => {
+  getMyQueues: async (
+    options: { hydrateQueues?: boolean } = {}
+  ): Promise<QueueApplicationDTO[]> => {
     const res = await apiClient<MyQueuesResponse>("/queues/my");
     const rows = getMyQueuesRows(res);
+    if (options.hydrateQueues === false) {
+      return rows.map((row) => {
+        const queueId = row.queueId ?? row.queue?.id;
+        return {
+          ...row,
+          queueId: queueId != null ? String(queueId) : queueId,
+          queueName: row.queueName ?? row.queue?.name,
+          queueDays: getQueueDays(row),
+        };
+      });
+    }
+
+    const queueIds = Array.from(
+      new Set(
+        rows
+          .map(getQueueApplicationQueueId)
+          .filter((queueId): queueId is string => Boolean(queueId))
+      )
+    );
+    const queueDetails = await Promise.all(
+      queueIds.map(async (queueId) => {
+        const queue = await queueService.get(queueId).catch(() => null);
+        return [queueId, queue] as const;
+      })
+    );
+    const queuesById = new Map(
+      queueDetails.filter(
+        (entry): entry is readonly [string, HousingQueueDTO] => entry[1] !== null
+      )
+    );
 
     return rows.map((row) => {
       const queueId = row.queueId ?? row.queue?.id;
-      const queueName = row.queueName ?? row.queue?.name;
+      const normalizedQueueId = queueId != null ? String(queueId) : queueId;
+      const queue = normalizedQueueId ? queuesById.get(normalizedQueueId) : undefined;
+      const queueName = row.queueName ?? row.queue?.name ?? queue?.name;
 
       return {
         ...row,
-        queueId: queueId != null ? String(queueId) : queueId,
+        queueId: normalizedQueueId,
         queueName,
+        queue: row.queue ?? queue,
         queueDays: getQueueDays(row),
       };
     });
