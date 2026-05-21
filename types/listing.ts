@@ -28,6 +28,7 @@ export interface ListingCardDTO {
   availableTo?: DateString | null;
   requirementsProfileId?: string | null;
   published?: TimestampString | null;
+  nearbyLocations?: ListingNearbyLocationDTO[];
 }
 
 // 2. DETALJVYN (Single Listing) - Matchar Java ListingDetailDTO
@@ -65,6 +66,14 @@ export interface ListingDetailDTO {
   verifiedOwner: boolean;
   requirementsProfileId?: string | null;
   published?: TimestampString | null;
+  nearbyLocations?: ListingNearbyLocationDTO[];
+}
+
+export interface ListingNearbyLocationDTO {
+  location: "GYM" | "GROCERIES" | "NIGHTCLUB" | "UNIVERSITY" | "TRANSIT" | string;
+  lat?: number | null;
+  lng?: number | null;
+  details?: string | null;
 }
 
 export interface ListingTagDTO {

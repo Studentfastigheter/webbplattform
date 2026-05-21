@@ -42,6 +42,7 @@ type EntityHeroProps = {
   headerActions?: ReactNode;
   sections?: EntityHeroSection[];
   className?: string;
+  bannerAspectRatio?: string;
   contentClassName?: string;
   avatarWrapperClassName?: string;
 };
@@ -69,6 +70,7 @@ export default function EntityHero({
   headerActions,
   sections = [],
   className,
+  bannerAspectRatio,
   contentClassName,
   avatarWrapperClassName,
 }: EntityHeroProps) {
@@ -77,7 +79,15 @@ export default function EntityHero({
 
   return (
     <section className={cn("w-full", className)}>
-      <div className="relative h-[220px] w-full overflow-hidden rounded-2xl bg-gray-100 sm:h-[280px] md:h-[340px]">
+      <div
+        className={cn(
+          "relative w-full overflow-hidden rounded-2xl bg-gray-100",
+          bannerAspectRatio
+            ? ""
+            : "h-[220px] sm:h-[280px] md:h-[340px]"
+        )}
+        style={bannerAspectRatio ? { aspectRatio: bannerAspectRatio } : undefined}
+      >
         {bannerImage ? (
           <Image
             src={bannerImage}
@@ -86,6 +96,7 @@ export default function EntityHero({
             className="object-cover"
             priority
             sizes="(min-width: 1024px) 896px, 100vw"
+            unoptimized
           />
         ) : (
           <div className="h-full w-full bg-[linear-gradient(135deg,#f8fafc_0%,#eef2f7_100%)]" />

@@ -26,6 +26,7 @@ export const UploadButton = React.forwardRef<
     if (!file) return;
 
     onFileSelect?.(file);
+    e.target.value = "";
   };
 
   return (

@@ -117,17 +117,21 @@ const amenityIconByKey: Record<string, ReactNode> = {
   internet: <Wifi className="h-6 w-6" />,
 };
 
-function toAmenityOptions(tags: { displayName: string; icon?: string | null }[]) {
+function toAmenityOptions(
+  tags: { tagKey?: string | null; displayName: string; icon?: string | null }[]
+) {
   const mapped = tags
     .map<AmenityOption | null>((tag) => {
       const label = tag.displayName.trim();
       if (!label) return null;
 
       const normalizedKey = label.toLowerCase().replace(/\s+/g, "_");
+      const normalizedTagKey = tag.tagKey?.toLowerCase() ?? "";
       return {
-        id: label,
+        id: tag.tagKey?.trim() || label,
         label,
         icon:
+          amenityIconByKey[normalizedTagKey] ??
           amenityIconByKey[normalizedKey] ??
           amenityIconByKey[tag.icon?.toLowerCase() ?? ""],
       };

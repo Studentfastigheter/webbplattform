@@ -307,16 +307,38 @@ export default function QueueDetailPage() {
       companyRecord?.displayName,
     ) ?? "Okänt företag";
 
+  const companyLogoUrl =
+    firstNonEmptyString(
+      companyRecord?.logoUrl,
+      companyRecord?.logoURL,
+      companyRecord?.logo,
+      companyRecord?.logoImage,
+    ) ?? "";
+  const companyBannerUrl =
+    firstNonEmptyString(
+      companyRecord?.bannerUrl,
+      companyRecord?.bannerURL,
+      companyRecord?.banner,
+      companyRecord?.bannerImage,
+    ) ?? undefined;
+  const resolvedCompanyId =
+    typeof companyRecord?.companyId === "number"
+      ? companyRecord.companyId
+      : company?.id ?? companyIdNumber ?? 0;
+  const companyWebsite =
+    firstNonEmptyString(companyRecord?.websiteUrl, companyRecord?.website) ??
+    undefined;
+
   const heroQueue: HousingQueueDTO = company
     ? {
-        id: String(company.id),
-        companyId: company.id,
+        id: String(resolvedCompanyId),
+        companyId: resolvedCompanyId,
         name: companyName,
-        city: company.cities?.[0] ?? "",
-        logoUrl: company.logoUrl ?? "",
-        bannerUrl: company.bannerUrl ?? undefined,
+        city: company.cities?.[0] ?? queues[0]?.city ?? "",
+        logoUrl: companyLogoUrl,
+        bannerUrl: companyBannerUrl,
         description: company.description ?? undefined,
-        website: company.website ?? undefined,
+        website: companyWebsite,
         activeListings: listingsTotalElements || listings.length,
         totalUnits: queues.reduce((sum, q) => sum + (q.totalUnits ?? 0), 0),
         waitDays:
@@ -537,7 +559,7 @@ export default function QueueDetailPage() {
         <div className="mt-12 w-full">
           <ImageSlideshow
             images={galleryImages}
-            title={company?.name ?? "Företaget"}
+            title={companyName}
           />
         </div>
       )}

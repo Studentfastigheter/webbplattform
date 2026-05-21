@@ -16,6 +16,7 @@ import {
   type ListingStatus,
   type DwellingType,
   type HostType,
+  type ListingNearbyLocationDTO,
   type RequirementsProfileDTO,
   type UpdateListingRequest,
   type PublishListingRequest,
@@ -275,6 +276,40 @@ const normalizeListingTags = (...values: unknown[]): string[] => {
   return [];
 };
 
+const normalizeNearbyLocation = (
+  value: unknown
+): ListingNearbyLocationDTO | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const location = firstString(value.location, value.type, value.name);
+  if (!location) {
+    return null;
+  }
+
+  return {
+    location,
+    lat: Number.isFinite(Number(value.lat)) ? Number(value.lat) : null,
+    lng: Number.isFinite(Number(value.lng)) ? Number(value.lng) : null,
+    details: firstString(value.details, value.description) ?? null,
+  };
+};
+
+const normalizeNearbyLocations = (...values: unknown[]) => {
+  for (const value of values) {
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    return value
+      .map(normalizeNearbyLocation)
+      .filter((item): item is ListingNearbyLocationDTO => item !== null);
+  }
+
+  return [];
+};
+
 const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
   const source = isRecord(value) && isRecord(value.listing) ? value.listing : value;
   if (!isRecord(source)) {
@@ -329,6 +364,10 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
     availableTo: firstString(source.availableTo) ?? null,
     requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
     published: firstString(source.published) ?? null,
+    nearbyLocations: normalizeNearbyLocations(
+      source.nearbyLocations,
+      source.nearbyLocatios
+    ),
   };
 };
 
@@ -347,6 +386,10 @@ const normalizeListingDetail = (dto: ListingDetailDTO): ListingDetailDTO => {
     imageUrls: firstStringArray(source.imageUrls, source.images),
     requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
     published: firstString(source.published) ?? null,
+    nearbyLocations: normalizeNearbyLocations(
+      source.nearbyLocations,
+      source.nearbyLocatios
+    ),
   };
 };
 

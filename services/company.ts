@@ -48,18 +48,25 @@ export type CompanyPrivateDTO = {
 export type CompanyPublicDTO = {
   id: number;
   name: string;
+  companyId?: number;
+  companyName?: string;
   subtitle?: string | null;
   description?: string | null;
   website?: string | null;
+  websiteUrl?: string | null;
   rating?: number | null;
   verified?: boolean | null;
   bannerUrl?: string | null;
   logoUrl?: string | null;
   housingQueueId?: string | null;
   privacyUrl?: string | null;
+  privacyPolicyUrl?: string | null;
   termsUrl?: string | null;
   cities?: string[];
   schools?: ResidentSchool[];
+  pictureUrlList?: string[];
+  videoUrlList?: string[];
+  socialLinks?: unknown[];
 };
 
 export type CompanyRole = {
@@ -538,8 +545,110 @@ function normalizeResidentAnalyticsData(value: unknown): ResidentAnalyticsData {
   };
 }
 
-function normalizeUploadedUrl(value: string): string {
+function normalizeCompanyPublic(value: unknown): CompanyPublicDTO | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = firstNumber(value.id, value.companyId);
+  const name = firstString(value.name, value.companyName);
+
+  if (id === undefined || !name) {
+    return null;
+  }
+
+  const schools = toArray<unknown>(
+    value.schools ?? value.companySchools
+  )
+    .map(normalizeResidentSchool)
+    .filter((school): school is ResidentSchool => school !== null);
+
+  return {
+    ...(value as Partial<CompanyPublicDTO>),
+    id,
+    name,
+    companyId: firstNumber(value.companyId, value.id),
+    companyName: firstString(value.companyName, value.name),
+    website: firstString(value.website, value.websiteUrl),
+    websiteUrl: firstString(value.websiteUrl, value.website),
+    privacyUrl: firstString(value.privacyUrl, value.privacyPolicyUrl, value.policyUrl),
+    privacyPolicyUrl: firstString(value.privacyPolicyUrl, value.privacyUrl, value.policyUrl),
+    termsUrl: firstString(value.termsUrl),
+    cities: toArray<string>(value.cities ?? value.companyCities),
+    schools,
+    pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
+    videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
+    socialLinks: toArray<unknown>(value.socialLinks),
+  };
+}
+
+function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
+  if (!isRecord(value)) {
+    throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+  }
+
+  const id = firstNumber(value.id, value.companyId);
+  const name = firstString(value.name, value.companyName);
+
+  if (id === undefined || !name) {
+    throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+  }
+
+  return {
+    ...(value as Partial<CompanyPrivateDTO>),
+    id,
+    name,
+    website: firstString(value.website, value.websiteUrl),
+    contactEmail: firstString(value.contactEmail, value.email),
+    contactPhone: firstString(value.contactPhone, value.phone),
+    email: firstString(value.email, value.contactEmail),
+    phone: firstString(value.phone, value.contactPhone),
+    orgNumber: firstString(
+      value.orgNumber,
+      value.organisationNumber,
+      value.organizationNumber
+    ),
+    internalContactNote: firstString(value.internalContactNote, value.contactNote),
+    contactNote: firstString(value.contactNote, value.internalContactNote),
+  };
+}
+
+function normalizeUploadedUrl(value: unknown): string | null {
+  if (typeof value !== "string") {
+    if (!isRecord(value)) {
+      return null;
+    }
+
+    const directUrl = firstString(
+      value.url,
+      value.logoUrl,
+      value.bannerUrl,
+      value.imageUrl,
+      value.fileUrl,
+      value.location,
+      value.path
+    );
+
+    if (directUrl) {
+      return normalizeUploadedUrl(directUrl);
+    }
+
+    return normalizeUploadedUrl(value.data ?? value.result);
+  }
+
   const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("{") || trimmed.startsWith("[") || trimmed.startsWith("\"")) {
+    try {
+      return normalizeUploadedUrl(JSON.parse(trimmed));
+    } catch {
+      // Keep treating the response as a plain URL below.
+    }
+  }
 
   if (
     (trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
@@ -698,13 +807,20 @@ export const companyService = {
 
   listCompanies: async (): Promise<CompanyPublicDTO[]> => {
     const companies = await apiClient<unknown>("/companies", { auth: false });
-    return arrayFromApiResponse<CompanyPublicDTO>(companies);
+    return arrayFromApiResponse<unknown>(companies)
+      .map(normalizeCompanyPublic)
+      .filter((company): company is CompanyPublicDTO => company !== null);
   },
 
   publicProfile: async (id: number): Promise<CompanyPublicDTO> => {
-    return apiClient<CompanyPublicDTO>(`/companies/${pathSegment(id)}`, {
+    const company = await apiClient<unknown>(`/companies/${pathSegment(id)}`, {
       auth: false,
     });
+    const normalizedCompany = normalizeCompanyPublic(company);
+    if (!normalizedCompany) {
+      throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+    }
+    return normalizedCompany;
   },
 
   myCompany: async (): Promise<CompanyInfo> => {
@@ -724,7 +840,8 @@ export const companyService = {
   },
 
   privateProfile: async (id: number): Promise<CompanyPrivateDTO> => {
-    return apiClient<CompanyPrivateDTO>(`/companies/${pathSegment(id)}/private`);
+    const company = await apiClient<unknown>(`/companies/${pathSegment(id)}/private`);
+    return normalizeCompanyPrivate(company);
   },
 
   updateCompanyData: async (
@@ -737,26 +854,24 @@ export const companyService = {
     });
   },
 
-  uploadLogo: async (id: number, file: File): Promise<string> => {
+  uploadLogo: async (id: number, file: File): Promise<string | null> => {
     const formData = new FormData();
     formData.append("file", file, file.name);
 
-    const url = await apiClient<string>(`/companies/${pathSegment(id)}/changeData/logo`, {
+    const url = await apiClient<unknown>(`/companies/${pathSegment(id)}/changeData/logo`, {
       method: "POST",
       body: formData,
-      responseType: "text",
     });
     return normalizeUploadedUrl(url);
   },
 
-  uploadBanner: async (id: number, file: File): Promise<string> => {
+  uploadBanner: async (id: number, file: File): Promise<string | null> => {
     const formData = new FormData();
     formData.append("file", file, file.name);
 
-    const url = await apiClient<string>(`/companies/${pathSegment(id)}/changeData/banner`, {
+    const url = await apiClient<unknown>(`/companies/${pathSegment(id)}/changeData/banner`, {
       method: "POST",
       body: formData,
-      responseType: "text",
     });
     return normalizeUploadedUrl(url);
   },
