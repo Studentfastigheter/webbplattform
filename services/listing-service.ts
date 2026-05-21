@@ -47,10 +47,14 @@ export type RollingAd = {
 };
 
 export type ListingSearchFacetsDTO = {
+  totalHits?: number;
   totalCount?: number;
+  totalElements?: number;
   priceDistribution?: {
     minRentObserved?: number;
     maxRentObserved?: number;
+    minRent?: number;
+    maxRent?: number;
     histogram?: Array<{
       minRent?: number;
       maxRent?: number;
@@ -64,6 +68,7 @@ export type ListingSearchFacetsDTO = {
       logoUrl?: string;
     };
     listingCount?: number;
+    count?: number;
   }>;
   privateLandlordCount?: number;
   dwellingTypeCounts?: Array<{

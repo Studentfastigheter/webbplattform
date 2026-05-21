@@ -26,6 +26,7 @@ import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
 import {
   listingService,
+  type ListingSearchFacetsDTO,
   type ListingSearchParams,
 } from "@/services/listing-service";
 import {
@@ -185,6 +186,85 @@ const uniqueListingsById = (items: ListingCardDTO[]) => {
   return Array.from(byId.values());
 };
 
+const filtersToListingSearchParams = (
+  filters: ListingsFilterState
+): ListingSearchParams => {
+  const city = filters.city.trim();
+  const hasSchoolFilter =
+    typeof filters.schoolLat === "number" &&
+    typeof filters.schoolLng === "number";
+
+  return {
+    city: city || undefined,
+    dwellingType: filters.propertyType ?? undefined,
+    minRent:
+      filters.priceRange.min > priceBounds.min
+        ? filters.priceRange.min
+        : undefined,
+    maxRent:
+      filters.priceRange.max < priceBounds.max
+        ? filters.priceRange.max
+        : undefined,
+    hostType: filters.hostType ?? undefined,
+    schoolTargetLat: hasSchoolFilter ? filters.schoolLat : undefined,
+    schoolTargetLng: hasSchoolFilter ? filters.schoolLng : undefined,
+    amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
+  };
+};
+
+const getFacetTotalHits = (facets: ListingSearchFacetsDTO | null) => {
+  const total =
+    facets?.totalHits ?? facets?.totalCount ?? facets?.totalElements ?? null;
+  return typeof total === "number" && Number.isFinite(total) ? total : null;
+};
+
+const getFacetPriceHistogram = (facets: ListingSearchFacetsDTO | null) =>
+  facets?.priceDistribution?.histogram?.map((bucket) => ({
+    minRent: bucket.minRent,
+    maxRent: bucket.maxRent,
+    count: bucket.count,
+  })) ?? [];
+
+const getObservedRentRange = (facets: ListingSearchFacetsDTO | null) => {
+  const distribution = facets?.priceDistribution;
+  const min = distribution?.minRentObserved ?? distribution?.minRent;
+  const max = distribution?.maxRentObserved ?? distribution?.maxRent;
+
+  if (
+    typeof min !== "number" ||
+    typeof max !== "number" ||
+    !Number.isFinite(min) ||
+    !Number.isFinite(max)
+  ) {
+    return null;
+  }
+
+  return { min, max };
+};
+
+const getDwellingTypeCounts = (facets: ListingSearchFacetsDTO | null) =>
+  facets?.dwellingTypeCounts?.reduce<Record<string, number>>((acc, item) => {
+    if (item.dwellingType && typeof item.count === "number") {
+      acc[item.dwellingType] = item.count;
+    }
+    return acc;
+  }, {});
+
+const getHostTypeCounts = (facets: ListingSearchFacetsDTO | null) => {
+  if (!facets) return undefined;
+
+  const companyCount =
+    facets.companyCounts?.reduce(
+      (sum, item) => sum + (item.listingCount ?? item.count ?? 0),
+      0
+    ) ?? 0;
+
+  return {
+    COMPANY: companyCount,
+    PRIVATE: facets.privateLandlordCount ?? 0,
+  };
+};
+
 export default function ListingsPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -197,12 +277,25 @@ export default function ListingsPage() {
   const [filters, setFilters] = useState<ListingsFilterState>(
     createDefaultListingsFilterState
   );
+  const [filterPreview, setFilterPreview] = useState<ListingsFilterState>(
+    createDefaultListingsFilterState
+  );
 
   const [schools, setSchools] = useState<School[]>([]);
   const [availableAmenities, setAvailableAmenities] =
     useState<AmenityOption[]>(amenityOptions);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [mapListings, setMapListings] = useState<ListingCardDTO[]>([]);
+  const [appliedFacets, setAppliedFacets] =
+    useState<ListingSearchFacetsDTO | null>(null);
+  const [previewFacets, setPreviewFacets] =
+    useState<ListingSearchFacetsDTO | null>(null);
+  const [previewPriceFacets, setPreviewPriceFacets] =
+    useState<ListingSearchFacetsDTO | null>(null);
+  const [previewFacetsLoading, setPreviewFacetsLoading] = useState(false);
+  const [previewFacetsError, setPreviewFacetsError] = useState<string | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(pageFromUrl);
   const [totalPages, setTotalPages] = useState(0);
@@ -326,29 +419,102 @@ export default function ListingsPage() {
     [user]
   );
 
-  const currentFilters = useMemo<ListingSearchParams>(() => {
-    const city = filters.city.trim();
-    const hasSchoolFilter =
-      typeof filters.schoolLat === "number" &&
-      typeof filters.schoolLng === "number";
+  const currentFilters = useMemo(
+    () => filtersToListingSearchParams(filters),
+    [filters]
+  );
 
-    return {
-      city: city || undefined,
-      dwellingType: filters.propertyType ?? undefined,
-      minRent:
-        filters.priceRange.min > priceBounds.min
-          ? filters.priceRange.min
-          : undefined,
-      maxRent:
-        filters.priceRange.max < priceBounds.max
-          ? filters.priceRange.max
-          : undefined,
-      hostType: filters.hostType ?? undefined,
-      schoolTargetLat: hasSchoolFilter ? filters.schoolLat : undefined,
-      schoolTargetLng: hasSchoolFilter ? filters.schoolLng : undefined,
-      amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
-    };
+  const previewSearchFilters = useMemo(
+    () => filtersToListingSearchParams(filterPreview),
+    [filterPreview]
+  );
+
+  const previewPriceSearchFilters = useMemo(
+    () =>
+      filtersToListingSearchParams({
+        ...filterPreview,
+        priceRange: { ...priceBounds },
+      }),
+    [
+      filterPreview.amenities,
+      filterPreview.city,
+      filterPreview.hostType,
+      filterPreview.propertyType,
+      filterPreview.schoolLat,
+      filterPreview.schoolLng,
+    ]
+  );
+
+  useEffect(() => {
+    setFilterPreview(filters);
   }, [filters]);
+
+  useEffect(() => {
+    let active = true;
+
+    listingService
+      .getFacets(currentFilters)
+      .then((facets) => {
+        if (active) setAppliedFacets(facets);
+      })
+      .catch((err) => {
+        console.error("Failed to load listing facets:", err);
+        if (active) setAppliedFacets(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentFilters]);
+
+  useEffect(() => {
+    let active = true;
+    setPreviewFacetsLoading(true);
+    setPreviewFacetsError(null);
+
+    const timeoutId = window.setTimeout(() => {
+      listingService
+        .getFacets(previewSearchFilters)
+        .then((facets) => {
+          if (active) setPreviewFacets(facets);
+        })
+        .catch((err) => {
+          console.error("Failed to load listing filter facets:", err);
+          if (!active) return;
+          setPreviewFacets(null);
+          setPreviewFacetsError("Kunde inte h\u00e4mta antal tr\u00e4ffar.");
+        })
+        .finally(() => {
+          if (active) setPreviewFacetsLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [previewSearchFilters]);
+
+  useEffect(() => {
+    let active = true;
+
+    const timeoutId = window.setTimeout(() => {
+      listingService
+        .getFacets(previewPriceSearchFilters)
+        .then((facets) => {
+          if (active) setPreviewPriceFacets(facets);
+        })
+        .catch((err) => {
+          console.error("Failed to load listing price facets:", err);
+          if (active) setPreviewPriceFacets(null);
+        });
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [previewPriceSearchFilters]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -513,7 +679,15 @@ export default function ListingsPage() {
     [totalPages, updatePageInUrl]
   );
 
-  const totalListingsCount = totalElements || listings.length;
+  const facetTotalListingsCount = getFacetTotalHits(appliedFacets);
+  const totalListingsCount =
+    facetTotalListingsCount ?? (totalElements > 0 ? totalElements : listings.length);
+  const previewFacetTotalCount = getFacetTotalHits(previewFacets);
+  const priceDistributionFacets = previewPriceFacets ?? previewFacets;
+  const previewPriceHistogram = getFacetPriceHistogram(priceDistributionFacets);
+  const previewObservedRentRange = getObservedRentRange(priceDistributionFacets);
+  const previewPropertyTypeCounts = getDwellingTypeCounts(previewFacets);
+  const previewHostTypeCounts = getHostTypeCounts(previewFacets);
   const listingGridClasses = isMapView
     ? "grid grid-cols-1 gap-3 justify-items-center"
     : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-3 md:gap-6 justify-items-center";
@@ -684,18 +858,29 @@ export default function ListingsPage() {
                   amenities={availableAmenities}
                   propertyTypes={propertyTypeOptions}
                   hostTypes={hostTypeOptions}
+                  priceHistogram={previewPriceHistogram}
+                  facetTotalCount={previewFacetTotalCount}
+                  facetsLoading={previewFacetsLoading}
+                  facetsError={previewFacetsError}
+                  propertyTypeCounts={previewPropertyTypeCounts}
+                  hostTypeCounts={previewHostTypeCounts}
+                  observedRentRange={previewObservedRentRange}
                   priceBounds={priceBounds}
                   schools={schools}
                   initialState={filters}
                   onApply={(state) => {
                     setPage(1);
                     updatePageInUrl(1);
+                    setFilterPreview(state);
                     setFilters(state);
                   }}
+                  onChange={setFilterPreview}
                   onClear={() => {
                     setPage(1);
                     updatePageInUrl(1);
-                    setFilters(createDefaultListingsFilterState());
+                    const nextState = createDefaultListingsFilterState();
+                    setFilterPreview(nextState);
+                    setFilters(nextState);
                     setSearchInput("");
                   }}
                 />

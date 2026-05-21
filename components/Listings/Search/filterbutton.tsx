@@ -10,6 +10,9 @@ export type FilterButtonProps = {
   applyLabel?: string;
   clearLabel?: string;
   resultsLabel?: string;
+  resultsMeta?: React.ReactNode;
+  resultsLoading?: boolean;
+  applyDisabled?: boolean;
   onApply?: () => void;
   onClear?: () => void;
   className?: string;
@@ -56,6 +59,9 @@ const FilterButton: React.FC<FilterButtonProps> = ({
   applyLabel = "Visa resultat",
   clearLabel = "Rensa alla",
   resultsLabel,
+  resultsMeta,
+  resultsLoading = false,
+  applyDisabled = false,
   onApply,
   onClear,
   className = "",
@@ -157,16 +163,32 @@ const FilterButton: React.FC<FilterButtonProps> = ({
               >
                 {clearLabel}
               </Button>
-              <Button
-                size="sm"
-                variant="default"
-                onClick={() => {
-                  onApply?.();
-                  close();
-                }}
-              >
-                {showApplyLabel}
-              </Button>
+              <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                {resultsMeta && (
+                  <div className="min-h-4 text-center text-xs text-black/55 sm:text-right">
+                    {resultsMeta}
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  variant="default"
+                  disabled={applyDisabled}
+                  onClick={() => {
+                    onApply?.();
+                    close();
+                  }}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    {resultsLoading && (
+                      <span
+                        aria-hidden
+                        className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                      />
+                    )}
+                    {showApplyLabel}
+                  </span>
+                </Button>
+              </div>
             </footer>
           </div>
         </div>
