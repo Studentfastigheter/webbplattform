@@ -2,7 +2,12 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { normalizeAuthToken } from "@/lib/api-client";
-import { authService, getAuthResponseToken } from "@/services/auth-service";
+import {
+  authService,
+  getOptionalAuthResponseToken,
+  getAuthResponseToken,
+  getAuthResponseUser,
+} from "@/services/auth-service";
 import {
   User,
   LoginRequest,
@@ -18,6 +23,7 @@ type AuthCtx = {
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<User>;
   googleLogin: (data: GoogleAuthRequest) => Promise<User>;
+  googleRegister: (data: GoogleAuthRequest) => Promise<User>;
   register: (data: RegisterRequest) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>; 
@@ -48,7 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.setItem("token", storedToken);
         setToken(storedToken); // Synka state med localStorage
-        const userData = await authService.me(storedToken);
+        const session = await authService.session(storedToken);
+        const accessToken = getOptionalAuthResponseToken(session) ?? storedToken;
+        const userData = getAuthResponseUser(session);
+        localStorage.setItem("token", accessToken);
+        setToken(accessToken);
         setUser(userData);
       } catch (error) {
         console.error("Token ogiltig", error);
@@ -65,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const applyAuthResponse = async (res: Awaited<ReturnType<typeof authService.login>>) => {
     const accessToken = getAuthResponseToken(res);
-    const userData = res.user ?? (await authService.me(accessToken));
+    const userData = getAuthResponseUser(res);
     localStorage.setItem("token", accessToken);
     setToken(accessToken);
     setUser(userData);
@@ -83,6 +93,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return applyAuthResponse(res);
   };
 
+  const googleRegister = async (data: GoogleAuthRequest) => {
+    const res = await authService.googleRegister(data);
+    return applyAuthResponse(res);
+  };
+
   // 3. Register
   const register = async (data: RegisterRequest) => {
     const res = await authService.register(data);
@@ -90,12 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Studentregistrering behöver verifieras med Freja först.");
     }
 
-    const accessToken = getAuthResponseToken(res);
-    const userData = res.user ?? (await authService.me(accessToken));
-    localStorage.setItem("token", accessToken);
-    setToken(accessToken); // Uppdatera token vid registrering
-    setUser(userData);
-    return userData;
+    return applyAuthResponse(res);
   };
 
   // 4. Logout
@@ -108,7 +118,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 5. Refresh (Hämta om användaren från servern)
   const refreshUser = async () => {
     try {
-      const updatedUser = await authService.me();
+      const session = await authService.session();
+      const accessToken =
+        getOptionalAuthResponseToken(session) ??
+        normalizeAuthToken(localStorage.getItem("token"));
+      const updatedUser = getAuthResponseUser(session);
+      if (accessToken) {
+        localStorage.setItem("token", accessToken);
+        setToken(accessToken);
+      }
       setUser(updatedUser);
     } catch (error) {
       console.error("Kunde inte uppdatera användare", error);
@@ -130,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading, 
       login, 
       googleLogin,
+      googleRegister,
       register, 
       logout, 
       refreshUser,

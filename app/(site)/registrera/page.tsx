@@ -68,7 +68,7 @@ function redirectPathForAccountType(accountType: AccountType) {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, googleRegister } = useAuth();
   const [accountType, setAccountType] = useState<AccountType>("student");
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [loading, setLoading] = useState(false);
@@ -191,17 +191,13 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const response = await authService.googleRegister({
+      const registeredUser = await googleRegister({
         googleIdToken,
         city: normalizeCity(form.city),
       });
-      router.push(
-        `/registrera/freja-id?authRef=${encodeURIComponent(
-          response.authRef
-        )}&flow=google`
-      );
+      router.push(redirectPathForAccountType(registeredUser.accountType));
     } catch (err: any) {
-      setError(err?.message ?? "Kunde inte starta Google-registreringen.");
+      setError(err?.message ?? "Kunde inte registrera med Google.");
     } finally {
       setLoading(false);
     }
@@ -334,9 +330,7 @@ export default function RegisterPage() {
                   </Field>
 
                   <FieldDescription>
-                    Google- och studentregistrering slutförs med Freja.
-                    Personnummer och telefon hämtas från Freja när verifieringen
-                    är godkänd.
+                    Google-registrering loggar in dig direkt när kontot har skapats.
                   </FieldDescription>
                 </>
               )}

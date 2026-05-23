@@ -171,6 +171,10 @@ export interface PasswordResetFinalRequest {
   newPassword: string;
 }
 
+export interface VerifyEmailRequest {
+  email: string;
+}
+
 // --- Komplexa typer (Behåll denna om du bygger ut objektet på frontend) ---
 export type StudentWithRelations = User & {
   school?: School | null;
