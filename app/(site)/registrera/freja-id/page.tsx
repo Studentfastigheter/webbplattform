@@ -32,14 +32,53 @@ function buildFrejaAuthUrl(authRef: string) {
 
 function FrejaIdRegisterContent() {
   const searchParams = useSearchParams();
-  const authRef = searchParams.get("authRef")?.trim() ?? "";
+  const initialAuthRef = searchParams.get("authRef")?.trim() ?? "";
+  const shouldStartFrejaOnly = searchParams.get("start") === "freja";
+  const isFrejaOnlyFlow =
+    shouldStartFrejaOnly || searchParams.get("flow") === "freja";
+  const [authRef, setAuthRef] = useState(initialAuthRef);
   const [status, setStatus] = useState<FrejaAuthStatus>("PENDING");
   const [pollError, setPollError] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
 
   const frejaAuthUrl = useMemo(
     () => (authRef ? buildFrejaAuthUrl(authRef) : ""),
     [authRef]
   );
+
+  useEffect(() => {
+    if (authRef || !shouldStartFrejaOnly) return;
+
+    let active = true;
+
+    async function startFrejaOnlyRegistration() {
+      setIsStarting(true);
+      setStartError(null);
+      try {
+        const response = await authService.frejaRegister();
+        if (!active) return;
+        setAuthRef(response.authRef);
+      } catch (err) {
+        if (!active) return;
+        setStartError(
+          err instanceof Error
+            ? err.message
+            : "Kunde inte starta Freja-registreringen."
+        );
+      } finally {
+        if (active) {
+          setIsStarting(false);
+        }
+      }
+    }
+
+    startFrejaOnlyRegistration();
+
+    return () => {
+      active = false;
+    };
+  }, [authRef, shouldStartFrejaOnly]);
 
   useEffect(() => {
     if (!authRef) return;
@@ -74,11 +113,18 @@ function FrejaIdRegisterContent() {
   }, [authRef]);
 
   const isComplete = status !== "PENDING";
+  const successText = isFrejaOnlyFlow
+    ? "Kontot är verifierat. Ett lösenord skickas till e-postadressen från Freja."
+    : statusMessages.MATCHES;
 
   return (
     <AuthCard
       title="Verifiera med Freja"
-      subtitle="Skanna koden med Freja för att fortsätta registreringen."
+      subtitle={
+        isStarting
+          ? "Startar Freja-verifiering."
+          : "Skanna koden med Freja för att fortsätta registreringen."
+      }
       footer={
         <FieldDescription className="text-center">
           {status === "MATCHES" ? (
@@ -89,9 +135,13 @@ function FrejaIdRegisterContent() {
         </FieldDescription>
       }
     >
-      {!authRef ? (
+      {startError ? (
+        <FieldError>{startError}</FieldError>
+      ) : !authRef ? (
         <FieldError>
-          Verifieringen saknar authRef. Starta registreringen igen.
+          {isStarting
+            ? "Startar verifiering..."
+            : "Verifieringen saknar authRef. Starta registreringen igen."}
         </FieldError>
       ) : (
         <div className="flex flex-col items-center gap-5">
@@ -108,7 +158,7 @@ function FrejaIdRegisterContent() {
 
           <div className="space-y-2 text-center">
             <p className="text-sm font-medium text-slate-950">
-              {statusMessages[status]}
+              {status === "MATCHES" ? successText : statusMessages[status]}
             </p>
             <p className="text-sm text-muted-foreground">
               {isComplete

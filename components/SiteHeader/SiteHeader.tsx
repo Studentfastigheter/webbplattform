@@ -71,6 +71,7 @@ const getRoleLabel = (accountType?: string | null) => {
 };
 
 const getInitial = (value: string) => value.trim().charAt(0).toUpperCase() || "C";
+const getLogoUrl = (user?: User | null) => user?.logoUrl?.trim() || "";
 
 type AccountAvatarProps = {
   src?: string | null;
@@ -102,6 +103,8 @@ function AccountAvatar({
       src={currentSrc}
       alt={alt}
       className={className}
+      referrerPolicy="no-referrer"
+      decoding="async"
       onError={() => setCurrentSrc("")}
     />
   );
@@ -109,16 +112,17 @@ function AccountAvatar({
 
 export default function SiteHeader() {
   const { user, token, logout, isLoading } = useAuth();
-  const [headerUser, setHeaderUser] = useState<User | null>(user);
+  const [authMeUser, setAuthMeUser] = useState<User | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const currentUser = headerUser ?? user;
+  const currentUser = authMeUser ?? user;
   const userType = currentUser?.accountType;
   const roleLabel = getRoleLabel(userType);
   const displayName = getUserDisplayName(currentUser);
   const accountInitial = getInitial(displayName || "CampusLyan");
+  const avatarSrc = getLogoUrl(currentUser);
 
   let navItems = publicNavItems;
 
@@ -166,19 +170,15 @@ export default function SiteHeader() {
 
   const handleLogout = () => {
     logout();
-    setHeaderUser(null);
+    setAuthMeUser(null);
     closeMenus();
   };
-
-  useEffect(() => {
-    setHeaderUser(user);
-  }, [user]);
 
   useEffect(() => {
     if (isLoading) return;
 
     if (!token) {
-      setHeaderUser(null);
+      setAuthMeUser(null);
       return;
     }
 
@@ -188,11 +188,11 @@ export default function SiteHeader() {
       .me(token)
       .then((meUser) => {
         if (!active) return;
-        setHeaderUser(meUser);
+        setAuthMeUser(meUser);
       })
       .catch(() => {
         if (!active) return;
-        setHeaderUser(user);
+        setAuthMeUser(null);
       });
 
     return () => {
@@ -295,7 +295,7 @@ export default function SiteHeader() {
                 className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
               >
                 <AccountAvatar
-                  src={currentUser.logoUrl}
+                  src={avatarSrc}
                   alt={displayName}
                   className="h-8 w-8 rounded-full object-cover"
                   fallbackClassName="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600"
@@ -318,7 +318,7 @@ export default function SiteHeader() {
                 <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] animate-dropdown">
                   <div className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-3">
                     <AccountAvatar
-                      src={currentUser.logoUrl}
+                      src={avatarSrc}
                       alt={displayName}
                       className="h-9 w-9 rounded-full object-cover"
                       fallbackClassName="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-600"
@@ -428,7 +428,7 @@ export default function SiteHeader() {
               <div className="mt-2 w-full border-t border-neutral-200 pt-4">
                 <div className="mb-3 flex items-center gap-3 px-1">
                   <AccountAvatar
-                    src={currentUser.logoUrl}
+                    src={avatarSrc}
                     alt={displayName}
                     className="h-9 w-9 rounded-full object-cover"
                     fallbackClassName="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-sm font-semibold text-neutral-600"

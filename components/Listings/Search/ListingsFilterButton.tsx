@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import AmenityGridSection from "@/components/Listings/filter_sections/AmenityGridSection";
 import FilterSectionShell from "@/components/Listings/filter_sections/FilterSectionShell";
-import PriceRangeSection from "@/components/Listings/filter_sections/PriceRangeSection";
+import PriceRangeSection, {
+  type PriceHistogramValue,
+} from "@/components/Listings/filter_sections/PriceRangeSection";
 import PropertyTypeSection from "@/components/Listings/filter_sections/PropertyTypeSection";
 import FilterButton, {
   type FilterButtonProps,
@@ -44,13 +46,19 @@ export type ListingsFilterState = {
 
 type ListingsFilterButtonProps = Omit<
   FilterButtonProps,
-  "children" | "onApply" | "onClear"
+  "children" | "onApply" | "onClear" | "resultsLabel" | "resultsMeta" | "resultsLoading"
 > & {
   amenities?: { id: string; label: string; icon?: ReactNode }[];
   propertyTypes?: { id: string; label: string }[];
   hostTypes?: { id: string; label: string }[];
   schools?: SchoolOption[];
-  priceHistogram?: number[];
+  priceHistogram?: PriceHistogramValue[];
+  facetTotalCount?: number | null;
+  facetsLoading?: boolean;
+  facetsError?: string | null;
+  propertyTypeCounts?: Record<string, number>;
+  hostTypeCounts?: Record<string, number>;
+  observedRentRange?: PriceBounds | null;
   priceBounds?: PriceBounds;
   showPriceFilter?: boolean;
   initialState?: ListingsFilterState;
@@ -60,6 +68,15 @@ type ListingsFilterButtonProps = Omit<
 };
 
 const defaultBounds: PriceBounds = { min: 0, max: 10000 };
+
+const formatListingCount = (count: number) =>
+  `${count.toLocaleString("sv-SE")} ${count === 1 ? "bostad" : "bost\u00e4der"}`;
+
+const formatRent = (value: number) =>
+  `${value.toLocaleString("sv-SE")} kr`;
+
+const hasCustomPriceRange = (range: PriceBounds, bounds: PriceBounds) =>
+  range.min > bounds.min || range.max < bounds.max;
 
 const emptyState = (priceBounds: PriceBounds): ListingsFilterState => ({
   city: "",
@@ -148,6 +165,12 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
   hostTypes = [],
   schools = [],
   priceHistogram = [],
+  facetTotalCount = null,
+  facetsLoading = false,
+  facetsError = null,
+  propertyTypeCounts,
+  hostTypeCounts,
+  observedRentRange,
   priceBounds = defaultBounds,
   showPriceFilter = true,
   initialState,
@@ -185,6 +208,72 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
       .filter((school) => school.label.toLowerCase().includes(query))
       .slice(0, 20);
   }, [schoolSearch, selectableSchools]);
+
+  const resultsLabel = useMemo(() => {
+    if (typeof facetTotalCount !== "number" && facetsLoading) {
+      return "H\u00e4mtar tr\u00e4ffar...";
+    }
+    if (typeof facetTotalCount === "number") {
+      return `Visa ${formatListingCount(facetTotalCount)}`;
+    }
+    return undefined;
+  }, [facetTotalCount, facetsLoading]);
+
+  const resultsMeta = useMemo(() => {
+    if (facetsLoading && typeof facetTotalCount === "number") {
+      return "Uppdaterar tr\u00e4ffar...";
+    }
+    if (facetsError) return facetsError;
+    return null;
+  }, [facetTotalCount, facetsError, facetsLoading]);
+
+  const priceDescription = useMemo(() => {
+    const base = "M\u00e5nadshyra i SEK.";
+    if (
+      observedRentRange &&
+      Number.isFinite(observedRentRange.min) &&
+      Number.isFinite(observedRentRange.max)
+    ) {
+      return `${base} Matchande bost\u00e4der ligger mellan ${formatRent(
+        observedRentRange.min
+      )} och ${formatRent(observedRentRange.max)}.`;
+    }
+
+    return base;
+  }, [observedRentRange]);
+
+  const selectedSummary = useMemo(() => {
+    const items: string[] = [];
+    const propertyType = propertyTypes.find((item) => item.id === state.propertyType);
+    const hostType = hostTypes.find((item) => item.id === state.hostType);
+    const selectedSchool = selectableSchools.find(
+      (school) => school.normalizedId === state.schoolId
+    );
+
+    if (state.city.trim()) items.push(state.city.trim());
+    if (propertyType) items.push(propertyType.label);
+    if (hostType) items.push(hostType.label);
+    if (hasCustomPriceRange(state.priceRange, priceBounds)) {
+      items.push(`${formatRent(state.priceRange.min)}-${formatRent(state.priceRange.max)}`);
+    }
+    if (selectedSchool) items.push(selectedSchool.name);
+    if (state.amenities.length > 0) {
+      items.push(`${state.amenities.length} bekv\u00e4mligheter`);
+    }
+
+    return items;
+  }, [
+    hostTypes,
+    priceBounds,
+    propertyTypes,
+    selectableSchools,
+    state.amenities.length,
+    state.city,
+    state.hostType,
+    state.priceRange,
+    state.propertyType,
+    state.schoolId,
+  ]);
 
   const updateState = (next: ListingsFilterState) => {
     setState(next);
@@ -277,12 +366,70 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
   const content = (
     <>
+      <div
+        className={`mb-1 rounded-2xl border px-4 py-3 transition-colors ${
+          facetTotalCount === 0
+            ? "border-amber-200 bg-amber-50 text-amber-950"
+            : "border-[#004225]/15 bg-[#004225]/5 text-[#004225]"
+        }`}
+        aria-live="polite"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase opacity-70">
+              Matchande annonser
+            </p>
+            <p className="mt-1 text-2xl font-semibold leading-none">
+              {typeof facetTotalCount === "number"
+                ? facetTotalCount.toLocaleString("sv-SE")
+                : facetsLoading
+                  ? "..."
+                  : "-"}
+            </p>
+          </div>
+          <div className="text-sm sm:max-w-[340px] sm:text-right">
+            {typeof facetTotalCount === "number" ? (
+              facetTotalCount === 0 ? (
+                "Inga annonser matchar kombinationen. Testa att ta bort ett krav eller bredda prisintervallet."
+              ) : (
+                `${formatListingCount(facetTotalCount)} matchar dina val.`
+              )
+            ) : facetsError ? (
+              facetsError
+            ) : facetsLoading ? (
+              "H\u00e4mtar tr\u00e4ffar..."
+            ) : (
+              "Antal tr\u00e4ffar visas n\u00e4r statistik finns."
+            )}
+            {facetsLoading && typeof facetTotalCount === "number" && (
+              <span className="mt-1 block text-xs opacity-70">
+                Uppdaterar...
+              </span>
+            )}
+          </div>
+        </div>
+
+        {selectedSummary.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {selectedSummary.map((item) => (
+              <span
+                key={item}
+                className="rounded-full bg-white/70 px-2.5 py-1 text-xs font-medium text-black/70"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       {propertyTypes.length > 0 && (
         <PropertyTypeSection
           title="Boendetyp"
           items={propertyTypes}
           selectedId={state.propertyType}
           onSelect={handlePropertyType}
+          counts={propertyTypeCounts}
         />
       )}
 
@@ -290,18 +437,19 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
         <PropertyTypeSection
           title={"Hyresv\u00e4rd"}
           description={
-            "V\u00e4lj om annonsen ska komma fr\u00e5n f\u00f6retag eller privat v\u00e4rd."
+            "Antalet visar hur m\u00e5nga annonser som finns kvar med dina andra val."
           }
           items={hostTypes}
           selectedId={state.hostType}
           onSelect={handleHostType}
+          counts={hostTypeCounts}
         />
       )}
 
       {showPriceFilter && (
         <PriceRangeSection
           title="Prisintervall"
-          description={"M\u00e5nadshyra i SEK."}
+          description={priceDescription}
           histogram={priceHistogram}
           bounds={priceBounds}
           value={[state.priceRange.min, state.priceRange.max]}
@@ -313,7 +461,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
         <AmenityGridSection
           title={"Bekv\u00e4mligheter"}
           description={
-            "Alla valda bekv\u00e4mligheter skickas som upprepade amenities-parametrar."
+            "Alla valda bekv\u00e4mligheter m\u00e5ste finnas p\u00e5 annonsen."
           }
           items={amenities}
           selectedIds={state.amenities}
@@ -324,7 +472,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
       <FilterSectionShell
         title={"N\u00e4ra skola"}
         description={
-          "S\u00f6k bland skolorna fr\u00e5n /api/schools. Campusets koordinater anv\u00e4nds automatiskt i filtret."
+          "V\u00e4lj ett campus eller en skola f\u00f6r att hitta annonser i n\u00e4rheten."
         }
         withBorder={false}
       >
@@ -421,7 +569,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
           {state.schoolId && (
             <p className="text-xs text-black/55">
-              Den valda skolans position skickas som schoolTargetLat och schoolTargetLng.
+              Filtret anv\u00e4nder skolans position n\u00e4r tr\u00e4ffarna r\u00e4knas.
             </p>
           )}
         </div>
@@ -432,6 +580,9 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
   return (
     <FilterButton
       {...buttonProps}
+      resultsLabel={resultsLabel}
+      resultsMeta={resultsMeta}
+      resultsLoading={facetsLoading}
       onClear={() => {
         updateState(emptyState(priceBounds));
         setSchoolSearch("");

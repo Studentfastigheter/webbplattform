@@ -183,6 +183,41 @@ export const demographicsService = {
     >;
   },
 
+  getFullCompanyListings: async (
+    companyId: number,
+    from: string | Date,
+    to: string | Date,
+    category: DemographyCategory
+  ): Promise<Record<string, ListingDemography>> => {
+    return apiClient<Record<string, ListingDemography>>(
+      `/demographics/company/${pathSegment(companyId)}/listings${demographyQuery(
+        from,
+        to,
+        category
+      )}`
+    );
+  },
+
+  getFullCompanyListingsByAllCategories: async (
+    companyId: number,
+    from: string | Date,
+    to: string | Date
+  ): Promise<Record<DemographyCategory, Record<string, ListingDemography>>> => {
+    const entries = await Promise.all(
+      LISTING_DEMOGRAPHY_CATEGORIES.map(async (category) => {
+        const value = await demographicsService
+          .getFullCompanyListings(companyId, from, to, category)
+          .catch(() => ({}));
+        return [category, value] as const;
+      })
+    );
+
+    return Object.fromEntries(entries) as Record<
+      DemographyCategory,
+      Record<string, ListingDemography>
+    >;
+  },
+
   getCompany: async (
     companyId: number,
     from: string | Date,

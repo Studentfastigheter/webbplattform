@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { AuthCard } from "@/components/ui/AuthCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +26,10 @@ const frejaLogoSrc =
 
 export function LoginForm({ className, ...props }: LoginFormProps) {
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, googleLogin, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [googleCity, setGoogleCity] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,6 +44,29 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
       router.push(loggedInUser.accountType === "company" ? "/portal" : "/");
     } catch (err: any) {
       setError(err?.message ?? "Något gick fel vid inloggning.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function onGoogleCredential(googleIdToken: string) {
+    if (isLoading || submitting) return;
+
+    setError(null);
+    if (!googleCity.trim()) {
+      setError("Ange stad innan du fortsätter med Google.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const loggedInUser = await googleLogin({
+        googleIdToken,
+        city: googleCity.trim().toLocaleUpperCase("sv-SE"),
+      });
+      router.push(loggedInUser.accountType === "company" ? "/portal" : "/");
+    } catch (err: any) {
+      setError(err?.message ?? "Google-inloggningen misslyckades.");
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +111,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
             <div className="flex items-center">
               <FieldLabel htmlFor="password">Lösenord</FieldLabel>
               <Link
-                href="#"
+                href="/glomt-losenord"
                 className="ml-auto text-sm underline-offset-2 hover:underline"
               >
                 Glömt lösenord?
@@ -122,10 +147,31 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
           </FieldSeparator>
 
           <Field>
+            <FieldLabel htmlFor="googleCity">Stad för Google</FieldLabel>
+            <Input
+              id="googleCity"
+              type="text"
+              value={googleCity}
+              onChange={(event) => setGoogleCity(event.target.value)}
+              autoComplete="address-level2"
+              disabled={isLoading || submitting}
+            />
+          </Field>
+
+          <Field>
+            <GoogleAuthButton
+              label="Logga in med Google"
+              disabled={isLoading || submitting}
+              onCredential={onGoogleCredential}
+              onError={setError}
+            />
+          </Field>
+
+          <Field>
             <Link
-              href="/logga-in/freja-id"
+              href="/registrera/freja-id?start=freja"
               className="flex min-h-[64px] w-full items-center gap-4 rounded-[8px] border border-slate-200 bg-white px-6 text-left shadow-[0_2px_12px_rgba(15,23,42,0.12)] transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E3A93]"
-              aria-label="Logga in med Freja ID"
+              aria-label="Skapa konto med Freja ID"
             >
               <Image
                 src={frejaLogoSrc}
@@ -135,7 +181,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
                 className="h-auto w-[38px]"
               />
               <span className="text-base font-medium text-slate-950">
-                Freja ID
+                Skapa konto med Freja ID
               </span>
             </Link>
           </Field>

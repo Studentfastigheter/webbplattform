@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, MapPin, Search, X } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import Que_ListingCard from "@/components/Listings/Que_ListingCard";
@@ -10,15 +10,13 @@ import QueueFilterButton, {
   type QueueFilterState,
 } from "@/components/Listings/Search/QueueFilterButton";
 import { FieldSet } from "@/components/ui/field";
-import { useAuth } from "@/context/AuthContext";
 
-import { buildJoinedQueueIdSet, queueService } from "@/services/queue-service";
+import { companyService, type CompanyPublicDTO } from "@/services/company";
 import {
-  demographicsService,
-  getClientDeviceType,
-} from "@/services/demographics-service";
-
-import { type AdvertisedHousingQueue } from "@/types/queue";
+  buildJoinedQueueIdSet,
+  queueService,
+} from "@/services/queue-service";
+import { useAuth } from "@/context/AuthContext";
 import { type CompanyId } from "@/types";
 
 import { removeEmpty, toSearchString, uniqueOnly } from "@/lib/utils";
@@ -27,9 +25,33 @@ type SearchValues = {
   queueName: string;
 };
 
-type QueueWithUI = AdvertisedHousingQueue & {
+type CompanyQueueCard = {
+  id: string;
+  companyId: number;
+  housingQueueId?: string | null;
+  name: string;
+  cities?: string[];
+  description?: string | null;
+  subtitle?: string | null;
+  logoUrl?: string | null;
   termsUrl?: string | null;
   privacyUrl?: string | null;
+  advertiser: {
+    type: "company";
+    id: CompanyId;
+    displayName: string;
+    logoUrl?: string | null;
+    bannerUrl?: string | null;
+    phone: null;
+    contactEmail: null;
+    contactPhone: null;
+    contactNote: null;
+    rating: null;
+    subtitle?: string | null;
+    description?: string | null;
+    website: null;
+    city: string | null;
+  };
 };
 
 const PAGE_SIZE = 6;
@@ -46,99 +68,46 @@ const countByValue = (values: string[]) =>
     return counts;
   }, {});
 
-interface CityFilterContainerProps {
-  cities: string[];
-  cityCounts: Record<string, number>;
-  activeCities: string[];
-  onSelect: (city: string | null) => void;
+const cleanStrings = (values: Array<string | null | undefined>) =>
+  removeEmpty(values).filter(
+    (value): value is string => typeof value === "string" && value.length > 0
+  );
+
+function mapCompanyToCard(company: CompanyPublicDTO): CompanyQueueCard {
+  const cities = Array.isArray(company.cities) ? company.cities : [];
+
+  return {
+    id: String(company.id),
+    companyId: company.id,
+    housingQueueId: company.housingQueueId ?? null,
+    name: company.name,
+    cities,
+    description: company.description ?? null,
+    subtitle: company.subtitle ?? null,
+    logoUrl: company.logoUrl ?? null,
+    termsUrl: company.termsUrl ?? null,
+    privacyUrl: company.privacyUrl ?? null,
+    advertiser: {
+      type: "company",
+      id: company.id as unknown as CompanyId,
+      displayName: company.name,
+      logoUrl: company.logoUrl ?? null,
+      bannerUrl: null,
+      phone: null,
+      contactEmail: null,
+      contactPhone: null,
+      contactNote: null,
+      rating: null,
+      subtitle: company.subtitle ?? null,
+      description: company.description ?? company.subtitle ?? null,
+      website: null,
+      city: cities[0] ?? null,
+    },
+  };
 }
 
-const CityFilterContainer = ({
-  cities,
-  cityCounts,
-  activeCities,
-  onSelect,
-}: CityFilterContainerProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const INITIAL_VISIBLE_COUNT = 8;
-
-  const sortedCities = useMemo(() => {
-    return [...cities].sort(
-      (a, b) => (cityCounts[b] || 0) - (cityCounts[a] || 0)
-    );
-  }, [cities, cityCounts]);
-
-  const visibleCities = isExpanded
-    ? sortedCities
-    : sortedCities.slice(0, INITIAL_VISIBLE_COUNT);
-  const hasMore = sortedCities.length > INITIAL_VISIBLE_COUNT;
-
-  return (
-    <div className="mt-6 flex flex-col items-center gap-5">
-      <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3.5">
-        <button
-          type="button"
-          onClick={() => onSelect(null)}
-          className={`group flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${
-            activeCities.length === 0
-              ? "bg-[#004225] text-white shadow-[0_8px_20px_-6px_rgba(0,66,37,0.4)] scale-105"
-              : "bg-white text-gray-700 ring-1 ring-black/[0.08] hover:ring-black/20 hover:bg-gray-50"
-          }`}
-        >
-          <MapPin
-            className={`h-4 w-4 transition-transform group-hover:scale-110 ${
-              activeCities.length === 0 ? "text-white" : "text-[#004225]"
-            }`}
-          />
-          Alla städer
-        </button>
-        {visibleCities.map((city) => {
-          const isSelected =
-            activeCities.includes(city) && activeCities.length === 1;
-          return (
-            <button
-              key={city}
-              type="button"
-              onClick={() => onSelect(isSelected ? null : city)}
-              className={`flex shrink-0 items-center gap-2.5 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                isSelected
-                  ? "bg-[#004225] text-white shadow-[0_8px_20px_-6px_rgba(0,66,37,0.4)] scale-105"
-                  : "bg-white text-gray-700 ring-1 ring-black/[0.08] hover:ring-black/20 hover:bg-gray-50"
-              }`}
-            >
-              <span className="leading-none">{city}</span>
-              <span
-                className={`flex h-5 min-w-[22px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold transition-colors ${
-                  isSelected
-                    ? "bg-white/20 text-white"
-                    : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {cityCounts[city] || 0}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-1.5 text-sm font-bold text-[#004225] transition-opacity hover:opacity-80"
-        >
-          <span className="underline underline-offset-4 decoration-2 decoration-[#004225]/30 hover:decoration-[#004225]">
-            {isExpanded
-              ? "Visa färre städer"
-              : `Visa alla ${cities.length} städer`}
-          </span>
-          <div
-            className={`h-1.5 w-1.5 rounded-full bg-[#004225] transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
-          />
-        </button>
-      )}
-    </div>
-  );
-};
+const getJoinQueueId = (queue: CompanyQueueCard): string | null =>
+  queue.housingQueueId ? String(queue.housingQueueId) : null;
 
 export default function Page() {
   const router = useRouter();
@@ -150,83 +119,34 @@ export default function Page() {
   const [filters, setFilters] = useState<QueueFilterState>(
     defaultQueueFilterState
   );
-  const [queues, setQueues] = useState<QueueWithUI[]>([]);
+  const [queues, setQueues] = useState<CompanyQueueCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
   const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
+  const [myQueuesLoading, setMyQueuesLoading] = useState(false);
+  const [joiningSelectedQueues, setJoiningSelectedQueues] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const companyQuickDemographicsRecordedIds = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setError(null);
 
-    queueService
-      .getAll()
-      .then(async (res) => {
+    companyService
+      .listCompanies()
+      .then((companies) => {
         if (!active) return;
-
-        const uniqueCompanyIds = [
-          ...new Set(res.map((dto) => dto.companyId).filter(Boolean)),
-        ];
-        const companyMap = new Map<
-          number,
-          { logoUrl?: string; termsUrl?: string | null; privacyUrl?: string | null }
-        >();
-
-        await Promise.all(
-          uniqueCompanyIds.map(async (companyId) => {
-            try {
-              const company = await queueService.getCompany(companyId);
-              companyMap.set(companyId, {
-                logoUrl: company.logoUrl,
-                termsUrl: company.termsUrl,
-                privacyUrl: company.privacyUrl,
-              });
-            } catch {
-              // If the company request fails, keep the queue's own logo.
-            }
-          })
-        );
-
-        const mapped: QueueWithUI[] = res.map((dto) => {
-          const companyData = companyMap.get(dto.companyId);
-          const companyLogo = companyData?.logoUrl;
-          return {
-            ...dto,
-            logoUrl: companyLogo || dto.logoUrl,
-            termsUrl: companyData?.termsUrl ?? null,
-            privacyUrl: companyData?.privacyUrl ?? null,
-            advertiser: {
-              type: "company",
-              id: dto.companyId as unknown as CompanyId,
-              displayName: dto.name,
-              logoUrl: companyLogo || dto.logoUrl,
-              bannerUrl: undefined,
-              phone: null,
-              contactEmail: null,
-              contactPhone: null,
-              contactNote: null,
-              rating: null,
-              subtitle: null,
-              description: dto.description ?? null,
-              website: null,
-              city: dto.city,
-            },
-          };
-        });
-
-        if (!active) return;
-        setQueues(mapped);
+        setQueues(companies.map(mapCompanyToCard));
         setVisibleCount(PAGE_SIZE);
       })
       .catch((err: any) => {
         if (!active) return;
         console.error(err);
-        setError("Kunde inte ladda köer.");
+        setError("Kunde inte ladda företag.");
       })
       .finally(() => {
         if (!active) return;
@@ -243,29 +163,26 @@ export default function Page() {
 
     if (!user) {
       setJoinedQueueIds(new Set());
+      setMyQueuesLoading(false);
       return;
     }
 
     let active = true;
+    setMyQueuesLoading(true);
 
     queueService
-      .getMyQueues()
+      .getMyQueues({ hydrateQueues: false })
       .then((applications) => {
         if (!active) return;
-
-        const nextJoinedQueueIds = buildJoinedQueueIdSet(applications);
-        setJoinedQueueIds(nextJoinedQueueIds);
-        setSelectedQueues((current) => {
-          const next = new Set(
-            [...current].filter((queueId) => !nextJoinedQueueIds.has(queueId))
-          );
-          return next.size === current.size ? current : next;
-        });
+        setJoinedQueueIds(buildJoinedQueueIdSet(applications));
       })
       .catch((err) => {
         if (!active) return;
-        console.error("Kunde inte hämta användarens köer:", err);
+        console.error("Kunde inte hÃ¤mta anvÃ¤ndarens kÃ¶er:", err);
         setJoinedQueueIds(new Set());
+      })
+      .finally(() => {
+        if (active) setMyQueuesLoading(false);
       });
 
     return () => {
@@ -273,10 +190,30 @@ export default function Page() {
     };
   }, [authLoading, user]);
 
+  const isCompanyQueueJoined = (queue: CompanyQueueCard) => {
+    const joinQueueId = getJoinQueueId(queue);
+    return joinQueueId !== null && joinedQueueIds.has(joinQueueId);
+  };
+
+  useEffect(() => {
+    setSelectedQueues((current) => {
+      const next = new Set(
+        Array.from(current).filter((queueId) => {
+          if (joinedQueueIds.has(queueId)) {
+            return false;
+          }
+
+          return true;
+        })
+      );
+      return next.size === current.size ? current : next;
+    });
+  }, [joinedQueueIds]);
+
   const cityFilterOptions = useMemo(
     () =>
-      uniqueOnly(removeEmpty(queues.map((queue) => queue.city))).sort((a, b) =>
-        a.localeCompare(b, "sv")
+      uniqueOnly(cleanStrings(queues.flatMap((queue) => queue.cities ?? []))).sort(
+        (a, b) => a.localeCompare(b, "sv")
       ),
     [queues]
   );
@@ -288,7 +225,7 @@ export default function Page() {
     [queues]
   );
   const cityCounts = useMemo(
-    () => countByValue(removeEmpty(queues.map((queue) => queue.city))),
+    () => countByValue(cleanStrings(queues.flatMap((queue) => queue.cities ?? []))),
     [queues]
   );
   const landlordCounts = useMemo(
@@ -301,33 +238,48 @@ export default function Page() {
 
     return queues.filter((queue) => {
       const matchesSearch =
-        !queueSearch || toSearchString(queue.name).includes(queueSearch);
-      const matchesCity =
-        filters.cities.length === 0 || filters.cities.includes(queue.city);
+        !queueSearch ||
+        toSearchString(queue.name).includes(queueSearch) ||
+        toSearchString(queue.subtitle).includes(queueSearch);
       const matchesLandlord =
         filters.landlords.length === 0 ||
         filters.landlords.includes(queue.name);
+      const matchesCity =
+        filters.cities.length === 0 ||
+        (queue.cities ?? []).some((city) => filters.cities.includes(city));
 
-      return matchesSearch && matchesCity && matchesLandlord;
+      return matchesSearch && matchesLandlord && matchesCity;
     });
   }, [queues, searchValues, filters]);
 
   const unjoinedFilteredQueues = useMemo(
-    () => filteredQueues.filter((q) => !joinedQueueIds.has(q.id)),
+    () =>
+      filteredQueues.filter(
+        (queue) => getJoinQueueId(queue) !== null && !isCompanyQueueJoined(queue)
+      ),
     [filteredQueues, joinedQueueIds]
   );
 
   const allFilteredSelected = useMemo(() => {
     if (unjoinedFilteredQueues.length === 0) return false;
-    return unjoinedFilteredQueues.every((q) => selectedQueues.has(q.id));
+    return unjoinedFilteredQueues.every((q) => {
+      const joinQueueId = getJoinQueueId(q);
+      return joinQueueId !== null && selectedQueues.has(joinQueueId);
+    });
   }, [unjoinedFilteredQueues, selectedQueues]);
 
   const toggleSelectAllInCity = () => {
     const next = new Set(selectedQueues);
     if (allFilteredSelected) {
-      unjoinedFilteredQueues.forEach((q) => next.delete(q.id));
+      unjoinedFilteredQueues.forEach((q) => {
+        const joinQueueId = getJoinQueueId(q);
+        if (joinQueueId) next.delete(joinQueueId);
+      });
     } else {
-      unjoinedFilteredQueues.forEach((q) => next.add(q.id));
+      unjoinedFilteredQueues.forEach((q) => {
+        const joinQueueId = getJoinQueueId(q);
+        if (joinQueueId) next.add(joinQueueId);
+      });
     }
     setSelectedQueues(next);
   };
@@ -342,57 +294,81 @@ export default function Page() {
     [filteredQueues, visibleCount]
   );
 
-  useEffect(() => {
-    if (authLoading || !user || visibleQueues.length === 0) {
-      return;
-    }
-
-    const visibleCompanyIds = new Set(
-      visibleQueues
-        .map((queue) => queue.companyId)
-        .filter((companyId): companyId is number => (
-          typeof companyId === "number" && Number.isFinite(companyId)
-        ))
-    );
-
-    visibleCompanyIds.forEach((companyId) => {
-      if (companyQuickDemographicsRecordedIds.current.has(companyId)) {
-        return;
-      }
-
-      companyQuickDemographicsRecordedIds.current.add(companyId);
-      demographicsService
-        .recordCompanyView(companyId, {
-          deviceType: getClientDeviceType(),
-          viewType: "QUICK",
-        })
-        .catch((err) =>
-          console.error("Kunde inte registrera snabb företagsvisning:", err)
-        );
-    });
-  }, [authLoading, user, visibleQueues]);
-
   const totalQueues = filteredQueues.length;
 
   const queueGridClasses =
     "grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3";
 
-  const openQueue = (queue: QueueWithUI) => {
+  const openQueue = (queue: CompanyQueueCard) => {
     router.push(`/alla-koer/${queue.companyId}`);
   };
 
-  const renderQueueCard = (queue: QueueWithUI) => {
+  const handleJoinSelectedQueues = async () => {
+    if (!user) {
+      router.push("/logga-in");
+      return;
+    }
+
+    const queueIdsToJoin = Array.from(selectedQueues).filter(
+      (queueId) => !joinedQueueIds.has(queueId)
+    );
+
+    if (queueIdsToJoin.length === 0) {
+      setSelectedQueues(new Set());
+      return;
+    }
+
+    setJoiningSelectedQueues(true);
+    setJoinError(null);
+
+    try {
+      const results = await Promise.allSettled(
+        queueIdsToJoin.map((queueId) => queueService.join(queueId))
+      );
+      const joinedIds = queueIdsToJoin.filter(
+        (_queueId, index) => results[index]?.status === "fulfilled"
+      );
+      const failedCount = results.length - joinedIds.length;
+
+      if (joinedIds.length > 0) {
+        setJoinedQueueIds((current) => {
+          const next = new Set(current);
+          joinedIds.forEach((queueId) => next.add(queueId));
+          return next;
+        });
+        setSelectedQueues((current) => {
+          const next = new Set(current);
+          joinedIds.forEach((queueId) => next.delete(queueId));
+          return next;
+        });
+      }
+
+      if (failedCount > 0) {
+        setJoinError(
+          failedCount === 1
+            ? "Kunde inte stÃ¤lla dig i en av de valda kÃ¶erna."
+            : `Kunde inte stÃ¤lla dig i ${failedCount} av de valda kÃ¶erna.`
+        );
+      }
+    } finally {
+      setJoiningSelectedQueues(false);
+    }
+  };
+
+  const renderQueueCard = (queue: CompanyQueueCard) => {
     const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
-    const isAlreadyJoined = joinedQueueIds.has(queue.id);
+    const joinQueueId = getJoinQueueId(queue);
+    const isAlreadyJoined = isCompanyQueueJoined(queue);
+    const isJoinStatusLoading = authLoading || myQueuesLoading;
 
     const queueCardProps = {
       ...queue,
       area: "",
-      city: queue.city ?? "",
-      totalUnits: queue.totalUnits ?? undefined,
+      city: (queue.cities ?? []).join(", "),
+      totalUnits: undefined,
       unitsLabel: undefined,
       logoUrl,
-      tags: queue.tags ?? [],
+      tags: [],
       logoAlt: `${queue.name} logotyp`,
     };
 
@@ -406,22 +382,32 @@ export default function Page() {
           unitsLabel={queueCardProps.unitsLabel}
           logoUrl={queueCardProps.logoUrl}
           logoAlt={queueCardProps.logoAlt}
-          description={queue.description}
+          description={queue.description ?? queue.subtitle}
           termsUrl={queue.termsUrl}
           privacyUrl={queue.privacyUrl}
           tags={queueCardProps.tags}
-          isSelected={selectedQueues.has(queue.id)}
+          isSelected={
+            joinQueueId !== null &&
+            selectedQueues.has(joinQueueId) &&
+            !isAlreadyJoined
+          }
           isAlreadyJoined={isAlreadyJoined}
+          isJoinStatusLoading={isJoinStatusLoading}
           onViewListings={() => openQueue(queue)}
           onToggleSelect={() => {
-            if (isAlreadyJoined) return;
+            if (isAlreadyJoined || isJoinStatusLoading) return;
+            if (joinQueueId === null) {
+              setJoinError("Företaget saknar en publicerad bostadskö.");
+              return;
+            }
 
             const next = new Set(selectedQueues);
-            if (next.has(queue.id)) {
-              next.delete(queue.id);
+            if (next.has(joinQueueId)) {
+              next.delete(joinQueueId);
             } else {
-              next.add(queue.id);
+              next.add(joinQueueId);
             }
+            setJoinError(null);
             setSelectedQueues(next);
           }}
         />
@@ -474,7 +460,7 @@ export default function Page() {
                     type="text"
                     value={searchInput}
                     onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Sök efter bostadskö"
+                    placeholder="Sök efter företag"
                     className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/45 sm:text-base"
                   />
                   {searchInput && (
@@ -517,20 +503,6 @@ export default function Page() {
               </div>
             </div>
 
-            {/* City filter pills — wrapped flex container for better accessibility and no horizontal scrolling */}
-            {cityFilterOptions.length > 0 && (
-              <CityFilterContainer
-                cities={cityFilterOptions}
-                cityCounts={cityCounts}
-                activeCities={filters.cities}
-                onSelect={(city) =>
-                  setFilters({
-                    ...filters,
-                    cities: city === null ? [] : [city],
-                  })
-                }
-              />
-            )}
           </div>
         </section>
 
@@ -542,10 +514,8 @@ export default function Page() {
                 className="text-base font-semibold text-black sm:text-lg"
               >
                 {loading && queues.length === 0
-                  ? "Laddar köer..."
-                  : filters.cities.length === 1
-                    ? `${totalQueues.toLocaleString("sv-SE")} köer i ${filters.cities[0]}`
-                    : `Över ${totalQueues.toLocaleString("sv-SE")} köer`}
+                  ? "Laddar företag..."
+                  : `${totalQueues.toLocaleString("sv-SE")} företag`}
               </h2>
               {filters.cities.length === 1 &&
                 unjoinedFilteredQueues.length > 0 && (
@@ -589,13 +559,19 @@ export default function Page() {
               </div>
             )}
 
+            {joinError && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-800 sm:px-4 sm:text-sm">
+                {joinError}
+              </div>
+            )}
+
             {loading ? (
               <div className="py-12 text-center text-sm text-gray-500">
                 Laddar köer...
               </div>
             ) : filteredQueues.length === 0 ? (
               <div className="py-12 text-center text-sm text-gray-500 sm:py-20 sm:text-base">
-                Inga köer matchade din sökning.
+                Inga företag matchade din sökning.
               </div>
             ) : (
               <div className={queueGridClasses}>
@@ -636,7 +612,14 @@ export default function Page() {
             >
               Rensa val
             </Button>
-            <Button type="button" size="sm" variant="default">
+            <Button
+              type="button"
+              size="sm"
+              variant="default"
+              isLoading={joiningSelectedQueues}
+              isDisabled={joiningSelectedQueues || selectedQueues.size === 0}
+              onClick={handleJoinSelectedQueues}
+            >
               Ställ mig i kö
             </Button>
           </div>

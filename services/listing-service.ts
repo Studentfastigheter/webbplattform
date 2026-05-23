@@ -16,8 +16,10 @@ import {
   type ListingStatus,
   type DwellingType,
   type HostType,
+  type ListingNearbyLocationDTO,
   type RequirementsProfileDTO,
   type UpdateListingRequest,
+  type PublishListingRequest,
 } from "@/types/listing";
 
 // --- Lokala typer ---
@@ -32,15 +34,27 @@ export type ListingActivity = {
 
 export type RollingAd = {
   id: number | string;
+  start?: string;
+  stop?: string;
   company?: string;
-  data?: unknown;
+  data?: {
+    imageUrl?: string;
+    linkUrl?: string;
+    headline?: string;
+    ctaText?: string;
+    [key: string]: unknown;
+  } | null;
 };
 
 export type ListingSearchFacetsDTO = {
+  totalHits?: number;
   totalCount?: number;
+  totalElements?: number;
   priceDistribution?: {
     minRentObserved?: number;
     maxRentObserved?: number;
+    minRent?: number;
+    maxRent?: number;
     histogram?: Array<{
       minRent?: number;
       maxRent?: number;
@@ -54,6 +68,7 @@ export type ListingSearchFacetsDTO = {
       logoUrl?: string;
     };
     listingCount?: number;
+    count?: number;
   }>;
   privateLandlordCount?: number;
   dwellingTypeCounts?: Array<{
@@ -88,14 +103,60 @@ export type ListingSearchParams = {
 
 export type ListingViewIncrementType = "QUICK" | "DETAILED";
 
+const DWELLING_TYPE_ALIASES: Record<string, DwellingType> = {
+  APARTMENT: "APARTMENT",
+  ROOM: "ROOM",
+  CORRIDOR_ROOM: "CORRIDOR_ROOM",
+  APARTMENT_TYPE: "APARTMENT",
+  LAGENHET: "APARTMENT",
+  LÄGENHET: "APARTMENT",
+  RUM: "ROOM",
+  KORRIDORSRUM: "CORRIDOR_ROOM",
+  CORRIDORROOM: "CORRIDOR_ROOM",
+};
+
+const HOST_TYPE_ALIASES: Record<string, HostType> = {
+  COMPANY: "COMPANY",
+  PRIVATE: "PRIVATE",
+  FORETAG: "COMPANY",
+  FÖRETAG: "COMPANY",
+  PRIVAT: "PRIVATE",
+  PRIVATE_LANDLORD: "PRIVATE",
+  LANDLORD: "PRIVATE",
+};
+
 const isListingStatus = (status: string): status is ListingStatus =>
   (LISTING_STATUS_VALUES as readonly string[]).includes(status);
 
-const isDwellingType = (value: string): value is DwellingType =>
-  (DWELLING_TYPE_VALUES as readonly string[]).includes(value);
+const enumLookupKey = (value: string) =>
+  value.normalize("NFC").trim().toUpperCase().replace(/[\s-]+/g, "_");
 
-const isHostType = (value: string): value is HostType =>
-  (HOST_TYPE_VALUES as readonly string[]).includes(value);
+const normalizeDwellingTypeParam = (
+  value: ListingSearchParams["dwellingType"]
+): DwellingType | undefined => {
+  if (!value) return undefined;
+  return DWELLING_TYPE_ALIASES[enumLookupKey(value)];
+};
+
+const normalizeHostTypeParam = (
+  value: ListingSearchParams["hostType"]
+): HostType | undefined => {
+  if (!value) return undefined;
+  return HOST_TYPE_ALIASES[enumLookupKey(value)];
+};
+
+const assertPublishListingEnums = (payload: PublishListingRequest) => {
+  if (payload.dwellingType && !normalizeDwellingTypeParam(payload.dwellingType)) {
+    throw new Error("Ogiltig bostadstyp.");
+  }
+};
+
+const normalizePublishListingPayload = (
+  payload: PublishListingRequest
+): PublishListingRequest => ({
+  ...payload,
+  dwellingType: normalizeDwellingTypeParam(payload.dwellingType),
+});
 
 const applicationBody = (message?: string) => {
   const trimmed = message?.trim();
@@ -103,12 +164,12 @@ const applicationBody = (message?: string) => {
 };
 
 function assertListingSearchEnums(params: ListingSearchParams) {
-  if (params.dwellingType && !isDwellingType(params.dwellingType)) {
+  if (params.dwellingType && !normalizeDwellingTypeParam(params.dwellingType)) {
     throw new Error("Ogiltig bostadstyp.");
   }
 
-  if (params.hostType && !isHostType(params.hostType)) {
-    throw new Error("Ogiltig hyresvardstyp.");
+  if (params.hostType && !normalizeHostTypeParam(params.hostType)) {
+    throw new Error("Ogiltig hyresvärdstyp.");
   }
 }
 
@@ -125,7 +186,7 @@ function buildListingSearchQuery(
         }
       : {}),
     city: params.city?.trim(),
-    dwellingType: params.dwellingType,
+    dwellingType: normalizeDwellingTypeParam(params.dwellingType),
     minRent: params.minRent,
     maxRent: params.maxRent,
     minLivingArea: params.minLivingArea,
@@ -133,7 +194,7 @@ function buildListingSearchQuery(
     exactRooms: params.exactRooms,
     minRooms: params.minRooms,
     maxRooms: params.maxRooms,
-    hostType: params.hostType,
+    hostType: normalizeHostTypeParam(params.hostType),
     schoolTargetLat: params.schoolTargetLat ?? params.school_lat,
     schoolTargetLng: params.schoolTargetLng ?? params.school_lng,
     maxDistanceToSchool: params.maxDistanceToSchool,
@@ -260,6 +321,106 @@ const normalizeListingTags = (...values: unknown[]): string[] => {
   return [];
 };
 
+const normalizeNearbyLocation = (
+  value: unknown
+): ListingNearbyLocationDTO | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const location = firstString(value.location, value.type, value.name);
+  if (!location) {
+    return null;
+  }
+
+  return {
+    location,
+    lat: Number.isFinite(Number(value.lat)) ? Number(value.lat) : null,
+    lng: Number.isFinite(Number(value.lng)) ? Number(value.lng) : null,
+    details: firstString(value.details, value.description) ?? null,
+  };
+};
+
+const normalizeNearbyLocations = (...values: unknown[]) => {
+  for (const value of values) {
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    return value
+      .map(normalizeNearbyLocation)
+      .filter((item): item is ListingNearbyLocationDTO => item !== null);
+  }
+
+  return [];
+};
+
+const normalizePageResponse = <T>(
+  value: unknown,
+  content: T[],
+  page: number,
+  size: number
+): PageResponse<T> => {
+  if (!isRecord(value)) {
+    return {
+      content,
+      totalPages: content.length > 0 ? 1 : 0,
+      totalElements: content.length,
+      numberOfElements: content.length,
+      size,
+      number: page,
+      first: page <= 0,
+      last: true,
+      empty: content.length === 0,
+    };
+  }
+
+  const pageMetadata = isRecord(value.page) ? value.page : value;
+  const totalElementsValue = Number(pageMetadata.totalElements);
+  const totalElements = Number.isFinite(totalElementsValue)
+    ? totalElementsValue
+    : content.length;
+  const totalPagesValue = Number(pageMetadata.totalPages);
+  const totalPages = Number.isFinite(totalPagesValue)
+    ? totalPagesValue
+    : totalElements > 0
+      ? Math.ceil(totalElements / size)
+      : 0;
+  const pageNumberValue = Number(pageMetadata.number);
+  const responseSizeValue = Number(pageMetadata.size);
+
+  return {
+    ...(value as Partial<PageResponse<T>>),
+    content,
+    totalPages,
+    totalElements,
+    numberOfElements:
+      Number.isFinite(Number(value.numberOfElements))
+        ? Number(value.numberOfElements)
+        : content.length,
+    size: Number.isFinite(responseSizeValue) ? responseSizeValue : size,
+    number: Number.isFinite(pageNumberValue) ? pageNumberValue : page,
+    first:
+      typeof value.first === "boolean"
+        ? value.first
+        : (Number.isFinite(pageNumberValue) ? pageNumberValue : page) <= 0,
+    last:
+      typeof value.last === "boolean"
+        ? value.last
+        : totalPages <= 0 ||
+          (Number.isFinite(pageNumberValue) ? pageNumberValue : page) >=
+            totalPages - 1,
+    empty:
+      typeof value.empty === "boolean" ? value.empty : content.length === 0,
+    page: {
+      size: Number.isFinite(responseSizeValue) ? responseSizeValue : size,
+      number: Number.isFinite(pageNumberValue) ? pageNumberValue : page,
+      totalElements,
+      totalPages,
+    },
+  };
+};
+
 const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
   const source = isRecord(value) && isRecord(value.listing) ? value.listing : value;
   if (!isRecord(source)) {
@@ -276,6 +437,10 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
   const area = firstString(source.area);
   const city = firstString(source.city);
   const location = firstString(source.location) ?? [area, city].filter(Boolean).join(", ");
+
+  const requirementsProfileId =
+    firstString(source.requirementsProfileId, source.requirementProfileId) ??
+    null;
 
   return {
     id,
@@ -312,8 +477,13 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
     applyBy: firstString(source.applyBy) ?? null,
     availableFrom: firstString(source.availableFrom) ?? null,
     availableTo: firstString(source.availableTo) ?? null,
-    requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
+    requirementProfileId: requirementsProfileId,
+    requirementsProfileId,
     published: firstString(source.published) ?? null,
+    nearbyLocations: normalizeNearbyLocations(
+      source.nearbyLocations,
+      source.nearbyLocatios
+    ),
   };
 };
 
@@ -330,8 +500,14 @@ const normalizeListingDetail = (dto: ListingDetailDTO): ListingDetailDTO => {
     ...dto,
     tags: normalizeListingTags(source.tags),
     imageUrls: firstStringArray(source.imageUrls, source.images),
-    requirementsProfileId: firstString(source.requirementsProfileId) ?? null,
+    requirementsProfileId:
+      firstString(source.requirementsProfileId, source.requirementProfileId) ??
+      null,
     published: firstString(source.published) ?? null,
+    nearbyLocations: normalizeNearbyLocations(
+      source.nearbyLocations,
+      source.nearbyLocatios
+    ),
   };
 };
 
@@ -358,6 +534,7 @@ const normalizeListingTagDTO = (value: unknown): ListingTagDTO | null => {
   }
 
   return {
+    tagKey: firstString(value.tagKey, value.key) ?? null,
     displayName,
     icon: firstString(value.icon) ?? null,
   };
@@ -428,14 +605,12 @@ export const listingService = {
     assertListingSearchEnums(params);
 
     const query = buildListingSearchQuery(params);
-    const res = await apiClient<PageResponse<ListingCardDTO>>(
+    const res = await apiClient<unknown>(
       `/listings${query}`,
       { auth: false }
     );
-    if (res && res.content) {
-      res.content = normalizeListingCards(res.content);
-    }
-    return res;
+    const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
+    return normalizePageResponse(res, content, params.page ?? 0, params.size ?? 12);
   },
 
   getFacets: async (
@@ -446,6 +621,15 @@ export const listingService = {
       `/listings/facets${buildListingSearchQuery(params, false)}`,
       { auth: false }
     );
+  },
+
+  create: async (payload: PublishListingRequest): Promise<void> => {
+    assertPublishListingEnums(payload);
+
+    await apiClient<void>("/listings", {
+      method: "POST",
+      body: JSON.stringify(normalizePublishListingPayload(payload)),
+    });
   },
 
   // 2. HÄMTA EN ANNONS (Detaljvy)
@@ -487,8 +671,8 @@ export const listingService = {
 
   getMyListings: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<PageResponse<ListingCardDTO>>(`/listings/my${query}`);
-    return normalizeListingCards(res?.content ?? []);
+    const res = await apiClient<unknown>(`/listings/my${query}`);
+    return normalizeListingCards(arrayFromApiResponse<unknown>(res));
   },
 
   getQueueListings: async (
@@ -497,14 +681,12 @@ export const listingService = {
     size = 12
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<PageResponse<ListingCardDTO>>(
+    const res = await apiClient<unknown>(
       `/listings/queue/${pathSegment(queueId)}${query}`,
       { auth: false }
     );
-    if (res?.content) {
-      res.content = normalizeListingCards(res.content);
-    }
-    return res;
+    const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
+    return normalizePageResponse(res, content, page, size);
   },
 
   // 3. HÄMTA MINA ANSÖKNINGAR
@@ -642,9 +824,14 @@ export const listingService = {
   // Ansök till en privat annons
   // Anropar: POST /api/applications/private/{id}
   applyToPrivateListing: async (listingId: string, message: string): Promise<void> => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
+      throw new Error("Meddelande krävs för privata annonser.");
+    }
+
     await apiClient(`/applications/private/${pathSegment(listingId)}`, {
       method: "POST",
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message: trimmedMessage }),
     });
   },
 
@@ -670,7 +857,13 @@ export const listingService = {
       const ads = await apiClient<unknown>("/ads/current", { auth: false });
 
       return arrayFromApiResponse<unknown>(ads)
-        .filter((ad): ad is { id: number | string; company?: string; data?: unknown } => (
+        .filter((ad): ad is {
+          id: number | string;
+          start?: unknown;
+          stop?: unknown;
+          company?: unknown;
+          data?: unknown;
+        } => (
           typeof ad === "object" &&
           ad !== null &&
           "id" in ad &&
@@ -678,8 +871,13 @@ export const listingService = {
         ))
         .map((ad) => ({
           id: ad.id,
-          company: ad.company, // Matchar 'company' i Java-modellen
-          data: ad.data,       // Innehåller JsonNode (JSONB)
+          start: typeof ad.start === "string" ? ad.start : undefined,
+          stop: typeof ad.stop === "string" ? ad.stop : undefined,
+          company: typeof ad.company === "string" ? ad.company : undefined,
+          data:
+            typeof ad.data === "object" && ad.data !== null
+              ? (ad.data as RollingAd["data"])
+              : null,
         }));
     } catch (e) {
       console.error("Kunde inte hämta annonser:", e);

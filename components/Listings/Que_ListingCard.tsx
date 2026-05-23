@@ -24,6 +24,7 @@ type QueueSummary = {
 export type QueListingCardProps = QueueSummary & {
   isSelected?: boolean;
   isAlreadyJoined?: boolean;
+  isJoinStatusLoading?: boolean;
   onViewListings?: () => void;
   onToggleSelect?: () => void;
 };
@@ -39,6 +40,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     privacyUrl,
     isSelected = false,
     isAlreadyJoined = false,
+    isJoinStatusLoading = false,
     onViewListings,
     onToggleSelect,
   } = props;
@@ -133,21 +135,23 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           type="button"
           onClick={e => {
             e.stopPropagation();
-            if (isAlreadyJoined) return;
+            if (isAlreadyJoined || isJoinStatusLoading) return;
             onToggleSelect?.();
           }}
           size="lg"
           variant="default"
-          isDisabled={isAlreadyJoined}
+          isDisabled={isAlreadyJoined || isJoinStatusLoading}
           className={`h-auto min-h-9 w-full min-w-0 whitespace-normal rounded-full px-4 py-2 text-center text-sm font-semibold leading-tight shadow-[0_6px_14px_rgba(0,0,0,0.18)] ${
-            isAlreadyJoined
+            isAlreadyJoined || isJoinStatusLoading
               ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
               : isSelected
                 ? "bg-[#004225] text-white"
               : ""
           }`}
         >
-          {isAlreadyJoined
+          {isJoinStatusLoading
+            ? "Kontrollerar..."
+            : isAlreadyJoined
             ? "Du står redan i kön"
             : isSelected
               ? "Tillagd"

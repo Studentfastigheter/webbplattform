@@ -26,8 +26,11 @@ export interface ListingCardDTO {
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
+  /** Backend list cards currently use the singular field name. */
+  requirementProfileId?: string | null;
   requirementsProfileId?: string | null;
   published?: TimestampString | null;
+  nearbyLocations?: ListingNearbyLocationDTO[];
 }
 
 // 2. DETALJVYN (Single Listing) - Matchar Java ListingDetailDTO
@@ -65,9 +68,18 @@ export interface ListingDetailDTO {
   verifiedOwner: boolean;
   requirementsProfileId?: string | null;
   published?: TimestampString | null;
+  nearbyLocations?: ListingNearbyLocationDTO[];
+}
+
+export interface ListingNearbyLocationDTO {
+  location: "GYM" | "GROCERIES" | "NIGHTCLUB" | "UNIVERSITY" | "TRANSIT" | string;
+  lat?: number | null;
+  lng?: number | null;
+  details?: string | null;
 }
 
 export interface ListingTagDTO {
+  tagKey?: string | null;
   displayName: string;
   icon?: string | null;
 }
@@ -119,6 +131,23 @@ export interface UpdateListingRequest {
   description?: string;
   tags?: string[];
   status?: ListingStatus;
+  images?: string[];
+  applyBy?: DateString | null;
+  availableFrom?: DateString | null;
+  availableTo?: DateString | null;
+}
+
+export interface PublishListingRequest {
+  title?: string;
+  city?: string;
+  area?: string;
+  address?: string;
+  dwellingType?: DwellingType | string;
+  rooms?: number | null;
+  sizeM2?: number | null;
+  rent?: number | null;
+  description?: string;
+  tags?: string[];
   images?: string[];
   applyBy?: DateString | null;
   availableFrom?: DateString | null;

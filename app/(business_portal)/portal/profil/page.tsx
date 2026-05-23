@@ -24,6 +24,8 @@ import {
   Share2,
 } from "lucide-react";
 import { UploadButton } from "../../_components/shared/UploadButton";
+import BannerImageCropDialog from "@/components/shared/BannerImageCropDialog";
+import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";
 
 type ProfileDraft = {
   companyId: number;
@@ -69,7 +71,8 @@ function buildInitialDraft(
       companyData.organisationNumber ??
       companyData.organizationNumber ??
       "",
-    internalContactNote: companyData.internalContactNote ?? "",
+    internalContactNote:
+      companyData.internalContactNote ?? companyData.contactNote ?? "",
   };
 }
 
@@ -92,6 +95,12 @@ function getProfileSnapshot(draft: ProfileDraft | null) {
   });
 }
 
+function getCompanyDataSnapshot(draft: ProfileDraft | null) {
+  if (!draft) return "";
+
+  return JSON.stringify(buildCompanyChangePayload(draft));
+}
+
 function toNullableString(value: string) {
   return value.trim();
 }
@@ -102,8 +111,6 @@ function isLocalObjectUrl(value: string) {
 
 function buildCompanyChangePayload(draft: ProfileDraft): CompanyChangeableDataDTO {
   return {
-    logoUrl: isLocalObjectUrl(draft.logoUrl) ? undefined : toNullableString(draft.logoUrl),
-    bannerUrl: isLocalObjectUrl(draft.bannerUrl) ? undefined : toNullableString(draft.bannerUrl),
     companyDescription: toNullableString(draft.description),
     phone: toNullableString(draft.contactPhone),
     contactEmail: toNullableString(draft.contactEmail),
@@ -197,7 +204,10 @@ function EditableCompanyPreview({
       className="mx-auto flex w-full max-w-6xl flex-col gap-8"
     >
       <div className="relative">
-        <div className="relative h-[220px] w-full overflow-hidden rounded-2xl bg-gray-100 sm:h-[280px] md:h-[340px]">
+        <div
+          className="relative w-full overflow-hidden rounded-2xl bg-gray-100"
+          style={{ aspectRatio: COMPANY_BANNER_ASPECT_RATIO }}
+        >
           {draft.bannerUrl ? (
             <img
               src={draft.bannerUrl}
@@ -362,10 +372,18 @@ export default function ProfilePage() {
     logoUrl: null,
     bannerUrl: null,
   });
+  const selectedImageFilesRef = useRef<{
+    logoUrl: File | null;
+    bannerUrl: File | null;
+  }>({
+    logoUrl: null,
+    bannerUrl: null,
+  });
 
   const [company, setCompany] = useState<CompanyPrivateDTO | null>(null);
   const [companyQueue, setCompanyQueue] = useState<HousingQueueDTO | null>(null);
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
+  const [bannerFileToCrop, setBannerFileToCrop] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -456,7 +474,7 @@ export default function ProfilePage() {
     });
   };
 
-  const handleImageSelect = (field: "logoUrl" | "bannerUrl", file: File) => {
+  const applySelectedImageFile = (field: "logoUrl" | "bannerUrl", file: File) => {
     const previousPreview = previewImageUrlsRef.current[field];
     if (previousPreview) {
       URL.revokeObjectURL(previousPreview);
@@ -464,7 +482,26 @@ export default function ProfilePage() {
 
     const localPreviewUrl = URL.createObjectURL(file);
     previewImageUrlsRef.current[field] = localPreviewUrl;
+    selectedImageFilesRef.current[field] = file;
     updateDraftField(field, localPreviewUrl);
+  };
+
+  const handleImageSelect = (field: "logoUrl" | "bannerUrl", file: File) => {
+    if (field === "bannerUrl") {
+      setBannerFileToCrop(file);
+      return;
+    }
+
+    applySelectedImageFile(field, file);
+  };
+
+  const handleBannerCropCancel = () => {
+    setBannerFileToCrop(null);
+  };
+
+  const handleBannerCropComplete = (file: File) => {
+    setBannerFileToCrop(null);
+    applySelectedImageFile("bannerUrl", file);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -476,26 +513,77 @@ export default function ProfilePage() {
     setSaveMessage(null);
 
     try {
-      await companyService.updateCompanyData(
-        draft.companyId,
-        buildCompanyChangePayload(draft)
-      );
+      const selectedImages = selectedImageFilesRef.current;
+      const hasSelectedLogo = Boolean(selectedImages.logoUrl);
+      const hasSelectedBanner = Boolean(selectedImages.bannerUrl);
+      const hasSelectedImages = hasSelectedLogo || hasSelectedBanner;
+      const savedDraft = company
+        ? buildInitialDraft(draft.companyId, company, companyQueue ?? undefined)
+        : null;
+      const hasCompanyDataChanges =
+        getCompanyDataSnapshot(draft) !== getCompanyDataSnapshot(savedDraft);
+      const uploadedLogoUrl = selectedImages.logoUrl
+        ? await companyService.uploadLogo(draft.companyId, selectedImages.logoUrl)
+        : null;
+      const uploadedBannerUrl = selectedImages.bannerUrl
+        ? await companyService.uploadBanner(draft.companyId, selectedImages.bannerUrl)
+        : null;
+      const uploadResolvedDraft: ProfileDraft = {
+        ...draft,
+        logoUrl: uploadedLogoUrl ?? draft.logoUrl,
+        bannerUrl: uploadedBannerUrl ?? draft.bannerUrl,
+      };
 
-      const savedCompany = mergeSavedCompany(company, draft);
+      if (hasCompanyDataChanges) {
+        await companyService.updateCompanyData(
+          uploadResolvedDraft.companyId,
+          buildCompanyChangePayload(uploadResolvedDraft)
+        );
+      }
+
+      const previewImageUrls = previewImageUrlsRef.current;
+      if (hasSelectedLogo && previewImageUrls.logoUrl) {
+        URL.revokeObjectURL(previewImageUrls.logoUrl);
+        previewImageUrls.logoUrl = null;
+      }
+      if (hasSelectedBanner && previewImageUrls.bannerUrl) {
+        URL.revokeObjectURL(previewImageUrls.bannerUrl);
+        previewImageUrls.bannerUrl = null;
+      }
+      selectedImageFilesRef.current = { logoUrl: null, bannerUrl: null };
+
+      const savedCompany = hasSelectedImages
+        ? await companyService
+            .privateProfile(uploadResolvedDraft.companyId)
+            .then((freshCompany) => mergeSavedCompany(freshCompany, {
+              ...uploadResolvedDraft,
+              logoUrl: freshCompany.logoUrl ?? uploadResolvedDraft.logoUrl,
+              bannerUrl: freshCompany.bannerUrl ?? uploadResolvedDraft.bannerUrl,
+            }))
+            .catch(() => mergeSavedCompany(company, uploadResolvedDraft))
+        : mergeSavedCompany(company, uploadResolvedDraft);
       const savedQueue = companyQueue
         ? {
             ...companyQueue,
+            logoUrl: savedCompany.logoUrl ?? companyQueue.logoUrl,
+            bannerUrl: savedCompany.bannerUrl ?? companyQueue.bannerUrl,
             socialLinks: {
               ...companyQueue.socialLinks,
-              facebook: draft.facebook,
-              linkedin: draft.linkedin,
+              facebook: uploadResolvedDraft.facebook,
+              linkedin: uploadResolvedDraft.linkedin,
             },
           }
         : companyQueue;
 
       setCompany(savedCompany);
       setCompanyQueue(savedQueue);
-      setDraft(buildInitialDraft(draft.companyId, savedCompany, savedQueue ?? undefined));
+      setDraft(
+        buildInitialDraft(
+          uploadResolvedDraft.companyId,
+          savedCompany,
+          savedQueue ?? undefined
+        )
+      );
       setSaveMessage("Företagsprofilen har sparats.");
     } catch (saveError) {
       setError(
@@ -519,6 +607,7 @@ export default function ProfilePage() {
       URL.revokeObjectURL(previewImageUrls.bannerUrl);
       previewImageUrls.bannerUrl = null;
     }
+    selectedImageFilesRef.current = { logoUrl: null, bannerUrl: null };
     setDraft(buildInitialDraft(draft.companyId, company, companyQueue ?? undefined));
   };
 
@@ -620,6 +709,16 @@ export default function ProfilePage() {
           </div>
         </div>
       </form>
+
+      <BannerImageCropDialog
+        file={bannerFileToCrop}
+        open={Boolean(bannerFileToCrop)}
+        onOpenChange={(open) => {
+          if (!open) handleBannerCropCancel();
+        }}
+        onCancel={handleBannerCropCancel}
+        onCropComplete={handleBannerCropComplete}
+      />
     </main>
   );
 }

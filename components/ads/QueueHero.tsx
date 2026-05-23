@@ -8,6 +8,7 @@ import EntityHero, {
   type EntityHeroSection,
 } from "@/components/shared/EntityHero";
 import { type HousingQueueDTO } from "@/types/queue";
+import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";
 import {
   Phone,
   Mail,
@@ -122,6 +123,7 @@ export default function QueueHero({
     <EntityHero
       title={queue.name}
       bannerImage={bannerImage}
+      bannerAspectRatio={COMPANY_BANNER_ASPECT_RATIO}
       avatarImage={logoImage}
       avatarShape="rounded"
       avatarFit="contain"

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/components/ads/QueueHero";
 import QueueListings from "@/components/ads/QueueListings";
-import CompanyVideo from "@/components/ads/CompanyVideo";
 import ImageSlideshow from "@/components/ads/ImageSlideshow";
 import CompanyMap from "@/components/ads/CompanyMap";
 import {
@@ -17,20 +16,15 @@ import {
   demographicsService,
   getClientDeviceType,
 } from "@/services/demographics-service";
+import { mediaService } from "@/services/media-service";
 import { useAuth } from "@/context/AuthContext";
 import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Dummy media data — TODO: replace with backend-provided video / gallery data
-// once endpoints exist. Kept colocated under [id]/_dummy/ so the cleanup is a
-// single import + a single folder removal.
-import { getCompanyMedia } from "./_dummy/companyMediaData";
-
 const COMPANY_LISTINGS_PAGE_SIZE = 6;
-const COMPANY_LISTINGS_FETCH_SIZE = 500;
-const companyListingsCache = new Map<number, ListingCardDTO[]>();
+const imageFilenamePattern = /\.(avif|gif|jpe?g|png|webp)$/i;
 
 const uniqueListingsById = (items: ListingCardDTO[]) => {
   const byId = new Map<string, ListingCardDTO>();
@@ -42,6 +36,16 @@ const uniqueListingsById = (items: ListingCardDTO[]) => {
   return Array.from(byId.values());
 };
 
+const firstNonEmptyString = (...values: unknown[]) => {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed) return trimmed;
+  }
+
+  return null;
+};
+
 export default function QueueDetailPage() {
   const params = useParams<{ id: string }>();
   const companyIdRaw = params?.id;
@@ -50,10 +54,13 @@ export default function QueueDetailPage() {
 
   const [company, setCompany] = useState<CompanyDTO | null>(null);
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
-  const [allCompanyListings, setAllCompanyListings] = useState<ListingCardDTO[]>([]);
+  const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [listingsPage, setListingsPage] = useState(1);
+  const [listingsTotalPages, setListingsTotalPages] = useState(1);
+  const [listingsTotalElements, setListingsTotalElements] = useState(0);
   const [listingsLoading, setListingsLoading] = useState(false);
   const [listingsError, setListingsError] = useState<string | null>(null);
+  const [queuesError, setQueuesError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Why true initially: avoids a flash of "Okänt företag" before the
   // effect has had a chance to start fetching on the very first render.
@@ -65,7 +72,9 @@ export default function QueueDetailPage() {
   const [hasFetched, setHasFetched] = useState(false);
   const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
   const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
+  const [joinedQueuesLoading, setJoinedQueuesLoading] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const companyViewDemographicsRecordedIds = useRef<Set<number>>(new Set());
   const listingQuickDemographicsRecordedIds = useRef<Set<string>>(new Set());
 
@@ -88,21 +97,34 @@ export default function QueueDetailPage() {
 
     let active = true;
     setLoading(true);
+    setHasFetched(false);
     setError(null);
+    setCompany(null);
+    setQueues([]);
+    setQueuesError(null);
 
-    Promise.all([
+    Promise.allSettled([
       queueService.getCompany(companyIdNumber),
       queueService.getByCompany(companyIdNumber),
     ])
-      .then(([companyData, companyQueues]) => {
+      .then(([companyResult, queuesResult]) => {
         if (!active) return;
-        setCompany(companyData);
-        setQueues(Array.isArray(companyQueues) ? companyQueues : []);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error("Fetch error:", err);
-        setError("Kunde inte ladda företagsinformation.");
+
+        if (companyResult.status === "fulfilled") {
+          setCompany(companyResult.value);
+        } else {
+          console.error("Kunde inte hämta företaget:", companyResult.reason);
+          setError("Kunde inte ladda företagsinformation.");
+        }
+
+        if (queuesResult.status === "fulfilled") {
+          setQueues(Array.isArray(queuesResult.value) ? queuesResult.value : []);
+          setQueuesError(null);
+        } else {
+          console.error("Kunde inte hämta företagets köer:", queuesResult.reason);
+          setQueues([]);
+          setQueuesError("Kunde inte ladda företagets köinformation.");
+        }
       })
       .finally(() => {
         // Why no `active` guard here: we want loading/hasFetched to settle
@@ -142,39 +164,41 @@ export default function QueueDetailPage() {
 
   useEffect(() => {
     setListingsPage(1);
-    setAllCompanyListings([]);
+    setListings([]);
+    setListingsTotalPages(1);
+    setListingsTotalElements(0);
     setListingsError(null);
-    if (companyIdNumber === null) {
-      setListingsLoading(false);
-      return;
-    }
+  }, [companyIdNumber]);
 
-    const cachedListings = companyListingsCache.get(companyIdNumber);
-    if (cachedListings) {
-      setAllCompanyListings(cachedListings);
+  useEffect(() => {
+    if (companyIdNumber === null) {
       setListingsLoading(false);
       return;
     }
 
     let active = true;
     setListingsLoading(true);
+    setListingsError(null);
 
     queueService
-      .getCompanyListings(
+      .getCompanyListingsPage(
         companyIdNumber,
-        0,
-        COMPANY_LISTINGS_FETCH_SIZE,
+        listingsPage - 1,
+        COMPANY_LISTINGS_PAGE_SIZE,
       )
-      .then((items) => {
+      .then((page) => {
         if (!active) return;
-        const uniqueListings = uniqueListingsById(items);
-        companyListingsCache.set(companyIdNumber, uniqueListings);
-        setAllCompanyListings(uniqueListings);
+        const uniqueListings = uniqueListingsById(page.content ?? []);
+        setListings(uniqueListings);
+        setListingsTotalPages(Math.max(1, page.totalPages ?? 1));
+        setListingsTotalElements(page.totalElements ?? uniqueListings.length);
       })
       .catch((err) => {
         if (!active) return;
         console.error("Kunde inte hämta företagets annonser:", err);
-        setAllCompanyListings([]);
+        setListings([]);
+        setListingsTotalPages(1);
+        setListingsTotalElements(0);
         setListingsError("Kunde inte ladda företagets bostäder.");
       })
       .finally(() => {
@@ -184,20 +208,22 @@ export default function QueueDetailPage() {
     return () => {
       active = false;
     };
-  }, [companyIdNumber]);
+  }, [companyIdNumber, listingsPage]);
 
   useEffect(() => {
     if (authLoading) return;
 
     if (!user) {
       setJoinedQueueIds(new Set());
+      setJoinedQueuesLoading(false);
       return;
     }
 
     let active = true;
+    setJoinedQueuesLoading(true);
 
     queueService
-      .getMyQueues()
+      .getMyQueues({ hydrateQueues: false })
       .then((applications) => {
         if (!active) return;
         setJoinedQueueIds(buildJoinedQueueIdSet(applications));
@@ -206,6 +232,9 @@ export default function QueueDetailPage() {
         if (!active) return;
         console.error("Kunde inte hämta användarens köer:", err);
         setJoinedQueueIds(new Set());
+      })
+      .finally(() => {
+        if (active) setJoinedQueuesLoading(false);
       });
 
     return () => {
@@ -240,16 +269,6 @@ export default function QueueDetailPage() {
     };
   }, [authLoading, user]);
 
-  const listingsTotalElements = allCompanyListings.length;
-  const listingsTotalPages = Math.max(
-    1,
-    Math.ceil(listingsTotalElements / COMPANY_LISTINGS_PAGE_SIZE),
-  );
-  const listings = useMemo(() => {
-    const start = (listingsPage - 1) * COMPANY_LISTINGS_PAGE_SIZE;
-    return allCompanyListings.slice(start, start + COMPANY_LISTINGS_PAGE_SIZE);
-  }, [allCompanyListings, listingsPage]);
-
   useEffect(() => {
     if (listingsPage > listingsTotalPages) {
       setListingsPage(listingsTotalPages);
@@ -280,18 +299,47 @@ export default function QueueDetailPage() {
   }, [authLoading, favoriteIds, listings, user]);
 
   // Bygg ett HousingQueueDTO-liknande objekt från company-data för QueueHero
+  const companyRecord = company as (CompanyDTO & Record<string, unknown>) | null;
+  const companyName =
+    firstNonEmptyString(
+      companyRecord?.name,
+      companyRecord?.companyName,
+      companyRecord?.displayName,
+    ) ?? "Okänt företag";
+
+  const companyLogoUrl =
+    firstNonEmptyString(
+      companyRecord?.logoUrl,
+      companyRecord?.logoURL,
+      companyRecord?.logo,
+      companyRecord?.logoImage,
+    ) ?? "";
+  const companyBannerUrl =
+    firstNonEmptyString(
+      companyRecord?.bannerUrl,
+      companyRecord?.bannerURL,
+      companyRecord?.banner,
+      companyRecord?.bannerImage,
+    ) ?? undefined;
+  const resolvedCompanyId =
+    typeof companyRecord?.companyId === "number"
+      ? companyRecord.companyId
+      : company?.id ?? companyIdNumber ?? 0;
+  const companyWebsite =
+    firstNonEmptyString(companyRecord?.websiteUrl, companyRecord?.website) ??
+    undefined;
+
   const heroQueue: HousingQueueDTO = company
     ? {
-        id: String(company.id),
-        companyId: company.id,
-        name: company.name,
-        city: "",
-        logoUrl: company.logoUrl,
-        bannerUrl: company.bannerUrl,
-        description: company.description,
-        website: company.website,
-        activeListings:
-          listingsTotalElements || allCompanyListings.length || listings.length,
+        id: String(resolvedCompanyId),
+        companyId: resolvedCompanyId,
+        name: companyName,
+        city: company.cities?.[0] ?? queues[0]?.city ?? "",
+        logoUrl: companyLogoUrl,
+        bannerUrl: companyBannerUrl,
+        description: company.description ?? undefined,
+        website: companyWebsite,
+        activeListings: listingsTotalElements || listings.length,
         totalUnits: queues.reduce((sum, q) => sum + (q.totalUnits ?? 0), 0),
         waitDays:
           queues.length > 0
@@ -314,19 +362,45 @@ export default function QueueDetailPage() {
         activeListings: 0,
       };
 
-  // Dummy media (video and gallery). Pulls per-company entries when
-  // available, otherwise a sensible default — see _dummy/companyMediaData.ts.
-  const media = useMemo(() => {
-    return getCompanyMedia(companyIdNumber ?? 0);
+  useEffect(() => {
+    if (companyIdNumber === null) {
+      setGalleryImages([]);
+      return;
+    }
+
+    let active = true;
+
+    mediaService
+      .listCompanyPublic(companyIdNumber)
+      .then((filenames) => {
+        if (!active) return;
+        setGalleryImages(
+          filenames
+            .filter((filename) => imageFilenamePattern.test(filename))
+            .map((filename) =>
+              mediaService.companyPublicUrl(companyIdNumber, filename)
+            )
+        );
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Kunde inte hämta företagsmedia:", err);
+        setGalleryImages([]);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [companyIdNumber]);
+
 
   const mapListings = useMemo(
     () =>
-      allCompanyListings.filter(
+      listings.filter(
         (listing) =>
           typeof listing.lat === "number" && typeof listing.lng === "number",
       ),
-    [allCompanyListings],
+    [listings],
   );
 
   const handleJoinQueue = async (queueId: string) => {
@@ -418,6 +492,12 @@ export default function QueueDetailPage() {
       </div>
 
       {/* Köer */}
+      {queuesError && (
+        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {queuesError}
+        </div>
+      )}
+
       {queues.length > 0 && (
         <div className="mt-10 w-full">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -440,7 +520,10 @@ export default function QueueDetailPage() {
                 <Button
                   onClick={() => handleJoinQueue(q.id)}
                   isDisabled={
-                    joinedQueueIds.has(q.id) || joiningQueueId !== null
+                    authLoading ||
+                    joinedQueuesLoading ||
+                    joinedQueueIds.has(q.id) ||
+                    joiningQueueId !== null
                   }
                   variant={joinedQueueIds.has(q.id) ? "secondary" : "default"}
                   size="sm"
@@ -455,7 +538,9 @@ export default function QueueDetailPage() {
                   ) : (
                     <>
                       <Bell className="h-4 w-4" />
-                      {joinedQueueIds.has(q.id)
+                      {authLoading || joinedQueuesLoading
+                        ? "Kontrollerar..."
+                        : joinedQueueIds.has(q.id)
                         ? "Du står redan i kön"
                         : user
                           ? "Ställ dig i kön"
@@ -470,21 +555,11 @@ export default function QueueDetailPage() {
       )}
 
       {/* Image gallery */}
-      {media.galleryImages.length > 0 && (
+      {galleryImages.length > 0 && (
         <div className="mt-12 w-full">
           <ImageSlideshow
-            images={media.galleryImages}
-            title={company?.name ?? "Företaget"}
-          />
-        </div>
-      )}
-
-      {/* Video presentation */}
-      {media.videoUrl && (
-        <div className="mt-12 w-full">
-          <CompanyVideo
-            videoUrl={media.videoUrl}
-            companyName={company?.name}
+            images={galleryImages}
+            title={companyName}
           />
         </div>
       )}

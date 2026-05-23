@@ -8,6 +8,7 @@ import SearchFilterBar, {
 } from "./SearchFilterBar";
 
 import ListingsFilterButton, { ListingsFilterState } from "./ListingsFilterButton";
+import type { PriceHistogramValue } from "@/components/Listings/filter_sections/PriceRangeSection";
 
 type ThreeFieldConfig = {
   id: string;
@@ -28,7 +29,7 @@ export type ThreeFieldSearchProps = {
   // Filter props
   amenities?: { id: string; label: string; icon?: React.ReactNode }[];
   propertyTypes?: { id: string; label: string }[];
-  priceHistogram?: number[];
+  priceHistogram?: PriceHistogramValue[];
   priceBounds?: { min: number; max: number };
   initialState?: ListingsFilterState;
   onApply?: (state: ListingsFilterState) => void;

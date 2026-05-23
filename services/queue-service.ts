@@ -9,17 +9,34 @@ import { HousingQueueDTO } from "@/types/queue";
 import { ListingCardDTO, type PageResponse } from "@/types/listing";
 
 export interface CompanyDTO {
-  id: number;
-  name: string;
-  subtitle: string;
-  description: string;
-  website: string;
-  rating: number;
-  verified: boolean;
-  bannerUrl: string;
-  logoUrl: string;
+  id?: number;
+  companyId?: number;
+  name?: string;
+  companyName?: string;
+  subtitle?: string | null;
+  description?: string | null;
+  website?: string | null;
+  websiteUrl?: string | null;
+  rating?: number | null;
+  verified?: boolean | null;
+  bannerUrl?: string | null;
+  logoUrl?: string | null;
+  housingQueueId?: string | null;
   termsUrl?: string | null;
   privacyUrl?: string | null;
+  privacyPolicyUrl?: string | null;
+  pictureUrlList?: string[];
+  videoUrlList?: string[];
+  socialLinks?: unknown[];
+  cities?: string[];
+  schools?: Array<{
+    id?: number;
+    schoolId?: number;
+    name?: string;
+    city?: string | null;
+    lat?: number | null;
+    lng?: number | null;
+  }>;
 };
 
 export type QueueFilters = {
@@ -34,7 +51,7 @@ export type QueueApplicationDTO = {
   id?: string | number;
   queueId?: string | number;
   queueName?: string;
-  queue?: {
+  queue?: (Partial<HousingQueueDTO> & {
     id?: string | number;
     name?: string;
     area?: string | null;
@@ -52,7 +69,7 @@ export type QueueApplicationDTO = {
       bannerUrl?: string | null;
       city?: string | null;
     } | null;
-  };
+  });
   studentId?: number;
   firstName?: string;
   surname?: string;
@@ -203,6 +220,55 @@ function normalizeListingPageResponse(
   };
 }
 
+function firstString(...values: unknown[]): string | undefined {
+  return values.find(
+    (value): value is string => typeof value === "string" && value.trim().length > 0
+  )?.trim();
+}
+
+function firstNumber(...values: unknown[]): number | undefined {
+  for (const value of values) {
+    const numberValue =
+      typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
+
+    if (Number.isFinite(numberValue)) {
+      return numberValue;
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeCompanyDto(value: unknown): CompanyDTO {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const source = value as Record<string, unknown>;
+
+  return {
+    ...(source as Partial<CompanyDTO>),
+    id: firstNumber(source.id, source.companyId),
+    companyId: firstNumber(source.companyId, source.id),
+    name: firstString(source.name, source.companyName),
+    companyName: firstString(source.companyName, source.name),
+    website: firstString(source.website, source.websiteUrl),
+    websiteUrl: firstString(source.websiteUrl, source.website),
+    privacyUrl: firstString(source.privacyUrl, source.privacyPolicyUrl, source.policyUrl),
+    privacyPolicyUrl: firstString(source.privacyPolicyUrl, source.privacyUrl, source.policyUrl),
+    cities: arrayFromApiResponse<string>(source.cities ?? source.companyCities),
+    schools: arrayFromApiResponse<NonNullable<CompanyDTO["schools"]>[number]>(
+      source.schools ?? source.companySchools
+    ),
+    pictureUrlList: arrayFromApiResponse<string>(
+      source.pictureUrlList ?? source.companyPictures
+    ),
+    videoUrlList: arrayFromApiResponse<string>(
+      source.videoUrlList ?? source.companyVideos
+    ),
+  };
+}
+
 export const queueService = {
 
   list: async ({ id         = null,
@@ -211,8 +277,10 @@ export const queueService = {
                  pageSize   = DEFAULT_PAGE_SIZE,
                  pageCount  = 1,
                }: QueueFilters = {}): Promise<HousingQueueDTO[]> => {
-    const drop = pageSize * (pageNumber - 1);
-    const take = pageSize;
+    const normalizedPageNumber = Math.max(1, pageNumber);
+    const normalizedPageSize = Math.max(1, pageSize);
+    const drop = normalizedPageSize * (normalizedPageNumber - 1);
+    const take = normalizedPageSize;
     const query: Record<string, any> = {
       drop: drop,
       take: take,
@@ -254,27 +322,63 @@ export const queueService = {
     });
   },
 
-  getMyQueues: async (): Promise<QueueApplicationDTO[]> => {
+  getMyQueues: async (
+    options: { hydrateQueues?: boolean } = {}
+  ): Promise<QueueApplicationDTO[]> => {
     const res = await apiClient<MyQueuesResponse>("/queues/my");
     const rows = getMyQueuesRows(res);
+    if (options.hydrateQueues === false) {
+      return rows.map((row) => {
+        const queueId = row.queueId ?? row.queue?.id;
+        return {
+          ...row,
+          queueId: queueId != null ? String(queueId) : queueId,
+          queueName: row.queueName ?? row.queue?.name,
+          queueDays: getQueueDays(row),
+        };
+      });
+    }
+
+    const queueIds = Array.from(
+      new Set(
+        rows
+          .map(getQueueApplicationQueueId)
+          .filter((queueId): queueId is string => Boolean(queueId))
+      )
+    );
+    const queueDetails = await Promise.all(
+      queueIds.map(async (queueId) => {
+        const queue = await queueService.get(queueId).catch(() => null);
+        return [queueId, queue] as const;
+      })
+    );
+    const queuesById = new Map(
+      queueDetails.filter(
+        (entry): entry is readonly [string, HousingQueueDTO] => entry[1] !== null
+      )
+    );
 
     return rows.map((row) => {
       const queueId = row.queueId ?? row.queue?.id;
-      const queueName = row.queueName ?? row.queue?.name;
+      const normalizedQueueId = queueId != null ? String(queueId) : queueId;
+      const queue = normalizedQueueId ? queuesById.get(normalizedQueueId) : undefined;
+      const queueName = row.queueName ?? row.queue?.name ?? queue?.name;
 
       return {
         ...row,
-        queueId: queueId != null ? String(queueId) : queueId,
+        queueId: normalizedQueueId,
         queueName,
+        queue: row.queue ?? queue,
         queueDays: getQueueDays(row),
       };
     });
   },
 
   getCompany: async (companyId: number): Promise<CompanyDTO> => {
-    return await apiClient<CompanyDTO>(`/companies/${pathSegment(companyId)}`, {
+    const company = await apiClient<unknown>(`/companies/${pathSegment(companyId)}`, {
       auth: false,
     });
+    return normalizeCompanyDto(company);
   },
 
   getCompanyListingsPage: async (

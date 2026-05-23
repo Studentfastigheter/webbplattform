@@ -21,6 +21,7 @@ import { cx } from "@/lib/utils/cx";
 import {
   documentService,
   type DocumentPropagationResult,
+  type UploadedDocument,
 } from "@/services/document-service";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
@@ -34,7 +35,7 @@ type StudentDocument = {
   title: string;
   note?: string;
   name: string;
-  file: File;
+  file?: File;
   size: number;
   type?: FileIconType;
   mimeType?: string;
@@ -42,7 +43,7 @@ type StudentDocument = {
   failed?: boolean;
   errorMessage?: string;
   propagationResult?: DocumentPropagationResult;
-  uploadedAt: string;
+  uploadedAt?: string;
   objectUrl?: string;
   downloadUrl?: string;
 };
@@ -256,6 +257,19 @@ function createDocumentFromFile(file: File): StudentDocument {
   };
 }
 
+function createDocumentFromUploaded(document: UploadedDocument): StudentDocument {
+  return {
+    id: crypto.randomUUID(),
+    title: document.title ?? titleFromFileName(document.name),
+    note: document.note,
+    name: document.name,
+    size: document.size ?? 0,
+    mimeType: document.mimeType ?? document.contentType,
+    progress: 100,
+    uploadedAt: document.uploadedAt,
+  };
+}
+
 export default function ProfileDocumentsSection() {
   const [documents, setDocuments] = useState<StudentDocument[]>([]);
   const [message, setMessage] = useState<StatusMessage | null>(null);
@@ -264,6 +278,16 @@ export default function ProfileDocumentsSection() {
   const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(
     null
   );
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(
+    null
+  );
+  const [downloadingDocumentId, setDownloadingDocumentId] = useState<
+    string | null
+  >(null);
+  const [previewLoadingDocumentId, setPreviewLoadingDocumentId] = useState<
+    string | null
+  >(null);
 
   const objectUrlsRef = useRef<Set<string>>(new Set());
   const uploadCleanupsRef = useRef<Map<string, () => void>>(new Map());
@@ -275,6 +299,52 @@ export default function ProfileDocumentsSection() {
 
       objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
       objectUrlsRef.current.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadDocuments = async () => {
+      try {
+        const uploadedDocuments = await documentService.list();
+
+        if (!isActive) return;
+
+        const loadedDocuments = uploadedDocuments.map(createDocumentFromUploaded);
+
+        setDocuments((current) => {
+          if (current.length === 0) return loadedDocuments;
+
+          const currentNames = new Set(current.map((document) => document.name));
+          return [
+            ...current,
+            ...loadedDocuments.filter(
+              (document) => !currentNames.has(document.name)
+            ),
+          ];
+        });
+      } catch (error) {
+        if (!isActive) return;
+
+        setMessage({
+          tone: "error",
+          text:
+            error instanceof Error
+              ? error.message
+              : "Kunde inte hämta uppladdade dokument.",
+        });
+      } finally {
+        if (isActive) {
+          setIsLoadingDocuments(false);
+        }
+      }
+    };
+
+    void loadDocuments();
+
+    return () => {
+      isActive = false;
     };
   }, []);
 
@@ -313,6 +383,30 @@ export default function ProfileDocumentsSection() {
         item.id === documentId ? { ...item, progress } : item
       )
     );
+  };
+
+  const getBackendDocumentUrl = async (documentName: string) => {
+    const blob = await documentService.download(documentName);
+    const objectUrl = URL.createObjectURL(blob);
+    objectUrlsRef.current.add(objectUrl);
+    return objectUrl;
+  };
+
+  const cacheDocumentDownloadUrl = (documentId: string, downloadUrl: string) => {
+    setDocuments((current) =>
+      current.map((item) =>
+        item.id === documentId ? { ...item, downloadUrl } : item
+      )
+    );
+  };
+
+  const triggerBrowserDownload = (href: string, fileName: string) => {
+    const link = window.document.createElement("a");
+    link.href = href;
+    link.download = fileName;
+    window.document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   const uploadDocumentToBackend = async (documentId: string, file: File) => {
@@ -417,7 +511,9 @@ export default function ProfileDocumentsSection() {
     setDocuments((current) => [...newDocuments, ...current]);
 
     newDocuments.forEach((document) => {
-      void uploadDocumentToBackend(document.id, document.file);
+      if (document.file) {
+        void uploadDocumentToBackend(document.id, document.file);
+      }
     });
   };
 
@@ -429,18 +525,44 @@ export default function ProfileDocumentsSection() {
     setMessage("Filen får vara max 20 MB.");
   };
 
-  const handleDeleteDocument = (documentId: string) => {
+  const handleDeleteDocument = async (documentId: string) => {
     const document = documents.find((item) => item.id === documentId);
     if (!document) return;
 
     const shouldDelete = window.confirm(`Ta bort "${document.title}"?`);
     if (!shouldDelete) return;
 
-    uploadCleanupsRef.current.get(documentId)?.();
+    const uploadCleanup = uploadCleanupsRef.current.get(documentId);
+    uploadCleanup?.();
     uploadCleanupsRef.current.delete(documentId);
+
+    const shouldDeleteFromBackend = document.progress >= 100 && !document.failed;
+
+    if (shouldDeleteFromBackend) {
+      setDeletingDocumentId(documentId);
+
+      try {
+        await documentService.delete(document.name);
+      } catch (error) {
+        setDeletingDocumentId(null);
+        setMessage({
+          tone: "error",
+          text:
+            error instanceof Error
+              ? error.message
+              : "Kunde inte radera dokumentet.",
+        });
+        return;
+      }
+
+      setDeletingDocumentId(null);
+    }
+
     revokeObjectUrl(document.objectUrl);
+    revokeObjectUrl(document.downloadUrl);
 
     setDocuments((current) => current.filter((item) => item.id !== documentId));
+    setMessage(null);
 
     if (editingId === documentId) {
       setEditingId(null);
@@ -456,9 +578,71 @@ export default function ProfileDocumentsSection() {
     const document = documents.find((item) => item.id === documentId);
 
     if (!document) return;
+    if (!document.file) {
+      setMessage({
+        tone: "error",
+        text: "Dokumentet saknar en lokal fil att ladda upp igen.",
+      });
+      return;
+    }
 
     setMessage(null);
     void uploadDocumentToBackend(documentId, document.file);
+  };
+
+  const handleDownloadDocument = async (documentId: string) => {
+    const document = documents.find((item) => item.id === documentId);
+    if (!document || document.failed || document.progress < 100) return;
+
+    setDownloadingDocumentId(documentId);
+    setMessage(null);
+
+    try {
+      const downloadUrl = await getBackendDocumentUrl(document.name);
+      triggerBrowserDownload(downloadUrl, document.name);
+      window.setTimeout(() => revokeObjectUrl(downloadUrl), 30000);
+    } catch (error) {
+      setMessage({
+        tone: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Kunde inte ladda ner dokumentet.",
+      });
+    } finally {
+      setDownloadingDocumentId(null);
+    }
+  };
+
+  const handlePreviewDocument = async (documentId: string) => {
+    const document = documents.find((item) => item.id === documentId);
+    if (!document || document.failed || document.progress < 100) return;
+
+    const documentHref = getDocumentHref(document);
+
+    if (documentHref) {
+      setPreviewDocumentId(documentId);
+      return;
+    }
+
+    setPreviewLoadingDocumentId(documentId);
+    setMessage(null);
+
+    try {
+      const downloadUrl = await getBackendDocumentUrl(document.name);
+      cacheDocumentDownloadUrl(documentId, downloadUrl);
+      setPreviewDocumentId(documentId);
+    } catch (error) {
+      setMessage({
+        tone: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Kunde inte hämta dokumentet för förhandsvisning.",
+      });
+    } finally {
+      setPreviewLoadingDocumentId(null);
+    }
   };
 
   const handleStartEdit = (document: StudentDocument) => {
@@ -620,7 +804,13 @@ export default function ProfileDocumentsSection() {
               </p>
             )}
 
-            {documents.length === 0 ? (
+            {isLoadingDocuments ? (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center">
+                <p className="text-sm font-medium text-gray-900">
+                  Hämtar uppladdade dokument...
+                </p>
+              </div>
+            ) : documents.length === 0 ? (
               <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center">
                 <p className="text-sm font-medium text-gray-900">
                   Inga dokument uppladdade än.
@@ -633,7 +823,13 @@ export default function ProfileDocumentsSection() {
               <FileUpload.List>
                 {documents.map((document) => {
                   const isEditing = editingId === document.id;
-                  const documentHref = getDocumentHref(document);
+                  const canUseBackendDocument =
+                    document.progress >= 100 &&
+                    !document.failed &&
+                    deletingDocumentId !== document.id;
+                  const isDownloading = downloadingDocumentId === document.id;
+                  const isPreviewLoading =
+                    previewLoadingDocumentId === document.id;
 
                   return (
                     <Fragment key={document.id}>
@@ -644,7 +840,7 @@ export default function ProfileDocumentsSection() {
                         failed={document.failed}
                         type={getFileListItemType(document)}
                         className={uploadListItemClassName}
-                        onDelete={() => handleDeleteDocument(document.id)}
+                        onDelete={() => void handleDeleteDocument(document.id)}
                         onRetry={() => handleRetryDocument(document.id)}
                       />
 
@@ -713,7 +909,11 @@ export default function ProfileDocumentsSection() {
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div className="min-w-0 text-sm text-gray-600">
                               <p>
-                                Uppladdad {formatUploadedAt(document.uploadedAt)}
+                                {document.uploadedAt
+                                  ? `Uppladdad ${formatUploadedAt(
+                                      document.uploadedAt
+                                    )}`
+                                  : "Uppladdad sedan tidigare"}
                               </p>
                               {document.note && (
                                 <p className="mt-1 leading-6">
@@ -746,34 +946,50 @@ export default function ProfileDocumentsSection() {
                             <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
                               {renderActionButton({
                                 type: "button",
-                                onClick: () => setPreviewDocumentId(document.id),
+                                onClick: () =>
+                                  void handlePreviewDocument(document.id),
                                 iconLeading: Eye,
-                                children: "Förhandsvisa",
-                                isDisabled: !documentHref,
-                                className: !documentHref
+                                children: isPreviewLoading
+                                  ? "Hämtar..."
+                                  : "Förhandsvisa",
+                                isDisabled:
+                                  !canUseBackendDocument || isPreviewLoading,
+                                className:
+                                  !canUseBackendDocument || isPreviewLoading
                                   ? "pointer-events-none opacity-50"
                                   : undefined,
                               })}
-                              <Button
-                                href={documentHref}
-                                download={document.name}
-                                color="secondary"
-                                size="sm"
-                                iconLeading={Download01}
-                                className={cx(
-                                  buttonClassName,
-                                  !documentHref &&
-                                    "pointer-events-none opacity-50"
-                                )}
-                              >
-                                Ladda ner
-                              </Button>
+                              {renderActionButton({
+                                type: "button",
+                                onClick: () =>
+                                  void handleDownloadDocument(document.id),
+                                iconLeading: Download01,
+                                children: isDownloading
+                                  ? "Hämtar..."
+                                  : "Ladda ner",
+                                isDisabled:
+                                  !canUseBackendDocument || isDownloading,
+                                className:
+                                  !canUseBackendDocument || isDownloading
+                                    ? "pointer-events-none opacity-50"
+                                    : undefined,
+                              })}
                               {renderActionButton({
                                 type: "button",
                                 onClick: () => handleStartEdit(document),
                                 iconLeading: Edit03,
                                 children: "Redigera",
+                                isDisabled: deletingDocumentId === document.id,
+                                className:
+                                  deletingDocumentId === document.id
+                                    ? "pointer-events-none opacity-50"
+                                    : undefined,
                               })}
+                              {deletingDocumentId === document.id && (
+                                <span className="self-center text-sm text-gray-500">
+                                  Raderar...
+                                </span>
+                              )}
                             </div>
                           </div>
                         )}
@@ -813,17 +1029,20 @@ export default function ProfileDocumentsSection() {
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
-                <Button
-                  href={getDocumentHref(previewDocument)}
-                  download={previewDocument.name}
-                  isDisabled={!getDocumentHref(previewDocument)}
-                  color="secondary"
-                  size="sm"
-                  iconLeading={Download01}
-                  className={buttonClassName}
-                >
-                  Ladda ner
-                </Button>
+                {renderActionButton({
+                  type: "button",
+                  onClick: () => void handleDownloadDocument(previewDocument.id),
+                  iconLeading: Download01,
+                  children:
+                    downloadingDocumentId === previewDocument.id
+                      ? "Hämtar..."
+                      : "Ladda ner",
+                  isDisabled: downloadingDocumentId === previewDocument.id,
+                  className:
+                    downloadingDocumentId === previewDocument.id
+                      ? "pointer-events-none opacity-50"
+                      : undefined,
+                })}
                 <button
                   type="button"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"

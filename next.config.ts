@@ -12,6 +12,8 @@ if (!apiUrl) {
 }
 
 const API_BASE = normalizeApiBase(apiUrl);
+const apiBaseUrl = new URL(API_BASE);
+const apiImagePathname = `${apiBaseUrl.pathname.replace(/\/+$/, "")}/media/**`;
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: [
@@ -37,6 +39,12 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "www.wikowia.se" },
       { protocol: "https", hostname: "heimstaden.com" },
       { protocol: "https", hostname: "www.hyresgastforeningen.se" },
+      {
+        protocol: apiBaseUrl.protocol.replace(":", "") as "http" | "https",
+        hostname: apiBaseUrl.hostname,
+        port: apiBaseUrl.port,
+        pathname: apiImagePathname,
+      },
       {
         protocol: "https",
         hostname: "sgs-fastighet.momentum.se",
