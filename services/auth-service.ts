@@ -6,6 +6,8 @@ import {
   LoginRequest,
   RegisterRequest,
   RegisterResponse,
+  GoogleAuthRequest,
+  FrejaRegisterResponse,
   ChangePasswordRequest,
   UpdateUserRequest,
   StartPasswordResetRequest,
@@ -93,6 +95,20 @@ export const authService = {
     });
   },
 
+  googleLogin: async (payload: GoogleAuthRequest): Promise<AuthResponse> => {
+    const googleIdToken = payload.googleIdToken.trim();
+    const city = payload.city.trim();
+    if (!googleIdToken || !city) {
+      throw new Error("Google-token och stad krävs.");
+    }
+
+    return apiClient<AuthResponse>("/auth/google/login", {
+      method: "POST",
+      body: JSON.stringify({ googleIdToken, city }),
+      auth: false,
+    });
+  },
+
   register: async (payload: RegisterRequest): Promise<RegisterResponse> => {
     const requestPayload = compactObject({
       ...payload,
@@ -109,6 +125,30 @@ export const authService = {
     return apiClient<RegisterResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(requestPayload),
+      auth: false,
+    });
+  },
+
+  googleRegister: async (
+    payload: GoogleAuthRequest
+  ): Promise<FrejaRegisterResponse> => {
+    const googleIdToken = payload.googleIdToken.trim();
+    const city = payload.city.trim();
+
+    if (!googleIdToken || !city) {
+      throw new Error("Google-token och stad krävs.");
+    }
+
+    return apiClient<FrejaRegisterResponse>("/auth/google/register", {
+      method: "POST",
+      body: JSON.stringify({ googleIdToken, city }),
+      auth: false,
+    });
+  },
+
+  frejaRegister: async (): Promise<FrejaRegisterResponse> => {
+    return apiClient<FrejaRegisterResponse>("/auth/freja/register", {
+      method: "POST",
       auth: false,
     });
   },

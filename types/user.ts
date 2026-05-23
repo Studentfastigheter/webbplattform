@@ -98,6 +98,13 @@ export interface StudentRegistrationResponse {
 
 export type RegisterResponse = AuthResponse | StudentRegistrationResponse;
 
+export interface GoogleAuthRequest {
+  googleIdToken: string;
+  city: string;
+}
+
+export type FrejaRegisterResponse = StudentRegistrationResponse;
+
 export type FrejaAuthStatus =
   | "MATCHES"
   | "CLASHING"

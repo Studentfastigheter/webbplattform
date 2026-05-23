@@ -3,7 +3,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { normalizeAuthToken } from "@/lib/api-client";
 import { authService, getAuthResponseToken } from "@/services/auth-service";
-import { User, LoginRequest, RegisterRequest, UpdateUserRequest } from "@/types";
+import {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  GoogleAuthRequest,
+  UpdateUserRequest,
+} from "@/types";
 
 type AuthCtx = {
   user: User | null;
@@ -11,6 +17,7 @@ type AuthCtx = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<User>;
+  googleLogin: (data: GoogleAuthRequest) => Promise<User>;
   register: (data: RegisterRequest) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>; 
@@ -56,15 +63,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
+  const applyAuthResponse = async (res: Awaited<ReturnType<typeof authService.login>>) => {
+    const accessToken = getAuthResponseToken(res);
+    const userData = res.user ?? (await authService.me(accessToken));
+    localStorage.setItem("token", accessToken);
+    setToken(accessToken);
+    setUser(userData);
+    return userData;
+  };
+
   // 2. Login
   const login = async (data: LoginRequest) => {
     const res = await authService.login(data);
-    const accessToken = getAuthResponseToken(res);
-    const userData = await authService.me(accessToken);
-    localStorage.setItem("token", accessToken);
-    setToken(accessToken); // Uppdatera token vid inloggning
-    setUser(userData);
-    return userData;
+    return applyAuthResponse(res);
+  };
+
+  const googleLogin = async (data: GoogleAuthRequest) => {
+    const res = await authService.googleLogin(data);
+    return applyAuthResponse(res);
   };
 
   // 3. Register
@@ -75,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const accessToken = getAuthResponseToken(res);
-    const userData = await authService.me(accessToken);
+    const userData = res.user ?? (await authService.me(accessToken));
     localStorage.setItem("token", accessToken);
     setToken(accessToken); // Uppdatera token vid registrering
     setUser(userData);
@@ -113,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!user, 
       isLoading, 
       login, 
+      googleLogin,
       register, 
       logout, 
       refreshUser,

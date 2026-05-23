@@ -31,7 +31,7 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
       return;
     }
 
-    if (user.accountType !== "student") {
+    if (user.accountType !== "student" && user.accountType !== "private_landlord") {
       logout();
       router.replace("/logga-in");
     }
@@ -41,7 +41,11 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
     return <RouteFallback message="Laddar..." />;
   }
 
-  if (user && (user.accountType !== "student" || getActiveCompanyId(user) != null)) {
+  if (
+    user &&
+    ((user.accountType !== "student" && user.accountType !== "private_landlord") ||
+      getActiveCompanyId(user) != null)
+  ) {
     return <RouteFallback message="Skickar dig vidare..." />;
   }
 
