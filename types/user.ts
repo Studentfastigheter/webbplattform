@@ -12,6 +12,7 @@ export type AccountId = StudentId | CompanyId | LandlordId;
 export type UserId = number; // Gemensamt ID från UserResponse
 
 export type AccountType = "student" | "company" | "private_landlord";
+export type PasswordResetAccountType = "student" | "landlord" | "company" | "admin";
 
 export type UserCompanyLink = {
   id?: CompanyId | string;
@@ -150,6 +151,16 @@ export interface UpdateUserRequest {
 
 export interface ChangePasswordRequest {
   currentPassword: string;
+  newPassword: string;
+}
+
+export interface StartPasswordResetRequest {
+  userEmail: string;
+  accountType: AccountType | PasswordResetAccountType;
+}
+
+export interface PasswordResetFinalRequest {
+  resetId: string;
   newPassword: string;
 }
 

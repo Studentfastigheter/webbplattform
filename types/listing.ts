@@ -26,6 +26,8 @@ export interface ListingCardDTO {
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
+  /** Backend list cards currently use the singular field name. */
+  requirementProfileId?: string | null;
   requirementsProfileId?: string | null;
   published?: TimestampString | null;
   nearbyLocations?: ListingNearbyLocationDTO[];

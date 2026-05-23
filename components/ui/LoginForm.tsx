@@ -86,7 +86,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
             <div className="flex items-center">
               <FieldLabel htmlFor="password">Lösenord</FieldLabel>
               <Link
-                href="#"
+                href="/glomt-losenord"
                 className="ml-auto text-sm underline-offset-2 hover:underline"
               >
                 Glömt lösenord?

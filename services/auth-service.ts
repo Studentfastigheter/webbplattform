@@ -8,15 +8,39 @@ import {
   RegisterResponse,
   ChangePasswordRequest,
   UpdateUserRequest,
+  StartPasswordResetRequest,
+  PasswordResetAccountType,
+  PasswordResetFinalRequest,
 } from "@/types";
 
+type AuthResponseLike = AuthResponse & Record<string, unknown>;
+
+const TOKEN_KEYS = [
+  "accessToken",
+  "token",
+  "access_token",
+  "jwt",
+  "bearerToken",
+] as const;
+
+const PASSWORD_RESET_ACCOUNT_TYPE_MAP: Record<string, PasswordResetAccountType> = {
+  student: "student",
+  company: "company",
+  private_landlord: "landlord",
+  landlord: "landlord",
+  admin: "admin",
+};
+
+const compactObject = <T extends object>(value: T) =>
+  Object.fromEntries(
+    Object.entries(value).filter(([, entryValue]) => entryValue !== undefined)
+  ) as Partial<T>;
+
 export function getAuthResponseToken(response: AuthResponse): string {
-  const source =
-    response.accessToken ??
-    response.token ??
-    response.access_token ??
-    response.jwt ??
-    response.bearerToken;
+  const responseLike = response as AuthResponseLike;
+  const source = TOKEN_KEYS.map((key) => responseLike[key]).find(
+    (value) => typeof value === "string" && value.trim().length > 0
+  );
 
   const token = normalizeAuthToken(source);
   if (!token) {
@@ -26,51 +50,120 @@ export function getAuthResponseToken(response: AuthResponse): string {
   return token;
 }
 
+export function isStudentRegistrationResponse(
+  response: RegisterResponse
+): response is { authRef: string } {
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "authRef" in response &&
+    typeof response.authRef === "string" &&
+    response.authRef.trim().length > 0
+  );
+}
+
+function normalizePasswordResetAccountType(
+  accountType: StartPasswordResetRequest["accountType"]
+): PasswordResetAccountType {
+  const normalized =
+    PASSWORD_RESET_ACCOUNT_TYPE_MAP[String(accountType).trim().toLowerCase()];
+
+  if (!normalized) {
+    throw new Error("Ogiltig kontotyp för återställning av lösenord.");
+  }
+
+  return normalized;
+}
+
 export const authService = {
-  // Hämta nuvarande användare
   me: async (token?: string | null): Promise<User> => {
-    return await apiClient<User>("/auth/me", {}, token);
+    return apiClient<User>("/auth/me", {}, token);
   },
 
-  // Logga in
   login: async (payload: LoginRequest): Promise<AuthResponse> => {
-    const res = await apiClient<AuthResponse>("/auth/login", {
+    const email = payload.email.trim();
+    if (!email || !payload.password) {
+      throw new Error("Fyll i e-postadress och lösenord.");
+    }
+
+    return apiClient<AuthResponse>("/auth/login", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ email, password: payload.password }),
       auth: false,
     });
-    return res;
   },
 
-  // Registrera (Ny endpoint!)
   register: async (payload: RegisterRequest): Promise<RegisterResponse> => {
-    const res = await apiClient<RegisterResponse>("/auth/register", {
+    const requestPayload = compactObject({
+      ...payload,
+      email: payload.email.trim(),
+      phone: payload.phone?.trim(),
+      city: payload.city?.trim(),
+      ssn: payload.ssn?.trim(),
+      firstName: payload.firstName?.trim(),
+      surname: payload.surname?.trim(),
+      companyName: payload.companyName?.trim(),
+      fullName: payload.fullName?.trim(),
+    });
+
+    return apiClient<RegisterResponse>("/auth/register", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(requestPayload),
       auth: false,
     });
-    return res;
   },
 
   pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {
-    return await apiClient<FrejaAuthStatus>(
+    return apiClient<FrejaAuthStatus>(
       `/auth/poll/${pathSegment(authRef)}`,
       { auth: false }
     );
   },
 
-  // Uppdatera profil
+  startPasswordReset: async (
+    payload: StartPasswordResetRequest
+  ): Promise<void> => {
+    const userEmail = payload.userEmail.trim();
+    if (!userEmail) {
+      throw new Error("Ange e-postadressen för kontot.");
+    }
+
+    await apiClient<void>("/auth/reset-password", {
+      method: "POST",
+      auth: false,
+      body: JSON.stringify({
+        userEmail,
+        accountType: normalizePasswordResetAccountType(payload.accountType),
+      }),
+    });
+  },
+
+  resetPassword: async (payload: PasswordResetFinalRequest): Promise<void> => {
+    const resetId = payload.resetId.trim();
+    const newPassword = payload.newPassword.trim();
+
+    if (!resetId || !newPassword) {
+      throw new Error("Återställnings-id och nytt lösenord krävs.");
+    }
+
+    await apiClient<void>("/auth/reset-password", {
+      method: "PUT",
+      auth: false,
+      body: JSON.stringify({ resetId, newPassword }),
+    });
+  },
+
   updateProfile: async (data: UpdateUserRequest): Promise<User> => {
-    const payload: UpdateUserRequest = {
+    const payload = compactObject<UpdateUserRequest>({
       firstName: data.firstName,
       surname: data.surname,
       phone: data.phone,
       city: data.city,
       aboutText: data.aboutText,
       description: data.description,
-    };
+    });
 
-    return await apiClient<User>("/auth/me", {
+    return apiClient<User>("/auth/me", {
       method: "PUT",
       body: JSON.stringify(payload),
     });
@@ -79,11 +172,10 @@ export const authService = {
   changePassword: async (data: ChangePasswordRequest): Promise<void> => {
     void data;
     throw new Error(
-      "Lösenordsbyte stöds inte av den aktuella API-versionen."
+      "Lösenordsbyte för inloggade användare finns inte i aktuell API-version. Använd lösenordsåterställning i stället."
     );
   },
 
-  // Logga ut (Frontend only)
   logout: () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
