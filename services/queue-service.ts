@@ -315,9 +315,9 @@ export const queueService = {
     return arrayFromApiResponse<HousingQueueDTO>(queues);
   },
 
-  join: async (queueId: string): Promise<void> => {
+  join: async (queueId: string): Promise<string> => {
     // Vi förväntar oss text/plain svar från backend
-    await apiClient<string>(`/queues/${pathSegment(queueId)}/join`, {
+    return apiClient<string>(`/queues/${pathSegment(queueId)}/join`, {
       method: "POST"
     });
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { normalizeAuthToken } from "@/lib/api-client";
 import {
   authService,
@@ -10,6 +10,7 @@ import {
 } from "@/services/auth-service";
 import {
   User,
+  AuthResponse,
   LoginRequest,
   RegisterRequest,
   GoogleAuthRequest,
@@ -24,6 +25,7 @@ type AuthCtx = {
   login: (data: LoginRequest) => Promise<User>;
   googleLogin: (data: GoogleAuthRequest) => Promise<User>;
   googleRegister: (data: GoogleAuthRequest) => Promise<User>;
+  completeAuth: (response: AuthResponse) => User;
   register: (data: RegisterRequest) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>; 
@@ -73,14 +75,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  const applyAuthResponse = async (res: Awaited<ReturnType<typeof authService.login>>) => {
+  const applyAuthResponse = useCallback((res: AuthResponse) => {
     const accessToken = getAuthResponseToken(res);
     const userData = getAuthResponseUser(res);
     localStorage.setItem("token", accessToken);
     setToken(accessToken);
     setUser(userData);
     return userData;
-  };
+  }, []);
 
   // 2. Login
   const login = async (data: LoginRequest) => {
@@ -94,7 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const googleRegister = async (data: GoogleAuthRequest) => {
-    const res = await authService.googleRegister(data);
+    await authService.googleRegister(data);
+    const res = await authService.googleLogin(data);
     return applyAuthResponse(res);
   };
 
@@ -149,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login, 
       googleLogin,
       googleRegister,
+      completeAuth: applyAuthResponse,
       register, 
       logout, 
       refreshUser,

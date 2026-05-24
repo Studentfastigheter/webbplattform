@@ -49,16 +49,20 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <AuthCard
-          className="[&_[data-slot=card-content]]:min-h-[580px] [&_[data-slot=card]]:min-h-[580px]"
           title={hasSubmitted ? "Kolla din inbox" : "Glömt lösenord"}
           subtitle={
             hasSubmitted
-              ? "Vi har skickat instruktioner till e-postadressen om ett studentkonto finns registrerat."
-              : "Skriv in e-postadressen för ditt studentkonto så skickar vi en återställningslänk."
+              ? "Vi har skickat instruktioner till e-postadressen om ett konto finns registrerat."
+              : "Ange din e-postadress så skickar vi instruktioner för att återställa lösenordet."
           }
           footer={
             <FieldDescription className="text-center">
-              <Link href="/logga-in">Tillbaka till inloggning</Link>
+              <Link
+                href="/logga-in"
+                className="font-medium text-[#004225] no-underline"
+              >
+                Tillbaka till inloggning
+              </Link>
             </FieldDescription>
           }
         >
@@ -85,24 +89,31 @@ export default function ForgotPasswordPage() {
             >
               <FieldGroup className="mx-auto w-full max-w-sm">
                 <Field>
-                  <FieldLabel htmlFor="email">E-postadress</FieldLabel>
+                  <FieldLabel htmlFor="email">E-post</FieldLabel>
                   <Input
                     id="email"
                     type="email"
+                    placeholder="namn@example.com"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     autoComplete="email"
                     required
                     disabled={submitting}
+                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
                   />
                   <FieldDescription>
-                    Återställning skickas endast för studentkonton.
+                    Vi skickar instruktioner om e-postadressen finns registrerad.
                   </FieldDescription>
                 </Field>
 
                 <Field>
-                  <Button type="submit" fullWidth disabled={submitting}>
-                    {submitting ? "Skickar..." : "Skicka återställningslänk"}
+                  <Button
+                    type="submit"
+                    fullWidth
+                    disabled={submitting}
+                    className="h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
+                  >
+                    {submitting ? "Skickar..." : "Fortsätt"}
                   </Button>
                 </Field>
 

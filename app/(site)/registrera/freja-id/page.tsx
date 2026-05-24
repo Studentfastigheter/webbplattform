@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 import { AuthCard } from "@/components/ui/AuthCard";
 import { FieldDescription, FieldError } from "@/components/ui/field";
-import { authService } from "@/services/auth-service";
+import { useAuth } from "@/context/AuthContext";
+import { authService, isAuthResponse } from "@/services/auth-service";
 import type { FrejaAuthStatus } from "@/types";
 
 const pollIntervalMs = 3500;
@@ -31,7 +32,9 @@ function buildFrejaAuthUrl(authRef: string) {
 }
 
 function FrejaIdRegisterContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { completeAuth } = useAuth();
   const initialAuthRef = searchParams.get("authRef")?.trim() ?? "";
   const shouldStartFrejaOnly = searchParams.get("start") === "freja";
   const isFrejaOnlyFlow =
@@ -88,9 +91,16 @@ function FrejaIdRegisterContent() {
 
     async function poll() {
       try {
-        const nextStatus = await authService.pollAuthStatus(authRef);
+        const result = await authService.pollAuthStatus(authRef);
         if (!active) return;
 
+        if (isAuthResponse(result)) {
+          completeAuth(result);
+          router.replace("/");
+          return;
+        }
+
+        const nextStatus = result;
         setStatus(nextStatus);
         setPollError(null);
 
@@ -110,7 +120,7 @@ function FrejaIdRegisterContent() {
       active = false;
       if (timeout) clearTimeout(timeout);
     };
-  }, [authRef]);
+  }, [authRef, completeAuth, router]);
 
   const isComplete = status !== "PENDING";
   const successText = isFrejaOnlyFlow

@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { AuthCard } from "@/components/ui/AuthCard";
@@ -21,17 +21,14 @@ import { useAuth } from "@/context/AuthContext";
 
 type LoginFormProps = React.ComponentProps<"div">;
 
-const frejaLogoSrc =
-  "/FrejaBrandingPackNew/FrejaBrandingPack/Freja Logo/Freja/SVG/FrejaIndigo.svg";
-
 export function LoginForm({ className, ...props }: LoginFormProps) {
   const router = useRouter();
   const { login, googleLogin, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [googleCity, setGoogleCity] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,8 +37,8 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
     setError(null);
     setSubmitting(true);
     try {
-      const loggedInUser = await login({ email: email.trim(), password });
-      router.push(loggedInUser.accountType === "company" ? "/portal" : "/");
+      await login({ email: email.trim(), password });
+      router.push("/");
     } catch (err: any) {
       setError(err?.message ?? "Något gick fel vid inloggning.");
     } finally {
@@ -53,18 +50,12 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
     if (isLoading || submitting) return;
 
     setError(null);
-    if (!googleCity.trim()) {
-      setError("Ange stad innan du fortsätter med Google.");
-      return;
-    }
-
     setSubmitting(true);
     try {
-      const loggedInUser = await googleLogin({
+      await googleLogin({
         googleIdToken,
-        city: googleCity.trim().toLocaleUpperCase("sv-SE"),
       });
-      router.push(loggedInUser.accountType === "company" ? "/portal" : "/");
+      router.push("/");
     } catch (err: any) {
       setError(err?.message ?? "Google-inloggningen misslyckades.");
     } finally {
@@ -75,7 +66,6 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
   return (
     <AuthCard
       title="Välkommen tillbaka"
-      subtitle="Logga in för att hantera dina köplatser och sparade objekt."
       helper={
         isLoading && (
           <p className="text-sm text-muted-foreground">
@@ -83,18 +73,24 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
           </p>
         )
       }
-      footer={
-        <FieldDescription className="text-center">
-          Har du inget konto? <Link href="/registrera">Skapa ett gratis konto</Link>
-        </FieldDescription>
-      }
       className={className}
       {...props}
     >
       <form className="space-y-6" onSubmit={onSubmit}>
-        <FieldGroup>
+        <FieldGroup className="gap-5">
+          <GoogleAuthButton
+            label="Fortsätt med Google"
+            disabled={isLoading || submitting}
+            onCredential={onGoogleCredential}
+            onError={setError}
+          />
+
+          <FieldSeparator className="my-0 [&_[data-slot=field-separator-content]]:bg-white">
+            Eller
+          </FieldSeparator>
+
           <Field>
-            <FieldLabel htmlFor="email">E-postadress</FieldLabel>
+            <FieldLabel htmlFor="email">E-post</FieldLabel>
             <Input
               id="email"
               type="email"
@@ -104,100 +100,83 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               autoComplete="email"
               required
               disabled={isLoading || submitting}
+              className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
             />
           </Field>
 
           <Field>
-            <div className="flex items-center">
+            <div className="flex items-center justify-between">
               <FieldLabel htmlFor="password">Lösenord</FieldLabel>
               <Link
                 href="/glomt-losenord"
-                className="ml-auto text-sm underline-offset-2 hover:underline"
+                className="text-sm font-medium text-[#004225] underline-offset-4 hover:underline"
               >
-                Glömt lösenord?
+                Glömt ditt lösenord?
               </Link>
             </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="********"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              required
-              disabled={isLoading || submitting}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={isPasswordVisible ? "text" : "password"}
+                placeholder="Skriv ditt lösenord"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                required
+                disabled={isLoading || submitting}
+                className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+              />
+              <button
+                type="button"
+                onClick={() => setIsPasswordVisible((currentValue) => !currentValue)}
+                className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                disabled={isLoading || submitting}
+              >
+                {isPasswordVisible ? (
+                  <EyeOffIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+                <span className="sr-only">
+                  {isPasswordVisible ? "Dölj lösenord" : "Visa lösenord"}
+                </span>
+              </button>
+            </div>
           </Field>
 
           <Field>
             <Button
               type="submit"
               fullWidth
-              className="mt-1"
+              className="h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
               disabled={isLoading || submitting}
             >
-              {submitting ? "Loggar in..." : "Logga in"}
+              {submitting ? "Loggar in..." : "Fortsätt"}
             </Button>
           </Field>
 
           {error && <FieldError>{error}</FieldError>}
 
-          <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-            Eller fortsätt med
-          </FieldSeparator>
-
-          <Field>
-            <FieldLabel htmlFor="googleCity">Stad för Google</FieldLabel>
-            <Input
-              id="googleCity"
-              type="text"
-              value={googleCity}
-              onChange={(event) => setGoogleCity(event.target.value)}
-              autoComplete="address-level2"
-              disabled={isLoading || submitting}
-            />
-          </Field>
-
-          <Field>
-            <GoogleAuthButton
-              label="Logga in med Google"
-              disabled={isLoading || submitting}
-              onCredential={onGoogleCredential}
-              onError={setError}
-            />
-          </Field>
-
-          <Field>
-            <Link
-              href="/registrera/freja-id?start=freja"
-              className="flex min-h-[64px] w-full items-center gap-4 rounded-[8px] border border-slate-200 bg-white px-6 text-left shadow-[0_2px_12px_rgba(15,23,42,0.12)] transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E3A93]"
-              aria-label="Skapa konto med Freja ID"
-            >
-              <Image
-                src={frejaLogoSrc}
-                alt=""
-                width={38}
-                height={10}
-                className="h-auto w-[38px]"
-              />
-              <span className="text-base font-medium text-slate-950">
-                Skapa konto med Freja ID
-              </span>
-            </Link>
-          </Field>
         </FieldGroup>
       </form>
 
       <FieldDescription className="text-center text-xs text-muted-foreground">
         Genom att logga in godkänner du våra{" "}
-        <a href="/anvandarvillkor" className="underline underline-offset-4">
+        <a href="/anvandarvillkor" className="text-[#004225] underline underline-offset-4">
           användarvillkor
         </a>{" "}
         och{" "}
-        <a href="/integritetspolicy" className="underline underline-offset-4">
+        <a href="/integritetspolicy" className="text-[#004225] underline underline-offset-4">
           integritetspolicy
         </a>
         .
+      </FieldDescription>
+
+      <FieldDescription className="text-center text-sm">
+        Har du inte ett konto?{" "}
+        <Link href="/registrera" className="font-medium text-[#004225] no-underline">
+          Skapa ett nu
+        </Link>
       </FieldDescription>
     </AuthCard>
   );

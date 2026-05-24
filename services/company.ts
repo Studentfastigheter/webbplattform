@@ -97,6 +97,17 @@ export type CompanyChangeableDataDTO = {
   socialLinkByPlatform?: Record<string, string>;
 };
 
+export type CompanyImageTarget = "logo" | "banner";
+
+export type ModifyImageFileSupportedFormat = {
+  mediaType: string;
+  supportedExtensions: string[];
+};
+
+export type ModifyImageFileResult = {
+  url?: string;
+};
+
 export type ResidentTrendEntry = {
   year: number;
   month: number;
@@ -854,26 +865,51 @@ export const companyService = {
     });
   },
 
-  uploadLogo: async (id: number, file: File): Promise<string | null> => {
+  getSupportedImageFileFormats: async (
+    id: number,
+    target: CompanyImageTarget
+  ): Promise<ModifyImageFileSupportedFormat[]> => {
+    const formats = await apiClient<unknown>(
+      `/companies/${pathSegment(id)}/changeData/${pathSegment(target)}`,
+      { auth: false }
+    );
+    return arrayFromApiResponse<ModifyImageFileSupportedFormat>(formats);
+  },
+
+  uploadImage: async (
+    id: number,
+    target: CompanyImageTarget,
+    file: File,
+    options: { mediaType?: string } = {}
+  ): Promise<string | null> => {
     const formData = new FormData();
     formData.append("file", file, file.name);
+    const query = buildQuery({ mediaType: options.mediaType });
 
-    const url = await apiClient<unknown>(`/companies/${pathSegment(id)}/changeData/logo`, {
-      method: "POST",
-      body: formData,
-    });
+    const url = await apiClient<unknown>(
+      `/companies/${pathSegment(id)}/changeData/${pathSegment(target)}${query}`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
     return normalizeUploadedUrl(url);
   },
 
-  uploadBanner: async (id: number, file: File): Promise<string | null> => {
-    const formData = new FormData();
-    formData.append("file", file, file.name);
+  uploadLogo: async (
+    id: number,
+    file: File,
+    options: { mediaType?: string } = {}
+  ): Promise<string | null> => {
+    return companyService.uploadImage(id, "logo", file, options);
+  },
 
-    const url = await apiClient<unknown>(`/companies/${pathSegment(id)}/changeData/banner`, {
-      method: "POST",
-      body: formData,
-    });
-    return normalizeUploadedUrl(url);
+  uploadBanner: async (
+    id: number,
+    file: File,
+    options: { mediaType?: string } = {}
+  ): Promise<string | null> => {
+    return companyService.uploadImage(id, "banner", file, options);
   },
 
   users: async (id: number): Promise<CompanyUserDTO[]> => {

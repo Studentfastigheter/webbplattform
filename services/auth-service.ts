@@ -82,6 +82,22 @@ export function getAuthResponseUser(response: AuthResponse): User {
   throw new Error("Backend skickade ingen anvandare i auth-svaret.");
 }
 
+export function isAuthResponse(response: unknown): response is AuthResponse {
+  if (typeof response !== "object" || response === null || Array.isArray(response)) {
+    return false;
+  }
+
+  const responseLike = response as Partial<AuthResponse> & Record<string, unknown>;
+  return (
+    responseLike.user !== undefined &&
+    TOKEN_KEYS.some(
+      (key) =>
+        typeof responseLike[key] === "string" &&
+        String(responseLike[key]).trim().length > 0
+    )
+  );
+}
+
 function persistAuthToken(token: string | null) {
   if (typeof window === "undefined" || !token) {
     return;
@@ -154,14 +170,13 @@ export const authService = {
 
   googleLogin: async (payload: GoogleAuthRequest): Promise<AuthResponse> => {
     const googleIdToken = payload.googleIdToken.trim();
-    const city = payload.city.trim();
-    if (!googleIdToken || !city) {
-      throw new Error("Google-token och stad krävs.");
+    if (!googleIdToken) {
+      throw new Error("Google-token krävs.");
     }
 
     return apiClient<AuthResponse>("/auth/google/login", {
       method: "POST",
-      body: JSON.stringify({ googleIdToken, city }),
+      body: JSON.stringify({ googleIdToken }),
       auth: false,
     });
   },
@@ -188,17 +203,16 @@ export const authService = {
 
   googleRegister: async (
     payload: GoogleAuthRequest
-  ): Promise<AuthResponse> => {
+  ): Promise<void> => {
     const googleIdToken = payload.googleIdToken.trim();
-    const city = payload.city.trim();
 
-    if (!googleIdToken || !city) {
-      throw new Error("Google-token och stad krävs.");
+    if (!googleIdToken) {
+      throw new Error("Google-token krävs.");
     }
 
-    return apiClient<AuthResponse>("/auth/google/register", {
+    await apiClient<void>("/auth/google/register", {
       method: "POST",
-      body: JSON.stringify({ googleIdToken, city }),
+      body: JSON.stringify({ googleIdToken }),
       auth: false,
     });
   },
@@ -210,8 +224,8 @@ export const authService = {
     });
   },
 
-  pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {
-    return apiClient<FrejaAuthStatus>(
+  pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus | AuthResponse> => {
+    return apiClient<FrejaAuthStatus | AuthResponse>(
       `/auth/poll/${pathSegment(authRef)}`,
       { auth: false }
     );

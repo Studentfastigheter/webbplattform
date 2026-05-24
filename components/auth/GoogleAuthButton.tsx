@@ -105,8 +105,8 @@ export function GoogleAuthButton({
           theme: "outline",
           size: "large",
           text: "continue_with",
-          shape: "rectangular",
-          width: 320,
+          shape: "pill",
+          width: Math.round(buttonRef.current.getBoundingClientRect().width || 320),
           logo_alignment: "left",
         });
       })
@@ -126,8 +126,9 @@ export function GoogleAuthButton({
       <button
         type="button"
         disabled
-        className="flex min-h-[44px] w-full items-center justify-center rounded-[8px] border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-muted-foreground"
+        className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#7a7a7a]"
       >
+        <GoogleLogo />
         Google Sign-In saknar client id
       </button>
     );
@@ -138,12 +139,52 @@ export function GoogleAuthButton({
       <button
         type="button"
         disabled
-        className="flex min-h-[44px] w-full items-center justify-center rounded-[8px] border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-muted-foreground"
+        className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#7a7a7a]"
       >
+        <GoogleLogo />
         {label}
       </button>
     );
   }
 
-  return <div ref={buttonRef} aria-label={label} className="flex justify-center" />;
+  return (
+    <div className="relative min-h-[48px] w-full">
+      <div className="pointer-events-none flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#252525] transition-colors">
+        <GoogleLogo />
+        <span>{label}</span>
+      </div>
+      <div
+        ref={buttonRef}
+        aria-label={label}
+        className="absolute inset-0 z-10 flex w-full justify-center opacity-0 [&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!rounded-full"
+      />
+    </div>
+  );
+}
+
+function GoogleLogo() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="h-5 w-5 shrink-0"
+    >
+      <path
+        fill="#4285F4"
+        d="M21.6 12.23c0-.78-.07-1.53-.2-2.23H12v4.22h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.52z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 4.97-.9 6.62-2.44l-3.24-2.51c-.9.6-2.04.96-3.38.96-2.6 0-4.8-1.76-5.6-4.12H3.06v2.6A10 10 0 0 0 12 22z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.4 13.89A6 6 0 0 1 6.08 12c0-.65.11-1.29.32-1.89v-2.6H3.06A10 10 0 0 0 2 12c0 1.61.39 3.13 1.06 4.49l3.34-2.6z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.99c1.47 0 2.79.5 3.83 1.5l2.87-2.88C16.96 2.99 14.69 2 12 2a10 10 0 0 0-8.94 5.51l3.34 2.6C7.2 7.75 9.4 5.99 12 5.99z"
+      />
+    </svg>
+  );
 }

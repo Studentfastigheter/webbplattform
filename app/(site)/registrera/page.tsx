@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { AuthCard } from "@/components/ui/AuthCard";
@@ -16,75 +18,95 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 import {
   authService,
+  isAuthResponse,
   isStudentRegistrationResponse,
 } from "@/services/auth-service";
-import type { AccountType } from "@/types";
 
 type RegisterForm = {
-  firstName: string;
-  surname: string;
   email: string;
   password: string;
-  ssn: string;
-  phone: string;
-  city: string;
-  companyName: string;
-  fullName: string;
+  confirmPassword: string;
 };
 
 const initialForm: RegisterForm = {
-  firstName: "",
-  surname: "",
   email: "",
   password: "",
-  ssn: "",
-  phone: "",
-  city: "",
-  companyName: "",
-  fullName: "",
+  confirmPassword: "",
 };
 
-const accountLabels: Record<AccountType, string> = {
-  student: "Student",
-  company: "Företag",
-  private_landlord: "Privat uthyrare",
-};
+const passwordRequirements = [
+  { regex: /.{8,}/, text: "Minst 8 tecken" },
+  { regex: /[a-z]/, text: "Minst 1 liten bokstav" },
+  { regex: /[A-Z]/, text: "Minst 1 stor bokstav" },
+  { regex: /[0-9]/, text: "Minst 1 siffra" },
+  {
+    regex: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
+    text: "Minst 1 specialtecken",
+  },
+];
 
-const ssnPattern = /^(\d{8}-?\d{4}|\d{12})$/;
+function getPasswordStrengthColor(score: number) {
+  if (score === 0) return "bg-border";
+  if (score <= 1) return "bg-destructive";
+  if (score <= 2) return "bg-orange-500";
+  if (score <= 3) return "bg-amber-500";
+  if (score === 4) return "bg-yellow-400";
 
-function normalizeCity(city: string) {
-  return city.trim().toLocaleUpperCase("sv-SE");
+  return "bg-green-500";
 }
 
-function redirectPathForAccountType(accountType: AccountType) {
-  if (accountType === "company") return "/portal";
-  if (accountType === "private_landlord") return "/mina-annonser";
-  return "/";
+function getPasswordStrengthText(score: number) {
+  if (score === 0) return "Ange ett lösenord";
+  if (score <= 2) return "Svagt lösenord";
+  if (score <= 3) return "Medelstarkt lösenord";
+  if (score === 4) return "Starkt lösenord";
+
+  return "Mycket starkt lösenord";
 }
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, googleRegister } = useAuth();
-  const [accountType, setAccountType] = useState<AccountType>("student");
+  const { googleRegister, completeAuth } = useAuth();
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
+    useState(false);
+
+  const passwordStrength = passwordRequirements.map((requirement) => ({
+    met: requirement.regex.test(form.password),
+    text: requirement.text,
+  }));
+  const passwordStrengthScore = passwordStrength.filter(
+    (requirement) => requirement.met
+  ).length;
+  const passwordsMatch =
+    form.confirmPassword.length > 0 && form.password === form.confirmPassword;
 
   function updateField(field: keyof RegisterForm, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  function validateBaseFields() {
-    if (!form.email.trim() || !form.password || !form.city.trim()) {
-      return "Fyll i e-postadress, lösenord och stad.";
+  function validateEmailPasswordFields() {
+    const email = form.email.trim();
+    const password = form.password.trim();
+    const confirmPassword = form.confirmPassword.trim();
+
+    if (!email || !password || !confirmPassword) {
+      return "Fyll i e-postadress och lösenord två gånger.";
     }
 
-    if (form.password.length < 6) {
-      return "Lösenord måste vara minst 6 tecken.";
+    if (password.length < 8) {
+      return "Lösenordet måste vara minst 8 tecken.";
+    }
+
+    if (password !== confirmPassword) {
+      return "Lösenorden matchar inte.";
     }
 
     return null;
@@ -96,82 +118,34 @@ export default function RegisterPage() {
 
     setError(null);
 
-    const baseError = validateBaseFields();
-    if (baseError) {
-      setError(baseError);
+    const validationError = validateEmailPasswordFields();
+    if (validationError) {
+      setError(validationError);
       return;
-    }
-
-    const basePayload = {
-      accountType,
-      email: form.email.trim(),
-      password: form.password,
-      city: normalizeCity(form.city),
-    };
-
-    if (accountType === "student") {
-      if (!form.firstName.trim() || !form.surname.trim()) {
-        setError("Fyll i förnamn och efternamn.");
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const response = await authService.register({
-          ...basePayload,
-          firstName: form.firstName.trim(),
-          surname: form.surname.trim(),
-        });
-
-        if (!isStudentRegistrationResponse(response)) {
-          setError("Registreringen startade inte Freja-verifieringen.");
-          return;
-        }
-
-        router.push(
-          `/registrera/freja-id?authRef=${encodeURIComponent(response.authRef)}`
-        );
-      } catch (err: any) {
-        setError(err?.message ?? "Kunde inte skapa konto. Kontrollera uppgifterna.");
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    if (accountType === "company" && (!form.companyName.trim() || !form.phone.trim())) {
-      setError("Fyll i företagsnamn och telefonnummer.");
-      return;
-    }
-
-    if (accountType === "private_landlord") {
-      if (!form.fullName.trim() || !form.phone.trim() || !form.ssn.trim()) {
-        setError("Fyll i namn, personnummer och telefonnummer.");
-        return;
-      }
-
-      if (!ssnPattern.test(form.ssn.trim())) {
-        setError("Personnummer måste anges som yyyyMMdd-xxxx eller yyyyMMddxxxx.");
-        return;
-      }
     }
 
     setLoading(true);
     try {
-      const loggedInUser = await register({
-        ...basePayload,
-        phone: form.phone.trim(),
-        companyName:
-          accountType === "company" ? form.companyName.trim() : undefined,
-        fullName:
-          accountType === "private_landlord" ? form.fullName.trim() : undefined,
-        ssn:
-          accountType === "private_landlord"
-            ? form.ssn.trim().replace("-", "")
-            : undefined,
+      const response = await authService.register({
+        accountType: "student",
+        email: form.email.trim(),
+        password: form.password.trim(),
       });
 
-      router.push(redirectPathForAccountType(loggedInUser.accountType));
+      if (isAuthResponse(response)) {
+        completeAuth(response);
+        router.push("/");
+        return;
+      }
+
+      if (!isStudentRegistrationResponse(response)) {
+        setError("Backend skickade ett oväntat svar vid registrering.");
+        return;
+      }
+
+      router.push(
+        `/registrera/freja-id?authRef=${encodeURIComponent(response.authRef)}`
+      );
     } catch (err: any) {
       setError(err?.message ?? "Kunde inte skapa konto. Kontrollera uppgifterna.");
     } finally {
@@ -184,18 +158,10 @@ export default function RegisterPage() {
 
     setError(null);
 
-    if (!form.city.trim()) {
-      setError("Ange stad innan du fortsätter med Google.");
-      return;
-    }
-
     setLoading(true);
     try {
-      const registeredUser = await googleRegister({
-        googleIdToken,
-        city: normalizeCity(form.city),
-      });
-      router.push(redirectPathForAccountType(registeredUser.accountType));
+      await googleRegister({ googleIdToken });
+      router.push("/");
     } catch (err: any) {
       setError(err?.message ?? "Kunde inte registrera med Google.");
     } finally {
@@ -203,58 +169,72 @@ export default function RegisterPage() {
     }
   }
 
-  const isStudent = accountType === "student";
-  const isCompany = accountType === "company";
-  const isPrivateLandlord = accountType === "private_landlord";
-
   return (
     <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <AuthCard
           title="Skapa konto"
-          subtitle="Välj kontotyp och fyll i uppgifterna för att komma igång."
           footer={
             <FieldDescription className="text-center">
-              Har du redan ett konto? <Link href="/logga-in">Logga in här</Link>
+              Har du redan ett konto?{" "}
+              <Link href="/logga-in" className="font-medium text-[#004225] no-underline">
+                Logga in
+              </Link>
             </FieldDescription>
           }
         >
           <form className="space-y-6" onSubmit={onSubmit}>
-            <FieldGroup>
-              <Tabs
-                value={accountType}
-                onValueChange={(value) => setAccountType(value as AccountType)}
-              >
-                <TabsList className="grid h-auto w-full grid-cols-3 rounded-md">
-                  {(Object.keys(accountLabels) as AccountType[]).map((type) => (
-                    <TabsTrigger key={type} value={type} className="min-h-9">
-                      {accountLabels[type]}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="email">E-postadress</FieldLabel>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="namn@example.com"
-                    value={form.email}
-                    onChange={(event) => updateField("email", event.target.value)}
-                    autoComplete="email"
-                    required
-                    disabled={loading}
+            <FieldGroup className="gap-5">
+              <div className="grid gap-3">
+                <Link
+                  href="/registrera/freja-id?start=freja"
+                  className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#252525] transition-colors hover:bg-[#e8e8e8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                  aria-label="Registrera med Freja ID"
+                >
+                  <Image
+                    src="/FrejaBrandingPackNew/FrejaBrandingPack/Freja Logo/Freja/SVG/FrejaIndigo.svg"
+                    alt=""
+                    width={44}
+                    height={14}
+                    className="h-auto w-11"
                   />
-                </Field>
+                  <span>Registrera med Freja ID</span>
+                </Link>
 
-                <Field>
-                  <FieldLabel htmlFor="password">Lösenord</FieldLabel>
+                <GoogleAuthButton
+                  label="Registrera med Google"
+                  disabled={loading}
+                  onCredential={onGoogleCredential}
+                  onError={setError}
+                />
+              </div>
+
+              <FieldSeparator className="my-0 [&_[data-slot=field-separator-content]]:bg-card">
+                Eller
+              </FieldSeparator>
+
+              <Field>
+                <FieldLabel htmlFor="email">E-postadress</FieldLabel>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="namn@example.com"
+                  value={form.email}
+                  onChange={(event) => updateField("email", event.target.value)}
+                  autoComplete="email"
+                  required
+                  disabled={loading}
+                  className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="password">Lägg till ett lösenord</FieldLabel>
+                <div className="relative">
                   <Input
                     id="password"
-                    type="password"
-                    placeholder="Minst 6 tecken"
+                    type={isPasswordVisible ? "text" : "password"}
+                    placeholder="Välj ett lösenord"
                     value={form.password}
                     onChange={(event) =>
                       updateField("password", event.target.value)
@@ -262,183 +242,116 @@ export default function RegisterPage() {
                     autoComplete="new-password"
                     required
                     disabled={loading}
+                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
                   />
-                </Field>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsPasswordVisible((currentValue) => !currentValue)
+                    }
+                    className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                    disabled={loading}
+                  >
+                    {isPasswordVisible ? (
+                      <EyeOffIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                    <span className="sr-only">
+                      {isPasswordVisible ? "Dölj lösenord" : "Visa lösenord"}
+                    </span>
+                  </button>
+                </div>
+              </Field>
+
+              <div className="-mt-2 space-y-2">
+                <div className="flex h-2 w-full gap-2">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <span
+                      key={index}
+                      className={cn(
+                        "h-full flex-1 rounded-full transition-all duration-500 ease-out",
+                        index < passwordStrengthScore
+                          ? getPasswordStrengthColor(passwordStrengthScore)
+                          : "bg-[#e7e9ec]"
+                      )}
+                    />
+                  ))}
+                </div>
+
+                <p className="text-right text-sm font-normal text-[#7a7a7a]">
+                  {getPasswordStrengthText(passwordStrengthScore)}
+                </p>
               </div>
 
               <Field>
-                <FieldLabel htmlFor="city">Stad</FieldLabel>
-                <Input
-                  id="city"
-                  type="text"
-                  value={form.city}
-                  onChange={(event) => updateField("city", event.target.value)}
-                  autoComplete="address-level2"
-                  required
-                  disabled={loading}
-                />
-                <FieldDescription>
-                  Skickas till API:t i backendens stadsformat.
-                </FieldDescription>
+                <FieldLabel htmlFor="confirmPassword">
+                  Bekräfta lösenordet
+                </FieldLabel>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={isConfirmPasswordVisible ? "text" : "password"}
+                    placeholder="Skriv lösenordet igen"
+                    value={form.confirmPassword}
+                    onChange={(event) =>
+                      updateField("confirmPassword", event.target.value)
+                    }
+                    autoComplete="new-password"
+                    required
+                    disabled={loading}
+                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsConfirmPasswordVisible(
+                        (currentValue) => !currentValue
+                      )
+                    }
+                    className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                    disabled={loading}
+                  >
+                    {isConfirmPasswordVisible ? (
+                      <EyeOffIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                    <span className="sr-only">
+                      {isConfirmPasswordVisible
+                        ? "Dölj lösenord"
+                        : "Visa lösenord"}
+                    </span>
+                  </button>
+                </div>
+                {form.confirmPassword.length > 0 && (
+                  <FieldDescription
+                    className={cn(
+                      passwordsMatch
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-destructive"
+                    )}
+                  >
+                    {passwordsMatch
+                      ? "Lösenorden matchar."
+                      : "Lösenorden matchar inte."}
+                  </FieldDescription>
+                )}
               </Field>
 
-              {isStudent && (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field>
-                      <FieldLabel htmlFor="firstName">Förnamn</FieldLabel>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        value={form.firstName}
-                        onChange={(event) =>
-                          updateField("firstName", event.target.value)
-                        }
-                        autoComplete="given-name"
-                        required
-                        disabled={loading}
-                      />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel htmlFor="surname">Efternamn</FieldLabel>
-                      <Input
-                        id="surname"
-                        type="text"
-                        value={form.surname}
-                        onChange={(event) =>
-                          updateField("surname", event.target.value)
-                        }
-                        autoComplete="family-name"
-                        required
-                        disabled={loading}
-                      />
-                    </Field>
-                  </div>
-
-                  <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-                    Eller registrera student med
-                  </FieldSeparator>
-
-                  <Field>
-                    <GoogleAuthButton
-                      label="Registrera med Google"
-                      disabled={loading}
-                      onCredential={onGoogleCredential}
-                      onError={setError}
-                    />
-                  </Field>
-
-                  <FieldDescription>
-                    Google-registrering loggar in dig direkt när kontot har skapats.
-                  </FieldDescription>
-                </>
-              )}
-
-              {isCompany && (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="companyName">Företagsnamn</FieldLabel>
-                    <Input
-                      id="companyName"
-                      type="text"
-                      value={form.companyName}
-                      onChange={(event) =>
-                        updateField("companyName", event.target.value)
-                      }
-                      autoComplete="organization"
-                      required
-                      disabled={loading}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="phone">Telefonnummer</FieldLabel>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={form.phone}
-                      onChange={(event) => updateField("phone", event.target.value)}
-                      autoComplete="tel"
-                      required
-                      disabled={loading}
-                    />
-                  </Field>
-                </>
-              )}
-
-              {isPrivateLandlord && (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="fullName">Fullständigt namn</FieldLabel>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      value={form.fullName}
-                      onChange={(event) =>
-                        updateField("fullName", event.target.value)
-                      }
-                      autoComplete="name"
-                      required
-                      disabled={loading}
-                    />
-                  </Field>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field>
-                      <FieldLabel htmlFor="ssn">Personnummer</FieldLabel>
-                      <Input
-                        id="ssn"
-                        type="text"
-                        placeholder="yyyyMMdd-xxxx"
-                        value={form.ssn}
-                        onChange={(event) => updateField("ssn", event.target.value)}
-                        autoComplete="off"
-                        required
-                        disabled={loading}
-                      />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel htmlFor="phonePrivate">
-                        Telefonnummer
-                      </FieldLabel>
-                      <Input
-                        id="phonePrivate"
-                        type="tel"
-                        value={form.phone}
-                        onChange={(event) =>
-                          updateField("phone", event.target.value)
-                        }
-                        autoComplete="tel"
-                        required
-                        disabled={loading}
-                      />
-                    </Field>
-                  </div>
-                </>
-              )}
-
               <Field>
-                <Button type="submit" fullWidth className="mt-1" disabled={loading}>
-                  {loading
-                    ? "Skapar konto..."
-                    : isStudent
-                      ? "Skapa konto och verifiera"
-                      : "Skapa konto"}
+                <Button
+                  type="submit"
+                  fullWidth
+                  className="mt-1 h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
+                  disabled={loading}
+                >
+                  {loading ? "Skapar konto..." : "Skapa konto"}
                 </Button>
               </Field>
 
-              {isStudent && (
-                <FieldDescription className="text-center">
-                  Vill du registrera helt via Freja?{" "}
-                  <Link href="/registrera/freja-id?start=freja">
-                    Starta Freja-registrering
-                  </Link>
-                </FieldDescription>
-              )}
-
               {error && <FieldError>{error}</FieldError>}
+
             </FieldGroup>
           </form>
         </AuthCard>
