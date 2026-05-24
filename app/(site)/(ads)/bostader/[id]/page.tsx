@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { getApplicationVerificationError } from "@/lib/application-eligibility";
 import { cn } from "@/lib/utils";
 
 import BostadAbout from "@/components/ads/BostadAbout";
@@ -333,6 +334,10 @@ export default function ListingDetailPage() {
   const [nearbyListings, setNearbyListings] = useState<ListingCardDTO[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const [nearbyError, setNearbyError] = useState<string | null>(null);
+  const applicationVerificationError = useMemo(
+    () => getApplicationVerificationError(user, "listing"),
+    [user]
+  );
 
   // Ladda favoriter och kolla om redan ansökt
   useEffect(() => {
@@ -563,6 +568,11 @@ export default function ListingDetailPage() {
       return;
     }
 
+    if (applicationVerificationError) {
+      setApplyError(applicationVerificationError);
+      return;
+    }
+
     setApplying(true);
     setApplyError(null);
     setApplySuccess(null);
@@ -580,7 +590,7 @@ export default function ListingDetailPage() {
       })
       .catch((err: any) => setApplyError(err?.message ?? "Kunde inte skicka ansökan."))
       .finally(() => setApplying(false));
-  }, [listingId, listing, user]);
+  }, [applicationVerificationError, listingId, listing, user]);
 
   const galleryImages = useMemo(() => listing?.imageUrls || [], [listing]);
 
@@ -670,6 +680,11 @@ export default function ListingDetailPage() {
               {applyError}
             </div>
           )}
+          {applicationVerificationError && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {applicationVerificationError}
+            </div>
+          )}
 
           {/* 1. Top image preview grid */}
           <ImagePreviewGrid images={galleryImages} onImageClick={openLightbox} />
@@ -680,7 +695,7 @@ export default function ListingDetailPage() {
             isFavorite={favoriteIds.has(listing.id)}
             onFavoriteToggle={handleFavoriteToggle}
             onApplyClick={handleApply}
-            applyDisabled={applying || hasApplied}
+            applyDisabled={applying || hasApplied || Boolean(applicationVerificationError)}
             hasApplied={hasApplied}
           />
 

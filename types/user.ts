@@ -45,6 +45,8 @@ export interface User {
   bannerUrl?: UrlString;
   description?: string;
   verified: boolean;
+  verifiedEmail?: boolean;
+  verifiedIdentity?: boolean;
   tags?: Tag[];
   linkedInUrl?: UrlString;
   instagramUrl?: UrlString;
@@ -100,7 +102,6 @@ export type RegisterResponse = AuthResponse | StudentRegistrationResponse;
 
 export interface GoogleAuthRequest {
   googleIdToken: string;
-  city: string;
 }
 
 export type FrejaRegisterResponse = StudentRegistrationResponse;
@@ -169,6 +170,10 @@ export interface StartPasswordResetRequest {
 export interface PasswordResetFinalRequest {
   resetId: string;
   newPassword: string;
+}
+
+export interface VerifyEmailRequest {
+  email: string;
 }
 
 // --- Komplexa typer (Behåll denna om du bygger ut objektet på frontend) ---

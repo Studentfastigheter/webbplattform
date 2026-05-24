@@ -13,6 +13,7 @@ import {
   StartPasswordResetRequest,
   PasswordResetAccountType,
   PasswordResetFinalRequest,
+  VerifyEmailRequest,
 } from "@/types";
 
 type AuthResponseLike = AuthResponse & Record<string, unknown>;
@@ -52,6 +53,67 @@ export function getAuthResponseToken(response: AuthResponse): string {
   return token;
 }
 
+export function getOptionalAuthResponseToken(
+  response: Partial<AuthResponse>
+): string | null {
+  const responseLike = response as AuthResponseLike;
+  const source = TOKEN_KEYS.map((key) => responseLike[key]).find(
+    (value) => typeof value === "string" && value.trim().length > 0
+  );
+
+  return normalizeAuthToken(source);
+}
+
+export function getAuthResponseUser(response: AuthResponse): User {
+  if (response.user && typeof response.user === "object") {
+    return response.user;
+  }
+
+  const responseLike = response as unknown as Record<string, unknown>;
+  if (
+    typeof responseLike === "object" &&
+    responseLike !== null &&
+    (typeof responseLike.accountType === "string" ||
+      typeof responseLike.email === "string")
+  ) {
+    return responseLike as unknown as User;
+  }
+
+  throw new Error("Backend skickade ingen anvandare i auth-svaret.");
+}
+
+export function isAuthResponse(response: unknown): response is AuthResponse {
+  if (typeof response !== "object" || response === null || Array.isArray(response)) {
+    return false;
+  }
+
+  const responseLike = response as Partial<AuthResponse> & Record<string, unknown>;
+  return (
+    responseLike.user !== undefined &&
+    TOKEN_KEYS.some(
+      (key) =>
+        typeof responseLike[key] === "string" &&
+        String(responseLike[key]).trim().length > 0
+    )
+  );
+}
+
+function persistAuthToken(token: string | null) {
+  if (typeof window === "undefined" || !token) {
+    return;
+  }
+
+  localStorage.setItem("token", token);
+}
+
+function clearAuthToken() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.removeItem("token");
+}
+
 export function isStudentRegistrationResponse(
   response: RegisterResponse
 ): response is { authRef: string } {
@@ -77,9 +139,20 @@ function normalizePasswordResetAccountType(
   return normalized;
 }
 
+async function fetchCurrentSession(token?: string | null): Promise<AuthResponse> {
+  const session = await apiClient<AuthResponse>("/auth/me", {}, token);
+  const refreshedToken = getOptionalAuthResponseToken(session);
+  persistAuthToken(refreshedToken);
+  return session;
+}
+
 export const authService = {
+  session: async (token?: string | null): Promise<AuthResponse> => {
+    return fetchCurrentSession(token);
+  },
+
   me: async (token?: string | null): Promise<User> => {
-    return apiClient<User>("/auth/me", {}, token);
+    return getAuthResponseUser(await fetchCurrentSession(token));
   },
 
   login: async (payload: LoginRequest): Promise<AuthResponse> => {
@@ -97,14 +170,13 @@ export const authService = {
 
   googleLogin: async (payload: GoogleAuthRequest): Promise<AuthResponse> => {
     const googleIdToken = payload.googleIdToken.trim();
-    const city = payload.city.trim();
-    if (!googleIdToken || !city) {
-      throw new Error("Google-token och stad krävs.");
+    if (!googleIdToken) {
+      throw new Error("Google-token krävs.");
     }
 
     return apiClient<AuthResponse>("/auth/google/login", {
       method: "POST",
-      body: JSON.stringify({ googleIdToken, city }),
+      body: JSON.stringify({ googleIdToken }),
       auth: false,
     });
   },
@@ -131,17 +203,16 @@ export const authService = {
 
   googleRegister: async (
     payload: GoogleAuthRequest
-  ): Promise<FrejaRegisterResponse> => {
+  ): Promise<void> => {
     const googleIdToken = payload.googleIdToken.trim();
-    const city = payload.city.trim();
 
-    if (!googleIdToken || !city) {
-      throw new Error("Google-token och stad krävs.");
+    if (!googleIdToken) {
+      throw new Error("Google-token krävs.");
     }
 
-    return apiClient<FrejaRegisterResponse>("/auth/google/register", {
+    await apiClient<void>("/auth/google/register", {
       method: "POST",
-      body: JSON.stringify({ googleIdToken, city }),
+      body: JSON.stringify({ googleIdToken }),
       auth: false,
     });
   },
@@ -153,8 +224,8 @@ export const authService = {
     });
   },
 
-  pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {
-    return apiClient<FrejaAuthStatus>(
+  pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus | AuthResponse> => {
+    return apiClient<FrejaAuthStatus | AuthResponse>(
       `/auth/poll/${pathSegment(authRef)}`,
       { auth: false }
     );
@@ -193,6 +264,30 @@ export const authService = {
     });
   },
 
+  verifyEmail: async (payload: VerifyEmailRequest): Promise<void> => {
+    const email = payload.email.trim();
+    if (!email) {
+      throw new Error("Ange e-postadressen som ska verifieras.");
+    }
+
+    await apiClient<void>("/auth/verify-email", {
+      method: "POST",
+      auth: false,
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  finalizeEmailVerification: async (verificationId: string): Promise<void> => {
+    const id = verificationId.trim();
+    if (!id) {
+      throw new Error("Verifierings-id saknas.");
+    }
+
+    await apiClient<void>(`/auth/verify-email/finalize/${pathSegment(id)}`, {
+      auth: false,
+    });
+  },
+
   updateProfile: async (data: UpdateUserRequest): Promise<User> => {
     const payload = compactObject<UpdateUserRequest>({
       firstName: data.firstName,
@@ -217,8 +312,6 @@ export const authService = {
   },
 
   logout: () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-    }
+    clearAuthToken();
   },
 };

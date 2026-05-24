@@ -103,6 +103,8 @@ export type ListingSearchParams = {
 
 export type ListingViewIncrementType = "QUICK" | "DETAILED";
 
+const LISTINGS_DEFAULT_PAGE_SIZE = 24;
+
 const DWELLING_TYPE_ALIASES: Record<string, DwellingType> = {
   APARTMENT: "APARTMENT",
   ROOM: "ROOM",
@@ -581,7 +583,7 @@ export const listingService = {
    */
   getAll: async (
     pageOrParams: number | ListingSearchParams = 0,
-    size = 12,
+    size = LISTINGS_DEFAULT_PAGE_SIZE,
     city?: string | null,
     dwellingType?: string | null,
     minRent?: number | null,
@@ -591,7 +593,7 @@ export const listingService = {
     // Bygg query-objektet med alla filter som skickas från ListingsPage
     const params: ListingSearchParams =
       typeof pageOrParams === "object"
-        ? { page: 0, size: 12, ...pageOrParams }
+        ? { page: 0, size: LISTINGS_DEFAULT_PAGE_SIZE, ...pageOrParams }
         : {
             page: pageOrParams,
             size,
@@ -610,7 +612,12 @@ export const listingService = {
       { auth: false }
     );
     const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
-    return normalizePageResponse(res, content, params.page ?? 0, params.size ?? 12);
+    return normalizePageResponse(
+      res,
+      content,
+      params.page ?? 0,
+      params.size ?? LISTINGS_DEFAULT_PAGE_SIZE
+    );
   },
 
   getFacets: async (
@@ -669,10 +676,19 @@ export const listingService = {
     });
   },
 
-  getMyListings: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
+  getMyListingsPage: async (
+    page = 0,
+    size = 200
+  ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<unknown>(`/listings/my${query}`);
-    return normalizeListingCards(arrayFromApiResponse<unknown>(res));
+    const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
+    return normalizePageResponse(res, content, page, size);
+  },
+
+  getMyListings: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
+    const res = await listingService.getMyListingsPage(page, size);
+    return res.content ?? [];
   },
 
   getQueueListings: async (
@@ -691,13 +707,22 @@ export const listingService = {
 
   // 3. HÄMTA MINA ANSÖKNINGAR
   // Anropar: GET /api/applications/my
-  getMyApplications: async (page = 0, size = 50): Promise<StudentApplicationDTO[]> => {
+  getMyApplicationsPage: async (
+    page = 0,
+    size = 50
+  ): Promise<PageResponse<StudentApplicationDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<any>(`/applications/my${query}`);
+    const res = await apiClient<unknown>(`/applications/my${query}`);
     // Hantera både paginerat svar (PageResponse) och ren array
-    if (res?.content && Array.isArray(res.content)) return res.content;
-    if (Array.isArray(res)) return res;
-    return [];
+    const content = Array.isArray(res)
+      ? (res as StudentApplicationDTO[])
+      : arrayFromApiResponse<StudentApplicationDTO>(res);
+    return normalizePageResponse(res, content, page, size);
+  },
+
+  getMyApplications: async (page = 0, size = 50): Promise<StudentApplicationDTO[]> => {
+    const res = await listingService.getMyApplicationsPage(page, size);
+    return res.content ?? [];
   },
 
 // --- FAVORITER ---
@@ -722,21 +747,21 @@ export const listingService = {
     });
   },
 
-  getFavorites: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
+  getFavoritesPage: async (
+    page = 0,
+    size = 200
+  ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<any>(`/listings/favorites${query}`);
-    
-    // Check if it's returning a list of StudentLikedListing where the actual listing is embedded
-    if (Array.isArray(res)) {
-      return normalizeListingCards(res);
-    }
-    
-    // Check if it's a page response
-    if (res && res.content) {
-      return normalizeListingCards(res.content);
-    }
-    
-    return [];
+    const res = await apiClient<unknown>(`/listings/favorites${query}`);
+    const content = normalizeListingCards(
+      Array.isArray(res) ? res : arrayFromApiResponse<unknown>(res)
+    );
+    return normalizePageResponse(res, content, page, size);
+  },
+
+  getFavorites: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
+    const res = await listingService.getFavoritesPage(page, size);
+    return res.content ?? [];
   },
 
   // --- ÖVRIGA METODER ---
@@ -767,17 +792,32 @@ export const listingService = {
     });
   },
 
+  getListingApplicationsPage: async (
+    listingId: string,
+    page = 0,
+    size = 50
+  ): Promise<PageResponse<StudentApplicationDTO>> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<unknown>(
+      `/listings/${pathSegment(listingId)}/applications${query}`
+    );
+    const content = Array.isArray(res)
+      ? (res as StudentApplicationDTO[])
+      : arrayFromApiResponse<StudentApplicationDTO>(res);
+    return normalizePageResponse(res, content, page, size);
+  },
+
   getListingApplications: async (
     listingId: string,
     page = 0,
     size = 50
   ): Promise<StudentApplicationDTO[]> => {
-    const query = buildQuery({ page, size });
-    const res = await apiClient<any>(
-      `/listings/${pathSegment(listingId)}/applications${query}`
+    const res = await listingService.getListingApplicationsPage(
+      listingId,
+      page,
+      size
     );
-    if (Array.isArray(res)) return res;
-    return res?.content ?? [];
+    return res.content ?? [];
   },
 
   // Hämta tillgängliga annonstaggar.

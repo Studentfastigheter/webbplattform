@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { UserEnvironmentProvider } from "@/context/UserEnvironmentContext";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { Theme } from "@radix-ui/themes";
@@ -92,21 +93,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SpeedInsights />
         <Analytics />
         <AuthProvider>
-          <Theme>
-            <ScrollToTop />
-            {children}
-            <Toaster
-              position="bottom-right"
-              richColors
-              toastOptions={{
-                duration: 4000,
-                classNames: {
-                  actionButton: "",
-                },
-              }}
-              theme="light"
-            />
-          </Theme>
+          <UserEnvironmentProvider>
+            <Theme>
+              <ScrollToTop />
+              {children}
+              <Toaster
+                position="bottom-right"
+                richColors
+                toastOptions={{
+                  duration: 4000,
+                  classNames: {
+                    actionButton: "",
+                  },
+                }}
+                theme="light"
+              />
+            </Theme>
+          </UserEnvironmentProvider>
         </AuthProvider>
       </body>
     </html>

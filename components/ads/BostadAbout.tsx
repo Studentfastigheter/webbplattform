@@ -189,7 +189,7 @@ function BostadAboutContent({
             ) : (
               <Button
                 onClick={onApplyClick}
-                disabled={applyDisabled}
+                isDisabled={applyDisabled}
                 className={cn(
                   "h-11 px-8 flex items-center justify-center gap-2",
                   "rounded-full",

@@ -12,6 +12,7 @@ type AuthCardProps = React.ComponentProps<"div"> & {
   helper?: React.ReactNode;
   footer?: React.ReactNode;
   aside?: React.ReactNode;
+  variant?: "split" | "homeq";
 };
 
 export function AuthCard({
@@ -20,10 +21,40 @@ export function AuthCard({
   helper,
   footer,
   aside,
+  variant = "split",
   className,
   children,
   ...props
 }: AuthCardProps) {
+  if (variant === "homeq") {
+    return (
+      <div
+        className={cn("mx-auto flex w-full max-w-[390px] flex-col", className)}
+        {...props}
+      >
+        <div className="rounded-[24px] bg-white px-5 py-6 shadow-[0_18px_55px_rgba(15,23,42,0.14)]">
+          <div className="mb-5 flex flex-col gap-1 text-left">
+            <h1 className="text-[18px] font-semibold leading-tight text-[#1f1f1f]">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-sm leading-normal text-[#6f6f6f]">{subtitle}</p>
+            )}
+            {helper && <div className="text-sm text-[#6f6f6f]">{helper}</div>}
+          </div>
+
+          {children}
+
+          {footer && (
+            <div className="mt-5 text-center text-sm text-[#6f6f6f]">
+              {footer}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
