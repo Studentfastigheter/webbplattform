@@ -11,16 +11,48 @@ import { useAuth } from "@/context/AuthContext";
 import { authService, isAuthResponse } from "@/services/auth-service";
 import type { FrejaAuthStatus } from "@/types";
 
-const pollIntervalMs = 3500;
+const pollIntervalMs = 2000;
+
+const frejaAuthStatuses = [
+  "PENDING",
+  "MATCHES",
+  "CLASHING",
+  "DISAPPROVED",
+  "EXPIRED",
+  "CANCELED",
+] as const satisfies readonly FrejaAuthStatus[];
 
 const statusMessages: Record<FrejaAuthStatus, string> = {
   PENDING: "Väntar på godkännande i Freja.",
   MATCHES: "Kontot är verifierat. Du kan logga in.",
-  CLASHING: "Identiteten i Freja matchar inte registreringsuppgifterna.",
-  DISAPPROVED: "Verifieringen nekades i Freja.",
-  EXPIRED: "Verifieringen hann löpa ut.",
+  CLASHING:
+    "Freja-identiteten matchade inte registreringen, eller så finns kontot redan.",
+  DISAPPROVED: "Verifieringen nekades i Freja-appen.",
+  EXPIRED: "Verifieringen hann löpa ut innan den godkändes.",
   CANCELED: "Verifieringen avbröts.",
 };
+
+function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
+  return (
+    typeof value === "string" &&
+    (frejaAuthStatuses as readonly string[]).includes(value)
+  );
+}
+
+function getStatusAction(status: FrejaAuthStatus) {
+  if (status === "MATCHES") {
+    return { href: "/logga-in", label: "Gå till inloggning" };
+  }
+
+  if (status === "EXPIRED" || status === "CANCELED") {
+    return {
+      href: "/registrera/freja-id?start=freja",
+      label: "Starta Freja igen",
+    };
+  }
+
+  return { href: "/registrera", label: "Tillbaka till registrering" };
+}
 
 function buildFrejaAuthUrl(authRef: string) {
   const url = new URL("https://app.test.frejaeid.com/freja");
@@ -100,6 +132,11 @@ function FrejaIdRegisterContent() {
           return;
         }
 
+        if (!isFrejaAuthStatus(result)) {
+          setPollError("Backend skickade en okänd Freja-status.");
+          return;
+        }
+
         const nextStatus = result;
         setStatus(nextStatus);
         setPollError(null);
@@ -126,6 +163,7 @@ function FrejaIdRegisterContent() {
   const successText = isFrejaOnlyFlow
     ? "Kontot är verifierat. Ett lösenord skickas till e-postadressen från Freja."
     : statusMessages.MATCHES;
+  const statusAction = getStatusAction(status);
 
   return (
     <AuthCard
@@ -137,11 +175,7 @@ function FrejaIdRegisterContent() {
       }
       footer={
         <FieldDescription className="text-center">
-          {status === "MATCHES" ? (
-            <Link href="/logga-in">Gå till inloggning</Link>
-          ) : (
-            <Link href="/registrera">Tillbaka till registrering</Link>
-          )}
+          <Link href={statusAction.href}>{statusAction.label}</Link>
         </FieldDescription>
       }
     >
@@ -173,7 +207,7 @@ function FrejaIdRegisterContent() {
             <p className="text-sm text-muted-foreground">
               {isComplete
                 ? "Verifieringen är avslutad."
-                : "Vi kontrollerar status var 3,5 sekund."}
+                : "Vi kontrollerar status varannan sekund."}
             </p>
             {pollError && <FieldError>{pollError}</FieldError>}
           </div>
