@@ -18,6 +18,7 @@ import {
 } from "@/services/demographics-service";
 import { mediaService } from "@/services/media-service";
 import { useAuth } from "@/context/AuthContext";
+import { getApplicationVerificationError } from "@/lib/application-eligibility";
 import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
 import { Bell, Loader2 } from "lucide-react";
@@ -77,6 +78,10 @@ export default function QueueDetailPage() {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const companyViewDemographicsRecordedIds = useRef<Set<number>>(new Set());
   const listingQuickDemographicsRecordedIds = useRef<Set<string>>(new Set());
+  const queueVerificationError = useMemo(
+    () => getApplicationVerificationError(user, "queue"),
+    [user]
+  );
 
   // Resolve the parsed company id once so we can drive both the fetch and
   // the dummy media lookup off the same number.
@@ -409,6 +414,11 @@ export default function QueueDetailPage() {
       return;
     }
 
+    if (queueVerificationError) {
+      alert(queueVerificationError);
+      return;
+    }
+
     if (joinedQueueIds.has(queueId)) {
       return;
     }
@@ -523,7 +533,8 @@ export default function QueueDetailPage() {
                     authLoading ||
                     joinedQueuesLoading ||
                     joinedQueueIds.has(q.id) ||
-                    joiningQueueId !== null
+                    joiningQueueId !== null ||
+                    Boolean(queueVerificationError)
                   }
                   variant={joinedQueueIds.has(q.id) ? "secondary" : "default"}
                   size="sm"
@@ -542,6 +553,8 @@ export default function QueueDetailPage() {
                         ? "Kontrollerar..."
                         : joinedQueueIds.has(q.id)
                         ? "Du står redan i kön"
+                        : queueVerificationError
+                        ? "Verifiering krävs"
                         : user
                           ? "Ställ dig i kön"
                           : "Logga in"}
@@ -551,6 +564,12 @@ export default function QueueDetailPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {queueVerificationError && queues.length > 0 && (
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {queueVerificationError}
         </div>
       )}
 

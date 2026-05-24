@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { type CompanyId } from "@/types";
 
+import { getApplicationVerificationError } from "@/lib/application-eligibility";
 import { removeEmpty, toSearchString, uniqueOnly } from "@/lib/utils";
 
 type SearchValues = {
@@ -130,6 +131,10 @@ export default function Page() {
   const [joiningSelectedQueues, setJoiningSelectedQueues] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const queueVerificationError = useMemo(
+    () => getApplicationVerificationError(user, "queue"),
+    [user]
+  );
 
   useEffect(() => {
     let active = true;
@@ -269,6 +274,11 @@ export default function Page() {
   }, [unjoinedFilteredQueues, selectedQueues]);
 
   const toggleSelectAllInCity = () => {
+    if (queueVerificationError) {
+      setJoinError(queueVerificationError);
+      return;
+    }
+
     const next = new Set(selectedQueues);
     if (allFilteredSelected) {
       unjoinedFilteredQueues.forEach((q) => {
@@ -306,6 +316,11 @@ export default function Page() {
   const handleJoinSelectedQueues = async () => {
     if (!user) {
       router.push("/logga-in");
+      return;
+    }
+
+    if (queueVerificationError) {
+      setJoinError(queueVerificationError);
       return;
     }
 
@@ -393,9 +408,15 @@ export default function Page() {
           }
           isAlreadyJoined={isAlreadyJoined}
           isJoinStatusLoading={isJoinStatusLoading}
+          isJoinDisabled={Boolean(queueVerificationError)}
+          joinDisabledLabel="Verifiering krävs"
           onViewListings={() => openQueue(queue)}
           onToggleSelect={() => {
             if (isAlreadyJoined || isJoinStatusLoading) return;
+            if (queueVerificationError) {
+              setJoinError(queueVerificationError);
+              return;
+            }
             if (joinQueueId === null) {
               setJoinError("Företaget saknar en publicerad bostadskö.");
               return;
@@ -565,6 +586,12 @@ export default function Page() {
               </div>
             )}
 
+            {queueVerificationError && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900 sm:px-4 sm:text-sm">
+                {queueVerificationError}
+              </div>
+            )}
+
             {loading ? (
               <div className="py-12 text-center text-sm text-gray-500">
                 Laddar köer...
@@ -617,7 +644,11 @@ export default function Page() {
               size="sm"
               variant="default"
               isLoading={joiningSelectedQueues}
-              isDisabled={joiningSelectedQueues || selectedQueues.size === 0}
+              isDisabled={
+                joiningSelectedQueues ||
+                selectedQueues.size === 0 ||
+                Boolean(queueVerificationError)
+              }
               onClick={handleJoinSelectedQueues}
             >
               Ställ mig i kö

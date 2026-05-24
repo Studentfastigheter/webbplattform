@@ -45,6 +45,8 @@ export interface User {
   bannerUrl?: UrlString;
   description?: string;
   verified: boolean;
+  verifiedEmail?: boolean;
+  verifiedIdentity?: boolean;
   tags?: Tag[];
   linkedInUrl?: UrlString;
   instagramUrl?: UrlString;
