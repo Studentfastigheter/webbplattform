@@ -4,7 +4,7 @@ import AccountSettingsShell from "@/components/shadcn-studio/blocks/account-sett
 export default function Page() {
   return (
     <main className='py-8'>
-      <AccountSettingsShell />
+      <AccountSettingsShell showVerification />
     </main>
   )
 }

@@ -18,11 +18,6 @@ import UserGeneral, {
   type UserGeneralOptions,
 } from '@/components/shadcn-studio/blocks/account-settings-01/account-settings-01'
 
-const tabs = [
-  { name: 'Allmänt', value: 'general' },
-  { name: 'Inställningar', value: 'preferences' },
-]
-
 function PlaceholderPanel({
   title,
   description,
@@ -38,7 +33,7 @@ function PlaceholderPanel({
       </CardHeader>
       <CardContent>
         <p className='text-muted-foreground text-sm'>
-          This tab is ready for additional account settings content.
+          Den här fliken är redo för fler kontoinställningar.
         </p>
       </CardContent>
     </Card>
@@ -47,9 +42,16 @@ function PlaceholderPanel({
 
 const AccountSettingsShell = ({
   generalOptions,
+  showVerification = false,
 }: {
   generalOptions?: UserGeneralOptions
+  showVerification?: boolean
 }) => {
+  const tabs = [
+    { name: 'Allmänt', value: 'general' },
+    { name: 'Inställningar', value: 'preferences' },
+  ]
+
   return (
     <div className='w-full py-8'>
       <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
@@ -67,13 +69,18 @@ const AccountSettingsShell = ({
           </TabsList>
 
           <TabsContent value='general' className='mt-4'>
-            <UserGeneral options={generalOptions} />
+            <UserGeneral
+              options={{
+                ...generalOptions,
+                showVerification,
+              }}
+            />
           </TabsContent>
 
           <TabsContent value='preferences' className='mt-4'>
             <PlaceholderPanel
-              title='Preferences'
-              description='Manage language, notifications, and personal defaults.'
+              title='Inställningar'
+              description='Hantera språk, notiser och personliga standardval.'
             />
           </TabsContent>
         </Tabs>

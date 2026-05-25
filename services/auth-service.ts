@@ -624,17 +624,6 @@ export const authService = {
     });
   },
 
-  finalizeEmailVerification: async (verificationId: string): Promise<void> => {
-    const id = verificationId.trim();
-    if (!id) {
-      throw new Error("Verifierings-id saknas.");
-    }
-
-    await apiClient<void>(`/auth/verify-email/finalize/${pathSegment(id)}`, {
-      auth: false,
-    });
-  },
-
   updateProfile: async (data: UpdateUserRequest): Promise<User> => {
     const payload = compactObject<UpdateUserRequest>({
       firstName: data.firstName,

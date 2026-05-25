@@ -25,6 +25,9 @@ const requirements = [
   },
 ]
 
+const inputClassName =
+  'h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20'
+
 const EmailPass = forwardRef<PasswordSectionHandle>((_, ref) => {
   const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] =
     useState(false)
@@ -108,7 +111,7 @@ const EmailPass = forwardRef<PasswordSectionHandle>((_, ref) => {
                 placeholder='Nuvarande lösenord'
                 value={currentPassword}
                 onChange={event => setCurrentPassword(event.target.value)}
-                className='pr-10'
+                className={`${inputClassName} pr-12`}
                 autoComplete='current-password'
                 required
               />
@@ -119,7 +122,7 @@ const EmailPass = forwardRef<PasswordSectionHandle>((_, ref) => {
                 onClick={() =>
                   setIsCurrentPasswordVisible(currentValue => !currentValue)
                 }
-                className='text-muted-foreground absolute inset-y-0 right-0 min-w-0 rounded-l-none rounded-r-md px-0 hover:bg-transparent'
+                className='text-muted-foreground absolute inset-y-0 right-0 h-14 min-w-0 rounded-l-none rounded-r-[8px] px-0 hover:bg-transparent'
               >
                 {isCurrentPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
                 <span className='sr-only'>
@@ -140,7 +143,7 @@ const EmailPass = forwardRef<PasswordSectionHandle>((_, ref) => {
                 placeholder='Nytt lösenord'
                 value={password}
                 onChange={event => setPassword(event.target.value)}
-                className='pr-10'
+                className={`${inputClassName} pr-12`}
                 autoComplete='new-password'
                 required
               />
@@ -151,7 +154,7 @@ const EmailPass = forwardRef<PasswordSectionHandle>((_, ref) => {
                 onClick={() =>
                   setIsNewPasswordVisible(currentValue => !currentValue)
                 }
-                className='text-muted-foreground absolute inset-y-0 right-0 min-w-0 rounded-l-none rounded-r-md px-0 hover:bg-transparent'
+                className='text-muted-foreground absolute inset-y-0 right-0 h-14 min-w-0 rounded-l-none rounded-r-[8px] px-0 hover:bg-transparent'
               >
                 {isNewPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
                 <span className='sr-only'>

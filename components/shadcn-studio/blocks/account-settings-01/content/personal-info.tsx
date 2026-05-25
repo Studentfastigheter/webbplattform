@@ -10,6 +10,7 @@ import {
 } from 'react'
 
 import {
+  CheckCircle2Icon,
   ImageIcon,
   Loader2Icon,
   MailIcon,
@@ -22,12 +23,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/context/AuthContext'
+import { authService } from '@/services/auth-service'
 import type { UpdateUserRequest } from '@/types'
 
 export type PersonalInfoOptions = {
   showAvatar?: boolean
   showCity?: boolean
   showAbout?: boolean
+  showEmailVerification?: boolean
 }
 
 export type PersonalInfoHandle = {
@@ -65,6 +68,10 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
+function isVerified(value: unknown) {
+  return value === true || value === 'true'
+}
+
 const PersonalInfo = forwardRef<
   PersonalInfoHandle,
   { options?: PersonalInfoOptions }
@@ -73,6 +80,7 @@ const PersonalInfo = forwardRef<
   const showAvatar = options.showAvatar ?? true
   const showCity = options.showCity ?? true
   const showAbout = options.showAbout ?? true
+  const showEmailVerification = options.showEmailVerification ?? false
 
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -86,6 +94,8 @@ const PersonalInfo = forwardRef<
   const [aboutText, setAboutText] = useState('')
 
   const [error, setError] = useState<string | null>(null)
+  const [emailVerificationLoading, setEmailVerificationLoading] = useState(false)
+  const [emailVerificationMessage, setEmailVerificationMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -171,6 +181,36 @@ const PersonalInfo = forwardRef<
     }
   }
 
+  const startEmailVerification = async () => {
+    if (emailVerificationLoading) return
+
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) {
+      setError('Ange en e-postadress först.')
+      return
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      setError('Ange en giltig e-postadress.')
+      return
+    }
+
+    setEmailVerificationLoading(true)
+    setEmailVerificationMessage(null)
+    setError(null)
+
+    try {
+      await authService.verifyEmail({ email: trimmedEmail })
+      setEmailVerificationMessage('Verifieringsmail är skickat.')
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Kunde inte skicka verifieringsmail.'
+      )
+    } finally {
+      setEmailVerificationLoading(false)
+    }
+  }
+
   useImperativeHandle(ref, () => ({ save }), [
     firstName,
     surname,
@@ -183,6 +223,10 @@ const PersonalInfo = forwardRef<
   ])
 
   const avatarSrc = preview ?? user?.logoUrl ?? null
+  const emailVerified = isVerified(user?.verifiedEmail)
+  const inputClassName =
+    'h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20'
+  const fieldClassName = 'flex flex-col items-start gap-2'
 
   if (authLoading) {
     return (
@@ -202,14 +246,17 @@ const PersonalInfo = forwardRef<
     <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
         <h3 className='font-semibold'>Personlig information</h3>
+        <p className='text-sm text-muted-foreground'>
+          Namn, kontaktuppgifter och profiltext.
+        </p>
       </div>
 
-      <div className='space-y-6 lg:col-span-2'>
-        <div className='mx-auto space-y-6'>
+      <div className='lg:col-span-2'>
+        <div className='space-y-7'>
           {showAvatar ? (
-            <div className='w-full space-y-2'>
+            <div className='w-full space-y-3'>
               <Label>Profilbild</Label>
-              <div className='flex flex-wrap items-center gap-4'>
+              <div className='flex flex-wrap items-center gap-5 rounded-[8px] border border-gray-200 bg-white p-4'>
                 <div
                   role='button'
                   tabIndex={0}
@@ -266,77 +313,110 @@ const PersonalInfo = forwardRef<
             </div>
           ) : null}
 
-          <div className='grid grid-cols-1 gap-6 sm:grid-cols-2'>
-            <div className='flex flex-col items-start gap-2'>
+          <div className='space-y-5'>
+            <div className='grid grid-cols-1 gap-5 sm:grid-cols-2'>
+              <div className={fieldClassName}>
               <Label htmlFor='personal-info-first-name'>Förnamn</Label>
               <Input
                 id='personal-info-first-name'
                 placeholder='Förnamn'
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
+                className={inputClassName}
               />
-            </div>
+              </div>
 
-            <div className='flex flex-col items-start gap-2'>
+              <div className={fieldClassName}>
               <Label htmlFor='personal-info-last-name'>Efternamn</Label>
               <Input
                 id='personal-info-last-name'
                 placeholder='Efternamn'
                 value={surname}
                 onChange={e => setSurname(e.target.value)}
+                className={inputClassName}
               />
+              </div>
             </div>
 
-            <div className='flex flex-col items-start gap-2'>
-              <Label htmlFor='personal-info-mobile'>Telefon</Label>
-              <Input
-                id='personal-info-mobile'
-                name='phone'
-                type='tel'
-                placeholder='070-123 45 67'
-                autoComplete='tel'
-                inputMode='tel'
-                value={phone}
-                onChange={e => setPhone(sanitizePhoneInput(e.target.value))}
-              />
-            </div>
-
-            <div className='flex flex-col items-start gap-2'>
-              <Label htmlFor='personal-info-email'>E-post</Label>
-              <div className='relative w-full'>
+            <div className='grid grid-cols-1 gap-5 sm:grid-cols-2'>
+              <div className={fieldClassName}>
+                <Label htmlFor='personal-info-mobile'>Telefon</Label>
                 <Input
-                  id='personal-info-email'
-                  name='email'
-                  type='email'
-                  placeholder='namn@exempel.se'
-                  autoComplete='email'
-                  inputMode='email'
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className='pr-9'
+                  id='personal-info-mobile'
+                  name='phone'
+                  type='tel'
+                  placeholder='070-123 45 67'
+                  autoComplete='tel'
+                  inputMode='tel'
+                  value={phone}
+                  onChange={e => setPhone(sanitizePhoneInput(e.target.value))}
+                  className={inputClassName}
                 />
-                <div className='text-muted-foreground pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-3'>
-                  <MailIcon className='size-4' />
-                  <span className='sr-only'>E-post</span>
+              </div>
+
+              {showCity ? (
+                <div className={fieldClassName}>
+                  <Label htmlFor='personal-info-city'>Stad</Label>
+                  <Input
+                    id='personal-info-city'
+                    placeholder='Stockholm'
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    className={inputClassName}
+                  />
                 </div>
-              </div>
+              ) : null}
             </div>
 
-            {showCity ? (
-              <div className='flex flex-col items-start gap-2'>
-                <Label htmlFor='personal-info-city'>Stad</Label>
-                <Input
-                  id='personal-info-city'
-                  placeholder='Stockholm'
-                  value={city}
-                  onChange={e => setCity(e.target.value)}
-                />
+            <div className={fieldClassName}>
+              <Label htmlFor='personal-info-email'>E-post</Label>
+              <div className='flex w-full flex-col gap-3 lg:flex-row'>
+                <div className='relative min-w-0 flex-1'>
+                  <Input
+                    id='personal-info-email'
+                    name='email'
+                    type='email'
+                    placeholder='namn@exempel.se'
+                    autoComplete='email'
+                    inputMode='email'
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className={`${inputClassName} pr-10`}
+                  />
+                  <div className='text-muted-foreground pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-3'>
+                    <MailIcon className='size-4' />
+                    <span className='sr-only'>E-post</span>
+                  </div>
+                </div>
+
+                {showEmailVerification ? (
+                  emailVerified ? (
+                    <div className='flex h-14 shrink-0 items-center justify-center gap-2 rounded-[8px] border border-green-200 bg-green-50 px-4 text-sm font-medium text-green-800 lg:min-w-[142px]'>
+                      <CheckCircle2Icon className='size-4' />
+                      Verifierad
+                    </div>
+                  ) : (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      className='h-14 shrink-0 rounded-[8px] px-4 lg:min-w-[142px]'
+                      isLoading={emailVerificationLoading}
+                      isDisabled={emailVerificationLoading}
+                      onClick={startEmailVerification}
+                    >
+                      Verifiera
+                    </Button>
+                  )
+                ) : null}
               </div>
-            ) : null}
+              {showEmailVerification && emailVerificationMessage ? (
+                <p className='text-sm text-green-700'>{emailVerificationMessage}</p>
+              ) : null}
+            </div>
           </div>
 
           {showAbout ? (
-            <div className='flex flex-col items-start gap-2'>
+            <div className={fieldClassName}>
               <Label htmlFor='personal-info-about'>Om mig</Label>
               <Textarea
                 id='personal-info-about'
@@ -344,6 +424,7 @@ const PersonalInfo = forwardRef<
                 rows={4}
                 value={aboutText}
                 onChange={e => setAboutText(e.target.value)}
+                className='rounded-[8px] border-transparent bg-[#f2f2f2] px-4 py-3 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20'
               />
             </div>
           ) : null}
