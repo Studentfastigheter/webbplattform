@@ -17,6 +17,27 @@ import {
   UpdateUserRequest,
 } from "@/types";
 
+function getJwtSubject(token: string | null): string {
+  if (!token || typeof window === "undefined") return "";
+
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return "";
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(window.atob(normalized));
+    return typeof decoded.sub === "string" ? decoded.sub : "";
+  } catch {
+    return "";
+  }
+}
+
+function withSessionEmail(user: User, token: string | null): User {
+  if (user.email) return user;
+  const email = getJwtSubject(token);
+  return email ? { ...user, email } : user;
+}
+
 type AuthCtx = {
   user: User | null;
   token: string | null; // NYTT: Exponera token för att fixa TypeScript-fel
@@ -58,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(storedToken); // Synka state med localStorage
         const session = await authService.session(storedToken);
         const accessToken = getOptionalAuthResponseToken(session) ?? storedToken;
-        const userData = getAuthResponseUser(session);
+        const userData = withSessionEmail(getAuthResponseUser(session), accessToken);
         localStorage.setItem("token", accessToken);
         setToken(accessToken);
         setUser(userData);
@@ -77,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const applyAuthResponse = useCallback((res: AuthResponse) => {
     const accessToken = getAuthResponseToken(res);
-    const userData = getAuthResponseUser(res);
+    const userData = withSessionEmail(getAuthResponseUser(res), accessToken);
     localStorage.setItem("token", accessToken);
     setToken(accessToken);
     setUser(userData);
@@ -107,6 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if ("authRef" in res) {
       throw new Error("Studentregistrering behöver verifieras med Freja först.");
     }
+    if (!("user" in res)) {
+      throw new Error("Studentregistreringen behöver kompletteras med personuppgifter.");
+    }
 
     return applyAuthResponse(res);
   };
@@ -125,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const accessToken =
         getOptionalAuthResponseToken(session) ??
         normalizeAuthToken(localStorage.getItem("token"));
-      const updatedUser = getAuthResponseUser(session);
+      const updatedUser = withSessionEmail(getAuthResponseUser(session), accessToken);
       if (accessToken) {
         localStorage.setItem("token", accessToken);
         setToken(accessToken);
@@ -139,8 +163,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 6. Update (Skicka ny data till servern)
   const updateUser = async (data: UpdateUserRequest) => {
     const updatedUser = await authService.updateProfile(data);
-    setUser(updatedUser);
-    return updatedUser;
+    const normalizedUser = withSessionEmail(updatedUser, token);
+    setUser(normalizedUser);
+    return normalizedUser;
   };
 
   return (
@@ -168,4 +193,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
-

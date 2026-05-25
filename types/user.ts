@@ -11,7 +11,7 @@ export type LandlordId = number;
 export type AccountId = StudentId | CompanyId | LandlordId;
 export type UserId = number; // Gemensamt ID från UserResponse
 
-export type AccountType = "student" | "company" | "private_landlord";
+export type AccountType = "student" | "company" | "private_landlord" | "landlord";
 export type PasswordResetAccountType = "student" | "landlord" | "company" | "admin";
 
 export type UserCompanyLink = {
@@ -60,6 +60,7 @@ export interface User {
   surname?: string;
   ssn?: string; // Personnummer
   schoolId?: number;
+  school_id?: number;
   schoolName?: string;
   verifiedStudent?: boolean;
   
@@ -98,7 +99,20 @@ export interface StudentRegistrationResponse {
   authRef: string;
 }
 
-export type RegisterResponse = AuthResponse | StudentRegistrationResponse;
+export interface QuickRegisterResponse {
+  email: string;
+}
+
+export interface GoogleRegisterResponse {
+  firstName?: string;
+  surname?: string;
+  email: string;
+}
+
+export type RegisterResponse =
+  | AuthResponse
+  | StudentRegistrationResponse
+  | QuickRegisterResponse;
 
 export interface GoogleAuthRequest {
   googleIdToken: string;
@@ -134,6 +148,21 @@ export interface RegisterRequest {
   phone?: string;
   city?: string;
   ssn?: string; // Personnummer eller Organisationsnummer
+  schoolId?: number;
+}
+
+export interface QuickRegisterRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterStudentRequest {
+  firstName: string;
+  surname: string;
+  email: string;
+  schoolId: number;
+  city: string;
+  ssn: string;
 }
 
 export interface UpdateUserRequest {

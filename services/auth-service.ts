@@ -14,6 +14,9 @@ import {
   PasswordResetAccountType,
   PasswordResetFinalRequest,
   VerifyEmailRequest,
+  GoogleRegisterResponse,
+  QuickRegisterRequest,
+  RegisterStudentRequest,
 } from "@/types";
 
 type AuthResponseLike = AuthResponse & Record<string, unknown>;
@@ -34,10 +37,86 @@ const PASSWORD_RESET_ACCOUNT_TYPE_MAP: Record<string, PasswordResetAccountType> 
   admin: "admin",
 };
 
+const SWEDISH_CITY_ENUMS: Record<string, string> = {
+  GÖTEBORG: "GÖTEBORG",
+  GOTEBORG: "GÖTEBORG",
+  STOCKHOLM: "STOCKHOLM",
+  LUND: "LUND",
+  UPPSALA: "UPPSALA",
+  MALMÖ: "MALMÖ",
+  MALMO: "MALMÖ",
+  LINKÖPING: "LINKÖPING",
+  LINKOPING: "LINKÖPING",
+  ÖREBRO: "ÖREBRO",
+  OREBRO: "ÖREBRO",
+  VÄSTERÅS: "VÄSTERÅS",
+  VASTERAS: "VÄSTERÅS",
+  HELSINGBORG: "HELSINGBORG",
+  JÖNKÖPING: "JÖNKÖPING",
+  JONKOPING: "JÖNKÖPING",
+  NORRKÖPING: "NORRKÖPING",
+  NORRKOPING: "NORRKÖPING",
+  HALMSTAD: "HALMSTAD",
+  LULEÅ: "LULEÅ",
+  LULEA: "LULEÅ",
+  SUNDSVALL: "SUNDSVALL",
+  VÄXJÖ: "VÄXJÖ",
+  VAXJO: "VÄXJÖ",
+  BORÅS: "BORÅS",
+  BORAS: "BORÅS",
+  ESKILSTUNA: "ESKILSTUNA",
+  GÄVLE: "GÄVLE",
+  GAVLE: "GÄVLE",
+  TROLLHÄTTAN: "TROLLHÄTTAN",
+  TROLLHATTAN: "TROLLHÄTTAN",
+  SKÖVDE: "SKÖVDE",
+  SKOVDE: "SKÖVDE",
+  KARLSTAD: "KARLSTAD",
+  SKELLEFTEÅ: "SKELLEFTEÅ",
+  SKELLEFTEA: "SKELLEFTEÅ",
+  KALMAR: "KALMAR",
+  KATRINEHOLM: "KATRINEHOLM",
+  FALUN: "FALUN",
+  KUNGSBACKA: "KUNGSBACKA",
+  VARBERG: "VARBERG",
+  LIDKÖPING: "LIDKÖPING",
+  LIDKOPING: "LIDKÖPING",
+  MOTALA: "MOTALA",
+  UDDEVALLA: "UDDEVALLA",
+  STRÖMSTAD: "STRÖMSTAD",
+  STROMSTAD: "STRÖMSTAD",
+  ESLÖV: "ESLÖV",
+  ESLOV: "ESLÖV",
+};
+
 const compactObject = <T extends object>(value: T) =>
   Object.fromEntries(
     Object.entries(value).filter(([, entryValue]) => entryValue !== undefined)
   ) as Partial<T>;
+
+function normalizeCityEnum(value: string | undefined | null): string | undefined {
+  const trimmed = value?.normalize("NFC").trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const key = trimmed
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  return SWEDISH_CITY_ENUMS[key] ?? SWEDISH_CITY_ENUMS[trimmed.toUpperCase()] ?? trimmed.toUpperCase();
+}
+
+function requireCityEnum(value: string | undefined | null): string {
+  const city = normalizeCityEnum(value);
+  if (!city) {
+    throw new Error("Välj stad.");
+  }
+
+  return city;
+}
 
 export function getAuthResponseToken(response: AuthResponse): string {
   const responseLike = response as AuthResponseLike;
@@ -66,7 +145,42 @@ export function getOptionalAuthResponseToken(
 
 export function getAuthResponseUser(response: AuthResponse): User {
   if (response.user && typeof response.user === "object") {
-    return response.user;
+    const profile = response.user as User & Record<string, unknown>;
+    const firstName =
+      typeof profile.firstName === "string" ? profile.firstName.trim() : "";
+    const surname =
+      typeof profile.surname === "string" ? profile.surname.trim() : "";
+    const displayName =
+      typeof profile.displayName === "string" && profile.displayName.trim()
+        ? profile.displayName.trim()
+        : [firstName, surname].filter(Boolean).join(" ") ||
+          (typeof profile.companyName === "string" ? profile.companyName : "") ||
+          (typeof profile.fullName === "string" ? profile.fullName : "") ||
+          (typeof profile.email === "string" ? profile.email : "") ||
+          "Användare";
+
+    return {
+      ...profile,
+      accountType:
+        typeof profile.accountType === "string"
+          ? (profile.accountType.toLowerCase() as User["accountType"])
+          : profile.accountType,
+      displayName,
+      createdAt:
+        typeof profile.createdAt === "string"
+          ? profile.createdAt
+          : new Date(0).toISOString(),
+      verified:
+        typeof profile.verified === "boolean"
+          ? profile.verified
+          : Boolean(profile.verifiedStudent ?? profile.verifiedIdentity),
+      schoolId:
+        typeof profile.schoolId === "number"
+          ? profile.schoolId
+          : typeof profile.school_id === "number"
+            ? profile.school_id
+            : undefined,
+    };
   }
 
   const responseLike = response as unknown as Record<string, unknown>;
@@ -181,36 +295,110 @@ export const authService = {
     });
   },
 
-  register: async (payload: RegisterRequest): Promise<RegisterResponse> => {
+  quickRegister: async (payload: QuickRegisterRequest): Promise<void> => {
+    const email = payload.email.trim();
+    const password = payload.password.trim();
+    if (!email || !password) {
+      throw new Error("E-postadress och lösenord krävs.");
+    }
+
+    await apiClient<void>("/auth/quick-register", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+      auth: false,
+    });
+  },
+
+  registerStudent: async (
+    payload: RegisterStudentRequest
+  ): Promise<AuthResponse> => {
+    const email = payload.email.trim();
+    const firstName = payload.firstName.trim();
+    const surname = payload.surname.trim();
+    const ssn = payload.ssn.trim();
+    const city = requireCityEnum(payload.city);
+
+    if (!email || !firstName || !surname || !ssn || !payload.schoolId) {
+      throw new Error("Fyll i namn, e-post, skola, stad och personnummer.");
+    }
+
+    return apiClient<AuthResponse>("/auth/register-student", {
+      method: "POST",
+      body: JSON.stringify({
+        firstName,
+        surname,
+        email,
+        schoolId: payload.schoolId,
+        city,
+        ssn,
+      }),
+      auth: false,
+    });
+  },
+
+  registerWorker: async (payload: RegisterRequest): Promise<AuthResponse> => {
+    if (payload.accountType !== "company") {
+      throw new Error("Aktuell backend stöder bara företagsregistrering via register-worker.");
+    }
+
     const requestPayload = compactObject({
-      ...payload,
+      accountType: payload.accountType,
       email: payload.email.trim(),
+      password: payload.password,
       phone: payload.phone?.trim(),
-      city: payload.city?.trim(),
-      ssn: payload.ssn?.trim(),
-      firstName: payload.firstName?.trim(),
-      surname: payload.surname?.trim(),
+      city: normalizeCityEnum(payload.city),
       companyName: payload.companyName?.trim(),
       fullName: payload.fullName?.trim(),
     });
 
-    return apiClient<RegisterResponse>("/auth/register", {
+    return apiClient<AuthResponse>("/auth/register-worker", {
       method: "POST",
       body: JSON.stringify(requestPayload),
       auth: false,
     });
   },
 
+  register: async (payload: RegisterRequest): Promise<RegisterResponse> => {
+    if (payload.accountType !== "student") {
+      return authService.registerWorker(payload);
+    }
+
+    await authService.quickRegister({
+      email: payload.email,
+      password: payload.password,
+    });
+
+    const hasStudentDetails =
+      Boolean(payload.firstName?.trim()) &&
+      Boolean(payload.surname?.trim()) &&
+      Boolean(payload.ssn?.trim()) &&
+      Boolean(payload.schoolId) &&
+      Boolean(payload.city?.trim());
+
+    if (!hasStudentDetails) {
+      return { email: payload.email.trim() };
+    }
+
+    return authService.registerStudent({
+      firstName: payload.firstName!,
+      surname: payload.surname!,
+      email: payload.email,
+      schoolId: payload.schoolId!,
+      city: payload.city!,
+      ssn: payload.ssn!,
+    });
+  },
+
   googleRegister: async (
     payload: GoogleAuthRequest
-  ): Promise<void> => {
+  ): Promise<GoogleRegisterResponse> => {
     const googleIdToken = payload.googleIdToken.trim();
 
     if (!googleIdToken) {
       throw new Error("Google-token krävs.");
     }
 
-    await apiClient<void>("/auth/google/register", {
+    return apiClient<GoogleRegisterResponse>("/auth/google/register", {
       method: "POST",
       body: JSON.stringify({ googleIdToken }),
       auth: false,

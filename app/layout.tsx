@@ -8,6 +8,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Theme } from "@radix-ui/themes";
 import { Toaster } from "@/components/ui/sonner";
 import ScrollToTop from "@/components/layout/ScrollToTop";
+import OnboardingModal from "@/components/user-onbording/OnboardingModal";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -97,6 +98,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Theme>
               <ScrollToTop />
               {children}
+              <OnboardingModal />
               <Toaster
                 position="bottom-right"
                 richColors

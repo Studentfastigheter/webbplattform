@@ -18,13 +18,8 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import {
-  authService,
-  isAuthResponse,
-  isStudentRegistrationResponse,
-} from "@/services/auth-service";
+import { authService } from "@/services/auth-service";
 
 type RegisterForm = {
   email: string;
@@ -70,10 +65,10 @@ function getPasswordStrengthText(score: number) {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { googleRegister, completeAuth } = useAuth();
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
@@ -92,7 +87,7 @@ export default function RegisterPage() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  function validateEmailPasswordFields() {
+  function validateForm() {
     const email = form.email.trim();
     const password = form.password.trim();
     const confirmPassword = form.confirmPassword.trim();
@@ -117,8 +112,9 @@ export default function RegisterPage() {
     if (loading) return;
 
     setError(null);
+    setSuccess(null);
 
-    const validationError = validateEmailPasswordFields();
+    const validationError = validateForm();
     if (validationError) {
       setError(validationError);
       return;
@@ -126,26 +122,12 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const response = await authService.register({
-        accountType: "student",
+      await authService.quickRegister({
         email: form.email.trim(),
         password: form.password.trim(),
       });
-
-      if (isAuthResponse(response)) {
-        completeAuth(response);
-        router.push("/");
-        return;
-      }
-
-      if (!isStudentRegistrationResponse(response)) {
-        setError("Backend skickade ett oväntat svar vid registrering.");
-        return;
-      }
-
-      router.push(
-        `/registrera/freja-id?authRef=${encodeURIComponent(response.authRef)}`
-      );
+      setSuccess("Quick-kontot är skapat. Logga in och komplettera studentprofilen i popupen.");
+      setForm(initialForm);
     } catch (err: any) {
       setError(err?.message ?? "Kunde inte skapa konto. Kontrollera uppgifterna.");
     } finally {
@@ -157,11 +139,14 @@ export default function RegisterPage() {
     if (loading) return;
 
     setError(null);
+    setSuccess(null);
 
     setLoading(true);
     try {
-      await googleRegister({ googleIdToken });
-      router.push("/");
+      await authService.googleRegister({
+        googleIdToken,
+      });
+      setSuccess("Google-kontot är skapat. Logga in med Google och komplettera studentprofilen i popupen.");
     } catch (err: any) {
       setError(err?.message ?? "Kunde inte registrera med Google.");
     } finally {
@@ -351,6 +336,18 @@ export default function RegisterPage() {
               </Field>
 
               {error && <FieldError>{error}</FieldError>}
+              {success && (
+                <FieldDescription className="text-center text-green-700">
+                  {success}{" "}
+                  <button
+                    type="button"
+                    onClick={() => router.push("/logga-in")}
+                    className="font-semibold underline underline-offset-4"
+                  >
+                    Gå till inloggning
+                  </button>
+                </FieldDescription>
+              )}
 
             </FieldGroup>
           </form>
