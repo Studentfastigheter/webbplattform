@@ -18,6 +18,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth-service";
 
@@ -65,6 +66,7 @@ function getPasswordStrengthText(score: number) {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { completeAuth, googleRegister } = useAuth();
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,11 +124,12 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await authService.quickRegister({
+      const response = await authService.quickRegister({
         email: form.email.trim(),
         password: form.password.trim(),
       });
-      setSuccess("Quick-kontot är skapat. Logga in och komplettera studentprofilen i popupen.");
+      completeAuth(response);
+      setSuccess("Kontot är skapat. Komplettera studentprofilen i popupen.");
       setForm(initialForm);
     } catch (err: any) {
       setError(err?.message ?? "Kunde inte skapa konto. Kontrollera uppgifterna.");
@@ -143,10 +146,10 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await authService.googleRegister({
+      await googleRegister({
         googleIdToken,
       });
-      setSuccess("Google-kontot är skapat. Logga in med Google och komplettera studentprofilen i popupen.");
+      setSuccess("Google-kontot är skapat. Komplettera studentprofilen i popupen.");
     } catch (err: any) {
       setError(err?.message ?? "Kunde inte registrera med Google.");
     } finally {

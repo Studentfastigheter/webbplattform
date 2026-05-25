@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/field";
 import { authService } from "@/services/auth-service";
 import { schoolService } from "@/services/school-service";
-import { UpdateUserRequest } from "@/types";
+import type { User } from "@/types/user";
 import type { School } from "@/types/school";
+
+type AuthMeUser = User & Record<string, unknown>;
 
 function getJwtSubject(token: string | null): string {
   if (!token || typeof window === "undefined") return "";
@@ -31,8 +33,35 @@ function getJwtSubject(token: string | null): string {
   }
 }
 
+function stringFromAuthMe(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+
+  return "";
+}
+
+function getCityFromAuthMe(user: AuthMeUser) {
+  if (typeof user.city === "string") {
+    return user.city.trim();
+  }
+
+  if (user.city && typeof user.city === "object") {
+    const city = user.city as Record<string, unknown>;
+    return stringFromAuthMe(city.name, city.city, city.value);
+  }
+
+  return "";
+}
+
 export default function OnboardingModal() {
-  const { user, token, isLoading, updateUser, completeAuth } = useAuth();
+  const { user, token, isLoading, completeAuth } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [schools, setSchools] = useState<School[]>([]);
@@ -41,11 +70,14 @@ export default function OnboardingModal() {
   const [formData, setFormData] = useState({
     firstName: "",
     surname: "",
-    phone: "",
     city: "",
     schoolId: "",
     ssn: "",
   });
+
+  const updateFormData = (patch: Partial<typeof formData>) => {
+    setFormData((current) => ({ ...current, ...patch }));
+  };
 
   useEffect(() => {
     let active = true;
@@ -65,25 +97,28 @@ export default function OnboardingModal() {
   }, []);
 
   useEffect(() => {
-    // Vänta tills användaren är laddad
-    if (isLoading || !user) return;
+    if (isLoading) return;
+    if (!user) {
+      setIsOpen(false);
+      return;
+    }
 
-    const isStudent = String(user.accountType).toLowerCase() === "student";
-    
-    // Vad saknas?
-    // Notera: Vi kollar om fälten är tomma strängar eller null/undefined
-    const missingStudentRegistration = isStudent && !user.schoolId;
+    const accountType = String(user.accountType).toLowerCase();
+    const isQuickRegister = accountType === "quick_register";
 
-    // Visa register-student-modalen först när en inloggad student saknar studentregistrering.
-    if (missingStudentRegistration) {
+    if (isQuickRegister) {
+      const authMeUser = user as AuthMeUser;
+
       setFormData({
-        firstName: isStudent ? (user.firstName || "") : "",
-        surname: isStudent ? (user.surname || "") : "",
-        phone: user.phone || "",
-        // Hantera fall där city kan vara ett objekt {name: "Gbg"} eller sträng
-        city: typeof user.city === 'string' ? user.city : (user.city as any)?.name || "",
-        schoolId: user.schoolId ? String(user.schoolId) : "",
-        ssn: user.ssn || "",
+        firstName: stringFromAuthMe(authMeUser.firstName),
+        surname: stringFromAuthMe(authMeUser.surname),
+        city: getCityFromAuthMe(authMeUser),
+        schoolId: stringFromAuthMe(
+          authMeUser.schoolId,
+          authMeUser.school_id,
+          (authMeUser.school as Record<string, unknown> | undefined)?.id
+        ),
+        ssn: stringFromAuthMe(authMeUser.ssn),
       });
       setIsOpen(true);
     } else {
@@ -97,47 +132,35 @@ export default function OnboardingModal() {
     setError(null);
 
     try {
-      const isStudent = String(user?.accountType).toLowerCase() === "student";
-      const needsStudentRegistration = isStudent && !user?.schoolId;
       const email = user?.email || getJwtSubject(token);
 
-      if (needsStudentRegistration) {
-        if (!email) {
-          throw new Error("Kunde inte läsa e-postadress från sessionen.");
-        }
-
-        if (!formData.schoolId || !formData.ssn.trim() || !formData.city.trim()) {
-          throw new Error("Fyll i stad, skola och personnummer.");
-        }
-
-        const response = await authService.registerStudent({
-          firstName: formData.firstName.trim(),
-          surname: formData.surname.trim(),
-          email,
-          schoolId: Number(formData.schoolId),
-          city: formData.city.trim(),
-          ssn: formData.ssn.trim(),
-        });
-
-        completeAuth(response);
-        setIsOpen(false);
-        return;
+      if (!email) {
+        throw new Error("Kunde inte läsa e-postadress från sessionen.");
       }
 
-      const payload: UpdateUserRequest = {
-        phone: formData.phone,
-        city: formData.city,
+      if (
+        !formData.firstName.trim() ||
+        !formData.surname.trim() ||
+        !formData.schoolId ||
+        !formData.ssn.trim() ||
+        !formData.city.trim()
+      ) {
+        throw new Error("Fyll i namn, stad, skola och personnummer.");
+      }
+
+      const payload = {
+        firstName: formData.firstName.trim(),
+        surname: formData.surname.trim(),
+        email,
+        schoolId: Number(formData.schoolId),
+        city: formData.city.trim(),
+        ssn: formData.ssn.trim(),
       };
 
-      if (isStudent) {
-        payload.firstName = formData.firstName;
-        payload.surname = formData.surname;
-      }
+      const response = await authService.registerStudent(payload);
 
-      await updateUser(payload);
-      
-      // Modalen stängs automatiskt när user uppdateras i context -> useEffect körs -> ser att inget saknas -> stänger
-      
+      completeAuth(response);
+      setIsOpen(false);
     } catch (error) {
       console.error("Kunde inte spara profil", error);
       setError(error instanceof Error ? error.message : "Något gick fel. Försök igen.");
@@ -148,100 +171,86 @@ export default function OnboardingModal() {
 
   if (!isOpen) return null;
 
-  const isStudent = String(user?.accountType).toLowerCase() === "student";
-  const needsStudentRegistration = isStudent && !user?.schoolId;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
       <div className="w-full max-w-lg rounded-[8px] bg-white p-6 shadow-2xl md:p-10 animate-in zoom-in-95 duration-300">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-semibold text-gray-900">
-            {needsStudentRegistration ? "Slutför studentkonto" : "Komplettera profil"}
+            Slutför studentkonto
           </h2>
           <p className="mt-2 text-gray-600">
-            {needsStudentRegistration
-              ? "Fyll i studentuppgifterna för att aktivera kontot."
-              : "För att du ska få ut det mesta av plattformen behöver vi lite mer information om dig."}
+            Fyll i de studentuppgifter som saknas för att aktivera kontot.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <FieldGroup>
-            {isStudent && (
-              <div className="grid grid-cols-2 gap-4">
-                <Field>
-                  <FieldLabel>Förnamn</FieldLabel>
-                  <Input 
-                    required
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                    placeholder="Förnamn"
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>Efternamn</FieldLabel>
-                  <Input 
-                    required
-                    value={formData.surname}
-                    onChange={(e) => setFormData({...formData, surname: e.target.value})}
-                    placeholder="Efternamn"
-                  />
-                </Field>
-              </div>
-            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="onboarding-first-name">Förnamn</FieldLabel>
+                <Input
+                  id="onboarding-first-name"
+                  required
+                  value={formData.firstName}
+                  onChange={(e) => updateFormData({ firstName: e.target.value })}
+                  placeholder="Förnamn"
+                  autoComplete="given-name"
+                />
+              </Field>
 
-            {needsStudentRegistration && (
-              <>
-                <Field>
-                  <FieldLabel>Skola</FieldLabel>
-                  <select
-                    required
-                    value={formData.schoolId}
-                    onChange={(e) => setFormData({ ...formData, schoolId: e.target.value })}
-                    className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="">Välj skola</option>
-                    {schools.map((school) => (
-                      <option key={school.id} value={school.id}>
-                        {[school.name, school.city].filter(Boolean).join(", ")}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-
-                <Field>
-                  <FieldLabel>Personnummer</FieldLabel>
-                  <Input
-                    required
-                    value={formData.ssn}
-                    onChange={(e) => setFormData({ ...formData, ssn: e.target.value })}
-                    placeholder="ÅÅÅÅMMDD-XXXX"
-                    autoComplete="off"
-                  />
-                  <FieldDescription>
-                    Uppgiften skickas till register-student för att slutföra studentkontot.
-                  </FieldDescription>
-                </Field>
-              </>
-            )}
+              <Field>
+                <FieldLabel htmlFor="onboarding-surname">Efternamn</FieldLabel>
+                <Input
+                  id="onboarding-surname"
+                  required
+                  value={formData.surname}
+                  onChange={(e) => updateFormData({ surname: e.target.value })}
+                  placeholder="Efternamn"
+                  autoComplete="family-name"
+                />
+              </Field>
+            </div>
 
             <Field>
-              <FieldLabel>Telefonnummer</FieldLabel>
-              <Input 
-                required={!needsStudentRegistration}
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                placeholder="070-123 45 67"
-              />
+              <FieldLabel htmlFor="onboarding-school">Skola</FieldLabel>
+              <select
+                id="onboarding-school"
+                required
+                value={formData.schoolId}
+                onChange={(e) => updateFormData({ schoolId: e.target.value })}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">Välj skola</option>
+                {schools.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {[school.name, school.city].filter(Boolean).join(", ")}
+                  </option>
+                ))}
+              </select>
             </Field>
 
             <Field>
-              <FieldLabel>Stad</FieldLabel>
+              <FieldLabel htmlFor="onboarding-ssn">Personnummer</FieldLabel>
+              <Input
+                id="onboarding-ssn"
+                required
+                value={formData.ssn}
+                onChange={(e) => updateFormData({ ssn: e.target.value })}
+                placeholder="ÅÅÅÅMMDD-XXXX"
+                autoComplete="off"
+              />
+              <FieldDescription>
+                Uppgiften skickas till register-student för att slutföra studentkontot.
+              </FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="onboarding-city">Stad</FieldLabel>
               <Input 
+                id="onboarding-city"
                 required
                 value={formData.city}
-                onChange={(e) => setFormData({...formData, city: e.target.value})}
+                onChange={(e) => updateFormData({ city: e.target.value })}
                 placeholder="T.ex. Stockholm"
               />
             </Field>
@@ -249,7 +258,7 @@ export default function OnboardingModal() {
             {error && <FieldError>{error}</FieldError>}
 
             <Button type="submit" fullWidth disabled={loading} className="mt-4">
-              {loading ? "Sparar..." : needsStudentRegistration ? "Slutför konto" : "Kom igång"}
+              {loading ? "Skickar..." : "Skicka"}
             </Button>
           </FieldGroup>
         </form>

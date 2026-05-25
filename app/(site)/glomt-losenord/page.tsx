@@ -14,9 +14,22 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authService } from "@/services/auth-service";
+import type { PasswordResetAccountType } from "@/types";
+
+const accountTypeOptions: Array<{
+  value: PasswordResetAccountType;
+  label: string;
+}> = [
+  { value: "student", label: "Student" },
+  { value: "quick_register", label: "Ej färdig studentregistrering" },
+  { value: "company", label: "Företagskonto" },
+  { value: "landlord", label: "Privat hyresvärd" },
+];
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const [accountType, setAccountType] =
+    useState<PasswordResetAccountType>("student");
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -31,7 +44,7 @@ export default function ForgotPasswordPage() {
     try {
       await authService.startPasswordReset({
         userEmail: email,
-        accountType: "student",
+        accountType,
       });
       setHasSubmitted(true);
     } catch (err) {
@@ -104,6 +117,25 @@ export default function ForgotPasswordPage() {
                   <FieldDescription>
                     Vi skickar instruktioner om e-postadressen finns registrerad.
                   </FieldDescription>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="accountType">Kontotyp</FieldLabel>
+                  <select
+                    id="accountType"
+                    value={accountType}
+                    onChange={(event) =>
+                      setAccountType(event.target.value as PasswordResetAccountType)
+                    }
+                    disabled={submitting}
+                    className="h-14 rounded-[8px] border border-transparent bg-[#f2f2f2] px-4 text-base shadow-none outline-none focus-visible:border-[#004225] focus-visible:ring-2 focus-visible:ring-[#004225]/20"
+                  >
+                    {accountTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
 
                 <Field>

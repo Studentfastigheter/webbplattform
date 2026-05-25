@@ -11,8 +11,18 @@ export type LandlordId = number;
 export type AccountId = StudentId | CompanyId | LandlordId;
 export type UserId = number; // Gemensamt ID från UserResponse
 
-export type AccountType = "student" | "company" | "private_landlord" | "landlord";
-export type PasswordResetAccountType = "student" | "landlord" | "company" | "admin";
+export type AccountType =
+  | "student"
+  | "company"
+  | "private_landlord"
+  | "landlord"
+  | "quick_register";
+export type PasswordResetAccountType =
+  | "student"
+  | "landlord"
+  | "company"
+  | "quick_register"
+  | "admin";
 
 export type UserCompanyLink = {
   id?: CompanyId | string;
@@ -104,6 +114,11 @@ export interface QuickRegisterResponse {
 }
 
 export interface GoogleRegisterResponse {
+  accessToken?: string;
+  token?: string;
+  access_token?: string;
+  jwt?: string;
+  bearerToken?: string;
   firstName?: string;
   surname?: string;
   email: string;
@@ -119,6 +134,7 @@ export interface GoogleAuthRequest {
 }
 
 export type FrejaRegisterResponse = StudentRegistrationResponse;
+export type FrejaAuthRef = StudentRegistrationResponse;
 
 export type FrejaAuthStatus =
   | "MATCHES"

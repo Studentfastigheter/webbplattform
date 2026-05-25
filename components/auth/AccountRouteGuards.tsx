@@ -11,6 +11,8 @@ type RouteGuardProps = {
   children: ReactNode;
 };
 
+const SITE_ACCOUNT_TYPES = new Set(["student", "private_landlord", "quick_register"]);
+
 function RouteFallback({ message }: { message: string }) {
   return (
     <div className="flex min-h-svh items-center justify-center bg-white px-6 text-sm text-neutral-500">
@@ -31,7 +33,7 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
       return;
     }
 
-    if (user.accountType !== "student" && user.accountType !== "private_landlord") {
+    if (!SITE_ACCOUNT_TYPES.has(user.accountType)) {
       logout();
       router.replace("/logga-in");
     }
@@ -43,8 +45,7 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
 
   if (
     user &&
-    ((user.accountType !== "student" && user.accountType !== "private_landlord") ||
-      getActiveCompanyId(user) != null)
+    (!SITE_ACCOUNT_TYPES.has(user.accountType) || getActiveCompanyId(user) != null)
   ) {
     return <RouteFallback message="Skickar dig vidare..." />;
   }
@@ -66,7 +67,10 @@ export function PortalAccountGuard({ children }: RouteGuardProps) {
 
     const companyId = getActiveCompanyId(user);
 
-    if (user.accountType === "student" && companyId == null) {
+    if (
+      (user.accountType === "student" || user.accountType === "quick_register") &&
+      companyId == null
+    ) {
       router.replace("/");
       return;
     }

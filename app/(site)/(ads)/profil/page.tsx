@@ -7,6 +7,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import ProfileHero, {
   type StudentProfileExtended,
 } from "@/components/profile/ProfileHero";
@@ -587,6 +588,7 @@ function EditableStudentProfile({
 }
 
 export default function Page() {
+  const router = useRouter();
   const { token, isLoading: authLoading, updateUser } = useAuth();
   const [student, setStudent] = useState<User | null>(null);
   const [draft, setDraft] = useState<StudentProfileDraft | null>(null);
@@ -596,6 +598,10 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [startingIdentityVerification, setStartingIdentityVerification] =
+    useState(false);
+  const [startingEmailVerification, setStartingEmailVerification] =
+    useState(false);
 
   useEffect(() => {
     if (authLoading || !token) {
@@ -712,6 +718,57 @@ export default function Page() {
     }
   };
 
+  const startIdentityVerification = async () => {
+    if (startingIdentityVerification) return;
+
+    setStartingIdentityVerification(true);
+    setSaveError(null);
+
+    try {
+      const response = await authService.verifyIdentity();
+      router.push(
+        `/registrera/freja-id?flow=identity&authRef=${encodeURIComponent(
+          response.authRef
+        )}`
+      );
+    } catch (err) {
+      setSaveError(
+        err instanceof Error
+          ? err.message
+          : "Kunde inte starta Freja-verifieringen."
+      );
+    } finally {
+      setStartingIdentityVerification(false);
+    }
+  };
+
+  const startEmailVerification = async () => {
+    if (startingEmailVerification) return;
+
+    const email = student?.email?.trim();
+    if (!email) {
+      setSaveError("Profilen saknar e-postadress.");
+      return;
+    }
+
+    setStartingEmailVerification(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    try {
+      await authService.verifyEmail({ email });
+      setSaveSuccess("Verifieringsmail är skickat.");
+    } catch (err) {
+      setSaveError(
+        err instanceof Error
+          ? err.message
+          : "Kunde inte skicka verifieringsmail."
+      );
+    } finally {
+      setStartingEmailVerification(false);
+    }
+  };
+
   if (authLoading || (token && loadingProfile && !student)) {
     return (
       <div className="p-10 text-center text-muted-foreground">
@@ -749,6 +806,9 @@ export default function Page() {
   }
 
   const profile = buildProfileFromUser(student);
+  const needsIdentityVerification =
+    !student.verifiedIdentity && !student.verifiedStudent;
+  const needsEmailVerification = !student.verifiedEmail;
 
   return (
     <main className="mx-4 min-h-screen bg-white pb-16 sm:mx-8 lg:mx-12">
@@ -769,6 +829,43 @@ export default function Page() {
           {saveSuccess && (
             <div className="mx-auto mb-4 max-w-4xl rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
               {saveSuccess}
+            </div>
+          )}
+          {saveError && (
+            <div className="mx-auto mb-4 max-w-4xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {saveError}
+            </div>
+          )}
+          {needsIdentityVerification && (
+            <div className="mx-auto mb-4 flex max-w-4xl flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
+              <span>Verifiera din identitet med Freja för att markera studentprofilen som verifierad.</span>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                isLoading={startingIdentityVerification}
+                isDisabled={startingIdentityVerification}
+                onPress={startIdentityVerification}
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Verifiera med Freja
+              </Button>
+            </div>
+          )}
+          {needsEmailVerification && (
+            <div className="mx-auto mb-4 flex max-w-4xl flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 sm:flex-row sm:items-center sm:justify-between">
+              <span>Verifiera din e-postadress för att säkra kontot.</span>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                isLoading={startingEmailVerification}
+                isDisabled={startingEmailVerification}
+                onPress={startEmailVerification}
+              >
+                <Mail className="h-4 w-4" />
+                Skicka verifieringsmail
+              </Button>
             </div>
           )}
           <ProfileHero student={profile} onEditProfile={startEditMode} />

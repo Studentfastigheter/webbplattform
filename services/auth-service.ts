@@ -17,9 +17,15 @@ import {
   GoogleRegisterResponse,
   QuickRegisterRequest,
   RegisterStudentRequest,
+  FrejaAuthRef,
 } from "@/types";
 
-type AuthResponseLike = AuthResponse & Record<string, unknown>;
+type AuthResponseLike = Partial<AuthResponse> & Record<string, unknown>;
+type JwtPayload = {
+  sub?: string;
+  uid?: number | string;
+  accountType?: string;
+};
 
 const TOKEN_KEYS = [
   "accessToken",
@@ -34,6 +40,7 @@ const PASSWORD_RESET_ACCOUNT_TYPE_MAP: Record<string, PasswordResetAccountType> 
   company: "company",
   private_landlord: "landlord",
   landlord: "landlord",
+  quick_register: "quick_register",
   admin: "admin",
 };
 
@@ -94,6 +101,56 @@ const compactObject = <T extends object>(value: T) =>
     Object.entries(value).filter(([, entryValue]) => entryValue !== undefined)
   ) as Partial<T>;
 
+const firstString = (...values: unknown[]): string | undefined => {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  return undefined;
+};
+
+const firstNumber = (...values: unknown[]): number | undefined => {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+function decodeJwtPayload(token: string | null): JwtPayload {
+  if (!token) return {};
+
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return {};
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "="
+    );
+    const decoded =
+      typeof atob === "function"
+        ? atob(padded)
+        : Buffer.from(padded, "base64").toString("utf8");
+
+    return JSON.parse(decoded) as JwtPayload;
+  } catch {
+    return {};
+  }
+}
+
 function normalizeCityEnum(value: string | undefined | null): string | undefined {
   const trimmed = value?.normalize("NFC").trim();
   if (!trimmed) {
@@ -118,7 +175,7 @@ function requireCityEnum(value: string | undefined | null): string {
   return city;
 }
 
-export function getAuthResponseToken(response: AuthResponse): string {
+export function getAuthResponseToken(response: Partial<AuthResponse>): string {
   const responseLike = response as AuthResponseLike;
   const source = TOKEN_KEYS.map((key) => responseLike[key]).find(
     (value) => typeof value === "string" && value.trim().length > 0
@@ -143,13 +200,74 @@ export function getOptionalAuthResponseToken(
   return normalizeAuthToken(source);
 }
 
+function createUserFromFlatAuthResponse(
+  response: Record<string, unknown>,
+  token: string
+): User {
+  const jwtPayload = decodeJwtPayload(token);
+  const firstName = firstString(response.firstName);
+  const surname = firstString(response.surname);
+  const email = firstString(response.email, jwtPayload.sub) ?? "";
+  const accountType = firstString(response.accountType, jwtPayload.accountType);
+  const id = firstNumber(response.id, response.userId, jwtPayload.uid) ?? 0;
+  const displayName =
+    firstString(response.displayName) ||
+    [firstName, surname].filter(Boolean).join(" ") ||
+    firstString(response.companyName, response.fullName, email) ||
+    "Användare";
+
+  return {
+    ...(response as Partial<User>),
+    id,
+    email,
+    accountType: (accountType?.toLowerCase() ?? "quick_register") as User["accountType"],
+    displayName,
+    createdAt: firstString(response.createdAt) ?? new Date(0).toISOString(),
+    verified:
+      typeof response.verified === "boolean"
+        ? response.verified
+        : Boolean(response.verifiedStudent ?? response.verifiedIdentity),
+    firstName,
+    surname,
+  };
+}
+
+export function normalizeAuthResponse(
+  response: Partial<AuthResponse> & Record<string, unknown>
+): AuthResponse {
+  const token = getAuthResponseToken(response);
+
+  return {
+    accessToken: token,
+    user:
+      response.user && typeof response.user === "object"
+        ? (response.user as User)
+        : createUserFromFlatAuthResponse(response, token),
+  };
+}
+
+export function authResponseFromGoogleRegisterResponse(
+  response: GoogleRegisterResponse
+): AuthResponse {
+  return normalizeAuthResponse(
+    response as unknown as Partial<AuthResponse> & Record<string, unknown>
+  );
+}
+
 export function getAuthResponseUser(response: AuthResponse): User {
+  const token = getOptionalAuthResponseToken(response);
+
   if (response.user && typeof response.user === "object") {
     const profile = response.user as User & Record<string, unknown>;
+    const fallbackUser = createUserFromFlatAuthResponse(profile, token ?? "");
     const firstName =
-      typeof profile.firstName === "string" ? profile.firstName.trim() : "";
+      typeof profile.firstName === "string"
+        ? profile.firstName.trim()
+        : fallbackUser.firstName ?? "";
     const surname =
-      typeof profile.surname === "string" ? profile.surname.trim() : "";
+      typeof profile.surname === "string"
+        ? profile.surname.trim()
+        : fallbackUser.surname ?? "";
     const displayName =
       typeof profile.displayName === "string" && profile.displayName.trim()
         ? profile.displayName.trim()
@@ -157,19 +275,30 @@ export function getAuthResponseUser(response: AuthResponse): User {
           (typeof profile.companyName === "string" ? profile.companyName : "") ||
           (typeof profile.fullName === "string" ? profile.fullName : "") ||
           (typeof profile.email === "string" ? profile.email : "") ||
+          fallbackUser.displayName ||
           "Användare";
+    const accountType =
+      typeof profile.accountType === "string"
+        ? (profile.accountType.toLowerCase() as User["accountType"])
+        : fallbackUser.accountType;
 
     return {
+      ...fallbackUser,
       ...profile,
-      accountType:
-        typeof profile.accountType === "string"
-          ? (profile.accountType.toLowerCase() as User["accountType"])
-          : profile.accountType,
+      id:
+        typeof profile.id === "number"
+          ? profile.id
+          : fallbackUser.id,
+      email:
+        typeof profile.email === "string" && profile.email.trim()
+          ? profile.email.trim()
+          : fallbackUser.email,
+      accountType,
       displayName,
       createdAt:
         typeof profile.createdAt === "string"
           ? profile.createdAt
-          : new Date(0).toISOString(),
+          : fallbackUser.createdAt,
       verified:
         typeof profile.verified === "boolean"
           ? profile.verified
@@ -179,7 +308,9 @@ export function getAuthResponseUser(response: AuthResponse): User {
           ? profile.schoolId
           : typeof profile.school_id === "number"
             ? profile.school_id
-            : undefined,
+            : fallbackUser.schoolId,
+      firstName,
+      surname,
     };
   }
 
@@ -188,9 +319,10 @@ export function getAuthResponseUser(response: AuthResponse): User {
     typeof responseLike === "object" &&
     responseLike !== null &&
     (typeof responseLike.accountType === "string" ||
-      typeof responseLike.email === "string")
+      typeof responseLike.email === "string" ||
+      token)
   ) {
-    return responseLike as unknown as User;
+    return createUserFromFlatAuthResponse(responseLike, token ?? "");
   }
 
   throw new Error("Backend skickade ingen anvandare i auth-svaret.");
@@ -202,8 +334,27 @@ export function isAuthResponse(response: unknown): response is AuthResponse {
   }
 
   const responseLike = response as Partial<AuthResponse> & Record<string, unknown>;
+  return TOKEN_KEYS.some(
+    (key) =>
+      typeof responseLike[key] === "string" &&
+      String(responseLike[key]).trim().length > 0
+  );
+}
+
+export function isGoogleRegisterResponse(
+  response: unknown
+): response is GoogleRegisterResponse {
+  if (typeof response !== "object" || response === null || Array.isArray(response)) {
+    return false;
+  }
+
+  const responseLike = response as Partial<GoogleRegisterResponse> &
+    Record<string, unknown>;
+
   return (
-    responseLike.user !== undefined &&
+    responseLike.user === undefined &&
+    typeof responseLike.email === "string" &&
+    responseLike.email.trim().length > 0 &&
     TOKEN_KEYS.some(
       (key) =>
         typeof responseLike[key] === "string" &&
@@ -282,27 +433,29 @@ export const authService = {
     });
   },
 
-  googleLogin: async (payload: GoogleAuthRequest): Promise<AuthResponse> => {
+  googleLogin: async (
+    payload: GoogleAuthRequest
+  ): Promise<AuthResponse | GoogleRegisterResponse> => {
     const googleIdToken = payload.googleIdToken.trim();
     if (!googleIdToken) {
       throw new Error("Google-token krävs.");
     }
 
-    return apiClient<AuthResponse>("/auth/google/login", {
+    return apiClient<AuthResponse | GoogleRegisterResponse>("/auth/google/login", {
       method: "POST",
       body: JSON.stringify({ googleIdToken }),
       auth: false,
     });
   },
 
-  quickRegister: async (payload: QuickRegisterRequest): Promise<void> => {
+  quickRegister: async (payload: QuickRegisterRequest): Promise<AuthResponse> => {
     const email = payload.email.trim();
     const password = payload.password.trim();
     if (!email || !password) {
       throw new Error("E-postadress och lösenord krävs.");
     }
 
-    await apiClient<void>("/auth/quick-register", {
+    return apiClient<AuthResponse>("/auth/quick-register", {
       method: "POST",
       body: JSON.stringify({ email, password }),
       auth: false,
@@ -363,7 +516,7 @@ export const authService = {
       return authService.registerWorker(payload);
     }
 
-    await authService.quickRegister({
+    const quickRegisterResponse = await authService.quickRegister({
       email: payload.email,
       password: payload.password,
     });
@@ -376,7 +529,7 @@ export const authService = {
       Boolean(payload.city?.trim());
 
     if (!hasStudentDetails) {
-      return { email: payload.email.trim() };
+      return quickRegisterResponse;
     }
 
     return authService.registerStudent({
@@ -409,6 +562,12 @@ export const authService = {
     return apiClient<FrejaRegisterResponse>("/auth/freja/register", {
       method: "POST",
       auth: false,
+    });
+  },
+
+  verifyIdentity: async (): Promise<FrejaAuthRef> => {
+    return apiClient<FrejaAuthRef>("/auth/verify-identity", {
+      method: "POST",
     });
   },
 
