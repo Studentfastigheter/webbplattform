@@ -11,8 +11,18 @@ export type LandlordId = number;
 export type AccountId = StudentId | CompanyId | LandlordId;
 export type UserId = number; // Gemensamt ID från UserResponse
 
-export type AccountType = "student" | "company" | "private_landlord";
-export type PasswordResetAccountType = "student" | "landlord" | "company" | "admin";
+export type AccountType =
+  | "student"
+  | "company"
+  | "private_landlord"
+  | "landlord"
+  | "quick_register";
+export type PasswordResetAccountType =
+  | "student"
+  | "landlord"
+  | "company"
+  | "quick_register"
+  | "admin";
 
 export type UserCompanyLink = {
   id?: CompanyId | string;
@@ -60,6 +70,7 @@ export interface User {
   surname?: string;
   ssn?: string; // Personnummer
   schoolId?: number;
+  school_id?: number;
   schoolName?: string;
   verifiedStudent?: boolean;
   
@@ -98,13 +109,32 @@ export interface StudentRegistrationResponse {
   authRef: string;
 }
 
-export type RegisterResponse = AuthResponse | StudentRegistrationResponse;
+export interface QuickRegisterResponse {
+  email: string;
+}
+
+export interface GoogleRegisterResponse {
+  accessToken?: string;
+  token?: string;
+  access_token?: string;
+  jwt?: string;
+  bearerToken?: string;
+  firstName?: string;
+  surname?: string;
+  email: string;
+}
+
+export type RegisterResponse =
+  | AuthResponse
+  | StudentRegistrationResponse
+  | QuickRegisterResponse;
 
 export interface GoogleAuthRequest {
   googleIdToken: string;
 }
 
 export type FrejaRegisterResponse = StudentRegistrationResponse;
+export type FrejaAuthRef = StudentRegistrationResponse;
 
 export type FrejaAuthStatus =
   | "MATCHES"
@@ -134,6 +164,21 @@ export interface RegisterRequest {
   phone?: string;
   city?: string;
   ssn?: string; // Personnummer eller Organisationsnummer
+  schoolId?: number;
+}
+
+export interface QuickRegisterRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterStudentRequest {
+  firstName: string;
+  surname: string;
+  email: string;
+  schoolId: number;
+  city: string;
+  ssn: string;
 }
 
 export interface UpdateUserRequest {

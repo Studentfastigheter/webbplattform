@@ -39,7 +39,13 @@ function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
   );
 }
 
-function getStatusAction(status: FrejaAuthStatus) {
+function getStatusAction(status: FrejaAuthStatus, flow: "registration" | "identity") {
+  if (flow === "identity") {
+    return status === "MATCHES"
+      ? { href: "/profil", label: "Tillbaka till profilen" }
+      : { href: "/profil", label: "Tillbaka till profilen" };
+  }
+
   if (status === "MATCHES") {
     return { href: "/logga-in", label: "Gå till inloggning" };
   }
@@ -66,9 +72,10 @@ function buildFrejaAuthUrl(authRef: string) {
 function FrejaIdRegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { completeAuth } = useAuth();
+  const { completeAuth, refreshUser } = useAuth();
   const initialAuthRef = searchParams.get("authRef")?.trim() ?? "";
   const shouldStartFrejaOnly = searchParams.get("start") === "freja";
+  const flow = searchParams.get("flow") === "identity" ? "identity" : "registration";
   const isFrejaOnlyFlow =
     shouldStartFrejaOnly || searchParams.get("flow") === "freja";
   const [authRef, setAuthRef] = useState(initialAuthRef);
@@ -83,15 +90,18 @@ function FrejaIdRegisterContent() {
   );
 
   useEffect(() => {
-    if (authRef || !shouldStartFrejaOnly) return;
+    if (authRef || (!shouldStartFrejaOnly && flow !== "identity")) return;
 
     let active = true;
 
-    async function startFrejaOnlyRegistration() {
+    async function startFrejaFlow() {
       setIsStarting(true);
       setStartError(null);
       try {
-        const response = await authService.frejaRegister();
+        const response =
+          flow === "identity"
+            ? await authService.verifyIdentity()
+            : await authService.frejaRegister();
         if (!active) return;
         setAuthRef(response.authRef);
       } catch (err) {
@@ -99,7 +109,9 @@ function FrejaIdRegisterContent() {
         setStartError(
           err instanceof Error
             ? err.message
-            : "Kunde inte starta Freja-registreringen."
+            : flow === "identity"
+              ? "Kunde inte starta Freja-verifieringen."
+              : "Kunde inte starta Freja-registreringen."
         );
       } finally {
         if (active) {
@@ -108,12 +120,12 @@ function FrejaIdRegisterContent() {
       }
     }
 
-    startFrejaOnlyRegistration();
+    startFrejaFlow();
 
     return () => {
       active = false;
     };
-  }, [authRef, shouldStartFrejaOnly]);
+  }, [authRef, flow, shouldStartFrejaOnly]);
 
   useEffect(() => {
     if (!authRef) return;
@@ -143,6 +155,9 @@ function FrejaIdRegisterContent() {
 
         if (nextStatus === "PENDING") {
           timeout = setTimeout(poll, pollIntervalMs);
+        } else if (nextStatus === "MATCHES" && flow === "identity") {
+          await refreshUser();
+          timeout = setTimeout(() => router.replace("/profil"), 900);
         }
       } catch {
         if (!active) return;
@@ -157,13 +172,15 @@ function FrejaIdRegisterContent() {
       active = false;
       if (timeout) clearTimeout(timeout);
     };
-  }, [authRef, completeAuth, router]);
+  }, [authRef, completeAuth, flow, refreshUser, router]);
 
   const isComplete = status !== "PENDING";
   const successText = isFrejaOnlyFlow
     ? "Kontot är verifierat. Ett lösenord skickas till e-postadressen från Freja."
+    : flow === "identity"
+      ? "Identiteten är verifierad."
     : statusMessages.MATCHES;
-  const statusAction = getStatusAction(status);
+  const statusAction = getStatusAction(status, flow);
 
   return (
     <AuthCard
@@ -171,7 +188,9 @@ function FrejaIdRegisterContent() {
       subtitle={
         isStarting
           ? "Startar Freja-verifiering."
-          : "Skanna koden med Freja för att fortsätta registreringen."
+          : flow === "identity"
+            ? "Skanna koden med Freja för att verifiera din identitet."
+            : "Skanna koden med Freja för att fortsätta registreringen."
       }
       footer={
         <FieldDescription className="text-center">

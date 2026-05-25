@@ -14,6 +14,7 @@ import PersonalInfo, {
   type PersonalInfoHandle,
   type PersonalInfoOptions,
 } from '@/components/shadcn-studio/blocks/account-settings-01/content/personal-info'
+import IdentityVerification from '@/components/shadcn-studio/blocks/account-settings-01/content/identity-verification'
 import SocialUrl, {
   type SocialUrlHandle,
 } from '@/components/shadcn-studio/blocks/account-settings-01/content/social-url'
@@ -22,11 +23,13 @@ export type UserGeneralOptions = {
   personalInfo?: PersonalInfoOptions
   showSocialUrls?: boolean
   showDangerZone?: boolean
+  showVerification?: boolean
 }
 
 const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
   const showSocialUrls = options.showSocialUrls ?? true
   const showDangerZone = options.showDangerZone ?? true
+  const showVerification = options.showVerification ?? false
   const personalInfoRef = useRef<PersonalInfoHandle>(null)
   const socialUrlRef = useRef<SocialUrlHandle>(null)
   const passwordSectionRef = useRef<PasswordSectionHandle>(null)
@@ -64,7 +67,19 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
   return (
     <section className='py-3'>
       <div className='mx-auto max-w-7xl'>
-        <PersonalInfo ref={personalInfoRef} options={options.personalInfo} />
+        <PersonalInfo
+          ref={personalInfoRef}
+          options={{
+            ...options.personalInfo,
+            showEmailVerification: showVerification,
+          }}
+        />
+        {showVerification ? (
+          <>
+            <Separator className='my-10' />
+            <IdentityVerification />
+          </>
+        ) : null}
         {showSocialUrls ? (
           <>
             <Separator className='my-10' />
