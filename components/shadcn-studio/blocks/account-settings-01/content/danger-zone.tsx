@@ -16,37 +16,26 @@ const DangerZone = () => {
   return (
     <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
-        <h3 className='font-semibold'>Danger Zone</h3>
-        <p className='text-muted-foreground text-sm'>
-          Delete your account permanently. This action will remove all your data
-          and cannot be undone.{' '}
-          <a href='#' className='text-card-foreground font-medium hover:underline'>
-            Learn more
-          </a>
-        </p>
+        <h3 className='font-semibold'>Radera konto</h3>
       </div>
 
       <div className='space-y-6 lg:col-span-2'>
-        <Card>
-          <CardContent>
-            <div className='flex items-center justify-between gap-4 max-lg:flex-col max-lg:items-start'>
-              <div className='space-y-1'>
-                <h3 className='text-sm font-medium'>Delete account</h3>
-                <p className='text-muted-foreground text-sm'>
-                  Delete your account permanently. This action will remove all
-                  your data and cannot be undone.
-                </p>
-              </div>
+        <Card className='rounded-[8px] border-gray-200 shadow-none'>
+          <CardContent className='px-4 py-3'>
+            <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+              <span className='text-sm font-semibold text-gray-950'>
+                Delete account
+              </span>
 
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
                     type='button'
                     variant='outline'
-                    className='text-destructive border-destructive hover:bg-destructive/10 max-lg:w-full'
+                    className='rounded-md border-red-200 text-red-700 hover:bg-red-50 sm:w-auto'
                   >
                     <Trash2Icon className='size-4' />
-                    Delete
+                    Delete account
                   </Button>
                 </DialogTrigger>
 
@@ -54,15 +43,14 @@ const DangerZone = () => {
                   <DialogHeader className='space-y-2'>
                     <DialogTitle>Delete account</DialogTitle>
                     <div className='text-muted-foreground text-sm'>
-                      Delete your account permanently. This action will remove
-                      all your data and cannot be undone.
+                      Detta tar bort kontot permanent och går inte att ångra.
                     </div>
                   </DialogHeader>
 
                   <DialogFooter className='mt-4 gap-4 sm:justify-end'>
                     <DialogClose asChild>
                       <Button type='button' variant='outline' className='rounded-md'>
-                        Cancel
+                        Avbryt
                       </Button>
                     </DialogClose>
                     <DialogClose asChild>
@@ -71,7 +59,7 @@ const DangerZone = () => {
                         variant='destructive'
                         className='rounded-md'
                       >
-                        Delete
+                        Delete account
                       </Button>
                     </DialogClose>
                   </DialogFooter>

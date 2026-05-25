@@ -11,7 +11,6 @@ import {
   ChangePasswordRequest,
   UpdateUserRequest,
   StartPasswordResetRequest,
-  PasswordResetAccountType,
   PasswordResetFinalRequest,
   VerifyEmailRequest,
   GoogleRegisterResponse,
@@ -34,15 +33,6 @@ const TOKEN_KEYS = [
   "jwt",
   "bearerToken",
 ] as const;
-
-const PASSWORD_RESET_ACCOUNT_TYPE_MAP: Record<string, PasswordResetAccountType> = {
-  student: "student",
-  company: "company",
-  private_landlord: "landlord",
-  landlord: "landlord",
-  quick_register: "quick_register",
-  admin: "admin",
-};
 
 const SWEDISH_CITY_ENUMS: Record<string, string> = {
   GÖTEBORG: "GÖTEBORG",
@@ -391,19 +381,6 @@ export function isStudentRegistrationResponse(
   );
 }
 
-function normalizePasswordResetAccountType(
-  accountType: StartPasswordResetRequest["accountType"]
-): PasswordResetAccountType {
-  const normalized =
-    PASSWORD_RESET_ACCOUNT_TYPE_MAP[String(accountType).trim().toLowerCase()];
-
-  if (!normalized) {
-    throw new Error("Ogiltig kontotyp för återställning av lösenord.");
-  }
-
-  return normalized;
-}
-
 async function fetchCurrentSession(token?: string | null): Promise<AuthResponse> {
   const session = await apiClient<AuthResponse>("/auth/me", {}, token);
   const refreshedToken = getOptionalAuthResponseToken(session);
@@ -589,10 +566,7 @@ export const authService = {
     await apiClient<void>("/auth/reset-password", {
       method: "POST",
       auth: false,
-      body: JSON.stringify({
-        userEmail,
-        accountType: normalizePasswordResetAccountType(payload.accountType),
-      }),
+      body: JSON.stringify({ userEmail }),
     });
   },
 

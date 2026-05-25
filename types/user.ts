@@ -17,12 +17,6 @@ export type AccountType =
   | "private_landlord"
   | "landlord"
   | "quick_register";
-export type PasswordResetAccountType =
-  | "student"
-  | "landlord"
-  | "company"
-  | "quick_register"
-  | "admin";
 
 export type UserCompanyLink = {
   id?: CompanyId | string;
@@ -209,7 +203,6 @@ export interface ChangePasswordRequest {
 
 export interface StartPasswordResetRequest {
   userEmail: string;
-  accountType: AccountType | PasswordResetAccountType;
 }
 
 export interface PasswordResetFinalRequest {

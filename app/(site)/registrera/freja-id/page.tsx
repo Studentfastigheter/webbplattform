@@ -1,17 +1,28 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import {
+  CheckCircle2Icon,
+  Clock3Icon,
+  RefreshCwIcon,
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 import { AuthCard } from "@/components/ui/AuthCard";
 import { FieldDescription, FieldError } from "@/components/ui/field";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { authService, isAuthResponse } from "@/services/auth-service";
 import type { FrejaAuthStatus } from "@/types";
 
 const pollIntervalMs = 2000;
+const frejaLogoPath =
+  "/FrejaBrandingPackNew/FrejaBrandingPack/Freja Logo/Freja/SVG/FrejaIndigo.svg";
+const frejaIconPath =
+  "/FrejaBrandingPackNew/FrejaBrandingPack/Freja Icons/Freja Icons SVG/FrejaRoundedGradient.svg";
 
 const frejaAuthStatuses = [
   "PENDING",
@@ -24,12 +35,21 @@ const frejaAuthStatuses = [
 
 const statusMessages: Record<FrejaAuthStatus, string> = {
   PENDING: "Väntar på godkännande i Freja.",
-  MATCHES: "Kontot är verifierat. Du kan logga in.",
+  MATCHES: "Kontot är verifierat. Du skickas vidare.",
   CLASHING:
     "Freja-identiteten matchade inte registreringen, eller så finns kontot redan.",
   DISAPPROVED: "Verifieringen nekades i Freja-appen.",
   EXPIRED: "Verifieringen hann löpa ut innan den godkändes.",
   CANCELED: "Verifieringen avbröts.",
+};
+
+const statusPillLabels: Record<FrejaAuthStatus, string> = {
+  PENDING: "Väntar på Freja",
+  MATCHES: "Verifierad",
+  CLASHING: "Kontrollera ärendet",
+  DISAPPROVED: "Nekad",
+  EXPIRED: "Tiden gick ut",
+  CANCELED: "Avbruten",
 };
 
 function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
@@ -47,7 +67,7 @@ function getStatusAction(status: FrejaAuthStatus, flow: "registration" | "identi
   }
 
   if (status === "MATCHES") {
-    return { href: "/logga-in", label: "Gå till inloggning" };
+    return { href: "/", label: "Fortsätt" };
   }
 
   if (status === "EXPIRED" || status === "CANCELED") {
@@ -67,6 +87,40 @@ function buildFrejaAuthUrl(authRef: string) {
   url.searchParams.set("transactionReference", authRef);
 
   return url.toString();
+}
+
+function getStatusTone(status: FrejaAuthStatus) {
+  if (status === "MATCHES") return "success";
+  if (status === "DISAPPROVED" || status === "EXPIRED" || status === "CANCELED") {
+    return "error";
+  }
+
+  return "pending";
+}
+
+function StatusPill({ status }: { status: FrejaAuthStatus }) {
+  const tone = getStatusTone(status);
+  const Icon =
+    tone === "success"
+      ? CheckCircle2Icon
+      : tone === "error"
+        ? RefreshCwIcon
+        : Clock3Icon;
+
+  return (
+    <div
+      className={cn(
+        "inline-flex h-9 max-w-[190px] items-center gap-2 rounded-full border px-3 text-sm font-medium",
+        tone === "success" &&
+          "border-emerald-200 bg-emerald-50 text-emerald-700",
+        tone === "error" && "border-red-200 bg-red-50 text-red-700",
+        tone === "pending" && "border-[#3E3A93]/15 bg-[#3E3A93]/5 text-[#3E3A93]"
+      )}
+    >
+      <Icon className={cn("h-4 w-4", tone === "pending" && "animate-pulse")} />
+      <span className="truncate">{statusPillLabels[status]}</span>
+    </div>
+  );
 }
 
 function FrejaIdRegisterContent() {
@@ -158,6 +212,8 @@ function FrejaIdRegisterContent() {
         } else if (nextStatus === "MATCHES" && flow === "identity") {
           await refreshUser();
           timeout = setTimeout(() => router.replace("/profil"), 900);
+        } else if (nextStatus === "MATCHES") {
+          timeout = setTimeout(() => router.replace("/"), 900);
         }
       } catch {
         if (!active) return;
@@ -174,64 +230,93 @@ function FrejaIdRegisterContent() {
     };
   }, [authRef, completeAuth, flow, refreshUser, router]);
 
-  const isComplete = status !== "PENDING";
   const successText = isFrejaOnlyFlow
-    ? "Kontot är verifierat. Ett lösenord skickas till e-postadressen från Freja."
+    ? "Kontot är verifierat. Du skickas vidare till startsidan."
     : flow === "identity"
       ? "Identiteten är verifierad."
     : statusMessages.MATCHES;
   const statusAction = getStatusAction(status, flow);
+  const pageTitle =
+    flow === "identity" ? "Verifiera identitet" : "Verifiera med Freja";
+  const pageSubtitle =
+    flow === "identity"
+      ? "Skanna QR-koden i Freja-appen."
+      : "Skanna QR-koden med Freja.";
 
   return (
     <AuthCard
-      title="Verifiera med Freja"
-      subtitle={
-        isStarting
-          ? "Startar Freja-verifiering."
-          : flow === "identity"
-            ? "Skanna koden med Freja för att verifiera din identitet."
-            : "Skanna koden med Freja för att fortsätta registreringen."
+      title={isStarting ? "Startar Freja" : pageTitle}
+      subtitle={isStarting ? "Vi förbereder verifieringen." : pageSubtitle}
+      aside={
+        <div className="flex h-full flex-col items-center justify-center bg-[#F4F5FA] px-8 text-center">
+          <Image
+            src={frejaIconPath}
+            alt=""
+            width={70}
+            height={70}
+            className="h-[70px] w-[70px]"
+            priority
+          />
+          <Image
+            src={frejaLogoPath}
+            alt="Freja"
+            width={132}
+            height={32}
+            className="mt-6 h-auto w-[132px]"
+            priority
+          />
+        </div>
       }
       footer={
         <FieldDescription className="text-center">
-          <Link href={statusAction.href}>{statusAction.label}</Link>
+          <Link
+            href={statusAction.href}
+            className="font-medium text-[#004225] no-underline"
+          >
+            {statusAction.label}
+          </Link>
         </FieldDescription>
       }
     >
-      {startError ? (
-        <FieldError>{startError}</FieldError>
-      ) : !authRef ? (
-        <FieldError>
-          {isStarting
-            ? "Startar verifiering..."
-            : "Verifieringen saknar authRef. Starta registreringen igen."}
-        </FieldError>
-      ) : (
-        <div className="flex flex-col items-center gap-5">
-          <div className="rounded-[8px] border border-slate-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.12)]">
+      <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
+        <div className="mb-4 flex w-full items-center justify-center">
+          <StatusPill status={status} />
+        </div>
+
+        <div className="rounded-[8px] border border-slate-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.10)]">
+          {startError ? (
+            <div className="flex h-[224px] w-[224px] items-center justify-center p-4">
+              <FieldError>{startError}</FieldError>
+            </div>
+          ) : !authRef ? (
+            <div className="flex h-[224px] w-[224px] items-center justify-center p-4">
+              <FieldError>
+                {isStarting
+                  ? "Startar verifiering..."
+                  : "Verifieringen saknar authRef. Starta registreringen igen."}
+              </FieldError>
+            </div>
+          ) : (
             <QRCodeSVG
               value={frejaAuthUrl}
-              size={220}
-              fgColor="#111827"
+              size={224}
+              fgColor="#17142F"
               bgColor="#ffffff"
               level="M"
               marginSize={4}
             />
-          </div>
+          )}
+        </div>
 
-          <div className="space-y-2 text-center">
+        <div className="mt-5 min-h-[24px] space-y-2">
+          {status !== "PENDING" && (
             <p className="text-sm font-medium text-slate-950">
               {status === "MATCHES" ? successText : statusMessages[status]}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {isComplete
-                ? "Verifieringen är avslutad."
-                : "Vi kontrollerar status varannan sekund."}
-            </p>
-            {pollError && <FieldError>{pollError}</FieldError>}
-          </div>
+          )}
+          {pollError && <FieldError>{pollError}</FieldError>}
         </div>
-      )}
+      </div>
     </AuthCard>
   );
 }

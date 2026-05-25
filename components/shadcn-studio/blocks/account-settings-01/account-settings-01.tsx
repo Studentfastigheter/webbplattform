@@ -7,32 +7,23 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
 import DangerZone from '@/components/shadcn-studio/blocks/account-settings-01/content/danger-zone'
-import PasswordSection, {
-  type PasswordSectionHandle,
-} from '@/components/shadcn-studio/blocks/account-settings-01/content/email-password'
+import PasswordSection from '@/components/shadcn-studio/blocks/account-settings-01/content/email-password'
+import IdentityVerification from '@/components/shadcn-studio/blocks/account-settings-01/content/identity-verification'
 import PersonalInfo, {
   type PersonalInfoHandle,
   type PersonalInfoOptions,
 } from '@/components/shadcn-studio/blocks/account-settings-01/content/personal-info'
-import IdentityVerification from '@/components/shadcn-studio/blocks/account-settings-01/content/identity-verification'
-import SocialUrl, {
-  type SocialUrlHandle,
-} from '@/components/shadcn-studio/blocks/account-settings-01/content/social-url'
 
 export type UserGeneralOptions = {
   personalInfo?: PersonalInfoOptions
-  showSocialUrls?: boolean
   showDangerZone?: boolean
   showVerification?: boolean
 }
 
 const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
-  const showSocialUrls = options.showSocialUrls ?? true
   const showDangerZone = options.showDangerZone ?? true
   const showVerification = options.showVerification ?? false
   const personalInfoRef = useRef<PersonalInfoHandle>(null)
-  const socialUrlRef = useRef<SocialUrlHandle>(null)
-  const passwordSectionRef = useRef<PasswordSectionHandle>(null)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,12 +38,6 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
     try {
       await personalInfoRef.current?.save()
 
-      if (showSocialUrls) {
-        await socialUrlRef.current?.save()
-      }
-
-      await passwordSectionRef.current?.save()
-
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
@@ -66,7 +51,7 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
 
   return (
     <section className='py-3'>
-      <div className='mx-auto max-w-7xl'>
+      <div className='mx-auto max-w-5xl space-y-8'>
         <PersonalInfo
           ref={personalInfoRef}
           options={{
@@ -74,34 +59,15 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
             showEmailVerification: showVerification,
           }}
         />
-        {showVerification ? (
-          <>
-            <Separator className='my-10' />
-            <IdentityVerification />
-          </>
-        ) : null}
-        {showSocialUrls ? (
-          <>
-            <Separator className='my-10' />
-            <SocialUrl ref={socialUrlRef} />
-          </>
-        ) : null}
-        <Separator className='my-10' />
-        <PasswordSection ref={passwordSectionRef} />
-        {showDangerZone ? (
-          <>
-            <Separator className='my-10' />
-            <DangerZone />
-          </>
-        ) : null}
-        <Separator className='my-10' />
-        {error ? <p className='mb-3 text-sm text-destructive'>{error}</p> : null}
+
+        {error ? <p className='text-sm text-destructive'>{error}</p> : null}
         {success ? (
-          <p className='mb-3 flex items-center gap-1 text-sm text-green-600'>
+          <p className='flex items-center gap-1 text-sm text-green-600'>
             <CheckIcon className='size-4' />
             Ändringar sparade!
           </p>
         ) : null}
+
         <div className='flex justify-end'>
           <Button
             type='button'
@@ -122,6 +88,17 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
             )}
           </Button>
         </div>
+
+        <Separator />
+        <IdentityVerification enabled={showVerification} />
+        <PasswordSection />
+
+        {showDangerZone ? (
+          <>
+            <Separator />
+            <DangerZone />
+          </>
+        ) : null}
       </div>
     </section>
   )

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
 
 type LoginFormProps = React.ComponentProps<"div">;
 
@@ -30,17 +31,46 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
+  function validateForm() {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail && !password) {
+      return "Fyll i e-postadress och lösenord för att logga in.";
+    }
+
+    if (!trimmedEmail) {
+      return "Fyll i e-postadressen som är kopplad till ditt konto.";
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      return "E-postadressen ser inte korrekt ut. Skriv den i formatet namn@example.com.";
+    }
+
+    if (!password) {
+      return "Fyll i lösenordet för ditt konto.";
+    }
+
+    return null;
+  }
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isLoading || submitting) return;
 
     setError(null);
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setSubmitting(true);
     try {
       await login({ email: email.trim(), password });
-      router.push("/");
-    } catch (err: any) {
-      setError(err?.message ?? "Något gick fel vid inloggning.");
+      router.replace("/");
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, "login"));
     } finally {
       setSubmitting(false);
     }
@@ -55,9 +85,9 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
       await googleLogin({
         googleIdToken,
       });
-      router.push("/");
-    } catch (err: any) {
-      setError(err?.message ?? "Google-inloggningen misslyckades.");
+      router.replace("/");
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, "google-login"));
     } finally {
       setSubmitting(false);
     }

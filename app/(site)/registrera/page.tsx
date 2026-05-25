@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth-service";
 
@@ -70,7 +71,6 @@ export default function RegisterPage() {
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
@@ -95,15 +95,29 @@ export default function RegisterPage() {
     const confirmPassword = form.confirmPassword.trim();
 
     if (!email || !password || !confirmPassword) {
-      return "Fyll i e-postadress och lösenord två gånger.";
+      return "Fyll i e-postadress och lösenord två gånger för att skapa kontot.";
+    }
+
+    if (!isValidEmail(email)) {
+      return "E-postadressen ser inte korrekt ut. Skriv den i formatet namn@example.com.";
     }
 
     if (password.length < 8) {
-      return "Lösenordet måste vara minst 8 tecken.";
+      return "Lösenordet behöver vara minst 8 tecken långt.";
+    }
+
+    const missingRequirements = passwordRequirements.filter(
+      (requirement) => !requirement.regex.test(password)
+    );
+
+    if (missingRequirements.length > 0) {
+      return `Lösenordet behöver även innehålla ${missingRequirements
+        .map((requirement) => requirement.text.toLowerCase())
+        .join(", ")}.`;
     }
 
     if (password !== confirmPassword) {
-      return "Lösenorden matchar inte.";
+      return "Lösenorden matchar inte. Skriv samma lösenord i båda fälten.";
     }
 
     return null;
@@ -114,7 +128,6 @@ export default function RegisterPage() {
     if (loading) return;
 
     setError(null);
-    setSuccess(null);
 
     const validationError = validateForm();
     if (validationError) {
@@ -129,10 +142,10 @@ export default function RegisterPage() {
         password: form.password.trim(),
       });
       completeAuth(response);
-      setSuccess("Kontot är skapat. Komplettera studentprofilen i popupen.");
       setForm(initialForm);
-    } catch (err: any) {
-      setError(err?.message ?? "Kunde inte skapa konto. Kontrollera uppgifterna.");
+      router.replace("/");
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, "register"));
     } finally {
       setLoading(false);
     }
@@ -142,16 +155,15 @@ export default function RegisterPage() {
     if (loading) return;
 
     setError(null);
-    setSuccess(null);
 
     setLoading(true);
     try {
       await googleRegister({
         googleIdToken,
       });
-      setSuccess("Google-kontot är skapat. Komplettera studentprofilen i popupen.");
-    } catch (err: any) {
-      setError(err?.message ?? "Kunde inte registrera med Google.");
+      router.replace("/");
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, "google-register"));
     } finally {
       setLoading(false);
     }
@@ -339,18 +351,6 @@ export default function RegisterPage() {
               </Field>
 
               {error && <FieldError>{error}</FieldError>}
-              {success && (
-                <FieldDescription className="text-center text-green-700">
-                  {success}{" "}
-                  <button
-                    type="button"
-                    onClick={() => router.push("/logga-in")}
-                    className="font-semibold underline underline-offset-4"
-                  >
-                    Gå till inloggning
-                  </button>
-                </FieldDescription>
-              )}
 
             </FieldGroup>
           </form>
