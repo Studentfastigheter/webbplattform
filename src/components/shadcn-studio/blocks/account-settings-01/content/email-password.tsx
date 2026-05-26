@@ -6,8 +6,10 @@ import { CheckCircle2Icon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
 import { authService } from '@/features/auth/services/auth-service'
+import { getAuthErrorMessage } from '@/lib/auth-error-messages'
 
 export default function PasswordSection() {
   const { user } = useAuth()

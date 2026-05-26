@@ -14,17 +14,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authService } from "@/features/auth/services/auth-service";
-import type { PasswordResetAccountType } from "@/types";
-
-const accountTypeOptions: Array<{
-  value: PasswordResetAccountType;
-  label: string;
-}> = [
-  { value: "student", label: "Student" },
-  { value: "quick_register", label: "Ej färdig studentregistrering" },
-  { value: "company", label: "Företagskonto" },
-  { value: "landlord", label: "Privat hyresvärd" },
-];
+import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
