@@ -1,0 +1,441 @@
+'use client'
+
+import {
+  type ChangeEvent,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
+
+import {
+  CheckCircle2Icon,
+  ImageIcon,
+  Loader2Icon,
+  MailIcon,
+  TrashIcon,
+  UploadCloudIcon,
+} from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { useAuth } from '@/context/AuthContext'
+import { authService } from '@/features/auth/services/auth-service'
+import type { UpdateUserRequest } from '@/types'
+
+export type PersonalInfoOptions = {
+  showAvatar?: boolean
+  showCity?: boolean
+  showAbout?: boolean
+  showEmailVerification?: boolean
+}
+
+export type PersonalInfoHandle = {
+  save: () => Promise<void>
+}
+
+function isEmailLike(value: string) {
+  const normalized = value.trim().toLowerCase()
+
+  return normalized.startsWith('mailto:') || normalized.includes('@')
+}
+
+function normalizePhone(
+  value: string | null | undefined,
+  blockedValues: Array<string | null | undefined> = []
+) {
+  const phone = value?.trim() ?? ''
+  if (!phone || isEmailLike(phone)) return ''
+
+  const normalizedPhone = phone.toLowerCase()
+  const isBlockedValue = blockedValues.some(
+    blockedValue => blockedValue?.trim().toLowerCase() === normalizedPhone
+  )
+
+  if (isBlockedValue || !/\d/.test(phone)) return ''
+
+  return phone
+}
+
+function sanitizePhoneInput(value: string) {
+  return isEmailLike(value) ? '' : value
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+function isVerified(value: unknown) {
+  return value === true || value === 'true'
+}
+
+const PersonalInfo = forwardRef<
+  PersonalInfoHandle,
+  { options?: PersonalInfoOptions }
+>(({ options = {} }, ref) => {
+  const { user, isLoading: authLoading, updateUser } = useAuth()
+  const showAvatar = options.showAvatar ?? true
+  const showCity = options.showCity ?? true
+  const showAbout = options.showAbout ?? true
+  const showEmailVerification = options.showEmailVerification ?? false
+
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+
+  const [firstName, setFirstName] = useState('')
+  const [surname, setSurname] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [city, setCity] = useState('')
+  const [aboutText, setAboutText] = useState('')
+
+  const [error, setError] = useState<string | null>(null)
+  const [emailVerificationLoading, setEmailVerificationLoading] = useState(false)
+  const [emailVerificationMessage, setEmailVerificationMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user) return
+    setFirstName(user.firstName ?? '')
+    setSurname(user.surname ?? '')
+    setPhone(user.phone ?? '')
+    setEmail(user.email ?? '')
+    setCity(user.city ?? '')
+    setAboutText(user.description ?? '')
+  }, [user])
+
+  useEffect(() => {
+    if (!file) {
+      const timeoutId = window.setTimeout(() => setPreview(null), 0)
+      return () => clearTimeout(timeoutId)
+    }
+
+    const url = URL.createObjectURL(file)
+    const timeoutId = window.setTimeout(() => setPreview(url), 0)
+
+    return () => {
+      clearTimeout(timeoutId)
+      URL.revokeObjectURL(url)
+    }
+  }, [file])
+
+  const onSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0]
+    if (!selectedFile) return
+
+    if (!selectedFile.type.startsWith('image/')) {
+      window.alert('Välj en bildfil')
+      event.currentTarget.value = ''
+      return
+    }
+
+    if (selectedFile.size > 1024 * 1024) {
+      window.alert('Filen måste vara mindre än 1 MB')
+      event.currentTarget.value = ''
+      return
+    }
+
+    setFile(selectedFile)
+  }
+
+  const openPicker = () => inputRef.current?.click()
+
+  const removeAvatar = () => {
+    setFile(null)
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const save = async () => {
+    setError(null)
+
+    try {
+      const trimmedEmail = email.trim()
+      if (trimmedEmail && !isValidEmail(trimmedEmail)) {
+        throw new Error('Ange en giltig e-postadress.')
+      }
+
+      const payload: UpdateUserRequest = {
+        email: trimmedEmail || undefined,
+        firstName: firstName.trim() || undefined,
+        surname: surname.trim() || undefined,
+        phone: normalizePhone(phone, [user?.email]),
+      }
+
+      if (showCity) {
+        payload.city = city.trim() || undefined
+      }
+
+      if (showAbout) {
+        payload.aboutText = aboutText.trim() || undefined
+      }
+
+      await updateUser(payload)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Kunde inte spara ändringar.'
+      )
+      throw err
+    }
+  }
+
+  const startEmailVerification = async () => {
+    if (emailVerificationLoading) return
+
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) {
+      setError('Ange en e-postadress först.')
+      return
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      setError('Ange en giltig e-postadress.')
+      return
+    }
+
+    setEmailVerificationLoading(true)
+    setEmailVerificationMessage(null)
+    setError(null)
+
+    try {
+      await authService.verifyEmail({ email: trimmedEmail })
+      setEmailVerificationMessage('Verifieringsmail är skickat.')
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Kunde inte skicka verifieringsmail.'
+      )
+    } finally {
+      setEmailVerificationLoading(false)
+    }
+  }
+
+  useImperativeHandle(ref, () => ({ save }), [
+    firstName,
+    surname,
+    phone,
+    email,
+    city,
+    aboutText,
+    showCity,
+    showAbout,
+  ])
+
+  const avatarSrc = preview ?? user?.logoUrl ?? null
+  const emailVerified = isVerified(user?.verifiedEmail)
+  const inputClassName =
+    'h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20'
+  const fieldClassName = 'flex flex-col items-start gap-2'
+
+  if (authLoading) {
+    return (
+      <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
+        <div className='flex flex-col space-y-1'>
+          <h3 className='font-semibold'>Personlig information</h3>
+        </div>
+        <div className='flex items-center gap-2 text-muted-foreground lg:col-span-2'>
+          <Loader2Icon className='size-4 animate-spin' />
+          Laddar...
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
+      <div className='flex flex-col space-y-1'>
+        <h3 className='font-semibold'>Personlig information</h3>
+        <p className='text-sm text-muted-foreground'>
+          Namn, kontaktuppgifter och profiltext.
+        </p>
+      </div>
+
+      <div className='lg:col-span-2'>
+        <div className='space-y-7'>
+          {showAvatar ? (
+            <div className='w-full space-y-3'>
+              <Label>Profilbild</Label>
+              <div className='flex flex-wrap items-center gap-5 rounded-[8px] border border-gray-200 bg-white p-4'>
+                <div
+                  role='button'
+                  tabIndex={0}
+                  aria-label='Ladda upp profilbild'
+                  onClick={openPicker}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      openPicker()
+                    }
+                  }}
+                  className='flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed hover:opacity-95'
+                >
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt='Profilbild'
+                      className='h-full w-full object-cover'
+                    />
+                  ) : (
+                    <ImageIcon className='text-muted-foreground size-5' />
+                  )}
+                </div>
+
+                <div className='flex flex-wrap items-center gap-2'>
+                  <input
+                    ref={inputRef}
+                    type='file'
+                    accept='image/*'
+                    className='hidden'
+                    onChange={onSelect}
+                  />
+                  <Button
+                    type='button'
+                    variant='outline'
+                    className='rounded-md'
+                    onClick={openPicker}
+                  >
+                    <UploadCloudIcon className='size-4' />
+                    Ladda upp
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    className='text-destructive min-w-0 rounded-md px-3'
+                    onClick={removeAvatar}
+                    isDisabled={!file && !avatarSrc}
+                  >
+                    <TrashIcon className='size-4' />
+                  </Button>
+                </div>
+              </div>
+              <p className='text-muted-foreground text-sm'>Max 1 MB.</p>
+            </div>
+          ) : null}
+
+          <div className='space-y-5'>
+            <div className='grid grid-cols-1 gap-5 sm:grid-cols-2'>
+              <div className={fieldClassName}>
+              <Label htmlFor='personal-info-first-name'>Förnamn</Label>
+              <Input
+                id='personal-info-first-name'
+                placeholder='Förnamn'
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                className={inputClassName}
+              />
+              </div>
+
+              <div className={fieldClassName}>
+              <Label htmlFor='personal-info-last-name'>Efternamn</Label>
+              <Input
+                id='personal-info-last-name'
+                placeholder='Efternamn'
+                value={surname}
+                onChange={e => setSurname(e.target.value)}
+                className={inputClassName}
+              />
+              </div>
+            </div>
+
+            <div className='grid grid-cols-1 gap-5 sm:grid-cols-2'>
+              <div className={fieldClassName}>
+                <Label htmlFor='personal-info-mobile'>Telefon</Label>
+                <Input
+                  id='personal-info-mobile'
+                  name='phone'
+                  type='tel'
+                  placeholder='070-123 45 67'
+                  autoComplete='tel'
+                  inputMode='tel'
+                  value={phone}
+                  onChange={e => setPhone(sanitizePhoneInput(e.target.value))}
+                  className={inputClassName}
+                />
+              </div>
+
+              {showCity ? (
+                <div className={fieldClassName}>
+                  <Label htmlFor='personal-info-city'>Stad</Label>
+                  <Input
+                    id='personal-info-city'
+                    placeholder='Stockholm'
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    className={inputClassName}
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            <div className={fieldClassName}>
+              <Label htmlFor='personal-info-email'>E-post</Label>
+              <div className='flex w-full flex-col gap-3 lg:flex-row'>
+                <div className='relative min-w-0 flex-1'>
+                  <Input
+                    id='personal-info-email'
+                    name='email'
+                    type='email'
+                    placeholder='namn@exempel.se'
+                    autoComplete='email'
+                    inputMode='email'
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className={`${inputClassName} pr-10`}
+                  />
+                  <div className='text-muted-foreground pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-3'>
+                    <MailIcon className='size-4' />
+                    <span className='sr-only'>E-post</span>
+                  </div>
+                </div>
+
+                {showEmailVerification ? (
+                  emailVerified ? (
+                    <div className='flex h-14 shrink-0 items-center justify-center gap-2 rounded-[8px] border border-green-200 bg-green-50 px-4 text-sm font-medium text-green-800 lg:min-w-[142px]'>
+                      <CheckCircle2Icon className='size-4' />
+                      Verifierad
+                    </div>
+                  ) : (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      className='h-14 shrink-0 rounded-[8px] px-4 lg:min-w-[142px]'
+                      isLoading={emailVerificationLoading}
+                      isDisabled={emailVerificationLoading}
+                      onClick={startEmailVerification}
+                    >
+                      Verifiera
+                    </Button>
+                  )
+                ) : null}
+              </div>
+              {showEmailVerification && emailVerificationMessage ? (
+                <p className='text-sm text-green-700'>{emailVerificationMessage}</p>
+              ) : null}
+            </div>
+          </div>
+
+          {showAbout ? (
+            <div className={fieldClassName}>
+              <Label htmlFor='personal-info-about'>Om mig</Label>
+              <Textarea
+                id='personal-info-about'
+                placeholder='Berätta lite om dig själv...'
+                rows={4}
+                value={aboutText}
+                onChange={e => setAboutText(e.target.value)}
+                className='rounded-[8px] border-transparent bg-[#f2f2f2] px-4 py-3 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20'
+              />
+            </div>
+          ) : null}
+
+          {error ? <p className='text-destructive text-sm'>{error}</p> : null}
+        </div>
+      </div>
+    </div>
+  )
+})
+
+PersonalInfo.displayName = 'PersonalInfo'
+
+export default PersonalInfo
