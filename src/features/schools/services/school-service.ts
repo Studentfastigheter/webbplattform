@@ -53,11 +53,10 @@ export const schoolService = {
       .filter((school) => school.id > 0);
   },
 
-  add: async (school: Omit<School, "id"> & { id?: number }): Promise<void> => {
+  add: async (school: Omit<School, "id">): Promise<void> => {
     await apiClient<void>("/schools/add", {
       method: "POST",
       body: JSON.stringify({
-        schoolId: school.id,
         name: school.name,
         city: school.city,
         lat: school.lat,

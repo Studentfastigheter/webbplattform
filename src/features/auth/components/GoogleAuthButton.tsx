@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 type GoogleAuthButtonProps = {
   label?: string;
   disabled?: boolean;
@@ -70,14 +72,35 @@ export function GoogleAuthButton({
   onCredential,
   onError,
 }: GoogleAuthButtonProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const credentialHandlerRef = useRef(onCredential);
   const [isConfigured] = useState(Boolean(googleClientId));
+  const [buttonWidth, setButtonWidth] = useState(0);
 
   credentialHandlerRef.current = onCredential;
 
   useEffect(() => {
-    if (!isConfigured || disabled || !buttonRef.current) return;
+    if (!isConfigured || disabled || !rootRef.current) return;
+
+    const updateButtonWidth = () => {
+      if (!rootRef.current) return;
+
+      setButtonWidth(Math.round(rootRef.current.getBoundingClientRect().width));
+    };
+
+    updateButtonWidth();
+
+    const resizeObserver = new ResizeObserver(updateButtonWidth);
+    resizeObserver.observe(rootRef.current);
+
+    return () => resizeObserver.disconnect();
+  }, [disabled, isConfigured]);
+
+  useEffect(() => {
+    if (!isConfigured || disabled || !buttonRef.current || buttonWidth <= 0) {
+      return;
+    }
 
     let active = true;
 
@@ -106,7 +129,7 @@ export function GoogleAuthButton({
           size: "large",
           text: "continue_with",
           shape: "pill",
-          width: Math.round(buttonRef.current.getBoundingClientRect().width || 320),
+          width: buttonWidth,
           logo_alignment: "left",
         });
       })
@@ -119,14 +142,17 @@ export function GoogleAuthButton({
     return () => {
       active = false;
     };
-  }, [disabled, isConfigured, onError]);
+  }, [buttonWidth, disabled, isConfigured, onError]);
+
+  const buttonChromeClassName =
+    "flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold transition-colors";
 
   if (!isConfigured) {
     return (
       <button
         type="button"
         disabled
-        className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#7a7a7a]"
+        className={cn(buttonChromeClassName, "text-[#7a7a7a]")}
       >
         <GoogleLogo />
         Google Sign-In saknar client id
@@ -139,7 +165,7 @@ export function GoogleAuthButton({
       <button
         type="button"
         disabled
-        className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#7a7a7a]"
+        className={cn(buttonChromeClassName, "text-[#7a7a7a]")}
       >
         <GoogleLogo />
         {label}
@@ -148,15 +174,23 @@ export function GoogleAuthButton({
   }
 
   return (
-    <div className="relative min-h-[48px] w-full">
-      <div className="pointer-events-none flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#252525] transition-colors">
+    <div
+      ref={rootRef}
+      className="group relative min-h-[48px] w-full rounded-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#004225]"
+    >
+      <div
+        className={cn(
+          buttonChromeClassName,
+          "pointer-events-none text-[#252525] group-hover:bg-[#e8e8e8]"
+        )}
+      >
         <GoogleLogo />
         <span>{label}</span>
       </div>
       <div
         ref={buttonRef}
         aria-label={label}
-        className="absolute inset-0 z-10 flex w-full justify-center opacity-0 [&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!rounded-full"
+        className="absolute inset-0 z-10 h-full w-full overflow-hidden rounded-full opacity-0 [&_*]:!h-full [&_*]:!w-full [&_iframe]:!rounded-full"
       />
     </div>
   );
