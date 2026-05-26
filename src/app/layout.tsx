@@ -1,0 +1,119 @@
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Outfit } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
+import { UserEnvironmentProvider } from "@/context/UserEnvironmentContext";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
+import { Theme } from "@radix-ui/themes";
+import { Toaster } from "@/components/ui/sonner";
+import ScrollToTop from "@/components/layout/ScrollToTop";
+import OnboardingModal from "@/features/onboarding/components/OnboardingModal";
+
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
+
+export const viewport: Viewport = {
+  themeColor: "#efefef",
+};
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://www.campuslyan.se"),
+  title: {
+    default: "CampusLyan - Gratis studentbostäder samlade på ett ställe",
+    template: "%s | CampusLyan",
+  },
+  description:
+    "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag.",
+  keywords: [
+    "studentbostad",
+    "studentlägenhet",
+    "studentboende",
+    "bostad student",
+    "hyra rum student",
+    "CampusLyan",
+    "andrahand student",
+    "gratis bostadsplattform",
+    "StudentLyan",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "CampusLyan",
+    title: "CampusLyan - Gratis plattform för studentbostäder",
+    description:
+      "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
+    images: [
+      { url: "/campuslyan-og.png", width: 1200, height: 630, alt: "CampusLyan" },
+    ],
+    locale: "sv_SE",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@campuslyan",
+    title: "CampusLyan - Gratis plattform för studentbostäder",
+    description:
+      "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
+    images: ["/campuslyan-og.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+    },
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    shortcut: ["/favicon.ico"],
+  },
+  manifest: "/site.webmanifest",
+  verification: {
+    google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes",
+  },
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="sv">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans bg-background text-foreground`}
+      >
+        <SpeedInsights />
+        <Analytics />
+        <AuthProvider>
+          <UserEnvironmentProvider>
+            <Theme>
+              <ScrollToTop />
+              {children}
+              <OnboardingModal />
+              <Toaster
+                position="bottom-right"
+                richColors
+                toastOptions={{
+                  duration: 4000,
+                  classNames: {
+                    actionButton: "",
+                  },
+                }}
+                theme="light"
+              />
+            </Theme>
+          </UserEnvironmentProvider>
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
