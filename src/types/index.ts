@@ -4,6 +4,5 @@ export * from "./listing";
 export * from "./queue";
 export * from "./school";
 export * from "./notification";
-export * from "./message";
 export * from "./api";
 export * from "./ui";

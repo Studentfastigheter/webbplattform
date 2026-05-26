@@ -12,6 +12,8 @@ export type City = string;
 export type Area = string;
 export type UrlString = string;
 export type Tag = string;
+export type SystemProvider = "HOGIA" | "PIGELLO" | "DEMO" | "MOMENTUM" | "FAST2";
+export type DocumentFileType = "PDF" | "TXT" | "PICTURE" | "DOCX";
 
 export type Coordinates = {
   lat?: number | null;
@@ -34,4 +36,3 @@ export interface AdvertiserSummary {
   contactNote?: string | null;
   subtitle?: string | null;
 }
-

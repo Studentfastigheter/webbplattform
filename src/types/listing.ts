@@ -1,5 +1,9 @@
-import { Area, City, Coordinates, DateString, Tag, TimestampString, UrlString } from "./common";
-import { User } from "./user";
+import {
+  DateString,
+  DocumentFileType,
+  SystemProvider,
+  TimestampString,
+} from "./common";
 export type { PageResponse } from "./api";
 
 // ==========================================
@@ -16,7 +20,7 @@ export interface ListingCardDTO {
   dwellingType: string;
   rooms: number;
   sizeM2: number;
-  tags: string[];
+  tags: ListingTagDTO[];
   hostType: string;
   hostName?: string;
   hostLogoUrl?: string;
@@ -27,8 +31,9 @@ export interface ListingCardDTO {
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
-  /** Backend list cards currently use the singular field name. */
+  /** Swagger field for ListingCardDTO. */
   requirementProfileId?: string | null;
+  /** @deprecated Detail DTO uses requirementsProfileId; cards use requirementProfileId. */
   requirementsProfileId?: string | null;
   published?: TimestampString | null;
   nearbyLocations?: ListingNearbyLocationDTO[];
@@ -46,7 +51,7 @@ export interface ListingDetailDTO {
   rooms: number;
   sizeM2: number | null;
   description: string;
-  tags: string[];
+  tags: ListingTagDTO[];
   imageUrls: string[]; 
   
   // Datum
@@ -64,7 +69,7 @@ export interface ListingDetailDTO {
   ownerName: string;
   ownerLogoUrl?: string | null;
   ownerId: number;
-  provider?: string | null;
+  provider?: SystemProvider | string | null;
   status?: ListingStatus | string | null;
   verifiedOwner: boolean;
   requirementsProfileId?: string | null;
@@ -85,9 +90,11 @@ export interface ListingTagDTO {
   icon?: string | null;
 }
 
-export interface RequiredDocument {
-  documentType: "PDF" | "TXT" | "PICTURE" | "DOCX" | string;
-  documentName: string;
+interface RequiredDocument {
+  caption?: string | null;
+  validityDays?: number | null;
+  mandatory?: boolean | null;
+  validTypes?: Array<DocumentFileType | string>;
 }
 
 export interface RequirementsProfileDTO {
@@ -154,94 +161,3 @@ export interface PublishListingRequest {
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
 }
-
-// ==========================================
-// GAMLA TYPER (Entity-modeller)
-// Behåll dessa om du använder dem i andra delar av appen (t.ex. Admin)
-// ==========================================
-
-// IDs
-export type ListingId = string;
-export type ListingImageId = number;
-export type ListingLikedId = string;
-export type ListingApplicationId = number;
-export type WatchlistId = number;
-
-// Status
-export type ListingApplicationStatus = "submitted" | "accepted" | "rejected";
-
-// Bilder
-export type ListingImage = {
-  id: ListingImageId;
-  imageUrl: UrlString;
-  createdAt: TimestampString;
-};
-
-// Base Listing
-export interface BaseListing extends Coordinates {
-  id: ListingId;
-  title: string;
-  area?: Area | null;
-  city?: City | null;
-  address?: string | null;
-  dwellingType?: string | null;
-  rooms?: number | null;
-  sizeM2?: number | null;
-  rent?: number | null;
-  moveIn?: DateString | null;
-  applyBy?: DateString | null;
-  availableFrom?: DateString | null;
-  availableTo?: DateString | null;
-  description?: string | null;
-  tags?: Tag[] | null;
-  status: ListingStatus;
-  createdAt: TimestampString;
-  updatedAt: TimestampString;
-  images?: ListingImage[]; 
-}
-
-// Company Listing
-export interface CompanyListing extends BaseListing {
-  company: User;
-}
-
-// Private Listing
-export interface PrivateListing extends BaseListing {
-  landlord: User;
-  applicationCount?: number | null;
-}
-
-// Union type
-export type Listing = CompanyListing | PrivateListing;
-
-// --- Interaktioner ---
-
-export type StudentLikedListing = {
-  id: ListingLikedId;
-  listing: Listing;
-  studentId: number;
-  createdAt: TimestampString;
-};
-
-export type ListingApplication = {
-  id: ListingApplicationId;
-  studentId: number;
-  companyListing?: CompanyListing;
-  privateListing?: PrivateListing;
-  applicationMessage?: string | null;
-  status: ListingApplicationStatus;
-  createdAt: TimestampString;
-  updatedAt: TimestampString;
-};
-
-export type StudentSearchWatchlist = {
-  id: WatchlistId;
-  studentId: number;
-  city?: City | null;
-  listingType?: "company" | "private" | null;
-  minRent?: number | null;
-  maxRent?: number | null;
-  minRooms?: number | null;
-  maxRooms?: number | null;
-  createdAt: TimestampString;
-};

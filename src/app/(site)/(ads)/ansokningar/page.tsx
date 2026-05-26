@@ -17,7 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 import { listingService } from "@/features/listings/services/listing-service";
 import { queueService } from "@/features/queues/services/queue-service";
 import { type CompanyId } from "@/types";
-import type { ListingDetailDTO, StudentApplicationDTO } from "@/types/listing";
+import type { ListingDetailDTO, ListingTagDTO, StudentApplicationDTO } from "@/types/listing";
 
 const STUDENT_COLUMNS: ListFrameColumn[] = [
   { id: "annons", label: "Annons", width: "2.6fr" },
@@ -51,6 +51,11 @@ function hasOfferStatus(status: unknown) {
     "erbjudande",
   ].includes(normalized);
 }
+
+const listingTagLabels = (tags?: ListingTagDTO[] | null): string[] =>
+  (tags ?? [])
+    .map((tag) => tag.displayName || tag.tagKey || "")
+    .filter(Boolean);
 
 function toStudentStatus(status: unknown): ListingApplicationRowProps["status"] {
   const normalized = normalizeApplicationStatus(status);
@@ -112,7 +117,7 @@ function buildApplicationRow(
     sizeM2: detail?.sizeM2 ?? null,
     landlordType: ownerName,
     imageUrl,
-    tags: detail?.tags ?? [],
+    tags: listingTagLabels(detail?.tags),
     images: imageUrl
       ? [
           {
@@ -302,7 +307,7 @@ export default function MyApplicationsPage() {
               sizeM2: detail?.sizeM2 ?? null,
               landlordType: detail?.ownerName ?? app.hostType,
               imageUrl: detail?.imageUrls?.[0] ?? app.listingImage ?? "",
-              tags: detail?.tags ?? [],
+              tags: listingTagLabels(detail?.tags),
 
               images: (detail?.imageUrls?.[0] ?? app.listingImage)
                 ? [

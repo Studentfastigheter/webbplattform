@@ -204,58 +204,6 @@ function buildListingSearchQuery(
   });
 }
 
-// --- Mock Coordinates Utility ---
-// En enkel fallback för att generera koordinater om backend inte levererar dem (t.ex. vid mock/demo-data).
-const addMockCoordinates = <T extends {
-  lat?: number | null;
-  lng?: number | null;
-  title: string;
-  location?: string | null;
-  city?: string | null;
-  area?: string | null;
-  fullAddress?: string | null;
-}>(dto: T): T => {
-  if (typeof dto.lat === "number" && typeof dto.lng === "number") return dto;
-
-  // Deterministisk offset baserad på titel/plats för att de inte ska alla ligga på exakt samma pixel (hash algorithm)
-  const titleLower = dto.title?.toLowerCase() || "";
-  const locLower = [dto.location, dto.city, dto.area, dto.fullAddress]
-    .filter((value): value is string => typeof value === "string" && value.length > 0)
-    .join(" ")
-    .toLowerCase();
-  
-  let hash = 0;
-  for (let i = 0; i < titleLower.length; i++) {
-    hash = ((hash << 5) - hash) + titleLower.charCodeAt(i);
-    hash |= 0;
-  }
-  const randomOffsetLat = (Math.abs(hash) % 100) * 0.0001 - 0.005;
-  const randomOffsetLng = (Math.abs(hash >> 2) % 100) * 0.0001 - 0.005;
-  
-  let lat = 57.708870; // Göteborg center
-  let lng = 11.974560;
-
-  if (titleLower.includes("pennygången")) {
-    lat = 57.6749 + randomOffsetLat;
-    lng = 11.9329 + randomOffsetLng;
-  } else if (titleLower.includes("högsbogatan")) {
-    lat = 57.6811 + randomOffsetLat;
-    lng = 11.9366 + randomOffsetLng;
-  } else if (titleLower.includes("långgatan")) {
-    lat = 57.6993 + randomOffsetLat;
-    lng = 11.9482 + randomOffsetLng;
-  } else if (locLower.includes("stockholm")) {
-    lat = 59.3293 + randomOffsetLat * 10;
-    lng = 18.0686 + randomOffsetLng * 10;
-  } else {
-    // Other Gothenburg locations spread further out
-    lat += randomOffsetLat * 5;
-    lng += randomOffsetLng * 5;
-  }
-
-  return { ...dto, lat, lng };
-};
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -288,28 +236,37 @@ const firstStringArray = (...values: unknown[]) => {
   return [];
 };
 
-const normalizeListingTag = (value: unknown): string | null => {
+const normalizeListingTag = (value: unknown): ListingTagDTO | null => {
   if (typeof value === "string") {
     const trimmed = value.normalize("NFC").trim();
-    return trimmed.length > 0 ? trimmed : null;
+    return trimmed.length > 0 ? { displayName: trimmed, tagKey: trimmed, icon: null } : null;
   }
 
   if (!isRecord(value)) {
     return null;
   }
 
-  return (
-    firstString(
-      value.displayName,
-      value.name,
-      value.label,
-      value.key,
-      value.icon
-    ) ?? null
+  const displayName = firstString(
+    value.displayName,
+    value.name,
+    value.label,
+    value.value,
+    value.key,
+    value.tagKey
   );
+
+  if (!displayName) {
+    return null;
+  }
+
+  return {
+    tagKey: firstString(value.tagKey, value.key) ?? null,
+    displayName,
+    icon: firstString(value.icon) ?? null,
+  };
 };
 
-const normalizeListingTags = (...values: unknown[]): string[] => {
+const normalizeListingTags = (...values: unknown[]): ListingTagDTO[] => {
   for (const value of values) {
     if (!Array.isArray(value)) {
       continue;
@@ -317,7 +274,7 @@ const normalizeListingTags = (...values: unknown[]): string[] => {
 
     return value
       .map(normalizeListingTag)
-      .filter((tag): tag is string => tag !== null);
+      .filter((tag): tag is ListingTagDTO => tag !== null);
   }
 
   return [];
@@ -492,8 +449,7 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
 export const normalizeListingCards = (items: unknown[]): ListingCardDTO[] =>
   items
     .map(normalizeListingCard)
-    .filter((item): item is ListingCardDTO => item !== null)
-    .map(addMockCoordinates);
+    .filter((item): item is ListingCardDTO => item !== null);
 
 const normalizeListingDetail = (dto: ListingDetailDTO): ListingDetailDTO => {
   const source = dto as ListingDetailDTO & Record<string, unknown>;
@@ -563,11 +519,30 @@ const normalizeRequirementsProfile = (
       ? value.requiredDocuments
           .filter((document): document is Record<string, unknown> => isRecord(document))
           .map((document) => ({
-            documentType: firstString(document.documentType) ?? "",
-            documentName:
-              firstString(document.documentName, document.displayName, document.name) ?? "",
+            caption:
+              firstString(
+                document.caption,
+                document.documentName,
+                document.displayName,
+                document.name
+              ) ?? null,
+            validityDays: Number.isFinite(Number(document.validityDays))
+              ? Number(document.validityDays)
+              : null,
+            mandatory:
+              typeof document.mandatory === "boolean"
+                ? document.mandatory
+                : null,
+            validTypes: Array.isArray(document.validTypes)
+              ? document.validTypes.filter(
+                  (type): type is string =>
+                    typeof type === "string" && type.trim().length > 0
+                )
+              : firstString(document.documentType)
+                ? [firstString(document.documentType)!]
+                : [],
           }))
-          .filter((document) => document.documentName.length > 0)
+          .filter((document) => Boolean(document.caption) || document.validTypes.length > 0)
       : [],
   };
 };
@@ -645,7 +620,7 @@ export const listingService = {
     const detail = await apiClient<ListingDetailDTO>(`/listings/${pathSegment(id)}`, {
       auth: false,
     });
-    return detail ? addMockCoordinates(normalizeListingDetail(detail)) : detail;
+    return detail ? normalizeListingDetail(detail) : detail;
   },
 
   incrementViews: async (

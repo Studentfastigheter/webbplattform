@@ -26,6 +26,9 @@ function formatDwellingType(value: string) {
   return DWELLING_TYPE_LABELS[value] ?? value;
 }
 
+const getListingTagLabel = (tag: ListingDetailDTO["tags"][number]) =>
+  typeof tag === "string" ? tag : tag.displayName || tag.tagKey || "";
+
 function BostadAboutContent({
   listing,
   isFavorite,
@@ -208,15 +211,18 @@ function BostadAboutContent({
 
       {listing.tags && listing.tags.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          {listing.tags.map((tag) => (
-            <Tag
-              key={tag}
-              text={tag}
-              height={28}
-              horizontalPadding={14}
-              fontSize={13}
-            />
-          ))}
+          {listing.tags.map((tag) => {
+            const label = getListingTagLabel(tag);
+            return label ? (
+              <Tag
+                key={label}
+                text={label}
+                height={28}
+                horizontalPadding={14}
+                fontSize={13}
+              />
+            ) : null;
+          })}
         </div>
       )}
 

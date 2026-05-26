@@ -571,8 +571,8 @@ export const authService = {
     });
   },
 
-  pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus | AuthResponse> => {
-    return apiClient<FrejaAuthStatus | AuthResponse>(
+  pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {
+    return apiClient<FrejaAuthStatus>(
       `/auth/poll/${pathSegment(authRef)}`,
       { auth: false }
     );

@@ -40,6 +40,7 @@ yarn-error.log*
 # env files
 .env*
 data/*.local.json
+src/data/*.local.json
 
 # vercel
 .vercel

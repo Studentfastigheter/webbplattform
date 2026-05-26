@@ -1,8 +1,4 @@
-import { City, JsonValue, Tag, TimestampString, UrlString } from "./common";
-// Behåll dina importer om du använder dem i relations-typen längst ner
-import { School } from "./school";
-import { StudentLikedListing, ListingApplication, StudentSearchWatchlist } from "./listing";
-import { StudentQueueApplication } from "./queue";
+import { City, Tag, TimestampString, UrlString } from "./common";
 
 // --- IDs & Typer ---
 export type StudentId = number;
@@ -220,13 +216,3 @@ export interface PasswordResetFinalRequest {
 export interface VerifyEmailRequest {
   email: string;
 }
-
-// --- Komplexa typer (Behåll denna om du bygger ut objektet på frontend) ---
-export type StudentWithRelations = User & {
-  school?: School | null;
-  likedListings?: StudentLikedListing[];
-  listingApplications?: ListingApplication[];
-  queueApplications?: StudentQueueApplication[];
-  searchWatchlist?: StudentSearchWatchlist[];
-  // notifications?: UserNotification[]; // Hanteras ofta separat via context
-};

@@ -18,17 +18,18 @@ import {
 import {
   type School,
   type SchoolId,
-  type StudentWithRelations,
+  type User,
 } from "@/types";
 import { FaLinkedin, FaInstagram, FaFacebook } from "react-icons/fa6";
 
-export type ProfileStats = {
+type ProfileStats = {
   studyProgram?: string;
   studyPace?: string;
   preferredArea?: string;
 };
 
-export type StudentProfileExtended = StudentWithRelations & {
+export type StudentProfileExtended = User & {
+  school?: School | null;
   headline?: string;
   stats?: ProfileStats;
   bannerImage?: string;

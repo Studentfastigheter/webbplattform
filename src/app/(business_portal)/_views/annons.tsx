@@ -22,6 +22,10 @@ type SaveState = {
   message: string | null;
 };
 
+type EditableListingDraft = Omit<ListingDetailDTO, "tags"> & {
+  tags: string[];
+};
+
 const emptySaveState: SaveState = {
   status: "idle",
   message: null,
@@ -41,7 +45,7 @@ function toNullableDateInputValue(value?: string | null) {
   return toDateInputValue(value) || null;
 }
 
-function cloneEditableListing(listing: ListingDetailDTO): ListingDetailDTO {
+function cloneEditableListing(listing: ListingDetailDTO): EditableListingDraft {
   return {
     ...listing,
     availableFrom: toNullableDateInputValue(listing.availableFrom),
@@ -57,15 +61,17 @@ function normalizeNumberValue(value: number | null | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function normalizeTagValue(value: string) {
-  return value.normalize("NFC").trim();
+function normalizeTagValue(value: string | ListingTagDTO) {
+  return (typeof value === "string" ? value : value.displayName || value.tagKey || "")
+    .normalize("NFC")
+    .trim();
 }
 
-function normalizeTagKey(value: string) {
+function normalizeTagKey(value: string | ListingTagDTO) {
   return normalizeTagValue(value).toLocaleLowerCase("sv-SE");
 }
 
-function normalizeTagList(tags: string[] | undefined) {
+function normalizeTagList(tags: Array<string | ListingTagDTO> | undefined) {
   const seen = new Set<string>();
   const normalizedTags: string[] = [];
 
@@ -120,7 +126,7 @@ function areStringArraysEqual(left: string[] | undefined, right: string[] | unde
 }
 
 function getEndpointTagsFromSelection(
-  selectedTags: string[] | undefined,
+  selectedTags: Array<string | ListingTagDTO> | undefined,
   availableTags: ListingTagDTO[]
 ) {
   const selectedKeys = new Set(normalizeTagList(selectedTags).map(normalizeTagKey));
@@ -135,7 +141,7 @@ function getEndpointTagsFromSelection(
 }
 
 function getEditableSnapshot(
-  listing: ListingDetailDTO | null,
+  listing: EditableListingDraft | ListingDetailDTO | null,
   availableTags: ListingTagDTO[] = []
 ) {
   if (!listing) return "";
@@ -155,11 +161,11 @@ function getEditableSnapshot(
 }
 
 function createUpdatePayload(
-  draft: ListingDetailDTO,
-  listing: ListingDetailDTO | null,
+  draft: EditableListingDraft,
+  listing: EditableListingDraft | null,
   availableTags: ListingTagDTO[]
 ): UpdateListingRequest {
-  const baseline = listing ? cloneEditableListing(listing) : null;
+  const baseline = listing;
   const payload: UpdateListingRequest = {};
 
   if (!baseline || draft.title !== baseline.title) {
@@ -239,13 +245,13 @@ function EditableListingPreview({
   onDraftChange,
   onNumberChange,
 }: {
-  draft: ListingDetailDTO;
+  draft: EditableListingDraft;
   galleryImages: string[];
   availableTags: ListingTagDTO[];
   tagsLoading: boolean;
   tagsError: string | null;
   onImageEdit: () => void;
-  onDraftChange: (patch: Partial<ListingDetailDTO>) => void;
+  onDraftChange: (patch: Partial<EditableListingDraft>) => void;
   onNumberChange: (key: "rent" | "rooms" | "sizeM2", value: string) => void;
 }) {
   const selectedTags = draft.tags ?? [];
@@ -381,7 +387,7 @@ function EditableListingPreview({
                       onChange={(event) =>
                         onDraftChange({
                           [item.key]: event.target.value || null,
-                        } as Partial<ListingDetailDTO>)
+                        } as Partial<EditableListingDraft>)
                       }
                       className={`${inlineInputClass} mt-1 w-full text-sm font-medium text-gray-900 sm:-mx-2 sm:w-40`}
                     />
@@ -470,8 +476,8 @@ function EditableListingPreview({
 }
 
 export default function Annons({ id }: AnnonsPageProps) {
-  const [listing, setListing] = useState<ListingDetailDTO | null>(null);
-  const [draft, setDraft] = useState<ListingDetailDTO | null>(null);
+  const [listing, setListing] = useState<EditableListingDraft | null>(null);
+  const [draft, setDraft] = useState<EditableListingDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>(emptySaveState);
@@ -499,7 +505,7 @@ export default function Annons({ id }: AnnonsPageProps) {
 
         const normalized = cloneEditableListing(res);
         setListing(normalized);
-        setDraft(cloneEditableListing(normalized));
+        setDraft({ ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] });
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -546,7 +552,7 @@ export default function Annons({ id }: AnnonsPageProps) {
     [availableTags, draft, listing]
   );
 
-  const updateDraft = (patch: Partial<ListingDetailDTO>) => {
+  const updateDraft = (patch: Partial<EditableListingDraft>) => {
     setDraft((current) => (current ? { ...current, ...patch } : current));
     setSaveState(emptySaveState);
   };
@@ -555,7 +561,7 @@ export default function Annons({ id }: AnnonsPageProps) {
     const parsed = value === "" ? null : Number(value);
     updateDraft({
       [key]: normalizeNumberValue(parsed),
-    } as Partial<ListingDetailDTO>);
+    } as Partial<EditableListingDraft>);
   };
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
@@ -589,10 +595,12 @@ export default function Annons({ id }: AnnonsPageProps) {
 
     try {
       await listingService.update(id, payload);
-      const next = await listingService.get(id).catch(() => draft);
-      const normalized = cloneEditableListing(next);
+      const normalized = await listingService
+        .get(id)
+        .then(cloneEditableListing)
+        .catch(() => draft);
       setListing(normalized);
-      setDraft(cloneEditableListing(normalized));
+      setDraft({ ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] });
       setSaveState({ status: "success", message: "Ändringarna är sparade." });
     } catch (err) {
       setSaveState({
@@ -604,7 +612,7 @@ export default function Annons({ id }: AnnonsPageProps) {
 
   const resetDraft = () => {
     if (!listing) return;
-    setDraft(cloneEditableListing(listing));
+    setDraft({ ...listing, imageUrls: [...(listing.imageUrls ?? [])] });
     setSaveState(emptySaveState);
   };
 

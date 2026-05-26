@@ -83,8 +83,8 @@ export default function QueueDetailPage() {
     [user]
   );
 
-  // Resolve the parsed company id once so we can drive both the fetch and
-  // the dummy media lookup off the same number.
+  // Resolve the parsed company id once so company, queues, listings, and media
+  // requests all use the same normalized id.
   const companyIdNumber = useMemo(() => {
     if (!companyIdRaw) return null;
     const parsed = Number(companyIdRaw);

@@ -288,13 +288,13 @@ function RequirementsProfileSection({
           {profile.requiredDocuments.map((document, index) => (
             <div
               className="rounded-2xl border border-gray-200 bg-white px-4 py-3"
-              key={`${document.documentType}-${document.documentName}-${index}`}
+              key={`${document.caption ?? "document"}-${index}`}
             >
               <p className="text-sm font-semibold text-gray-900">
-                {document.documentName}
+                {document.caption ?? "Dokument"}
               </p>
               <p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-gray-500">
-                {document.documentType}
+                {document.validTypes?.join(", ") || "Valfri filtyp"}
               </p>
             </div>
           ))}

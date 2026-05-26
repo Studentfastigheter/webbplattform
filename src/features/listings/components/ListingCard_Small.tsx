@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Tag from "@/components/ui/Tag";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import type { ListingTagDTO } from "@/types/listing";
 
 // ÄNDRING: Vi definierar props manuellt istället för att ärva från gamla ListingWithRelations
 export type ListingCardSmallProps = {
@@ -14,7 +15,7 @@ export type ListingCardSmallProps = {
   rooms: number;
   sizeM2: number;
   rent: number;
-  tags?: string[];
+  tags?: Array<string | ListingTagDTO>;
   imageUrl?: string;      // En enkel sträng nu (URL)
   landlordType?: string;  // Motsvarar hostType ("Privat värd" / "Företag")
   hostName?: string;
@@ -51,6 +52,9 @@ const formatRent = (rent?: number | null) =>
         maximumFractionDigits: 0,
       })} kr/mån`
     : "-";
+
+const getTagLabel = (tag: string | ListingTagDTO) =>
+  typeof tag === "string" ? tag : tag.displayName || tag.tagKey || "";
 
 const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const {
@@ -138,7 +142,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     fontSize: (isCompact ? 9.5 : 10.5) * scale,
     lineHeight: (isCompact ? 12 : 13) * scale,
   };
-  const safeTags = tags ?? [];
+  const safeTags = (tags ?? []).map(getTagLabel).filter(Boolean);
   const locationText = [area, city].filter(Boolean).join(", ") || "Ej angivet";
   const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
   const logoSize = variant === "compact" ? 50 : 64;

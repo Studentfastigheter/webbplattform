@@ -1,15 +1,13 @@
 // src/types/notification.ts
 
-export type NotificationType = "message" | "queue_update" | "listing_status" | "generic";
-
-export type NotificationBase = {
+type NotificationBase = {
   id: number; // Backend använder Long (number), inte UUID (string)
   createdAt: string;
   opened?: boolean;
   title?: string; // Backend skickar alltid en titel
 };
 
-export type MessageNotification = NotificationBase & {
+type MessageNotification = NotificationBase & {
   type: "message";
   sender: string;
   body: string;
@@ -31,7 +29,7 @@ export type ListingStatusNotification = NotificationBase & {
   body?: string;
 };
 
-export type GenericNotification = NotificationBase & {
+type GenericNotification = NotificationBase & {
   type: "generic";
   body: string;
 };
