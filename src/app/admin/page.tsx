@@ -256,7 +256,7 @@ export default function AdminPage() {
   const payloadPreview = useMemo(
     () =>
       rows.map((row) => ({
-        name: row.name,
+        schoolName: row.name,
         city: row.city,
         lat: parseCoordinate(row.lat) ?? 0,
         lng: parseCoordinate(row.lng) ?? 0,
@@ -578,7 +578,7 @@ export default function AdminPage() {
               {JSON.stringify(
                 payloadPreview.length > 0
                   ? payloadPreview
-                  : [{ name: "string", city: "string", lat: 0, lng: 0 }],
+                  : [{ schoolName: "string", city: "string", lat: 0, lng: 0 }],
                 null,
                 2
               )}

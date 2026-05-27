@@ -99,6 +99,7 @@ export type ListingSearchParams = {
   /** @deprecated Use schoolTargetLng. Kept so older UI call sites still map to the current backend query name. */
   school_lng?: number | null;
   amenities?: string[];
+  seed?: string | null;
 };
 
 export type ListingViewIncrementType = "QUICK" | "DETAILED";
@@ -183,7 +184,7 @@ function buildListingSearchQuery(
     ...(includePageable
       ? {
           page: params.page ?? 0,
-          size: params.size ?? 12,
+          size: params.size ?? LISTINGS_DEFAULT_PAGE_SIZE,
           sort: params.sort,
         }
       : {}),
@@ -201,6 +202,7 @@ function buildListingSearchQuery(
     schoolTargetLng: params.schoolTargetLng ?? params.school_lng,
     maxDistanceToSchool: params.maxDistanceToSchool,
     amenities: params.amenities,
+    seed: params.seed?.trim(),
   });
 }
 
@@ -603,6 +605,13 @@ export const listingService = {
       `/listings/facets${buildListingSearchQuery(params, false)}`,
       { auth: false }
     );
+  },
+
+  getCities: async (): Promise<string[]> => {
+    const cities = await apiClient<unknown>("/listings/cities", { auth: false });
+    return Array.isArray(cities)
+      ? cities.filter((city): city is string => typeof city === "string")
+      : [];
   },
 
   create: async (payload: PublishListingRequest): Promise<void> => {

@@ -57,7 +57,7 @@ export const schoolService = {
     await apiClient<void>("/schools/add", {
       method: "POST",
       body: JSON.stringify({
-        name: school.name,
+        schoolName: school.name,
         city: school.city,
         lat: school.lat,
         lng: school.lng,

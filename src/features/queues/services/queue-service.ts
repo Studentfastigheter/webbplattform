@@ -27,7 +27,7 @@ export interface CompanyDTO {
   privacyPolicyUrl?: string | null;
   pictureUrlList?: string[];
   videoUrlList?: string[];
-  socialLinks?: unknown[];
+  socialLinks?: Record<string, string>;
   cities?: string[];
   schools?: Array<{
     id?: number;
@@ -239,6 +239,25 @@ function firstNumber(...values: unknown[]): number | undefined {
   return undefined;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeStringRecord(value: unknown): Record<string, string> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const entries = Object.entries(value)
+    .map(([key, entryValue]) => [
+      key,
+      typeof entryValue === "string" ? entryValue : undefined,
+    ] as const)
+    .filter((entry): entry is readonly [string, string] => entry[1] !== undefined);
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 function normalizeCompanyDto(value: unknown): CompanyDTO {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
@@ -266,6 +285,7 @@ function normalizeCompanyDto(value: unknown): CompanyDTO {
     videoUrlList: arrayFromApiResponse<string>(
       source.videoUrlList ?? source.companyVideos
     ),
+    socialLinks: normalizeStringRecord(source.socialLinks),
   };
 }
 

@@ -64,8 +64,10 @@ function buildInitialDraft(
     contactPhone: companyData.contactPhone ?? companyData.phone ?? "",
     logoUrl: companyData.logoUrl ?? "",
     bannerUrl: companyData.bannerUrl ?? "",
-    facebook: firstQueue?.socialLinks?.facebook ?? "",
-    linkedin: firstQueue?.socialLinks?.linkedin ?? "",
+    facebook:
+      companyData.socialLinks?.facebook ?? firstQueue?.socialLinks?.facebook ?? "",
+    linkedin:
+      companyData.socialLinks?.linkedin ?? firstQueue?.socialLinks?.linkedin ?? "",
     orgNumber:
       companyData.orgNumber ??
       companyData.organisationNumber ??
@@ -115,7 +117,8 @@ function buildCompanyChangePayload(draft: ProfileDraft): CompanyChangeableDataDT
     phone: toNullableString(draft.contactPhone),
     contactEmail: toNullableString(draft.contactEmail),
     companyUrl: toNullableString(draft.website),
-    socialLinkByPlatform: {
+    websiteUrl: toNullableString(draft.website),
+    socialLinks: {
       facebook: toNullableString(draft.facebook),
       linkedin: toNullableString(draft.linkedin),
     },
@@ -142,6 +145,11 @@ function mergeSavedCompany(
     bannerUrl: isLocalObjectUrl(draft.bannerUrl)
       ? company?.bannerUrl ?? ""
       : draft.bannerUrl,
+    socialLinks: {
+      ...(company?.socialLinks ?? {}),
+      facebook: draft.facebook,
+      linkedin: draft.linkedin,
+    },
   };
 }
 
@@ -421,16 +429,23 @@ export default function ProfilePage() {
     Promise.all([
       companyService.privateProfile(companyId),
       queueService.getByCompany(companyId),
+      companyService.publicProfile(companyId).catch(() => null),
     ])
-      .then(([companyData, companyQueues]) => {
+      .then(([companyData, companyQueues, publicCompanyData]) => {
         if (!active) return;
 
         const normalizedQueues = Array.isArray(companyQueues) ? companyQueues : [];
         const firstQueue = normalizedQueues[0];
+        const companyDataWithPublicFields: CompanyPrivateDTO = {
+          ...companyData,
+          socialLinks: publicCompanyData?.socialLinks ?? companyData.socialLinks,
+        };
 
-        setCompany(companyData);
+        setCompany(companyDataWithPublicFields);
         setCompanyQueue(firstQueue ?? null);
-        setDraft(buildInitialDraft(companyId, companyData, firstQueue));
+        setDraft(
+          buildInitialDraft(companyId, companyDataWithPublicFields, firstQueue)
+        );
       })
       .catch((fetchError) => {
         if (!active) return;

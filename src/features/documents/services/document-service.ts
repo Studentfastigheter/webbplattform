@@ -54,6 +54,8 @@ export type UserDocumentDTO = {
   filesystemId: string;
   expired?: boolean;
   documentType?: DocumentFileType | string;
+  mediaType?: string;
+  originalFilename?: string;
   sharedWith?: SharedUserDocumentDTO[];
   notSharedWith?: UploadDocumentTargetDTO[];
 };
@@ -110,9 +112,14 @@ function normalizeUserDocument(value: unknown): UploadedDocument | null {
 
   return {
     name: filesystemId,
-    title: stringValue(value.documentType) ?? "Dokument",
+    title:
+      stringValue(value.originalFilename) ??
+      stringValue(value.documentType) ??
+      "Dokument",
     filesystemId,
     documentType: stringValue(value.documentType),
+    contentType: stringValue(value.mediaType),
+    mimeType: stringValue(value.mediaType),
     expired: typeof value.expired === "boolean" ? value.expired : undefined,
     sharedWith: Array.isArray(value.sharedWith)
       ? (value.sharedWith as SharedUserDocumentDTO[])

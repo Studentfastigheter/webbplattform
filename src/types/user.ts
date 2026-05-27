@@ -12,7 +12,8 @@ export type AccountType =
   | "company"
   | "private_landlord"
   | "landlord"
-  | "quick_register";
+  | "quick_register"
+  | "admin";
 
 export type UserCompanyLink = {
   id?: CompanyId | string;
@@ -208,4 +209,10 @@ export interface PasswordResetFinalRequest {
 
 export interface VerifyEmailRequest {
   email: string;
+}
+
+export interface UserDeleteFailureDTO {
+  message?: string;
+  error?: "EDU001" | "EDU002" | "EDU003";
+  data?: Record<string, unknown>;
 }

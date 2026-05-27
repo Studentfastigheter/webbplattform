@@ -43,6 +43,7 @@ export type CompanyPrivateDTO = {
   organisationNumber?: string | null;
   organizationNumber?: string | null;
   internalContactNote?: string | null;
+  socialLinks?: Record<string, string>;
 };
 
 export type CompanyPublicDTO = {
@@ -66,13 +67,17 @@ export type CompanyPublicDTO = {
   schools?: ResidentSchool[];
   pictureUrlList?: string[];
   videoUrlList?: string[];
-  socialLinks?: unknown[];
+  socialLinks?: Record<string, string>;
 };
 
 export type CompanyRole = {
   name?: string;
   description?: string;
   accessLevel?: number;
+};
+
+export type SocialPlatform = {
+  platform?: string;
 };
 
 export type CompanyUserDTO = {
@@ -94,7 +99,13 @@ export type CompanyChangeableDataDTO = {
   phone?: string | null;
   contactEmail?: string | null;
   companyUrl?: string | null;
-  socialLinkByPlatform?: Record<string, string>;
+  subtitle?: string | null;
+  privacyPolicyUrl?: string | null;
+  termsUrl?: string | null;
+  websiteUrl?: string | null;
+  pictureUrlList?: string[];
+  videoUrlList?: string[];
+  socialLinks?: Record<string, string>;
 };
 
 export type CompanyImageTarget = "logo" | "banner";
@@ -284,6 +295,21 @@ function toArray<T>(value: unknown, includeSingleObject = false): T[] {
   }
 
   return [];
+}
+
+function normalizeStringRecord(value: unknown): Record<string, string> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const entries = Object.entries(value)
+    .map(([key, entryValue]) => [
+      key,
+      typeof entryValue === "string" ? entryValue : undefined,
+    ] as const)
+    .filter((entry): entry is readonly [string, string] => entry[1] !== undefined);
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function normalizeAnalyticalQuantity(value: unknown): AnalyticalQuantity | null {
@@ -589,7 +615,7 @@ function normalizeCompanyPublic(value: unknown): CompanyPublicDTO | null {
     schools,
     pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
     videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
-    socialLinks: toArray<unknown>(value.socialLinks),
+    socialLinks: normalizeStringRecord(value.socialLinks),
   };
 }
 
@@ -621,6 +647,7 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     ),
     internalContactNote: firstString(value.internalContactNote, value.contactNote),
     contactNote: firstString(value.contactNote, value.internalContactNote),
+    socialLinks: normalizeStringRecord(value.socialLinks),
   };
 }
 
@@ -1101,5 +1128,12 @@ export const companyService = {
     return apiClient<unknown>(`/landlord/${pathSegment(companyId)}/kickback`, {
       auth: false,
     });
+  },
+
+  getAllPlatforms: async (): Promise<SocialPlatform[]> => {
+    const platforms = await apiClient<unknown>("/companies/all-platforms", {
+      auth: false,
+    });
+    return arrayFromApiResponse<SocialPlatform>(platforms);
   },
 };

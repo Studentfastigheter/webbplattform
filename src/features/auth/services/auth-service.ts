@@ -17,6 +17,7 @@ import {
   QuickRegisterRequest,
   RegisterStudentRequest,
   FrejaAuthRef,
+  UserDeleteFailureDTO,
 } from "@/types";
 
 type AuthResponseLike = Partial<AuthResponse> & Record<string, unknown>;
@@ -410,6 +411,19 @@ export const authService = {
     });
   },
 
+  adminLogin: async (payload: LoginRequest): Promise<AuthResponse> => {
+    const email = payload.email.trim();
+    if (!email || !payload.password) {
+      throw new Error("Fyll i e-postadress och losenord.");
+    }
+
+    return apiClient<AuthResponse>("/auth/admin-login", {
+      method: "POST",
+      body: JSON.stringify({ email, password: payload.password }),
+      auth: false,
+    });
+  },
+
   googleLogin: async (
     payload: GoogleAuthRequest
   ): Promise<AuthResponse | GoogleRegisterResponse> => {
@@ -598,6 +612,19 @@ export const authService = {
     });
   },
 
+  finalizeEmailVerification: async (id: string): Promise<void> => {
+    await apiClient<void>(`/auth/verify-email/finalize/${pathSegment(id)}`, {
+      auth: false,
+    });
+  },
+
+  verifyStudentDeprecated: async (): Promise<Record<string, unknown>> => {
+    return apiClient<Record<string, unknown>>("/auth/verify-student", {
+      method: "POST",
+      auth: false,
+    });
+  },
+
   updateProfile: async (data: UpdateUserRequest): Promise<User> => {
     const payload = compactObject<UpdateUserRequest>({
       firstName: data.firstName,
@@ -619,6 +646,12 @@ export const authService = {
     throw new Error(
       "Lösenordsbyte för inloggade användare finns inte i aktuell API-version. Använd lösenordsåterställning i stället."
     );
+  },
+
+  deleteMe: async (): Promise<Record<string, unknown> | UserDeleteFailureDTO> => {
+    return apiClient<Record<string, unknown> | UserDeleteFailureDTO>("/auth/me", {
+      method: "DELETE",
+    });
   },
 
   logout: () => {
