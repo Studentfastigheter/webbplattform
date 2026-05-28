@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { normalizeAuthToken } from "@/lib/api/client";
+import { isAdminSubdomain } from "@/lib/subdomain-routing";
 import {
   authService,
   getOptionalAuthResponseToken,
@@ -19,20 +20,49 @@ import {
 } from "@/types";
 
 type AuthPayload = Partial<AuthResponse> & Record<string, unknown>;
+type JwtPayload = {
+  sub?: string;
+  uid?: number | string;
+  accountType?: string;
+};
 
-function getJwtSubject(token: string | null): string {
-  if (!token || typeof window === "undefined") return "";
+function getJwtPayload(token: string | null): JwtPayload {
+  if (!token || typeof window === "undefined") return {};
 
   try {
     const payload = token.split(".")[1];
-    if (!payload) return "";
+    if (!payload) return {};
 
     const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = JSON.parse(window.atob(normalized));
-    return typeof decoded.sub === "string" ? decoded.sub : "";
+    return JSON.parse(window.atob(normalized)) as JwtPayload;
   } catch {
-    return "";
+    return {};
   }
+}
+
+function getJwtSubject(token: string | null): string {
+  const payload = getJwtPayload(token);
+  return typeof payload.sub === "string" ? payload.sub : "";
+}
+
+function getAdminUserFromToken(token: string): User | null {
+  const payload = getJwtPayload(token);
+
+  if (payload.accountType?.toLowerCase() !== "admin") {
+    return null;
+  }
+
+  const email = typeof payload.sub === "string" ? payload.sub : "";
+  const numericId = Number(payload.uid);
+
+  return {
+    id: Number.isFinite(numericId) ? numericId : 0,
+    email,
+    accountType: "admin",
+    displayName: email || "Admin",
+    createdAt: new Date(0).toISOString(),
+    verified: true,
+  };
 }
 
 function withSessionEmail(user: User, token: string | null): User {
@@ -41,12 +71,40 @@ function withSessionEmail(user: User, token: string | null): User {
   return email ? { ...user, email } : user;
 }
 
+function getTransferredTokenFromHash() {
+  if (typeof window === "undefined" || !window.location.hash) {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const transferredToken = normalizeAuthToken(
+    params.get("token") ?? params.get("access_token")
+  );
+
+  if (!transferredToken) {
+    return null;
+  }
+
+  params.delete("token");
+  params.delete("access_token");
+
+  const nextHash = params.toString();
+  const nextUrl = `${window.location.pathname}${window.location.search}${
+    nextHash ? `#${nextHash}` : ""
+  }`;
+
+  window.history.replaceState(null, "", nextUrl);
+
+  return transferredToken;
+}
+
 type AuthCtx = {
   user: User | null;
   token: string | null; // NYTT: Exponera token för att fixa TypeScript-fel
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<User>;
+  adminLogin: (data: LoginRequest) => Promise<User>;
   googleLogin: (data: GoogleAuthRequest) => Promise<User>;
   googleRegister: (data: GoogleAuthRequest) => Promise<User>;
   completeAuth: (response: AuthResponse) => User;
@@ -66,9 +124,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 1. Initiera vid start
   useEffect(() => {
     const initAuth = async () => {
+      const transferredToken = getTransferredTokenFromHash();
       const storedToken =
         typeof window !== "undefined"
-          ? normalizeAuthToken(localStorage.getItem("token"))
+          ? transferredToken ?? normalizeAuthToken(localStorage.getItem("token"))
           : null;
       
       if (!storedToken) {
@@ -80,6 +139,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.setItem("token", storedToken);
         setToken(storedToken); // Synka state med localStorage
+
+        if (isAdminSubdomain()) {
+          const adminUser = getAdminUserFromToken(storedToken);
+          if (adminUser) {
+            setUser(adminUser);
+            return;
+          }
+        }
+
         const session = await authService.session(storedToken);
         const accessToken = getOptionalAuthResponseToken(session) ?? storedToken;
         const userData = withSessionEmail(getAuthResponseUser(session), accessToken);
@@ -134,6 +202,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (data: LoginRequest) => {
     const res = await authService.login(data);
     return applyAuthResponseFromSession(res as unknown as AuthPayload);
+  };
+
+  const adminLogin = async (data: LoginRequest) => {
+    const res = await authService.adminLogin(data);
+    return applyAuthResponse(res as unknown as AuthPayload);
   };
 
   const googleLogin = async (data: GoogleAuthRequest) => {
@@ -196,6 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!user, 
       isLoading, 
       login, 
+      adminLogin,
       googleLogin,
       googleRegister,
       completeAuth: (response) => applyAuthResponse(response as unknown as AuthPayload),

@@ -177,7 +177,10 @@ export async function apiClient<T>(
   }
 
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
-  const url = `${API_BASE}/${cleanEndpoint}`;
+  const url =
+    typeof window !== "undefined"
+      ? `/api/${cleanEndpoint}`
+      : `${API_BASE}/${cleanEndpoint}`;
   const method = (customOptions.method ?? "GET").toUpperCase();
 
   const request = async (): Promise<T> => {

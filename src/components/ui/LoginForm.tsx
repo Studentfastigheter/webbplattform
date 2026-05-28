@@ -19,12 +19,71 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
+import { getActiveCompanyId } from "@/lib/company-access";
+import type { User } from "@/types";
 
-type LoginFormProps = React.ComponentProps<"div">;
+type LoginMode = "student" | "company" | "admin";
 
-export function LoginForm({ className, ...props }: LoginFormProps) {
+type LoginFormProps = React.ComponentProps<"div"> & {
+  mode?: LoginMode;
+};
+
+const loginCopy: Record<
+  LoginMode,
+  {
+    title: string;
+    subtitle: string;
+    invalidAccountMessage: string;
+    successPath: string;
+    showGoogle: boolean;
+    showRegisterLink: boolean;
+  }
+> = {
+  student: {
+    title: "Logga in",
+    subtitle: "Endast för studentkonton på CampusLyan.",
+    invalidAccountMessage:
+      "Det här kontot är inte ett studentkonto. Använd rätt inloggningssida.",
+    successPath: "/",
+    showGoogle: true,
+    showRegisterLink: true,
+  },
+  company: {
+    title: "Portal-login",
+    subtitle: "Endast för företagskonton.",
+    invalidAccountMessage:
+      "Det här kontot är inte kopplat till ett företag. Logga in via rätt sida.",
+    successPath: "/",
+    showGoogle: false,
+    showRegisterLink: false,
+  },
+  admin: {
+    title: "Admin-login",
+    subtitle: "Endast för administratörskonton.",
+    invalidAccountMessage:
+      "Det här kontot är inte ett administratörskonto.",
+    successPath: "/",
+    showGoogle: false,
+    showRegisterLink: false,
+  },
+};
+
+function isAllowedAccount(user: User, mode: LoginMode) {
+  if (mode === "student") {
+    return user.accountType === "student";
+  }
+
+  if (mode === "company") {
+    return getActiveCompanyId(user) != null && user.accountType !== "admin";
+  }
+
+  return user.accountType === "admin";
+}
+
+export function LoginForm({ mode = "student", className, ...props }: LoginFormProps) {
   const router = useRouter();
-  const { login, googleLogin, isLoading } = useAuth();
+  const { login, adminLogin, googleLogin, logout, isLoading } = useAuth();
+  const copy = loginCopy[mode];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +112,16 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
     return null;
   }
 
+  function handleAuthenticatedUser(user: User) {
+    if (!isAllowedAccount(user, mode)) {
+      logout();
+      setError(copy.invalidAccountMessage);
+      return;
+    }
+
+    router.replace(copy.successPath);
+  }
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isLoading || submitting) return;
@@ -67,8 +136,9 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
 
     setSubmitting(true);
     try {
-      await login({ email: email.trim(), password });
-      router.replace("/");
+      const loginAction = mode === "admin" ? adminLogin : login;
+      const user = await loginAction({ email: email.trim(), password });
+      handleAuthenticatedUser(user);
     } catch (err: unknown) {
       setError(getAuthErrorMessage(err, "login"));
     } finally {
@@ -77,15 +147,15 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
   }
 
   async function onGoogleCredential(googleIdToken: string) {
-    if (isLoading || submitting) return;
+    if (isLoading || submitting || !copy.showGoogle) return;
 
     setError(null);
     setSubmitting(true);
     try {
-      await googleLogin({
+      const user = await googleLogin({
         googleIdToken,
       });
-      router.replace("/");
+      handleAuthenticatedUser(user);
     } catch (err: unknown) {
       setError(getAuthErrorMessage(err, "google-login"));
     } finally {
@@ -95,7 +165,8 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
 
   return (
     <AuthCard
-      title="Välkommen tillbaka"
+      title={copy.title}
+      subtitle={copy.subtitle}
       helper={
         isLoading && (
           <p className="text-sm text-muted-foreground">
@@ -108,16 +179,20 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
     >
       <form className="space-y-6" onSubmit={onSubmit}>
         <FieldGroup className="gap-5">
-          <GoogleAuthButton
-            label="Fortsätt med Google"
-            disabled={isLoading || submitting}
-            onCredential={onGoogleCredential}
-            onError={setError}
-          />
+          {copy.showGoogle && (
+            <>
+              <GoogleAuthButton
+                label="Fortsätt med Google"
+                disabled={isLoading || submitting}
+                onCredential={onGoogleCredential}
+                onError={setError}
+              />
 
-          <FieldSeparator className="my-0 [&_[data-slot=field-separator-content]]:bg-white">
-            Eller
-          </FieldSeparator>
+              <FieldSeparator className="my-0 [&_[data-slot=field-separator-content]]:bg-white">
+                Eller
+              </FieldSeparator>
+            </>
+          )}
 
           <Field>
             <FieldLabel htmlFor="email">E-post</FieldLabel>
@@ -137,12 +212,14 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
           <Field>
             <div className="flex items-center justify-between">
               <FieldLabel htmlFor="password">Lösenord</FieldLabel>
-              <Link
-                href="/glomt-losenord"
-                className="text-sm font-medium text-[#004225] underline-offset-4 hover:underline"
-              >
-                Glömt ditt lösenord?
-              </Link>
+              {mode === "student" && (
+                <Link
+                  href="/glomt-losenord"
+                  className="text-sm font-medium text-[#004225] underline-offset-4 hover:underline"
+                >
+                  Glömt ditt lösenord?
+                </Link>
+              )}
             </div>
             <div className="relative">
               <Input
@@ -186,7 +263,6 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
           </Field>
 
           {error && <FieldError>{error}</FieldError>}
-
         </FieldGroup>
       </form>
 
@@ -202,12 +278,14 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
         .
       </FieldDescription>
 
-      <FieldDescription className="text-center text-sm">
-        Har du inte ett konto?{" "}
-        <Link href="/registrera" className="font-medium text-[#004225] no-underline">
-          Skapa ett nu
-        </Link>
-      </FieldDescription>
+      {copy.showRegisterLink && (
+        <FieldDescription className="text-center text-sm">
+          Har du inte ett konto?{" "}
+          <Link href="/registrera" className="font-medium text-[#004225] no-underline">
+            Skapa ett nu
+          </Link>
+        </FieldDescription>
+      )}
     </AuthCard>
   );
 }

@@ -410,7 +410,7 @@ export default function QueueDetailPage() {
 
   const handleJoinQueue = async (queueId: string) => {
     if (!user) {
-      router.push("/logga-in");
+      router.push("/login");
       return;
     }
 
@@ -439,7 +439,7 @@ export default function QueueDetailPage() {
 
   const handleFavoriteToggle = (id: string, isFav: boolean) => {
     if (!user) {
-      router.push("/logga-in");
+      router.push("/login");
       return;
     }
 

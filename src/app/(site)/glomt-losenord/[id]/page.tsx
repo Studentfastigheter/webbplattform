@@ -127,7 +127,7 @@ export default function ResetPasswordPage() {
           footer={
             <FieldDescription className="text-center">
               <Link
-                href="/logga-in"
+                href="/login"
                 className="font-medium text-[#004225] no-underline"
               >
                 Tillbaka till inloggning
@@ -146,7 +146,7 @@ export default function ResetPasswordPage() {
                 </p>
               </div>
               <Link
-                href="/logga-in"
+                href="/login"
                 className="mt-6 inline-flex h-10 items-center justify-center rounded-full bg-[#004225] px-5 text-sm font-semibold text-white transition hover:bg-[#004225]/90"
               >
                 Logga in

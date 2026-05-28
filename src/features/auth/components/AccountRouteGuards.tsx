@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
+import { buildPortalUrl } from "@/lib/subdomain-routing";
 
 type RouteGuardProps = {
   children: ReactNode;
 };
 
-const SITE_ACCOUNT_TYPES = new Set(["student", "private_landlord", "quick_register"]);
+const SITE_ACCOUNT_TYPES = new Set(["student"]);
 
 function RouteFallback({ message }: { message: string }) {
   return (
@@ -23,21 +24,21 @@ function RouteFallback({ message }: { message: string }) {
 
 export function SiteAccountGuard({ children }: RouteGuardProps) {
   const router = useRouter();
-  const { user, isLoading, logout } = useAuth();
+  const { user, token, isLoading, logout } = useAuth();
 
   useEffect(() => {
     if (isLoading || !user) return;
 
     if (getActiveCompanyId(user) != null) {
-      router.replace("/portal");
+      window.location.replace(buildPortalUrl("/", token));
       return;
     }
 
     if (!SITE_ACCOUNT_TYPES.has(user.accountType)) {
       logout();
-      router.replace("/logga-in");
+      router.replace("/login");
     }
-  }, [isLoading, logout, router, user]);
+  }, [isLoading, logout, router, token, user]);
 
   if (isLoading) {
     return <RouteFallback message="Laddar..." />;
@@ -61,7 +62,7 @@ export function PortalAccountGuard({ children }: RouteGuardProps) {
     if (isLoading) return;
 
     if (!user) {
-      router.replace("/logga-in");
+      router.replace("/login");
       return;
     }
 
@@ -71,13 +72,14 @@ export function PortalAccountGuard({ children }: RouteGuardProps) {
       (user.accountType === "student" || user.accountType === "quick_register") &&
       companyId == null
     ) {
-      router.replace("/");
+      logout();
+      router.replace("/login");
       return;
     }
 
     if (companyId == null) {
       logout();
-      router.replace("/logga-in");
+      router.replace("/login");
     }
   }, [isLoading, logout, router, user]);
 
@@ -86,6 +88,35 @@ export function PortalAccountGuard({ children }: RouteGuardProps) {
   }
 
   if (!user || getActiveCompanyId(user) == null) {
+    return <RouteFallback message="Kontrollerar behörighet..." />;
+  }
+
+  return children;
+}
+
+export function AdminAccountGuard({ children }: RouteGuardProps) {
+  const router = useRouter();
+  const { user, isLoading, logout } = useAuth();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+
+    if (user.accountType !== "admin") {
+      logout();
+      router.replace("/login");
+    }
+  }, [isLoading, logout, router, user]);
+
+  if (isLoading) {
+    return <RouteFallback message="Laddar admin..." />;
+  }
+
+  if (!user || user.accountType !== "admin") {
     return <RouteFallback message="Kontrollerar behörighet..." />;
   }
 

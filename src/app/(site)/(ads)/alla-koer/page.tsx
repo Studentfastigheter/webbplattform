@@ -315,7 +315,7 @@ export default function Page() {
 
   const handleJoinSelectedQueues = async () => {
     if (!user) {
-      router.push("/logga-in");
+      router.push("/login");
       return;
     }
 

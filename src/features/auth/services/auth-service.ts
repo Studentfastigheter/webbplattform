@@ -1,4 +1,5 @@
 import { apiClient, normalizeAuthToken, pathSegment } from "@/lib/api/client";
+import { isAdminSubdomain } from "@/lib/subdomain-routing";
 import {
   User,
   AuthResponse,
@@ -412,6 +413,10 @@ export const authService = {
   },
 
   adminLogin: async (payload: LoginRequest): Promise<AuthResponse> => {
+    if (typeof window !== "undefined" && !isAdminSubdomain()) {
+      throw new Error("Admininloggning är endast tillgänglig på admin-subdomänen.");
+    }
+
     const email = payload.email.trim();
     if (!email || !payload.password) {
       throw new Error("Fyll i e-postadress och losenord.");

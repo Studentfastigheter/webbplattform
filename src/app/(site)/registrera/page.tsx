@@ -177,7 +177,7 @@ export default function RegisterPage() {
           footer={
             <FieldDescription className="text-center">
               Har du redan ett konto?{" "}
-              <Link href="/logga-in" className="font-medium text-[#004225] no-underline">
+              <Link href="/login" className="font-medium text-[#004225] no-underline">
                 Logga in
               </Link>
             </FieldDescription>

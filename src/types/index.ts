@@ -6,3 +6,4 @@ export * from "./school";
 export * from "./notification";
 export * from "./api";
 export * from "./ui";
+export * from "./admin";

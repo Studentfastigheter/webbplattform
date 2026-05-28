@@ -1,6 +1,6 @@
 "use client";
 
-import EditWrapper from "@/app/(business_portal)/_components/EditWrapper";
+import EditWrapper from "@/app/portal/_components/EditWrapper";
 import { ShareDialog } from "@/components/ui/ShareDialog";
 import { Button } from "@/components/ui/button";
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";

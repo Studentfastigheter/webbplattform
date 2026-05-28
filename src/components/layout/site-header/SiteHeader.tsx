@@ -275,7 +275,7 @@ export default function SiteHeader() {
           {!currentUser ? (
             <>
               <Link
-                href="/logga-in"
+                href="/login"
                 className="inline-flex rounded-full px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
               >
                 Logga in
@@ -410,7 +410,7 @@ export default function SiteHeader() {
             {!currentUser ? (
               <>
                 <Link
-                  href="/logga-in"
+                  href="/login"
                   onClick={closeMenus}
                   className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-neutral-200 px-5 py-3 text-base font-medium text-neutral-700 transition hover:bg-neutral-50"
                 >

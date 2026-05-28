@@ -75,7 +75,7 @@ export default function ForgotPasswordPage() {
           footer={
             <FieldDescription className="text-center">
               <Link
-                href="/logga-in"
+                href="/login"
                 className="font-medium text-[#004225] no-underline"
               >
                 Tillbaka till inloggning

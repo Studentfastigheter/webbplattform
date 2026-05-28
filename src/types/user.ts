@@ -89,7 +89,7 @@ export interface User {
 }
 
 // --- Auth Responses ---
-export interface AuthResponse {
+export interface LoginResponse {
   accessToken?: string;
   access_token?: string;
   token?: string;
@@ -97,6 +97,8 @@ export interface AuthResponse {
   bearerToken?: string;
   user: User;
 }
+
+export type AuthResponse = LoginResponse;
 
 export interface StudentRegistrationResponse {
   authRef: string;
