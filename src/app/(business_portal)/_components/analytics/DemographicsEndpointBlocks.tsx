@@ -17,6 +17,7 @@ import {
   YAxis,
 } from "recharts";
 import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -63,6 +64,12 @@ type ListingRow = {
   topLabel: string;
   topViews: number;
   topShare: number;
+};
+
+type ApplicationListingRow = {
+  listingId: string;
+  title: string;
+  totalApplications: number;
 };
 
 type PortfolioSummary = {
@@ -150,6 +157,29 @@ function formatPercent(value: number) {
   return `${value.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}%`;
 }
 
+function toDateTimeLocalValue(value: Date) {
+  const localDate = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function defaultDateTimeRange() {
+  const to = new Date();
+  const from = new Date(to);
+  from.setDate(from.getDate() - 30);
+
+  return {
+    from: toDateTimeLocalValue(from),
+    to: toDateTimeLocalValue(to),
+  };
+}
+
+function dateTimeLocalToIso(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date.toISOString();
+}
+
 function keyLabel(value: unknown) {
   if (value === null || value === undefined) return "Okänt";
   const raw = repairMojibake(String(value).trim());
@@ -218,6 +248,25 @@ function mapListingRows(
     })
     .filter((row) => row.totalViews > 0)
     .sort((left, right) => right.totalViews - left.totalViews)
+    .slice(0, 8);
+}
+
+function mapApplicationListingRows(
+  batch: Record<string, ApplicationDemography>,
+  listings: ListingCardDTO[]
+): ApplicationListingRow[] {
+  const titleById = new Map(
+    listings.map((listing) => [String(listing.id), listing.title])
+  );
+
+  return Object.entries(batch)
+    .map(([listingId, demography]) => ({
+      listingId,
+      title: titleById.get(listingId) ?? `Annons ${listingId.slice(0, 8)}`,
+      totalApplications: totalApplications(demography),
+    }))
+    .filter((row) => row.totalApplications > 0)
+    .sort((left, right) => right.totalApplications - left.totalApplications)
     .slice(0, 8);
 }
 
@@ -437,7 +486,13 @@ function PieDistribution({ data }: { data: BucketDatum[] }) {
   );
 }
 
-function HorizontalBars({ data }: { data: BucketDatum[] }) {
+function HorizontalBars({
+  data,
+  valueLabel = "Visningar",
+}: {
+  data: BucketDatum[];
+  valueLabel?: string;
+}) {
   if (data.length === 0) return <EmptyState message="Ingen data för perioden." />;
 
   return (
@@ -459,7 +514,7 @@ function HorizontalBars({ data }: { data: BucketDatum[] }) {
               borderRadius: 12,
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
             }}
-            formatter={(value) => [formatNumber(Number(value)), "Visningar"]}
+            formatter={(value) => [formatNumber(Number(value)), valueLabel]}
           />
           <Bar dataKey="value" radius={[0, 8, 8, 0]}>
             {data.map((entry) => (
@@ -923,15 +978,15 @@ export function ListingDemographyBatchBlock() {
 export function ApplicationDemographyPortfolioBlock() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
+  const initialRange = React.useMemo(() => defaultDateTimeRange(), []);
+  const [fromValue, setFromValue] = React.useState(initialRange.from);
+  const [toValue, setToValue] = React.useState(initialRange.to);
+  const [category, setCategory] =
+    React.useState<ApplicationDemographyCategory>("GOT_LISTING");
   const [gotListing, setGotListing] = React.useState<GotListingFilter>("BOTH");
-  const [summary, setSummary] = React.useState<Record<
-    ApplicationDemographyCategory,
-    Record<string, ApplicationDemography>
-  > | null>(null);
-  const [categoryData, setCategoryData] = React.useState<
-    Array<{ category: string; value: number }>
-  >([]);
+  const [demographies, setDemographies] =
+    React.useState<Record<string, ApplicationDemography> | null>(null);
+  const [listingRows, setListingRows] = React.useState<ApplicationListingRow[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -943,36 +998,62 @@ export function ApplicationDemographyPortfolioBlock() {
       return;
     }
 
-    const { from, to } = getApplicationIntervalRange(range);
+    const from = dateTimeLocalToIso(fromValue);
+    const to = dateTimeLocalToIso(toValue);
+
+    if (!from || !to) {
+      setDemographies(null);
+      setListingRows([]);
+      setError("Välj giltiga datum för from och to.");
+      return;
+    }
+
+    if (new Date(from).getTime() > new Date(to).getTime()) {
+      setDemographies(null);
+      setListingRows([]);
+      setError("From måste vara tidigare än to.");
+      return;
+    }
+
+    const fromIso = from;
+    const toIso = to;
     let cancelled = false;
 
     setIsLoading(true);
     setError(null);
 
-    demographicsService
-      .getFullCompanyListingsApplicationsByAllCategories(
-        companyId,
-        from,
-        to,
+    async function load() {
+      const listings = await queueService.getAllCompanyListings(companyId!, 0, 200);
+      const listingIds = listings.map((listing) => listing.id).filter(Boolean);
+
+      if (listingIds.length === 0) {
+        if (!cancelled) {
+          setDemographies({});
+          setListingRows([]);
+        }
+        return;
+      }
+
+      const result = await demographicsService.getApplicationsBatch(
+        companyId!,
+        listingIds,
+        fromIso,
+        toIso,
+        category,
         gotListing
-      )
-      .then((result) => {
-        if (cancelled) return;
-        setSummary(result);
-        setCategoryData(
-          APPLICATION_DEMOGRAPHY_CATEGORIES.map((category) => ({
-            category: labels[category] ?? category,
-            value: Object.values(result[category] ?? {}).reduce(
-              (sum, demography) => sum + totalApplications(demography),
-              0
-            ),
-          })).filter((item) => item.value > 0)
-        );
-      })
+      );
+
+      if (!cancelled) {
+        setDemographies(result);
+        setListingRows(mapApplicationListingRows(result, listings));
+      }
+    }
+
+    load()
       .catch((requestError) => {
         if (!cancelled) {
-          setSummary(null);
-          setCategoryData([]);
+          setDemographies(null);
+          setListingRows([]);
           setError(
             requestError instanceof Error
               ? requestError.message
@@ -987,12 +1068,53 @@ export function ApplicationDemographyPortfolioBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId, gotListing, range]);
+  }, [authLoading, category, companyId, fromValue, gotListing, toValue]);
+
+  const bucketData = React.useMemo(
+    () => mergeApplicationBuckets(Object.values(demographies ?? {}), 10),
+    [demographies]
+  );
+  const total = React.useMemo(
+    () =>
+      Object.values(demographies ?? {}).reduce(
+        (sum, demography) => sum + totalApplications(demography),
+        0
+      ),
+    [demographies]
+  );
+  const listingChartData = React.useMemo(
+    () =>
+      listingRows.map((row) => ({
+        category:
+          row.title.length > 16 ? `${row.title.slice(0, 15)}...` : row.title,
+        value: row.totalApplications,
+      })),
+    [listingRows]
+  );
 
   return (
     <AnalyticsBlock
       action={
-        <div className="flex max-w-full flex-col gap-2 sm:flex-row">
+        <div className="flex max-w-full flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
+          <Input
+            aria-label="From"
+            className="h-8 min-w-[180px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] lg:w-[190px]"
+            onChange={(event) => setFromValue(event.target.value)}
+            type="datetime-local"
+            value={fromValue}
+          />
+          <Input
+            aria-label="To"
+            className="h-8 min-w-[180px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] lg:w-[190px]"
+            onChange={(event) => setToValue(event.target.value)}
+            type="datetime-local"
+            value={toValue}
+          />
+          <CategorySelect
+            categories={APPLICATION_DEMOGRAPHY_CATEGORIES}
+            onChange={setCategory}
+            value={category}
+          />
           <Select
             onValueChange={(value) => setGotListing(value as GotListingFilter)}
             value={gotListing}
@@ -1008,26 +1130,43 @@ export function ApplicationDemographyPortfolioBlock() {
               ))}
             </SelectContent>
           </Select>
-          <ApplicationIntervalToggle onChange={setRange} value={range} />
         </div>
       }
       contentClassName="overflow-hidden p-4"
       size="3x4"
       title="Ansökningsdemografi"
-      description="Terminala ansökningsutfall för företagets annonser."
+      description="Batchdata från POST /demographics/applications/listings/query."
     >
       {authLoading || isLoading ? (
         <BlockSkeleton rows={3} />
       ) : error ? (
         <ErrorState message={error} />
-      ) : summary ? (
+      ) : demographies ? (
         <div className="grid h-full min-h-0 gap-4">
-          <ApplicationPortfolioSummary data={summary} />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <SummaryMetric
+              helper={labels[category] ?? category}
+              label="Ansökningar"
+              value={total}
+            />
+            <SummaryMetric label="Annonser i fråga" value={Object.keys(demographies).length} />
+            <SummaryMetric
+              helper={gotListingLabels[gotListing]}
+              label="Annonser med data"
+              value={listingRows.length}
+            />
+          </div>
           <div className="rounded-xl border border-gray-100 bg-white p-4">
             <h3 className="mb-2 text-sm font-semibold text-gray-900">
-              Datatäckning per kategori
+              {labels[category] ?? category}
             </h3>
-            <CategoryBars data={categoryData} valueLabel="Ansökningar" />
+            <HorizontalBars data={bucketData} valueLabel="Ansökningar" />
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <h3 className="mb-2 text-sm font-semibold text-gray-900">
+              Ansökningar per annons
+            </h3>
+            <CategoryBars data={listingChartData} valueLabel="Ansökningar" />
           </div>
         </div>
       ) : (
