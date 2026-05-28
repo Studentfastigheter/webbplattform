@@ -1,10 +1,16 @@
-// src/types/notification.ts
+export type NotificationDTO = {
+  id: number;
+  title?: string | null;
+  body?: string | null;
+  opened?: boolean | null;
+  createdAt?: string | null;
+};
 
 type NotificationBase = {
-  id: number; // Backend använder Long (number), inte UUID (string)
+  id: number;
   createdAt: string;
   opened?: boolean;
-  title?: string; // Backend skickar alltid en titel
+  title?: string;
 };
 
 type MessageNotification = NotificationBase & {

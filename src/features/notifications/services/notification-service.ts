@@ -1,12 +1,7 @@
 import { apiClient, arrayFromApiResponse, pathSegment } from "@/lib/api/client";
-import { NotificationItem } from "@/types";
+import { NotificationDTO, NotificationItem } from "@/types";
 
-type NotificationDTO = {
-  id?: number;
-  title?: string | null;
-  body?: string | null;
-  opened?: boolean | null;
-  createdAt?: string | null;
+type NotificationResponseDTO = Partial<NotificationDTO> & {
   type?: NotificationItem["type"];
 };
 
@@ -15,7 +10,7 @@ function normalizeNotification(value: unknown): NotificationItem | null {
     return null;
   }
 
-  const source = value as NotificationDTO;
+  const source = value as NotificationResponseDTO;
   if (typeof source.id !== "number") {
     return null;
   }

@@ -1,3 +1,10 @@
+export interface PageMetadata {
+  size: number;
+  number: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface PageResponse<T> {
   totalPages?: number;
   totalElements?: number;
@@ -8,10 +15,5 @@ export interface PageResponse<T> {
   first?: boolean;
   last?: boolean;
   empty?: boolean;
-  page?: {
-    size: number;
-    totalElements: number;
-    totalPages: number;
-    number: number;
-  };
+  page?: PageMetadata;
 }

@@ -29,11 +29,15 @@ import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
   COMPANY_DEMOGRAPHY_CATEGORIES,
+  APPLICATION_DEMOGRAPHY_CATEGORIES,
   LISTING_DEMOGRAPHY_CATEGORIES,
   demographicsService,
+  type ApplicationDemography,
+  type ApplicationDemographyCategory,
   type CompanyDemography,
   type CompanyDemographyCategory,
   type DemographyCategory,
+  type GotListingFilter,
   type ListingDemography,
 } from "@/features/analytics/services/demographics-service";
 import { queueService } from "@/features/queues/services/queue-service";
@@ -91,12 +95,22 @@ const labels: Record<string, string> = {
   RESULTED_IN_LIKE: "Favorit",
   VIEW_TYPE: "Visningstyp",
   DEVICE_TYPE: "Enhet",
+  PREFERRED_MAX_RENT: "Maxhyra",
+  DAYS_IN_QUEUE: "Dagar i kö",
+  APPLICANT_OTHER_APPLICATIONS: "Andra ansökningar",
+  GOT_LISTING: "Utfall",
   QUICK: "Snabb",
   DETAILED: "Detalj",
   MOBILE: "Mobil",
   DESKTOP: "Desktop",
   true: "Favorit",
   false: "Ingen favorit",
+};
+
+const gotListingLabels: Record<GotListingFilter, string> = {
+  BOTH: "Alla utfall",
+  ACCEPTED_ONLY: "Accepterade",
+  REJECTED_ONLY: "Nekade",
 };
 
 const swedishLabelCorrections: Record<string, string> = {
@@ -147,6 +161,18 @@ function totalViews(value?: CompanyDemography | ListingDemography | null) {
   return (
     value.totalViews ??
     value.buckets?.reduce((sum, bucket) => sum + (bucket.totalViews ?? 0), 0) ??
+    0
+  );
+}
+
+function totalApplications(value?: ApplicationDemography | null) {
+  if (!value) return 0;
+  return (
+    value.totalApplications ??
+    value.buckets?.reduce(
+      (sum, bucket) => sum + Number(bucket.totalApplications ?? 0),
+      0
+    ) ??
     0
   );
 }
@@ -223,6 +249,43 @@ function mergeBuckets(
       label: keyLabel(bucket.key),
       value: bucket.totalViews,
       share: total > 0 ? (bucket.totalViews / total) * 100 : 0,
+      fill: colors[index % colors.length],
+    }))
+    .filter((item) => item.value > 0)
+    .sort((left, right) => right.value - left.value)
+    .slice(0, limit);
+}
+
+function mergeApplicationBuckets(
+  values: Array<ApplicationDemography | null | undefined>,
+  limit = 8
+): BucketDatum[] {
+  const counts = new Map<string, { key: unknown; totalApplications: number }>();
+
+  values.forEach((value) => {
+    value?.buckets?.forEach((bucket) => {
+      const label = keyLabel(bucket.key);
+      const current = counts.get(label);
+      counts.set(label, {
+        key: bucket.key,
+        totalApplications:
+          (current?.totalApplications ?? 0) +
+          Number(bucket.totalApplications ?? 0),
+      });
+    });
+  });
+
+  const total = Array.from(counts.values()).reduce(
+    (sum, bucket) => sum + bucket.totalApplications,
+    0
+  );
+
+  return Array.from(counts.values())
+    .map((bucket, index) => ({
+      key: `${keyLabel(bucket.key)}-${index}`,
+      label: keyLabel(bucket.key),
+      value: bucket.totalApplications,
+      share: total > 0 ? (bucket.totalApplications / total) * 100 : 0,
       fill: colors[index % colors.length],
     }))
     .filter((item) => item.value > 0)
@@ -411,8 +474,10 @@ function HorizontalBars({ data }: { data: BucketDatum[] }) {
 
 function CategoryBars({
   data,
+  valueLabel = "Visningar",
 }: {
   data: Array<{ category: string; value: number }>;
+  valueLabel?: string;
 }) {
   if (data.length === 0) return <EmptyState message="Ingen batchdata för perioden." />;
 
@@ -439,11 +504,60 @@ function CategoryBars({
               borderRadius: 12,
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
             }}
-            formatter={(value) => [formatNumber(Number(value)), "Visningar"]}
+            formatter={(value) => [formatNumber(Number(value)), valueLabel]}
           />
           <Bar dataKey="value" fill="#004225" radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ApplicationPortfolioSummary({
+  data,
+}: {
+  data: Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>;
+}) {
+  const outcomeValues = Object.values(data.GOT_LISTING ?? {});
+  const schoolData = mergeApplicationBuckets(Object.values(data.SCHOOL ?? {}), 6);
+  const queueData = mergeApplicationBuckets(Object.values(data.DAYS_IN_QUEUE ?? {}), 6);
+  const rentData = mergeApplicationBuckets(Object.values(data.PREFERRED_MAX_RENT ?? {}), 6);
+  const total = outcomeValues.reduce(
+    (sum, demography) => sum + totalApplications(demography),
+    0
+  );
+  const accepted = mergeApplicationBuckets(outcomeValues, 10)
+    .filter((item) => item.label === "Fick bostad" || item.label === "true")
+    .reduce((sum, item) => sum + item.value, 0);
+  const rejected = mergeApplicationBuckets(outcomeValues, 10)
+    .filter((item) => item.label === "Fick ej bostad" || item.label === "false")
+    .reduce((sum, item) => sum + item.value, 0);
+
+  if (total === 0 && schoolData.length === 0 && queueData.length === 0) {
+    return <EmptyState message="Ingen ansökningsdemografi för perioden." />;
+  }
+
+  return (
+    <div className="grid h-full min-h-0 gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <SummaryMetric label="Terminala ansökningar" value={total} />
+        <SummaryMetric label="Accepterade" value={accepted} />
+        <SummaryMetric label="Nekade" value={rejected} />
+      </div>
+      <div className="grid min-h-0 gap-4 xl:grid-cols-3">
+        <div className="rounded-xl border border-gray-100 bg-white p-4">
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">Skolor</h3>
+          <HorizontalBars data={schoolData} />
+        </div>
+        <div className="rounded-xl border border-gray-100 bg-white p-4">
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">Dagar i kö</h3>
+          <HorizontalBars data={queueData} />
+        </div>
+        <div className="rounded-xl border border-gray-100 bg-white p-4">
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">Maxhyra</h3>
+          <HorizontalBars data={rentData} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -801,6 +915,123 @@ export function ListingDemographyBatchBlock() {
         <ListingPortfolioSummary summary={summary} />
       ) : (
         <EmptyState message="Ingen annonsdata för perioden." />
+      )}
+    </AnalyticsBlock>
+  );
+}
+
+export function ApplicationDemographyPortfolioBlock() {
+  const { user, isLoading: authLoading } = useAuth();
+  const companyId = getActiveCompanyId(user);
+  const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
+  const [gotListing, setGotListing] = React.useState<GotListingFilter>("BOTH");
+  const [summary, setSummary] = React.useState<Record<
+    ApplicationDemographyCategory,
+    Record<string, ApplicationDemography>
+  > | null>(null);
+  const [categoryData, setCategoryData] = React.useState<
+    Array<{ category: string; value: number }>
+  >([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (authLoading) return;
+
+    if (!companyId) {
+      setError("Kunde inte hitta ett aktivt företag.");
+      return;
+    }
+
+    const { from, to } = getApplicationIntervalRange(range);
+    let cancelled = false;
+
+    setIsLoading(true);
+    setError(null);
+
+    demographicsService
+      .getFullCompanyListingsApplicationsByAllCategories(
+        companyId,
+        from,
+        to,
+        gotListing
+      )
+      .then((result) => {
+        if (cancelled) return;
+        setSummary(result);
+        setCategoryData(
+          APPLICATION_DEMOGRAPHY_CATEGORIES.map((category) => ({
+            category: labels[category] ?? category,
+            value: Object.values(result[category] ?? {}).reduce(
+              (sum, demography) => sum + totalApplications(demography),
+              0
+            ),
+          })).filter((item) => item.value > 0)
+        );
+      })
+      .catch((requestError) => {
+        if (!cancelled) {
+          setSummary(null);
+          setCategoryData([]);
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Kunde inte hämta ansökningsdemografi."
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, companyId, gotListing, range]);
+
+  return (
+    <AnalyticsBlock
+      action={
+        <div className="flex max-w-full flex-col gap-2 sm:flex-row">
+          <Select
+            onValueChange={(value) => setGotListing(value as GotListingFilter)}
+            value={gotListing}
+          >
+            <SelectTrigger className="h-8 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-gray-200 bg-white">
+              {(Object.keys(gotListingLabels) as GotListingFilter[]).map((filter) => (
+                <SelectItem key={filter} value={filter}>
+                  {gotListingLabels[filter]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ApplicationIntervalToggle onChange={setRange} value={range} />
+        </div>
+      }
+      contentClassName="overflow-hidden p-4"
+      size="3x4"
+      title="Ansökningsdemografi"
+      description="Terminala ansökningsutfall för företagets annonser."
+    >
+      {authLoading || isLoading ? (
+        <BlockSkeleton rows={3} />
+      ) : error ? (
+        <ErrorState message={error} />
+      ) : summary ? (
+        <div className="grid h-full min-h-0 gap-4">
+          <ApplicationPortfolioSummary data={summary} />
+          <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <h3 className="mb-2 text-sm font-semibold text-gray-900">
+              Datatäckning per kategori
+            </h3>
+            <CategoryBars data={categoryData} valueLabel="Ansökningar" />
+          </div>
+        </div>
+      ) : (
+        <EmptyState message="Ingen ansökningsdemografi för perioden." />
       )}
     </AnalyticsBlock>
   );

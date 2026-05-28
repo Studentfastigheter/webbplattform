@@ -1,6 +1,7 @@
 import {
   DateString,
   DocumentFileType,
+  JsonValue,
   SystemProvider,
   TimestampString,
 } from "./common";
@@ -160,4 +161,16 @@ export interface PublishListingRequest {
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
+}
+
+export interface ApplicationRequest {
+  message?: string;
+}
+
+export interface Ad {
+  id: number;
+  start?: DateString | null;
+  stop?: DateString | null;
+  company?: string | null;
+  data?: JsonValue;
 }

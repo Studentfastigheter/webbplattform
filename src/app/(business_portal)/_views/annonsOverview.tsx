@@ -66,6 +66,7 @@ import {
   type ApplicationIntervalValue,
 } from "../_components/analytics/ApplicationIntervalStats";
 import ListingDemographicsPanel from "../_components/analytics/ListingDemographicsPanel";
+import ApplicationDemographicsPanel from "../_components/analytics/ApplicationDemographicsPanel";
 import { dashboardRelPath } from "../_statics/variables";
 
 type AnnonsOverviewProps = {
@@ -1045,6 +1046,12 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           </section>
 
           <ListingDemographicsPanel
+            from={analyticsRange.from}
+            listingId={listing.id}
+            periodLabel={selectedApplicationInterval.detailLabel}
+            to={analyticsRange.to}
+          />
+          <ApplicationDemographicsPanel
             from={analyticsRange.from}
             listingId={listing.id}
             periodLabel={selectedApplicationInterval.detailLabel}

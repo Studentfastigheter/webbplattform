@@ -1,4 +1,5 @@
 import { apiClient, buildQuery, pathSegment } from "@/lib/api/client";
+import type { DeviceType, ViewType } from "@/types/common";
 
 export type DemographyCategory =
   | "GENDER"
@@ -13,6 +14,17 @@ export type CompanyDemographyCategory = Exclude<
   DemographyCategory,
   "RESULTED_IN_LIKE"
 >;
+
+export type ApplicationDemographyCategory =
+  | "GENDER"
+  | "AGE"
+  | "SCHOOL"
+  | "PREFERRED_MAX_RENT"
+  | "DAYS_IN_QUEUE"
+  | "APPLICANT_OTHER_APPLICATIONS"
+  | "GOT_LISTING";
+
+export type GotListingFilter = "ACCEPTED_ONLY" | "REJECTED_ONLY" | "BOTH";
 
 export const LISTING_DEMOGRAPHY_CATEGORIES = [
   "GENDER",
@@ -33,8 +45,18 @@ export const COMPANY_DEMOGRAPHY_CATEGORIES = [
   "DEVICE_TYPE",
 ] as const satisfies readonly CompanyDemographyCategory[];
 
-export type DemographicsDeviceType = "MOBILE" | "DESKTOP";
-export type DemographicsViewType = "QUICK" | "DETAILED";
+export const APPLICATION_DEMOGRAPHY_CATEGORIES = [
+  "GENDER",
+  "AGE",
+  "SCHOOL",
+  "PREFERRED_MAX_RENT",
+  "DAYS_IN_QUEUE",
+  "APPLICANT_OTHER_APPLICATIONS",
+  "GOT_LISTING",
+] as const satisfies readonly ApplicationDemographyCategory[];
+
+export type DemographicsDeviceType = DeviceType;
+export type DemographicsViewType = ViewType;
 
 export type DemographyBucket = {
   key: unknown;
@@ -59,6 +81,20 @@ export type CompanyDemography = {
   buckets?: DemographyBucket[];
 };
 
+export type ApplicationDemographyBucket = {
+  key: unknown;
+  totalApplications: number;
+};
+
+export type ApplicationDemography = {
+  listingId?: string;
+  category?: ApplicationDemographyCategory;
+  totalApplications?: number;
+  from?: string;
+  to?: string;
+  buckets?: ApplicationDemographyBucket[];
+};
+
 export type NewListingViewDemographicsRequest = {
   deviceType: DemographicsDeviceType;
   viewType: DemographicsViewType;
@@ -77,12 +113,14 @@ function dateTimeValue(value: string | Date): string {
 function demographyQuery(
   from: string | Date,
   to: string | Date,
-  category?: string
+  category?: string,
+  gotListing?: GotListingFilter
 ) {
   return buildQuery({
     from: dateTimeValue(from),
     to: dateTimeValue(to),
     category,
+    gotListing,
   });
 }
 
@@ -298,6 +336,137 @@ export const demographicsService = {
     return Object.fromEntries(entries) as Record<
       CompanyDemographyCategory,
       Record<string, CompanyDemography>
+    >;
+  },
+
+  getApplication: async (
+    listingId: string,
+    from: string | Date,
+    to: string | Date,
+    category: ApplicationDemographyCategory,
+    gotListing?: GotListingFilter
+  ): Promise<ApplicationDemography> => {
+    return apiClient<ApplicationDemography>(
+      `/demographics/applications/listing/${pathSegment(
+        listingId
+      )}${demographyQuery(from, to, category, gotListing)}`
+    );
+  },
+
+  getApplicationByAllCategories: async (
+    listingId: string,
+    from: string | Date,
+    to: string | Date,
+    gotListing?: GotListingFilter
+  ): Promise<Record<ApplicationDemographyCategory, ApplicationDemography | null>> => {
+    const entries = await Promise.all(
+      APPLICATION_DEMOGRAPHY_CATEGORIES.map(async (category) => {
+        const value = await demographicsService
+          .getApplication(listingId, from, to, category, gotListing)
+          .catch(() => null);
+        return [category, value] as const;
+      })
+    );
+
+    return Object.fromEntries(entries) as Record<
+      ApplicationDemographyCategory,
+      ApplicationDemography | null
+    >;
+  },
+
+  getApplicationsBatch: async (
+    companyId: number,
+    listingIds: string[],
+    from: string | Date,
+    to: string | Date,
+    category: ApplicationDemographyCategory,
+    gotListing?: GotListingFilter
+  ): Promise<Record<string, ApplicationDemography>> => {
+    return apiClient<Record<string, ApplicationDemography>>(
+      `/demographics/applications/listings/query/${pathSegment(
+        companyId
+      )}${demographyQuery(from, to, category, gotListing)}`,
+      {
+        method: "POST",
+        body: JSON.stringify(listingIds),
+      }
+    );
+  },
+
+  getApplicationsBatchByAllCategories: async (
+    companyId: number,
+    listingIds: string[],
+    from: string | Date,
+    to: string | Date,
+    gotListing?: GotListingFilter
+  ): Promise<
+    Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>
+  > => {
+    const entries = await Promise.all(
+      APPLICATION_DEMOGRAPHY_CATEGORIES.map(async (category) => {
+        const value =
+          listingIds.length > 0
+            ? await demographicsService
+                .getApplicationsBatch(
+                  companyId,
+                  listingIds,
+                  from,
+                  to,
+                  category,
+                  gotListing
+                )
+                .catch(() => ({}))
+            : {};
+        return [category, value] as const;
+      })
+    );
+
+    return Object.fromEntries(entries) as Record<
+      ApplicationDemographyCategory,
+      Record<string, ApplicationDemography>
+    >;
+  },
+
+  getFullCompanyListingsApplications: async (
+    companyId: number,
+    from: string | Date,
+    to: string | Date,
+    category: ApplicationDemographyCategory,
+    gotListing?: GotListingFilter
+  ): Promise<Record<string, ApplicationDemography>> => {
+    return apiClient<Record<string, ApplicationDemography>>(
+      `/demographics/applications/company/${pathSegment(
+        companyId
+      )}/listings${demographyQuery(from, to, category, gotListing)}`
+    );
+  },
+
+  getFullCompanyListingsApplicationsByAllCategories: async (
+    companyId: number,
+    from: string | Date,
+    to: string | Date,
+    gotListing?: GotListingFilter
+  ): Promise<
+    Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>
+  > => {
+    const entries = await Promise.all(
+      APPLICATION_DEMOGRAPHY_CATEGORIES.map(async (category) => {
+        const value = await demographicsService
+          .getFullCompanyListingsApplications(
+            companyId,
+            from,
+            to,
+            category,
+            gotListing
+          )
+          .catch(() => ({}));
+        return [category, value] as const;
+      })
+    );
+
+    return Object.fromEntries(entries) as Record<
+      ApplicationDemographyCategory,
+      Record<string, ApplicationDemography>
     >;
   },
 };

@@ -1,14 +1,14 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckCircle2Icon, Loader2Icon } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
 import { authService, isAuthResponse } from '@/features/auth/services/auth-service'
-import type { FrejaAuthStatus } from '@/types'
+import type { FrejaAuthStatus, User } from '@/types'
 
 const pollIntervalMs = 2000
 const frejaLogoPath =
@@ -62,13 +62,52 @@ export default function IdentityVerification({
   const [authRef, setAuthRef] = useState('')
   const [status, setStatus] = useState<FrejaAuthStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [checkingMe, setCheckingMe] = useState(false)
+  const [hasLoadedMe, setHasLoadedMe] = useState(false)
+  const [meUser, setMeUser] = useState<User | null>(null)
 
-  const identityVerified =
-    isVerified(user?.verifiedIdentity) || isVerified(user?.verifiedStudent)
+  const verificationUser = meUser ?? user
+  const identityVerified = isVerified(verificationUser?.verifiedIdentity)
+  const hasFreshVerificationStatus = !enabled || !user || hasLoadedMe
+  const canStartVerification =
+    !!user && !identityVerified && hasFreshVerificationStatus && !checkingMe
   const frejaAuthUrl = useMemo(
     () => (authRef ? buildFrejaAuthUrl(authRef) : ''),
     [authRef]
   )
+
+  const loadVerificationStatus = useCallback(async () => {
+    if (!enabled || !user) return
+
+    setCheckingMe(true)
+    try {
+      const currentUser = await authService.me()
+      setMeUser(currentUser)
+      if (isVerified(currentUser.verifiedIdentity)) {
+        setAuthRef('')
+        setStatus(null)
+        setLoading(false)
+      }
+      setError(null)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Kunde inte läsa verifieringsstatus.'
+      )
+    } finally {
+      setHasLoadedMe(true)
+      setCheckingMe(false)
+    }
+  }, [enabled, user])
+
+  useEffect(() => {
+    setMeUser(null)
+    setHasLoadedMe(false)
+    if (!enabled || !user) return
+
+    void loadVerificationStatus()
+  }, [enabled, loadVerificationStatus, user?.email, user?.id, user])
 
   useEffect(() => {
     if (!authRef) return
@@ -85,6 +124,8 @@ export default function IdentityVerification({
           completeAuth(result)
           setStatus('MATCHES')
           setLoading(false)
+          await refreshUser()
+          await loadVerificationStatus()
           return
         }
 
@@ -106,6 +147,7 @@ export default function IdentityVerification({
 
         if (result === 'MATCHES') {
           await refreshUser()
+          await loadVerificationStatus()
         }
       } catch {
         if (!active) return
@@ -120,10 +162,10 @@ export default function IdentityVerification({
       active = false
       if (timeout) clearTimeout(timeout)
     }
-  }, [authRef, completeAuth, refreshUser])
+  }, [authRef, completeAuth, loadVerificationStatus, refreshUser])
 
   const startIdentityVerification = async () => {
-    if (loading) return
+    if (loading || !canStartVerification) return
 
     setLoading(true)
     setAuthRef('')
@@ -183,16 +225,16 @@ export default function IdentityVerification({
                 type='button'
                 variant='outline'
                 className='rounded-md border-gray-200 text-gray-900 sm:w-auto'
-                isLoading={loading}
-                isDisabled={loading}
+                isLoading={loading || checkingMe}
+                isDisabled={loading || !canStartVerification}
                 onClick={startIdentityVerification}
               >
-                Verifiera
+                {hasFreshVerificationStatus ? 'Verifiera' : 'Kontrollerar'}
               </Button>
             ) : null}
           </div>
 
-          {frejaAuthUrl ? (
+          {!identityVerified && frejaAuthUrl ? (
             <div className='mt-4 flex items-center gap-4 border-t border-gray-100 pt-4'>
               <div className='rounded-[8px] border border-gray-200 bg-white p-2'>
                 <QRCodeSVG

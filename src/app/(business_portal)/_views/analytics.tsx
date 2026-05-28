@@ -7,8 +7,8 @@ import AnalyticsResidentsOverview from "../_components/analytics/AnalyticsReside
 import {
   CompanyDemographyBatchBlock,
   CompanyDemographyBlock,
+  ApplicationDemographyPortfolioBlock,
   ListingDemographyBatchBlock,
-  ListingDemographyDrilldownBlock,
 } from "../_components/analytics/DemographicsEndpointBlocks";
 
 export default function Analytics() {
@@ -35,7 +35,7 @@ export default function Analytics() {
         <CompanyDemographyBlock />
         <CompanyDemographyBatchBlock />
         <ListingDemographyBatchBlock />
-        <ListingDemographyDrilldownBlock />
+        <ApplicationDemographyPortfolioBlock />
       </AnalyticsGrid>
     </div>
   );

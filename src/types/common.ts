@@ -14,6 +14,45 @@ export type UrlString = string;
 export type Tag = string;
 export type SystemProvider = "HOGIA" | "PIGELLO" | "DEMO" | "MOMENTUM" | "FAST2";
 export type DocumentFileType = "PDF" | "TXT" | "PICTURE" | "DOCX";
+export type DeviceType = "MOBILE" | "DESKTOP";
+export type ViewType = "QUICK" | "DETAILED";
+
+export const CITY_VALUES = [
+  "GÖTEBORG",
+  "STOCKHOLM",
+  "LUND",
+  "UPPSALA",
+  "MALMÖ",
+  "LINKÖPING",
+  "ÖREBRO",
+  "VÄSTERÅS",
+  "HELSINGBORG",
+  "JÖNKÖPING",
+  "NORRKÖPING",
+  "HALMSTAD",
+  "LULEÅ",
+  "SUNDSVALL",
+  "VÄXJÖ",
+  "BORÅS",
+  "ESKILSTUNA",
+  "GÄVLE",
+  "TROLLHÄTTAN",
+  "SKÖVDE",
+  "KARLSTAD",
+  "SKELLEFTEÅ",
+  "KALMAR",
+  "KATRINEHOLM",
+  "FALUN",
+  "KUNGSBACKA",
+  "VARBERG",
+  "LIDKÖPING",
+  "MOTALA",
+  "UDDEVALLA",
+  "STRÖMSTAD",
+  "ESLÖV",
+] as const;
+
+export type CityEnum = (typeof CITY_VALUES)[number];
 
 export type Coordinates = {
   lat?: number | null;

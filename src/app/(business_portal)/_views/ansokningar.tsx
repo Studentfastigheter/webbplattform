@@ -23,11 +23,8 @@ import { cn } from "@/lib/utils";
 import { companyService, type NewApplication } from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../_statics/variables";
 
-export type ApplicationsMode = "interest" | "queue";
-
 type AnsokningarProps = {
   listingId?: string | null;
-  mode?: ApplicationsMode;
 };
 
 type PortalApplication = NewApplication & {
@@ -537,17 +534,28 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
         </div>
 
         <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5">
-          <div className="h-[320px] min-h-0">
-            <TrendBarChart
-              data={group.trend}
-              defaultInterval="1m"
-              embedded
-              emptyMessage="Det finns inga ansökningar registrerade för annonsen ännu."
-              showHeader={false}
-              showSummary={false}
-              title="Ansökningar över tid"
-              valueLabel="Ansökningar"
-            />
+          <h3 className="text-sm font-semibold text-gray-950">Senaste ansökningar</h3>
+          <div className="mt-3 grid gap-2">
+            {group.applications.slice(0, 12).map((application) => (
+              <div
+                className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50/70 px-4 py-3"
+                key={`${application.applicationId ?? application.id}-${application.submittedAtTime}`}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-gray-900">
+                    {[application.firstName, application.surname].filter(Boolean).join(" ") ||
+                      application.studentEmail ||
+                      "Sökande"}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-gray-500">
+                    {application.message || application.studentSchool || "Ingen kommentar"}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs font-medium text-gray-500">
+                  {formatTimestamp(application.submittedAtTime)}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -557,7 +565,6 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
 
 export default function Ansokningar({
   listingId = null,
-  mode = "interest",
 }: AnsokningarProps) {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -567,7 +574,7 @@ export default function Ansokningar({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading || mode !== "interest") {
+    if (authLoading) {
       return;
     }
 
@@ -611,7 +618,7 @@ export default function Ansokningar({
     return () => {
       active = false;
     };
-  }, [authLoading, companyId, mode]);
+  }, [authLoading, companyId]);
 
   const visibleApplications = useMemo(() => {
     if (!listingId) {
@@ -631,6 +638,7 @@ export default function Ansokningar({
     () => buildMonthlyTrend(visibleApplications, 12),
     [visibleApplications]
   );
+  const showOverviewAnalytics = !listingId;
 
   useEffect(() => {
     if (listingGroups.length === 0) {
@@ -680,17 +688,6 @@ export default function Ansokningar({
     );
   }
 
-  if (mode === "queue") {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Bostadskö</h1>
-        <section className="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
-          Köansökningar visas inte via /api/companies/{"{id}"}/all-applications.
-        </section>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -707,36 +704,38 @@ export default function Ansokningar({
         <LoadingApplicationsLayout />
       ) : (
         <>
-          <AnalyticsGrid>
-            <AnalyticsBlock size="1x4">
-              <ApplicationStatsGrid
-                applications={visibleApplications}
-                groups={listingGroups}
-              />
-            </AnalyticsBlock>
+          {showOverviewAnalytics ? (
+            <AnalyticsGrid>
+              <AnalyticsBlock size="1x4">
+                <ApplicationStatsGrid
+                  applications={visibleApplications}
+                  groups={listingGroups}
+                />
+              </AnalyticsBlock>
 
-            <AnalyticsBlock size="2x2" title="Ansökningstrend">
-              <TrendBarChart
-                data={applicationTrend}
-                defaultInterval="1m"
-                embedded
-                emptyMessage="Det finns inga ansökningar registrerade ännu."
-                showHeader={false}
-                showSummary={false}
-                title="Ansökningstrend"
-                valueLabel="Ansökningar"
-              />
-            </AnalyticsBlock>
+              <AnalyticsBlock size="2x2" title="Ansökningstrend">
+                <TrendBarChart
+                  data={applicationTrend}
+                  defaultInterval="1m"
+                  embedded
+                  emptyMessage="Det finns inga ansökningar registrerade ännu."
+                  showHeader={false}
+                  showSummary={false}
+                  title="Ansökningstrend"
+                  valueLabel="Ansökningar"
+                />
+              </AnalyticsBlock>
 
-            <AnalyticsBlock
-              action={<TrendingUp className="h-5 w-5 text-brand-500" />}
-              contentClassName="overflow-hidden"
-              size="2x2"
-              title="Trending annonser"
-            >
-              <TrendingListings groups={listingGroups} />
-            </AnalyticsBlock>
-          </AnalyticsGrid>
+              <AnalyticsBlock
+                action={<TrendingUp className="h-5 w-5 text-brand-500" />}
+                contentClassName="overflow-hidden"
+                size="2x2"
+                title="Trending annonser"
+              >
+                <TrendingListings groups={listingGroups} />
+              </AnalyticsBlock>
+            </AnalyticsGrid>
+          ) : null}
 
           <ListingApplicationsLayout
             groups={listingGroups}

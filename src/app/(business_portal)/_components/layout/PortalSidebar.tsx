@@ -50,7 +50,7 @@ const portalItems: PortalNavItem[] = [
   },
   {
     name: "Bostadsk\u00F6",
-    path: `${dashboardRelPath}/ansokningar?filter=ko`,
+    path: `${dashboardRelPath}/bostadsko`,
     icon: <Building2 className="h-5 w-5" />,
   },
 

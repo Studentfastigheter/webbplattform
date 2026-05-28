@@ -1,4 +1,6 @@
 import Ansokningar from "../../_views/ansokningar"
+import { redirect } from "next/navigation";
+import { dashboardRelPath } from "../../_statics/variables";
 
 
 
@@ -19,8 +21,12 @@ export default async function Applications({
     : resolvedSearchParams?.listingId;
   const mode = filter === "ko" ? "queue" : "interest";
 
+  if (mode === "queue") {
+    redirect(`${dashboardRelPath}/bostadsko`);
+  }
+
   return (
-    <Ansokningar listingId={listingId} mode={mode} />
+    <Ansokningar listingId={listingId} />
   )
 
 }

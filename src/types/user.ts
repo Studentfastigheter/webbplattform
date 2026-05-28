@@ -15,6 +15,8 @@ export type AccountType =
   | "quick_register"
   | "admin";
 
+export type RegistrationAccountType = "student" | "company" | "private_landlord";
+
 export type UserCompanyLink = {
   id?: CompanyId | string;
   companyId?: CompanyId | string;
@@ -145,7 +147,7 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  accountType: AccountType;
+  accountType: RegistrationAccountType;
   
   // Fyll i relevanta fält beroende på accountType
   firstName?: string;
