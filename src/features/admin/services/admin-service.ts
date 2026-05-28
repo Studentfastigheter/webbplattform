@@ -6,6 +6,8 @@ import {
 import type {
   AdminAddSchoolRequest,
   AdminCityPayload,
+  AdminCompanyDetailedDTO,
+  AdminCompanyPublicDTO,
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
   AdminCreatePOIRequest,
@@ -15,7 +17,9 @@ import type {
   AdminModifyPOIRequest,
   AdminPointOfInterestDTO,
   AdminUserTrendDTO,
+  School,
 } from "@/types";
+import { schoolService } from "@/features/schools/services/school-service";
 
 function jsonBody(value: unknown) {
   return JSON.stringify(value);
@@ -47,6 +51,10 @@ export const adminService = {
     await apiClient<void>(`/admin/tag${adminTagQuery(tag)}`, {
       method: "PUT",
     });
+  },
+
+  getSchools: async (): Promise<School[]> => {
+    return schoolService.list();
   },
 
   createSchool: async (school: AdminAddSchoolRequest): Promise<void> => {
@@ -101,6 +109,17 @@ export const adminService = {
     await apiClient<void>("/admin/company", {
       method: "PUT",
       body: jsonBody(company),
+    });
+  },
+
+  getCompanies: async (): Promise<AdminCompanyPublicDTO[]> => {
+    const response = await apiClient<unknown>("/companies", { auth: false });
+    return arrayFromApiResponse<AdminCompanyPublicDTO>(response);
+  },
+
+  getCompany: async (companyId: number): Promise<AdminCompanyDetailedDTO> => {
+    return apiClient<AdminCompanyDetailedDTO>(`/companies/${companyId}`, {
+      auth: false,
     });
   },
 

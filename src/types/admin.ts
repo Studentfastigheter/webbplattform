@@ -48,6 +48,16 @@ export type AdminCompanyDetailedDTO = {
   websiteUrl?: string;
 };
 
+export type AdminCompanyPublicDTO = {
+  id?: number;
+  name?: string;
+  subtitle?: string;
+  logoUrl?: string;
+  housingQueueId?: string;
+  privacyUrl?: string;
+  termsUrl?: string;
+};
+
 export type AdminCreateCompanyRequest = {
   companyDate?: AdminCompanyDetailedDTO;
   credentials?: AdminCompanyCredentialDTO;

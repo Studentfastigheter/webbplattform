@@ -11,6 +11,7 @@ export interface SchoolDTO {
 }
 
 export interface AddSchoolRequest {
+  schoolId?: SchoolId;
   schoolName: string;
   city: string;
   lat: number;

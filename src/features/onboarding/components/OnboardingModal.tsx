@@ -64,6 +64,8 @@ export default function OnboardingModal() {
   const { user, token, isLoading, completeAuth } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [schoolsLoaded, setSchoolsLoaded] = useState(false);
   const [schools, setSchools] = useState<School[]>([]);
   const [error, setError] = useState<string | null>(null);
   
@@ -80,7 +82,10 @@ export default function OnboardingModal() {
   };
 
   useEffect(() => {
+    if (!isOpen || schoolsLoaded) return;
+
     let active = true;
+    setSchoolsLoading(true);
 
     schoolService
       .list()
@@ -89,12 +94,18 @@ export default function OnboardingModal() {
       })
       .catch(() => {
         if (active) setSchools([]);
+      })
+      .finally(() => {
+        if (active) {
+          setSchoolsLoaded(true);
+          setSchoolsLoading(false);
+        }
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [isOpen, schoolsLoaded]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -220,7 +231,9 @@ export default function OnboardingModal() {
                 onChange={(e) => updateFormData({ schoolId: e.target.value })}
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <option value="">Välj skola</option>
+                <option value="">
+                  {schoolsLoading ? "Laddar skolor..." : "Välj skola"}
+                </option>
                 {schools.map((school) => (
                   <option key={school.id} value={school.id}>
                     {[school.name, school.city].filter(Boolean).join(", ")}
