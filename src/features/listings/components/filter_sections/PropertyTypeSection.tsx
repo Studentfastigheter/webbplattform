@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { cn } from "@/lib/utils";
 import FilterSectionShell from "./FilterSectionShell";
 
 export type PropertyTypeItem = {
@@ -43,14 +44,16 @@ const PropertyTypeSection: React.FC<PropertyTypeSectionProps> = ({
             <button
               key={type.id}
               type="button"
+              aria-pressed={isActive}
               onClick={() => onSelect(isActive ? null : type.id)}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${
+              className={cn(
+                "inline-flex min-h-10 items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition",
                 isActive
-                  ? "border-black bg-black text-white"
+                  ? "border-[#004225] bg-[#004225] text-white"
                   : isEmpty
-                    ? "border-black/10 text-black/45 hover:border-black/25 hover:text-black/70"
-                    : "border-black/15 text-black hover:border-black/40"
-              }`}
+                    ? "border-black/10 bg-white text-black/45 hover:border-black/25 hover:text-black/70"
+                    : "border-black/10 bg-white text-black hover:border-[#004225]/30 hover:bg-[#f6faf8]"
+              )}
             >
               <span>{type.label}</span>
               {hasCount && (
@@ -60,7 +63,7 @@ const PropertyTypeSection: React.FC<PropertyTypeSectionProps> = ({
                       ? "bg-white/20 text-white"
                       : isEmpty
                         ? "bg-black/[0.03] text-black/40"
-                        : "bg-black/5 text-black/60"
+                        : "bg-[#004225]/10 text-[#004225]"
                   }`}
                 >
                   {count.toLocaleString("sv-SE")}

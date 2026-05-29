@@ -1,6 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import FilterSectionShell from "./FilterSectionShell";
 
 export type AmenityItem = {
@@ -32,22 +33,37 @@ const AmenityGridSection: React.FC<AmenityGridSectionProps> = ({
       description={description}
       withBorder={withBorder}
     >
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="flex flex-wrap gap-2">
         {items.map((item) => {
           const active = selectedIds.includes(item.id);
           return (
             <button
               key={item.id}
               type="button"
+              aria-pressed={active}
               onClick={() => onToggle(item.id)}
-              className={`flex flex-col items-center rounded-3xl border px-3 py-4 text-center transition ${
+              className={`inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
                 active
-                  ? "border-black bg-black text-white"
-                  : "border-black/10 hover:border-black/30"
+                  ? "border-[#004225] bg-[#004225] text-white"
+                  : "border-black/10 bg-white text-black hover:border-[#004225]/30 hover:bg-[#f6faf8]"
               }`}
             >
-              <span className="text-2xl">{item.icon ?? "•"}</span>
-              <span className="mt-2 text-sm font-medium">{item.label}</span>
+              <span
+                aria-hidden
+                className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center",
+                  active
+                    ? "text-white"
+                    : "text-[#004225]"
+                )}
+              >
+                {item.icon ?? (
+                  <span className="text-xs font-semibold uppercase">
+                    {item.label.slice(0, 1)}
+                  </span>
+                )}
+              </span>
+              <span>{item.label}</span>
             </button>
           );
         })}

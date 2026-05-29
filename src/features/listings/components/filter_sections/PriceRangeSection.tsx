@@ -30,13 +30,13 @@ type PriceRangeSectionProps = {
 };
 
 const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
-  title = "Prisintervall",
+  title,
   description,
   histogram = [],
   bounds,
   value,
   onChange,
-  withBorder = false,
+  withBorder = true,
 }) => {
   const [inputValues, setInputValues] = useState<[string, string]>([
     value[0].toString(),
@@ -47,15 +47,16 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
     null,
   ]);
 
-  const formatCurrency = (val: number) => `kr${val.toLocaleString("sv-SE")}`;
+  const formatCurrency = (val: number) =>
+    `${val.toLocaleString("sv-SE")} kr`;
 
   const formatInterval = (min?: number | null, max?: number | null) => {
     if (typeof min === "number" && typeof max === "number") {
-      return `${formatCurrency(min)}-${formatCurrency(max)}`;
+      return `${formatCurrency(min)} - ${formatCurrency(max)}`;
     }
-    if (typeof min === "number") return `Fr\u00e5n ${formatCurrency(min)}`;
+    if (typeof min === "number") return `Från ${formatCurrency(min)}`;
     if (typeof max === "number") return `Till ${formatCurrency(max)}`;
-    return "Prisintervall";
+    return "Hyra";
   };
 
   const clampToBounds = (val: number, targetBounds: PriceBounds) =>
@@ -166,11 +167,6 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
     return Math.max(1, Math.round(width));
   }, [histogramBuckets]);
 
-  const histogramTotal = useMemo(
-    () => histogramBuckets.reduce((sum, bucket) => sum + bucket.count, 0),
-    [histogramBuckets]
-  );
-
   useEffect(() => {
     setInputValues([displayValue[0].toString(), displayValue[1].toString()]);
     setErrors([null, null]);
@@ -178,13 +174,13 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
 
   const validateInput = (index: 0 | 1, raw: string): string | null => {
     const parsed = parseNumeric(raw);
-    if (Number.isNaN(parsed)) return "Ange ett v\u00e4rde";
+    if (Number.isNaN(parsed)) return "Ange ett värde";
 
     if (parsed < histogramScale.min) {
-      return `L\u00e4gsta till\u00e5tna \u00e4r ${formatCurrency(histogramScale.min)}`;
+      return `Lägsta tillåtna är ${formatCurrency(histogramScale.min)}`;
     }
     if (parsed > histogramScale.max) {
-      return `H\u00f6gsta till\u00e5tna \u00e4r ${formatCurrency(histogramScale.max)}`;
+      return `Högsta tillåtna är ${formatCurrency(histogramScale.max)}`;
     }
 
     const otherRaw = inputValues[index === 0 ? 1 : 0];
@@ -193,10 +189,10 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
       Number.isNaN(otherParsed) ? displayValue[index === 0 ? 1 : 0] : otherParsed;
 
     if (index === 0 && parsed > fallbackOther) {
-      return "M\u00e5ste vara l\u00e4gre \u00e4n eller lika med h\u00f6gsta v\u00e4rdet";
+      return "Måste vara lägre än eller lika med högsta värdet";
     }
     if (index === 1 && parsed < fallbackOther) {
-      return "M\u00e5ste vara h\u00f6gre \u00e4n eller lika med l\u00e4gsta v\u00e4rdet";
+      return "Måste vara högre än eller lika med lägsta värdet";
     }
 
     return null;
@@ -246,51 +242,44 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
       description={description}
       withBorder={withBorder}
     >
-      <div className="space-y-4">
-        <div className="relative rounded-2xl bg-pink-50 px-4 pb-12 pt-6">
-          <div className="flex h-32 items-end gap-[2px] overflow-hidden">
-            {histogramBuckets.length > 0 ? (
-              histogramBuckets.map((bucket) => (
-                <span
-                  key={bucket.key}
-                  role="img"
-                  aria-label={`${bucket.label}: ${bucket.count.toLocaleString(
-                    "sv-SE"
-                  )} annonser`}
-                  title={`${bucket.label}: ${bucket.count.toLocaleString(
-                    "sv-SE"
-                  )} annonser`}
-                  className={`flex-1 rounded-full transition-[height,background-color,opacity] duration-200 ${
-                    bucket.count > 0
-                      ? bucket.overlapsSelectedRange
-                        ? "bg-[#FF2A6D]"
-                        : "bg-[#FF2A6D]/30"
-                      : "bg-black/10"
-                  }`}
-                  style={{
-                    height: `${
-                      bucket.count > 0 ? Math.max(bucket.height, 8) : 3
-                    }%`,
-                  }}
-                />
-              ))
-            ) : (
-              <p className="text-sm text-black/50">
-                Prisdata h\u00e4mtas automatiskt n\u00e4r statistik finns.
-              </p>
-            )}
+      <div className="space-y-3">
+        <div className="relative px-1 pb-10 pt-1">
+          <div className="flex h-24 items-end gap-[3px] overflow-hidden sm:h-28">
+              {histogramBuckets.length > 0 ? (
+                histogramBuckets.map((bucket) => (
+                  <span
+                    key={bucket.key}
+                    role="img"
+                    aria-label={`${bucket.label}: ${bucket.count.toLocaleString(
+                      "sv-SE"
+                    )} annonser`}
+                    title={`${bucket.label}: ${bucket.count.toLocaleString(
+                      "sv-SE"
+                    )} annonser`}
+                    className={`flex-1 rounded-t-sm transition-[height,background-color,opacity] duration-200 ${
+                      bucket.count > 0
+                        ? bucket.overlapsSelectedRange
+                          ? "bg-[#004225]"
+                          : "bg-[#004225]/20"
+                        : "bg-black/[0.08]"
+                    }`}
+                    style={{
+                      height: `${
+                        bucket.count > 0 ? Math.max(bucket.height, 8) : 3
+                      }%`,
+                    }}
+                  />
+                ))
+              ) : (
+                <p className="flex h-full w-full items-center justify-center text-center text-sm text-black/50">
+                  Prisdata hämtas automatiskt när statistik finns.
+                </p>
+              )}
           </div>
-          {histogramBuckets.length > 0 && (
-            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-black/55">
-              <span>
-                {histogramTotal.toLocaleString("sv-SE")} annonser i intervallen
-              </span>
-              <span>{histogramBuckets.length} prisniv\u00e5er</span>
-            </div>
-          )}
-          <div className="absolute inset-x-4 bottom-3">
+
+          <div className="absolute inset-x-1 bottom-1">
             <ControlledRange
-              ariaLabel="Prisintervall"
+              ariaLabel="Månadshyra"
               min={histogramScale.min}
               max={histogramScale.max}
               step={sliderStep}
@@ -301,13 +290,12 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-1 text-sm text-black/70">
-          <div className="space-y-1">
-            <span className="block text-xs uppercase text-black/60">
-              L\u00e4gst
+        <div className="grid grid-cols-1 gap-3 text-sm text-black/70 sm:grid-cols-2">
+          <label className="space-y-1.5">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-black/55">
+              Från
             </span>
-            <div className="flex items-center gap-2 rounded-full border border-black/15 px-3 py-2 shadow-sm">
-              <span className="text-sm text-black/60">kr</span>
+            <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-[#004225] focus-within:ring-2 focus-within:ring-[#004225]/10">
               <input
                 type="text"
                 inputMode="numeric"
@@ -315,23 +303,20 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                 max={histogramScale.max}
                 value={inputValues[0]}
                 onChange={(e) => handleManualChange(0, e.target.value)}
-                className="w-full bg-transparent text-base font-semibold outline-none"
-                aria-label="L\u00e4gsta pris"
+                className="min-w-0 flex-1 bg-transparent text-right text-base font-semibold outline-none"
+                aria-label="Lägsta pris"
               />
+              <span className="text-sm text-black/50">kr</span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-black/50">
-                Min: {formatCurrency(histogramScale.min)}
-              </span>
-              {errors[0] && <span className="text-red-600">{errors[0]}</span>}
-            </div>
-          </div>
-          <div className="space-y-1 text-right">
-            <span className="block text-xs uppercase text-black/60">
-              H\u00f6gst
+            {errors[0] && (
+              <p className="text-xs text-red-600">{errors[0]}</p>
+            )}
+          </label>
+          <label className="space-y-1.5 sm:text-right">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-black/55">
+              Till
             </span>
-            <div className="flex items-center gap-2 rounded-full border border-black/15 px-3 py-2 shadow-sm">
-              <span className="text-sm text-black/60">kr</span>
+            <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-[#004225] focus-within:ring-2 focus-within:ring-[#004225]/10">
               <input
                 type="text"
                 inputMode="numeric"
@@ -339,17 +324,15 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                 max={histogramScale.max}
                 value={inputValues[1]}
                 onChange={(e) => handleManualChange(1, e.target.value)}
-                className="w-full bg-transparent text-right text-base font-semibold outline-none"
-                aria-label="H\u00f6gsta pris"
+                className="min-w-0 flex-1 bg-transparent text-right text-base font-semibold outline-none"
+                aria-label="Högsta pris"
               />
+              <span className="text-sm text-black/50">kr</span>
             </div>
-            <div className="flex justify-between text-xs">
-              {errors[1] && <span className="text-red-600">{errors[1]}</span>}
-              <span className="text-black/50">
-                Max: {formatCurrency(histogramScale.max)}
-              </span>
-            </div>
-          </div>
+            {errors[1] && (
+              <p className="text-xs text-red-600">{errors[1]}</p>
+            )}
+          </label>
         </div>
       </div>
     </FilterSectionShell>

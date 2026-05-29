@@ -70,13 +70,7 @@ type ListingsFilterButtonProps = Omit<
 const defaultBounds: PriceBounds = { min: 0, max: 10000 };
 
 const formatListingCount = (count: number) =>
-  `${count.toLocaleString("sv-SE")} ${count === 1 ? "bostad" : "bost\u00e4der"}`;
-
-const formatRent = (value: number) =>
-  `${value.toLocaleString("sv-SE")} kr`;
-
-const hasCustomPriceRange = (range: PriceBounds, bounds: PriceBounds) =>
-  range.min > bounds.min || range.max < bounds.max;
+  `${count.toLocaleString("sv-SE")} ${count === 1 ? "bostad" : "bostäder"}`;
 
 const emptyState = (priceBounds: PriceBounds): ListingsFilterState => ({
   city: "",
@@ -211,7 +205,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
   const resultsLabel = useMemo(() => {
     if (typeof facetTotalCount !== "number" && facetsLoading) {
-      return "H\u00e4mtar tr\u00e4ffar...";
+      return "Hämtar träffar...";
     }
     if (typeof facetTotalCount === "number") {
       return `Visa ${formatListingCount(facetTotalCount)}`;
@@ -221,59 +215,11 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
   const resultsMeta = useMemo(() => {
     if (facetsLoading && typeof facetTotalCount === "number") {
-      return "Uppdaterar tr\u00e4ffar...";
+      return "Uppdaterar träffar...";
     }
     if (facetsError) return facetsError;
     return null;
   }, [facetTotalCount, facetsError, facetsLoading]);
-
-  const priceDescription = useMemo(() => {
-    const base = "M\u00e5nadshyra i SEK.";
-    if (
-      observedRentRange &&
-      Number.isFinite(observedRentRange.min) &&
-      Number.isFinite(observedRentRange.max)
-    ) {
-      return `${base} Matchande bost\u00e4der ligger mellan ${formatRent(
-        observedRentRange.min
-      )} och ${formatRent(observedRentRange.max)}.`;
-    }
-
-    return base;
-  }, [observedRentRange]);
-
-  const selectedSummary = useMemo(() => {
-    const items: string[] = [];
-    const propertyType = propertyTypes.find((item) => item.id === state.propertyType);
-    const hostType = hostTypes.find((item) => item.id === state.hostType);
-    const selectedSchool = selectableSchools.find(
-      (school) => school.normalizedId === state.schoolId
-    );
-
-    if (state.city.trim()) items.push(state.city.trim());
-    if (propertyType) items.push(propertyType.label);
-    if (hostType) items.push(hostType.label);
-    if (hasCustomPriceRange(state.priceRange, priceBounds)) {
-      items.push(`${formatRent(state.priceRange.min)}-${formatRent(state.priceRange.max)}`);
-    }
-    if (selectedSchool) items.push(selectedSchool.name);
-    if (state.amenities.length > 0) {
-      items.push(`${state.amenities.length} bekv\u00e4mligheter`);
-    }
-
-    return items;
-  }, [
-    hostTypes,
-    priceBounds,
-    propertyTypes,
-    selectableSchools,
-    state.amenities.length,
-    state.city,
-    state.hostType,
-    state.priceRange,
-    state.propertyType,
-    state.schoolId,
-  ]);
 
   const updateState = (next: ListingsFilterState) => {
     setState(next);
@@ -365,64 +311,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
   };
 
   const content = (
-    <>
-      <div
-        className={`mb-1 rounded-2xl border px-4 py-3 transition-colors ${
-          facetTotalCount === 0
-            ? "border-amber-200 bg-amber-50 text-amber-950"
-            : "border-[#004225]/15 bg-[#004225]/5 text-[#004225]"
-        }`}
-        aria-live="polite"
-      >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase opacity-70">
-              Matchande annonser
-            </p>
-            <p className="mt-1 text-2xl font-semibold leading-none">
-              {typeof facetTotalCount === "number"
-                ? facetTotalCount.toLocaleString("sv-SE")
-                : facetsLoading
-                  ? "..."
-                  : "-"}
-            </p>
-          </div>
-          <div className="text-sm sm:max-w-[340px] sm:text-right">
-            {typeof facetTotalCount === "number" ? (
-              facetTotalCount === 0 ? (
-                "Inga annonser matchar kombinationen. Testa att ta bort ett krav eller bredda prisintervallet."
-              ) : (
-                `${formatListingCount(facetTotalCount)} matchar dina val.`
-              )
-            ) : facetsError ? (
-              facetsError
-            ) : facetsLoading ? (
-              "H\u00e4mtar tr\u00e4ffar..."
-            ) : (
-              "Antal tr\u00e4ffar visas n\u00e4r statistik finns."
-            )}
-            {facetsLoading && typeof facetTotalCount === "number" && (
-              <span className="mt-1 block text-xs opacity-70">
-                Uppdaterar...
-              </span>
-            )}
-          </div>
-        </div>
-
-        {selectedSummary.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {selectedSummary.map((item) => (
-              <span
-                key={item}
-                className="rounded-full bg-white/70 px-2.5 py-1 text-xs font-medium text-black/70"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
+    <div className="space-y-3">
       {propertyTypes.length > 0 && (
         <PropertyTypeSection
           title="Boendetyp"
@@ -435,10 +324,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
       {hostTypes.length > 0 && (
         <PropertyTypeSection
-          title={"Hyresv\u00e4rd"}
-          description={
-            "Antalet visar hur m\u00e5nga annonser som finns kvar med dina andra val."
-          }
+          title="Hyresvärd"
           items={hostTypes}
           selectedId={state.hostType}
           onSelect={handleHostType}
@@ -448,8 +334,6 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
       {showPriceFilter && (
         <PriceRangeSection
-          title="Prisintervall"
-          description={priceDescription}
           histogram={priceHistogram}
           bounds={priceBounds}
           value={[state.priceRange.min, state.priceRange.max]}
@@ -459,10 +343,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
       {amenities.length > 0 && (
         <AmenityGridSection
-          title={"Bekv\u00e4mligheter"}
-          description={
-            "Alla valda bekv\u00e4mligheter m\u00e5ste finnas p\u00e5 annonsen."
-          }
+          title="Bekvämligheter"
           items={amenities}
           selectedIds={state.amenities}
           onToggle={handleAmenityToggle}
@@ -470,17 +351,12 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
       )}
 
       <FilterSectionShell
-        title={"N\u00e4ra skola"}
-        description={
-          "V\u00e4lj ett campus eller en skola f\u00f6r att hitta annonser i n\u00e4rheten."
-        }
+        title="Nära skola"
         withBorder={false}
       >
-        <div className="space-y-2">
-          <label className="space-y-2">
-            <span className="block text-sm font-medium text-black/75">
-              Skola
-            </span>
+        <div className="space-y-3">
+          <label>
+            <span className="sr-only">Skola</span>
             <div className="relative">
               <input
                 type="text"
@@ -489,14 +365,14 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                 onChange={(event) =>
                   handleSchoolSearchChange(event.target.value)
                 }
-                placeholder={"S\u00f6k skola eller universitet"}
-                className="h-11 w-full rounded-2xl border border-black/15 bg-white px-4 pr-24 text-sm outline-none transition focus:border-[#004225] focus:ring-2 focus:ring-[#004225]/10"
+                placeholder="Sök skola eller universitet"
+                className="h-11 w-full rounded-lg border border-black/15 bg-white px-3.5 pr-24 text-sm outline-none transition focus:border-[#004225] focus:ring-2 focus:ring-[#004225]/10"
               />
               {state.schoolId && (
                 <button
                   type="button"
                   onClick={clearSchool}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-xs font-semibold text-[#004225] hover:bg-[#004225]/5"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold text-[#004225] transition hover:bg-[#004225]/10"
                 >
                   Rensa
                 </button>
@@ -505,16 +381,16 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
           </label>
 
           {schools.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-black/15 px-4 py-3 text-sm text-black/55">
+            <p className="text-sm text-black/55">
               Skolor laddas...
             </p>
           ) : selectableSchools.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-black/15 px-4 py-3 text-sm text-black/55">
+            <p className="text-sm text-black/55">
               Inga skolor med position kunde hittas.
             </p>
           ) : (
             <div
-              className={`max-h-56 overflow-y-auto rounded-2xl border border-black/10 bg-white p-2 ${
+              className={`max-h-56 overflow-y-auto rounded-lg border border-black/10 bg-white p-1.5 shadow-inner ${
                 isSchoolListOpen || !state.schoolId ? "block" : "hidden"
               }`}
             >
@@ -531,10 +407,10 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                       }}
                       onClick={() => handleSchoolSelect(school)}
                       aria-pressed={isSelected}
-                      className={`flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2 text-left transition ${
+                      className={`flex w-full items-start justify-between gap-3 rounded-md px-3 py-2 text-left transition ${
                         isSelected
                           ? "bg-[#004225] text-white"
-                          : "text-black hover:bg-[#004225]/5"
+                          : "text-black hover:bg-[#f6faf8]"
                       }`}
                     >
                       <span>
@@ -561,7 +437,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                 })
               ) : (
                 <p className="px-3 py-2 text-sm text-black/55">
-                  {"Ingen skola matchar din s\u00f6kning."}
+                  Ingen skola matchar din sökning.
                 </p>
               )}
             </div>
@@ -569,12 +445,12 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
           {state.schoolId && (
             <p className="text-xs text-black/55">
-              Filtret anv\u00e4nder skolans position n\u00e4r tr\u00e4ffarna r\u00e4knas.
+              Filtret använder skolans position när träffarna räknas.
             </p>
           )}
         </div>
       </FilterSectionShell>
-    </>
+    </div>
   );
 
   return (

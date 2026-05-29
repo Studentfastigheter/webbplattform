@@ -1,6 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 type FilterSectionShellProps = {
   title?: string;
@@ -19,13 +20,23 @@ const FilterSectionShell: React.FC<FilterSectionShellProps> = ({
 }) => {
   return (
     <section
-      className={`py-5 ${withBorder ? "border-b border-black/10" : ""} ${className}`}
+      className={cn(
+        "py-4 sm:py-5",
+        withBorder && "border-b border-black/10",
+        className
+      )}
     >
       {(title || description) && (
-        <div className="mb-4 space-y-1">
-          {title && <h3 className="text-base font-semibold">{title}</h3>}
+        <div className="mb-3">
+          {title && (
+            <h3 className="text-sm font-semibold leading-5 text-black">
+              {title}
+            </h3>
+          )}
           {description && (
-            <p className="text-sm text-black/60">{description}</p>
+            <p className="mt-1 text-sm leading-5 text-black/60">
+              {description}
+            </p>
           )}
         </div>
       )}
