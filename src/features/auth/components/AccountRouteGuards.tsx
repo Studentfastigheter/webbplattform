@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import { LoadingScreen } from "@/components/ui/loader";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { buildPortalUrl } from "@/lib/subdomain-routing";
@@ -15,11 +16,7 @@ type RouteGuardProps = {
 const SITE_ACCOUNT_TYPES = new Set(["student"]);
 
 function RouteFallback({ message }: { message: string }) {
-  return (
-    <div className="flex min-h-svh items-center justify-center bg-white px-6 text-sm text-neutral-500">
-      {message}
-    </div>
-  );
+  return <LoadingScreen label={message} />;
 }
 
 export function SiteAccountGuard({ children }: RouteGuardProps) {
