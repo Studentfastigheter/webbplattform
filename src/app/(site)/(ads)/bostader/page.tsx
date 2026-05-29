@@ -271,15 +271,18 @@ export default function ListingsPage() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const pageFromUrl = getPageFromParam(searchParams.get("page"));
+  const cityFromUrl = searchParams.get("city")?.trim() ?? "";
 
   const [view, setView] = useState<SwitchSelectValue>("lista");
-  const [searchInput, setSearchInput] = useState("");
-  const [filters, setFilters] = useState<ListingsFilterState>(
-    createDefaultListingsFilterState
-  );
-  const [filterPreview, setFilterPreview] = useState<ListingsFilterState>(
-    createDefaultListingsFilterState
-  );
+  const [searchInput, setSearchInput] = useState(cityFromUrl);
+  const [filters, setFilters] = useState<ListingsFilterState>(() => ({
+    ...createDefaultListingsFilterState(),
+    city: cityFromUrl,
+  }));
+  const [filterPreview, setFilterPreview] = useState<ListingsFilterState>(() => ({
+    ...createDefaultListingsFilterState(),
+    city: cityFromUrl,
+  }));
 
   const [schools, setSchools] = useState<School[]>([]);
   const [availableAmenities, setAvailableAmenities] =

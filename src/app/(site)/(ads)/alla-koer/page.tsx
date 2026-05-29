@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -74,8 +74,19 @@ const cleanStrings = (values: Array<string | null | undefined>) =>
     (value): value is string => typeof value === "string" && value.length > 0
   );
 
+const formatCityName = (value: string) => {
+  const trimmed = value.normalize("NFC").trim();
+  if (!trimmed) return "";
+
+  return trimmed
+    .toLocaleLowerCase("sv-SE")
+    .replace(/(^|[\s-])\p{L}/gu, (match) => match.toLocaleUpperCase("sv-SE"));
+};
+
 function mapCompanyToCard(company: CompanyPublicDTO): CompanyQueueCard {
-  const cities = Array.isArray(company.cities) ? company.cities : [];
+  const cities = Array.isArray(company.cities)
+    ? company.cities.map(formatCityName).filter((city) => city.length > 0)
+    : [];
 
   return {
     id: String(company.id),
@@ -112,14 +123,17 @@ const getJoinQueueId = (queue: CompanyQueueCard): string | null =>
 
 export default function Page() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
+  const cityFromUrl = formatCityName(searchParams.get("city") ?? "");
   const [searchInput, setSearchInput] = useState("");
   const [searchValues, setSearchValues] = useState<SearchValues>({
     queueName: "",
   });
-  const [filters, setFilters] = useState<QueueFilterState>(
-    defaultQueueFilterState
-  );
+  const [filters, setFilters] = useState<QueueFilterState>(() => ({
+    ...defaultQueueFilterState,
+    cities: cityFromUrl ? [cityFromUrl] : [],
+  }));
   const [queues, setQueues] = useState<CompanyQueueCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);

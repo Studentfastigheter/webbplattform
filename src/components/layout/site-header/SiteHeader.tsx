@@ -23,9 +23,10 @@ import {
 type NavItem = NavbarItem;
 
 const publicNavItems: NavItem[] = [
+  { name: "Hem", link: "/" },
   { name: "Bostäder", link: "/bostader" },
   { name: "Alla köer", link: "/alla-koer" },
-  { name: "Kom igång", link: "/" },
+  { name: "Städer", link: "/stader" },
 ];
 
 const studentNavItems: NavItem[] = [
@@ -46,11 +47,13 @@ const studentNavItems: NavItem[] = [
       { name: "Mina köer", link: "/koer" },
     ],
   },
+  { name: "Städer", link: "/stader" },
   { name: "Notiser", link: "/notiser" },
 ];
 
 const landlordNavItems: NavItem[] = [
   { name: "Bostäder", link: "/bostader" },
+  { name: "Städer", link: "/stader" },
   {
     name: "Mina annonser",
     link: "/mina-annonser",
@@ -131,7 +134,10 @@ export default function SiteHeader() {
   } else if (userType === "private_landlord" || userType === "company") {
     navItems = landlordNavItems;
   } else if (currentUser) {
-    navItems = [{ name: "Bostadssök", link: "/bostader" }];
+    navItems = [
+      { name: "Bostadssök", link: "/bostader" },
+      { name: "Städer", link: "/stader" },
+    ];
   }
 
   let accountMenuItems: NavItem[] = [];
