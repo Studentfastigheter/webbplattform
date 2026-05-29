@@ -3,19 +3,9 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
-  ActivityIcon,
-  BarChart3Icon,
-  Building2Icon,
   CheckCircle2Icon,
-  InfoIcon,
-  KeyRoundIcon,
-  ListChecksIcon,
-  MapPinIcon,
   RefreshCwIcon,
-  SchoolIcon,
-  TagsIcon,
   Trash2Icon,
-  UsersIcon,
   XCircleIcon,
 } from "lucide-react";
 
@@ -57,49 +47,6 @@ const ADMIN_TABS = [
 ] as const;
 
 export type AdminSection = (typeof ADMIN_TABS)[number];
-
-const TAB_META: Record<AdminSection, { title: string; description: string }> = {
-  tags: {
-    title: "Taggar för bostadsannonser",
-    description:
-      "Skapa och uppdatera de attribut som används för att filtrera och beskriva annonser.",
-  },
-  schools: {
-    title: "Skolor och campus",
-    description:
-      "Lägg till eller uppdatera skolor med stad och koordinater så att sökfilter och kartor fungerar rätt.",
-  },
-  locations: {
-    title: "Platskategorier",
-    description:
-      "Hantera Google-kategorier som ligger bakom närliggande service och platsbaserade listor.",
-  },
-  companies: {
-    title: "Bostadsföretag",
-    description:
-      "Skapa, uppdatera eller avaktivera företagsprofiler och deras systemkopplingar.",
-  },
-  accounts: {
-    title: "Företagskonton",
-    description:
-      "Administrera användare, roller och kontaktuppgifter kopplade till företagsportalen.",
-  },
-  activities: {
-    title: "Studentaktiviteter och POI",
-    description:
-      "Lista, skapa, uppdatera och ta bort aktiviteter som visas nära skolor och bostäder.",
-  },
-  statistics: {
-    title: "Registrerade användare",
-    description:
-      "Hämta tidsserier för användarregistreringar inom ett valt datumintervall.",
-  },
-  legacy: {
-    title: "Äldre stads-endpoints",
-    description:
-      "Verktyg för äldre stadsdata som fortfarande finns kvar av bakåtkompatibilitetsskäl.",
-  },
-};
 
 function toInputValue(value: unknown) {
   return value === undefined || value === null ? "" : String(value);
@@ -172,7 +119,7 @@ function useResourceList<TItem>(onFetch: () => Promise<TItem[]>) {
     try {
       const result = await onFetch();
       setItems(result);
-      setState({ status: "success", message: `${result.length} poster hämtade.` });
+      setState({ status: "idle" });
       return result;
     } catch (error) {
       setItems([]);
@@ -230,37 +177,6 @@ function EndpointBadge({ method, endpoint }: { method: string; endpoint: string 
       </span>
       <span className="break-all">{endpoint}</span>
     </code>
-  );
-}
-
-function TabIntro({
-  icon,
-  title,
-  description,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  children?: ReactNode;
-}) {
-  return (
-    <section className="mb-4 rounded-[8px] border border-[#dfe7e3] bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex min-w-0 gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#004225] text-white">
-            {icon}
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-[#111827]">{title}</h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-[#66716f]">
-              {description}
-            </p>
-          </div>
-        </div>
-        {children}
-      </div>
-    </section>
   );
 }
 
@@ -1545,59 +1461,36 @@ export function AdminToolPage({ section }: { section: AdminSection }) {
     <main className="flex flex-col gap-6 text-[#1f2937]">
       <div className="flex flex-col gap-5">
         <SectionContent active={section} value="tags">
-          <TabIntro icon={<TagsIcon className="h-5 w-5" />} title={TAB_META.tags.title} description={TAB_META.tags.description} />
           <TagsForm />
         </SectionContent>
 
         <SectionContent active={section} value="schools">
-          <TabIntro icon={<SchoolIcon className="h-5 w-5" />} title={TAB_META.schools.title} description={TAB_META.schools.description} />
           <SchoolsForm />
         </SectionContent>
 
         <SectionContent active={section} value="locations">
-          <TabIntro icon={<MapPinIcon className="h-5 w-5" />} title={TAB_META.locations.title} description={TAB_META.locations.description} />
           <LocationCategoriesForm />
         </SectionContent>
 
         <SectionContent active={section} value="companies">
-          <TabIntro icon={<Building2Icon className="h-5 w-5" />} title={TAB_META.companies.title} description={TAB_META.companies.description}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800">
-              <Trash2Icon className="h-4 w-4" />
-              Soft delete via id
-            </span>
-          </TabIntro>
           <CompaniesForm />
         </SectionContent>
 
         <SectionContent active={section} value="accounts">
-          <TabIntro icon={<UsersIcon className="h-5 w-5" />} title={TAB_META.accounts.title} description={TAB_META.accounts.description}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#dfe7e3] bg-[#fbfcfb] px-3 py-1.5 text-xs font-medium text-[#36534d]">
-              <KeyRoundIcon className="h-4 w-4 text-[#004225]" />
-              Rollstyrt konto
-            </span>
-          </TabIntro>
           <CompanyAccountForm />
         </SectionContent>
 
         <SectionContent active={section} value="activities">
-          <TabIntro icon={<ActivityIcon className="h-5 w-5" />} title={TAB_META.activities.title} description={TAB_META.activities.description} />
           <ActivitiesForm />
         </SectionContent>
 
         <SectionContent active={section} value="statistics">
-          <TabIntro icon={<BarChart3Icon className="h-5 w-5" />} title={TAB_META.statistics.title} description={TAB_META.statistics.description} />
           <div className="grid gap-4 xl:grid-cols-2">
             <UserStatisticsAction />
           </div>
         </SectionContent>
 
         <SectionContent active={section} value="legacy">
-          <TabIntro icon={<ListChecksIcon className="h-5 w-5" />} title={TAB_META.legacy.title} description={TAB_META.legacy.description}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900">
-              <InfoIcon className="h-4 w-4" />
-              Bakåtkompatibilitet
-            </span>
-          </TabIntro>
           <div className="grid gap-4">
             <CityForm />
             <DeleteIdAction title="Ta bort stad" description="Ta bort eller avaktivera en stad med numeriskt id." endpoint="/api/admin/city/delete" label="Stads-id" onSubmit={adminService.deleteCity} />
