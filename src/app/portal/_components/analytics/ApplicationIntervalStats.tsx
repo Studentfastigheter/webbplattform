@@ -191,33 +191,33 @@ export default function ApplicationIntervalStats() {
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setInterval} value={interval} />}
-      size="2x1"
+      size="2x2"
       title="Ansökningar totalt"
     >
       {authLoading || isLoading ? (
-        <div className="flex h-full min-h-[96px] items-center gap-4">
-          <Skeleton className="h-12 w-12 rounded-lg" />
+        <div className="flex h-full items-center gap-4">
+          <Skeleton className="h-10 w-10 rounded-lg" />
           <div className="space-y-2">
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-4 w-44" />
+            <Skeleton className="h-7 w-20" />
+            <Skeleton className="h-3.5 w-36" />
           </div>
         </div>
       ) : error ? (
-        <div className="flex h-full min-h-[96px] items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">
+        <div className="flex h-full items-center rounded-xl border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">
           {error}
         </div>
       ) : (
-        <div className="flex h-full min-h-[96px] items-center justify-between gap-4 rounded-xl border border-brand-100 bg-brand-25/70 px-4 py-4">
+        <div className="flex h-full items-center justify-between gap-4 rounded-xl border border-brand-100 bg-brand-25/70 px-4 py-3">
           <div className="min-w-0">
-            <p className="text-[13px] font-medium leading-5 text-gray-500">
+            <p className="text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
               {selectedInterval.detailLabel}
             </p>
-            <p className="mt-1 text-[34px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
+            <p className="mt-0.5 text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[34px] sm:leading-9">
               {count.toLocaleString("sv-SE")}
             </p>
           </div>
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-brand-100 bg-white text-brand-500 shadow-[0_8px_20px_rgba(0,66,37,0.08)]">
-            <FileUser className="h-6 w-6" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-100 bg-white text-brand-500 shadow-[0_8px_20px_rgba(0,66,37,0.08)] sm:h-12 sm:w-12">
+            <FileUser className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
         </div>
       )}

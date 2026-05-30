@@ -161,6 +161,7 @@ function MiniPie({ data }: { data: ChartDatum[] }) {
 
 function MiniBars({ data }: { data: ChartDatum[] }) {
   if (data.length === 0) return <EmptyState />;
+  console.log("where are you",data);
 
   return (
     <div className="h-[210px] min-w-0">

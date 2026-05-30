@@ -84,14 +84,14 @@ type PortfolioSummary = {
 };
 
 const colors = [
-  "#004225",
-  "#0ea5e9",
-  "#f43f5e",
-  "#f59e0b",
-  "#14b8a6",
-  "#8b5cf6",
-  "#22c55e",
-  "#64748b",
+  "#16a34a",
+  "#38bdf8",
+  "#fb7185",
+  "#fbbf24",
+  "#2dd4bf",
+  "#a78bfa",
+  "#4ade80",
+  "#94a3b8",
 ];
 
 const labels: Record<string, string> = {
@@ -447,11 +447,11 @@ function BlockSkeleton({ rows = 2 }: { rows?: number }) {
   );
 }
 
-function PieDistribution({ data }: { data: BucketDatum[] }) {
+function PieDistribution({ data, compact }: { data: BucketDatum[]; compact?: boolean }) {
   if (data.length === 0) return <EmptyState message="Ingen data för perioden." />;
 
   return (
-    <div className="h-full min-h-[230px] min-w-0">
+    <div className={compact ? "min-h-[200px] min-w-0 h-[240px]" : "h-full min-h-[230px] min-w-0"}>
       <ResponsiveContainer>
         <PieChart>
           <Tooltip
@@ -459,6 +459,7 @@ function PieDistribution({ data }: { data: BucketDatum[] }) {
               border: "1px solid #e5e7eb",
               borderRadius: 12,
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+              fontSize: 12,
             }}
             formatter={(value, _, item) => [
               `${formatNumber(Number(value))} (${formatPercent(item.payload.share)})`,
@@ -470,16 +471,19 @@ function PieDistribution({ data }: { data: BucketDatum[] }) {
             cy="50%"
             data={data}
             dataKey="value"
-            innerRadius={50}
+            innerRadius={46}
             nameKey="label"
-            outerRadius={82}
+            outerRadius={74}
             paddingAngle={3}
           >
             {data.map((entry) => (
               <Cell fill={entry.fill} key={entry.key} />
             ))}
           </Pie>
-          <Legend />
+          <Legend
+            formatter={(value) => <span style={{ color: "#6b7280", fontSize: 12 }}>{value}</span>}
+            iconSize={10}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
@@ -489,21 +493,24 @@ function PieDistribution({ data }: { data: BucketDatum[] }) {
 function HorizontalBars({
   data,
   valueLabel = "Visningar",
+  compact,
 }: {
   data: BucketDatum[];
   valueLabel?: string;
+  compact?: boolean;
 }) {
   if (data.length === 0) return <EmptyState message="Ingen data för perioden." />;
 
   return (
-    <div className="h-full min-h-[230px] min-w-0">
+    <div className={compact ? "min-h-[200px] min-w-0 h-[240px]" : "h-full min-h-[230px] min-w-0"}>
       <ResponsiveContainer>
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
           <CartesianGrid horizontal={false} stroke="#edf0f4" />
-          <XAxis axisLine={false} tickLine={false} type="number" />
+          <XAxis axisLine={false} tick={{ fontSize: 11 }} tickLine={false} type="number" />
           <YAxis
             axisLine={false}
             dataKey="label"
+            tick={{ fontSize: 11 }}
             tickLine={false}
             type="category"
             width={92}
@@ -513,10 +520,11 @@ function HorizontalBars({
               border: "1px solid #e5e7eb",
               borderRadius: 12,
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+              fontSize: 12,
             }}
             formatter={(value) => [formatNumber(Number(value)), valueLabel]}
           />
-          <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+          <Bar barSize={18} dataKey="value" radius={[0, 6, 6, 0]}>
             {data.map((entry) => (
               <Cell fill={entry.fill} key={entry.key} />
             ))}
@@ -558,10 +566,11 @@ function CategoryBars({
               border: "1px solid #e5e7eb",
               borderRadius: 12,
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+              fontSize: 12,
             }}
             formatter={(value) => [formatNumber(Number(value)), valueLabel]}
           />
-          <Bar dataKey="value" fill="#004225" radius={[8, 8, 0, 0]} />
+          <Bar barSize={28} dataKey="value" fill="#16a34a" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -620,20 +629,21 @@ function ApplicationPortfolioSummary({
 function ListingPortfolioChart({ rows }: { rows: ListingRow[] }) {
   if (rows.length === 0) return <EmptyState message="Ingen annonsdata för perioden." />;
 
-  const data = rows.map((row) => ({
+  const data = rows.map((row, index) => ({
     ...row,
-    shortTitle: row.title.length > 16 ? `${row.title.slice(0, 15)}...` : row.title,
+    shortTitle: `#${index + 1}`,
   }));
 
   return (
-    <div className="h-full min-h-[280px] min-w-0">
+    <div className="min-h-[240px] min-w-0 h-[280px]">
       <ResponsiveContainer>
-        <ComposedChart data={data} margin={{ left: 4, right: 18, top: 8 }}>
+        <ComposedChart data={data} margin={{ left: 4, right: 18, top: 8, bottom: 4 }}>
           <CartesianGrid stroke="#edf0f4" vertical={false} />
           <XAxis
             dataKey="shortTitle"
             interval={0}
             tick={{ fill: "#6b7280", fontSize: 11 }}
+            tickLine={false}
           />
           <YAxis
             allowDecimals={false}
@@ -655,25 +665,30 @@ function ListingPortfolioChart({ rows }: { rows: ListingRow[] }) {
               border: "1px solid #e5e7eb",
               borderRadius: 12,
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+              fontSize: 12,
             }}
             formatter={(value, name) => [
               name === "topShare" ? formatPercent(Number(value)) : formatNumber(Number(value)),
               name === "topShare" ? "Andel toppsegment" : "Visningar",
             ]}
-            labelFormatter={(_, payload: any[]) => payload?.[0]?.payload?.title ?? ""}
+            labelFormatter={(_, payload: unknown[]) => {
+              const item = payload?.[0] as { payload?: { title?: string } } | undefined;
+              return item?.payload?.title ?? "";
+            }}
           />
           <Bar
+            barSize={20}
             dataKey="totalViews"
-            fill="#004225"
+            fill="#16a34a"
             name="Visningar"
-            radius={[8, 8, 0, 0]}
+            radius={[6, 6, 0, 0]}
             yAxisId="views"
           />
           <Line
             dataKey="topShare"
             dot={{ r: 3 }}
             name="Andel toppsegment"
-            stroke="#e11d48"
+            stroke="#f472b6"
             strokeWidth={2}
             yAxisId="share"
           />
@@ -693,13 +708,15 @@ function SummaryMetric({
   helper?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-gray-950">
+    <div className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
+      <p className="truncate text-[11px] font-medium leading-4 text-gray-500 sm:text-xs">
+        {label}
+      </p>
+      <p className="mt-0.5 text-lg font-semibold text-gray-950 tabular-nums sm:text-xl">
         {formatNumber(value)}
       </p>
       {helper ? (
-        <p className="mt-1 truncate text-xs text-gray-500">{helper}</p>
+        <p className="mt-0.5 truncate text-[11px] text-gray-400">{helper}</p>
       ) : null}
     </div>
   );
@@ -713,8 +730,9 @@ function ListingPortfolioSummary({ summary }: { summary: PortfolioSummary }) {
   }
 
   return (
-    <div className="grid h-full min-h-0 gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid h-full min-h-0 gap-4 w-full">
+      {/* Compact metrics row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         <SummaryMetric label="Totala visningar" value={summary.totalViews} />
         <SummaryMetric label="Snabbvisningar" value={summary.quickViews} />
         <SummaryMetric label="Detaljvisningar" value={summary.detailedViews} />
@@ -726,26 +744,25 @@ function ListingPortfolioSummary({ summary }: { summary: PortfolioSummary }) {
         />
       </div>
 
-      <div className="grid min-h-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.8fr)]">
-        <div className="rounded-xl border border-gray-100 bg-white p-4">
+      {/* Charts: 3-col grid for toppannonser, enheter, städer */}
+      <div className="grid h-full gap-4 grid-cols-1 lg:grid-cols-4">
+        <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-2">
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h3 className="text-sm font-semibold text-gray-900">
               Toppannonser
             </h3>
-            <span className="text-xs text-gray-500">Visningar och toppsegment</span>
+            <span className="text-xs text-gray-500">Visningar</span>
           </div>
           <ListingPortfolioChart rows={summary.rows} />
         </div>
 
-        <div className="grid gap-4">
-          <div className="rounded-xl border border-gray-100 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-gray-900">Enheter</h3>
-            <PieDistribution data={summary.deviceData} />
-          </div>
-          <div className="rounded-xl border border-gray-100 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-gray-900">Städer</h3>
-            <HorizontalBars data={summary.cityData} />
-          </div>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-1">
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">Enheter</h3>
+          <PieDistribution compact data={summary.deviceData} />
+        </div>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-1">
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">Städer</h3>
+          <HorizontalBars compact data={summary.cityData} />
         </div>
       </div>
     </div>
@@ -1095,17 +1112,17 @@ export function ApplicationDemographyPortfolioBlock() {
   return (
     <AnalyticsBlock
       action={
-        <div className="flex max-w-full flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
+        <div className="flex max-w-full flex-wrap items-center gap-2">
           <Input
             aria-label="From"
-            className="h-8 min-w-[180px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] lg:w-[190px]"
+            className="h-8 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
             onChange={(event) => setFromValue(event.target.value)}
             type="datetime-local"
             value={fromValue}
           />
           <Input
             aria-label="To"
-            className="h-8 min-w-[180px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] lg:w-[190px]"
+            className="h-8 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
             onChange={(event) => setToValue(event.target.value)}
             type="datetime-local"
             value={toValue}
@@ -1119,7 +1136,7 @@ export function ApplicationDemographyPortfolioBlock() {
             onValueChange={(value) => setGotListing(value as GotListingFilter)}
             value={gotListing}
           >
-            <SelectTrigger className="h-8 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:w-[160px]">
+            <SelectTrigger className="h-8 w-[140px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="border-gray-200 bg-white">
@@ -1133,7 +1150,7 @@ export function ApplicationDemographyPortfolioBlock() {
         </div>
       }
       contentClassName="overflow-hidden p-4"
-      size="3x4"
+      size="4x2"
       title="Ansökningsdemografi"
       description="Ansökningsstatistik uppdelad per annons och vald kategori."
     >
@@ -1143,7 +1160,7 @@ export function ApplicationDemographyPortfolioBlock() {
         <ErrorState message={error} />
       ) : demographies ? (
         <div className="grid h-full min-h-0 gap-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-3">
             <SummaryMetric
               helper={labels[category] ?? category}
               label="Ansökningar"
@@ -1156,17 +1173,19 @@ export function ApplicationDemographyPortfolioBlock() {
               value={listingRows.length}
             />
           </div>
-          <div className="rounded-xl border border-gray-100 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-gray-900">
-              {labels[category] ?? category}
-            </h3>
-            <HorizontalBars data={bucketData} valueLabel="Ansökningar" />
-          </div>
-          <div className="rounded-xl border border-gray-100 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-gray-900">
-              Ansökningar per annons
-            </h3>
-            <CategoryBars data={listingChartData} valueLabel="Ansökningar" />
+          <div className="grid min-h-0 gap-4 xl:grid-cols-2">
+            <div className="rounded-xl border border-gray-100 bg-white p-4">
+              <h3 className="mb-2 text-sm font-semibold text-gray-900">
+                {labels[category] ?? category}
+              </h3>
+              <HorizontalBars data={bucketData} valueLabel="Ansökningar" />
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-white p-4">
+              <h3 className="mb-2 text-sm font-semibold text-gray-900">
+                Ansökningar per annons
+              </h3>
+              <CategoryBars data={listingChartData} valueLabel="Ansökningar" />
+            </div>
           </div>
         </div>
       ) : (

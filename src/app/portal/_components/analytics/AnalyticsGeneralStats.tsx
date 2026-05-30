@@ -374,7 +374,7 @@ export default function AnalyticsGeneralStats({
   const skeletonCount = variant === "analytics" ? 6 : metrics.length;
   const gridClassName =
     variant === "analytics"
-      ? "grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-3"
+      ? "grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3"
       : "grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4";
 
   if (authLoading || isLoading) {
@@ -416,7 +416,7 @@ export default function AnalyticsGeneralStats({
         return (
           <div
             className={cn(
-              "relative min-h-[116px] min-w-0 overflow-hidden rounded-xl border p-4 transition-colors",
+              "relative min-h-[100px] min-w-0 overflow-hidden rounded-xl border p-3 transition-colors sm:p-4",
               tone.tile
             )}
             key={item.label}
@@ -428,24 +428,24 @@ export default function AnalyticsGeneralStats({
               )}
             />
 
-            <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start justify-between gap-2">
               <div
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border",
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border sm:h-10 sm:w-10",
                   tone.icon
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
 
               <TrendBadge change={item.change} />
             </div>
 
-            <div className="mt-4 min-w-0">
-              <p className="truncate text-[13px] font-medium leading-5 text-gray-500">
+            <div className="mt-3 min-w-0">
+              <p className="truncate text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
                 {item.label}
               </p>
-              <p className="mt-1 truncate text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums">
+              <p className="mt-0.5 truncate text-xl font-semibold leading-7 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[28px] sm:leading-8">
                 {formatMetricValue(item)}
               </p>
             </div>
