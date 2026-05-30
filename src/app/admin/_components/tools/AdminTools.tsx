@@ -286,17 +286,20 @@ function FormSelect({
   value,
   onChange,
   children,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   children: ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <FieldRow label={label}>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
         className="h-10 rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm normal-case tracking-normal text-[#111827] outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/20"
       >
         {children}
@@ -799,29 +802,67 @@ function buildActivityPayload(form: ActivityFormState, requireId: boolean): Admi
   if (requireId && !id) {
     throw new Error("Välj en aktivitet eller ange id innan du uppdaterar.");
   }
+  const category = form.category.trim();
+  if (!category) {
+    throw new Error("Välj en kategori.");
+  }
 
   return {
     ...(id ? { id } : {}),
-    category: form.category.trim(),
+    category,
     name: form.name.trim(),
     lat: parseRequiredNumber(form.lat, "Latitud"),
     lng: parseRequiredNumber(form.lng, "Longitud"),
   };
 }
 
+function getActivityCategoryOptions(
+  categories: AdminLocationCategoryDTO[],
+  selectedCategory: string
+) {
+  const values = new Set(
+    categories
+      .map((category) => category.category?.trim())
+      .filter((category): category is string => Boolean(category))
+  );
+  const selected = selectedCategory.trim();
+  if (selected) {
+    values.add(selected);
+  }
+  return Array.from(values).sort((left, right) => left.localeCompare(right, "sv"));
+}
+
 function ActivityFields({
   form,
   onChange,
   includeId,
+  categoryOptions,
+  categoriesLoading,
 }: {
   form: ActivityFormState;
   onChange: (patch: Partial<ActivityFormState>) => void;
   includeId: boolean;
+  categoryOptions: string[];
+  categoriesLoading: boolean;
 }) {
   return (
     <div className="mt-4 grid gap-3 md:grid-cols-2">
       {includeId && <FormInput label="Id" value={form.id ?? ""} onChange={(id) => onChange({ id })} />}
-      <FormInput label="Kategori" value={form.category} onChange={(category) => onChange({ category })} />
+      <FormSelect
+        label="Kategori"
+        value={form.category}
+        onChange={(category) => onChange({ category })}
+        disabled={categoriesLoading || categoryOptions.length === 0}
+      >
+        <option value="">
+          {categoriesLoading ? "Hämtar kategorier..." : "Välj kategori"}
+        </option>
+        {categoryOptions.map((category) => (
+          <option key={category} value={category}>
+            {category}
+          </option>
+        ))}
+      </FormSelect>
       <FormInput label="Namn" value={form.name} onChange={(name) => onChange({ name })} />
       <FormInput label="Latitud" value={form.lat} onChange={(lat) => onChange({ lat })} />
       <FormInput label="Longitud" value={form.lng} onChange={(lng) => onChange({ lng })} />
@@ -831,6 +872,7 @@ function ActivityFields({
 
 function ActivitiesForm() {
   const { items, state: listState, refresh } = useResourceList<AdminPointOfInterestDTO>(adminService.getActivities);
+  const { items: categories, state: categoryState } = useResourceList<AdminLocationCategoryDTO>(adminService.getLocationCategories);
   const [selectedId, setSelectedId] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
@@ -838,6 +880,9 @@ function ActivitiesForm() {
   const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
   const [updateForm, setUpdateForm] = useState<ActivityFormState>(emptyActivityForm);
   const [createForm, setCreateForm] = useState<ActivityFormState>(emptyActivityForm);
+  const categoriesLoading = categoryState.status === "loading";
+  const updateCategoryOptions = getActivityCategoryOptions(categories, updateForm.category);
+  const createCategoryOptions = getActivityCategoryOptions(categories, createForm.category);
 
   function selectActivity(id: string) {
     setSelectedId(id);
@@ -910,6 +955,7 @@ function ActivitiesForm() {
         endpoint="/api/admin/activities, /api/admin/activity"
       >
         <ResultBlock state={listState} />
+        <ResultBlock state={categoryState} />
         <FormSelect label="Välj befintlig aktivitet" value={selectedId} onChange={selectActivity}>
           <option value="">Välj aktivitet</option>
           {items.map((item) => (
@@ -918,7 +964,13 @@ function ActivitiesForm() {
             </option>
           ))}
         </FormSelect>
-        <ActivityFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeId />
+        <ActivityFields
+          form={updateForm}
+          onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))}
+          includeId
+          categoryOptions={updateCategoryOptions}
+          categoriesLoading={categoriesLoading}
+        />
         <SubmitButton isLoading={updateState.status === "loading"} onPress={() => void save("update")} disabled={!updateForm.id?.trim()}>
           Uppdatera vald
         </SubmitButton>
@@ -931,8 +983,15 @@ function ActivitiesForm() {
         method="POST"
         endpoint="/api/admin/activity"
       >
-        <ActivityFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeId={false} />
-        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void save("create")}>
+        <ResultBlock state={categoryState} />
+        <ActivityFields
+          form={createForm}
+          onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
+          includeId={false}
+          categoryOptions={createCategoryOptions}
+          categoriesLoading={categoriesLoading}
+        />
+        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void save("create")} disabled={!createForm.category.trim()}>
           Skapa
         </SubmitButton>
         <ResultBlock state={createState} />
