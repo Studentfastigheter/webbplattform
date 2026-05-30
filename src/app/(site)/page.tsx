@@ -8,47 +8,53 @@ import StepsTimeline from "@/features/marketing/components/home/landing/StepsTim
 import { StickyCards } from "@/features/marketing/components/home/landing/sticky-cards";
 import { featuresData, stickyCardsData, stepsData } from "@/data/home-page";
 
-const sideAdMockups = [
+const listingMockups = [
   {
     src: "/images/mockups/listing1.png",
-    className:
-      "top-[420px] left-12 w-[220px] -rotate-[16deg] 2xl:top-[440px] 2xl:left-20 2xl:w-[280px]",
+    className: "sm:mt-6 lg:mt-10",
   },
   {
     src: "/images/mockups/listing2.png",
-    className:
-      "top-[1450px] right-14 w-[210px] rotate-[10deg] 2xl:top-[1540px] 2xl:right-20 2xl:w-[265px]",
+    className: "",
   },
   {
     src: "/images/mockups/listing3.png",
-    className:
-      "top-[2200px] left-14 w-[210px] rotate-[7deg] 2xl:top-[2320px] 2xl:left-24 2xl:w-[270px]",
+    className: "sm:mt-3 lg:mt-6",
   },
   {
     src: "/images/mockups/listing4.png",
-    className:
-      "top-[3760px] right-16 w-[225px] -rotate-[12deg] 2xl:top-[3940px] 2xl:right-24 2xl:w-[290px]",
+    className: "sm:mt-8 lg:mt-12",
   },
 ];
 
-export default function Home() {
+function ListingMockupShowcase() {
   return (
-    <main className="main-marketing-theme relative overflow-hidden font-sans text-foreground bg-background">
-      <div className="pointer-events-none absolute inset-0 z-20 hidden xl:block" aria-hidden="true">
-        {sideAdMockups.map((mockup) => (
-          <Image
+    <section className="relative bg-background px-4 pb-12 pt-2 sm:px-6 sm:pb-16 lg:pb-20" aria-label="Exempelannonser">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-2 items-center justify-items-center gap-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+        {listingMockups.map((mockup, index) => (
+          <div
             key={mockup.src}
-            src={mockup.src}
-            alt=""
-            width={777}
-            height={728}
-            sizes="(max-width: 1536px) 225px, 290px"
-            unoptimized
-            className={`absolute h-auto rounded-[18px] shadow-[0_20px_45px_rgba(15,23,42,0.14)] ring-1 ring-black/5 ${mockup.className}`}
-          />
+            className={`w-full max-w-[176px] sm:max-w-[232px] md:max-w-[270px] lg:max-w-[292px] ${mockup.className}`}
+          >
+            <Image
+              src={mockup.src}
+              alt={`Exempelannons ${index + 1}`}
+              width={777}
+              height={728}
+              sizes="(max-width: 640px) 44vw, (max-width: 1024px) 232px, 292px"
+              quality={100}
+              className="h-auto w-full rounded-[18px] object-contain shadow-[0_20px_45px_rgba(15,23,42,0.14)] ring-1 ring-black/5"
+            />
+          </div>
         ))}
       </div>
+    </section>
+  );
+}
 
+export default function Home() {
+  return (
+    <main className="main-marketing-theme relative overflow-x-clip font-sans text-foreground bg-background">
       <Hero
         title="Lyor för studenter i"
         flipWords={["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping"]}
@@ -61,6 +67,8 @@ export default function Home() {
         backgroundClassName="bg-background"
       />
 
+      
+
       <StepsTimeline
         heading={
           <>
@@ -69,7 +77,7 @@ export default function Home() {
         }
         steps={stepsData}
       />
-
+      <ListingMockupShowcase />
       <StickyCards
         sectionClassName="bg-background"
         heading={
