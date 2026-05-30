@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { Features } from "@/features/marketing/components/home/landing/features";
 import { CityCarousel } from "@/features/marketing/components/home/landing/city-carousel";
 import { Hero } from "@/features/marketing/components/home/landing/hero";
@@ -6,9 +8,47 @@ import StepsTimeline from "@/features/marketing/components/home/landing/StepsTim
 import { StickyCards } from "@/features/marketing/components/home/landing/sticky-cards";
 import { featuresData, stickyCardsData, stepsData } from "@/data/home-page";
 
+const sideAdMockups = [
+  {
+    src: "/images/mockups/listing1.png",
+    className:
+      "top-[420px] left-12 w-[220px] -rotate-[16deg] 2xl:top-[440px] 2xl:left-20 2xl:w-[280px]",
+  },
+  {
+    src: "/images/mockups/listing2.png",
+    className:
+      "top-[1450px] right-14 w-[210px] rotate-[10deg] 2xl:top-[1540px] 2xl:right-20 2xl:w-[265px]",
+  },
+  {
+    src: "/images/mockups/listing3.png",
+    className:
+      "top-[2200px] left-14 w-[210px] rotate-[7deg] 2xl:top-[2320px] 2xl:left-24 2xl:w-[270px]",
+  },
+  {
+    src: "/images/mockups/listing4.png",
+    className:
+      "top-[3760px] right-16 w-[225px] -rotate-[12deg] 2xl:top-[3940px] 2xl:right-24 2xl:w-[290px]",
+  },
+];
+
 export default function Home() {
   return (
-    <main className="main-marketing-theme font-sans text-foreground bg-background">
+    <main className="main-marketing-theme relative overflow-hidden font-sans text-foreground bg-background">
+      <div className="pointer-events-none absolute inset-0 z-20 hidden xl:block" aria-hidden="true">
+        {sideAdMockups.map((mockup) => (
+          <Image
+            key={mockup.src}
+            src={mockup.src}
+            alt=""
+            width={777}
+            height={728}
+            sizes="(max-width: 1536px) 225px, 290px"
+            unoptimized
+            className={`absolute h-auto rounded-[18px] shadow-[0_20px_45px_rgba(15,23,42,0.14)] ring-1 ring-black/5 ${mockup.className}`}
+          />
+        ))}
+      </div>
+
       <Hero
         title="Lyor för studenter i"
         flipWords={["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping"]}
