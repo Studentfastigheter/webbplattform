@@ -79,7 +79,7 @@ export function useAnalyticsBlock() {
 
 export function AnalyticsGrid({
   className,
-  rowHeightClassName = "xl:auto-rows-[var(--analytics-block-unit)]",
+  rowHeightClassName = "xl:auto-rows-[minmax(var(--analytics-block-unit),auto)]",
   style,
   ...props
 }: AnalyticsGridProps) {
@@ -168,10 +168,10 @@ export function AnalyticsBlock({
         {...props}
       >
         {hasHeader ? (
-          <div className="flex min-h-[64px] min-w-0 flex-col items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
-            <div className="min-w-0">
+          <div className="flex min-h-[64px] min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-gray-100 px-4 py-4 sm:items-center sm:px-5">
+            <div className="min-w-0 flex-1 basis-[180px]">
               {title ? (
-                <h2 className="truncate text-base font-semibold leading-6 text-[#111827]">
+                <h2 className="text-base font-semibold leading-6 text-[#111827]">
                   {title}
                 </h2>
               ) : null}
@@ -181,7 +181,7 @@ export function AnalyticsBlock({
                 </p>
               ) : null}
             </div>
-            {action ? <div className="max-w-full shrink-0">{action}</div> : null}
+            {action ? <div className="max-w-full overflow-x-auto">{action}</div> : null}
           </div>
         ) : null}
 

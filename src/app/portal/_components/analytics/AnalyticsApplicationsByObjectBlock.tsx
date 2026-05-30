@@ -322,7 +322,7 @@ export default function AnalyticsApplicationsByObjectBlock() {
     <AnalyticsBlock
       action={<LimitToggle onChange={setLimit} value={limit} />}
       contentClassName="overflow-hidden"
-      size="4x2"
+      size="2x2"
       title="Ansökningar per annons"
     >
       {authLoading || isLoading ? (
