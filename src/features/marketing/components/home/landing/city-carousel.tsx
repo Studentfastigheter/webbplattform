@@ -1,0 +1,95 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+import { getCityImageUrl, normalizeCityName } from "@/features/cities/city-utils";
+import { listingService } from "@/features/listings/services/listing-service";
+import { uniqueOnly } from "@/lib/utils";
+
+const FALLBACK_CITIES = [
+  "Göteborg",
+  "Stockholm",
+  "Lund",
+  "Uppsala",
+  "Linköping",
+  "Malmö",
+  "Örebro",
+  "Umeå",
+];
+
+function CityCarouselCard({ city }: { city: string }) {
+  return (
+    <Link
+      href={`/stader/${encodeURIComponent(city)}`}
+      aria-label={`Öppna ${city}`}
+      className="group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-white ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]"
+      style={{
+        backgroundImage: `url("${getCityImageUrl(city, "720x980")}")`,
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+      }}
+    >
+      <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/72 transition-opacity group-hover:opacity-95" />
+      <span className="absolute bottom-5 left-5 max-w-[calc(100%-2.5rem)] break-words text-[24px] font-medium leading-[1.05] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:text-[28px]">
+        {city}
+      </span>
+    </Link>
+  );
+}
+
+export function CityCarousel() {
+  const [cities, setCities] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+
+    listingService
+      .getCities()
+      .then((cityResult) => {
+        if (!active) return;
+
+        const nextCities = uniqueOnly(
+          cityResult
+            .map(normalizeCityName)
+            .filter((city) => city.length > 0)
+        ).sort((a, b) => a.localeCompare(b, "sv-SE"));
+
+        if (nextCities.length > 0) {
+          setCities(nextCities);
+        }
+      })
+      .catch((err) => {
+        console.error("Kunde inte ladda städer till startsidan:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const displayCities = cities.length > 0 ? cities : FALLBACK_CITIES.map(normalizeCityName);
+  const carouselCities = useMemo(
+    () => [...displayCities, ...displayCities],
+    [displayCities]
+  );
+
+  return (
+    <section className="py-14 sm:py-20 lg:py-24" aria-labelledby="city-carousel-heading">
+      <h2
+        id="city-carousel-heading"
+        className="mx-auto mb-6 max-w-4xl px-4 text-center text-2xl font-bold leading-tight text-foreground sm:mb-8 sm:text-3xl md:text-4xl"
+      >
+        Hitta din studentstad.{" "}
+        <span className="text-pop-contrast">Vi samlar bostäderna</span>
+      </h2>
+      <div className="landing-cities-marquee">
+        <div className="landing-cities-track">
+          {carouselCities.map((city, index) => (
+            <CityCarouselCard key={`${city}-${index}`} city={city} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

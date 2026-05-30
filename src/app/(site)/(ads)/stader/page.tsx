@@ -20,15 +20,15 @@ function CityCard({ city }: { city: CityCardData }) {
     <Link
       href={cityHref}
       aria-label={`Öppna ${city.name}`}
-      className="group relative block h-[220px] w-full overflow-hidden rounded-[32px] border border-black/[0.04] bg-gray-200 shadow-md transition-shadow duration-200 hover:shadow-lg sm:h-[240px]"
+      className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-gray-200 shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[245px]"
       style={{
         backgroundImage: `url("${getCityImageUrl(city.name, "900x620")}")`,
         backgroundPosition: "center",
         backgroundSize: "cover",
       }}
     >
-      <span className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/10 to-black/65 transition-opacity group-hover:opacity-90" />
-      <span className="absolute bottom-5 left-5 max-w-[calc(100%-2.5rem)] break-words text-[26px] font-semibold leading-tight text-white drop-shadow sm:bottom-6 sm:left-6 sm:text-[30px]">
+      <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/70 transition-opacity group-hover:opacity-95" />
+      <span className="absolute bottom-5 left-5 max-w-[calc(100%-2.5rem)] break-words text-[25px] font-medium leading-[1.05] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:text-[29px]">
         {city.name}
       </span>
     </Link>

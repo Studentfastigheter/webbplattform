@@ -1,4 +1,5 @@
 import { Features } from "@/features/marketing/components/home/landing/features";
+import { CityCarousel } from "@/features/marketing/components/home/landing/city-carousel";
 import { Hero } from "@/features/marketing/components/home/landing/hero";
 import { HeroWaitlist } from "@/features/marketing/components/home/landing/hero_waitlist";
 import StepsTimeline from "@/features/marketing/components/home/landing/StepsTimeline";
@@ -20,6 +21,15 @@ export default function Home() {
         backgroundClassName="bg-background"
       />
 
+      <StepsTimeline
+        heading={
+          <>
+            Från registrering till <span className="text-pop-contrast">inflytt</span> i tre steg
+          </>
+        }
+        steps={stepsData}
+      />
+
       <StickyCards
         sectionClassName="bg-background"
         heading={
@@ -31,15 +41,8 @@ export default function Home() {
         }
         cards={stickyCardsData}
       />
-
-      <StepsTimeline
-        heading={
-          <>
-            Från registrering till <span className="text-pop-contrast">inflytt</span> i tre steg
-          </>
-        }
-        steps={stepsData}
-      />
+      <CityCarousel />
+      
 
       <Features
         sectionClassName="bg-background"

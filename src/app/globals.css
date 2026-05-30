@@ -425,6 +425,56 @@ img, svg, video, canvas {
 .cities-track { display:flex; gap: 22px; animation: cities 30s linear infinite; padding-inline: 20px; }
 @keyframes cities { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
+.landing-cities-marquee {
+  overflow: hidden;
+  width: 100%;
+  padding-block: 16px;
+}
+
+.landing-cities-track {
+  display: flex;
+  width: max-content;
+  gap: 16px;
+  padding-inline: 16px;
+  animation: landing-cities-loop 260s linear infinite;
+  will-change: transform;
+}
+
+.landing-cities-marquee:hover .landing-cities-track,
+.landing-cities-marquee:focus-within .landing-cities-track {
+  animation-play-state: paused;
+}
+
+@keyframes landing-cities-loop {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (min-width: 640px) {
+  .landing-cities-track {
+    gap: 18px;
+    padding-inline: 18px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-cities-track {
+    gap: 20px;
+    padding-inline: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-cities-track {
+    animation: none;
+    transform: translateX(0);
+  }
+}
+
 /* ─────────────────────────────────────────────
    Cards
 ────────────────────────────────────────────── */
