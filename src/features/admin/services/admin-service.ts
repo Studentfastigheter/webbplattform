@@ -25,15 +25,6 @@ function jsonBody(value: unknown) {
   return JSON.stringify(value);
 }
 
-function adminTagQuery(tag: AdminListingTagDetailDTO) {
-  return buildQuery({
-    tag: tag.tag,
-    displayName: tag.displayName,
-    icon: tag.icon,
-    tagValues: tag.tagValues,
-  });
-}
-
 export const adminService = {
   getTags: async (): Promise<AdminListingTagDetailDTO[]> => {
     const response = await apiClient<unknown>("/admin/tags");
@@ -48,8 +39,9 @@ export const adminService = {
   },
 
   modifyTag: async (tag: AdminListingTagDetailDTO): Promise<void> => {
-    await apiClient<void>(`/admin/tag${adminTagQuery(tag)}`, {
+    await apiClient<void>("/admin/tag", {
       method: "PUT",
+      body: jsonBody(tag),
     });
   },
 
