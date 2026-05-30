@@ -11,7 +11,6 @@ import type {
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
   AdminCreatePOIRequest,
-  AdminListingTagDTO,
   AdminListingTagDetailDTO,
   AdminLocationCategoryDTO,
   AdminModifyPOIRequest,
@@ -31,7 +30,7 @@ export const adminService = {
     return arrayFromApiResponse<AdminListingTagDetailDTO>(response);
   },
 
-  createTag: async (tag: AdminListingTagDTO): Promise<void> => {
+  createTag: async (tag: AdminListingTagDetailDTO): Promise<void> => {
     await apiClient<void>("/admin/tag", {
       method: "POST",
       body: jsonBody(tag),

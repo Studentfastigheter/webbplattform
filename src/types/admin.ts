@@ -1,12 +1,6 @@
 import type { SystemProvider } from "./common";
 import type { AddSchoolRequest } from "./school";
 
-export type AdminListingTagDTO = {
-  tagKey?: string;
-  displayName?: string;
-  icon?: string;
-};
-
 export type AdminListingTagDetailDTO = {
   tag?: string;
   displayName?: string;
@@ -59,7 +53,7 @@ export type AdminCompanyPublicDTO = {
 };
 
 export type AdminCreateCompanyRequest = {
-  companyDate?: AdminCompanyDetailedDTO;
+  companylDetails: AdminCompanyDetailedDTO;
   credentials?: AdminCompanyCredentialDTO;
 };
 

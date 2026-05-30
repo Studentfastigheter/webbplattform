@@ -21,7 +21,6 @@ import type {
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
   AdminCreatePOIRequest,
-  AdminListingTagDTO,
   AdminListingTagDetailDTO,
   AdminLocationCategoryDTO,
   AdminModifyPOIRequest,
@@ -386,7 +385,6 @@ function DeleteIdAction({
 }
 
 type TagFormState = {
-  tagKey: string;
   tag: string;
   displayName: string;
   icon: string;
@@ -405,10 +403,7 @@ function TagsFormFields({
   return (
     <>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <FormInput label="Tag key" value={form.tagKey} onChange={(tagKey) => onChange({ tagKey })} />
-        {includeValues && (
-          <FormInput label="Tagg" value={form.tag} onChange={(tag) => onChange({ tag })} />
-        )}
+        <FormInput label="Tagg" value={form.tag} onChange={(tag) => onChange({ tag })} />
         <FormInput
           label="Visningsnamn"
           value={form.displayName}
@@ -436,14 +431,12 @@ function TagsForm() {
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [updateForm, setUpdateForm] = useState<TagFormState>({
-    tagKey: "",
     tag: "",
     displayName: "",
     icon: "",
     tagValues: "",
   });
   const [createForm, setCreateForm] = useState<TagFormState>({
-    tagKey: "",
     tag: "",
     displayName: "",
     icon: "",
@@ -455,7 +448,6 @@ function TagsForm() {
     const selected = items.find((item) => item.tag === tag);
     if (!selected) return;
     setUpdateForm({
-      tagKey: selected.tag ?? "",
       tag: selected.tag ?? "",
       displayName: selected.displayName ?? "",
       icon: selected.icon ?? "",
@@ -486,11 +478,12 @@ function TagsForm() {
     setCreateState({ status: "loading", message: "Skapar tagg..." });
     try {
       await adminService.createTag({
-        tagKey: createForm.tagKey.trim(),
+        tag: createForm.tag.trim(),
         displayName: createForm.displayName.trim(),
         icon: createForm.icon.trim(),
+        tagValues: parseListInput(createForm.tagValues),
       });
-      setCreateForm({ tagKey: "", tag: "", displayName: "", icon: "", tagValues: "" });
+      setCreateForm({ tag: "", displayName: "", icon: "", tagValues: "" });
       setCreateState({ status: "success", message: "Taggen skapades." });
       await refresh();
     } catch (error) {
@@ -531,8 +524,8 @@ function TagsForm() {
         method="POST"
         endpoint="/api/admin/tag"
       >
-        <TagsFormFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeValues={false} />
-        <SubmitButton isLoading={createState.status === "loading"} onPress={createTag}>
+        <TagsFormFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeValues />
+        <SubmitButton isLoading={createState.status === "loading"} onPress={createTag} disabled={!createForm.tag.trim()}>
           Skapa
         </SubmitButton>
         <ResultBlock state={createState} />
@@ -1041,16 +1034,23 @@ function buildCompanyPayload(form: CompanyFormState, requireId: boolean): AdminC
     throw new Error("Välj ett företag eller ange companyId innan du uppdaterar.");
   }
 
-  const credentialsProvided = [
-    form.credentialCompanyName,
+  const credentialsTouched = [
     form.companySystemUrlOrigin,
     form.propertySystemUsername,
     form.propertySystemPassword,
     form.propertySystem,
   ].some((value) => value.trim().length > 0);
 
+  if (!requireId && !credentialsTouched) {
+    throw new Error("Systemkoppling krävs när du skapar ett företag.");
+  }
+
+  if (credentialsTouched && !form.propertySystem.trim()) {
+    throw new Error("Property system krävs när systemkoppling anges.");
+  }
+
   return {
-    companyDate: {
+    companylDetails: {
       ...(companyId ? { companyId } : {}),
       companyName: form.companyName.trim(),
       subtitle: form.subtitle.trim(),
@@ -1064,7 +1064,7 @@ function buildCompanyPayload(form: CompanyFormState, requireId: boolean): AdminC
       videoUrlList: parseListInput(form.videoUrlList),
       websiteUrl: form.websiteUrl.trim(),
     },
-    ...(credentialsProvided
+    ...(credentialsTouched
       ? {
           credentials: {
             companyName: form.credentialCompanyName.trim() || form.companyName.trim(),
