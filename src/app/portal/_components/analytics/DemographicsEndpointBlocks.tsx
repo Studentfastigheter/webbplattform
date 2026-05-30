@@ -1135,7 +1135,7 @@ export function ApplicationDemographyPortfolioBlock() {
       contentClassName="overflow-hidden p-4"
       size="3x4"
       title="Ansökningsdemografi"
-      description="Batchdata från POST /demographics/applications/listings/query."
+      description="Ansökningsstatistik uppdelad per annons och vald kategori."
     >
       {authLoading || isLoading ? (
         <BlockSkeleton rows={3} />
