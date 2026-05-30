@@ -451,7 +451,7 @@ function PieDistribution({ data, compact }: { data: BucketDatum[]; compact?: boo
   if (data.length === 0) return <EmptyState message="Ingen data för perioden." />;
 
   return (
-    <div className={compact ? "min-h-[200px] min-w-0 h-[240px]" : "h-full min-h-[230px] min-w-0"}>
+    <div className={compact ? "min-h-[180px] min-w-0 h-[180px]" : "min-h-[180px] min-w-0 h-[180px]"}>
       <ResponsiveContainer>
         <PieChart>
           <Tooltip
@@ -502,7 +502,7 @@ function HorizontalBars({
   if (data.length === 0) return <EmptyState message="Ingen data för perioden." />;
 
   return (
-    <div className={compact ? "min-h-[200px] min-w-0 h-[240px]" : "h-full min-h-[230px] min-w-0"}>
+    <div className={compact ? "min-h-[140px] min-w-0 h-[160px]" : "min-h-[140px] min-w-0 h-[160px]"}>
       <ResponsiveContainer>
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
           <CartesianGrid horizontal={false} stroke="#edf0f4" />
@@ -545,15 +545,16 @@ function CategoryBars({
   if (data.length === 0) return <EmptyState message="Ingen batchdata för perioden." />;
 
   return (
-    <div className="h-full min-h-[230px] min-w-0">
+    <div className="min-h-[250px] min-w-0 h-[280px]">
       <ResponsiveContainer>
-        <BarChart data={data} margin={{ left: 4, right: 16, top: 8 }}>
+        <BarChart data={data} margin={{ left: 4, right: 16, top: 8, bottom: 40 }}>
           <CartesianGrid stroke="#edf0f4" vertical={false} />
           <XAxis
             dataKey="category"
             interval={0}
-            tick={{ fill: "#6b7280", fontSize: 11 }}
+            tick={{ fill: "#6b7280", fontSize: 10, angle: -45, textAnchor: "end" } as any}
             tickLine={false}
+            height={60}
           />
           <YAxis
             allowDecimals={false}
@@ -570,7 +571,7 @@ function CategoryBars({
             }}
             formatter={(value) => [formatNumber(Number(value)), valueLabel]}
           />
-          <Bar barSize={28} dataKey="value" fill="#16a34a" radius={[6, 6, 0, 0]} />
+          <Bar barSize={16} dataKey="value" fill="#16a34a" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -1149,8 +1150,8 @@ export function ApplicationDemographyPortfolioBlock() {
           </Select>
         </div>
       }
-      contentClassName="overflow-hidden p-4"
-      size="4x2"
+      contentClassName="overflow-hidden p-3 pt-1"
+      size="2x4"
       title="Ansökningsdemografi"
       description="Ansökningsstatistik uppdelad per annons och vald kategori."
     >
