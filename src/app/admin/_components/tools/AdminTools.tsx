@@ -6,6 +6,7 @@ import {
   CheckCircle2Icon,
   RefreshCwIcon,
   Trash2Icon,
+  UserPlusIcon,
   XCircleIcon,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -1388,12 +1389,10 @@ function CompaniesForm() {
   );
 }
 
-function CompanyAccountForm() {
-  const { items: companies, state: companiesState } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
-  const [state, setState] = useState<AdminActionState>({ status: "idle" });
-  const [form, setForm] = useState({
+function createEmptyCompanyAccountForm(companyId = "") {
+  return {
     id: "",
-    companyId: "",
+    companyId,
     roleName: "",
     roleDescription: "",
     roleAccessLevel: "",
@@ -1403,10 +1402,70 @@ function CompanyAccountForm() {
     phone: "",
     bannerUrl: "",
     logoUrl: "",
-  });
+  };
+}
 
-  function patchForm(patch: Partial<typeof form>) {
+type CompanyAccountFormState = ReturnType<typeof createEmptyCompanyAccountForm>;
+
+function companyAccountToForm(
+  account: AdminCompanyUserDTO,
+  fallbackCompanyId: string
+): CompanyAccountFormState {
+  return {
+    id: toInputValue(account.id),
+    companyId: toInputValue(account.companyId ?? fallbackCompanyId),
+    roleName: account.role?.name ?? "",
+    roleDescription: account.role?.description ?? "",
+    roleAccessLevel: toInputValue(account.role?.accessLevel),
+    firstName: account.firstName ?? "",
+    surname: account.surname ?? "",
+    email: account.email ?? "",
+    phone: account.phone ?? "",
+    bannerUrl: account.bannerUrl ?? "",
+    logoUrl: account.logoUrl ?? "",
+  };
+}
+
+function companyAccountName(account: AdminCompanyUserDTO) {
+  const name = [account.firstName, account.surname]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .join(" ")
+    .trim();
+
+  return name || account.email?.trim() || `Konto ${account.id ?? ""}`.trim() || "Namnlöst konto";
+}
+
+function companyAccountRoleLabel(account: AdminCompanyUserDTO) {
+  const roleName = account.role?.name?.trim();
+  const accessLevel = account.role?.accessLevel;
+  return [
+    roleName,
+    typeof accessLevel === "number" ? `Access ${accessLevel}` : undefined,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function CompanyAccountForm() {
+  const { items: companies, state: companiesState } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
+  const [saveState, setSaveState] = useState<AdminActionState>({ status: "idle" });
+  const [accountsState, setAccountsState] = useState<AdminActionState>({ status: "idle" });
+  const [accounts, setAccounts] = useState<AdminCompanyUserDTO[]>([]);
+  const [form, setForm] = useState<CompanyAccountFormState>(() => createEmptyCompanyAccountForm());
+
+  function patchForm(patch: Partial<CompanyAccountFormState>) {
     setForm((current) => ({ ...current, ...patch }));
+  }
+
+  function setLoadedAccounts(result: AdminCompanyUserDTO[]) {
+    setAccounts(result);
+    setAccountsState({
+      status: "success",
+      message:
+        result.length === 1
+          ? "1 konto hämtades för valt företag."
+          : `${result.length} konton hämtades för valt företag.`,
+    });
   }
 
   const companiesLoading = companiesState.status === "loading";
@@ -1415,12 +1474,91 @@ function CompanyAccountForm() {
       typeof company.id === "number"
   );
 
-  async function run() {
-    setState({ status: "loading", message: "Sparar företagskonto..." });
+  useEffect(() => {
+    const companyIdValue = form.companyId.trim();
+    if (!companyIdValue) {
+      setAccounts([]);
+      setAccountsState({ status: "idle" });
+      return;
+    }
+
+    const companyId = Number(companyIdValue);
+    if (!Number.isFinite(companyId)) {
+      setAccounts([]);
+      setAccountsState({
+        status: "error",
+        message: "CompanyId måste vara ett nummer.",
+      });
+      return;
+    }
+
+    let active = true;
+    setAccounts([]);
+    setAccountsState({ status: "loading", message: "Hämtar konton för valt företag..." });
+
+    adminService
+      .getCompanyUsers(companyId)
+      .then((result) => {
+        if (!active) return;
+        setLoadedAccounts(result);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setAccounts([]);
+        setAccountsState({
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Kunde inte hämta konton för valt företag.",
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [form.companyId]);
+
+  function selectCompany(companyId: string) {
+    setSaveState({ status: "idle" });
+    setForm(createEmptyCompanyAccountForm(companyId));
+  }
+
+  function selectAccount(account: AdminCompanyUserDTO) {
+    setSaveState({ status: "idle" });
+    setForm(companyAccountToForm(account, form.companyId));
+  }
+
+  function startNewAccount() {
+    setSaveState({ status: "idle" });
+    setForm(createEmptyCompanyAccountForm(form.companyId));
+  }
+
+  async function refreshAccounts() {
+    const companyId = parseRequiredNumber(form.companyId, "CompanyId");
+    setAccountsState({ status: "loading", message: "Hämtar konton för valt företag..." });
     try {
+      const result = await adminService.getCompanyUsers(companyId);
+      setLoadedAccounts(result);
+    } catch (error) {
+      setAccounts([]);
+      setAccountsState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Kunde inte hämta konton för valt företag.",
+      });
+    }
+  }
+
+  async function run() {
+    setSaveState({ status: "loading", message: "Sparar företagskonto..." });
+    try {
+      const companyId = parseRequiredNumber(form.companyId, "CompanyId");
       const payload: AdminCompanyUserDTO = {
         id: parseOptionalNumber(form.id),
-        companyId: parseRequiredNumber(form.companyId, "CompanyId"),
+        companyId,
         role: {
           name: form.roleName.trim(),
           description: form.roleDescription.trim(),
@@ -1435,9 +1573,21 @@ function CompanyAccountForm() {
       };
 
       await adminService.manageCompanyAccount(payload);
-      setState({ status: "success", message: "Företagskontot sparades." });
+      setSaveState({ status: "success", message: "Företagskontot sparades." });
+      try {
+        const refreshedAccounts = await adminService.getCompanyUsers(companyId);
+        setLoadedAccounts(refreshedAccounts);
+      } catch (refreshError) {
+        setAccountsState({
+          status: "error",
+          message:
+            refreshError instanceof Error
+              ? refreshError.message
+              : "Kontot sparades, men listan kunde inte hämtas om.",
+        });
+      }
     } catch (error) {
-      setState({
+      setSaveState({
         status: "error",
         message: error instanceof Error ? error.message : "Kunde inte spara kontot.",
       });
@@ -1447,9 +1597,9 @@ function CompanyAccountForm() {
   return (
     <ActionShell
       title="Företagskonto"
-      description="Backend saknar GET-listning för konton här, men företag väljs från GET /companies innan PUT."
-      method="PUT"
-      endpoint="/api/companies, /api/admin/company/account"
+      description="Välj företag för att hämta kopplade konton med GET innan du skapar eller uppdaterar ett konto."
+      method="GET/PUT"
+      endpoint="/api/companies/{id}/users, /api/admin/company/account"
     >
       <ResultBlock state={companiesState} />
       <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -1457,7 +1607,7 @@ function CompanyAccountForm() {
         <FormSelect
           label="Företag"
           value={form.companyId}
-          onChange={(companyId) => patchForm({ companyId })}
+          onChange={selectCompany}
           disabled={companiesLoading || companyOptions.length === 0}
         >
           <option value="">
@@ -1479,10 +1629,92 @@ function CompanyAccountForm() {
         <FormInput label="Banner URL" value={form.bannerUrl} onChange={(bannerUrl) => patchForm({ bannerUrl })} />
         <FormInput label="Logo URL" value={form.logoUrl} onChange={(logoUrl) => patchForm({ logoUrl })} />
       </div>
-      <SubmitButton isLoading={state.status === "loading"} onPress={run} disabled={!form.companyId.trim()}>
+      <div className="mt-4 rounded-[8px] border border-[#dfe7e3] bg-[#f8fbfa]">
+        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-[#111827]">Kopplade konton</h4>
+            <p className="mt-1 text-xs text-[#66716f]">
+              Listan uppdateras från GET /api/companies/{form.companyId || "{id}"}/users.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              title="Hämta om konton"
+              onClick={() => void refreshAccounts()}
+              disabled={!form.companyId.trim() || accountsState.status === "loading"}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#dfe7e3] bg-white text-[#36534d] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCwIcon
+                className={[
+                  "h-4 w-4",
+                  accountsState.status === "loading" ? "animate-spin" : "",
+                ].join(" ")}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={startNewAccount}
+              disabled={!form.companyId.trim()}
+              className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm font-medium text-[#36534d] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <UserPlusIcon className="h-4 w-4" />
+              Nytt konto
+            </button>
+          </div>
+        </div>
+        <div className="border-t border-[#dfe7e3] p-4">
+          <ResultBlock state={accountsState} />
+          {!form.companyId.trim() ? (
+            <p className="text-sm text-[#66716f]">
+              Välj ett företag för att hämta kopplade konton.
+            </p>
+          ) : accountsState.status === "loading" ? (
+            <p className="text-sm text-[#66716f]">Hämtar konton...</p>
+          ) : accountsState.status === "error" ? null : accounts.length === 0 ? (
+            <p className="text-sm text-[#66716f]">
+              Inga konton hittades för valt företag.
+            </p>
+          ) : (
+            <div className="grid gap-2">
+              {accounts.map((account, index) => {
+                const accountId = toInputValue(account.id);
+                const isSelected = Boolean(accountId && accountId === form.id);
+
+                return (
+                  <button
+                    key={account.id ?? account.email ?? index}
+                    type="button"
+                    onClick={() => selectAccount(account)}
+                    className={[
+                      "grid gap-1 rounded-[8px] border px-3 py-2 text-left text-sm transition",
+                      isSelected
+                        ? "border-[#004225] bg-white text-[#111827]"
+                        : "border-[#dfe7e3] bg-white/70 text-[#36534d] hover:bg-white",
+                    ].join(" ")}
+                  >
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
+                      <span>{companyAccountName(account)}</span>
+                      {accountId && (
+                        <span className="font-mono text-xs text-[#66716f]">#{accountId}</span>
+                      )}
+                    </span>
+                    <span className="text-xs text-[#66716f]">
+                      {[account.email?.trim(), account.phone?.trim(), companyAccountRoleLabel(account)]
+                        .filter(Boolean)
+                        .join(" · ") || "Saknar kontaktuppgifter"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+      <SubmitButton isLoading={saveState.status === "loading"} onPress={run} disabled={!form.companyId.trim()}>
         Spara konto
       </SubmitButton>
-      <ResultBlock state={state} />
+      <ResultBlock state={saveState} />
     </ActionShell>
   );
 }

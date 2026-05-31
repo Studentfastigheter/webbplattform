@@ -2,6 +2,7 @@ import {
   apiClient,
   arrayFromApiResponse,
   buildQuery,
+  pathSegment,
 } from "@/lib/api/client";
 import type {
   AdminAddSchoolRequest,
@@ -118,6 +119,13 @@ export const adminService = {
     return apiClient<AdminCompanyDetailedDTO>(`/companies/${companyId}`, {
       auth: false,
     });
+  },
+
+  getCompanyUsers: async (companyId: number): Promise<AdminCompanyUserDTO[]> => {
+    const response = await apiClient<unknown>(
+      `/companies/${pathSegment(companyId)}/users`
+    );
+    return arrayFromApiResponse<AdminCompanyUserDTO>(response);
   },
 
   deleteCompany: async (companyId: number): Promise<void> => {
