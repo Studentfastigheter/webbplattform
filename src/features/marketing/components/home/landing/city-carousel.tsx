@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -18,6 +18,9 @@ const FALLBACK_CITIES = [
   "Örebro",
   "Umeå",
 ];
+
+const MIN_CAROUSEL_DURATION_SECONDS = 520;
+const CAROUSEL_DURATION_SECONDS_PER_CITY = 32;
 
 function CityCarouselCard({ city }: { city: string }) {
   const { t } = useI18n();
@@ -77,6 +80,12 @@ export function CityCarousel() {
     () => [...displayCities, ...displayCities],
     [displayCities],
   );
+  const carouselStyle = {
+    "--landing-cities-duration": `${Math.max(
+      MIN_CAROUSEL_DURATION_SECONDS,
+      displayCities.length * CAROUSEL_DURATION_SECONDS_PER_CITY,
+    )}s`,
+  } as CSSProperties;
 
   return (
     <section className="py-14 sm:py-20 lg:py-24" aria-labelledby="city-carousel-heading">
@@ -88,7 +97,7 @@ export function CityCarousel() {
         <span className="text-pop-contrast">{t("home.cities.headingHighlight")}</span>
       </h2>
       <div className="landing-cities-marquee">
-        <div className="landing-cities-track">
+        <div className="landing-cities-track" style={carouselStyle}>
           {carouselCities.map((city, index) => (
             <CityCarouselCard key={`${city}-${index}`} city={city} />
           ))}

@@ -436,7 +436,7 @@ img, svg, video, canvas {
   width: max-content;
   gap: 16px;
   padding-inline: 16px;
-  animation: landing-cities-loop 260s linear infinite;
+  animation: landing-cities-loop var(--landing-cities-duration, 520s) linear infinite;
   will-change: transform;
 }
 
