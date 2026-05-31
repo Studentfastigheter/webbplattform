@@ -135,6 +135,7 @@ export default function Page() {
     cities: cityFromUrl ? [cityFromUrl] : [],
   }));
   const [queues, setQueues] = useState<CompanyQueueCard[]>([]);
+  const [cityFacetQueues, setCityFacetQueues] = useState<CompanyQueueCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +160,11 @@ export default function Page() {
       .listCompanies({ city: cityFromUrl || undefined })
       .then((companies) => {
         if (!active) return;
-        setQueues(companies.map(mapCompanyToCard));
+        const cards = companies.map(mapCompanyToCard);
+        setQueues(cards);
+        if (!cityFromUrl) {
+          setCityFacetQueues(cards);
+        }
         setVisibleCount(PAGE_SIZE);
       })
       .catch((err: any) => {
@@ -176,6 +181,27 @@ export default function Page() {
       active = false;
     };
   }, [cityFromUrl]);
+
+  useEffect(() => {
+    if (!cityFromUrl || cityFacetQueues.length > 0) return;
+
+    let active = true;
+
+    companyService
+      .listCompanies()
+      .then((companies) => {
+        if (!active) return;
+        setCityFacetQueues(companies.map(mapCompanyToCard));
+      })
+      .catch((err: any) => {
+        if (!active) return;
+        console.error("Kunde inte ladda stadsfilter:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [cityFromUrl, cityFacetQueues.length]);
 
   useEffect(() => {
     setFilters((current) => ({
@@ -236,27 +262,18 @@ export default function Page() {
     });
   }, [joinedQueueIds]);
 
+  const cityFilterQueues = cityFacetQueues.length > 0 ? cityFacetQueues : queues;
+
   const cityFilterOptions = useMemo(
     () =>
-      uniqueOnly(cleanStrings(queues.flatMap((queue) => queue.cities ?? []))).sort(
+      uniqueOnly(cleanStrings(cityFilterQueues.flatMap((queue) => queue.cities ?? []))).sort(
         (a, b) => a.localeCompare(b, "sv")
       ),
-    [queues]
-  );
-  const landlordFilterOptions = useMemo(
-    () =>
-      uniqueOnly(removeEmpty(queues.map((queue) => queue.name))).sort((a, b) =>
-        a.localeCompare(b, "sv")
-      ),
-    [queues]
+    [cityFilterQueues]
   );
   const cityCounts = useMemo(
-    () => countByValue(cleanStrings(queues.flatMap((queue) => queue.cities ?? []))),
-    [queues]
-  );
-  const landlordCounts = useMemo(
-    () => countByValue(removeEmpty(queues.map((queue) => queue.name))),
-    [queues]
+    () => countByValue(cleanStrings(cityFilterQueues.flatMap((queue) => queue.cities ?? []))),
+    [cityFilterQueues]
   );
 
   const filteredQueues = useMemo(() => {
@@ -267,14 +284,11 @@ export default function Page() {
         !queueSearch ||
         toSearchString(queue.name).includes(queueSearch) ||
         toSearchString(queue.subtitle).includes(queueSearch);
-      const matchesLandlord =
-        filters.landlords.length === 0 ||
-        filters.landlords.includes(queue.name);
       const matchesCity =
         filters.cities.length === 0 ||
         (queue.cities ?? []).some((city) => filters.cities.includes(city));
 
-      return matchesSearch && matchesLandlord && matchesCity;
+      return matchesSearch && matchesCity;
     });
   }, [queues, searchValues, filters]);
 
@@ -537,21 +551,24 @@ export default function Page() {
                 <QueueFilterButton
                   variant="ghost"
                   size="icon-lg"
-                  title="Avancerade filter"
-                  triggerLabel="Filtrera"
+                  title="Filtrera på stad"
+                  triggerLabel="Stad"
                   className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-[#004225] shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                   cities={cityFilterOptions}
                   cityCounts={cityCounts}
-                  landlords={landlordFilterOptions}
-                  landlordCounts={landlordCounts}
+                  citySelectionMode="single"
                   statuses={[]}
                   initialState={filters}
                   onApply={(state) => {
-                    setFilters(state);
-                    updateCityInUrl(state.cities.length === 1 ? state.cities[0] : null);
+                    const selectedCity = state.cities[0] ?? null;
+                    setFilters({
+                      ...defaultQueueFilterState,
+                      cities: selectedCity ? [selectedCity] : [],
+                    });
+                    updateCityInUrl(selectedCity);
                   }}
                   onClear={() => {
-                    setFilters(defaultQueueFilterState);
+                    setFilters({ ...defaultQueueFilterState });
                     updateCityInUrl(null);
                   }}
                 />
@@ -597,7 +614,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => {
-                  setFilters({ ...filters, cities: [] });
+                  setFilters({ ...defaultQueueFilterState });
                   updateCityInUrl(null);
                 }}
                 className="inline-flex items-center gap-1 self-start text-xs font-medium text-gray-500 hover:text-black sm:text-sm"

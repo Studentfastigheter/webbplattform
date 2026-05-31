@@ -18,6 +18,7 @@ type QueueFilterButtonProps = Omit<
 > & {
   cities?: string[];
   cityCounts?: Record<string, number>;
+  citySelectionMode?: "multiple" | "single";
   landlords?: string[];
   landlordCounts?: Record<string, number>;
   statuses?: { id: string; label: string; description?: string }[];
@@ -37,6 +38,7 @@ const defaultState: QueueFilterState = {
 const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
   cities = [],
   cityCounts,
+  citySelectionMode = "multiple",
   landlords = [],
   landlordCounts,
   statuses = [
@@ -83,6 +85,14 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
   const toggleValue = (key: keyof QueueFilterState, value: string) => {
     const current = state[key];
     if (!Array.isArray(current)) return;
+
+    if (key === "cities" && citySelectionMode === "single") {
+      updateState({
+        ...state,
+        cities: current.includes(value) ? [] : [value],
+      });
+      return;
+    }
 
     const exists = current.includes(value);
     const updated = exists
@@ -154,6 +164,7 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
   }, [
     cities,
     cityCounts,
+    citySelectionMode,
     landlords,
     landlordCounts,
     statuses,
