@@ -24,7 +24,7 @@ import { type HousingQueueDTO } from "@/types/queue";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
-import { formatLocalizedNumber, localizedText } from "@/i18n/text";
+import { localizedText } from "@/i18n/text";
 
 const COMPANY_LISTINGS_PAGE_SIZE = 6;
 const imageFilenamePattern = /\.(avif|gif|jpe?g|png|webp)$/i;
@@ -412,6 +412,7 @@ export default function QueueDetailPage() {
       ),
     [listings],
   );
+  const queueToJoin = queues[0] ?? null;
 
   const handleJoinQueue = async (queueId: string) => {
     if (!user) {
@@ -518,64 +519,46 @@ export default function QueueDetailPage() {
         </div>
       )}
 
-      {queues.length > 0 && (
-        <div className="mt-10 w-full">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {localizedText(locale, "Bostadsköer", "Housing queues")}
-          </h2>
-          <div className="space-y-3">
-            {queues.map((q) => (
-              <div
-                key={q.id}
-                className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-gray-900">{q.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {q.city}
-                    {q.waitDays != null &&
-                      ` · ~${q.waitDays} ${localizedText(locale, "dagars kötid", "days wait")}`}
-                    {q.totalUnits != null &&
-                      ` · ${formatLocalizedNumber(locale, q.totalUnits)} ${localizedText(locale, "bostäder", "homes")}`}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => handleJoinQueue(q.id)}
-                  isDisabled={
-                    authLoading ||
-                    joinedQueuesLoading ||
-                    joinedQueueIds.has(q.id) ||
-                    joiningQueueId !== null ||
-                    Boolean(queueVerificationError)
-                  }
-                  variant={joinedQueueIds.has(q.id) ? "secondary" : "default"}
-                  size="sm"
-                  className={`shrink-0 ${
-                    joinedQueueIds.has(q.id)
-                      ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
-                      : ""
-                  }`}
-                >
-                  {joiningQueueId === q.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Bell className="h-4 w-4" />
-                      {authLoading || joinedQueuesLoading
-                        ? localizedText(locale, "Kontrollerar...", "Checking...")
-                        : joinedQueueIds.has(q.id)
-                        ? localizedText(locale, "Du står redan i kön", "You are already in the queue")
-                        : queueVerificationError
-                        ? localizedText(locale, "Verifiering krävs", "Verification required")
-                        : user
-                          ? localizedText(locale, "Ställ dig i kön", "Join queue")
-                          : localizedText(locale, "Logga in", "Log in")}
-                    </>
-                  )}
-                </Button>
-              </div>
-            ))}
-          </div>
+      {queueToJoin && (
+        <div className="mt-8 w-full">
+          <Button
+            onClick={() => handleJoinQueue(queueToJoin.id)}
+            isDisabled={
+              authLoading ||
+              joinedQueuesLoading ||
+              joinedQueueIds.has(queueToJoin.id) ||
+              joiningQueueId !== null ||
+              Boolean(queueVerificationError)
+            }
+            variant={joinedQueueIds.has(queueToJoin.id) ? "secondary" : "default"}
+            size="sm"
+            className={`shrink-0 ${
+              joinedQueueIds.has(queueToJoin.id)
+                ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
+                : ""
+            }`}
+          >
+            {joiningQueueId === queueToJoin.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Bell className="h-4 w-4" />
+                {authLoading || joinedQueuesLoading
+                  ? localizedText(locale, "Kontrollerar...", "Checking...")
+                  : joinedQueueIds.has(queueToJoin.id)
+                  ? localizedText(
+                      locale,
+                      "Du står redan i kön",
+                      "You are already in the queue"
+                    )
+                  : queueVerificationError
+                  ? localizedText(locale, "Verifiering krävs", "Verification required")
+                  : user
+                  ? localizedText(locale, "Ställ dig i kön", "Join queue")
+                  : localizedText(locale, "Logga in", "Log in")}
+              </>
+            )}
+          </Button>
         </div>
       )}
 

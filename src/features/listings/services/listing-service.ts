@@ -675,20 +675,6 @@ export const listingService = {
     return res.content ?? [];
   },
 
-  getQueueListings: async (
-    queueId: string,
-    page = 0,
-    size = 12
-  ): Promise<PageResponse<ListingCardDTO>> => {
-    const query = buildQuery({ page, size });
-    const res = await apiClient<unknown>(
-      `/listings/queue/${pathSegment(queueId)}${query}`,
-      { auth: false }
-    );
-    const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
-    return normalizePageResponse(res, content, page, size);
-  },
-
   // 3. HÄMTA MINA ANSÖKNINGAR
   // Anropar: GET /api/applications/my
   getMyApplicationsPage: async (

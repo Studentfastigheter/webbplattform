@@ -770,18 +770,38 @@ function ListingPortfolioSummary({ summary }: { summary: PortfolioSummary }) {
   );
 }
 
-export function CompanyDemographyBlock() {
+type CompanyDemographyBlockProps = {
+  deferUntilSelection?: boolean;
+  description?: React.ReactNode;
+  title?: React.ReactNode;
+  useCompaniesQuery?: boolean;
+};
+
+export function CompanyDemographyBlock({
+  deferUntilSelection = false,
+  description = "Besökare uppdelade efter vald kategori.",
+  title = "Företagsprofil",
+  useCompaniesQuery = false,
+}: CompanyDemographyBlockProps = {}) {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
   const [category, setCategory] =
     React.useState<CompanyDemographyCategory>("VIEW_TYPE");
   const [demography, setDemography] = React.useState<CompanyDemography | null>(null);
+  const [hasSelection, setHasSelection] = React.useState(!deferUntilSelection);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (authLoading) return;
+
+    if (!hasSelection) {
+      setDemography(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
 
     if (!companyId) {
       setError("Kunde inte hitta ett aktivt företag.");
@@ -794,8 +814,13 @@ export function CompanyDemographyBlock() {
     setIsLoading(true);
     setError(null);
 
-    demographicsService
-      .getCompany(companyId, from, to, category)
+    const request = useCompaniesQuery
+      ? demographicsService
+          .getCompaniesBatch([companyId], from, to, category)
+          .then((result) => result[String(companyId)] ?? null)
+      : demographicsService.getCompany(companyId, from, to, category);
+
+    request
       .then((result) => {
         if (!cancelled) setDemography(result);
       })
@@ -816,7 +841,17 @@ export function CompanyDemographyBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, category, companyId, range]);
+  }, [authLoading, category, companyId, hasSelection, range, useCompaniesQuery]);
+
+  const handleCategoryChange = (nextCategory: CompanyDemographyCategory) => {
+    setCategory(nextCategory);
+    setHasSelection(true);
+  };
+
+  const handleRangeChange = (nextRange: ApplicationIntervalValue) => {
+    setRange(nextRange);
+    setHasSelection(true);
+  };
 
   return (
     <AnalyticsBlock
@@ -824,20 +859,22 @@ export function CompanyDemographyBlock() {
         <div className="flex max-w-full flex-col gap-2 sm:flex-row">
           <CategorySelect
             categories={COMPANY_DEMOGRAPHY_CATEGORIES}
-            onChange={setCategory}
+            onChange={handleCategoryChange}
             value={category}
           />
-          <ApplicationIntervalToggle onChange={setRange} value={range} />
+          <ApplicationIntervalToggle onChange={handleRangeChange} value={range} />
         </div>
       }
       size="2x2"
-      title="Företagsprofil"
-      description="Besökare uppdelade efter vald kategori."
+      title={title}
+      description={description}
     >
       {authLoading || isLoading ? (
         <BlockSkeleton />
       ) : error ? (
         <ErrorState message={error} />
+      ) : deferUntilSelection && !hasSelection ? (
+        <EmptyState message="Välj kategori eller tidsintervall för att ladda demografi." />
       ) : category === "GENDER" || category === "VIEW_TYPE" || category === "DEVICE_TYPE" ? (
         <PieDistribution data={bucketsToData(demography)} />
       ) : (
