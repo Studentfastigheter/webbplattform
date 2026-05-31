@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +17,7 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
+import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { cn, normalizeRoute } from "@/lib/utils";
 import { dashboardRelPath } from "../../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
@@ -212,20 +212,13 @@ export default function PortalSidebar() {
           expanded ? "justify-start" : "lg:justify-center"
         )}
       >
-        <Link className="flex items-center gap-3" href={dashboardRelPath}>
-          <Image
-            alt="CampusLyan"
-            className="h-8 w-8 shrink-0"
-            height={32}
-            src="/campuslyan-logo.svg"
-            width={32}
-          />
-          {expanded && (
-            <span className="text-lg font-semibold tracking-tight text-gray-900">
-              CampusLyan
-            </span>
-          )}
-        </Link>
+        <CampusLyanBrandLink
+          className="gap-3"
+          href={dashboardRelPath}
+          logoClassName="h-8 w-8"
+          showText={expanded}
+          textClassName="text-lg"
+        />
       </div>
 
       <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto duration-300 ease-linear">

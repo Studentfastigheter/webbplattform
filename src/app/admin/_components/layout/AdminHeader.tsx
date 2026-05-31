@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { ChevronDown, LogOut, Menu, ShieldCheckIcon, X } from "lucide-react";
 
+import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -49,10 +48,12 @@ export default function AdminHeader() {
             {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          <Link className="flex items-center gap-2 lg:hidden" href="/">
-            <Image alt="CampusLyan" height={28} src="/campuslyan-logo.svg" width={28} />
-            <span className="text-sm font-semibold text-gray-900">Admin</span>
-          </Link>
+          <CampusLyanBrandLink
+            className="lg:hidden"
+            href="/"
+            logoSize={28}
+            textClassName="text-sm"
+          />
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-3">
