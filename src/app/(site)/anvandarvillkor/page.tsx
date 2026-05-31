@@ -39,8 +39,8 @@ function InlineLink({ href, children }: { href: string; children: ReactNode }) {
 export default function TermsPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
+      <section className="pb-20 pt-10">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="mb-8">
             <Link
               href="/"
