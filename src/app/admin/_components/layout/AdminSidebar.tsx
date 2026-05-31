@@ -8,6 +8,7 @@ import {
   BarChart3Icon,
   Building2Icon,
   ListChecksIcon,
+  MailIcon,
   MapPinIcon,
   MoreHorizontalIcon,
   SchoolIcon,
@@ -57,6 +58,11 @@ const accountItems: AdminNavItem[] = [
     name: "Activities",
     path: "/activities",
     icon: <ActivityIcon className="h-5 w-5" />,
+  },
+  {
+    name: "Waitlist",
+    path: "/waitlist",
+    icon: <MailIcon className="h-5 w-5" />,
   },
   {
     name: "Statistics",

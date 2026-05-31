@@ -16,6 +16,7 @@ import type {
   AdminModifyPOIRequest,
   AdminPointOfInterestDTO,
   AdminUserTrendDTO,
+  AdminWaitlistStatsDTO,
   School,
 } from "@/types";
 import { schoolService } from "@/features/schools/services/school-service";
@@ -193,5 +194,9 @@ export const adminService = {
     );
 
     return arrayFromApiResponse<AdminUserTrendDTO>(response);
+  },
+
+  getWaitlistStats: async (): Promise<AdminWaitlistStatsDTO> => {
+    return apiClient<AdminWaitlistStatsDTO>("/admin/waitlist");
   },
 };

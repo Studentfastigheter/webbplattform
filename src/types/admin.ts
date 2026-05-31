@@ -97,6 +97,26 @@ export type AdminUserTrendDTO = {
   userCount?: number;
 };
 
+export type AdminWaitlistTrendPointDTO = {
+  date: string;
+  count: number;
+  cumulative: number;
+};
+
+export type AdminWaitlistEntryDTO = {
+  email: string;
+  createdAt: string;
+};
+
+export type AdminWaitlistStatsDTO = {
+  total: number;
+  entries: AdminWaitlistEntryDTO[];
+  daily: AdminWaitlistTrendPointDTO[];
+  unknownCreatedAtCount?: number;
+  storage?: "firestore" | "local";
+  generatedAt?: string;
+};
+
 export type AdminCityPayload = Record<string, unknown>;
 
 export type AdminAddSchoolRequest = AddSchoolRequest;
