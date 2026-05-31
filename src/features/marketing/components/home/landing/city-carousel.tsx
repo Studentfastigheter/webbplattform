@@ -57,7 +57,7 @@ function CityCarouselCard({
 
   return (
     <Link
-      href={`/stader/${encodeURIComponent(city)}`}
+      href={`/cities/${encodeURIComponent(city)}`}
       aria-label={t("home.cities.openAria", { city })}
       className={cardClassName}
       style={style}

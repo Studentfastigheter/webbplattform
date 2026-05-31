@@ -93,15 +93,15 @@ export default function SiteHeader() {
       platformLaunched
         ? [
             { name: t("siteHeader.nav.home"), link: localizedHref("/") },
-            { name: t("siteHeader.nav.housing"), link: localizedHref("/bostader") },
-            { name: t("siteHeader.nav.allQueues"), link: localizedHref("/alla-koer") },
-            { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
+            { name: t("siteHeader.nav.housing"), link: localizedHref("/housing") },
+            { name: t("siteHeader.nav.allQueues"), link: localizedHref("/all-queues") },
+            { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },
           ]
         : [
             { name: t("siteHeader.nav.home"), link: localizedHref("/") },
-            { name: t("siteFooter.links.forBusiness"), link: localizedHref("/for-foretag") },
+            { name: t("siteFooter.links.forBusiness"), link: localizedHref("/for-business") },
             { name: t("siteFooter.links.ourPartners"), link: localizedHref("/partners") },
-            { name: t("siteFooter.links.about"), link: localizedHref("/om-oss") },
+            { name: t("siteFooter.links.about"), link: localizedHref("/about-us") },
           ],
     [localizedHref, platformLaunched, t],
   );
@@ -110,41 +110,41 @@ export default function SiteHeader() {
     () => [
       {
         name: t("siteHeader.nav.housing"),
-        link: localizedHref("/bostader"),
+        link: localizedHref("/housing"),
         dropdown: [
-          { name: t("siteHeader.nav.searchHousing"), link: localizedHref("/bostader") },
-          { name: t("siteHeader.nav.applications"), link: localizedHref("/ansokningar") },
-          { name: t("siteHeader.nav.saved"), link: localizedHref("/sparade") },
+          { name: t("siteHeader.nav.searchHousing"), link: localizedHref("/housing") },
+          { name: t("siteHeader.nav.applications"), link: localizedHref("/applications") },
+          { name: t("siteHeader.nav.saved"), link: localizedHref("/saved") },
         ],
       },
       {
         name: t("siteHeader.nav.allQueues"),
-        link: localizedHref("/alla-koer"),
+        link: localizedHref("/all-queues"),
         dropdown: [
-          { name: t("siteHeader.nav.addQueues"), link: localizedHref("/alla-koer") },
-          { name: t("siteHeader.nav.myQueues"), link: localizedHref("/koer") },
+          { name: t("siteHeader.nav.addQueues"), link: localizedHref("/all-queues") },
+          { name: t("siteHeader.nav.myQueues"), link: localizedHref("/queues") },
         ],
       },
-      { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
-      { name: t("siteHeader.nav.notifications"), link: localizedHref("/notiser") },
+      { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },
+      { name: t("siteHeader.nav.notifications"), link: localizedHref("/notifications") },
     ],
     [localizedHref, t],
   );
 
   const landlordNavItems = useMemo<NavItem[]>(
     () => [
-      { name: t("siteHeader.nav.housing"), link: localizedHref("/bostader") },
-      { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
+      { name: t("siteHeader.nav.housing"), link: localizedHref("/housing") },
+      { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },
       {
         name: t("siteHeader.nav.myListings"),
-        link: localizedHref("/mina-annonser"),
+        link: localizedHref("/my-listings"),
         dropdown: [
-          { name: t("siteHeader.nav.createNew"), link: localizedHref("/mina-annonser/ny") },
-          { name: t("siteHeader.nav.myListings"), link: localizedHref("/mina-annonser") },
-          { name: t("siteHeader.nav.applications"), link: localizedHref("/ansokningar") },
+          { name: t("siteHeader.nav.createNew"), link: localizedHref("/my-listings/new") },
+          { name: t("siteHeader.nav.myListings"), link: localizedHref("/my-listings") },
+          { name: t("siteHeader.nav.applications"), link: localizedHref("/applications") },
         ],
       },
-      { name: t("siteHeader.nav.notifications"), link: localizedHref("/notiser") },
+      { name: t("siteHeader.nav.notifications"), link: localizedHref("/notifications") },
     ],
     [localizedHref, t],
   );
@@ -157,8 +157,8 @@ export default function SiteHeader() {
     navItems = landlordNavItems;
   } else if (currentUser) {
     navItems = [
-      { name: t("siteHeader.nav.housingSearch"), link: localizedHref("/bostader") },
-      { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
+      { name: t("siteHeader.nav.housingSearch"), link: localizedHref("/housing") },
+      { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },
     ];
   }
 
@@ -166,20 +166,20 @@ export default function SiteHeader() {
 
   if (userType === "student") {
     accountMenuItems = [
-      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profil") },
-      { name: t("siteHeader.account.settings"), link: localizedHref("/installningar") },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profile") },
+      { name: t("siteHeader.account.settings"), link: localizedHref("/settings") },
       { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
   } else if (userType === "private_landlord" || userType === "company") {
     accountMenuItems = [
-      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profil") },
-      { name: t("siteHeader.account.settings"), link: localizedHref("/installningar") },
-      { name: t("siteHeader.account.billing"), link: localizedHref("/fakturering") },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profile") },
+      { name: t("siteHeader.account.settings"), link: localizedHref("/settings") },
+      { name: t("siteHeader.account.billing"), link: localizedHref("/billing") },
       { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
   } else if (currentUser) {
     accountMenuItems = [
-      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profil") },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profile") },
     ];
   }
 
@@ -317,7 +317,7 @@ export default function SiteHeader() {
                 {t("siteHeader.auth.login")}
               </Link>
               <Link
-                href="/registrera"
+                href="/register"
                 className="inline-flex rounded-full bg-[#004225] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00341d]"
               >
                 {t("siteHeader.auth.createAccount")}
@@ -456,7 +456,7 @@ export default function SiteHeader() {
                   {t("siteHeader.auth.login")}
                 </Link>
                 <Link
-                  href="/registrera"
+                  href="/register"
                   onClick={closeMenus}
                   className="inline-flex w-full items-center justify-center rounded-full bg-[#004225] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
                 >

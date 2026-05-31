@@ -29,9 +29,9 @@ export default function PortalHeader() {
     user?.companyName ||
     user?.displayName ||
     user?.email ||
-    "Konto";
+    "Account";
   const email = user?.email || "";
-  const role = activeCompany ? "Företagskonto" : "Hyresvärd";
+  const role = activeCompany ? "Company account" : "Landlord";
   const avatarSrc =
     activeCompany
       ? companyLogoUrl || activeCompany.logoUrl || user?.logoUrl || ""
@@ -82,7 +82,7 @@ export default function PortalHeader() {
       <div className="flex min-w-0 grow items-center justify-between gap-3 px-3 py-3 sm:gap-4 lg:px-6 lg:py-4">
         <div className="flex min-w-0 items-center gap-3">
           <button
-            aria-label="Växla sidomeny"
+            aria-label="Toggle sidebar"
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 lg:h-11 lg:w-11"
             onClick={handleToggle}
             type="button"
@@ -98,7 +98,7 @@ export default function PortalHeader() {
 
         <div className="flex shrink-0 items-center justify-end gap-3">
           <button
-            aria-label="Notiser"
+            aria-label="Notifications"
             className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:bg-gray-50"
             type="button"
           >
@@ -115,7 +115,7 @@ export default function PortalHeader() {
                 <Avatar className="mr-3 h-11 w-11 overflow-hidden rounded-none bg-transparent">
                   {avatarSrc ? (
                     <AvatarImage
-                      alt={`${displayName} logotyp`}
+                      alt={`${displayName} logo`}
                       className="object-contain"
                       src={avatarSrc}
                     />
@@ -149,19 +149,19 @@ export default function PortalHeader() {
                 <DropdownMenuItem asChild className="rounded-lg p-0">
                   <Link
                     className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"
-                    href={`${dashboardRelPath}/profil`}
+                    href={`${dashboardRelPath}/profile`}
                   >
                     <UserCircle className="h-6 w-6 text-gray-500" />
-                    Redigera profil
+                    Edit profile
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg p-0">
                   <Link
                     className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"
-                    href={`${dashboardRelPath}/installningar`}
+                    href={`${dashboardRelPath}/settings`}
                   >
                     <Settings className="h-6 w-6 text-gray-500" />
-                    Kontoinställningar
+                    Account settings
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg p-0">
@@ -179,7 +179,7 @@ export default function PortalHeader() {
                 onSelect={() => logout()}
               >
                 <LogOut className="h-6 w-6 text-gray-500" />
-                Logga ut
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

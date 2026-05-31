@@ -74,7 +74,7 @@ export default async function Home() {
         flipWordsClassName="!text-pop-contrast !z-10 relative"
         subtitle={home.hero.subtitle}
         waitlistHref="#register-waitlist"
-        businessHref="/for-foretag"
+        businessHref="/for-business"
         interestCta={home.hero.interestCta}
         businessCta={home.hero.businessCta}
         previewImageSrc="/platform-demo.png"

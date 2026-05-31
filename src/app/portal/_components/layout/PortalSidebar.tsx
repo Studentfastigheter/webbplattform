@@ -34,23 +34,23 @@ type PortalNavItem = {
 
 const portalItems: PortalNavItem[] = [
   {
-    name: "\u00D6versikt",
+    name: "Overview",
     path: dashboardRelPath,
     icon: <Home className="h-5 w-5" />,
   },
   {
-    name: "Annonser",
-    path: `${dashboardRelPath}/annonser`,
+    name: "Listings",
+    path: `${dashboardRelPath}/listings`,
     icon: <FileText className="h-5 w-5" />,
   },
   {
-    name: "Ans\u00F6kningar",
-    path: `${dashboardRelPath}/ansokningar`,
+    name: "Applications",
+    path: `${dashboardRelPath}/applications`,
     icon: <Users className="h-5 w-5" />,
   },
   {
-    name: "Bostadsk\u00F6",
-    path: `${dashboardRelPath}/bostadsko`,
+    name: "Housing queue",
+    path: `${dashboardRelPath}/housing-queue`,
     icon: <Building2 className="h-5 w-5" />,
   },
 
@@ -58,49 +58,49 @@ const portalItems: PortalNavItem[] = [
 
 const insightItems: PortalNavItem[] = [
   {
-    name: "Analys",
+    name: "Analytics",
     path: `${dashboardRelPath}/analytics`,
     icon: <BarChart3 className="h-5 w-5" />,
   },
   {
-    name: "Produktnyheter",
-    path: `${dashboardRelPath}/produktnyheter`,
+    name: "Product news",
+    path: `${dashboardRelPath}/product-news`,
     icon: <Newspaper className="h-5 w-5" />,
   },
   {
-    name: "Guider",
-    path: `${dashboardRelPath}/guider`,
+    name: "Guides",
+    path: `${dashboardRelPath}/guides`,
     icon: <BookOpen className="h-5 w-5" />,
   },
 ];
 
 const settingsItems: PortalNavItem[] = [
   {
-    name: "Mina inst\u00E4llningar",
-    path: `${dashboardRelPath}/installningar`,
+    name: "My settings",
+    path: `${dashboardRelPath}/settings`,
     icon: <Settings className="h-5 w-5" />,
   },
   {
-    name: "Kravprofiler",
-    path: `${dashboardRelPath}/kravprofiler`,
+    name: "Requirement profiles",
+    path: `${dashboardRelPath}/requirement-profiles`,
     icon: <FileCheck2 className="h-5 w-5" />,
   },
   {
-    name: "Användare",
-    path: `${dashboardRelPath}/anvandare`,
+    name: "Users",
+    path: `${dashboardRelPath}/users`,
     icon: <Users className="h-5 w-5" />,
   },
   {
-    name: "F\u00F6retagsprofil",
-    path: `${dashboardRelPath}/profil`,
+    name: "Company profile",
+    path: `${dashboardRelPath}/profile`,
     icon: <UserCircle className="h-5 w-5" />,
   },
 ];
 
 const navSections = [
   { key: "portal", title: "Portal", items: portalItems },
-  { key: "insights", title: "Insikter", items: insightItems },
-  { key: "settings", title: "Inst\u00E4llningar", items: settingsItems },
+  { key: "insights", title: "Insights", items: insightItems },
+  { key: "settings", title: "Settings", items: settingsItems },
 ] as const;
 
 type SectionKey = (typeof navSections)[number]["key"];

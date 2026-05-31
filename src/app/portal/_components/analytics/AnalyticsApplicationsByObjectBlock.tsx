@@ -134,7 +134,7 @@ function ListingApplicationPreviewRow({
   const facts = formatListingFacts(item);
   const href =
     item.listingId != null
-      ? `${dashboardRelPath}/annonser/${encodeURIComponent(String(item.listingId))}`
+      ? `${dashboardRelPath}/listings/${encodeURIComponent(String(item.listingId))}`
       : null;
   const content = (
     <div className="grid min-h-[118px] min-w-0 grid-cols-[96px_minmax(0,1fr)] sm:grid-cols-[132px_minmax(0,1fr)]">

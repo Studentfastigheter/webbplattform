@@ -139,7 +139,7 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               {t("home.waitlist.privacyPrefix")}{" "}
               <Link
-                href="/integritetspolicy"
+                href="/privacy-policy"
                 className="font-medium text-[#004225] underline underline-offset-4 hover:text-[#00341d]"
               >
                 {t("home.waitlist.privacyLink")}

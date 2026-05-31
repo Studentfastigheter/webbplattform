@@ -31,7 +31,7 @@ export const Hero: React.FC<HeroProps> = ({
   previewImageSrc = "/platform-demo.png",
   previewImageAlt,
   waitlistHref = "#register-waitlist",
-  businessHref = "/for-foretag",
+  businessHref = "/for-business",
   interestCta,
   businessCta,
 }) => {

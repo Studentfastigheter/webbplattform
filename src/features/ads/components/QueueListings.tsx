@@ -60,7 +60,7 @@ export default function QueueListings({
             <ListingCardFromDTO
               listing={listing}
               showFavoriteButton={false}
-              onOpen={() => router.push(localizedHref(`/bostader/${listing.id}`))}
+              onOpen={() => router.push(localizedHref(`/housing/${listing.id}`))}
             />
           </div>
         ))}

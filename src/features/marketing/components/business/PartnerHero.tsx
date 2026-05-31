@@ -77,7 +77,7 @@ export const TrustHero = () => {
 */}
         {/* --- CTA --- */}
         <Link
-          href={localizedHref("/for-foretag#bokning")}
+          href={localizedHref("/for-business#booking")}
           className="inline-flex rounded-full bg-[#004225] px-8 py-3 text-base font-semibold text-white transition hover:bg-[#00341d] mb-8"
         >
           {localizedText(locale, "Boka möte", "Book a meeting")}

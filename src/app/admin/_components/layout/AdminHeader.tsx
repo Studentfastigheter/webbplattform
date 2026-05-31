@@ -41,7 +41,7 @@ export default function AdminHeader() {
       <div className="flex min-w-0 grow items-center justify-between gap-3 px-3 py-3 sm:gap-4 lg:px-6 lg:py-4">
         <div className="flex min-w-0 items-center gap-3">
           <button
-            aria-label="Växla sidomeny"
+            aria-label="Toggle sidebar"
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 lg:h-11 lg:w-11"
             onClick={handleToggle}
             type="button"
@@ -58,7 +58,7 @@ export default function AdminHeader() {
         <div className="flex shrink-0 items-center justify-end gap-3">
           <span className="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 sm:inline-flex">
             <ShieldCheckIcon className="h-4 w-4" />
-            Adminportal
+            Admin portal
           </span>
 
           <DropdownMenu>
@@ -87,7 +87,7 @@ export default function AdminHeader() {
                   {email}
                 </span>
                 <span className="mt-1 block text-theme-xs text-gray-400">
-                  Administratorkonto
+                  Administrator account
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuItem
@@ -95,7 +95,7 @@ export default function AdminHeader() {
                 onSelect={() => logout()}
               >
                 <LogOut className="h-6 w-6 text-gray-500" />
-                Logga ut
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -697,8 +697,8 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     };
   }, [analyticsRange, authLoading, companyId, id]);
 
-  const editHref = `${dashboardRelPath}/annonser/${encodeURIComponent(id)}/redigera`;
-  const applicationsHref = `${dashboardRelPath}/ansokningar?listingId=${encodeURIComponent(id)}`;
+  const editHref = `${dashboardRelPath}/listings/${encodeURIComponent(id)}/edit`;
+  const applicationsHref = `${dashboardRelPath}/applications?listingId=${encodeURIComponent(id)}`;
   const galleryImages = useMemo(
     () => listing?.imageUrls?.filter(Boolean) ?? [],
     [listing]
@@ -736,7 +736,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       await listingService.delete(id);
       toast.success("Annonsen har raderats.");
       setDeleteDialogOpen(false);
-      router.push(`${dashboardRelPath}/annonser`);
+      router.push(`${dashboardRelPath}/listings`);
       router.refresh();
     } catch (deleteError) {
       toast.error(
@@ -815,7 +815,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       <Tabs defaultValue="info" className="space-y-6">
         <header className="space-y-5 border-b border-gray-200 pb-5">
           <Link
-            href={`${dashboardRelPath}/annonser`}
+            href={`${dashboardRelPath}/listings`}
             className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
           >
             <ArrowLeft className="h-4 w-4" />

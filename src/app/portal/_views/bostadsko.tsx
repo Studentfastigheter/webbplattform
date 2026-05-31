@@ -206,7 +206,7 @@ function QueueListings({ listings }: { listings: ListingCardDTO[] }) {
       {listings.map((listing) => (
         <Link
           className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:border-brand-200 hover:shadow-[0_8px_24px_rgba(16,24,40,0.08)]"
-          href={`${dashboardRelPath}/annonser/${encodeURIComponent(listing.id)}`}
+          href={`${dashboardRelPath}/listings/${encodeURIComponent(listing.id)}`}
           key={listing.id}
         >
           <div className="relative h-32 bg-gray-100">

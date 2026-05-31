@@ -77,7 +77,7 @@ export const PartnerGrid = ({
           )}
           {isFoundingVariant && (
             <Link
-              href={localizedHref("/for-foretag#bokning")}
+              href={localizedHref("/for-business#booking")}
               className="mt-8 inline-flex rounded-full px-8 py-3 text-base font-semibold transition hover:opacity-90"
               style={{
                 border: "2px solid #d4a017",

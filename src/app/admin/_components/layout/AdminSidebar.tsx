@@ -26,17 +26,17 @@ type AdminNavItem = {
 
 const operationsItems: AdminNavItem[] = [
   {
-    name: "Taggar",
+    name: "Tags",
     path: "/tags",
     icon: <TagsIcon className="h-5 w-5" />,
   },
   {
-    name: "Skolor",
+    name: "Schools",
     path: "/schools",
     icon: <SchoolIcon className="h-5 w-5" />,
   },
   {
-    name: "Platser",
+    name: "Locations",
     path: "/locations",
     icon: <MapPinIcon className="h-5 w-5" />,
   },
@@ -44,22 +44,22 @@ const operationsItems: AdminNavItem[] = [
 
 const accountItems: AdminNavItem[] = [
   {
-    name: "Företag",
+    name: "Companies",
     path: "/companies",
     icon: <Building2Icon className="h-5 w-5" />,
   },
   {
-    name: "Konton",
+    name: "Accounts",
     path: "/accounts",
     icon: <UsersIcon className="h-5 w-5" />,
   },
   {
-    name: "Aktiviteter",
+    name: "Activities",
     path: "/activities",
     icon: <ActivityIcon className="h-5 w-5" />,
   },
   {
-    name: "Statistik",
+    name: "Statistics",
     path: "/statistics",
     icon: <BarChart3Icon className="h-5 w-5" />,
   },
@@ -71,7 +71,7 @@ const accountItems: AdminNavItem[] = [
 ];
 
 const navSections = [
-  { key: "operations", title: "Plattform", items: operationsItems },
+  { key: "operations", title: "Platform", items: operationsItems },
   { key: "management", title: "Admin", items: accountItems },
 ] as const;
 

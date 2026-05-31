@@ -98,7 +98,7 @@ export const Hero = ({
   title, 
   description, 
   primaryCtaText, 
-  primaryCtaLink = "/boka-demo" 
+  primaryCtaLink = "#booking" 
 }: HeroProps) => {
   const { locale, localizedHref } = useI18n();
 
@@ -133,7 +133,7 @@ export const Hero = ({
         {/* --- HÄR ÄR ÄNDRINGEN --- */}
         {/* Ändrat från flex-col till flex-row för att tvinga dem brevid varandra */}
         <div className="pt-2 flex flex-row gap-3 sm:gap-4">
-          {/* Primary CTA -> scrollar till #bokning */}
+          {/* Primary CTA -> scrollar till #booking */}
           <Link
             href={localizedHref(primaryCtaLink)}
             className="flex-1 sm:flex-none bg-primary text-white px-4 sm:px-8 h-12 sm:h-14 rounded-xl font-bold hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base whitespace-nowrap"
@@ -144,7 +144,7 @@ export const Hero = ({
 
           {/* Secondary CTA -> också till bokning (eller valfri länk) 
           <Link
-            href="#bokning"
+            href="#booking"
             className="flex-1 sm:flex-none bg-white border-2 border-slate-200 text-slate-700 px-4 sm:px-8 h-12 sm:h-14 rounded-xl font-bold hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center text-sm sm:text-base whitespace-nowrap"
           >
             Läs mer

@@ -33,21 +33,21 @@ export default function SiteFooter() {
   const platformLaunched = isPlatformLaunched();
   const platformLinks = platformLaunched
     ? [
-        { href: "/bostader", label: t("siteFooter.links.housing") },
-        { href: "/alla-koer", label: t("siteFooter.links.allQueues") },
-        { href: "/for-foretag", label: t("siteFooter.links.forBusiness") },
+        { href: "/housing", label: t("siteFooter.links.housing") },
+        { href: "/all-queues", label: t("siteFooter.links.allQueues") },
+        { href: "/for-business", label: t("siteFooter.links.forBusiness") },
       ]
     : [
-        { href: "/for-foretag", label: t("siteFooter.links.forBusiness") },
+        { href: "/for-business", label: t("siteFooter.links.forBusiness") },
       ];
   const partnerLinks = [
     { href: "/partners", label: t("siteFooter.links.ourPartners") },
   ];
   const companyLinks = [
-    { href: "/om-oss", label: t("siteFooter.links.about") },
-    { href: "/anvandarvillkor", label: t("siteFooter.links.terms") },
-    { href: "/integritetspolicy", label: t("siteFooter.links.privacy") },
-    { href: "/cookiepolicy", label: t("siteFooter.links.cookies") },
+    { href: "/about-us", label: t("siteFooter.links.about") },
+    { href: "/terms-of-service", label: t("siteFooter.links.terms") },
+    { href: "/privacy-policy", label: t("siteFooter.links.privacy") },
+    { href: "/cookie-policy", label: t("siteFooter.links.cookies") },
   ];
 
   return (

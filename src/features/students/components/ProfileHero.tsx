@@ -294,7 +294,7 @@ export default function ProfileHero({
       actionLinks={socialItems}
       headerActions={
         <ProfileHeroActions
-          editHref={onEditProfile ? undefined : "/installningar"}
+          editHref={onEditProfile ? undefined : "/settings"}
           onEdit={onEditProfile}
           primaryLabel={localizedText(locale, "Redigera profil", "Edit profile")}
         />

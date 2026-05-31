@@ -39,7 +39,7 @@ export default async function NotFound() {
             </Link>
             {platformLaunched ? (
               <Link
-                href={localizeHref("/bostader", locale)}
+                href={localizeHref("/housing", locale)}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-[#004225]/20 px-5 text-sm font-semibold text-[#004225] transition hover:border-[#004225]/40 hover:bg-[#f4f8f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
               >
                 <Search className="h-4 w-4" aria-hidden="true" />

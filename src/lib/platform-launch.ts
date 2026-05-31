@@ -4,12 +4,12 @@ const enabledValues = new Set(["1", "true", "yes", "on", "launched"]);
 
 const prelaunchPublicSitePaths = new Set([
   "/",
-  "/for-foretag",
+  "/for-business",
   "/partners",
-  "/om-oss",
-  "/anvandarvillkor",
-  "/integritetspolicy",
-  "/cookiepolicy",
+  "/about-us",
+  "/terms-of-service",
+  "/privacy-policy",
+  "/cookie-policy",
 ]);
 
 export function isPlatformLaunched() {

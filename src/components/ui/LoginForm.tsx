@@ -242,7 +242,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
               <FieldLabel htmlFor="password">{localizedText(locale, "Lösenord", "Password")}</FieldLabel>
               {mode === "student" && (
                 <Link
-                  href="/glomt-losenord"
+                  href="/forgot-password"
                   className="text-sm font-medium text-[#004225] underline-offset-4 hover:underline"
                 >
                   {localizedText(locale, "Glömt ditt lösenord?", "Forgot your password?")}
@@ -300,11 +300,11 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
 
       <FieldDescription className="text-center text-xs text-muted-foreground">
         {localizedText(locale, "Genom att logga in godkänner du våra", "By signing in, you accept our")}{" "}
-        <Link href="/anvandarvillkor" className="text-[#004225] underline underline-offset-4">
+        <Link href="/terms-of-service" className="text-[#004225] underline underline-offset-4">
           {localizedText(locale, "användarvillkor", "terms of use")}
         </Link>{" "}
         {localizedText(locale, "och", "and")}{" "}
-        <Link href="/integritetspolicy" className="text-[#004225] underline underline-offset-4">
+        <Link href="/privacy-policy" className="text-[#004225] underline underline-offset-4">
           {localizedText(locale, "integritetspolicy", "privacy policy")}
         </Link>
         .
@@ -313,7 +313,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
       {copy.showRegisterLink && (
         <FieldDescription className="text-center text-sm">
           {localizedText(locale, "Har du inte ett konto?", "Do not have an account?")}{" "}
-          <Link href="/registrera" className="font-medium text-[#004225] no-underline">
+          <Link href="/register" className="font-medium text-[#004225] no-underline">
             {localizedText(locale, "Skapa ett nu", "Create one now")}
           </Link>
         </FieldDescription>
