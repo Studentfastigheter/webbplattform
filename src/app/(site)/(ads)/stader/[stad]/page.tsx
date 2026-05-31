@@ -89,7 +89,7 @@ export default function CityDetailPage() {
     setCompaniesError(null);
 
     companyService
-      .listCompanies()
+      .listCompanies({ city: cityName })
       .then((items) => {
         if (active) setCompanies(items);
       })
@@ -106,7 +106,7 @@ export default function CityDetailPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [cityName]);
 
   useEffect(() => {
     if (!user) {
@@ -256,7 +256,10 @@ export default function CityDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Företag
             </h2>
-            <Link href="/alla-koer" className={linkButtonClassName}>
+            <Link
+              href={`/alla-koer?city=${encodeURIComponent(cityName)}`}
+              className={linkButtonClassName}
+            >
               Fler företag
             </Link>
           </div>

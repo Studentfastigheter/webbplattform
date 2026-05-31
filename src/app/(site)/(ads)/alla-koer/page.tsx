@@ -156,7 +156,7 @@ export default function Page() {
     setError(null);
 
     companyService
-      .listCompanies()
+      .listCompanies({ city: cityFromUrl || undefined })
       .then((companies) => {
         if (!active) return;
         setQueues(companies.map(mapCompanyToCard));
@@ -175,7 +175,14 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [cityFromUrl]);
+
+  useEffect(() => {
+    setFilters((current) => ({
+      ...current,
+      cities: cityFromUrl ? [cityFromUrl] : [],
+    }));
+  }, [cityFromUrl]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -325,6 +332,13 @@ export default function Page() {
 
   const openQueue = (queue: CompanyQueueCard) => {
     router.push(`/alla-koer/${queue.companyId}`);
+  };
+
+  const updateCityInUrl = (city: string | null) => {
+    const nextUrl = city
+      ? `/alla-koer?city=${encodeURIComponent(city)}`
+      : "/alla-koer";
+    router.replace(nextUrl, { scroll: false });
   };
 
   const handleJoinSelectedQueues = async () => {
@@ -531,9 +545,15 @@ export default function Page() {
                   landlords={landlordFilterOptions}
                   landlordCounts={landlordCounts}
                   statuses={[]}
-                  initialState={defaultQueueFilterState}
-                  onApply={(state) => setFilters(state)}
-                  onClear={() => setFilters(defaultQueueFilterState)}
+                  initialState={filters}
+                  onApply={(state) => {
+                    setFilters(state);
+                    updateCityInUrl(state.cities.length === 1 ? state.cities[0] : null);
+                  }}
+                  onClear={() => {
+                    setFilters(defaultQueueFilterState);
+                    updateCityInUrl(null);
+                  }}
                 />
               </div>
             </div>
@@ -576,7 +596,10 @@ export default function Page() {
             {filters.cities.length === 1 && (
               <button
                 type="button"
-                onClick={() => setFilters({ ...filters, cities: [] })}
+                onClick={() => {
+                  setFilters({ ...filters, cities: [] });
+                  updateCityInUrl(null);
+                }}
                 className="inline-flex items-center gap-1 self-start text-xs font-medium text-gray-500 hover:text-black sm:text-sm"
               >
                 <X className="h-3.5 w-3.5" />

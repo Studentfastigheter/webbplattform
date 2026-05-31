@@ -70,6 +70,10 @@ export type CompanyPublicDTO = {
   socialLinks?: Record<string, string>;
 };
 
+export type CompanyListParams = {
+  city?: string | null;
+};
+
 export type CompanyRole = {
   name?: string;
   description?: string;
@@ -843,8 +847,13 @@ function companyApplicationsEndpoint(id: number, page: number, size: number): st
 
 export const companyService = {
 
-  listCompanies: async (): Promise<CompanyPublicDTO[]> => {
-    const companies = await apiClient<unknown>("/companies", { auth: false });
+  listCompanies: async (
+    params: CompanyListParams = {}
+  ): Promise<CompanyPublicDTO[]> => {
+    const companies = await apiClient<unknown>(
+      `/companies${buildQuery({ city: params.city?.trim() })}`,
+      { auth: false }
+    );
     return arrayFromApiResponse<unknown>(companies)
       .map(normalizeCompanyPublic)
       .filter((company): company is CompanyPublicDTO => company !== null);
