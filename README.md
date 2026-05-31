@@ -14,10 +14,20 @@ Miljovariabeln `NEXT_PUBLIC_API_URL` maste finnas i `.env.local`. Vardet normali
 ## Waitlist i produktion
 
 Waitlisten sparas via `src/app/api/waitlist`. Lokalt kan den falla tillbaka till
-`data/waitlist.local.json`, men pa Vercel maste Firestore-skrivningen ha
-server-side behorighet.
+`data/waitlist.local.json` om Firestore nekar skrivningen, men pa Vercel returneras
+felet till klienten.
 
-Rekommenderad Vercel-konfiguration:
+Med de publika Firestore-reglerna for waitlisten racker dessa Vercel-variabler:
+
+```text
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+```
+
+Routen satter `CreatedAt` med Firestore server timestamp (`REQUEST_TIME`), vilket
+kravs av regeln `request.resource.data.CreatedAt == request.time`.
+
+Om publika writes stangs av helt kan routen i stallet anvanda service account:
 
 ```text
 FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
@@ -30,10 +40,6 @@ FIREBASE_PROJECT_ID=...
 FIREBASE_CLIENT_EMAIL=...
 FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
 ```
-
-De publika `NEXT_PUBLIC_FIREBASE_*`-variablerna racker for Firebase-klienter,
-men de ger inte automatiskt servern ratt att skriva till Firestore om reglerna
-nekar publika writes.
 
 ## Launch-lage
 

@@ -25,6 +25,10 @@ type FirestoreErrorResponse = {
   };
 };
 
+type FirestoreCommitResponse = {
+  writeResults?: unknown[];
+};
+
 type FirebaseServiceAccount = {
   projectId: string;
   clientEmail: string;
@@ -223,11 +227,9 @@ async function writeFirestoreWaitlistDocument(
   email: string,
   auth: FirestoreAuth,
 ): Promise<{ alreadyRegistered: boolean }> {
-  const url = new URL(
-    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/waitlist`,
-  );
-
-  url.searchParams.set("documentId", email);
+  const databasePath = `projects/${projectId}/databases/(default)`;
+  const documentPath = `${databasePath}/documents/waitlist/${email}`;
+  const url = new URL(`https://firestore.googleapis.com/v1/${databasePath}/documents:commit`);
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -243,15 +245,31 @@ async function writeFirestoreWaitlistDocument(
     method: "POST",
     headers,
     body: JSON.stringify({
-      fields: {
-        Email: { stringValue: email },
-        CreatedAt: { timestampValue: new Date().toISOString() },
-      },
+      writes: [
+        {
+          update: {
+            name: documentPath,
+            fields: {
+              Email: { stringValue: email },
+            },
+          },
+          currentDocument: {
+            exists: false,
+          },
+          updateTransforms: [
+            {
+              fieldPath: "CreatedAt",
+              setToServerValue: "REQUEST_TIME",
+            },
+          ],
+        },
+      ],
     }),
   });
 
   if (response.ok) {
-    return { alreadyRegistered: false };
+    const payload = (await response.json().catch(() => null)) as FirestoreCommitResponse | null;
+    return { alreadyRegistered: !payload?.writeResults?.length };
   }
 
   const payload = (await response.json().catch(() => null)) as FirestoreErrorResponse | null;
