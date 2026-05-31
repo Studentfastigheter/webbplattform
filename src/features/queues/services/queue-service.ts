@@ -273,6 +273,7 @@ function normalizeCompanyDto(value: unknown): CompanyDTO {
     companyName: firstString(source.companyName, source.name),
     website: firstString(source.website, source.websiteUrl),
     websiteUrl: firstString(source.websiteUrl, source.website),
+    termsUrl: firstString(source.termsUrl),
     privacyUrl: firstString(source.privacyUrl, source.privacyPolicyUrl, source.policyUrl),
     privacyPolicyUrl: firstString(source.privacyPolicyUrl, source.privacyUrl, source.policyUrl),
     cities: arrayFromApiResponse<string>(source.cities ?? source.companyCities),

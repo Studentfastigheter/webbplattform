@@ -19,10 +19,7 @@ export interface HousingQueueDTO {
   contactPhone?: string;
   contactEmail?: string;
   website?: string;
-  socialLinks?: {
-    facebook?: string;
-    linkedin?: string;
-  };
+  socialLinks?: Record<string, string>;
 };
 
 export interface StudentQueueMembershipDTO {

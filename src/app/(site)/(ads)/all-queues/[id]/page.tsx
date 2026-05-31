@@ -49,12 +49,19 @@ const firstNonEmptyString = (...values: unknown[]) => {
   return null;
 };
 
+const getExternalLink = (value: string | null | undefined) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (/^(https?:\/\/|mailto:|\/)/i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+};
+
 export default function QueueDetailPage() {
   const params = useParams<{ id: string }>();
   const companyIdRaw = params?.id;
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { locale, localizedHref } = useI18n();
+  const { locale, localizedHref, t } = useI18n();
 
   const [company, setCompany] = useState<CompanyDTO | null>(null);
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
@@ -336,6 +343,19 @@ export default function QueueDetailPage() {
   const companyWebsite =
     firstNonEmptyString(companyRecord?.websiteUrl, companyRecord?.website) ??
     undefined;
+  const companyTermsUrl = getExternalLink(
+    firstNonEmptyString(companyRecord?.termsUrl)
+  );
+  const companyPrivacyUrl = getExternalLink(
+    firstNonEmptyString(companyRecord?.privacyPolicyUrl, companyRecord?.privacyUrl)
+  );
+  const companyPolicyLinks = [
+    { label: t("queueCard.terms"), href: companyTermsUrl },
+    {
+      label: t("queueCard.privacy"),
+      href: companyPrivacyUrl,
+    },
+  ].filter((link): link is { label: string; href: string } => Boolean(link.href));
 
   const heroQueue: HousingQueueDTO = company
     ? {
@@ -347,6 +367,7 @@ export default function QueueDetailPage() {
         bannerUrl: companyBannerUrl,
         description: company.description ?? undefined,
         website: companyWebsite,
+        socialLinks: company.socialLinks,
         activeListings: listingsTotalElements || listings.length,
         totalUnits: queues.reduce((sum, q) => sum + (q.totalUnits ?? 0), 0),
         waitDays:
@@ -506,7 +527,7 @@ export default function QueueDetailPage() {
   }
 
   return (
-    <main className="container mx-auto min-h-screen max-w-6xl bg-white px-4 pb-12 pt-6 lg:pt-10">
+    <main className="container mx-auto min-h-screen bg-white px-3 pb-12 pt-4 sm:px-4 md:px-6 lg:px-8 lg:pt-10">
       {/* Hero: banner, logo, company info, about */}
       <div className="w-full">
         <QueueHero queue={heroQueue} />
@@ -520,7 +541,31 @@ export default function QueueDetailPage() {
       )}
 
       {queueToJoin && (
-        <div className="mt-8 w-full">
+        <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {companyPolicyLinks.length > 0 ? (
+            <nav
+              aria-label={t("queueCard.policyAria", { name: companyName })}
+              className="flex min-h-[17px] flex-wrap items-center gap-x-4 gap-y-1 overflow-hidden text-[13px] font-medium leading-[17px] text-[#004225]"
+            >
+              {companyPolicyLinks.map((link, index) => (
+                <span key={link.label} className="inline-flex items-center gap-x-4">
+                  {index > 0 && (
+                    <span className="hidden h-5 w-px bg-[#004225]/70 sm:block" />
+                  )}
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-sm underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]"
+                  >
+                    {link.label}
+                  </a>
+                </span>
+              ))}
+            </nav>
+          ) : (
+            <span className="hidden sm:block" />
+          )}
           <Button
             onClick={() => handleJoinQueue(queueToJoin.id)}
             isDisabled={
@@ -531,8 +576,8 @@ export default function QueueDetailPage() {
               Boolean(queueVerificationError)
             }
             variant={joinedQueueIds.has(queueToJoin.id) ? "secondary" : "default"}
-            size="sm"
-            className={`shrink-0 ${
+            size="lg"
+            className={`h-auto min-h-9 w-full min-w-0 shrink-0 whitespace-normal rounded-full px-4 py-2 text-center text-sm font-semibold leading-tight shadow-[0_6px_14px_rgba(0,0,0,0.18)] md:w-auto md:min-w-[180px] ${
               joinedQueueIds.has(queueToJoin.id)
                 ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
                 : ""
@@ -600,7 +645,11 @@ export default function QueueDetailPage() {
         {listings.length > 0 ? (
           <QueueListings
             listings={listings}
-            title={localizedText(locale, "Våra bostäder", "Our homes")}
+            title={localizedText(
+              locale,
+              `Lediga bostäder hos ${companyName}`,
+              `Available homes at ${companyName}`
+            )}
             page={listingsPage}
             totalPages={listingsTotalPages}
             isLoading={listingsLoading}

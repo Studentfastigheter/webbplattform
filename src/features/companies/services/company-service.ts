@@ -29,7 +29,13 @@ export type CompanyPrivateDTO = {
   name: string;
   subtitle?: string | null;
   description?: string | null;
+  companyDescription?: string | null;
   website?: string | null;
+  companyUrl?: string | null;
+  websiteUrl?: string | null;
+  privacyUrl?: string | null;
+  privacyPolicyUrl?: string | null;
+  termsUrl?: string | null;
   rating?: number | null;
   verified?: boolean | null;
   bannerUrl?: string | null;
@@ -43,6 +49,8 @@ export type CompanyPrivateDTO = {
   organisationNumber?: string | null;
   organizationNumber?: string | null;
   internalContactNote?: string | null;
+  pictureUrlList?: string[];
+  videoUrlList?: string[];
   socialLinks?: Record<string, string>;
 };
 
@@ -54,6 +62,7 @@ export type CompanyPublicDTO = {
   subtitle?: string | null;
   description?: string | null;
   website?: string | null;
+  companyUrl?: string | null;
   websiteUrl?: string | null;
   rating?: number | null;
   verified?: boolean | null;
@@ -314,6 +323,16 @@ function normalizeStringRecord(value: unknown): Record<string, string> | undefin
     .filter((entry): entry is readonly [string, string] => entry[1] !== undefined);
 
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function normalizeSocialPlatform(value: unknown): SocialPlatform | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const platform = firstString(value.platform);
+
+  return platform ? { platform } : null;
 }
 
 function normalizeAnalyticalQuantity(value: unknown): AnalyticalQuantity | null {
@@ -610,6 +629,8 @@ function normalizeCompanyPublic(value: unknown): CompanyPublicDTO | null {
     name,
     companyId: firstNumber(value.companyId, value.id),
     companyName: firstString(value.companyName, value.name),
+    description: firstString(value.description, value.companyDescription),
+    companyUrl: firstString(value.companyUrl),
     website: firstString(value.website, value.websiteUrl),
     websiteUrl: firstString(value.websiteUrl, value.website),
     privacyUrl: firstString(value.privacyUrl, value.privacyPolicyUrl, value.policyUrl),
@@ -639,7 +660,14 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     ...(value as Partial<CompanyPrivateDTO>),
     id,
     name,
+    description: firstString(value.description, value.companyDescription),
+    companyDescription: firstString(value.companyDescription, value.description),
+    companyUrl: firstString(value.companyUrl),
     website: firstString(value.website, value.websiteUrl),
+    websiteUrl: firstString(value.websiteUrl, value.website),
+    privacyUrl: firstString(value.privacyUrl, value.privacyPolicyUrl, value.policyUrl),
+    privacyPolicyUrl: firstString(value.privacyPolicyUrl, value.privacyUrl, value.policyUrl),
+    termsUrl: firstString(value.termsUrl),
     contactEmail: firstString(value.contactEmail, value.email),
     contactPhone: firstString(value.contactPhone, value.phone),
     email: firstString(value.email, value.contactEmail),
@@ -651,6 +679,8 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     ),
     internalContactNote: firstString(value.internalContactNote, value.contactNote),
     contactNote: firstString(value.contactNote, value.internalContactNote),
+    pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
+    videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
     socialLinks: normalizeStringRecord(value.socialLinks),
   };
 }
@@ -1143,6 +1173,8 @@ export const companyService = {
     const platforms = await apiClient<unknown>("/companies/all-platforms", {
       auth: false,
     });
-    return arrayFromApiResponse<SocialPlatform>(platforms);
+    return arrayFromApiResponse<unknown>(platforms)
+      .map(normalizeSocialPlatform)
+      .filter((platform): platform is SocialPlatform => platform !== null);
   },
 };

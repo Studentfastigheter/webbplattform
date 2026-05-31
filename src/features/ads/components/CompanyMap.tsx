@@ -59,7 +59,7 @@ export default function CompanyMap({
         local to this container; without it the dropdown / lightbox would
         render under the map.
       */}
-      <div className="relative isolate z-0 h-[400px] w-full overflow-hidden rounded-3xl border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+      <div className="relative isolate z-0 h-[70vh] min-h-[520px] max-h-[860px] w-full overflow-hidden rounded-3xl border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
         <ListingsMap
           listings={mapListings}
           className="h-full w-full"

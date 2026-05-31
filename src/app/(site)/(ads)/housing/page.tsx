@@ -22,6 +22,7 @@ import ListingsFilterButton, {
   type ListingsFilterState,
 } from "@/features/listings/components/Search/ListingsFilterButton";
 import { FieldSet } from "@/components/ui/field";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
 import {
@@ -668,14 +669,6 @@ export default function ListingsPage() {
     }
   }, [page, totalPages, updatePageInUrl]);
 
-  const paginationPages = useMemo(() => {
-    if (totalPages <= 1) return [];
-
-    const start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, page + 2);
-    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
-  }, [page, totalPages]);
-
   const goToPage = useCallback(
     (nextPage: number) => {
       const clampedPage = Math.min(
@@ -729,78 +722,19 @@ export default function ListingsPage() {
     if (totalPages <= 1) return null;
 
     return (
-      <nav
-        className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
-        aria-label={localizedText(locale, "Sidnavigering för bostäder", "Pagination for homes")}
-      >
-        <button
-          type="button"
-          onClick={() => goToPage(page - 1)}
-          disabled={page <= 1 || loading}
-          className="h-10 rounded-full border border-black/15 px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {localizedText(locale, "Föregående", "Previous")}
-        </button>
-
-        <div className="flex items-center gap-2">
-          {paginationPages[0] > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={() => goToPage(1)}
-                disabled={loading}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-black/15 text-sm font-semibold text-black transition hover:border-[#004225] hover:text-[#004225] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                1
-              </button>
-              <span className="px-1 text-sm text-black/45">...</span>
-            </>
-          )}
-
-          {paginationPages.map((pageNumber) => {
-            const isActive = pageNumber === page;
-            return (
-              <button
-                key={pageNumber}
-                type="button"
-                onClick={() => goToPage(pageNumber)}
-                disabled={isActive || loading}
-                aria-current={isActive ? "page" : undefined}
-                className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition ${
-                  isActive
-                    ? "border-[#004225] bg-[#004225] text-white"
-                    : "border-black/15 text-black hover:border-[#004225] hover:text-[#004225]"
-                } disabled:cursor-not-allowed`}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
-
-          {paginationPages[paginationPages.length - 1] < totalPages && (
-            <>
-              <span className="px-1 text-sm text-black/45">...</span>
-              <button
-                type="button"
-                onClick={() => goToPage(totalPages)}
-                disabled={loading}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-black/15 text-sm font-semibold text-black transition hover:border-[#004225] hover:text-[#004225] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {totalPages}
-              </button>
-            </>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => goToPage(page + 1)}
-          disabled={page >= totalPages || loading}
-          className="h-10 rounded-full border border-black/15 px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {localizedText(locale, "Nästa", "Next")}
-        </button>
-      </nav>
+      <PaginationControls
+        className="mt-8"
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={goToPage}
+        isDisabled={loading}
+        ariaLabel={localizedText(locale, "Sidnavigering för bostäder", "Pagination for homes")}
+        previousLabel={localizedText(locale, "Föregående", "Previous")}
+        nextLabel={localizedText(locale, "Nästa", "Next")}
+        pageLabel={(pageNumber) =>
+          localizedText(locale, `Sida ${pageNumber}`, `Page ${pageNumber}`)
+        }
+      />
     );
   };
 

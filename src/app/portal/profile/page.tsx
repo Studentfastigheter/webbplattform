@@ -8,21 +8,33 @@ import {
   companyService,
   type CompanyChangeableDataDTO,
   type CompanyPrivateDTO,
+  type CompanyPublicDTO,
+  type SocialPlatform,
 } from "@/features/companies/services/company-service";
 import { queueService } from "@/features/queues/services/queue-service";
 import { type HousingQueueDTO } from "@/types/queue";
 import {
-  Facebook,
   Globe,
-  Linkedin,
+  ImageIcon,
+  Link2,
   Loader2,
   Mail,
   MapPin,
   Pencil,
   Phone,
+  Plus,
   Save,
   Share2,
+  Trash2,
+  Video,
 } from "lucide-react";
+import {
+  FaFacebook,
+  FaInstagram,
+  FaLinkedin,
+  FaTiktok,
+  FaYoutube,
+} from "react-icons/fa6";
 import { UploadButton } from "../_components/shared/UploadButton";
 import BannerImageCropDialog from "@/components/shared/BannerImageCropDialog";
 import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";
@@ -32,15 +44,23 @@ type ProfileDraft = {
   name: string;
   subtitle: string;
   description: string;
-  website: string;
+  websiteUrl: string;
+  privacyPolicyUrl: string;
+  termsUrl: string;
   contactEmail: string;
   contactPhone: string;
   logoUrl: string;
   bannerUrl: string;
-  facebook: string;
-  linkedin: string;
+  additionalSocialLinks: SocialLinkDraft[];
+  pictureUrlListText: string;
+  videoUrlListText: string;
   orgNumber: string;
   internalContactNote: string;
+};
+
+type SocialLinkDraft = {
+  platform: string;
+  url: string;
 };
 
 const inlineInputClass =
@@ -48,6 +68,122 @@ const inlineInputClass =
 
 const iconInputClass =
   "min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition hover:border-[#004225]/30 focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10";
+
+function platformKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function platformIconKey(value: string) {
+  return platformKey(value).replace(/[^a-z0-9]/g, "");
+}
+
+function dedupeSocialPlatforms(platforms: string[]) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  platforms.forEach((platform) => {
+    const trimmed = platform.trim();
+    const key = platformKey(trimmed);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    result.push(trimmed);
+  });
+
+  return result;
+}
+
+function normalizeSocialPlatformOptions(platforms: SocialPlatform[]) {
+  return dedupeSocialPlatforms(
+    platforms
+      .map((platform) => draftString(platform.platform))
+      .filter(Boolean)
+  );
+}
+
+function getSocialPlatformOptionsForLink(
+  socialPlatformOptions: string[],
+  selectedPlatform: string,
+  links: SocialLinkDraft[]
+) {
+  const selectedKey = platformKey(selectedPlatform);
+  const usedKeys = new Set(
+    links
+      .map((link) => platformKey(draftString(link.platform)))
+      .filter((key) => key && key !== selectedKey)
+  );
+
+  return dedupeSocialPlatforms([...socialPlatformOptions, selectedPlatform])
+    .filter((platform) => !usedKeys.has(platformKey(platform)));
+}
+
+function joinUrlList(values: string[] | undefined) {
+  return (values ?? []).join("\n");
+}
+
+function parseUrlListText(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function draftString(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function buildAdditionalSocialLinks(
+  socialLinks: Record<string, string> | undefined
+): SocialLinkDraft[] {
+  return Object.entries(socialLinks ?? {})
+    .map(([platform, url]) => ({
+      platform: platform.trim(),
+      url: draftString(url).trim(),
+    }));
+}
+
+function socialLinksToRecord(draft: ProfileDraft) {
+  const socialLinks: Record<string, string> = {};
+
+  draft.additionalSocialLinks.forEach((link) => {
+    const platform = draftString(link.platform).trim();
+    const url = draftString(link.url).trim();
+    if (!platform || !url) return;
+    socialLinks[platform] = url;
+  });
+
+  return socialLinks;
+}
+
+function withPublicProfileFields(
+  companyData: CompanyPrivateDTO,
+  publicCompanyData: CompanyPublicDTO | null
+): CompanyPrivateDTO {
+  if (!publicCompanyData) {
+    return companyData;
+  }
+
+  return {
+    ...companyData,
+    logoUrl: companyData.logoUrl ?? publicCompanyData.logoUrl,
+    bannerUrl: companyData.bannerUrl ?? publicCompanyData.bannerUrl,
+    description: companyData.description ?? publicCompanyData.description,
+    website: companyData.website ?? publicCompanyData.website,
+    websiteUrl: companyData.websiteUrl ?? publicCompanyData.websiteUrl,
+    privacyUrl: companyData.privacyUrl ?? publicCompanyData.privacyUrl,
+    privacyPolicyUrl:
+      companyData.privacyPolicyUrl ?? publicCompanyData.privacyPolicyUrl,
+    termsUrl: companyData.termsUrl ?? publicCompanyData.termsUrl,
+    pictureUrlList:
+      companyData.pictureUrlList?.length
+        ? companyData.pictureUrlList
+        : publicCompanyData.pictureUrlList,
+    videoUrlList:
+      companyData.videoUrlList?.length
+        ? companyData.videoUrlList
+        : publicCompanyData.videoUrlList,
+    socialLinks: publicCompanyData.socialLinks ?? companyData.socialLinks,
+  };
+}
 
 function buildInitialDraft(
   companyId: number,
@@ -59,15 +195,19 @@ function buildInitialDraft(
     name: companyData.name ?? "",
     subtitle: companyData.subtitle ?? "",
     description: companyData.description ?? "",
-    website: companyData.website ?? "",
+    websiteUrl: companyData.websiteUrl ?? companyData.website ?? "",
+    privacyPolicyUrl:
+      companyData.privacyPolicyUrl ?? companyData.privacyUrl ?? "",
+    termsUrl: companyData.termsUrl ?? "",
     contactEmail: companyData.contactEmail ?? companyData.email ?? "",
     contactPhone: companyData.contactPhone ?? companyData.phone ?? "",
     logoUrl: companyData.logoUrl ?? "",
     bannerUrl: companyData.bannerUrl ?? "",
-    facebook:
-      companyData.socialLinks?.facebook ?? firstQueue?.socialLinks?.facebook ?? "",
-    linkedin:
-      companyData.socialLinks?.linkedin ?? firstQueue?.socialLinks?.linkedin ?? "",
+    additionalSocialLinks: buildAdditionalSocialLinks(
+      companyData.socialLinks ?? firstQueue?.socialLinks
+    ),
+    pictureUrlListText: joinUrlList(companyData.pictureUrlList),
+    videoUrlListText: joinUrlList(companyData.videoUrlList),
     orgNumber:
       companyData.orgNumber ??
       companyData.organisationNumber ??
@@ -83,15 +223,7 @@ function getProfileSnapshot(draft: ProfileDraft | null) {
 
   return JSON.stringify({
     name: draft.name,
-    subtitle: draft.subtitle,
-    description: draft.description,
-    website: draft.website,
-    contactEmail: draft.contactEmail,
-    contactPhone: draft.contactPhone,
-    logoUrl: draft.logoUrl,
-    bannerUrl: draft.bannerUrl,
-    facebook: draft.facebook,
-    linkedin: draft.linkedin,
+    ...buildCompanyChangePayload(draft),
     orgNumber: draft.orgNumber,
     internalContactNote: draft.internalContactNote,
   });
@@ -113,15 +245,18 @@ function isLocalObjectUrl(value: string) {
 
 function buildCompanyChangePayload(draft: ProfileDraft): CompanyChangeableDataDTO {
   return {
+    logoUrl: toNullableString(draft.logoUrl),
+    bannerUrl: toNullableString(draft.bannerUrl),
     companyDescription: toNullableString(draft.description),
     phone: toNullableString(draft.contactPhone),
     contactEmail: toNullableString(draft.contactEmail),
-    companyUrl: toNullableString(draft.website),
-    websiteUrl: toNullableString(draft.website),
-    socialLinks: {
-      facebook: toNullableString(draft.facebook),
-      linkedin: toNullableString(draft.linkedin),
-    },
+    subtitle: toNullableString(draft.subtitle),
+    privacyPolicyUrl: toNullableString(draft.privacyPolicyUrl),
+    termsUrl: toNullableString(draft.termsUrl),
+    websiteUrl: toNullableString(draft.websiteUrl),
+    pictureUrlList: parseUrlListText(draft.pictureUrlListText),
+    videoUrlList: parseUrlListText(draft.videoUrlListText),
+    socialLinks: socialLinksToRecord(draft),
   };
 }
 
@@ -134,8 +269,13 @@ function mergeSavedCompany(
       id: draft.companyId,
       name: draft.name,
     }),
+    subtitle: draft.subtitle,
     description: draft.description,
-    website: draft.website,
+    companyDescription: draft.description,
+    website: draft.websiteUrl,
+    websiteUrl: draft.websiteUrl,
+    privacyPolicyUrl: draft.privacyPolicyUrl,
+    termsUrl: draft.termsUrl,
     contactEmail: draft.contactEmail,
     contactPhone: draft.contactPhone,
     phone: draft.contactPhone,
@@ -145,11 +285,9 @@ function mergeSavedCompany(
     bannerUrl: isLocalObjectUrl(draft.bannerUrl)
       ? company?.bannerUrl ?? ""
       : draft.bannerUrl,
-    socialLinks: {
-      ...(company?.socialLinks ?? {}),
-      facebook: draft.facebook,
-      linkedin: draft.linkedin,
-    },
+    socialLinks: socialLinksToRecord(draft),
+    pictureUrlList: parseUrlListText(draft.pictureUrlListText),
+    videoUrlList: parseUrlListText(draft.videoUrlListText),
   };
 }
 
@@ -192,20 +330,78 @@ function EditableContactRow({
   );
 }
 
+function SocialPlatformIcon({ platform }: { platform: string }) {
+  const key = platformIconKey(platform);
+
+  if (key === "facebook") {
+    return <FaFacebook className="h-[18px] w-[18px] text-[#1877f2]" />;
+  }
+
+  if (key === "instagram") {
+    return <FaInstagram className="h-[18px] w-[18px] text-[#e4405f]" />;
+  }
+
+  if (key === "youtube") {
+    return <FaYoutube className="h-[18px] w-[18px] text-[#ff0000]" />;
+  }
+
+  if (key === "tiktok") {
+    return <FaTiktok className="h-[18px] w-[18px] text-gray-950" />;
+  }
+
+  if (key === "linkedin") {
+    return <FaLinkedin className="h-[18px] w-[18px] text-[#0a66c2]" />;
+  }
+
+  return <Globe className="h-[18px] w-[18px]" />;
+}
+
 function EditableCompanyPreview({
   draft,
   companyQueue,
+  socialPlatformOptions,
   onDraftChange,
   onImageSelect,
 }: {
   draft: ProfileDraft;
   companyQueue: HousingQueueDTO | null;
+  socialPlatformOptions: string[];
   onDraftChange: <K extends keyof ProfileDraft>(
     key: K,
     value: ProfileDraft[K]
   ) => void;
   onImageSelect: (field: "logoUrl" | "bannerUrl", file: File) => void;
 }) {
+  const updateAdditionalSocialLink = (
+    index: number,
+    patch: Partial<SocialLinkDraft>
+  ) => {
+    onDraftChange(
+      "additionalSocialLinks",
+      draft.additionalSocialLinks.map((link, linkIndex) =>
+        linkIndex === index ? { ...link, ...patch } : link
+      )
+    );
+  };
+
+  const addAdditionalSocialLink = () => {
+    onDraftChange("additionalSocialLinks", [
+      ...draft.additionalSocialLinks,
+      { platform: "", url: "" },
+    ]);
+  };
+
+  const removeAdditionalSocialLink = (index: number) => {
+    onDraftChange(
+      "additionalSocialLinks",
+      draft.additionalSocialLinks.filter((_, linkIndex) => linkIndex !== index)
+    );
+  };
+
+  const visibleSocialLinks = draft.additionalSocialLinks.filter(
+    (link) => draftString(link.platform) && draftString(link.url)
+  );
+
   return (
     <section
       aria-label="Förhandsvisning av företagsprofil"
@@ -273,11 +469,13 @@ function EditableCompanyPreview({
               {draft.name || "Företagsprofil"}
             </h2>
 
-            {draft.subtitle ? (
-              <p className="mt-2 text-sm font-medium text-gray-600 sm:text-base">
-                {draft.subtitle}
-              </p>
-            ) : null}
+            <input
+              aria-label="Underrubrik"
+              value={draft.subtitle}
+              onChange={(event) => onDraftChange("subtitle", event.target.value)}
+              className={`${inlineInputClass} mt-2 w-full max-w-2xl text-sm font-medium text-gray-600 sm:text-base`}
+              placeholder="Kort underrubrik för företaget"
+            />
 
             {companyQueue?.city && (
               <div className="mt-3 flex items-center gap-1.5 text-sm text-gray-600">
@@ -288,13 +486,18 @@ function EditableCompanyPreview({
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400">
-              <Facebook className="h-[18px] w-[18px]" />
-            </span>
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400">
-              <Linkedin className="h-[18px] w-[18px]" />
-            </span>
-            <div className="mx-0.5 h-5 w-px bg-gray-200" />
+            {visibleSocialLinks.slice(0, 4).map((link, index) => (
+              <span
+                key={`${draftString(link.platform)}-${index}`}
+                title={draftString(link.platform)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400"
+              >
+                <SocialPlatformIcon platform={draftString(link.platform)} />
+              </span>
+            ))}
+            {visibleSocialLinks.length > 0 ? (
+              <div className="mx-0.5 h-5 w-px bg-gray-200" />
+            ) : null}
             <button
               type="button"
               disabled
@@ -309,21 +512,92 @@ function EditableCompanyPreview({
 
         <div className="mt-8 grid gap-2">
           <InlineLabel>Sociala länkar</InlineLabel>
-          <div className="grid gap-3 lg:grid-cols-2">
-            <EditableContactRow
-              icon={<Facebook className="h-4 w-4 shrink-0 text-gray-400" />}
-              label="Facebook"
-              value={draft.facebook}
-              onChange={(value) => onDraftChange("facebook", value)}
-              placeholder="https://facebook.com/..."
-            />
-            <EditableContactRow
-              icon={<Linkedin className="h-4 w-4 shrink-0 text-gray-400" />}
-              label="LinkedIn"
-              value={draft.linkedin}
-              onChange={(value) => onDraftChange("linkedin", value)}
-              placeholder="https://linkedin.com/company/..."
-            />
+          <div className="grid gap-3">
+            {draft.additionalSocialLinks.map((link, index) => {
+              const platformOptions = getSocialPlatformOptionsForLink(
+                socialPlatformOptions,
+                draftString(link.platform),
+                draft.additionalSocialLinks
+              );
+
+              return (
+                <div
+                  key={index}
+                  className="grid gap-2 rounded-xl border border-gray-100 bg-gray-50/70 p-3 sm:grid-cols-[auto_minmax(0,180px)_minmax(0,1fr)_auto]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-500 shadow-sm"
+                    title={draftString(link.platform) || "Social plattform"}
+                  >
+                    <SocialPlatformIcon platform={draftString(link.platform)} />
+                  </span>
+                  {platformOptions.length > 0 ? (
+                    <select
+                      aria-label="Social plattform"
+                      value={draftString(link.platform)}
+                      onChange={(event) =>
+                        updateAdditionalSocialLink(index, {
+                          platform: event.target.value,
+                        })
+                      }
+                      className={iconInputClass}
+                    >
+                      <option value="">Välj plattform</option>
+                      {platformOptions.map((platform) => (
+                        <option key={platformKey(platform)} value={platform}>
+                          {platform}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      aria-label="Social plattform"
+                      value={draftString(link.platform)}
+                      onChange={(event) =>
+                        updateAdditionalSocialLink(index, {
+                          platform: event.target.value,
+                        })
+                      }
+                      className={iconInputClass}
+                      placeholder="plattform"
+                    />
+                  )}
+                  <input
+                    aria-label="Social länk"
+                    type="url"
+                    value={draftString(link.url)}
+                    onChange={(event) =>
+                      updateAdditionalSocialLink(index, {
+                        url: event.target.value,
+                      })
+                    }
+                    className={iconInputClass}
+                    placeholder="https://"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Ta bort social länk"
+                    title="Ta bort social länk"
+                    onClick={() => removeAdditionalSocialLink(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-fit"
+              onClick={addAdditionalSocialLink}
+            >
+              <Plus className="h-4 w-4" />
+              Lägg till social länk
+            </Button>
           </div>
         </div>
 
@@ -340,7 +614,7 @@ function EditableCompanyPreview({
 
         <div className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-gray-900">Kontakt</h2>
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div className="grid gap-3 lg:grid-cols-2">
             <EditableContactRow
               icon={<Phone className="h-4 w-4 shrink-0 text-gray-400" />}
               label="Kontakt telefon"
@@ -360,10 +634,62 @@ function EditableCompanyPreview({
               icon={<Globe className="h-4 w-4 shrink-0 text-gray-400" />}
               label="Hemsida"
               type="url"
-              value={draft.website}
-              onChange={(value) => onDraftChange("website", value)}
+              value={draft.websiteUrl}
+              onChange={(value) => onDraftChange("websiteUrl", value)}
               placeholder="https://"
             />
+            <EditableContactRow
+              icon={<Link2 className="h-4 w-4 shrink-0 text-gray-400" />}
+              label="Integritetspolicy"
+              type="url"
+              value={draft.privacyPolicyUrl}
+              onChange={(value) => onDraftChange("privacyPolicyUrl", value)}
+              placeholder="https://"
+            />
+            <EditableContactRow
+              icon={<Link2 className="h-4 w-4 shrink-0 text-gray-400" />}
+              label="Villkor"
+              type="url"
+              value={draft.termsUrl}
+              onChange={(value) => onDraftChange("termsUrl", value)}
+              placeholder="https://"
+            />
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">Media</h2>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <label className="grid gap-2 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+              <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <ImageIcon className="h-4 w-4 text-gray-400" />
+                Bild-URL:er
+              </span>
+              <textarea
+                aria-label="Bild-URL:er"
+                value={draft.pictureUrlListText}
+                onChange={(event) =>
+                  onDraftChange("pictureUrlListText", event.target.value)
+                }
+                className={`${iconInputClass} min-h-28 resize-y`}
+                placeholder="En bild-URL per rad"
+              />
+            </label>
+            <label className="grid gap-2 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+              <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Video className="h-4 w-4 text-gray-400" />
+                Video-URL:er
+              </span>
+              <textarea
+                aria-label="Video-URL:er"
+                value={draft.videoUrlListText}
+                onChange={(event) =>
+                  onDraftChange("videoUrlListText", event.target.value)
+                }
+                className={`${iconInputClass} min-h-28 resize-y`}
+                placeholder="En video-URL per rad"
+              />
+            </label>
           </div>
         </div>
       </section>
@@ -391,6 +717,7 @@ export default function ProfilePage() {
   const [company, setCompany] = useState<CompanyPrivateDTO | null>(null);
   const [companyQueue, setCompanyQueue] = useState<HousingQueueDTO | null>(null);
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
+  const [socialPlatformOptions, setSocialPlatformOptions] = useState<string[]>([]);
   const [bannerFileToCrop, setBannerFileToCrop] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -425,24 +752,27 @@ export default function ProfilePage() {
     let active = true;
     setLoading(true);
     setError(null);
+    setSocialPlatformOptions([]);
 
     Promise.all([
       companyService.privateProfile(companyId),
       queueService.getByCompany(companyId),
       companyService.publicProfile(companyId).catch(() => null),
+      companyService.getAllPlatforms().catch(() => []),
     ])
-      .then(([companyData, companyQueues, publicCompanyData]) => {
+      .then(([companyData, companyQueues, publicCompanyData, socialPlatforms]) => {
         if (!active) return;
 
         const normalizedQueues = Array.isArray(companyQueues) ? companyQueues : [];
         const firstQueue = normalizedQueues[0];
-        const companyDataWithPublicFields: CompanyPrivateDTO = {
-          ...companyData,
-          socialLinks: publicCompanyData?.socialLinks ?? companyData.socialLinks,
-        };
+        const companyDataWithPublicFields = withPublicProfileFields(
+          companyData,
+          publicCompanyData
+        );
 
         setCompany(companyDataWithPublicFields);
         setCompanyQueue(firstQueue ?? null);
+        setSocialPlatformOptions(normalizeSocialPlatformOptions(socialPlatforms));
         setDraft(
           buildInitialDraft(companyId, companyDataWithPublicFields, firstQueue)
         );
@@ -535,19 +865,26 @@ export default function ProfilePage() {
       const savedDraft = company
         ? buildInitialDraft(draft.companyId, company, companyQueue ?? undefined)
         : null;
-      const hasCompanyDataChanges =
-        getCompanyDataSnapshot(draft) !== getCompanyDataSnapshot(savedDraft);
-      const uploadedLogoUrl = selectedImages.logoUrl
-        ? await companyService.uploadLogo(draft.companyId, selectedImages.logoUrl)
-        : null;
-      const uploadedBannerUrl = selectedImages.bannerUrl
-        ? await companyService.uploadBanner(draft.companyId, selectedImages.bannerUrl)
-        : null;
+      const [uploadedLogoUrl, uploadedBannerUrl] = await Promise.all([
+        selectedImages.logoUrl
+          ? companyService.uploadLogo(draft.companyId, selectedImages.logoUrl)
+          : Promise.resolve(null),
+        selectedImages.bannerUrl
+          ? companyService.uploadBanner(draft.companyId, selectedImages.bannerUrl)
+          : Promise.resolve(null),
+      ]);
       const uploadResolvedDraft: ProfileDraft = {
         ...draft,
-        logoUrl: uploadedLogoUrl ?? draft.logoUrl,
-        bannerUrl: uploadedBannerUrl ?? draft.bannerUrl,
+        logoUrl:
+          uploadedLogoUrl ??
+          (hasSelectedLogo ? company?.logoUrl ?? "" : draft.logoUrl),
+        bannerUrl:
+          uploadedBannerUrl ??
+          (hasSelectedBanner ? company?.bannerUrl ?? "" : draft.bannerUrl),
       };
+      const hasCompanyDataChanges =
+        getCompanyDataSnapshot(uploadResolvedDraft) !==
+        getCompanyDataSnapshot(savedDraft);
 
       if (hasCompanyDataChanges) {
         await companyService.updateCompanyData(
@@ -582,11 +919,7 @@ export default function ProfilePage() {
             ...companyQueue,
             logoUrl: savedCompany.logoUrl ?? companyQueue.logoUrl,
             bannerUrl: savedCompany.bannerUrl ?? companyQueue.bannerUrl,
-            socialLinks: {
-              ...companyQueue.socialLinks,
-              facebook: uploadResolvedDraft.facebook,
-              linkedin: uploadResolvedDraft.linkedin,
-            },
+            socialLinks: socialLinksToRecord(uploadResolvedDraft),
           }
         : companyQueue;
 
@@ -682,6 +1015,7 @@ export default function ProfilePage() {
         <EditableCompanyPreview
           draft={draft}
           companyQueue={companyQueue}
+          socialPlatformOptions={socialPlatformOptions}
           onDraftChange={updateDraftField}
           onImageSelect={handleImageSelect}
         />
