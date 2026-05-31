@@ -42,10 +42,11 @@ export type ListingCardSmallProps = {
   reserveTagSpace?: boolean;
 };
 
-const BASE_WIDTH = 380;
+const BASE_WIDTH = 470;
+const COMPACT_BASE_WIDTH = 360;
 const IMAGE_ASPECT_RATIO = "16 / 10";
-const MIN_SCALE = 0.42;
-const MAX_SCALE = 1.26;
+const MIN_SCALE = 0.86;
+const MAX_SCALE = 1;
 
 const formatRent = (rent: number | null | undefined, locale: "sv" | "en") =>
   typeof rent === "number" ? formatLocalizedCurrency(locale, rent) : "-";
@@ -98,14 +99,19 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const newLikedState = !isLiked;
+    if (!user && id && onFavoriteToggle) {
+      onFavoriteToggle(id, newLikedState);
+      return;
+    }
+
     setIsLiked(newLikedState);
     if (id && onFavoriteToggle) {
       onFavoriteToggle(id, newLikedState);
     }
   };
 
-  const baseWidth = variant === "compact" ? 320 : BASE_WIDTH;
-  const maxWidth = variant === "compact" ? 360 : 480;
+  const baseWidth = variant === "compact" ? COMPACT_BASE_WIDTH : BASE_WIDTH;
+  const maxWidth = variant === "compact" ? 360 : BASE_WIDTH;
 
   useEffect(() => {
     const node = cardRef.current;
@@ -135,21 +141,22 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const scaleValue = (value: number) => `${(value * scale).toFixed(2)}px`;
   const isCompact = variant === "compact";
   const tagSize = {
-    height: (isCompact ? 20 : 22) * scale,
+    height: (isCompact ? 19 : 20) * scale,
     horizontalPadding: (isCompact ? 8 : 10) * scale,
-    fontSize: (isCompact ? 9.5 : 10.5) * scale,
-    lineHeight: (isCompact ? 12 : 13) * scale,
+    fontSize: (isCompact ? 9.25 : 10) * scale,
+    lineHeight: (isCompact ? 11.5 : 12) * scale,
   };
   const safeTags = (tags ?? []).map(getTagLabel).filter(Boolean);
   const locationText =
     [area, city].filter(Boolean).join(", ") ||
     localizedText(locale, "Ej angivet", "Not specified");
   const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} ${localizedText(locale, "rum", "rooms")} \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
-  const logoSize = variant === "compact" ? 50 : 64;
+  const shouldShowHostLogo = showHostLogo && Boolean(hostLogoUrl);
+  const logoSize = variant === "compact" ? 44 : 54;
   const contentPadding = isCompact ? 12 : 14;
-  const logoRightOffset = showHostLogo ? 16 : 0;
+  const logoRightOffset = shouldShowHostLogo ? 14 : 0;
   const hasContentTopRight = Boolean(contentTopRightContent);
-  const contentRightPadding = showHostLogo
+  const contentRightPadding = shouldShowHostLogo
     ? logoRightOffset + logoSize + 14
     : hasContentTopRight
       ? contentPadding + 96
@@ -164,11 +171,11 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
       onClick={onClick}
       onMouseEnter={() => onHoverChange?.(true)}
       onMouseLeave={() => onHoverChange?.(false)}
-      className="flex w-full flex-col bg-white shadow-md cursor-pointer group hover:shadow-lg transition-shadow duration-200"
+      className="group flex w-full cursor-pointer flex-col border border-black/[0.08] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_12px_26px_rgba(15,23,42,0.12)]"
       style={{
         maxWidth,
         minWidth: 0,
-        borderRadius: scaleValue(32),
+        borderRadius: scaleValue(28),
         overflow: "hidden"
       }}
     >
@@ -191,19 +198,18 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           </div>
         )}
 
-        {/* Favorite Button (Only visible if logged in and enabled) */}
-        {user && showFavoriteButton && (
+        {showFavoriteButton && (
           <button
             type="button"
             onClick={handleFavoriteClick}
-            className="absolute top-3 right-3 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all shadow-sm"
+            className="absolute right-3 top-3 z-10 rounded-full bg-white/95 p-2.5 shadow-sm backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
             aria-label={
               isLiked
                 ? localizedText(locale, "Ta bort från sparade", "Remove from saved")
                 : localizedText(locale, "Spara bostad", "Save home")
             }
           >
-            <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+            <Heart className={`h-5 w-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
           </button>
         )}
 
@@ -252,7 +258,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           </div>
         )}
 
-        {showHostLogo && (
+        {shouldShowHostLogo && (
           <div
             className="absolute top-1/2 flex items-center justify-center"
             style={{
@@ -265,7 +271,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             }}
           >
             <img
-              src={hostLogoUrl || "/campuslyan-logo.svg"}
+              src={hostLogoUrl}
               alt={logoAlt}
               className="block h-full w-full"
               style={{
@@ -291,8 +297,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             <p
               className="font-semibold text-[#6f6f6f]"
               style={{
-                fontSize: scaleValue(isCompact ? 11.5 : 12.5),
-                lineHeight: scaleValue(isCompact ? 15 : 16),
+                fontSize: scaleValue(isCompact ? 11 : 11.5),
+                lineHeight: scaleValue(isCompact ? 14 : 15),
                 display: "-webkit-box",
                 WebkitLineClamp: 1,
                 WebkitBoxOrient: "vertical",
@@ -306,8 +312,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             <h3
               className="font-normal text-[#111111]"
               style={{
-                fontSize: scaleValue(isCompact ? 16.5 : 18),
-                lineHeight: scaleValue(isCompact ? 21 : 23),
+                fontSize: scaleValue(isCompact ? 15.5 : 17),
+                lineHeight: scaleValue(isCompact ? 20 : 22),
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
@@ -321,9 +327,9 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             <p
               className="font-normal text-[#202020]"
               style={{
-                marginTop: scaleValue(isCompact ? 2 : 3),
-                fontSize: scaleValue(isCompact ? 14.5 : 16),
-                lineHeight: scaleValue(isCompact ? 19 : 21),
+                marginTop: scaleValue(isCompact ? 1 : 2),
+                fontSize: scaleValue(isCompact ? 14 : 15),
+                lineHeight: scaleValue(isCompact ? 18 : 20),
               }}
             >
               {formatRent(rent, locale)}
@@ -332,8 +338,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             <p
               className="font-normal text-[#6f6f6f]"
               style={{
-                fontSize: scaleValue(isCompact ? 11.5 : 13),
-                lineHeight: scaleValue(isCompact ? 15 : 17),
+                fontSize: scaleValue(isCompact ? 11 : 12),
+                lineHeight: scaleValue(isCompact ? 14 : 16),
                 wordBreak: "break-word",
               }}
             >
