@@ -2,8 +2,10 @@
 
 import React, { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
+import { useI18n } from "@/i18n/I18nProvider";
 
 type HeroWaitlistProps = {
   id?: string;
@@ -30,15 +32,18 @@ const initialWaitlistForm: WaitlistFormValues = {
 export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
   id = "register-waitlist",
   backgroundClassName = "bg-background",
-  heading = "Redo att hitta din nästa lya?",
-  subtitle = "Anmäl dig till väntelistan så får du ett mail så fort vi lanserar.",
+  heading,
+  subtitle,
 }) => {
+  const { t } = useI18n();
   const [waitlistForm, setWaitlistForm] = useState<WaitlistFormValues>(initialWaitlistForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
   const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
+  const resolvedHeading = heading ?? t("home.waitlist.heading");
+  const resolvedSubtitle = subtitle ?? t("home.waitlist.subtitle");
 
   const handleWaitlistChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -52,9 +57,9 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
     setSuccessMessage("");
 
     const email = waitlistForm.email.trim().toLowerCase();
-    if (!email) return setErrorMessage("Ange en e-postadress.");
-    if (!emailRegex.test(email)) return setErrorMessage("Ange en giltig e-postadress.");
-    if (email.length > 254) return setErrorMessage("E-postadressen är för lång.");
+    if (!email) return setErrorMessage(t("home.waitlist.errors.missingEmail"));
+    if (!emailRegex.test(email)) return setErrorMessage(t("home.waitlist.errors.invalidEmail"));
+    if (email.length > 254) return setErrorMessage(t("home.waitlist.errors.tooLong"));
 
     setIsSubmitting(true);
     const abortController = new AbortController();
@@ -75,23 +80,23 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
       const payload = (await response.json().catch(() => null)) as WaitlistResponse | null;
 
       if (!response.ok) {
-        throw new Error(payload?.error || "Något gick fel vid registreringen. Försök igen.");
+        throw new Error(payload?.error || t("home.waitlist.errors.registrationFailed"));
       }
 
       setWaitlistForm(initialWaitlistForm);
       setSuccessMessage(
         payload?.alreadyRegistered
-          ? "E-postadressen finns redan registrerad, du kan vara lugn."
-          : "Tack! Du är nu med i väntelistan.",
+          ? t("home.waitlist.success.alreadyRegistered")
+          : t("home.waitlist.success.registered"),
       );
     } catch (error) {
       console.error("Waitlist submit failed", error);
       setErrorMessage(
         error instanceof DOMException && error.name === "AbortError"
-          ? "Registreringen tog för lång tid. Försök igen om en liten stund."
+          ? t("home.waitlist.errors.timeout")
           : error instanceof Error
             ? error.message
-            : "Något gick fel vid registreringen. Försök igen.",
+            : t("home.waitlist.errors.generic"),
       );
     } finally {
       window.clearTimeout(timeout);
@@ -103,9 +108,11 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
     <section id={id} className={`relative overflow-hidden pb-8 sm:pb-18 md:pb-32 ${backgroundClassName}`}>
       <div className="container relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-10 text-center sm:mb-12 md:mb-16">
-          <h2 className="text-3xl font-bold leading-[1.1] text-foreground sm:text-4xl md:text-6xl">{heading}</h2>
-          {subtitle ? (
-            <p className="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground sm:mt-4 sm:text-base md:text-lg">{subtitle}</p>
+          <h2 className="text-3xl font-bold leading-[1.1] text-foreground sm:text-4xl md:text-6xl">{resolvedHeading}</h2>
+          {resolvedSubtitle ? (
+            <p className="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground sm:mt-4 sm:text-base md:text-lg">
+              {resolvedSubtitle}
+            </p>
           ) : null}
         </div>
 
@@ -113,7 +120,7 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
           <form onSubmit={handleWaitlistSubmit}>
             <div>
               <label htmlFor="waitlist-email" className="text-sm font-medium text-foreground">
-                E-post
+                {t("home.waitlist.emailLabel")}
               </label>
               <input
                 id="waitlist-email"
@@ -123,19 +130,19 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
                 value={waitlistForm.email}
                 onChange={handleWaitlistChange}
                 className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-foreground/40 focus:ring-2 focus:ring-foreground/10"
-                placeholder="Ange din e-post för att hitta din nästa lya"
+                placeholder={t("home.waitlist.emailPlaceholder")}
                 autoComplete="email"
                 inputMode="email"
               />
             </div>
 
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Genom att gå med i väntelistan godkänner du CampusLyans{" "}
+              {t("home.waitlist.privacyPrefix")}{" "}
               <Link
                 href="/integritetspolicy"
                 className="font-medium text-[#004225] underline underline-offset-4 hover:text-[#00341d]"
               >
-                integritetspolicy
+                {t("home.waitlist.privacyLink")}
               </Link>
               .
             </p>
@@ -162,10 +169,10 @@ export const HeroWaitlist: React.FC<HeroWaitlistProps> = ({
               {isSubmitting ? (
                 <span className="inline-flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Skickar...
+                  {t("home.waitlist.submitting")}
                 </span>
               ) : (
-                "Gå med i väntelistan"
+                t("home.waitlist.submit")
               )}
             </Button>
           </form>

@@ -6,7 +6,8 @@ import { Hero } from "@/features/marketing/components/home/landing/hero";
 import { HeroWaitlist } from "@/features/marketing/components/home/landing/hero_waitlist";
 import StepsTimeline from "@/features/marketing/components/home/landing/StepsTimeline";
 import { StickyCards } from "@/features/marketing/components/home/landing/sticky-cards";
-import { featuresData, stickyCardsData, stepsData } from "@/data/home-page";
+import { getHomePageData } from "@/data/home-page";
+import { getDictionary } from "@/i18n/server";
 
 const listingMockups = [
   {
@@ -27,9 +28,18 @@ const listingMockups = [
   },
 ];
 
-function ListingMockupShowcase() {
+function ListingMockupShowcase({
+  altPrefix,
+  label,
+}: {
+  altPrefix: string;
+  label: string;
+}) {
   return (
-    <section className="relative bg-background px-4 pb-12 pt-2 sm:px-6 sm:pb-16 lg:pb-20" aria-label="Exempelannonser">
+    <section
+      className="relative bg-background px-4 pb-12 pt-2 sm:px-6 sm:pb-16 lg:pb-20"
+      aria-label={label}
+    >
       <div className="mx-auto grid w-full max-w-7xl grid-cols-2 items-center justify-items-center gap-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
         {listingMockups.map((mockup, index) => (
           <div
@@ -38,11 +48,10 @@ function ListingMockupShowcase() {
           >
             <Image
               src={mockup.src}
-              alt={`Exempelannons ${index + 1}`}
+              alt={`${altPrefix} ${index + 1}`}
               width={777}
               height={728}
               sizes="(max-width: 640px) 44vw, (max-width: 1024px) 232px, 292px"
-              quality={100}
               className="h-auto w-full rounded-[18px] object-contain shadow-[0_20px_45px_rgba(15,23,42,0.14)] ring-1 ring-black/5"
             />
           </div>
@@ -52,59 +61,73 @@ function ListingMockupShowcase() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const dictionary = await getDictionary();
+  const { featuresData, stickyCardsData, stepsData } = getHomePageData(dictionary);
+  const home = dictionary.home;
+
   return (
-    <main className="main-marketing-theme relative overflow-x-clip font-sans text-foreground bg-background">
+    <main className="main-marketing-theme relative overflow-x-clip bg-background font-sans text-foreground">
       <Hero
-        title="Lyor för studenter i"
-        flipWords={["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping"]}
+        title={home.hero.title}
+        flipWords={[...home.hero.flipWords]}
         flipWordsClassName="!text-pop-contrast !z-10 relative"
-        subtitle="Allt för studentboende i hela Sverige. Bostäder, köer, verifierade privatuthyrare och guider. Helt gratis."
+        subtitle={home.hero.subtitle}
         waitlistHref="#register-waitlist"
         businessHref="/for-foretag"
+        interestCta={home.hero.interestCta}
+        businessCta={home.hero.businessCta}
         previewImageSrc="/platform-demo.png"
-        previewImageAlt="Preview av CampusLyan plattformen"
+        previewImageAlt={home.hero.previewAlt}
         backgroundClassName="bg-background"
       />
-
-      
 
       <StepsTimeline
         heading={
           <>
-            Från registrering till <span className="text-pop-contrast">inflytt</span> i tre steg
+            {home.steps.headingStart}{" "}
+            <span className="text-pop-contrast">{home.steps.headingHighlight}</span>{" "}
+            {home.steps.headingEnd}
           </>
         }
         steps={stepsData}
       />
-      <ListingMockupShowcase />
+      <ListingMockupShowcase
+        altPrefix={home.listingAltPrefix}
+        label={home.listingShowcaseLabel}
+      />
       <StickyCards
         sectionClassName="bg-background"
         heading={
           <>
-            Mindre krångel.
+            {home.stickyCards.headingStart}
             <br />
-            <span className="text-pop-contrast">Större chans att få bostad.</span>
+            <span className="text-pop-contrast">{home.stickyCards.headingHighlight}</span>
           </>
         }
         cards={stickyCardsData}
       />
       <CityCarousel />
-      
 
       <Features
         sectionClassName="bg-background"
         heading={
           <>
-            Verktyg som gör skillnad.
+            {home.features.headingStart}
             <br />
-            <span className="text-pop-contrast">Före, under och efter studietiden.</span>
+            <span className="text-pop-contrast">{home.features.headingHighlight}</span>
           </>
         }
         features={featuresData}
+        moreLabel={dictionary.common.more}
       />
 
-      <HeroWaitlist id="register-waitlist" backgroundClassName="bg-background" />
+      <HeroWaitlist
+        id="register-waitlist"
+        backgroundClassName="bg-background"
+        heading={home.waitlist.heading}
+        subtitle={home.waitlist.subtitle}
+      />
     </main>
   );
 }

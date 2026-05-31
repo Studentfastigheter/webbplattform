@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export type FilterButtonProps = {
   children?: React.ReactNode;
@@ -24,10 +25,10 @@ export type FilterButtonProps = {
 
 const FilterButton: React.FC<FilterButtonProps> = ({
   children,
-  triggerLabel = "Filter",
-  title = "Filter",
-  applyLabel = "Visa resultat",
-  clearLabel = "Rensa alla",
+  triggerLabel,
+  title,
+  applyLabel,
+  clearLabel,
   resultsLabel,
   resultsMeta,
   resultsLoading = false,
@@ -38,7 +39,12 @@ const FilterButton: React.FC<FilterButtonProps> = ({
   variant = "ghost",
   size = "lg",
 }) => {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
+  const resolvedTriggerLabel = triggerLabel ?? t("filters.filter");
+  const resolvedTitle = title ?? t("filters.filter");
+  const resolvedApplyLabel = applyLabel ?? t("filters.apply");
+  const resolvedClearLabel = clearLabel ?? t("filters.clearAll");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -64,8 +70,8 @@ const FilterButton: React.FC<FilterButtonProps> = ({
 
   const showApplyLabel = useMemo(() => {
     if (resultsLabel) return resultsLabel;
-    return applyLabel;
-  }, [resultsLabel, applyLabel]);
+    return resolvedApplyLabel;
+  }, [resultsLabel, resolvedApplyLabel]);
 
   const hasContent = React.Children.count(children) > 0;
 
@@ -79,7 +85,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
         className={className}
       >
         <SlidersHorizontal className="h-4 w-4" aria-hidden />
-        {triggerLabel}
+        {resolvedTriggerLabel}
       </Button>
 
       {isOpen && (
@@ -105,7 +111,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
                   <SlidersHorizontal className="h-4 w-4" aria-hidden />
                 </span>
                 <h2 className="truncate text-base font-semibold sm:text-lg">
-                  {title}
+                  {resolvedTitle}
                 </h2>
               </div>
               <button
@@ -113,7 +119,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
                 onClick={close}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-black/60 transition hover:bg-black/5 hover:text-black"
               >
-                <span className="sr-only">Stäng</span>
+                <span className="sr-only">{t("filters.close")}</span>
                 <X className="h-5 w-5" aria-hidden />
               </button>
             </header>
@@ -128,7 +134,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
                 children
               ) : (
                 <p className="text-center text-sm text-black/60">
-                  Inga filter är konfigurerade ännu.
+                  {t("filters.notConfigured")}
                 </p>
               )}
             </div>
@@ -141,7 +147,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
                 onClick={onClear}
                 className="w-full justify-center sm:w-auto"
               >
-                {clearLabel}
+                {resolvedClearLabel}
               </Button>
               <div className="flex flex-col items-stretch gap-2 sm:items-end">
                 {resultsMeta && (
@@ -160,7 +166,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
                   }}
                   className={cn(
                     "w-full justify-center sm:w-auto",
-                    resultsLoading && "cursor-wait"
+                    resultsLoading && "cursor-wait",
                   )}
                 >
                   <span className="inline-flex items-center gap-2">

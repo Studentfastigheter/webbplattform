@@ -1,14 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { IconChevronDown } from "@tabler/icons-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
 import { authService } from "@/features/auth/services/auth-service";
 import { type User } from "@/types";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
+import { useI18n } from "@/i18n/I18nProvider";
 import {
   MobileNav,
   MobileNavHeader,
@@ -21,57 +23,6 @@ import {
 } from "@/components/ui/resizable-navbar";
 
 type NavItem = NavbarItem;
-
-const publicNavItems: NavItem[] = [
-  { name: "Hem", link: "/" },
-  { name: "Bostäder", link: "/bostader" },
-  { name: "Alla köer", link: "/alla-koer" },
-  { name: "Städer", link: "/stader" },
-];
-
-const studentNavItems: NavItem[] = [
-  {
-    name: "Bostäder",
-    link: "/bostader",
-    dropdown: [
-      { name: "Sök bostäder", link: "/bostader" },
-      { name: "Mina ansökningar", link: "/ansokningar" },
-      { name: "Sparade", link: "/sparade" },
-    ],
-  },
-  {
-    name: "Alla köer",
-    link: "/alla-koer",
-    dropdown: [
-      { name: "Lägg till köer", link: "/alla-koer" },
-      { name: "Mina köer", link: "/koer" },
-    ],
-  },
-  { name: "Städer", link: "/stader" },
-  { name: "Notiser", link: "/notiser" },
-];
-
-const landlordNavItems: NavItem[] = [
-  { name: "Bostäder", link: "/bostader" },
-  { name: "Städer", link: "/stader" },
-  {
-    name: "Mina annonser",
-    link: "/mina-annonser",
-    dropdown: [
-      { name: "Skapa ny", link: "/mina-annonser/ny" },
-      { name: "Mina annonser", link: "/mina-annonser" },
-      { name: "Ansökningar", link: "/ansokningar" },
-    ],
-  },
-  { name: "Notiser", link: "/notiser" },
-];
-
-const getRoleLabel = (accountType?: string | null) => {
-  if (accountType === "student") return "Student";
-  if (accountType === "private_landlord") return "Privat uthyrare";
-  if (accountType === "company") return "Företag";
-  return null;
-};
 
 const getInitial = (value: string) => value.trim().charAt(0).toUpperCase() || "C";
 const getLogoUrl = (user?: User | null) => user?.logoUrl?.trim() || "";
@@ -115,6 +66,7 @@ function AccountAvatar({
 
 export default function SiteHeader() {
   const { user, token, logout, isLoading } = useAuth();
+  const { localizedHref, t } = useI18n();
   const [authMeUser, setAuthMeUser] = useState<User | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
@@ -122,10 +74,70 @@ export default function SiteHeader() {
 
   const currentUser = authMeUser ?? user;
   const userType = currentUser?.accountType;
-  const roleLabel = getRoleLabel(userType);
+  const roleLabel =
+    userType === "student"
+      ? t("siteHeader.roles.student")
+      : userType === "private_landlord"
+        ? t("siteHeader.roles.privateLandlord")
+        : userType === "company"
+          ? t("siteHeader.roles.company")
+          : null;
   const displayName = getUserDisplayName(currentUser);
   const accountInitial = getInitial(displayName || "CampusLyan");
   const avatarSrc = getLogoUrl(currentUser);
+
+  const publicNavItems = useMemo<NavItem[]>(
+    () => [
+      { name: t("siteHeader.nav.home"), link: localizedHref("/") },
+      { name: t("siteHeader.nav.housing"), link: localizedHref("/bostader") },
+      { name: t("siteHeader.nav.allQueues"), link: localizedHref("/alla-koer") },
+      { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
+    ],
+    [localizedHref, t],
+  );
+
+  const studentNavItems = useMemo<NavItem[]>(
+    () => [
+      {
+        name: t("siteHeader.nav.housing"),
+        link: localizedHref("/bostader"),
+        dropdown: [
+          { name: t("siteHeader.nav.searchHousing"), link: localizedHref("/bostader") },
+          { name: t("siteHeader.nav.applications"), link: localizedHref("/ansokningar") },
+          { name: t("siteHeader.nav.saved"), link: localizedHref("/sparade") },
+        ],
+      },
+      {
+        name: t("siteHeader.nav.allQueues"),
+        link: localizedHref("/alla-koer"),
+        dropdown: [
+          { name: t("siteHeader.nav.addQueues"), link: localizedHref("/alla-koer") },
+          { name: t("siteHeader.nav.myQueues"), link: localizedHref("/koer") },
+        ],
+      },
+      { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
+      { name: t("siteHeader.nav.notifications"), link: localizedHref("/notiser") },
+    ],
+    [localizedHref, t],
+  );
+
+  const landlordNavItems = useMemo<NavItem[]>(
+    () => [
+      { name: t("siteHeader.nav.housing"), link: localizedHref("/bostader") },
+      { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
+      {
+        name: t("siteHeader.nav.myListings"),
+        link: localizedHref("/mina-annonser"),
+        dropdown: [
+          { name: t("siteHeader.nav.createNew"), link: localizedHref("/mina-annonser/ny") },
+          { name: t("siteHeader.nav.myListings"), link: localizedHref("/mina-annonser") },
+          { name: t("siteHeader.nav.applications"), link: localizedHref("/ansokningar") },
+        ],
+      },
+      { name: t("siteHeader.nav.notifications"), link: localizedHref("/notiser") },
+    ],
+    [localizedHref, t],
+  );
 
   let navItems = publicNavItems;
 
@@ -135,8 +147,8 @@ export default function SiteHeader() {
     navItems = landlordNavItems;
   } else if (currentUser) {
     navItems = [
-      { name: "Bostadssök", link: "/bostader" },
-      { name: "Städer", link: "/stader" },
+      { name: t("siteHeader.nav.housingSearch"), link: localizedHref("/bostader") },
+      { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
     ];
   }
 
@@ -144,19 +156,21 @@ export default function SiteHeader() {
 
   if (userType === "student") {
     accountMenuItems = [
-      { name: "Mitt konto", link: "/profil" },
-      { name: "Inställningar", link: "/installningar" },
-      { name: "Hjälp", link: "/faq" },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profil") },
+      { name: t("siteHeader.account.settings"), link: localizedHref("/installningar") },
+      { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
   } else if (userType === "private_landlord" || userType === "company") {
     accountMenuItems = [
-      { name: "Mitt konto", link: "/profil" },
-      { name: "Inställningar", link: "/installningar" },
-      { name: "Fakturering", link: "/fakturering" },
-      { name: "Hjälp", link: "/faq" },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profil") },
+      { name: t("siteHeader.account.settings"), link: localizedHref("/installningar") },
+      { name: t("siteHeader.account.billing"), link: localizedHref("/fakturering") },
+      { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
   } else if (currentUser) {
-    accountMenuItems = [{ name: "Mitt konto", link: "/profil" }];
+    accountMenuItems = [
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profil") },
+    ];
   }
 
   const closeMenus = () => {
@@ -261,7 +275,7 @@ export default function SiteHeader() {
         <Link
           href="/"
           className="relative z-20 flex items-center gap-2 px-2 py-1 text-sm font-medium"
-          aria-label="Gå till startsidan"
+          aria-label={t("siteHeader.homeAria")}
         >
           <Image
             src="/campuslyan-logo.svg"
@@ -278,19 +292,20 @@ export default function SiteHeader() {
         <NavItems items={navItems} onItemClick={() => setIsAccountMenuOpen(false)} />
 
         <div className="relative z-20 hidden items-center gap-2 lg:flex">
+          <LanguageSwitcher compact />
           {!currentUser ? (
             <>
               <Link
                 href="/login"
                 className="inline-flex rounded-full px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
               >
-                Logga in
+                {t("siteHeader.auth.login")}
               </Link>
               <Link
                 href="/registrera"
                 className="inline-flex rounded-full bg-[#004225] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00341d]"
               >
-                Skapa konto
+                {t("siteHeader.auth.createAccount")}
               </Link>
             </>
           ) : (
@@ -358,7 +373,7 @@ export default function SiteHeader() {
                     onClick={handleLogout}
                     className="mt-2 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
                   >
-                    Logga ut
+                    {t("siteHeader.auth.logout")}
                   </button>
                 </div>
               )}
@@ -369,7 +384,7 @@ export default function SiteHeader() {
 
       <MobileNav>
         <MobileNavHeader>
-          <Link href="/" className="flex items-center gap-2" aria-label="Gå till startsidan">
+          <Link href="/" className="flex items-center gap-2" aria-label={t("siteHeader.homeAria")}>
             <Image
               src="/campuslyan-logo.svg"
               alt="CampusLyan"
@@ -378,10 +393,13 @@ export default function SiteHeader() {
             />
             <span className="text-sm font-semibold">CampusLyan</span>
           </Link>
-          <MobileNavToggle
-            isOpen={isMobileMenuOpen}
-            onClick={handleMobileToggle}
-          />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher compact />
+            <MobileNavToggle
+              isOpen={isMobileMenuOpen}
+              onClick={handleMobileToggle}
+            />
+          </div>
         </MobileNavHeader>
 
         <MobileNavMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
@@ -420,14 +438,14 @@ export default function SiteHeader() {
                   onClick={closeMenus}
                   className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-neutral-200 px-5 py-3 text-base font-medium text-neutral-700 transition hover:bg-neutral-50"
                 >
-                  Logga in
+                  {t("siteHeader.auth.login")}
                 </Link>
                 <Link
                   href="/registrera"
                   onClick={closeMenus}
                   className="inline-flex w-full items-center justify-center rounded-full bg-[#004225] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
                 >
-                  Skapa konto
+                  {t("siteHeader.auth.createAccount")}
                 </Link>
               </>
             ) : (
@@ -468,7 +486,7 @@ export default function SiteHeader() {
                   onClick={handleLogout}
                   className="mt-1 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
                 >
-                  Logga ut
+                  {t("siteHeader.auth.logout")}
                 </button>
               </div>
             )}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import clsx from "clsx";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export type ListFrameColumn = {
   id: string;
@@ -35,6 +36,7 @@ const ListFrame: React.FC<ListFrameProps> = ({
   emptyState,
   className,
 }) => {
+  const { t } = useI18n();
   const gridTemplateColumns = columns
     .map((col) => col.width ?? "minmax(0, 1fr)")
     .join(" ");
@@ -111,7 +113,7 @@ const ListFrame: React.FC<ListFrameProps> = ({
           <div className="px-8 py-6">{children}</div>
         ) : (
           <div className="py-12 text-center text-sm text-gray-500">
-            {emptyState ?? "Inga objekt att visa"}
+            {emptyState ?? t("listFrame.empty")}
           </div>
         )}
       </div>

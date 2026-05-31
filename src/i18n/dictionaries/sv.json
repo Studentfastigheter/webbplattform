@@ -1,0 +1,295 @@
+{
+  "common": {
+    "language": "Språk",
+    "swedish": "Svenska",
+    "english": "English",
+    "more": "Fler"
+  },
+  "siteMetadata": {
+    "titleDefault": "CampusLyan - Gratis studentbostäder samlade på ett ställe",
+    "titleTemplate": "%s | CampusLyan",
+    "description": "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag.",
+    "ogTitle": "CampusLyan - Gratis plattform för studentbostäder",
+    "ogDescription": "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
+    "keywords": [
+      "studentbostad",
+      "studentlägenhet",
+      "studentboende",
+      "bostad student",
+      "hyra rum student",
+      "CampusLyan",
+      "andrahand student",
+      "gratis bostadsplattform",
+      "StudentLyan"
+    ]
+  },
+  "siteHeader": {
+    "homeAria": "Gå till startsidan",
+    "openMenu": "Öppna meny",
+    "closeMenu": "Stäng meny",
+    "auth": {
+      "login": "Logga in",
+      "createAccount": "Skapa konto",
+      "logout": "Logga ut"
+    },
+    "roles": {
+      "student": "Student",
+      "privateLandlord": "Privat uthyrare",
+      "company": "Företag"
+    },
+    "nav": {
+      "home": "Hem",
+      "housing": "Bostäder",
+      "searchHousing": "Sök bostäder",
+      "allQueues": "Alla köer",
+      "addQueues": "Lägg till köer",
+      "myQueues": "Mina köer",
+      "cities": "Städer",
+      "notifications": "Notiser",
+      "myListings": "Mina annonser",
+      "createNew": "Skapa ny",
+      "applications": "Ansökningar",
+      "housingSearch": "Bostadssök",
+      "saved": "Sparade"
+    },
+    "account": {
+      "myAccount": "Mitt konto",
+      "settings": "Inställningar",
+      "help": "Hjälp",
+      "billing": "Fakturering"
+    }
+  },
+  "siteFooter": {
+    "homeAria": "CampusLyan startsida",
+    "tagline": "Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.",
+    "sections": {
+      "platform": "Plattform",
+      "partners": "Partners",
+      "campuslyan": "CampusLyan"
+    },
+    "links": {
+      "housing": "Bostäder",
+      "allQueues": "Alla köer",
+      "forBusiness": "För företag",
+      "ourPartners": "Våra partners",
+      "about": "Om oss",
+      "terms": "Användarvillkor",
+      "privacy": "Integritetspolicy",
+      "cookies": "Cookiepolicy"
+    },
+    "copyright": "Copyright © {year} CampusLyan. Alla rättigheter förbehållna."
+  },
+  "home": {
+    "listingShowcaseLabel": "Exempelannonser",
+    "listingAltPrefix": "Exempelannons",
+    "hero": {
+      "title": "Lyor för studenter i",
+      "flipWords": ["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping"],
+      "subtitle": "Allt för studentboende i hela Sverige. Bostäder, köer, verifierade privatuthyrare och guider. Helt gratis.",
+      "interestCta": "Anmäl intresse",
+      "businessCta": "För företag",
+      "previewAlt": "Preview av CampusLyan plattformen"
+    },
+    "steps": {
+      "headingStart": "Från registrering till",
+      "headingHighlight": "inflytt",
+      "headingEnd": "i tre steg",
+      "items": [
+        {
+          "title": "Skapa din profil",
+          "desc": "Fyll i dina uppgifter en gång och använd profilen när du söker bostad eller kontaktar uthyrare."
+        },
+        {
+          "title": "Hitta rätt bostäder och köer",
+          "desc": "Se vilka bostäder som finns och vilka köer du bör ställa dig i för att inte missa någon möjlighet."
+        },
+        {
+          "title": "Sök och flytta in",
+          "desc": "Ansök direkt, kontakta verifierade privatuthyrare och byt bostad om du ska på utbyte, praktik eller sommarjobb."
+        }
+      ]
+    },
+    "stickyCards": {
+      "headingStart": "Mindre krångel.",
+      "headingHighlight": "Större chans att få bostad.",
+      "items": [
+        {
+          "title": "Allt samlat på ett ställe",
+          "text": "Hitta studentbostäder i hela Sverige och ställ dig i rätt köer utan att hoppa mellan olika sidor."
+        },
+        {
+          "title": "Trygg privatuthyrning",
+          "text": "Verifierade uthyrare och säkrare kontakt än i öppna Facebook grupper med mindre risk för bedrägerier."
+        },
+        {
+          "title": "Guider som hjälper dig lyckas",
+          "text": "Få koll på regler, dokument och ansökningar så att du ökar chansen att få bostad."
+        }
+      ]
+    },
+    "cities": {
+      "headingStart": "Hitta din studentstad.",
+      "headingHighlight": "Vi samlar bostäderna",
+      "openAria": "Öppna {city}",
+      "loadError": "Kunde inte ladda städer till startsidan:"
+    },
+    "features": {
+      "headingStart": "Verktyg som gör skillnad.",
+      "headingHighlight": "Före, under och efter studietiden.",
+      "items": [
+        {
+          "badge": "Bostadsköer",
+          "title": "Rätt köer för rätt stad",
+          "tags": ["Missa inga köer", "Stad för stad", "Prioritera smart"]
+        },
+        {
+          "badge": "Profil",
+          "title": "Ansök med en profil som ger seriöst intryck",
+          "tags": ["Snabb kontakt", "Proffsigt", "Spara tid"]
+        },
+        {
+          "badge": "Studentliv",
+          "title": "Aktiviteter och rabatter nära ditt boende",
+          "tags": ["Studentaktiviteter", "Lokala erbjudanden", "Partners"]
+        },
+        {
+          "badge": "Bostadsbyte",
+          "title": "Byt boende med andra studenter när du är borta",
+          "tags": ["Utbyte", "Praktik", "Sommarjobb"]
+        }
+      ]
+    },
+    "waitlist": {
+      "heading": "Redo att hitta din nästa lya?",
+      "subtitle": "Anmäl dig till väntelistan så får du ett mail så fort vi lanserar.",
+      "emailLabel": "E-post",
+      "emailPlaceholder": "Ange din e-post för att hitta din nästa lya",
+      "privacyPrefix": "Genom att gå med i väntelistan godkänner du CampusLyans",
+      "privacyLink": "integritetspolicy",
+      "submit": "Gå med i väntelistan",
+      "submitting": "Skickar...",
+      "errors": {
+        "missingEmail": "Ange en e-postadress.",
+        "invalidEmail": "Ange en giltig e-postadress.",
+        "tooLong": "E-postadressen är för lång.",
+        "generic": "Något gick fel vid registreringen. Försök igen.",
+        "registrationFailed": "Något gick fel vid registreringen. Försök igen.",
+        "timeout": "Registreringen tog för lång tid. Försök igen om en liten stund."
+      },
+      "success": {
+        "alreadyRegistered": "E-postadressen finns redan registrerad, du kan vara lugn.",
+        "registered": "Tack! Du är nu med i väntelistan."
+      }
+    }
+  },
+  "ads": {
+    "adSpace": "Annonsutrymme",
+    "ad": "Annons",
+    "adFrom": "Annons från {company}",
+    "topAd": "Toppannons",
+    "leftAd": "Vänster annonsyta",
+    "bottomAd": "Bottenannons",
+    "rightAd": "Höger annonsyta"
+  },
+  "listFrame": {
+    "empty": "Inga objekt att visa"
+  },
+  "filters": {
+    "filter": "Filter",
+    "apply": "Visa resultat",
+    "clearAll": "Rensa alla",
+    "close": "Stäng",
+    "notConfigured": "Inga filter är konfigurerade ännu.",
+    "queue": {
+      "empty": "Inga filterval tillgängliga just nu.",
+      "cityTitle": "Var vill du ställa dig i kö?",
+      "cityDescription": "Städer hämtas dynamiskt från databasen.",
+      "landlordTitle": "Bostadskö",
+      "landlordDescription": "Visar specifika bostadsköer.",
+      "statusTitle": "Köläge",
+      "statusDescription": "Anpassa om du vill se öppna köer eller alla.",
+      "statuses": {
+        "open": {
+          "label": "Endast öppna",
+          "description": "Visar köer som går att söka just nu"
+        },
+        "paused": {
+          "label": "Pausade",
+          "description": "Visar köer som är tillfälligt pausade"
+        },
+        "closed": {
+          "label": "Stängda",
+          "description": "Visar köer som är stängda"
+        },
+        "all": {
+          "label": "Alla",
+          "description": "Ingen filtrering"
+        }
+      }
+    }
+  },
+  "queueCard": {
+    "fallbackDescription": "Vi hjälper dig hitta studentboende på ett enkelt och tryggt sätt.",
+    "policyAria": "{name} policylänkar",
+    "terms": "Villkor",
+    "privacy": "Integritetspolicy",
+    "unavailable": "Ej tillgänglig",
+    "checking": "Kontrollerar...",
+    "alreadyJoined": "Du står redan i kön",
+    "added": "Tillagd",
+    "join": "Gå med",
+    "readMore": "Läs mer"
+  },
+  "queueListings": {
+    "defaultTitle": "Våra bostäder",
+    "loading": "Hämtar bostäder...",
+    "paginationAria": "Sidnavigering för företagets bostäder",
+    "previous": "Föregående",
+    "next": "Nästa"
+  },
+  "queueHero": {
+    "about": "Om oss",
+    "contact": "Kontakt",
+    "readMore": "Läs mer",
+    "showLess": "Visa mindre",
+    "share": "Dela",
+    "shareQueueTitle": "Dela kö",
+    "shareQueueDescription": "Dela länken till den här bostadskön eller kopiera länken direkt.",
+    "mailSubject": "Kolla in {name}",
+    "mailBody": "Jag hittade den här kön som kan vara intressant:"
+  },
+  "allQueues": {
+    "searchPlaceholder": "Sök efter företag",
+    "clearSearch": "Rensa sökning",
+    "searchSubmit": "Sök",
+    "filterTitle": "Filtrera på stad",
+    "filterTrigger": "Stad",
+    "loadingCompanies": "Laddar företag...",
+    "companyCount": "{count} företag",
+    "selectAllInCity": "Välj alla i {city}",
+    "deselectAll": "Avmarkera alla",
+    "clearCityFilter": "Rensa stadsfilter",
+    "loadingQueues": "Laddar köer...",
+    "empty": "Inga företag matchade din sökning.",
+    "loadMore": "Laddar fler köer...",
+    "selectedSingular": "kö vald",
+    "selectedPlural": "köer valda",
+    "clearSelection": "Rensa val",
+    "joinSelected": "Ställ mig i kö",
+    "verificationRequired": "Verifiering krävs",
+    "missingQueue": "Företaget saknar en publicerad bostadskö.",
+    "loadCompaniesError": "Kunde inte ladda företag.",
+    "failedJoinOne": "Kunde inte ställa dig i en av de valda köerna.",
+    "failedJoinMany": "Kunde inte ställa dig i {count} av de valda köerna.",
+    "userQueuesLoadError": "Kunde inte hämta användarens köer:",
+    "cityFilterLoadError": "Kunde inte ladda stadsfilter:",
+    "logoAlt": "{name} logotyp"
+  },
+  "notFound": {
+    "code": "Felkod 808",
+    "title": "Sidan finns inte.",
+    "description": "Länken kan vara gammal, flyttad eller felstavad. Börja om från startsidan eller fortsätt direkt till bostäder.",
+    "homeCta": "Till startsidan",
+    "housingCta": "Sök bostäder"
+  }
+}

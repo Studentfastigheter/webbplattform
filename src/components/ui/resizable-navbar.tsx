@@ -10,6 +10,7 @@ import {
 } from "framer-motion";
 import Link from "next/link";
 import React, { useRef, useState } from "react";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export type NavbarItem = {
   name: string;
@@ -254,11 +255,13 @@ export const MobileNavToggle = ({
   isOpen: boolean;
   onClick: () => void;
 }) => {
+  const { t } = useI18n();
+
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={isOpen ? "Stang meny" : "Oppna meny"}
+      aria-label={isOpen ? t("siteHeader.closeMenu") : t("siteHeader.openMenu")}
       className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 bg-white text-black transition-colors hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
     >
       {isOpen ? <IconX className="h-5 w-5" /> : <IconMenu2 className="h-5 w-5" />}

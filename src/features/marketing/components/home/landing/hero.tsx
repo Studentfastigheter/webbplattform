@@ -1,10 +1,12 @@
 "use client";
 
 import React from "react";
-import { FlipWords } from "@/components/ui/flip-words";
 import Image from "next/image";
-import Link from "next/link";
+
+import { FlipWords } from "@/components/ui/flip-words";
 import { Button } from "@/components/ui/button";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
+import { useI18n } from "@/i18n/I18nProvider";
 
 type HeroProps = {
   title: string | React.ReactNode;
@@ -16,6 +18,8 @@ type HeroProps = {
   previewImageAlt?: string;
   waitlistHref?: string;
   businessHref?: string;
+  interestCta?: string;
+  businessCta?: string;
 };
 
 export const Hero: React.FC<HeroProps> = ({
@@ -25,20 +29,23 @@ export const Hero: React.FC<HeroProps> = ({
   subtitle,
   backgroundClassName = "bg-background",
   previewImageSrc = "/platform-demo.png",
-  previewImageAlt = "Preview av CampusLyan-plattformen",
+  previewImageAlt,
   waitlistHref = "#register-waitlist",
   businessHref = "/for-foretag",
+  interestCta,
+  businessCta,
 }) => {
+  const { dictionary, t } = useI18n();
   const words =
     flipWords && flipWords.length > 0
       ? flipWords
-      : ["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping", "Örebro", "Malmö", "Umeå"];
+      : [...dictionary.home.hero.flipWords];
 
   return (
     <section className={`relative overflow-hidden ${backgroundClassName}`}>
-      <div className="pointer-events-none absolute top-1/2 left-0 -translate-y-1/2 w-full h-full overflow-hidden">
-        <div className="hidden md:block absolute top-1/4 -left-64 w-96 h-96 bg-emerald-100/50 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-white rounded-full blur-3xl -z-10" />
+      <div className="pointer-events-none absolute left-0 top-1/2 h-full w-full -translate-y-1/2 overflow-hidden">
+        <div className="absolute -left-64 top-1/4 hidden h-96 w-96 rounded-full bg-emerald-100/50 opacity-50 blur-3xl md:block" />
+        <div className="absolute bottom-0 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-white blur-3xl" />
       </div>
 
       <div className="relative mx-auto flex w-full max-w-[1440px] flex-col items-center px-4 pb-12 pt-12 sm:pb-16 sm:pt-14 md:px-8 md:pb-24 md:pt-24">
@@ -46,7 +53,7 @@ export const Hero: React.FC<HeroProps> = ({
           <h1 className="order-1 mx-auto max-w-4xl text-center text-[2rem] font-black leading-[1.1] text-slate-900 sm:text-5xl md:text-6xl">
             {title}
             <br className="hidden sm:block" />
-            <span className={`mt-2 block sm:inline-block sm:min-h-[1.2em] sm:mt-0 ${flipWordsClassName}`}>
+            <span className={`mt-2 block sm:mt-0 sm:inline-block sm:min-h-[1.2em] ${flipWordsClassName}`}>
               <FlipWords words={words} duration={2500} className={flipWordsClassName} />
             </span>
           </h1>
@@ -54,7 +61,7 @@ export const Hero: React.FC<HeroProps> = ({
             <div className="pointer-events-none absolute inset-x-4 -bottom-8 hidden h-24 rounded-full bg-emerald-300/25 blur-3xl sm:inset-x-8 md:block" />
             <Image
               src={previewImageSrc}
-              alt={previewImageAlt}
+              alt={previewImageAlt ?? t("home.hero.previewAlt")}
               width={1920}
               height={1080}
               sizes="(max-width: 640px) 96vw, (max-width: 1024px) 92vw, (max-width: 1536px) 88vw, 1400px"
@@ -63,14 +70,16 @@ export const Hero: React.FC<HeroProps> = ({
             />
           </div>
           {subtitle ? (
-            <p className="order-3 mt-6 max-w-2xl px-1 text-center text-sm text-slate-600 sm:text-base md:order-2 md:text-lg">{subtitle}</p>
+            <p className="order-3 mt-6 max-w-2xl px-1 text-center text-sm text-slate-600 sm:text-base md:order-2 md:text-lg">
+              {subtitle}
+            </p>
           ) : null}
           <div className="order-4 mt-6 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row md:order-3">
             <Button as={Link} href={waitlistHref} variant="default" className="w-full rounded-full px-6 sm:w-auto">
-              Anmäl intresse
+              {interestCta ?? t("home.hero.interestCta")}
             </Button>
             <Button as={Link} href={businessHref} variant="secondary" className="w-full rounded-full px-6 sm:w-auto">
-              För företag
+              {businessCta ?? t("home.hero.businessCta")}
             </Button>
           </div>
         </div>

@@ -1,0 +1,295 @@
+{
+  "common": {
+    "language": "Language",
+    "swedish": "Svenska",
+    "english": "English",
+    "more": "More"
+  },
+  "siteMetadata": {
+    "titleDefault": "CampusLyan - Free student housing in one place",
+    "titleTemplate": "%s | CampusLyan",
+    "description": "CampusLyan is a free platform where students can find housing, rooms and second-hand rentals from both private landlords and student housing companies.",
+    "ogTitle": "CampusLyan - Free platform for student housing",
+    "ogDescription": "Find student housing for free. CampusLyan collects listings from both private landlords and established housing companies.",
+    "keywords": [
+      "student housing",
+      "student apartment",
+      "student accommodation",
+      "housing for students",
+      "rent room student",
+      "CampusLyan",
+      "second hand student housing",
+      "free housing platform",
+      "StudentLyan"
+    ]
+  },
+  "siteHeader": {
+    "homeAria": "Go to the homepage",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "auth": {
+      "login": "Log in",
+      "createAccount": "Create account",
+      "logout": "Log out"
+    },
+    "roles": {
+      "student": "Student",
+      "privateLandlord": "Private landlord",
+      "company": "Company"
+    },
+    "nav": {
+      "home": "Home",
+      "housing": "Housing",
+      "searchHousing": "Search housing",
+      "allQueues": "All queues",
+      "addQueues": "Add queues",
+      "myQueues": "My queues",
+      "cities": "Cities",
+      "notifications": "Notifications",
+      "myListings": "My listings",
+      "createNew": "Create new",
+      "applications": "Applications",
+      "housingSearch": "Housing search",
+      "saved": "Saved"
+    },
+    "account": {
+      "myAccount": "My account",
+      "settings": "Settings",
+      "help": "Help",
+      "billing": "Billing"
+    }
+  },
+  "siteFooter": {
+    "homeAria": "CampusLyan homepage",
+    "tagline": "We make it simple to find, compare and rent student housing across Sweden.",
+    "sections": {
+      "platform": "Platform",
+      "partners": "Partners",
+      "campuslyan": "CampusLyan"
+    },
+    "links": {
+      "housing": "Housing",
+      "allQueues": "All queues",
+      "forBusiness": "For companies",
+      "ourPartners": "Our partners",
+      "about": "About us",
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "cookies": "Cookie policy"
+    },
+    "copyright": "Copyright © {year} CampusLyan. All rights reserved."
+  },
+  "home": {
+    "listingShowcaseLabel": "Example listings",
+    "listingAltPrefix": "Example listing",
+    "hero": {
+      "title": "Student homes in",
+      "flipWords": ["Gothenburg", "Stockholm", "Lund", "Uppsala", "Linköping"],
+      "subtitle": "Everything for student housing across Sweden. Listings, queues, verified private landlords and guides. Completely free.",
+      "interestCta": "Join the waitlist",
+      "businessCta": "For companies",
+      "previewAlt": "Preview of the CampusLyan platform"
+    },
+    "steps": {
+      "headingStart": "From registration to",
+      "headingHighlight": "move-in",
+      "headingEnd": "in three steps",
+      "items": [
+        {
+          "title": "Create your profile",
+          "desc": "Enter your details once and use your profile when you apply for housing or contact landlords."
+        },
+        {
+          "title": "Find the right homes and queues",
+          "desc": "See available homes and the queues you should join so you do not miss an opportunity."
+        },
+        {
+          "title": "Apply and move in",
+          "desc": "Apply directly, contact verified private landlords and swap housing when you go on exchange, internship or summer work."
+        }
+      ]
+    },
+    "stickyCards": {
+      "headingStart": "Less hassle.",
+      "headingHighlight": "A better chance of finding a home.",
+      "items": [
+        {
+          "title": "Everything in one place",
+          "text": "Find student housing across Sweden and join the right queues without jumping between different websites."
+        },
+        {
+          "title": "Safer private rentals",
+          "text": "Verified landlords and safer contact than open Facebook groups, with less risk of scams."
+        },
+        {
+          "title": "Guides that help you succeed",
+          "text": "Get clarity on rules, documents and applications so you improve your chances of getting housing."
+        }
+      ]
+    },
+    "cities": {
+      "headingStart": "Find your student city.",
+      "headingHighlight": "We collect the homes",
+      "openAria": "Open {city}",
+      "loadError": "Could not load cities for the homepage:"
+    },
+    "features": {
+      "headingStart": "Tools that make a difference.",
+      "headingHighlight": "Before, during and after your studies.",
+      "items": [
+        {
+          "badge": "Housing queues",
+          "title": "The right queues for the right city",
+          "tags": ["Miss no queues", "City by city", "Prioritize smartly"]
+        },
+        {
+          "badge": "Profile",
+          "title": "Apply with a profile that makes a serious impression",
+          "tags": ["Fast contact", "Professional", "Save time"]
+        },
+        {
+          "badge": "Student life",
+          "title": "Activities and discounts near your home",
+          "tags": ["Student activities", "Local offers", "Partners"]
+        },
+        {
+          "badge": "Housing swap",
+          "title": "Swap housing with other students while you are away",
+          "tags": ["Exchange", "Internship", "Summer work"]
+        }
+      ]
+    },
+    "waitlist": {
+      "heading": "Ready to find your next student home?",
+      "subtitle": "Join the waitlist and we will email you as soon as we launch.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email to find your next student home",
+      "privacyPrefix": "By joining the waitlist you accept CampusLyan's",
+      "privacyLink": "privacy policy",
+      "submit": "Join the waitlist",
+      "submitting": "Sending...",
+      "errors": {
+        "missingEmail": "Enter an email address.",
+        "invalidEmail": "Enter a valid email address.",
+        "tooLong": "The email address is too long.",
+        "generic": "Something went wrong during registration. Please try again.",
+        "registrationFailed": "Something went wrong during registration. Please try again.",
+        "timeout": "Registration took too long. Please try again in a moment."
+      },
+      "success": {
+        "alreadyRegistered": "That email address is already registered, you are all set.",
+        "registered": "Thanks! You are now on the waitlist."
+      }
+    }
+  },
+  "ads": {
+    "adSpace": "Ad space",
+    "ad": "Ad",
+    "adFrom": "Ad from {company}",
+    "topAd": "Top ad",
+    "leftAd": "Left ad slot",
+    "bottomAd": "Bottom ad",
+    "rightAd": "Right ad slot"
+  },
+  "listFrame": {
+    "empty": "No items to show"
+  },
+  "filters": {
+    "filter": "Filter",
+    "apply": "Show results",
+    "clearAll": "Clear all",
+    "close": "Close",
+    "notConfigured": "No filters are configured yet.",
+    "queue": {
+      "empty": "No filter options are available right now.",
+      "cityTitle": "Where do you want to join a queue?",
+      "cityDescription": "Cities are loaded dynamically from the database.",
+      "landlordTitle": "Housing queue",
+      "landlordDescription": "Shows specific housing queues.",
+      "statusTitle": "Queue status",
+      "statusDescription": "Choose whether to show open queues or all queues.",
+      "statuses": {
+        "open": {
+          "label": "Open only",
+          "description": "Shows queues that are open for applications right now"
+        },
+        "paused": {
+          "label": "Paused",
+          "description": "Shows queues that are temporarily paused"
+        },
+        "closed": {
+          "label": "Closed",
+          "description": "Shows queues that are closed"
+        },
+        "all": {
+          "label": "All",
+          "description": "No filtering"
+        }
+      }
+    }
+  },
+  "queueCard": {
+    "fallbackDescription": "We help you find student housing in a simple and secure way.",
+    "policyAria": "{name} policy links",
+    "terms": "Terms",
+    "privacy": "Privacy policy",
+    "unavailable": "Unavailable",
+    "checking": "Checking...",
+    "alreadyJoined": "You are already in the queue",
+    "added": "Added",
+    "join": "Join",
+    "readMore": "Read more"
+  },
+  "queueListings": {
+    "defaultTitle": "Our homes",
+    "loading": "Loading homes...",
+    "paginationAria": "Pagination for the company's homes",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "queueHero": {
+    "about": "About us",
+    "contact": "Contact",
+    "readMore": "Read more",
+    "showLess": "Show less",
+    "share": "Share",
+    "shareQueueTitle": "Share queue",
+    "shareQueueDescription": "Share the link to this housing queue or copy the link directly.",
+    "mailSubject": "Check out {name}",
+    "mailBody": "I found this queue that might be interesting:"
+  },
+  "allQueues": {
+    "searchPlaceholder": "Search by company",
+    "clearSearch": "Clear search",
+    "searchSubmit": "Search",
+    "filterTitle": "Filter by city",
+    "filterTrigger": "City",
+    "loadingCompanies": "Loading companies...",
+    "companyCount": "{count} companies",
+    "selectAllInCity": "Select all in {city}",
+    "deselectAll": "Deselect all",
+    "clearCityFilter": "Clear city filter",
+    "loadingQueues": "Loading queues...",
+    "empty": "No companies matched your search.",
+    "loadMore": "Loading more queues...",
+    "selectedSingular": "queue selected",
+    "selectedPlural": "queues selected",
+    "clearSelection": "Clear selection",
+    "joinSelected": "Join queue",
+    "verificationRequired": "Verification required",
+    "missingQueue": "The company does not have a published housing queue.",
+    "loadCompaniesError": "Could not load companies.",
+    "failedJoinOne": "Could not join one of the selected queues.",
+    "failedJoinMany": "Could not join {count} of the selected queues.",
+    "userQueuesLoadError": "Could not load the user's queues:",
+    "cityFilterLoadError": "Could not load city filters:",
+    "logoAlt": "{name} logo"
+  },
+  "notFound": {
+    "code": "Error code 808",
+    "title": "This page does not exist.",
+    "description": "The link may be old, moved or misspelled. Start over from the homepage or continue straight to housing.",
+    "homeCta": "Go to homepage",
+    "housingCta": "Search housing"
+  }
+}

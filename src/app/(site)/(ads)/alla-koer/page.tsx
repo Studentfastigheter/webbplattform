@@ -21,6 +21,7 @@ import { type CompanyId } from "@/types";
 
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
 import { removeEmpty, toSearchString, uniqueOnly } from "@/lib/utils";
+import { useI18n } from "@/i18n/I18nProvider";
 
 type SearchValues = {
   queueName: string;
@@ -124,7 +125,9 @@ const getJoinQueueId = (queue: CompanyQueueCard): string | null =>
 export default function Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { locale, localizedHref, t } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
+  const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
   const cityFromUrl = formatCityName(searchParams.get("city") ?? "");
   const [searchInput, setSearchInput] = useState("");
   const [searchValues, setSearchValues] = useState<SearchValues>({
@@ -170,7 +173,7 @@ export default function Page() {
       .catch((err: any) => {
         if (!active) return;
         console.error(err);
-        setError("Kunde inte ladda företag.");
+        setError(t("allQueues.loadCompaniesError"));
       })
       .finally(() => {
         if (!active) return;
@@ -180,7 +183,7 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, [cityFromUrl]);
+  }, [cityFromUrl, t]);
 
   useEffect(() => {
     if (!cityFromUrl || cityFacetQueues.length > 0) return;
@@ -195,13 +198,13 @@ export default function Page() {
       })
       .catch((err: any) => {
         if (!active) return;
-        console.error("Kunde inte ladda stadsfilter:", err);
+        console.error(t("allQueues.cityFilterLoadError"), err);
       });
 
     return () => {
       active = false;
     };
-  }, [cityFromUrl, cityFacetQueues.length]);
+  }, [cityFromUrl, cityFacetQueues.length, t]);
 
   useEffect(() => {
     setFilters((current) => ({
@@ -230,7 +233,7 @@ export default function Page() {
       })
       .catch((err) => {
         if (!active) return;
-        console.error("Kunde inte hÃ¤mta anvÃ¤ndarens kÃ¶er:", err);
+        console.error(t("allQueues.userQueuesLoadError"), err);
         setJoinedQueueIds(new Set());
       })
       .finally(() => {
@@ -240,7 +243,7 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, [authLoading, user]);
+  }, [authLoading, user, t]);
 
   const isCompanyQueueJoined = (queue: CompanyQueueCard) => {
     const joinQueueId = getJoinQueueId(queue);
@@ -345,19 +348,19 @@ export default function Page() {
     "grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3";
 
   const openQueue = (queue: CompanyQueueCard) => {
-    router.push(`/alla-koer/${queue.companyId}`);
+    router.push(localizedHref(`/alla-koer/${queue.companyId}`));
   };
 
   const updateCityInUrl = (city: string | null) => {
     const nextUrl = city
       ? `/alla-koer?city=${encodeURIComponent(city)}`
       : "/alla-koer";
-    router.replace(nextUrl, { scroll: false });
+    router.replace(localizedHref(nextUrl), { scroll: false });
   };
 
   const handleJoinSelectedQueues = async () => {
     if (!user) {
-      router.push("/login");
+      router.push(localizedHref("/login"));
       return;
     }
 
@@ -403,8 +406,8 @@ export default function Page() {
       if (failedCount > 0) {
         setJoinError(
           failedCount === 1
-            ? "Kunde inte stÃ¤lla dig i en av de valda kÃ¶erna."
-            : `Kunde inte stÃ¤lla dig i ${failedCount} av de valda kÃ¶erna.`
+            ? t("allQueues.failedJoinOne")
+            : t("allQueues.failedJoinMany", { count: failedCount })
         );
       }
     } finally {
@@ -426,7 +429,7 @@ export default function Page() {
       unitsLabel: undefined,
       logoUrl,
       tags: [],
-      logoAlt: `${queue.name} logotyp`,
+      logoAlt: t("allQueues.logoAlt", { name: queue.name }),
     };
 
     return (
@@ -451,7 +454,7 @@ export default function Page() {
           isAlreadyJoined={isAlreadyJoined}
           isJoinStatusLoading={isJoinStatusLoading}
           isJoinDisabled={Boolean(queueVerificationError)}
-          joinDisabledLabel="Verifiering krävs"
+          joinDisabledLabel={t("allQueues.verificationRequired")}
           onViewListings={() => openQueue(queue)}
           onToggleSelect={() => {
             if (isAlreadyJoined || isJoinStatusLoading) return;
@@ -460,7 +463,7 @@ export default function Page() {
               return;
             }
             if (joinQueueId === null) {
-              setJoinError("Företaget saknar en publicerad bostadskö.");
+              setJoinError(t("allQueues.missingQueue"));
               return;
             }
 
@@ -523,13 +526,13 @@ export default function Page() {
                     type="text"
                     value={searchInput}
                     onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Sök efter företag"
+                    placeholder={t("allQueues.searchPlaceholder")}
                     className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/45 sm:text-base"
                   />
                   {searchInput && (
                     <button
                       type="button"
-                      aria-label="Rensa sökning"
+                      aria-label={t("allQueues.clearSearch")}
                       onClick={() => {
                         setSearchInput("");
                         setSearchValues({ queueName: "" });
@@ -543,7 +546,7 @@ export default function Page() {
                     type="submit"
                     className="h-8 shrink-0 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
                   >
-                    Sök
+                    {t("allQueues.searchSubmit")}
                   </button>
                 </form>
               </div>
@@ -551,8 +554,8 @@ export default function Page() {
                 <QueueFilterButton
                   variant="ghost"
                   size="icon-lg"
-                  title="Filtrera på stad"
-                  triggerLabel="Stad"
+                  title={t("allQueues.filterTitle")}
+                  triggerLabel={t("allQueues.filterTrigger")}
                   className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-[#004225] shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                   cities={cityFilterOptions}
                   cityCounts={cityCounts}
@@ -586,8 +589,10 @@ export default function Page() {
                 className="text-base font-semibold text-black sm:text-lg"
               >
                 {loading && queues.length === 0
-                  ? "Laddar företag..."
-                  : `${totalQueues.toLocaleString("sv-SE")} företag`}
+                  ? t("allQueues.loadingCompanies")
+                  : t("allQueues.companyCount", {
+                      count: totalQueues.toLocaleString(numberLocale),
+                    })}
               </h2>
               {filters.cities.length === 1 &&
                 unjoinedFilteredQueues.length > 0 && (
@@ -599,12 +604,12 @@ export default function Page() {
                     {allFilteredSelected ? (
                       <>
                         <X className="h-3.5 w-3.5" />
-                        Avmarkera alla
+                        {t("allQueues.deselectAll")}
                       </>
                     ) : (
                       <>
                         <Check className="h-4 w-4" />
-                        Välj alla i {filters.cities[0]}
+                        {t("allQueues.selectAllInCity", { city: filters.cities[0] })}
                       </>
                     )}
                   </button>
@@ -620,7 +625,7 @@ export default function Page() {
                 className="inline-flex items-center gap-1 self-start text-xs font-medium text-gray-500 hover:text-black sm:text-sm"
               >
                 <X className="h-3.5 w-3.5" />
-                Rensa stadsfilter
+                {t("allQueues.clearCityFilter")}
               </button>
             )}
           </div>
@@ -648,11 +653,11 @@ export default function Page() {
 
             {loading ? (
               <div className="py-12 text-center text-sm text-gray-500">
-                Laddar köer...
+                {t("allQueues.loadingQueues")}
               </div>
             ) : filteredQueues.length === 0 ? (
               <div className="py-12 text-center text-sm text-gray-500 sm:py-20 sm:text-base">
-                Inga företag matchade din sökning.
+                {t("allQueues.empty")}
               </div>
             ) : (
               <div className={queueGridClasses}>
@@ -668,7 +673,7 @@ export default function Page() {
               >
                 {loadingMore && (
                   <span className="text-xs text-gray-500">
-                    Laddar fler köer...
+                    {t("allQueues.loadMore")}
                   </span>
                 )}
               </div>
@@ -682,7 +687,9 @@ export default function Page() {
           <div className="flex items-center gap-3 rounded-2xl bg-white px-5 py-3 shadow-xl ring-1 ring-black/5">
             <span className="whitespace-nowrap text-sm font-medium text-gray-700">
               {selectedQueues.size}{" "}
-              {selectedQueues.size === 1 ? "kö vald" : "köer valda"}
+              {selectedQueues.size === 1
+                ? t("allQueues.selectedSingular")
+                : t("allQueues.selectedPlural")}
             </span>
             <div className="h-5 w-px bg-gray-200" />
             <Button
@@ -691,7 +698,7 @@ export default function Page() {
               variant="secondary"
               onClick={() => setSelectedQueues(new Set())}
             >
-              Rensa val
+              {t("allQueues.clearSelection")}
             </Button>
             <Button
               type="button"
@@ -705,7 +712,7 @@ export default function Page() {
               }
               onClick={handleJoinSelectedQueues}
             >
-              Ställ mig i kö
+              {t("allQueues.joinSelected")}
             </Button>
           </div>
         </div>

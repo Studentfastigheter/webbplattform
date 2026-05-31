@@ -1,6 +1,16 @@
 "use client";
 
 import type { ReactNode } from "react";
+import {
+  Facebook,
+  Globe,
+  Linkedin,
+  Mail,
+  MapPin,
+  Phone,
+  Share2,
+} from "lucide-react";
+
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import { ShareDialog } from "@/components/ui/ShareDialog";
 import EntityHero, {
@@ -9,15 +19,7 @@ import EntityHero, {
 } from "@/components/shared/EntityHero";
 import { type HousingQueueDTO } from "@/types/queue";
 import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";
-import {
-  Phone,
-  Mail,
-  Globe,
-  Facebook,
-  Linkedin,
-  Share2,
-  MapPin,
-} from "lucide-react";
+import { useI18n } from "@/i18n/I18nProvider";
 
 type QueueHeroProps = {
   queue: HousingQueueDTO;
@@ -37,6 +39,7 @@ export default function QueueHero({
   showShareButton = true,
   disableShareButton = false,
 }: QueueHeroProps) {
+  const { t } = useI18n();
   const bannerImage = queue.bannerUrl || "/images/queue-default-banner.jpg";
   const logoImage = queue.logoUrl || "/logos/default-landlord-logo.svg";
   const description = queue.description?.trim() ?? "";
@@ -84,20 +87,20 @@ export default function QueueHero({
   const sections = [
     description && {
       id: "about",
-      title: "Om oss",
+      title: t("queueHero.about"),
       content: (
         <ReadMoreComponent
           text={description}
           variant="large"
           textClassName="text-base leading-relaxed text-gray-600"
-          moreLabel="Läs mer"
-          lessLabel="Visa mindre"
+          moreLabel={t("queueHero.readMore")}
+          lessLabel={t("queueHero.showLess")}
         />
       ),
     },
     contactRows.length > 0 && {
       id: "contact",
-      title: "Kontakt",
+      title: t("queueHero.contact"),
       content: (
         <ul className="flex flex-wrap gap-x-6 gap-y-2">
           {contactRows.map((item) => (
@@ -144,24 +147,24 @@ export default function QueueHero({
             <button
               type="button"
               disabled
-              aria-label="Dela"
-              title="Dela"
+              aria-label={t("queueHero.share")}
+              title={t("queueHero.share")}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-300"
             >
               <Share2 className="h-[18px] w-[18px]" />
             </button>
           ) : (
             <ShareDialog
-              title="Dela kö"
-              description="Dela länken till den här bostadskön eller kopiera länken direkt."
-              mailSubject={`Kolla in ${queue.name}`}
-              mailBody="Jag hittade den här kön som kan vara intressant:"
+              title={t("queueHero.shareQueueTitle")}
+              description={t("queueHero.shareQueueDescription")}
+              mailSubject={t("queueHero.mailSubject", { name: queue.name })}
+              mailBody={t("queueHero.mailBody")}
             >
               <button
                 type="button"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Dela"
-                title="Dela"
+                aria-label={t("queueHero.share")}
+                title={t("queueHero.share")}
               >
                 <Share2 className="h-[18px] w-[18px]" />
               </button>

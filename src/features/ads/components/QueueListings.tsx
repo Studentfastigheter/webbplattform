@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import { type ListingCardDTO } from "@/types/listing";
+import { useI18n } from "@/i18n/I18nProvider";
 
 type Props = {
   listings: ListingCardDTO[];
@@ -19,13 +20,14 @@ const MAX_VISIBLE_LISTINGS = ROWS * COLS;
 
 export default function QueueListings({
   listings,
-  title = "Våra bostäder",
+  title,
   page = 1,
   totalPages = 1,
   isLoading = false,
   onPageChange,
 }: Props) {
   const router = useRouter();
+  const { localizedHref, t } = useI18n();
   const visible = listings.slice(0, MAX_VISIBLE_LISTINGS);
   const safeTotalPages = Math.max(1, totalPages);
   const currentPage = Math.min(Math.max(1, page), safeTotalPages);
@@ -47,7 +49,9 @@ export default function QueueListings({
   return (
     <section>
       <div className="mb-5 flex items-center">
-        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-xl font-semibold text-gray-900">
+          {title ?? t("queueListings.defaultTitle")}
+        </h2>
       </div>
 
       <div className="grid grid-cols-1 justify-items-center gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -56,7 +60,7 @@ export default function QueueListings({
             <ListingCardFromDTO
               listing={listing}
               showFavoriteButton={false}
-              onOpen={() => router.push(`/bostader/${listing.id}`)}
+              onOpen={() => router.push(localizedHref(`/bostader/${listing.id}`))}
             />
           </div>
         ))}
@@ -65,7 +69,7 @@ export default function QueueListings({
       {isLoading && (
         <div className="flex min-h-[52px] items-center justify-center py-4">
           <span className="animate-pulse text-sm text-gray-500">
-            Hämtar bostäder...
+            {t("queueListings.loading")}
           </span>
         </div>
       )}
@@ -73,7 +77,7 @@ export default function QueueListings({
       {onPageChange && safeTotalPages > 1 && (
         <nav
           className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
-          aria-label="Sidnavigering för företagets bostäder"
+          aria-label={t("queueListings.paginationAria")}
         >
           <button
             type="button"
@@ -81,7 +85,7 @@ export default function QueueListings({
             disabled={currentPage <= 1 || isLoading}
             className="h-10 rounded-full border border-black/15 px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Föregående
+            {t("queueListings.previous")}
           </button>
 
           <div className="flex items-center gap-2">
@@ -140,7 +144,7 @@ export default function QueueListings({
             disabled={currentPage >= safeTotalPages || isLoading}
             className="h-10 rounded-full border border-black/15 px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Nästa
+            {t("queueListings.next")}
           </button>
         </nav>
       )}

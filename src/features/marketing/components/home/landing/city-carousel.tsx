@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
+import { useI18n } from "@/i18n/I18nProvider";
 import { getCityImageUrl, normalizeCityName } from "@/features/cities/city-utils";
 import { listingService } from "@/features/listings/services/listing-service";
 import { uniqueOnly } from "@/lib/utils";
@@ -19,10 +20,12 @@ const FALLBACK_CITIES = [
 ];
 
 function CityCarouselCard({ city }: { city: string }) {
+  const { t } = useI18n();
+
   return (
     <Link
       href={`/stader/${encodeURIComponent(city)}`}
-      aria-label={`Öppna ${city}`}
+      aria-label={t("home.cities.openAria", { city })}
       className="group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-white ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]"
       style={{
         backgroundImage: `url("${getCityImageUrl(city, "720x980")}")`,
@@ -39,6 +42,7 @@ function CityCarouselCard({ city }: { city: string }) {
 }
 
 export function CityCarousel() {
+  const { t } = useI18n();
   const [cities, setCities] = useState<string[]>([]);
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export function CityCarousel() {
         const nextCities = uniqueOnly(
           cityResult
             .map(normalizeCityName)
-            .filter((city) => city.length > 0)
+            .filter((city) => city.length > 0),
         ).sort((a, b) => a.localeCompare(b, "sv-SE"));
 
         if (nextCities.length > 0) {
@@ -60,18 +64,18 @@ export function CityCarousel() {
         }
       })
       .catch((err) => {
-        console.error("Kunde inte ladda städer till startsidan:", err);
+        console.error(t("home.cities.loadError"), err);
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   const displayCities = cities.length > 0 ? cities : FALLBACK_CITIES.map(normalizeCityName);
   const carouselCities = useMemo(
     () => [...displayCities, ...displayCities],
-    [displayCities]
+    [displayCities],
   );
 
   return (
@@ -80,8 +84,8 @@ export function CityCarousel() {
         id="city-carousel-heading"
         className="mx-auto mb-6 max-w-4xl px-4 text-center text-2xl font-bold leading-tight text-foreground sm:mb-8 sm:text-3xl md:text-4xl"
       >
-        Hitta din studentstad.{" "}
-        <span className="text-pop-contrast">Vi samlar bostäderna</span>
+        {t("home.cities.headingStart")}{" "}
+        <span className="text-pop-contrast">{t("home.cities.headingHighlight")}</span>
       </h2>
       <div className="landing-cities-marquee">
         <div className="landing-cities-track">

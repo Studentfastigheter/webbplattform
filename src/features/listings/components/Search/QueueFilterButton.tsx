@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import ChipCloudSection from "@/features/listings/components/filter_sections/ChipCloudSection";
 import StatusCardSection from "@/features/listings/components/filter_sections/StatusCardSection";
 import FilterButton, { type FilterButtonProps } from "./filterbutton";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export type QueueFilterState = {
   cities: string[];
@@ -41,28 +42,7 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
   citySelectionMode = "multiple",
   landlords = [],
   landlordCounts,
-  statuses = [
-    {
-      id: "open",
-      label: "Endast öppna",
-      description: "Visar köer som går att söka just nu",
-    },
-    {
-      id: "paused",
-      label: "Pausade",
-      description: "Visar köer som är tillfälligt pausade",
-    },
-    {
-      id: "closed",
-      label: "Stängda",
-      description: "Visar köer som är stängda",
-    },
-    {
-      id: "all",
-      label: "Alla",
-      description: "Ingen filtrering",
-    },
-  ],
+  statuses,
   initialState = defaultState,
   onApply,
   onClear,
@@ -70,6 +50,33 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
   emptyState,
   ...buttonProps
 }) => {
+  const { t } = useI18n();
+  const defaultStatuses = useMemo(
+    () => [
+      {
+        id: "open",
+        label: t("filters.queue.statuses.open.label"),
+        description: t("filters.queue.statuses.open.description"),
+      },
+      {
+        id: "paused",
+        label: t("filters.queue.statuses.paused.label"),
+        description: t("filters.queue.statuses.paused.description"),
+      },
+      {
+        id: "closed",
+        label: t("filters.queue.statuses.closed.label"),
+        description: t("filters.queue.statuses.closed.description"),
+      },
+      {
+        id: "all",
+        label: t("filters.queue.statuses.all.label"),
+        description: t("filters.queue.statuses.all.description"),
+      },
+    ],
+    [t],
+  );
+  const resolvedStatuses = statuses ?? defaultStatuses;
   const resolvedInitial = useMemo(() => initialState, [initialState]);
   const [state, setState] = useState<QueueFilterState>(resolvedInitial);
 
@@ -107,13 +114,13 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
 
   const content = useMemo<ReactNode>(() => {
     const hasAnyData =
-      cities.length > 0 || landlords.length > 0 || statuses.length > 0;
+      cities.length > 0 || landlords.length > 0 || resolvedStatuses.length > 0;
 
     if (!hasAnyData) {
       return (
         emptyState ?? (
           <p className="text-center text-sm text-black/60">
-            Inga filterval tillgängliga just nu.
+            {t("filters.queue.empty")}
           </p>
         )
       );
@@ -123,8 +130,8 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
       <>
         {cities.length > 0 && (
           <ChipCloudSection
-            title="Var vill du ställa dig i kö?"
-            description="Städer hämtas dynamiskt från databasen."
+            title={t("filters.queue.cityTitle")}
+            description={t("filters.queue.cityDescription")}
             items={cities.map((city) => ({
               id: city,
               label: city,
@@ -137,8 +144,8 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
 
         {landlords.length > 0 && (
           <ChipCloudSection
-            title="Bostadskö"
-            description="Visar specifika bostadsköer."
+            title={t("filters.queue.landlordTitle")}
+            description={t("filters.queue.landlordDescription")}
             items={landlords.map((landlord) => ({
               id: landlord,
               label: landlord,
@@ -149,11 +156,11 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
           />
         )}
 
-        {statuses.length > 0 && (
+        {resolvedStatuses.length > 0 && (
           <StatusCardSection
-            title="Köläge"
-            description="Anpassa om du vill se öppna köer eller alla."
-            items={statuses}
+            title={t("filters.queue.statusTitle")}
+            description={t("filters.queue.statusDescription")}
+            items={resolvedStatuses}
             selectedId={state.status}
             onSelect={(id) => updateState({ ...state, status: id })}
             withBorder={false}
@@ -167,9 +174,10 @@ const QueueFilterButton: React.FC<QueueFilterButtonProps> = ({
     citySelectionMode,
     landlords,
     landlordCounts,
-    statuses,
+    resolvedStatuses,
     state,
     emptyState,
+    t,
   ]);
 
   return (

@@ -4,8 +4,11 @@ import Image from "next/image";
 import type { ComponentType } from "react";
 import { Typography, type TypographyProps } from "@material-tailwind/react";
 import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa6";
-import { HiGlobeAlt } from "react-icons/hi";
 import { SiThreads } from "react-icons/si";
+
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
+import { useI18n } from "@/i18n/I18nProvider";
 
 const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 
@@ -14,23 +17,6 @@ const COLORS = {
   lightestText: "#EFEFEF",
   accent: "#708A83",
 };
-
-const PLATTFORM_LINKS = [
-  { href: "/bostader", label: "Bostäder" },
-  { href: "/alla-koer", label: "Alla köer" },
-  { href: "/for-foretag", label: "För företag" },
-];
-
-const PARTNER_LINKS = [
-  { href: "/partners", label: "Våra partners" },
-];
-
-const COMPANY_LINKS = [
-  { href: "/om-oss", label: "Om oss" },
-  { href: "/anvandarvillkor", label: "Användarvillkor" },
-  { href: "/integritetspolicy", label: "Integritetspolicy" },
-  { href: "/cookiepolicy", label: "Cookiepolicy" },
-];
 
 const SOCIAL_LINKS = [
   { href: "https://www.linkedin.com/company/campuslyan", label: "LinkedIn", icon: <FaLinkedin /> },
@@ -42,6 +28,21 @@ const SOCIAL_LINKS = [
 
 export default function SiteFooter() {
   const year = new Date().getFullYear();
+  const { t } = useI18n();
+  const platformLinks = [
+    { href: "/bostader", label: t("siteFooter.links.housing") },
+    { href: "/alla-koer", label: t("siteFooter.links.allQueues") },
+    { href: "/for-foretag", label: t("siteFooter.links.forBusiness") },
+  ];
+  const partnerLinks = [
+    { href: "/partners", label: t("siteFooter.links.ourPartners") },
+  ];
+  const companyLinks = [
+    { href: "/om-oss", label: t("siteFooter.links.about") },
+    { href: "/anvandarvillkor", label: t("siteFooter.links.terms") },
+    { href: "/integritetspolicy", label: t("siteFooter.links.privacy") },
+    { href: "/cookiepolicy", label: t("siteFooter.links.cookies") },
+  ];
 
   return (
     <footer className="relative mt-40 w-full sm:mt-48 lg:mt-56" style={{ backgroundColor: COLORS.primary }}>
@@ -61,21 +62,21 @@ export default function SiteFooter() {
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
           <div className="flex flex-col gap-8 lg:col-span-5">
             <div className="flex flex-row items-center gap-5">
-              <a href="/" className="relative block h-14 w-14 shrink-0" aria-label="CampusLyan startsida">
+              <Link href="/" className="relative block h-14 w-14 shrink-0" aria-label={t("siteFooter.homeAria")}>
                 <Image
                   src="/campuslyan-logo.svg"
                   alt="CampusLyan"
                   fill
                   className="object-contain brightness-0 invert"
                 />
-              </a>
+              </Link>
 
               <div className="border-l-2 py-1 pl-5" style={{ borderColor: COLORS.accent }}>
                 <Text
                   className="max-w-md text-sm font-light leading-relaxed"
                   style={{ color: COLORS.lightestText }}
                 >
-                  Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.
+                  {t("siteFooter.tagline")}
                 </Text>
               </div>
             </div>
@@ -100,9 +101,9 @@ export default function SiteFooter() {
           <div className="flex flex-col gap-10 pt-4 lg:col-span-7 lg:pl-10">
             <div className="grid grid-cols-2 gap-10 md:grid-cols-3">
               {[
-                { title: "Plattform", links: PLATTFORM_LINKS },
-                { title: "Partners", links: PARTNER_LINKS },
-                { title: "CampusLyan", links: COMPANY_LINKS },
+                { title: t("siteFooter.sections.platform"), links: platformLinks },
+                { title: t("siteFooter.sections.partners"), links: partnerLinks },
+                { title: t("siteFooter.sections.campuslyan"), links: companyLinks },
               ].map((section) => (
                 <div key={section.title}>
                   <div
@@ -115,13 +116,13 @@ export default function SiteFooter() {
                   <ul className="flex flex-col gap-3">
                     {section.links.map((link) => (
                       <li key={link.href}>
-                        <a
+                        <Link
                           href={link.href}
                           className="text-xs font-bold uppercase tracking-wide transition-colors hover:underline hover:underline-offset-4"
                           style={{ color: COLORS.lightestText }}
                         >
                           {link.label}
-                        </a>
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -132,16 +133,11 @@ export default function SiteFooter() {
         </div>
 
         <div
-          className="mt-20 flex flex-col items-start justify-between border-t pt-6 text-xs font-medium sm:flex-row sm:items-center"
+          className="mt-20 flex flex-col items-start justify-between gap-4 border-t pt-6 text-xs font-medium sm:flex-row sm:items-center"
           style={{ borderColor: COLORS.accent, color: COLORS.lightestText }}
         >
-          <div>Copyright © {year} CampusLyan. Alla rättigheter förbehållna.</div>
-
-          <div className="mt-4 flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-80 sm:mt-0">
-            <HiGlobeAlt className="text-lg" />
-            <span className="uppercase tracking-wide">Svenska</span>
-            <span className="text-[10px]">▼</span>
-          </div>
+          <div>{t("siteFooter.copyright", { year })}</div>
+          <LanguageSwitcher compact inverted />
         </div>
       </div>
     </footer>
