@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type GoogleAuthButtonProps = {
   label?: string;
@@ -37,9 +39,9 @@ declare global {
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID;
 const googleScriptId = "google-identity-services";
 
-function loadGoogleScript() {
+function loadGoogleScript(errorMessages: { browserOnly: string; loadFailed: string }) {
   if (typeof window === "undefined") {
-    return Promise.reject(new Error("Google Sign-In kan bara laddas i webbläsaren."));
+    return Promise.reject(new Error(errorMessages.browserOnly));
   }
 
   if (window.google?.accounts?.id) {
@@ -61,17 +63,19 @@ function loadGoogleScript() {
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Kunde inte ladda Google Sign-In."));
+    script.onerror = () => reject(new Error(errorMessages.loadFailed));
     document.head.appendChild(script);
   });
 }
 
 export function GoogleAuthButton({
-  label = "Fortsätt med Google",
+  label,
   disabled = false,
   onCredential,
   onError,
 }: GoogleAuthButtonProps) {
+  const { locale } = useI18n();
+  const resolvedLabel = label ?? localizedText(locale, "Fortsätt med Google", "Continue with Google");
   const rootRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const credentialHandlerRef = useRef(onCredential);
@@ -104,7 +108,10 @@ export function GoogleAuthButton({
 
     let active = true;
 
-    loadGoogleScript()
+    loadGoogleScript({
+      browserOnly: localizedText(locale, "Google Sign-In kan bara laddas i webbläsaren.", "Google Sign-In can only be loaded in the browser."),
+      loadFailed: localizedText(locale, "Kunde inte ladda Google Sign-In.", "Could not load Google Sign-In."),
+    })
       .then(() => {
         if (!active || !buttonRef.current || !window.google?.accounts?.id) {
           return;
@@ -116,7 +123,7 @@ export function GoogleAuthButton({
           callback: async (response) => {
             const credential = response.credential?.trim();
             if (!credential) {
-              onError?.("Google skickade ingen ID-token.");
+              onError?.(localizedText(locale, "Google skickade ingen ID-token.", "Google did not send an ID token."));
               return;
             }
 
@@ -135,14 +142,14 @@ export function GoogleAuthButton({
       })
       .catch((error) => {
         onError?.(
-          error instanceof Error ? error.message : "Kunde inte ladda Google Sign-In."
+          error instanceof Error ? error.message : localizedText(locale, "Kunde inte ladda Google Sign-In.", "Could not load Google Sign-In.")
         );
       });
 
     return () => {
       active = false;
     };
-  }, [buttonWidth, disabled, isConfigured, onError]);
+  }, [buttonWidth, disabled, isConfigured, locale, onError]);
 
   const buttonChromeClassName =
     "flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold transition-colors";
@@ -155,7 +162,7 @@ export function GoogleAuthButton({
         className={cn(buttonChromeClassName, "text-[#7a7a7a]")}
       >
         <GoogleLogo />
-        Google Sign-In saknar client id
+        {localizedText(locale, "Google Sign-In saknar client id", "Google Sign-In is missing a client ID")}
       </button>
     );
   }
@@ -168,7 +175,7 @@ export function GoogleAuthButton({
         className={cn(buttonChromeClassName, "text-[#7a7a7a]")}
       >
         <GoogleLogo />
-        {label}
+        {resolvedLabel}
       </button>
     );
   }
@@ -185,11 +192,11 @@ export function GoogleAuthButton({
         )}
       >
         <GoogleLogo />
-        <span>{label}</span>
+        <span>{resolvedLabel}</span>
       </div>
       <div
         ref={buttonRef}
-        aria-label={label}
+        aria-label={resolvedLabel}
         className="absolute inset-0 z-10 h-full w-full overflow-hidden rounded-full opacity-0 [&_*]:!h-full [&_*]:!w-full [&_iframe]:!rounded-full"
       />
     </div>

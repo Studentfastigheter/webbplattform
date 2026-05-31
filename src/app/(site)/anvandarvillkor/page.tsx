@@ -1,16 +1,32 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { localizeHref } from "@/i18n/config";
+import { getRequestLocale } from "@/i18n/server";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Användarvillkor",
-  description: "Användarvillkor för CampusLyan.",
-  alternates: {
-    canonical: "/anvandarvillkor",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+
+  if (locale === "en") {
+    return {
+      title: "Terms of Use",
+      description: "Terms of Use for CampusLyan.",
+      alternates: {
+        canonical: "/en/anvandarvillkor",
+      },
+    };
+  }
+
+  return {
+    title: "Användarvillkor",
+    description: "Användarvillkor för CampusLyan.",
+    alternates: {
+      canonical: "/anvandarvillkor",
+    },
+  };
+}
 
 const lastUpdated = "21 maj 2026";
 const contactEmail = "privacy@campuslyan.se";
@@ -36,14 +52,107 @@ function InlineLink({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
-export default function TermsPage() {
+function EnglishTermsPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <section className="pb-20 pt-10">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="mb-8">
             <Link
-              href="/"
+              href="/en"
+              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              ← Back to homepage
+            </Link>
+          </div>
+
+          <header className="mb-12 border-b border-border pb-8">
+            <p className="mb-4 text-xs font-semibold uppercase text-muted-foreground">
+              CampusLyan
+            </p>
+            <h1 className="text-4xl font-bold text-foreground md:text-6xl">
+              Terms of Use
+            </h1>
+            <p className="mt-4 text-sm font-medium text-muted-foreground">
+              Last updated: 21 May 2026
+            </p>
+          </header>
+
+          <div className="space-y-8">
+            <TermsSection title="1. General">
+              <Paragraph>
+                CampusLyan provides a digital platform where students and other housing seekers can find, monitor and understand student housing, housing queues and related housing information.
+              </Paragraph>
+              <Paragraph>
+                These terms govern your use of <InlineLink href="https://www.campuslyan.se">www.campuslyan.se</InlineLink> and the services provided by CampusLyan Nordics AB, company registration number 559587-0048.
+              </Paragraph>
+              <Paragraph>
+                CampusLyan is not a landlord, legal housing agency, representative of landlords or party to any rental agreement. We provide a technical platform and marketplace.
+              </Paragraph>
+            </TermsSection>
+
+            <TermsSection title="2. User Accounts and Eligibility">
+              <Paragraph>
+                You generally need to be at least 18 years old to create an account and use logged-in features. Each person may only have one account, and the account is personal.
+              </Paragraph>
+              <Paragraph>
+                Some features may require identity, email or student-status verification through services such as Freja or equivalent providers.
+              </Paragraph>
+            </TermsSection>
+
+            <TermsSection title="3. Listings, Queues and Applications">
+              <Paragraph>
+                Housing information may come from CampusLyan, partner housing providers, property owners or other sources. You are responsible for reviewing the landlord's terms, queue rules and rental conditions before applying.
+              </Paragraph>
+              <Paragraph>
+                CampusLyan may help you express interest, manage queue information or navigate to external housing actors, but final allocation and rental decisions are made by the relevant housing actor.
+              </Paragraph>
+            </TermsSection>
+
+            <TermsSection title="4. Your Responsibilities">
+              <Paragraph>
+                You must provide accurate information, keep your login details secure and use the service lawfully. You may not misuse the service, scrape it, disrupt it or provide misleading information.
+              </Paragraph>
+            </TermsSection>
+
+            <TermsSection title="5. Availability and Changes">
+              <Paragraph>
+                We may change, suspend or discontinue features, update these terms and make improvements to the service. Material changes will be communicated in a reasonable way.
+              </Paragraph>
+            </TermsSection>
+
+            <TermsSection title="6. Liability">
+              <Paragraph>
+                CampusLyan is not responsible for external landlords' decisions, third-party websites, incorrect information supplied by users or external actors, or rental agreements entered into outside the platform.
+              </Paragraph>
+            </TermsSection>
+
+            <TermsSection title="7. Contact">
+              <Paragraph>
+                Questions about these terms can be sent to <InlineLink href={`mailto:${contactEmail}`}>{contactEmail}</InlineLink>.
+              </Paragraph>
+            </TermsSection>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export default async function TermsPage() {
+  const locale = await getRequestLocale();
+
+  if (locale === "en") {
+    return <EnglishTermsPage />;
+  }
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <section className="pb-20 pt-10">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="mb-8">
+            <Link
+              href={localizeHref("/", locale)}
               className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               ← Tillbaka till startsidan

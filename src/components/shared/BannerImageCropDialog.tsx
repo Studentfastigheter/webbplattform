@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Move, RotateCcw } from "lucide-react";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import {
   Dialog,
   DialogContent,
@@ -89,6 +91,7 @@ export default function BannerImageCropDialog({
   onCancel,
   onCropComplete,
 }: BannerImageCropDialogProps) {
+  const { locale } = useI18n();
   const imageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
 
@@ -239,7 +242,7 @@ export default function BannerImageCropDialog({
       setError(
         cropError instanceof Error
           ? cropError.message
-          : "Bilden kunde inte beskäras."
+          : localizedText(locale, "Bilden kunde inte beskäras.", "The image could not be cropped.")
       );
     } finally {
       setIsCropping(false);
@@ -250,24 +253,24 @@ export default function BannerImageCropDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100vh-2rem)] w-[min(calc(100vw-2rem),1280px)] max-w-none flex-col gap-0 overflow-hidden p-0">
         <DialogHeader className="border-b border-gray-200 px-5 py-4">
-          <DialogTitle>Placera bannerutsnitt</DialogTitle>
+          <DialogTitle>{localizedText(locale, "Placera bannerutsnitt", "Position banner crop")}</DialogTitle>
           <DialogDescription className="text-sm">
-            Bilden visas i originalstorlek. Dra ramen till det utsnitt som ska sparas.
+            {localizedText(locale, "Bilden visas i originalstorlek. Dra ramen till det utsnitt som ska sparas.", "The image is shown at original size. Drag the frame to the crop that should be saved.")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           <div className="mb-3 grid gap-2 text-xs font-medium text-gray-600 sm:grid-cols-3">
             <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="text-gray-400">Bild</span>{" "}
+              <span className="text-gray-400">{localizedText(locale, "Bild", "Image")}</span>{" "}
               {imageSize.width || "-"} x {imageSize.height || "-"} px
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="text-gray-400">Ram</span>{" "}
+              <span className="text-gray-400">{localizedText(locale, "Ram", "Frame")}</span>{" "}
               {Math.round(cropSize.width || 0)} x {Math.round(cropSize.height || 0)} px
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="text-gray-400">Sparas som</span>{" "}
+              <span className="text-gray-400">{localizedText(locale, "Sparas som", "Saved as")}</span>{" "}
               {COMPANY_BANNER_WIDTH} x {COMPANY_BANNER_HEIGHT} px
             </div>
           </div>
@@ -275,7 +278,7 @@ export default function BannerImageCropDialog({
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             {!isUsingNativeOutputSize && imageSize.width > 0 && (
               <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
-                Bilden är mindre än standardbannern. Utsnittet skalas upp när du sparar.
+                {localizedText(locale, "Bilden är mindre än standardbannern. Utsnittet skalas upp när du sparar.", "The image is smaller than the standard banner. The crop will be scaled up when you save.")}
               </div>
             )}
 
@@ -294,7 +297,7 @@ export default function BannerImageCropDialog({
                     alt=""
                     draggable={false}
                     onLoad={handleImageLoad}
-                    onError={() => setError("Bilden kunde inte laddas.")}
+                    onError={() => setError(localizedText(locale, "Bilden kunde inte laddas.", "The image could not be loaded."))}
                     className="absolute select-none"
                     style={{
                       left: cropInset,
@@ -306,7 +309,7 @@ export default function BannerImageCropDialog({
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                    Ingen bild vald.
+                    {localizedText(locale, "Ingen bild vald.", "No image selected.")}
                   </div>
                 )}
 
@@ -330,7 +333,7 @@ export default function BannerImageCropDialog({
                     <div className="pointer-events-none absolute inset-0 rounded-md bg-[linear-gradient(to_right,rgba(255,255,255,0.42)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.42)_1px,transparent_1px)] bg-[length:33.333%_33.333%]" />
                     <div className="pointer-events-none absolute left-1/2 top-3 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm">
                       <Move className="h-3 w-3" />
-                      Dra ramen
+                      {localizedText(locale, "Dra ramen", "Drag the frame")}
                     </div>
                   </div>
                 )}
@@ -353,7 +356,7 @@ export default function BannerImageCropDialog({
             isDisabled={!canCrop || isCropping}
           >
             <RotateCcw className="h-4 w-4" />
-            Centrera ram
+            {localizedText(locale, "Centrera ram", "Center frame")}
           </Button>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -363,7 +366,7 @@ export default function BannerImageCropDialog({
               onClick={onCancel}
               isDisabled={isCropping}
             >
-              Avbryt
+              {localizedText(locale, "Avbryt", "Cancel")}
             </Button>
             <Button
               type="button"
@@ -371,7 +374,7 @@ export default function BannerImageCropDialog({
               isLoading={isCropping}
               isDisabled={!canCrop || isCropping}
             >
-              Spara beskärning
+              {localizedText(locale, "Spara beskärning", "Save crop")}
             </Button>
           </div>
         </DialogFooter>

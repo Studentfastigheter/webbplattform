@@ -1,27 +1,30 @@
 
 import Image from 'next/image';
+import { useI18n } from '@/i18n/I18nProvider';
+import { localizedText } from '@/i18n/text';
 
 export const Implementation = () => {
+  const { locale } = useI18n();
   const steps = [
   {
     num: "01",
-    title: "Inledande dialog",
-    desc: "Vi inleder med ett möte där vi presenterar CampusLyan mer utförligt och sätter oss in i er situation, era mål och nuvarande arbetssätt. Fokus ligger på att förstå er uthyrningsprocess och hur vi kan skapa störst värde för er."
+    title: localizedText(locale, "Inledande dialog", "Initial dialogue"),
+    desc: localizedText(locale, "Vi inleder med ett möte där vi presenterar CampusLyan mer utförligt och sätter oss in i er situation, era mål och nuvarande arbetssätt. Fokus ligger på att förstå er uthyrningsprocess och hur vi kan skapa störst värde för er.", "We start with a meeting where we present CampusLyan in more detail and understand your situation, goals and current workflow. The focus is on understanding your rental process and how we can create the most value for you.")
   },
   {
     num: "02",
-    title: "Demo & planering",
-    desc: "Live-demo av plattformen och dess funktioner, samt hur integrationen mot ert befintliga fastighetssystem sker automatiskt. Tillsammans planerar vi implementationen, tidslinje och nästa steg för ett samarbete."
+    title: localizedText(locale, "Demo & planering", "Demo & planning"),
+    desc: localizedText(locale, "Live-demo av plattformen och dess funktioner, samt hur integrationen mot ert befintliga fastighetssystem sker automatiskt. Tillsammans planerar vi implementationen, tidslinje och nästa steg för ett samarbete.", "A live demo of the platform and its features, including how integration with your existing property system works automatically. Together we plan the implementation, timeline and next steps for collaboration.")
   },
   {
     num: "03",
-    title: "Pilot & implementation",
-    desc: "Vi ansluter till ert befintliga fastighetssystem för att smidigt hantera ert bostadsbestånd och säkerställer att annonserna presenteras enligt era önskemål och riktlinjer. Under pilotfasen testar vi samtliga flöden, finjusterar exponeringen och optimerar upplevelsen inför full lansering."
+    title: localizedText(locale, "Pilot & implementation", "Pilot & implementation"),
+    desc: localizedText(locale, "Vi ansluter till ert befintliga fastighetssystem för att smidigt hantera ert bostadsbestånd och säkerställer att annonserna presenteras enligt era önskemål och riktlinjer. Under pilotfasen testar vi samtliga flöden, finjusterar exponeringen och optimerar upplevelsen inför full lansering.", "We connect to your existing property system to manage your housing stock smoothly and ensure listings are presented according to your preferences and guidelines. During the pilot we test all flows, refine exposure and optimize the experience before full launch.")
   },
   {
     num: "04",
-    title: "Utvärdering & vidare samarbete",
-    desc: "Efter implementationen utvärderar vi resultat, synlighet och konvertering. Vi bygger ett långsiktigt partnerskap med tydlig transparens och kontinuerlig optimering för att stärka er närvaro bland studenter."
+    title: localizedText(locale, "Utvärdering & vidare samarbete", "Evaluation & continued collaboration"),
+    desc: localizedText(locale, "Efter implementationen utvärderar vi resultat, synlighet och konvertering. Vi bygger ett långsiktigt partnerskap med tydlig transparens och kontinuerlig optimering för att stärka er närvaro bland studenter.", "After implementation we evaluate results, visibility and conversion. We build a long-term partnership with clear transparency and continuous optimization to strengthen your presence among students.")
   }
 ];
 
@@ -33,7 +36,7 @@ export const Implementation = () => {
             <div className="sticky top-32">
               <div className="border-l-2 border-white/10 pl-8 md:pl-12">
                 <h2 className="mb-8 text-4xl font-bold leading-[1.1] text-primary-foreground md:text-5xl lg:text-6xl">
-                  Från dialog till full räckvidd
+                  {localizedText(locale, "Från dialog till full räckvidd", "From dialogue to full reach")}
                 </h2>
 
                 <div className="mt-8 flex items-center gap-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useState } from "react";
 
 import { AuthCard } from "@/components/ui/AuthCard";
@@ -15,8 +15,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { authService } from "@/features/auth/services/auth-service";
 import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 export default function ForgotPasswordPage() {
+  const { locale } = useI18n();
   const [email, setEmail] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +29,11 @@ export default function ForgotPasswordPage() {
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail) {
-      return "Fyll i e-postadressen som är kopplad till kontot.";
+      return localizedText(locale, "Fyll i e-postadressen som är kopplad till kontot.", "Enter the email address connected to the account.");
     }
 
     if (!isValidEmail(trimmedEmail)) {
-      return "E-postadressen ser inte korrekt ut. Skriv den i formatet namn@example.com.";
+      return localizedText(locale, "E-postadressen ser inte korrekt ut. Skriv den i formatet namn@example.com.", "The email address does not look correct. Use the format name@example.com.");
     }
 
     return null;
@@ -56,7 +59,7 @@ export default function ForgotPasswordPage() {
       });
       setHasSubmitted(true);
     } catch (err: unknown) {
-      setError(getAuthErrorMessage(err, "forgot-password"));
+      setError(getAuthErrorMessage(err, "forgot-password", locale));
     } finally {
       setSubmitting(false);
     }
@@ -66,11 +69,15 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <AuthCard
-          title={hasSubmitted ? "Kolla din inbox" : "Glömt lösenord"}
+          title={
+            hasSubmitted
+              ? localizedText(locale, "Kolla din inbox", "Check your inbox")
+              : localizedText(locale, "Glömt lösenord", "Forgot password")
+          }
           subtitle={
             hasSubmitted
-              ? "Vi har skickat instruktioner till e-postadressen om ett konto finns registrerat."
-              : "Ange din e-postadress så skickar vi instruktioner för att återställa lösenordet."
+              ? localizedText(locale, "Vi har skickat instruktioner till e-postadressen om ett konto finns registrerat.", "We have sent instructions to the email address if an account is registered.")
+              : localizedText(locale, "Ange din e-postadress så skickar vi instruktioner för att återställa lösenordet.", "Enter your email address and we will send instructions to reset the password.")
           }
           footer={
             <FieldDescription className="text-center">
@@ -78,7 +85,7 @@ export default function ForgotPasswordPage() {
                 href="/login"
                 className="font-medium text-[#004225] no-underline"
               >
-                Tillbaka till inloggning
+                {localizedText(locale, "Tillbaka till inloggning", "Back to sign-in")}
               </Link>
             </FieldDescription>
           }
@@ -87,16 +94,14 @@ export default function ForgotPasswordPage() {
             <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
               <div className="max-w-sm space-y-2">
                 <p className="text-base font-semibold text-[#004225]">
-                  Återställningslänken är skickad
+                  {localizedText(locale, "Återställningslänken är skickad", "The reset link has been sent")}
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Öppna din inkorg och följ länken i mailet för att välja ett
-                  nytt lösenord.
+                  {localizedText(locale, "Öppna din inkorg och följ länken i mailet för att välja ett nytt lösenord.", "Open your inbox and follow the link in the email to choose a new password.")}
                 </p>
               </div>
               <div className="mt-6 w-full max-w-sm rounded-lg border border-black/10 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-                Kontrollera skräpposten om mailet inte dyker upp inom några
-                minuter.
+                {localizedText(locale, "Kontrollera skräpposten om mailet inte dyker upp inom några minuter.", "Check your spam folder if the email does not appear within a few minutes.")}
               </div>
             </div>
           ) : (
@@ -106,7 +111,7 @@ export default function ForgotPasswordPage() {
             >
               <FieldGroup className="mx-auto w-full max-w-sm">
                 <Field>
-                  <FieldLabel htmlFor="email">E-post</FieldLabel>
+                  <FieldLabel htmlFor="email">{localizedText(locale, "E-post", "Email")}</FieldLabel>
                   <Input
                     id="email"
                     type="email"
@@ -119,7 +124,7 @@ export default function ForgotPasswordPage() {
                     className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
                   />
                   <FieldDescription>
-                    Vi skickar instruktioner om e-postadressen finns registrerad.
+                    {localizedText(locale, "Vi skickar instruktioner om e-postadressen finns registrerad.", "We will send instructions if the email address is registered.")}
                   </FieldDescription>
                 </Field>
 
@@ -130,7 +135,9 @@ export default function ForgotPasswordPage() {
                     disabled={submitting}
                     className="h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
                   >
-                    {submitting ? "Skickar..." : "Fortsätt"}
+                    {submitting
+                      ? localizedText(locale, "Skickar...", "Sending...")
+                      : localizedText(locale, "Fortsätt", "Continue")}
                   </Button>
                 </Field>
 

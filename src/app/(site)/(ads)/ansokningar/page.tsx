@@ -16,23 +16,26 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { listingService } from "@/features/listings/services/listing-service";
 import { queueService } from "@/features/queues/services/queue-service";
+import type { Locale } from "@/i18n/config";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedDate, localizedText } from "@/i18n/text";
 import { type CompanyId } from "@/types";
 import type { ListingDetailDTO, ListingTagDTO, StudentApplicationDTO } from "@/types/listing";
 
-const STUDENT_COLUMNS: ListFrameColumn[] = [
-  { id: "annons", label: "Annons", width: "2.6fr" },
-  { id: "etikett", label: "Etikett", width: "1.4fr" },
+const getStudentColumns = (locale: Locale): ListFrameColumn[] => [
+  { id: "annons", label: localizedText(locale, "Annons", "Listing"), width: "2.6fr" },
+  { id: "etikett", label: localizedText(locale, "Etikett", "Label"), width: "1.4fr" },
   { id: "status", label: "Status", align: "center", width: "1.1fr" },
-  { id: "ansokningsdag", label: "Ansökningsdag", align: "left", width: "1fr" },
-  { id: "atgarder", label: "Åtgärder", align: "center", width: "1.1fr" },
+  { id: "ansokningsdag", label: localizedText(locale, "Ansökningsdag", "Application date"), align: "left", width: "1fr" },
+  { id: "atgarder", label: localizedText(locale, "Åtgärder", "Actions"), align: "center", width: "1.1fr" },
 ];
 
-const LANDLORD_COLUMNS: ListFrameColumn[] = [
+const getLandlordColumns = (locale: Locale): ListFrameColumn[] => [
   { id: "student", label: "Student", width: "2.6fr" },
-  { id: "annons", label: "Annons", width: "1.6fr" },
+  { id: "annons", label: localizedText(locale, "Annons", "Listing"), width: "1.6fr" },
   { id: "status", label: "Status", align: "center", width: "1.1fr" },
-  { id: "inkommen", label: "Inkommen", align: "left", width: "1fr" },
-  { id: "hantera", label: "Åtgärder", align: "center", width: "1.1fr" },
+  { id: "inkommen", label: localizedText(locale, "Inkommen", "Received"), align: "left", width: "1fr" },
+  { id: "hantera", label: localizedText(locale, "Åtgärder", "Actions"), align: "center", width: "1.1fr" },
 ];
 
 function normalizeApplicationStatus(status: unknown) {
@@ -67,13 +70,13 @@ function toStudentStatus(status: unknown): ListingApplicationRowProps["status"] 
   return "Under granskning";
 }
 
-function formatApplicationDate(value: unknown) {
+function formatApplicationDate(value: unknown, locale: Locale) {
   if (typeof value !== "string" || !value) return "-";
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
 
-  return date.toLocaleDateString("sv-SE");
+  return formatLocalizedDate(locale, date);
 }
 
 function getAdvertiserType(ownerType?: string | null, hostType?: string | null) {
@@ -87,6 +90,7 @@ function buildApplicationRow(
   app: StudentApplicationDTO & Record<string, any>,
   detail: ListingDetailDTO | null,
   actions: {
+    locale: Locale;
     processingOfferId: number | null;
     onOpen: (listingId: string) => void;
     onWithdraw: (applicationId: number, listingTitle: string) => void;
@@ -99,10 +103,10 @@ function buildApplicationRow(
 ): ListingApplicationRowProps {
   const applicationId = Number(app.applicationId ?? app.id);
   const listingId = String(app.listingId ?? detail?.id ?? "");
-  const title = detail?.title ?? app.listingTitle ?? "Annons";
+  const title = detail?.title ?? app.listingTitle ?? localizedText(actions.locale, "Annons", "Listing");
   const imageUrl = detail?.imageUrls?.[0] ?? app.listingImage ?? "";
   const ownerType = detail?.ownerType ?? app.hostType;
-  const ownerName = detail?.ownerName ?? app.hostType ?? "Hyresvärd";
+  const ownerName = detail?.ownerName ?? app.hostType ?? localizedText(actions.locale, "Hyresvärd", "Landlord");
   const hasOffer = Number.isFinite(applicationId) && hasOfferStatus(app.status);
 
   return {
@@ -135,7 +139,7 @@ function buildApplicationRow(
       phone: null,
       contactEmail: null,
       contactPhone: null,
-      contactNote: detail?.provider ? `Förmedlas via ${detail.provider}` : null,
+      contactNote: detail?.provider ? localizedText(actions.locale, `Förmedlas via ${detail.provider}`, `Managed through ${detail.provider}`) : null,
       rating: null,
       subtitle: null,
       description: null,
@@ -145,7 +149,7 @@ function buildApplicationRow(
     status: toStudentStatus(app.status),
     hasOffer,
     isProcessingOffer: actions.processingOfferId === applicationId,
-    applicationDate: formatApplicationDate(app.appliedAt),
+    applicationDate: formatApplicationDate(app.appliedAt, actions.locale),
     onOpen: () => actions.onOpen(listingId),
     onWithdraw: () => actions.onWithdraw(applicationId, title),
     onAcceptOffer: hasOffer
@@ -159,6 +163,7 @@ function buildApplicationRow(
 
 export default function MyApplicationsPage() {
   const router = useRouter();
+  const { locale, localizedHref } = useI18n();
   
   // FIX 1: Vi hämtar inte 'token' härifrån, vi kollar bara om 'user' finns.
   const { user } = useAuth();
@@ -178,15 +183,15 @@ export default function MyApplicationsPage() {
   const [reloadKey, setReloadKey] = useState(0);
 
   const handleWithdraw = useCallback(async (applicationId: number, listingTitle: string) => {
-    if (!confirm(`Vill du dra tillbaka din ansökan till "${listingTitle}"?`)) return;
+    if (!confirm(localizedText(locale, `Vill du dra tillbaka din ansökan till "${listingTitle}"?`, `Do you want to withdraw your application for "${listingTitle}"?`))) return;
 
     try {
       await listingService.withdrawApplication(applicationId);
       setReloadKey((k) => k + 1);
     } catch (err: any) {
-      setError(err?.message ?? "Kunde inte dra tillbaka ansökan.");
+      setError(err?.message ?? localizedText(locale, "Kunde inte dra tillbaka ansökan.", "Could not withdraw the application."));
     }
-  }, []);
+  }, [locale]);
 
   const handleOfferAction = useCallback(
     async (
@@ -194,8 +199,10 @@ export default function MyApplicationsPage() {
       listingTitle: string,
       action: "accept" | "reject"
     ) => {
-      const actionLabel = action === "accept" ? "acceptera" : "neka";
-      if (!confirm(`Vill du ${actionLabel} erbjudandet för "${listingTitle}"?`)) {
+      const actionLabel = action === "accept"
+        ? localizedText(locale, "acceptera", "accept")
+        : localizedText(locale, "neka", "reject");
+      if (!confirm(localizedText(locale, `Vill du ${actionLabel} erbjudandet för "${listingTitle}"?`, `Do you want to ${actionLabel} the offer for "${listingTitle}"?`))) {
         return;
       }
 
@@ -220,8 +227,8 @@ export default function MyApplicationsPage() {
         setError(
           err?.message ??
             (action === "accept"
-              ? "Kunde inte acceptera erbjudandet."
-              : "Kunde inte neka erbjudandet.")
+              ? localizedText(locale, "Kunde inte acceptera erbjudandet.", "Could not accept the offer.")
+              : localizedText(locale, "Kunde inte neka erbjudandet.", "Could not reject the offer."))
         );
       } finally {
         setProcessingOfferId(null);
@@ -234,7 +241,7 @@ export default function MyApplicationsPage() {
         );
       }
     },
-    []
+    [locale]
   );
 
   useEffect(() => {
@@ -269,7 +276,7 @@ export default function MyApplicationsPage() {
         })
         .catch((err: any) => {
           if (!active) return;
-          console.error("Kunde inte hämta köer:", err);
+          console.error("Could not load queues:", err);
         });
 
       listingService
@@ -298,7 +305,7 @@ export default function MyApplicationsPage() {
               return {
               applicationId,
               listingId: String(app.listingId ?? detail?.id ?? ""),
-              title: detail?.title ?? app.listingTitle ?? "Annons",
+              title: detail?.title ?? app.listingTitle ?? localizedText(locale, "Annons", "Listing"),
               rent: detail?.rent ?? app.rent,
               area: detail?.area ?? null,
               city: detail?.city ?? app.city ?? null,
@@ -322,13 +329,13 @@ export default function MyApplicationsPage() {
               advertiser: {
                   type: app.hostType === "Företag" ? "company" : "private_landlord",
                   id: (detail?.ownerId ?? 0) as CompanyId,
-                  displayName: detail?.ownerName ?? app.hostType ?? "Hyresvärd",
+                  displayName: detail?.ownerName ?? app.hostType ?? localizedText(locale, "Hyresvärd", "Landlord"),
                   logoUrl: detail?.ownerLogoUrl ?? null,
                   bannerUrl: null,
                   phone: null,
                   contactEmail: null,
                   contactPhone: null,
-                  contactNote: detail?.provider ? `Förmedlas via ${detail.provider}` : null,
+                  contactNote: detail?.provider ? localizedText(locale, `Förmedlas via ${detail.provider}`, `Managed through ${detail.provider}`) : null,
                   rating: null,
                   subtitle: null,
                   description: null,
@@ -340,9 +347,9 @@ export default function MyApplicationsPage() {
               hasOffer,
               isProcessingOffer: processingOfferId === applicationId,
 
-              applicationDate: formatApplicationDate(app.appliedAt),
+              applicationDate: formatApplicationDate(app.appliedAt, locale),
 
-              onOpen: () => router.push(`/bostader/${app.listingId ?? detail?.id}`),
+              onOpen: () => router.push(localizedHref(`/bostader/${app.listingId ?? detail?.id}`)),
               onWithdraw: () =>
                 handleWithdraw(applicationId, detail?.title ?? app.listingTitle),
               onAcceptOffer: hasOffer
@@ -369,7 +376,7 @@ export default function MyApplicationsPage() {
         .catch((err: any) => {
           if (!active) return;
           console.error(err);
-          setError("Kunde inte ladda ansökningar.");
+          setError(localizedText(locale, "Kunde inte ladda ansökningar.", "Could not load applications."));
         })
         .finally(() => {
           if (!active) return;
@@ -399,6 +406,8 @@ export default function MyApplicationsPage() {
     user,
     isStudent,
     isPrivateLandlord,
+    locale,
+    localizedHref,
     router,
     reloadKey,
     handleWithdraw,
@@ -416,14 +425,17 @@ export default function MyApplicationsPage() {
   );
 
   const rows = isPrivateLandlord ? landlordRows : studentRows;
-  const columns = isPrivateLandlord ? LANDLORD_COLUMNS : STUDENT_COLUMNS;
+  const columns = useMemo(
+    () => (isPrivateLandlord ? getLandlordColumns(locale) : getStudentColumns(locale)),
+    [isPrivateLandlord, locale],
+  );
 
   const emptyMessage = (() => {
-    if (loading) return "Laddar ansökningar...";
-    if (!user) return "Du måste vara inloggad för att se dina ansökningar.";
-    if (isPrivateLandlord) return "Inga ansökningar till dina annonser än.";
-    if (isStudent) return "Du har inte sökt några bostäder än.";
-    return "Denna vy stöder inte kontotypen än.";
+    if (loading) return localizedText(locale, "Laddar ansökningar...", "Loading applications...");
+    if (!user) return localizedText(locale, "Du måste vara inloggad för att se dina ansökningar.", "You must be logged in to view your applications.");
+    if (isPrivateLandlord) return localizedText(locale, "Inga ansökningar till dina annonser än.", "No applications for your listings yet.");
+    if (isStudent) return localizedText(locale, "Du har inte sökt några bostäder än.", "You have not applied for any homes yet.");
+    return localizedText(locale, "Denna vy stöder inte kontotypen än.", "This view does not support this account type yet.");
   })();
 
   return (
@@ -431,7 +443,7 @@ export default function MyApplicationsPage() {
       <div className="w-full">
         {!user && (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Logga in för att se dina ansökningar.
+            {localizedText(locale, "Logga in för att se dina ansökningar.", "Log in to view your applications.")}
           </div>
         )}
         {error && (

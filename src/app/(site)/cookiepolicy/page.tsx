@@ -1,16 +1,32 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { localizeHref } from "@/i18n/config";
+import { getRequestLocale } from "@/i18n/server";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Cookiepolicy",
-  description: "Cookiepolicy för CampusLyan.",
-  alternates: {
-    canonical: "/cookiepolicy",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+
+  if (locale === "en") {
+    return {
+      title: "Cookie Policy",
+      description: "Cookie Policy for CampusLyan.",
+      alternates: {
+        canonical: "/en/cookiepolicy",
+      },
+    };
+  }
+
+  return {
+    title: "Cookiepolicy",
+    description: "Cookiepolicy för CampusLyan.",
+    alternates: {
+      canonical: "/cookiepolicy",
+    },
+  };
+}
 
 const lastUpdated = "17 maj 2026";
 const contactEmail = "privacy@campuslyan.se";
@@ -117,14 +133,135 @@ function CookieTable() {
   );
 }
 
-export default function CookiePage() {
+function EnglishCookiePage() {
+  const englishRows: CookieTableRow[] = [
+    {
+      id: "consent",
+      nameAndDomain: "[COOKIE NAME] | campuslyan.se",
+      type: "First-party",
+      category: "Necessary",
+      purpose: "For example: stores your cookie consent choices.",
+      retention: "For example: 12 months",
+    },
+    {
+      id: "session",
+      nameAndDomain: "[COOKIE NAME] | campuslyan.se",
+      type: "First-party",
+      category: "Necessary",
+      purpose: "For example: keeps track of your session when you use the service.",
+      retention: "For example: session",
+    },
+    {
+      id: "preferences",
+      nameAndDomain: "[COOKIE NAME] | campuslyan.se",
+      type: "First-party",
+      category: "Functional",
+      purpose: "For example: stores language choice or user settings.",
+      retention: "For example: 30 days",
+    },
+    {
+      id: "analytics",
+      nameAndDomain: "[COOKIE NAME] | [THIRD-PARTY DOMAIN]",
+      type: "Third-party",
+      category: "Analytics",
+      purpose: "For example: analyses use of the website.",
+      retention: "For example: 13 months",
+    },
+    {
+      id: "marketing",
+      nameAndDomain: "[COOKIE NAME] | [THIRD-PARTY DOMAIN]",
+      type: "Third-party",
+      category: "Marketing",
+      purpose: "For example: measures campaign performance or ad clicks.",
+      retention: "For example: 90 days",
+    },
+  ];
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <section className="pb-20 pt-10">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="mb-8">
+            <Link href="/en" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              ← Back to homepage
+            </Link>
+          </div>
+
+          <header className="mb-12 border-b border-border pb-8">
+            <p className="mb-4 text-xs font-semibold uppercase text-muted-foreground">CampusLyan</p>
+            <h1 className="text-4xl font-bold text-foreground md:text-6xl">Cookie Policy</h1>
+            <p className="mt-4 text-sm font-medium text-muted-foreground">Last updated: 17 May 2026</p>
+          </header>
+
+          <div className="space-y-8">
+            <PolicySection title="General Information">
+              <Paragraph>
+                This cookie policy explains how CampusLyan Nordics AB uses cookies and similar technologies on <InlineLink href="https://www.campuslyan.se">www.campuslyan.se</InlineLink> and related digital services.
+              </Paragraph>
+              <Paragraph>
+                We use cookies to make the platform work correctly, keep it secure, remember preferences and, where permitted, understand how the website is used.
+              </Paragraph>
+            </PolicySection>
+
+            <PolicySection title="Cookies We Use">
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+                  <thead className="bg-muted/60 text-foreground">
+                    <tr>
+                      <th className="border-b border-border px-4 py-3 font-semibold">Name and domain</th>
+                      <th className="border-b border-border px-4 py-3 font-semibold">Type</th>
+                      <th className="border-b border-border px-4 py-3 font-semibold">Category</th>
+                      <th className="border-b border-border px-4 py-3 font-semibold">Purpose</th>
+                      <th className="border-b border-border px-4 py-3 font-semibold">Retention</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border text-muted-foreground">
+                    {englishRows.map((row) => (
+                      <tr key={row.id}>
+                        <td className="px-4 py-4 align-top font-medium text-foreground">{row.nameAndDomain}</td>
+                        <td className="px-4 py-4 align-top">{row.type}</td>
+                        <td className="px-4 py-4 align-top">{row.category}</td>
+                        <td className="px-4 py-4 align-top">{row.purpose}</td>
+                        <td className="px-4 py-4 align-top">{row.retention}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </PolicySection>
+
+            <PolicySection title="Managing Cookies">
+              <Paragraph>
+                You can change or withdraw consent through cookie settings where available, and you can also block or remove cookies in your browser. Some necessary cookies are required for the service to function.
+              </Paragraph>
+            </PolicySection>
+
+            <PolicySection title="Contact">
+              <Paragraph>
+                Questions can be sent to <InlineLink href={`mailto:${contactEmail}`}>{contactEmail}</InlineLink>.
+              </Paragraph>
+            </PolicySection>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export default async function CookiePage() {
+  const locale = await getRequestLocale();
+
+  if (locale === "en") {
+    return <EnglishCookiePage />;
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <section className="pb-20 pt-10">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="mb-8">
             <Link
-              href="/"
+              href={localizeHref("/", locale)}
               className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               ← Tillbaka till startsidan

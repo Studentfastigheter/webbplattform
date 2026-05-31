@@ -2,11 +2,18 @@
 
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Quote } from 'lucide-react';
+import { useI18n } from '@/i18n/I18nProvider';
+import { localizedText } from '@/i18n/text';
 
 export const Testimonials = () => {
+  const { locale } = useI18n();
   const testimonials = [
     {
-      text: "CampusLyan är ett mycket efterfrågat initiativ som har potential att stärka studenters möjligheter att hitta boende i hela Sverige. Jag ser med stor förväntan på den fortsatta utvecklingen av plattformen och vilka värden den kan skapa för både studenter och uthyrare!",
+      text: localizedText(
+        locale,
+        "CampusLyan är ett mycket efterfrågat initiativ som har potential att stärka studenters möjligheter att hitta boende i hela Sverige. Jag ser med stor förväntan på den fortsatta utvecklingen av plattformen och vilka värden den kan skapa för både studenter och uthyrare!",
+        "CampusLyan is a highly requested initiative with the potential to strengthen students' ability to find housing across Sweden. I look forward to the continued development of the platform and the value it can create for both students and landlords!",
+      ),
       author: "Gabriella Näslund",
       role: "Vice Ordförande, SGS",
       logo: "https://data.maglr.com/3591/issues/38791/710263/assets/media/742c16fffc590c8be19450e83b031937d78d2a55a4c6ed72894c5080b7e133c2.jpg",
@@ -32,7 +39,7 @@ export const Testimonials = () => {
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
           <div className="max-w-3xl">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-              Lyssna på era branschkollegor
+              {localizedText(locale, "Lyssna på era branschkollegor", "Hear from your industry peers")}
             </h2>
           </div>
 
@@ -40,14 +47,14 @@ export const Testimonials = () => {
             <button 
               onClick={prevSlide}
               className="w-14 h-14 rounded-full border border-foreground/10 flex items-center justify-center hover:bg-brand-beige-100 transition-colors text-foreground group"
-              aria-label="Föregående"
+              aria-label={localizedText(locale, "Föregående", "Previous")}
             >
               <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
             </button>
             <button 
               onClick={nextSlide}
               className="w-14 h-14 rounded-full border border-foreground/10 flex items-center justify-center hover:bg-brand-beige-100 transition-colors text-foreground group"
-              aria-label="Nästa"
+              aria-label={localizedText(locale, "Nästa", "Next")}
             >
               <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
             </button>
@@ -116,7 +123,7 @@ export const Testimonials = () => {
               className={`h-2.5 rounded-full transition-all duration-300 ${
                 currentIndex === idx ? 'bg-foreground w-8' : 'bg-foreground/20 w-2.5'
               }`}
-              aria-label={`Gå till slide ${idx + 1}`}
+              aria-label={localizedText(locale, `Gå till slide ${idx + 1}`, `Go to slide ${idx + 1}`)}
             />
           ))}
         </div>

@@ -8,6 +8,8 @@ import { Heart, Loader2 } from "lucide-react";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import { Button } from "@/components/ui/button";
 import { listingService } from "@/features/listings/services/listing-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import type { ListingCardDTO } from "@/types/listing";
 
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
@@ -19,6 +21,7 @@ const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"),
 
 export default function Page() {
   const router = useRouter();
+  const { locale, localizedHref } = useI18n();
   const [favorites, setFavorites] = useState<ListingCardDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredListingId, setHoveredListingId] = useState<string | undefined>();
@@ -29,7 +32,7 @@ export default function Page() {
         const data = await listingService.getFavorites();
         setFavorites(data);
       } catch (error) {
-        console.error("Kunde inte hämta favoriter:", error);
+        console.error("Could not load favorites:", error);
       } finally {
         setLoading(false);
       }
@@ -56,7 +59,7 @@ export default function Page() {
       setHoveredListingId((current) => (current === id ? undefined : current));
 
       listingService.removeFavorite(id).catch((error) => {
-        console.error("Kunde inte ta bort favorit:", error);
+        console.error("Could not remove favorite:", error);
 
         if (!removedListing) return;
 
@@ -74,9 +77,9 @@ export default function Page() {
 
   const openListing = useCallback(
     (id: string) => {
-      router.push(`/bostader/${id}`);
+      router.push(localizedHref(`/bostader/${id}`));
     },
-    [router],
+    [localizedHref, router],
   );
 
   if (loading) {
@@ -96,17 +99,21 @@ export default function Page() {
               <Heart className="h-5 w-5" />
             </div>
             <h2 className="mt-4 text-lg font-semibold text-black">
-              Inga sparade annonser
+              {localizedText(locale, "Inga sparade annonser", "No saved listings")}
             </h2>
             <p className="mt-2 max-w-sm text-sm leading-6 text-black/55">
-              När du sparar bostäder visas de här tillsammans med kartan.
+              {localizedText(
+                locale,
+                "När du sparar bostäder visas de här tillsammans med kartan.",
+                "When you save homes, they appear here together with the map.",
+              )}
             </p>
             <Button
               variant="outline"
               className="mt-6"
-              onClick={() => router.push("/bostader")}
+              onClick={() => router.push(localizedHref("/bostader"))}
             >
-              Hitta bostäder
+              {localizedText(locale, "Hitta bostäder", "Find homes")}
             </Button>
           </section>
         ) : (

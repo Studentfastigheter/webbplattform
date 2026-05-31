@@ -21,6 +21,8 @@ function getHostname(req: NextRequest) {
   return host.split(":")[0].toLowerCase();
 }
 
+const internalLocaleSearchParam = "__campuslyan_locale";
+
 function pathStartsWithSegment(pathname: string, segment: "/portal" | "/admin") {
   return pathname === segment || pathname.startsWith(`${segment}/`);
 }
@@ -44,9 +46,14 @@ function requestHeadersWithLocale(req: NextRequest, locale: Locale) {
   return requestHeaders;
 }
 
-function resolvePreferredLocale(req: NextRequest, urlLocale: Locale | null) {
+function resolvePreferredLocale(
+  req: NextRequest,
+  urlLocale: Locale | null,
+  internalLocale: Locale | null,
+) {
   return (
     urlLocale ??
+    internalLocale ??
     getLocaleFromCookieValue(req.cookies.get(localeCookieName)?.value) ??
     getLocaleFromAcceptLanguage(req.headers.get("accept-language")) ??
     defaultLocale
@@ -93,7 +100,8 @@ export function proxy(req: NextRequest) {
   const url = req.nextUrl.clone();
   const { pathname } = url;
   const urlLocale = getLocaleFromPathname(pathname);
-  const locale = resolvePreferredLocale(req, urlLocale);
+  const internalLocale = getLocaleFromCookieValue(url.searchParams.get(internalLocaleSearchParam));
+  const locale = resolvePreferredLocale(req, urlLocale, internalLocale);
   const routingPathname = stripLocaleFromPathname(pathname);
 
   if (isPublicAssetPath(pathname)) {
@@ -148,6 +156,10 @@ export function proxy(req: NextRequest) {
     return redirectToPrelaunchHome(url, locale);
   }
 
+  if (internalLocale && !urlLocale) {
+    return nextWithLocale(req, locale);
+  }
+
   if (!urlLocale && locale === "en") {
     url.pathname = localizePathname(pathname, "en");
     return redirectWithLocale(url, locale);
@@ -155,6 +167,7 @@ export function proxy(req: NextRequest) {
 
   if (urlLocale) {
     url.pathname = routingPathname;
+    url.searchParams.set(internalLocaleSearchParam, locale);
     return rewriteWithLocale(req, url, locale);
   }
 

@@ -21,6 +21,8 @@ import {
   Mail,
   Twitter,
 } from "lucide-react";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type ShareDialogProps = {
   children: React.ReactNode;
@@ -32,13 +34,32 @@ type ShareDialogProps = {
 
 export function ShareDialog({
   children,
-  title = "Dela bostad",
-  description = "Dela länken till denna sida via sociala medier eller kopiera länken direkt.",
-  mailSubject = "Kolla in den här sidan",
-  mailBody = "Hittade den här länken som jag trodde du skulle gilla:",
+  title,
+  description,
+  mailSubject,
+  mailBody,
 }: ShareDialogProps) {
+  const { locale } = useI18n();
   const [copied, setCopied] = useState(false);
   const [currentUrl, setCurrentUrl] = useState("");
+  const resolvedTitle =
+    title ?? localizedText(locale, "Dela bostad", "Share listing");
+  const resolvedDescription =
+    description ??
+    localizedText(
+      locale,
+      "Dela länken till denna sida via sociala medier eller kopiera länken direkt.",
+      "Share this page through social channels or copy the link directly.",
+    );
+  const resolvedMailSubject =
+    mailSubject ?? localizedText(locale, "Kolla in den här sidan", "Check out this page");
+  const resolvedMailBody =
+    mailBody ??
+    localizedText(
+      locale,
+      "Hittade den här länken som jag trodde du skulle gilla:",
+      "I found this link and thought you might like it:",
+    );
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -53,8 +74,8 @@ export function ShareDialog({
   };
 
   const encodedUrl = encodeURIComponent(currentUrl);
-  const encodedMailSubject = encodeURIComponent(mailSubject);
-  const encodedMailBody = encodeURIComponent(`${mailBody} ${currentUrl}`);
+  const encodedMailSubject = encodeURIComponent(resolvedMailSubject);
+  const encodedMailBody = encodeURIComponent(`${resolvedMailBody} ${currentUrl}`);
 
   const socialLinks = [
     {
@@ -76,7 +97,7 @@ export function ShareDialog({
       color: "hover:bg-blue-700 hover:text-white",
     },
     {
-      name: "E-post",
+      name: localizedText(locale, "E-post", "Email"),
       icon: <Mail className="w-5 h-5" />,
       href: `mailto:?subject=${encodedMailSubject}&body=${encodedMailBody}`,
       color: "hover:bg-gray-600 hover:text-white",
@@ -88,8 +109,8 @@ export function ShareDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md bg-white rounded-xl">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>{resolvedTitle}</DialogTitle>
+          <DialogDescription>{resolvedDescription}</DialogDescription>
         </DialogHeader>
 
         <div className="flex justify-center gap-4 py-4">
@@ -103,7 +124,7 @@ export function ShareDialog({
                 p-3 rounded-full bg-gray-100 transition-colors text-gray-700
                 ${social.color}
               `}
-              title={`Dela på ${social.name}`}
+              title={localizedText(locale, `Dela på ${social.name}`, `Share on ${social.name}`)}
             >
               {social.icon}
             </a>
@@ -113,7 +134,7 @@ export function ShareDialog({
         <div className="flex items-center space-x-2 pt-2">
           <div className="grid flex-1 gap-2">
             <Label htmlFor="link" className="sr-only">
-              Länk
+              {localizedText(locale, "Länk", "Link")}
             </Label>
             <Input
               id="link"
@@ -132,7 +153,7 @@ export function ShareDialog({
             ) : (
               <Copy className="h-4 w-4" />
             )}
-            <span className="sr-only">Kopiera</span>
+            <span className="sr-only">{localizedText(locale, "Kopiera", "Copy")}</span>
           </Button>
         </div>
       </DialogContent>

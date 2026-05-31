@@ -3,8 +3,12 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowDown } from "lucide-react";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 export const TrustHero = () => {
+  const { locale, localizedHref } = useI18n();
+
   return (
     <section className="relative bg-background border-b border-border overflow-hidden min-h-[85vh] flex items-center justify-center">
 
@@ -26,15 +30,19 @@ export const TrustHero = () => {
 */}
         {/* --- Huvudrubrik --- */}
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-8 text-balance">
-          Vi är bryggan mellan <br className="hidden md:block"/>
+          {localizedText(locale, "Vi är bryggan mellan", "We are the bridge between")} <br className="hidden md:block"/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-pop-contrast">
-             studenter och bostadsmarknaden
+             {localizedText(locale, "studenter och bostadsmarknaden", "students and the housing market")}
           </span>
         </h1>
 
         {/* --- Ingress --- */}
         <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-12">
-          En plattform byggd för studenter, av studenter – i nära samarbete med landets ledande bostadsaktörer.
+          {localizedText(
+            locale,
+            "En plattform byggd för studenter, av studenter - i nära samarbete med landets ledande bostadsaktörer.",
+            "A platform built for students, by students - in close collaboration with Sweden's leading housing providers.",
+          )}
         </p>
 
         {/* --- Metrics / Stats (Trovärdighetsbyggare) --- 
@@ -69,10 +77,10 @@ export const TrustHero = () => {
 */}
         {/* --- CTA --- */}
         <Link
-          href="/for-foretag#bokning"
+          href={localizedHref("/for-foretag#bokning")}
           className="inline-flex rounded-full bg-[#004225] px-8 py-3 text-base font-semibold text-white transition hover:bg-[#00341d] mb-8"
         >
-          Boka möte
+          {localizedText(locale, "Boka möte", "Book a meeting")}
         </Link>
 
         {/* --- Scroll Indicator --- */}

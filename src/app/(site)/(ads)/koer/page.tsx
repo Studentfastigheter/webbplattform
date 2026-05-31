@@ -6,6 +6,8 @@ import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/features/queues/components/QueueRow";
 import { useAuth } from "@/context/AuthContext";
 import { queueService } from "@/features/queues/services/queue-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
   const normalized = status?.toLowerCase();
@@ -15,11 +17,12 @@ const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
 };
 
 export default function Page() {
+  const { locale, localizedHref } = useI18n();
   const columns: ListFrameColumn[] = [
-    { id: "name", label: "Kö", width: "2.4fr" },
-    { id: "city", label: "Stad", width: "1.6fr" },
+    { id: "name", label: localizedText(locale, "Kö", "Queue"), width: "2.4fr" },
+    { id: "city", label: localizedText(locale, "Stad", "City"), width: "1.6fr" },
     { id: "status", label: "Status", align: "center", width: "1.2fr" },
-    { id: "days", label: "Kötid", align: "left", width: "1fr" },
+    { id: "days", label: localizedText(locale, "Kötid", "Queue time"), align: "left", width: "1fr" },
     { id: "hantera", label: " ", align: "center", width: "1.1fr" },
   ];
 
@@ -55,7 +58,7 @@ export default function Page() {
 
             return {
               id: queueId,
-              name: app.queueName ?? queue?.name ?? "Okänd kö",
+              name: app.queueName ?? queue?.name ?? localizedText(locale, "Okänd kö", "Unknown queue"),
               logoUrl:
                 queue?.logoUrl ??
                 company?.logoUrl ??
@@ -65,8 +68,8 @@ export default function Page() {
               days: app.queueDays ?? 0,
               onManage: () => {
                 window.location.href = companyId != null
-                  ? `/alla-koer/${companyId}`
-                  : "/alla-koer";
+                  ? localizedHref(`/alla-koer/${companyId}`)
+                  : localizedHref("/alla-koer");
               },
             };
           });
@@ -76,7 +79,7 @@ export default function Page() {
       .catch((err: unknown) => {
         if (!active) return;
         console.error(err);
-        setError("Kunde inte ladda dina köer.");
+        setError(localizedText(locale, "Kunde inte ladda dina köer.", "Could not load your queues."));
       })
       .finally(() => {
         if (!active) return;
@@ -86,7 +89,7 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [locale, localizedHref, user]);
 
   const rows = useMemo(() => queueRows.map(buildQueueRow), [queueRows]);
 
@@ -95,7 +98,7 @@ export default function Page() {
       <div className="w-full">
         {!user && (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Logga in för att se dina köer.
+            {localizedText(locale, "Logga in för att se dina köer.", "Log in to view your queues.")}
           </div>
         )}
         {error && (
@@ -116,10 +119,10 @@ export default function Page() {
           emptyState={
             <div className="py-16 text-center text-sm text-gray-400">
               {loading
-                ? "Laddar dina köplatser..."
+                ? localizedText(locale, "Laddar dina köplatser...", "Loading your queue positions...")
                 : user
-                ? "Du står inte i några bostadsköer än."
-                : "Du måste vara inloggad för att se dina köer."}
+                ? localizedText(locale, "Du står inte i några bostadsköer än.", "You are not in any housing queues yet.")
+                : localizedText(locale, "Du måste vara inloggad för att se dina köer.", "You must be logged in to view your queues.")}
             </div>
           }
         />

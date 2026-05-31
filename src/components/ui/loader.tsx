@@ -17,7 +17,7 @@ type LoadingScreenProps = React.ComponentPropsWithoutRef<"div"> & {
 function Loader({
   className,
   color,
-  label = "Laddar",
+  label = "Loading",
   size,
   style,
   ...props
@@ -45,7 +45,7 @@ function Loader({
 
 function LoadingScreen({
   className,
-  label = "Laddar",
+  label = "Loading",
   loaderColor,
   loaderSize,
   ...props

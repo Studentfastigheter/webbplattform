@@ -19,6 +19,8 @@ import {
 } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
@@ -111,6 +113,7 @@ const ClusterPreviewPopup: React.FC<{
   zoom: number;
   activeMarkerId?: string;
 }> = ({ markers, zoom, activeMarkerId }) => {
+  const { locale } = useI18n();
   const [index, setIndex] = useState(0);
   const markerIds = markers.map((marker) => marker.id).join("-");
 
@@ -137,7 +140,7 @@ const ClusterPreviewPopup: React.FC<{
       <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
         <button
           type="button"
-          aria-label="Föregående annons"
+          aria-label={localizedText(locale, "Föregående annons", "Previous listing")}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -154,7 +157,7 @@ const ClusterPreviewPopup: React.FC<{
 
         <button
           type="button"
-          aria-label="Nästa annons"
+          aria-label={localizedText(locale, "Nästa annons", "Next listing")}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -182,7 +185,7 @@ const ClusterPreviewPopup: React.FC<{
         <div className="hidden">
           <button
             type="button"
-            aria-label="Föregående annons"
+            aria-label={localizedText(locale, "Föregående annons", "Previous listing")}
             onClick={(event) => {
               event.stopPropagation();
               goToPrevious();
@@ -192,11 +195,11 @@ const ClusterPreviewPopup: React.FC<{
             <ChevronLeft className="h-4 w-4" />
           </button>
           <span className="min-w-0 text-center text-xs font-semibold text-black/70">
-            {activeIndex + 1} av {markers.length}
+            {activeIndex + 1} {localizedText(locale, "av", "of")} {markers.length}
           </span>
           <button
             type="button"
-            aria-label="Nästa annons"
+            aria-label={localizedText(locale, "Nästa annons", "Next listing")}
             onClick={(event) => {
               event.stopPropagation();
               goToNext();
@@ -224,6 +227,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
   autoFitMarkers = true,
   fillContainer = false,
 }) => {
+  const { locale } = useI18n();
   const [isClient, setIsClient] = useState(false);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(zoom);
@@ -660,10 +664,10 @@ const BaseMap: React.FC<BaseMapProps> = ({
                   ) : (
                   <div className="space-y-1 text-sm">
                     <div className="font-semibold">
-                      {cluster.markers.length} platser här
+                      {cluster.markers.length} {localizedText(locale, "platser här", "places here")}
                     </div>
                     <div className="text-xs text-gray-500">
-                      Zooma in för detaljerade markeringar.
+                      {localizedText(locale, "Zooma in för detaljerade markeringar.", "Zoom in for detailed markers.")}
                     </div>
                   </div>
                   )}

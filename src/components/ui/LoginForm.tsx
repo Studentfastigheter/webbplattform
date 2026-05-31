@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
@@ -21,6 +21,8 @@ import { useAuth } from "@/context/AuthContext";
 import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
 import { getActiveCompanyId } from "@/lib/company-access";
 import type { User } from "@/types";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type LoginMode = "student" | "company" | "admin";
 
@@ -32,8 +34,11 @@ const loginCopy: Record<
   LoginMode,
   {
     title: string;
+    titleEn: string;
     subtitle: string;
+    subtitleEn: string;
     invalidAccountMessage: string;
+    invalidAccountMessageEn: string;
     successPath: string;
     showGoogle: boolean;
     showRegisterLink: boolean;
@@ -41,27 +46,39 @@ const loginCopy: Record<
 > = {
   student: {
     title: "Logga in",
+    titleEn: "Log in",
     subtitle: "Endast för studentkonton på CampusLyan.",
+    subtitleEn: "For CampusLyan student accounts only.",
     invalidAccountMessage:
       "Det här kontot är inte ett studentkonto. Använd rätt inloggningssida.",
+    invalidAccountMessageEn:
+      "This account is not a student account. Use the correct sign-in page.",
     successPath: "/",
     showGoogle: true,
     showRegisterLink: true,
   },
   company: {
     title: "Portal-login",
+    titleEn: "Portal login",
     subtitle: "Endast för företagskonton.",
+    subtitleEn: "For company accounts only.",
     invalidAccountMessage:
       "Det här kontot är inte kopplat till ett företag. Logga in via rätt sida.",
+    invalidAccountMessageEn:
+      "This account is not linked to a company. Sign in through the correct page.",
     successPath: "/",
     showGoogle: false,
     showRegisterLink: false,
   },
   admin: {
     title: "Admin-login",
+    titleEn: "Admin login",
     subtitle: "Endast för administratörskonton.",
+    subtitleEn: "For administrator accounts only.",
     invalidAccountMessage:
       "Det här kontot är inte ett administratörskonto.",
+    invalidAccountMessageEn:
+      "This account is not an administrator account.",
     successPath: "/",
     showGoogle: false,
     showRegisterLink: false,
@@ -83,7 +100,18 @@ function isAllowedAccount(user: User, mode: LoginMode) {
 export function LoginForm({ mode = "student", className, ...props }: LoginFormProps) {
   const router = useRouter();
   const { login, adminLogin, googleLogin, logout, isLoading } = useAuth();
-  const copy = loginCopy[mode];
+  const { locale, localizedHref } = useI18n();
+  const baseCopy = loginCopy[mode];
+  const copy = {
+    ...baseCopy,
+    title: localizedText(locale, baseCopy.title, baseCopy.titleEn),
+    subtitle: localizedText(locale, baseCopy.subtitle, baseCopy.subtitleEn),
+    invalidAccountMessage: localizedText(
+      locale,
+      baseCopy.invalidAccountMessage,
+      baseCopy.invalidAccountMessageEn,
+    ),
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -94,19 +122,19 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail && !password) {
-      return "Fyll i e-postadress och lösenord för att logga in.";
+      return localizedText(locale, "Fyll i e-postadress och lösenord för att logga in.", "Enter your email address and password to sign in.");
     }
 
     if (!trimmedEmail) {
-      return "Fyll i e-postadressen som är kopplad till ditt konto.";
+      return localizedText(locale, "Fyll i e-postadressen som är kopplad till ditt konto.", "Enter the email address connected to your account.");
     }
 
     if (!isValidEmail(trimmedEmail)) {
-      return "E-postadressen ser inte korrekt ut. Skriv den i formatet namn@example.com.";
+      return localizedText(locale, "E-postadressen ser inte korrekt ut. Skriv den i formatet namn@example.com.", "The email address does not look correct. Use the format name@example.com.");
     }
 
     if (!password) {
-      return "Fyll i lösenordet för ditt konto.";
+      return localizedText(locale, "Fyll i lösenordet för ditt konto.", "Enter the password for your account.");
     }
 
     return null;
@@ -119,7 +147,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
       return;
     }
 
-    router.replace(copy.successPath);
+    router.replace(localizedHref(copy.successPath));
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -140,7 +168,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
       const user = await loginAction({ email: email.trim(), password });
       handleAuthenticatedUser(user);
     } catch (err: unknown) {
-      setError(getAuthErrorMessage(err, "login"));
+      setError(getAuthErrorMessage(err, "login", locale));
     } finally {
       setSubmitting(false);
     }
@@ -157,7 +185,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
       });
       handleAuthenticatedUser(user);
     } catch (err: unknown) {
-      setError(getAuthErrorMessage(err, "google-login"));
+      setError(getAuthErrorMessage(err, "google-login", locale));
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +198,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
       helper={
         isLoading && (
           <p className="text-sm text-muted-foreground">
-            Vi laddar dina inställningar ...
+            {localizedText(locale, "Vi laddar dina inställningar ...", "Loading your settings ...")}
           </p>
         )
       }
@@ -182,20 +210,20 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
           {copy.showGoogle && (
             <>
               <GoogleAuthButton
-                label="Fortsätt med Google"
+                label={localizedText(locale, "Fortsätt med Google", "Continue with Google")}
                 disabled={isLoading || submitting}
                 onCredential={onGoogleCredential}
                 onError={setError}
               />
 
               <FieldSeparator className="my-0 [&_[data-slot=field-separator-content]]:bg-white">
-                Eller
+                {localizedText(locale, "Eller", "Or")}
               </FieldSeparator>
             </>
           )}
 
           <Field>
-            <FieldLabel htmlFor="email">E-post</FieldLabel>
+            <FieldLabel htmlFor="email">{localizedText(locale, "E-post", "Email")}</FieldLabel>
             <Input
               id="email"
               type="email"
@@ -211,13 +239,13 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
 
           <Field>
             <div className="flex items-center justify-between">
-              <FieldLabel htmlFor="password">Lösenord</FieldLabel>
+              <FieldLabel htmlFor="password">{localizedText(locale, "Lösenord", "Password")}</FieldLabel>
               {mode === "student" && (
                 <Link
                   href="/glomt-losenord"
                   className="text-sm font-medium text-[#004225] underline-offset-4 hover:underline"
                 >
-                  Glömt ditt lösenord?
+                  {localizedText(locale, "Glömt ditt lösenord?", "Forgot your password?")}
                 </Link>
               )}
             </div>
@@ -225,7 +253,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
               <Input
                 id="password"
                 type={isPasswordVisible ? "text" : "password"}
-                placeholder="Skriv ditt lösenord"
+                placeholder={localizedText(locale, "Skriv ditt lösenord", "Enter your password")}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
@@ -245,7 +273,9 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
                   <EyeIcon className="h-5 w-5" />
                 )}
                 <span className="sr-only">
-                  {isPasswordVisible ? "Dölj lösenord" : "Visa lösenord"}
+                  {isPasswordVisible
+                    ? localizedText(locale, "Dölj lösenord", "Hide password")
+                    : localizedText(locale, "Visa lösenord", "Show password")}
                 </span>
               </button>
             </div>
@@ -258,7 +288,9 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
               className="h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
               disabled={isLoading || submitting}
             >
-              {submitting ? "Loggar in..." : "Fortsätt"}
+              {submitting
+                ? localizedText(locale, "Loggar in...", "Signing in...")
+                : localizedText(locale, "Fortsätt", "Continue")}
             </Button>
           </Field>
 
@@ -267,22 +299,22 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
       </form>
 
       <FieldDescription className="text-center text-xs text-muted-foreground">
-        Genom att logga in godkänner du våra{" "}
-        <a href="/anvandarvillkor" className="text-[#004225] underline underline-offset-4">
-          användarvillkor
-        </a>{" "}
-        och{" "}
-        <a href="/integritetspolicy" className="text-[#004225] underline underline-offset-4">
-          integritetspolicy
-        </a>
+        {localizedText(locale, "Genom att logga in godkänner du våra", "By signing in, you accept our")}{" "}
+        <Link href="/anvandarvillkor" className="text-[#004225] underline underline-offset-4">
+          {localizedText(locale, "användarvillkor", "terms of use")}
+        </Link>{" "}
+        {localizedText(locale, "och", "and")}{" "}
+        <Link href="/integritetspolicy" className="text-[#004225] underline underline-offset-4">
+          {localizedText(locale, "integritetspolicy", "privacy policy")}
+        </Link>
         .
       </FieldDescription>
 
       {copy.showRegisterLink && (
         <FieldDescription className="text-center text-sm">
-          Har du inte ett konto?{" "}
+          {localizedText(locale, "Har du inte ett konto?", "Do not have an account?")}{" "}
           <Link href="/registrera" className="font-medium text-[#004225] no-underline">
-            Skapa ett nu
+            {localizedText(locale, "Skapa ett nu", "Create one now")}
           </Link>
         </FieldDescription>
       )}

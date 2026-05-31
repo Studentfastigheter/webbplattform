@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 export interface PartnerItem {
   name: string;
@@ -29,6 +31,7 @@ export const PartnerGrid = ({
   columns = 3,
   variant = "default",
 }: PartnerGridProps) => {
+  const { locale, localizedHref } = useI18n();
   const isFoundingVariant = variant === "founding";
 
   const sectionClasses = isFoundingVariant
@@ -74,7 +77,7 @@ export const PartnerGrid = ({
           )}
           {isFoundingVariant && (
             <Link
-              href="/for-foretag#bokning"
+              href={localizedHref("/for-foretag#bokning")}
               className="mt-8 inline-flex rounded-full px-8 py-3 text-base font-semibold transition hover:opacity-90"
               style={{
                 border: "2px solid #d4a017",
@@ -82,7 +85,7 @@ export const PartnerGrid = ({
                 color: "#d4a017",
               }}
             >
-              Bli partner
+              {localizedText(locale, "Bli partner", "Become a partner")}
             </Link>
           )}
         </div>
@@ -115,7 +118,7 @@ export const PartnerGrid = ({
                 {partner.logoSrc ? (
                   <img
                     src={partner.logoSrc.startsWith("http") ? partner.logoSrc : `/logos/${partner.logoSrc}`}
-                    alt={`${partner.name} logotyp`}
+                    alt={localizedText(locale, `${partner.name} logotyp`, `${partner.name} logo`)}
                     className="max-h-full w-auto object-contain"
                   />
                 ) : (
@@ -136,11 +139,13 @@ export const PartnerGrid = ({
 
               <div className="mt-auto">
                 <Link
-                  href={partner.href}
+                  href={localizedHref(partner.href)}
                   {...(partner.href.startsWith("http") ? { target: "_blank" } : {})}
                   className="group inline-flex items-center text-sm font-bold text-foreground hover:text-foreground transition-colors"
                 >
-                  {partner.href.startsWith("/") ? "KONTAKTA OSS" : "LÄS MER"}
+                  {partner.href.startsWith("/")
+                    ? localizedText(locale, "KONTAKTA OSS", "CONTACT US")
+                    : localizedText(locale, "LÄS MER", "READ MORE")}
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
               </div>

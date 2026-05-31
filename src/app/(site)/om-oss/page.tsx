@@ -8,6 +8,9 @@ import {
   MapPin,
 } from "lucide-react";
 import { image } from "@heroui/theme";
+import type { Locale } from "@/i18n/config";
+import { getRequestLocale } from "@/i18n/server";
+import { localizedText } from "@/i18n/text";
 
 // --- DATA ---
 
@@ -58,9 +61,9 @@ const VALUE_CARDS: ValueCard[] = [
 const FEATURED_VALUE_CARDS = VALUE_CARDS.slice(0, 2);
 const VALUE_FALLBACK_ICONS = [Search, MapPin, Users2, ShieldCheck];
 
-const TEAM_CATEGORIES = [
+const getTeamCategories = (locale: Locale) => [
   {
-    title: "Ledning",
+    title: localizedText(locale, "Ledning", "Leadership"),
     members: [
       {
         name: "Simon Carlén",
@@ -85,7 +88,7 @@ const TEAM_CATEGORIES = [
     ],
   },
   {
-    title: "Kommersiellt & Marknadsföring",
+    title: localizedText(locale, "Kommersiellt & Marknadsföring", "Commercial & Marketing"),
     members: [
       { name: "Alve Nilsson", 
         role: "Commercial Associate",
@@ -112,7 +115,7 @@ const TEAM_CATEGORIES = [
     ],
   },
   {
-    title: "Produkt & Utveckling",
+    title: localizedText(locale, "Produkt & Utveckling", "Product & Development"),
     members: [
       {
         name: "Marco Speziale",
@@ -229,7 +232,7 @@ function ValueFeature({ item, index }: { item: ValueCard; index: number }) {
   );
 }
 
-function MemberCard({ member }: { member: TeamMember }) {
+function MemberCard({ member, locale }: { member: TeamMember; locale: Locale }) {
   return (
     <div className="group flex flex-col items-center text-center">
       <div className="relative mb-6">
@@ -255,7 +258,7 @@ function MemberCard({ member }: { member: TeamMember }) {
             target="_blank" 
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-foreground transition-colors p-1"
-            aria-label={`LinkedIn för ${member.name}`}
+            aria-label={localizedText(locale, `LinkedIn för ${member.name}`, `LinkedIn for ${member.name}`)}
           >
             <Linkedin className="w-5 h-5" />
           </a>
@@ -265,7 +268,7 @@ function MemberCard({ member }: { member: TeamMember }) {
           <a 
             href={`mailto:${member.email}`}
             className="text-muted-foreground hover:text-foreground transition-colors p-1"
-            aria-label={`Maila ${member.name}`}
+            aria-label={localizedText(locale, `Maila ${member.name}`, `Email ${member.name}`)}
           >
             <Mail className="w-5 h-5" />
           </a>
@@ -278,7 +281,10 @@ function MemberCard({ member }: { member: TeamMember }) {
 
 // --- HUVUDSIDA ---
 
-export default function OmPage() {
+export default async function OmPage() {
+  const locale = await getRequestLocale();
+  const teamCategories = getTeamCategories(locale);
+
   return (
     <main className="main-marketing-theme min-h-screen bg-background text-foreground">
       
@@ -287,17 +293,23 @@ export default function OmPage() {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-4xl mx-auto text-center mb-16 flex flex-col">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-8 leading-tight">
-              Byggt på Chalmers <br className="hidden md:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-pop-contrast">för studenter i hela Sverige</span>
+              {localizedText(locale, "Byggt på Chalmers", "Built at Chalmers")} <br className="hidden md:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-pop-contrast">
+                {localizedText(locale, "för studenter i hela Sverige", "for students across Sweden")}
+              </span>
             </h1>
             <p className="order-4 mt-8 text-xl text-muted-foreground leading-relaxed md:order-3 md:mt-0">
-              Vi som grundade CampusLyan är själva studenter. Efter att ha upplevt hur krångligt och otryggt det kan vara att söka bostad, bestämde vi oss för att bygga lösningen vi själva saknade.
+              {localizedText(
+                locale,
+                "Vi som grundade CampusLyan är själva studenter. Efter att ha upplevt hur krångligt och otryggt det kan vara att söka bostad, bestämde vi oss för att bygga lösningen vi själva saknade.",
+                "The people who founded CampusLyan are students ourselves. After experiencing how complicated and unsafe it can be to search for housing, we decided to build the solution we were missing.",
+              )}
             </p>
 
             <div className="order-3 relative overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm md:order-4 md:mt-10">
               <Image
                 src="/team/group.jpg"
-                alt="CampusLyan-teamet"
+                alt={localizedText(locale, "CampusLyan-teamet", "The CampusLyan team")}
                 width={1618}
                 height={911}
                 sizes="(max-width: 768px) 100vw, 896px"
@@ -343,12 +355,16 @@ export default function OmPage() {
       <section className="py-24 px-6 bg-background">
         <div className="max-w-7xl mx-auto">
           <SectionHeading
-            title="Möt teamet"
-            description="Vi kombinerar våra erfarenheter från Chalmers med viljan att förbättra bostadsmarknaden för alla."
+            title={localizedText(locale, "Möt teamet", "Meet the team")}
+            description={localizedText(
+              locale,
+              "Vi kombinerar våra erfarenheter från Chalmers med viljan att förbättra bostadsmarknaden för alla.",
+              "We combine our experiences from Chalmers with the ambition to improve the housing market for everyone.",
+            )}
           />
 
           <div className="space-y-24">
-            {TEAM_CATEGORIES.map((category) => (
+            {teamCategories.map((category) => (
               <div key={category.title}>
                 <div className="flex items-center mb-12">
                   <h3 className="text-2xl font-bold text-foreground mr-6">
@@ -359,7 +375,7 @@ export default function OmPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
                   {category.members.map((member) => (
-                    <MemberCard key={member.name} member={member} />
+                    <MemberCard key={member.name} member={member} locale={locale} />
                   ))}
                 </div>
               </div>

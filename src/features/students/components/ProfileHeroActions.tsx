@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import { PencilLine } from "lucide-react";
 
 type Props = {
@@ -22,23 +24,25 @@ export default function ProfileHeroActions({
   messageLabel,
   primaryLabel = "Uppdatera profil",
 }: Props) {
+  const { locale, localizedHref } = useI18n();
+
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
       {secondaryHref && (
-        <Button as="a" href={secondaryHref} size="sm" variant="secondary">
-          <span className="truncate">{secondaryLabel ?? "Visa mer"}</span>
+        <Button as="a" href={localizedHref(secondaryHref)} size="sm" variant="secondary">
+          <span className="truncate">{secondaryLabel ?? localizedText(locale, "Visa mer", "Show more")}</span>
         </Button>
       )}
 
       {messageHref && (
-        <Button as="a" href={messageHref} size="sm" variant="outline">
-          <span className="truncate">{messageLabel ?? "Kontakta"}</span>
+        <Button as="a" href={localizedHref(messageHref)} size="sm" variant="outline">
+          <span className="truncate">{messageLabel ?? localizedText(locale, "Kontakta", "Contact")}</span>
         </Button>
       )}
 
       <Button
         as={editHref ? "a" : undefined}
-        href={editHref}
+        href={editHref ? localizedHref(editHref) : undefined}
         onPress={editHref ? undefined : onEdit}
         size="sm"
         variant="default"

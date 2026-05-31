@@ -10,8 +10,11 @@ import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
 import { authService } from '@/features/auth/services/auth-service'
 import { getAuthErrorMessage } from '@/lib/auth-error-messages'
+import { useI18n } from '@/i18n/I18nProvider'
+import { localizedText } from '@/i18n/text'
 
 export default function PasswordSection() {
+  const { locale } = useI18n()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -28,13 +31,13 @@ export default function PasswordSection() {
 
     try {
       if (!email) {
-        throw new Error('Kontot saknar e-postadress.')
+        throw new Error(localizedText(locale, 'Kontot saknar e-postadress.', 'The account is missing an email address.'))
       }
 
       await authService.startPasswordReset({ userEmail: email })
-      setMessage('Vi har skickat en länk för lösenordsbyte till din e-post.')
+      setMessage(localizedText(locale, 'Vi har skickat en länk för lösenordsbyte till din e-post.', 'We have sent a password reset link to your email.'))
     } catch (err) {
-      setError(getAuthErrorMessage(err, 'forgot-password'))
+      setError(getAuthErrorMessage(err, 'forgot-password', locale))
     } finally {
       setLoading(false)
     }
@@ -49,12 +52,12 @@ export default function PasswordSection() {
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
             <div className='flex flex-wrap items-center gap-2.5'>
               <span className='text-sm font-semibold text-gray-950'>
-                Återställ lösenord
+                {localizedText(locale, 'Återställ lösenord', 'Reset password')}
               </span>
               {message ? (
                 <span className='inline-flex h-6 items-center gap-1.5 rounded-full border border-green-200 bg-white px-2 text-xs font-medium text-green-700'>
                   <CheckCircle2Icon className='size-3.5 text-green-700' />
-                  Skickat
+                  {localizedText(locale, 'Skickat', 'Sent')}
                 </span>
               ) : null}
             </div>
@@ -67,7 +70,7 @@ export default function PasswordSection() {
               isDisabled={loading}
               onClick={startPasswordReset}
             >
-              Byt lösenord
+              {localizedText(locale, 'Byt lösenord', 'Change password')}
             </Button>
           </div>
 

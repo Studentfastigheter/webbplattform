@@ -14,6 +14,8 @@ import { BookingSection } from "@/features/marketing/components/business/Booking
 import { Hero } from "@/features/marketing/components/business/Hero";
 import { Testimonials } from "@/features/marketing/components/business/Testimonial";
 import { Implementation } from "@/features/marketing/components/business/Implementation";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type FeatureRowProps = {
   flipped?: boolean;
@@ -41,24 +43,37 @@ const FeatureRow = ({
 };
 
 export default function ForForetagPage() {
+  const { locale } = useI18n();
+
   return (
     <div className="main-marketing-theme min-h-screen bg-background font-sans text-foreground selection:bg-secondary selection:text-foreground">
       <Hero
         title={
           <span>
-            Marknadsför till <span className="text-pop-contrast">Sveriges studenter</span>
+            {localizedText(locale, "Marknadsför till", "Market to")}{" "}
+            <span className="text-pop-contrast">
+              {localizedText(locale, "Sveriges studenter", "Sweden's students")}
+            </span>
           </span>
         }
-        description="Anslut ditt fastighetssystem och nå hela marknaden automatiskt. Vi verifierar studenterna enligt din kravprofil, så att du kan fylla vakanserna helt utan administration."
-        primaryCtaText="Boka demo"
+        description={localizedText(
+          locale,
+          "Anslut ditt fastighetssystem och nå hela marknaden automatiskt. Vi verifierar studenterna enligt din kravprofil, så att du kan fylla vakanserna helt utan administration.",
+          "Connect your property system and reach the entire market automatically. We verify students against your requirements profile so you can fill vacancies with no administration.",
+        )}
+        primaryCtaText={localizedText(locale, "Boka demo", "Book a demo")}
         primaryCtaLink="#bokning"
       />
 
       <section className="relative z-10 mx-auto max-w-7xl space-y-24 px-6 py-16 lg:space-y-32 lg:py-32">
         <FeatureRow
           flipped
-          title="Den optimala marknadskanalen"
-          description="Med CampusLyan når ni ut till alla studenter i Sverige på ett och samma ställe. Vi samlar studenterna i en gemensam plattform, vilket ger er maximal exponering mot rätt målgrupp utan onödigt spill."
+          title={localizedText(locale, "Den optimala marknadskanalen", "The optimal marketing channel")}
+          description={localizedText(
+            locale,
+            "Med CampusLyan når ni ut till alla studenter i Sverige på ett och samma ställe. Vi samlar studenterna i en gemensam plattform, vilket ger er maximal exponering mot rätt målgrupp utan onödigt spill.",
+            "With CampusLyan you reach all students in Sweden in one place. We bring students together in a shared platform, giving you maximum exposure to the right audience without unnecessary waste.",
+          )}
         >
           <div className="relative flex h-[350px] flex-col items-center justify-center overflow-hidden rounded-[2.5rem] border border-border bg-card p-4 shadow-lg lg:h-[480px] lg:p-8">
             <div className="z-20 mb-6 flex h-10 w-52 items-center rounded-full border border-border bg-background px-4 shadow-sm lg:mb-8 lg:h-12 lg:w-64">
@@ -106,8 +121,12 @@ export default function ForForetagPage() {
         </FeatureRow>
 
         <FeatureRow
-          title="Verifierade studenter – inga spökanvändare"
-          description="Vi säkerställer att alla registrerade användare är aktiva studenter genom strikt verifiering. Detta eliminerar spökanvändare i era bostadsköer och garanterar att ni enbart hanterar ansökningar från behöriga sökande."
+          title={localizedText(locale, "Verifierade studenter - inga spökanvändare", "Verified students - no ghost users")}
+          description={localizedText(
+            locale,
+            "Vi säkerställer att alla registrerade användare är aktiva studenter genom strikt verifiering. Detta eliminerar spökanvändare i era bostadsköer och garanterar att ni enbart hanterar ansökningar från behöriga sökande.",
+            "We ensure every registered user is an active student through strict verification. This removes ghost users from your housing queues and ensures you only handle applications from eligible applicants.",
+          )}
         >
           <div className="group relative flex h-[350px] items-center justify-center overflow-hidden rounded-[2.5rem] border border-primary bg-primary p-4 shadow-2xl shadow-primary/40 lg:h-[480px] lg:p-8">
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
@@ -134,7 +153,9 @@ export default function ForForetagPage() {
                     <div className="rounded-full bg-brand-green-light p-1">
                       <Check size={10} className="text-white" strokeWidth={4} />
                     </div>
-                    <span className="text-xs font-bold tracking-wide text-brand-green-light lg:text-sm">VERIFIERAD STUDENT</span>
+                    <span className="text-xs font-bold tracking-wide text-brand-green-light lg:text-sm">
+                      {localizedText(locale, "VERIFIERAD STUDENT", "VERIFIED STUDENT")}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -144,8 +165,12 @@ export default function ForForetagPage() {
 
         <FeatureRow
           flipped
-          title="Sömlös systemkoppling"
-          description="Arbeta kvar i era befintliga processer. Tack vare våra färdiga integrationer kopplar ni enkelt ihop CampusLyan direkt med ert nuvarande fastighetssystem för automatiserad publicering och hantering."
+          title={localizedText(locale, "Sömlös systemkoppling", "Seamless system connection")}
+          description={localizedText(
+            locale,
+            "Arbeta kvar i era befintliga processer. Tack vare våra färdiga integrationer kopplar ni enkelt ihop CampusLyan direkt med ert nuvarande fastighetssystem för automatiserad publicering och hantering.",
+            "Keep working in your existing processes. With our ready-made integrations, you connect CampusLyan directly to your current property system for automated publishing and management.",
+          )}
         >
           <div className="relative flex h-[350px] items-center justify-center overflow-hidden rounded-[2.5rem] border border-border bg-card p-4 lg:h-[480px] lg:p-8">
             <div className="z-10 flex w-full max-w-lg scale-90 items-center justify-center gap-2 md:gap-8 lg:scale-100">
@@ -153,7 +178,9 @@ export default function ForForetagPage() {
                 <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background shadow-sm lg:h-24 lg:w-24">
                   <Server size={28} className="text-muted-foreground" />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground lg:text-xs">Ert System</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground lg:text-xs">
+                  {localizedText(locale, "Ert system", "Your system")}
+                </span>
               </div>
 
               <div className="relative h-px min-w-[40px] flex-1 bg-border lg:min-w-[60px]">
@@ -186,8 +213,8 @@ export default function ForForetagPage() {
       <Testimonials />
       <Implementation />
       <BookingSection
-        title="Nyfiken på mer räckvidd?"
-        description="Vi berättar gärna mer"
+        title={localizedText(locale, "Nyfiken på mer räckvidd?", "Curious about more reach?")}
+        description={localizedText(locale, "Vi berättar gärna mer", "We are happy to tell you more")}
       />
     </div>
   );

@@ -23,6 +23,8 @@ import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
 const COMPANY_LISTINGS_PAGE_SIZE = 6;
 const imageFilenamePattern = /\.(avif|gif|jpe?g|png|webp)$/i;
@@ -52,6 +54,7 @@ export default function QueueDetailPage() {
   const companyIdRaw = params?.id;
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const { locale, localizedHref } = useI18n();
 
   const [company, setCompany] = useState<CompanyDTO | null>(null);
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
@@ -79,8 +82,8 @@ export default function QueueDetailPage() {
   const companyViewDemographicsRecordedIds = useRef<Set<number>>(new Set());
   const listingQuickDemographicsRecordedIds = useRef<Set<string>>(new Set());
   const queueVerificationError = useMemo(
-    () => getApplicationVerificationError(user, "queue"),
-    [user]
+    () => getApplicationVerificationError(user, "queue", locale),
+    [locale, user]
   );
 
   // Resolve the parsed company id once so company, queues, listings, and media
@@ -94,7 +97,7 @@ export default function QueueDetailPage() {
   useEffect(() => {
     if (!companyIdRaw) return;
     if (companyIdNumber === null) {
-      setError("Ogiltigt företags-ID.");
+      setError(localizedText(locale, "Ogiltigt företags-ID.", "Invalid company ID."));
       setLoading(false);
       setHasFetched(true);
       return;
@@ -119,7 +122,7 @@ export default function QueueDetailPage() {
           setCompany(companyResult.value);
         } else {
           console.error("Kunde inte hämta företaget:", companyResult.reason);
-          setError("Kunde inte ladda företagsinformation.");
+          setError(localizedText(locale, "Kunde inte ladda företagsinformation.", "Could not load company information."));
         }
 
         if (queuesResult.status === "fulfilled") {
@@ -128,7 +131,7 @@ export default function QueueDetailPage() {
         } else {
           console.error("Kunde inte hämta företagets köer:", queuesResult.reason);
           setQueues([]);
-          setQueuesError("Kunde inte ladda företagets köinformation.");
+          setQueuesError(localizedText(locale, "Kunde inte ladda företagets köinformation.", "Could not load the company's queue information."));
         }
       })
       .finally(() => {
@@ -204,7 +207,7 @@ export default function QueueDetailPage() {
         setListings([]);
         setListingsTotalPages(1);
         setListingsTotalElements(0);
-        setListingsError("Kunde inte ladda företagets bostäder.");
+        setListingsError(localizedText(locale, "Kunde inte ladda företagets bostäder.", "Could not load the company's homes."));
       })
       .finally(() => {
         if (active) setListingsLoading(false);
@@ -310,7 +313,7 @@ export default function QueueDetailPage() {
       companyRecord?.name,
       companyRecord?.companyName,
       companyRecord?.displayName,
-    ) ?? "Okänt företag";
+    ) ?? localizedText(locale, "Okänt företag", "Unknown company");
 
   const companyLogoUrl =
     firstNonEmptyString(
@@ -361,7 +364,9 @@ export default function QueueDetailPage() {
         // we know to fall back to "Okänt företag".
         id: companyIdRaw ?? "",
         companyId: 0,
-        name: hasFetched ? "Okänt företag" : "Laddar...",
+        name: hasFetched
+          ? localizedText(locale, "Okänt företag", "Unknown company")
+          : localizedText(locale, "Laddar...", "Loading..."),
         city: "",
         logoUrl: "",
         activeListings: 0,
@@ -410,7 +415,7 @@ export default function QueueDetailPage() {
 
   const handleJoinQueue = async (queueId: string) => {
     if (!user) {
-      router.push("/login");
+      router.push(localizedHref("/login"));
       return;
     }
 
@@ -427,10 +432,15 @@ export default function QueueDetailPage() {
     try {
       await queueService.join(queueId);
       setJoinedQueueIds((current) => new Set(current).add(queueId));
-      alert("Du står nu i kön!");
+      alert(localizedText(locale, "Du står nu i kön!", "You are now in the queue!"));
     } catch (err: any) {
       alert(
-        err.message || "Kunde inte gå med i kön. Kanske står du redan i den?",
+        err.message ||
+          localizedText(
+            locale,
+            "Kunde inte gå med i kön. Kanske står du redan i den?",
+            "Could not join the queue. You may already be in it.",
+          ),
       );
     } finally {
       setJoiningQueueId(null);
@@ -439,7 +449,7 @@ export default function QueueDetailPage() {
 
   const handleFavoriteToggle = (id: string, isFav: boolean) => {
     if (!user) {
-      router.push("/login");
+      router.push(localizedHref("/login"));
       return;
     }
 
@@ -511,7 +521,7 @@ export default function QueueDetailPage() {
       {queues.length > 0 && (
         <div className="mt-10 w-full">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Bostadsköer
+            {localizedText(locale, "Bostadsköer", "Housing queues")}
           </h2>
           <div className="space-y-3">
             {queues.map((q) => (
@@ -523,8 +533,10 @@ export default function QueueDetailPage() {
                   <p className="font-medium text-gray-900">{q.name}</p>
                   <p className="text-sm text-gray-500">
                     {q.city}
-                    {q.waitDays != null && ` · ~${q.waitDays} dagars kötid`}
-                    {q.totalUnits != null && ` · ${q.totalUnits} bostäder`}
+                    {q.waitDays != null &&
+                      ` · ~${q.waitDays} ${localizedText(locale, "dagars kötid", "days wait")}`}
+                    {q.totalUnits != null &&
+                      ` · ${formatLocalizedNumber(locale, q.totalUnits)} ${localizedText(locale, "bostäder", "homes")}`}
                   </p>
                 </div>
                 <Button
@@ -550,14 +562,14 @@ export default function QueueDetailPage() {
                     <>
                       <Bell className="h-4 w-4" />
                       {authLoading || joinedQueuesLoading
-                        ? "Kontrollerar..."
+                        ? localizedText(locale, "Kontrollerar...", "Checking...")
                         : joinedQueueIds.has(q.id)
-                        ? "Du står redan i kön"
+                        ? localizedText(locale, "Du står redan i kön", "You are already in the queue")
                         : queueVerificationError
-                        ? "Verifiering krävs"
+                        ? localizedText(locale, "Verifiering krävs", "Verification required")
                         : user
-                          ? "Ställ dig i kön"
-                          : "Logga in"}
+                          ? localizedText(locale, "Ställ dig i kön", "Join queue")
+                          : localizedText(locale, "Logga in", "Log in")}
                     </>
                   )}
                 </Button>
@@ -605,7 +617,7 @@ export default function QueueDetailPage() {
         {listings.length > 0 ? (
           <QueueListings
             listings={listings}
-            title="Våra bostäder"
+            title={localizedText(locale, "Våra bostäder", "Our homes")}
             page={listingsPage}
             totalPages={listingsTotalPages}
             isLoading={listingsLoading}
@@ -613,11 +625,11 @@ export default function QueueDetailPage() {
           />
         ) : listingsLoading ? (
           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
-            Hämtar bostäder...
+            {localizedText(locale, "Hämtar bostäder...", "Loading homes...")}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
-            Det finns inga lediga bostäder publicerade just nu.
+            {localizedText(locale, "Det finns inga lediga bostäder publicerade just nu.", "There are no available homes published right now.")}
           </div>
         )}
       </div>

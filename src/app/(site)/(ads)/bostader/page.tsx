@@ -36,6 +36,8 @@ import {
 import { schoolService } from "@/features/schools/services/school-service";
 import { ListingCardDTO } from "@/types/listing";
 import type { School } from "@/types/school";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText, localizedCount } from "@/i18n/text";
 
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
   ssr: false,
@@ -51,39 +53,39 @@ const PAGE_SIZE = 15;
 const MAP_PAGE_SIZE = 500;
 const priceBounds = { min: 0, max: 20000 };
 
-const propertyTypeOptions = [
-  { id: "APARTMENT", label: "Lägenhet" },
-  { id: "ROOM", label: "Rum" },
-  { id: "CORRIDOR_ROOM", label: "Korridorsrum" },
+const getPropertyTypeOptions = (locale: "sv" | "en") => [
+  { id: "APARTMENT", label: localizedText(locale, "Lägenhet", "Apartment") },
+  { id: "ROOM", label: localizedText(locale, "Rum", "Room") },
+  { id: "CORRIDOR_ROOM", label: localizedText(locale, "Korridorsrum", "Corridor room") },
 ];
 
-const hostTypeOptions = [
-  { id: "COMPANY", label: "Företag" },
-  { id: "PRIVATE", label: "Privat värd" },
+const getHostTypeOptions = (locale: "sv" | "en") => [
+  { id: "COMPANY", label: localizedText(locale, "Företag", "Company") },
+  { id: "PRIVATE", label: localizedText(locale, "Privat värd", "Private landlord") },
 ];
 
-const amenityOptions = [
-  { id: "BALCONY", label: "Balkong", icon: <Sparkles className="h-6 w-6" /> },
+const getAmenityOptions = (locale: "sv" | "en") => [
+  { id: "BALCONY", label: localizedText(locale, "Balkong", "Balcony"), icon: <Sparkles className="h-6 w-6" /> },
   {
     id: "DISHWASHER",
-    label: "Diskmaskin",
+    label: localizedText(locale, "Diskmaskin", "Dishwasher"),
     icon: <CookingPot className="h-6 w-6" />,
   },
-  { id: "PARKING", label: "Parkering", icon: <Car className="h-6 w-6" /> },
+  { id: "PARKING", label: localizedText(locale, "Parkering", "Parking"), icon: <Car className="h-6 w-6" /> },
   {
     id: "PET_FRIENDLY",
-    label: "Husdjur",
+    label: localizedText(locale, "Husdjur", "Pets"),
     icon: <Cat className="h-6 w-6" />,
   },
-  { id: "ELEVATOR", label: "Hiss", icon: <Building2 className="h-6 w-6" /> },
+  { id: "ELEVATOR", label: localizedText(locale, "Hiss", "Elevator"), icon: <Building2 className="h-6 w-6" /> },
   {
     id: "LAUNDRY",
-    label: "Tvätt",
+    label: localizedText(locale, "Tvätt", "Laundry"),
     icon: <WashingMachine className="h-6 w-6" />,
   },
   {
     id: "FURNISHED",
-    label: "Möblerad",
+    label: localizedText(locale, "Möblerad", "Furnished"),
     icon: <Sofa className="h-6 w-6" />,
   },
   {
@@ -119,7 +121,8 @@ const amenityIconByKey: Record<string, ReactNode> = {
 };
 
 function toAmenityOptions(
-  tags: { tagKey?: string | null; displayName: string; icon?: string | null }[]
+  tags: { tagKey?: string | null; displayName: string; icon?: string | null }[],
+  locale: "sv" | "en",
 ) {
   const mapped = tags
     .map<AmenityOption | null>((tag) => {
@@ -139,7 +142,7 @@ function toAmenityOptions(
     })
     .filter((item): item is AmenityOption => item !== null);
 
-  return mapped.length > 0 ? mapped : amenityOptions;
+  return mapped.length > 0 ? mapped : getAmenityOptions(locale);
 }
 
 const createDefaultListingsFilterState = (): ListingsFilterState => ({
@@ -270,6 +273,10 @@ export default function ListingsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const { locale, localizedHref } = useI18n();
+  const propertyTypeOptions = useMemo(() => getPropertyTypeOptions(locale), [locale]);
+  const hostTypeOptions = useMemo(() => getHostTypeOptions(locale), [locale]);
+  const defaultAmenityOptions = useMemo(() => getAmenityOptions(locale), [locale]);
   const pageFromUrl = getPageFromParam(searchParams.get("page"));
   const cityFromUrl = searchParams.get("city")?.trim() ?? "";
 
@@ -286,7 +293,7 @@ export default function ListingsPage() {
 
   const [schools, setSchools] = useState<School[]>([]);
   const [availableAmenities, setAvailableAmenities] =
-    useState<AmenityOption[]>(amenityOptions);
+    useState<AmenityOption[]>(defaultAmenityOptions);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [mapListings, setMapListings] = useState<ListingCardDTO[]>([]);
   const [appliedFacets, setAppliedFacets] =
@@ -358,17 +365,17 @@ export default function ListingsPage() {
     listingService
       .getListingTags()
       .then((tags) => {
-        if (active) setAvailableAmenities(toAmenityOptions(tags));
+        if (active) setAvailableAmenities(toAmenityOptions(tags, locale));
       })
       .catch((err) => {
         console.error("Failed to load listing tags:", err);
-        if (active) setAvailableAmenities(amenityOptions);
+        if (active) setAvailableAmenities(defaultAmenityOptions);
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [defaultAmenityOptions, locale]);
 
   useEffect(() => {
     if (user) {
@@ -386,7 +393,7 @@ export default function ListingsPage() {
   const handleFavoriteToggle = useCallback(
     (id: string, isFav: boolean) => {
       if (!user) {
-        alert("Du måste vara inloggad för att spara bostäder");
+        alert(localizedText(locale, "Du måste vara inloggad för att spara bostäder", "You must be signed in to save homes"));
         return;
       }
 
@@ -419,7 +426,7 @@ export default function ListingsPage() {
         });
       });
     },
-    [user]
+    [locale, user]
   );
 
   const currentFilters = useMemo(
@@ -485,7 +492,7 @@ export default function ListingsPage() {
           console.error("Failed to load listing filter facets:", err);
           if (!active) return;
           setPreviewFacets(null);
-          setPreviewFacetsError("Kunde inte h\u00e4mta antal tr\u00e4ffar.");
+          setPreviewFacetsError(localizedText(locale, "Kunde inte hämta antal träffar.", "Could not load the number of matches."));
         })
         .finally(() => {
           if (active) setPreviewFacetsLoading(false);
@@ -496,7 +503,7 @@ export default function ListingsPage() {
       active = false;
       window.clearTimeout(timeoutId);
     };
-  }, [previewSearchFilters]);
+  }, [locale, previewSearchFilters]);
 
   useEffect(() => {
     let active = true;
@@ -588,12 +595,12 @@ export default function ListingsPage() {
         });
       } catch (err: any) {
         console.error("Error loading listings:", err);
-        setError("Kunde inte ladda bostäder.");
+        setError(localizedText(locale, "Kunde inte ladda bostäder.", "Could not load homes."));
       } finally {
         setLoading(false);
       }
     },
-    [currentFilters, user]
+    [currentFilters, locale, user]
   );
 
   const loadMapListings = useCallback(async () => {
@@ -704,7 +711,7 @@ export default function ListingsPage() {
         listing={listing}
         isFavorite={favoriteIds.has(listing.id)}
         onFavoriteToggle={handleFavoriteToggle}
-        onOpen={(id) => router.push(`/bostader/${id}`)}
+        onOpen={(id) => router.push(localizedHref(`/bostader/${id}`))}
         onHoverChange={
           isMapView
             ? (hovering) =>
@@ -724,7 +731,7 @@ export default function ListingsPage() {
     return (
       <nav
         className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
-        aria-label="Sidnavigering för bostäder"
+        aria-label={localizedText(locale, "Sidnavigering för bostäder", "Pagination for homes")}
       >
         <button
           type="button"
@@ -732,7 +739,7 @@ export default function ListingsPage() {
           disabled={page <= 1 || loading}
           className="h-10 rounded-full border border-black/15 px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Föregående
+          {localizedText(locale, "Föregående", "Previous")}
         </button>
 
         <div className="flex items-center gap-2">
@@ -791,7 +798,7 @@ export default function ListingsPage() {
           disabled={page >= totalPages || loading}
           className="h-10 rounded-full border border-black/15 px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Nästa
+          {localizedText(locale, "Nästa", "Next")}
         </button>
       </nav>
     );
@@ -821,13 +828,13 @@ export default function ListingsPage() {
                     type="text"
                     value={searchInput}
                     onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Sök på stad"
+                    placeholder={localizedText(locale, "Sök på stad", "Search by city")}
                     className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/45 sm:text-base"
                   />
                   {searchInput && (
                     <button
                       type="button"
-                      aria-label="Rensa sökning"
+                      aria-label={localizedText(locale, "Rensa sökning", "Clear search")}
                       onClick={() => {
                         setSearchInput("");
                         setPage(1);
@@ -843,7 +850,7 @@ export default function ListingsPage() {
                     type="submit"
                     className="h-8 shrink-0 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
                   >
-                    Sök
+                    {localizedText(locale, "Sök", "Search")}
                   </button>
                 </form>
               </div>
@@ -851,11 +858,11 @@ export default function ListingsPage() {
                 <ListingsFilterButton
                   variant="ghost"
                   size="icon-lg"
-                  title="Avancerade filter"
+                  title={localizedText(locale, "Avancerade filter", "Advanced filters")}
                   triggerLabel={
                     activeFilterCount > 0
-                      ? `Filtrera (${activeFilterCount})`
-                      : "Filtrera"
+                      ? `${localizedText(locale, "Filtrera", "Filter")} (${activeFilterCount})`
+                      : localizedText(locale, "Filtrera", "Filter")
                   }
                   className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-[#004225] shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                   amenities={availableAmenities}
@@ -899,10 +906,15 @@ export default function ListingsPage() {
               className="text-base font-semibold text-black sm:text-lg"
             >
               {loading && listings.length === 0
-                ? "Laddar bostäder..."
-                : `Visar ${totalListingsCount} ${
-                    totalListingsCount === 1 ? "bostad" : "bostäder"
-                  }`}
+                ? localizedText(locale, "Laddar bostäder...", "Loading homes...")
+                : `${localizedText(locale, "Visar", "Showing")} ${localizedCount(
+                    locale,
+                    totalListingsCount,
+                    "bostad",
+                    "bostäder",
+                    "home",
+                    "homes",
+                  )}`}
             </h2>
             <div className="w-full sm:w-auto">
               <SwitchSelect value={view} onChange={setView} />
@@ -923,7 +935,7 @@ export default function ListingsPage() {
                 <div className={`${listingGridClasses} w-full 2xl:col-span-1`}>
                   {listings.length === 0 && !loading ? (
                     <div className="col-span-full py-12 text-center text-sm text-gray-500 sm:py-20 sm:text-base">
-                      Inga bostäder matchade din sökning.
+                      {localizedText(locale, "Inga bostäder matchade din sökning.", "No homes matched your search.")}
                     </div>
                   ) : (
                     listings.map((listing) => renderListingCard(listing))
@@ -939,7 +951,7 @@ export default function ListingsPage() {
                     activeListingId={hoveredListingId}
                     getIsFavorite={(id) => favoriteIds.has(id)}
                     onFavoriteToggle={handleFavoriteToggle}
-                    onOpenListing={(id) => router.push(`/bostader/${id}`)}
+                    onOpenListing={(id) => router.push(localizedHref(`/bostader/${id}`))}
                   />
                 </div>
               </div>
@@ -947,7 +959,7 @@ export default function ListingsPage() {
               <>
                 {listings.length === 0 && !loading && (
                   <div className="py-12 text-center text-sm text-gray-500 sm:py-20 sm:text-base">
-                    Inga bostäder matchade din sökning.
+                    {localizedText(locale, "Inga bostäder matchade din sökning.", "No homes matched your search.")}
                   </div>
                 )}
 
@@ -960,7 +972,7 @@ export default function ListingsPage() {
                 >
                   {loading && (
                     <span className="animate-pulse text-xs text-gray-500 sm:text-sm">
-                      Hämtar bostäder...
+                      {localizedText(locale, "Hämtar bostäder...", "Loading homes...")}
                     </span>
                   )}
                 </div>

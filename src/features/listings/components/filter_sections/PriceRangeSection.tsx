@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ControlledRange from "@/components/ui/sliders/Controlled_Range";
 import FilterSectionShell from "./FilterSectionShell";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
 type PriceRange = [number, number];
 
@@ -38,6 +40,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
   onChange,
   withBorder = true,
 }) => {
+  const { locale } = useI18n();
   const [inputValues, setInputValues] = useState<[string, string]>([
     value[0].toString(),
     value[1].toString(),
@@ -48,15 +51,15 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
   ]);
 
   const formatCurrency = (val: number) =>
-    `${val.toLocaleString("sv-SE")} kr`;
+    `${formatLocalizedNumber(locale, val)} kr`;
 
   const formatInterval = (min?: number | null, max?: number | null) => {
     if (typeof min === "number" && typeof max === "number") {
       return `${formatCurrency(min)} - ${formatCurrency(max)}`;
     }
-    if (typeof min === "number") return `Från ${formatCurrency(min)}`;
-    if (typeof max === "number") return `Till ${formatCurrency(max)}`;
-    return "Hyra";
+    if (typeof min === "number") return `${localizedText(locale, "Från", "From")} ${formatCurrency(min)}`;
+    if (typeof max === "number") return `${localizedText(locale, "Till", "To")} ${formatCurrency(max)}`;
+    return localizedText(locale, "Hyra", "Rent");
   };
 
   const clampToBounds = (val: number, targetBounds: PriceBounds) =>
@@ -75,7 +78,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
           minRent: null,
           maxRent: null,
           count: Math.max(0, bucket),
-          label: `Intervall ${index + 1}`,
+        label: `${localizedText(locale, "Intervall", "Interval")} ${index + 1}`,
         };
       }
 
@@ -174,13 +177,13 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
 
   const validateInput = (index: 0 | 1, raw: string): string | null => {
     const parsed = parseNumeric(raw);
-    if (Number.isNaN(parsed)) return "Ange ett värde";
+    if (Number.isNaN(parsed)) return localizedText(locale, "Ange ett värde", "Enter a value");
 
     if (parsed < histogramScale.min) {
-      return `Lägsta tillåtna är ${formatCurrency(histogramScale.min)}`;
+      return `${localizedText(locale, "Lägsta tillåtna är", "Minimum allowed is")} ${formatCurrency(histogramScale.min)}`;
     }
     if (parsed > histogramScale.max) {
-      return `Högsta tillåtna är ${formatCurrency(histogramScale.max)}`;
+      return `${localizedText(locale, "Högsta tillåtna är", "Maximum allowed is")} ${formatCurrency(histogramScale.max)}`;
     }
 
     const otherRaw = inputValues[index === 0 ? 1 : 0];
@@ -189,10 +192,10 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
       Number.isNaN(otherParsed) ? displayValue[index === 0 ? 1 : 0] : otherParsed;
 
     if (index === 0 && parsed > fallbackOther) {
-      return "Måste vara lägre än eller lika med högsta värdet";
+      return localizedText(locale, "Måste vara lägre än eller lika med högsta värdet", "Must be less than or equal to the maximum value");
     }
     if (index === 1 && parsed < fallbackOther) {
-      return "Måste vara högre än eller lika med lägsta värdet";
+      return localizedText(locale, "Måste vara högre än eller lika med lägsta värdet", "Must be greater than or equal to the minimum value");
     }
 
     return null;
@@ -251,11 +254,11 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                     key={bucket.key}
                     role="img"
                     aria-label={`${bucket.label}: ${bucket.count.toLocaleString(
-                      "sv-SE"
-                    )} annonser`}
+                      locale === "en" ? "en-US" : "sv-SE"
+                    )} ${localizedText(locale, "annonser", "listings")}`}
                     title={`${bucket.label}: ${bucket.count.toLocaleString(
-                      "sv-SE"
-                    )} annonser`}
+                      locale === "en" ? "en-US" : "sv-SE"
+                    )} ${localizedText(locale, "annonser", "listings")}`}
                     className={`flex-1 rounded-t-sm transition-[height,background-color,opacity] duration-200 ${
                       bucket.count > 0
                         ? bucket.overlapsSelectedRange
@@ -272,14 +275,18 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                 ))
               ) : (
                 <p className="flex h-full w-full items-center justify-center text-center text-sm text-black/50">
-                  Prisdata hämtas automatiskt när statistik finns.
+                  {localizedText(
+                    locale,
+                    "Prisdata hämtas automatiskt när statistik finns.",
+                    "Price data is loaded automatically when statistics are available.",
+                  )}
                 </p>
               )}
           </div>
 
           <div className="absolute inset-x-1 bottom-1">
             <ControlledRange
-              ariaLabel="Månadshyra"
+              ariaLabel={localizedText(locale, "Månadshyra", "Monthly rent")}
               min={histogramScale.min}
               max={histogramScale.max}
               step={sliderStep}
@@ -293,7 +300,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
         <div className="grid grid-cols-1 gap-3 text-sm text-black/70 sm:grid-cols-2">
           <label className="space-y-1.5">
             <span className="block text-xs font-semibold uppercase tracking-wide text-black/55">
-              Från
+              {localizedText(locale, "Från", "From")}
             </span>
             <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-[#004225] focus-within:ring-2 focus-within:ring-[#004225]/10">
               <input
@@ -304,7 +311,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                 value={inputValues[0]}
                 onChange={(e) => handleManualChange(0, e.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-right text-base font-semibold outline-none"
-                aria-label="Lägsta pris"
+                aria-label={localizedText(locale, "Lägsta pris", "Minimum price")}
               />
               <span className="text-sm text-black/50">kr</span>
             </div>
@@ -314,7 +321,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
           </label>
           <label className="space-y-1.5 sm:text-right">
             <span className="block text-xs font-semibold uppercase tracking-wide text-black/55">
-              Till
+              {localizedText(locale, "Till", "To")}
             </span>
             <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-[#004225] focus-within:ring-2 focus-within:ring-[#004225]/10">
               <input
@@ -325,7 +332,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                 value={inputValues[1]}
                 onChange={(e) => handleManualChange(1, e.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-right text-base font-semibold outline-none"
-                aria-label="Högsta pris"
+                aria-label={localizedText(locale, "Högsta pris", "Maximum price")}
               />
               <span className="text-sm text-black/50">kr</span>
             </div>

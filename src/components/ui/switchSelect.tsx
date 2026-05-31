@@ -3,6 +3,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { List, Map } from "lucide-react";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 export type SwitchSelectValue = "lista" | "karta";
 
@@ -23,13 +25,17 @@ export function SwitchSelect({
   disabled = false,
   fullWidth = false,
 }: Props) {
+  const { locale } = useI18n();
   // internal state for uncontrolled usage
   const [internal, setInternal] = React.useState<SwitchSelectValue>("lista");
 
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value! : internal;
   const showLabels = labels !== undefined;
-  const resolvedLabels = { lista: labels?.lista ?? "Lista", karta: labels?.karta ?? "Karta" };
+  const resolvedLabels = {
+    lista: labels?.lista ?? localizedText(locale, "Lista", "List"),
+    karta: labels?.karta ?? localizedText(locale, "Karta", "Map"),
+  };
 
   const options = [
     { key: "lista" as const, label: resolvedLabels.lista, icon: <List className="h-4 w-4 sm:h-[18px] sm:w-[18px] xl:h-5 xl:w-5" /> },

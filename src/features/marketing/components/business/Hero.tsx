@@ -3,6 +3,8 @@
 import React from "react";
 import { ChevronRight, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 interface HeroProps {
   badge?: string;
   title?: React.ReactNode;
@@ -12,6 +14,8 @@ interface HeroProps {
 }
 
 function HeroPreview() {
+  const { locale } = useI18n();
+
   return (
     <div className="relative h-[320px] sm:h-[400px] md:h-[450px] lg:h-[500px] w-full flex items-center justify-center lg:justify-end mt-6 sm:mt-8 lg:mt-0 select-none">
       <div className="relative w-full max-w-[280px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] h-full flex items-center justify-center">
@@ -20,8 +24,8 @@ function HeroPreview() {
         <div className="relative w-full max-w-[280px] sm:max-w-[360px] md:max-w-[440px] lg:max-w-[480px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 p-4 sm:p-5 md:p-6 overflow-hidden">
           <div className="flex items-center justify-between mb-4 sm:mb-5 md:mb-6">
             <div>
-              <div className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Översikt</div>
-              <h3 className="text-base sm:text-lg md:text-xl font-black text-slate-900">Studentbostäder</h3>
+              <div className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{localizedText(locale, "Översikt", "Overview")}</div>
+              <h3 className="text-base sm:text-lg md:text-xl font-black text-slate-900">{localizedText(locale, "Studentbostäder", "Student housing")}</h3>
             </div>
             <div className="bg-emerald-100 text-emerald-700 px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-xs font-bold flex items-center gap-1">
               <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
@@ -34,7 +38,7 @@ function HeroPreview() {
 
           <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-5 md:mb-6">
             <div className="bg-slate-50 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-200">
-              <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">Visningar</div>
+              <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">{localizedText(locale, "Visningar", "Views")}</div>
               <div className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 mb-0.5 sm:mb-1">25.8k</div>
               <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-pop-contrast">
                 <TrendingUp className="w-2 h-2 sm:w-3 sm:h-3" />
@@ -43,7 +47,7 @@ function HeroPreview() {
             </div>
 
             <div className="bg-slate-50 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-200">
-              <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">Klick</div>
+              <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">{localizedText(locale, "Klick", "Clicks")}</div>
               <div className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 mb-0.5 sm:mb-1">6.4k</div>
               <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-pop-contrast">
                 <TrendingUp className="w-2 h-2 sm:w-3 sm:h-3" />
@@ -52,7 +56,7 @@ function HeroPreview() {
             </div>
 
             <div className="bg-slate-50 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-200">
-              <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">Ansökn.</div>
+              <div className="text-[8px] sm:text-[9px] md:text-xs font-semibold text-slate-500 mb-0.5 sm:mb-1 uppercase tracking-wide">{localizedText(locale, "Ansökn.", "Applications")}</div>
               <div className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 mb-0.5 sm:mb-1">852</div>
               <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs font-bold text-pop-contrast">
                 <TrendingUp className="w-2 h-2 sm:w-3 sm:h-3" />
@@ -62,7 +66,7 @@ function HeroPreview() {
           </div>
 
           <div className="mb-0">
-            <div className="text-[8px] sm:text-[9px] md:text-xs font-bold text-slate-600 mb-2 sm:mb-3 uppercase tracking-wide">Visningar Senaste 7 Dagarna</div>
+            <div className="text-[8px] sm:text-[9px] md:text-xs font-bold text-slate-600 mb-2 sm:mb-3 uppercase tracking-wide">{localizedText(locale, "Visningar senaste 7 dagarna", "Views in the last 7 days")}</div>
             <div className="relative h-20 sm:h-24 md:h-32 flex items-end gap-1 sm:gap-1.5 md:gap-2">
               {[25, 30, 45, 55, 65, 88, 100].map((height, i) => (
                 <div
@@ -75,7 +79,7 @@ function HeroPreview() {
                     <>
                       <div className="absolute inset-0 shadow-lg shadow-emerald-500/30 rounded-t-lg"></div>
                       <div className="absolute -top-4 sm:-top-5 md:-top-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[7px] sm:text-[8px] md:text-[9px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
-                        Idag
+                        {localizedText(locale, "Idag", "Today")}
                       </div>
                     </>
                   )}
@@ -93,17 +97,22 @@ function HeroPreview() {
 export const Hero = ({ 
   title, 
   description, 
-  primaryCtaText = "Anslut ditt system", 
+  primaryCtaText, 
   primaryCtaLink = "/boka-demo" 
 }: HeroProps) => {
+  const { locale, localizedHref } = useI18n();
 
   const defaultTitle = (
     <span>
-      Nå hela marknaden på – <span className="text-emerald-600">Sveriges ledande plattform</span>
+      {localizedText(locale, "Nå hela marknaden på", "Reach the full market on")} <span className="text-emerald-600">{localizedText(locale, "Sveriges ledande plattform", "Sweden's leading platform")}</span>
     </span>
   );
 
-  const defaultDescription = "Vi samlar landets alla studenter på ett ställe. Fyll dina vakanser snabbare genom att synas där studenterna faktiskt finns – enkelt integrerat med ditt nuvarande system.";
+  const defaultDescription = localizedText(
+    locale,
+    "Vi samlar landets alla studenter på ett ställe. Fyll dina vakanser snabbare genom att synas där studenterna faktiskt finns - enkelt integrerat med ditt nuvarande system.",
+    "We bring Sweden's students together in one place. Fill vacancies faster by being visible where students actually are - easily integrated with your current system.",
+  );
 
   return (
     <section className="relative z-10 pt-8 sm:pt-12 md:pt-16 pb-12 sm:pb-16 md:pb-20 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-20 items-center overflow-hidden">
@@ -126,10 +135,10 @@ export const Hero = ({
         <div className="pt-2 flex flex-row gap-3 sm:gap-4">
           {/* Primary CTA -> scrollar till #bokning */}
           <Link
-            href={primaryCtaLink}
+            href={localizedHref(primaryCtaLink)}
             className="flex-1 sm:flex-none bg-primary text-white px-4 sm:px-8 h-12 sm:h-14 rounded-xl font-bold hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base whitespace-nowrap"
           >
-            {primaryCtaText}
+            {primaryCtaText ?? localizedText(locale, "Anslut ditt system", "Connect your system")}
             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
 

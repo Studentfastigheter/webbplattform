@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,6 +22,8 @@ import { useAuth } from "@/context/AuthContext";
 import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
 import { cn } from "@/lib/utils";
 import { authService } from "@/features/auth/services/auth-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type RegisterForm = {
   email: string;
@@ -35,14 +37,14 @@ const initialForm: RegisterForm = {
   confirmPassword: "",
 };
 
-const passwordRequirements = [
-  { regex: /.{8,}/, text: "Minst 8 tecken" },
-  { regex: /[a-z]/, text: "Minst 1 liten bokstav" },
-  { regex: /[A-Z]/, text: "Minst 1 stor bokstav" },
-  { regex: /[0-9]/, text: "Minst 1 siffra" },
+const getPasswordRequirements = (locale: "sv" | "en") => [
+  { regex: /.{8,}/, text: localizedText(locale, "Minst 8 tecken", "At least 8 characters") },
+  { regex: /[a-z]/, text: localizedText(locale, "Minst 1 liten bokstav", "At least 1 lowercase letter") },
+  { regex: /[A-Z]/, text: localizedText(locale, "Minst 1 stor bokstav", "At least 1 uppercase letter") },
+  { regex: /[0-9]/, text: localizedText(locale, "Minst 1 siffra", "At least 1 number") },
   {
     regex: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
-    text: "Minst 1 specialtecken",
+    text: localizedText(locale, "Minst 1 specialtecken", "At least 1 special character"),
   },
 ];
 
@@ -56,18 +58,20 @@ function getPasswordStrengthColor(score: number) {
   return "bg-green-500";
 }
 
-function getPasswordStrengthText(score: number) {
-  if (score === 0) return "Ange ett lösenord";
-  if (score <= 2) return "Svagt lösenord";
-  if (score <= 3) return "Medelstarkt lösenord";
-  if (score === 4) return "Starkt lösenord";
+function getPasswordStrengthText(score: number, locale: "sv" | "en") {
+  if (score === 0) return localizedText(locale, "Ange ett lösenord", "Enter a password");
+  if (score <= 2) return localizedText(locale, "Svagt lösenord", "Weak password");
+  if (score <= 3) return localizedText(locale, "Medelstarkt lösenord", "Medium-strength password");
+  if (score === 4) return localizedText(locale, "Starkt lösenord", "Strong password");
 
-  return "Mycket starkt lösenord";
+  return localizedText(locale, "Mycket starkt lösenord", "Very strong password");
 }
 
 export default function RegisterPage() {
   const router = useRouter();
   const { completeAuth, googleRegister } = useAuth();
+  const { locale, localizedHref } = useI18n();
+  const passwordRequirements = getPasswordRequirements(locale);
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,15 +99,15 @@ export default function RegisterPage() {
     const confirmPassword = form.confirmPassword.trim();
 
     if (!email || !password || !confirmPassword) {
-      return "Fyll i e-postadress och lösenord två gånger för att skapa kontot.";
+      return localizedText(locale, "Fyll i e-postadress och lösenord två gånger för att skapa kontot.", "Enter your email address and password twice to create the account.");
     }
 
     if (!isValidEmail(email)) {
-      return "E-postadressen ser inte korrekt ut. Skriv den i formatet namn@example.com.";
+      return localizedText(locale, "E-postadressen ser inte korrekt ut. Skriv den i formatet namn@example.com.", "The email address does not look correct. Use the format name@example.com.");
     }
 
     if (password.length < 8) {
-      return "Lösenordet behöver vara minst 8 tecken långt.";
+      return localizedText(locale, "Lösenordet behöver vara minst 8 tecken långt.", "The password must be at least 8 characters long.");
     }
 
     const missingRequirements = passwordRequirements.filter(
@@ -111,13 +115,13 @@ export default function RegisterPage() {
     );
 
     if (missingRequirements.length > 0) {
-      return `Lösenordet behöver även innehålla ${missingRequirements
+      return `${localizedText(locale, "Lösenordet behöver även innehålla", "The password must also contain")} ${missingRequirements
         .map((requirement) => requirement.text.toLowerCase())
         .join(", ")}.`;
     }
 
     if (password !== confirmPassword) {
-      return "Lösenorden matchar inte. Skriv samma lösenord i båda fälten.";
+      return localizedText(locale, "Lösenorden matchar inte. Skriv samma lösenord i båda fälten.", "The passwords do not match. Enter the same password in both fields.");
     }
 
     return null;
@@ -143,9 +147,9 @@ export default function RegisterPage() {
       });
       completeAuth(response);
       setForm(initialForm);
-      router.replace("/");
+      router.replace(localizedHref("/"));
     } catch (err: unknown) {
-      setError(getAuthErrorMessage(err, "register"));
+      setError(getAuthErrorMessage(err, "register", locale));
     } finally {
       setLoading(false);
     }
@@ -161,9 +165,9 @@ export default function RegisterPage() {
       await googleRegister({
         googleIdToken,
       });
-      router.replace("/");
+      router.replace(localizedHref("/"));
     } catch (err: unknown) {
-      setError(getAuthErrorMessage(err, "google-register"));
+      setError(getAuthErrorMessage(err, "google-register", locale));
     } finally {
       setLoading(false);
     }
@@ -173,12 +177,12 @@ export default function RegisterPage() {
     <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <AuthCard
-          title="Skapa konto"
+          title={localizedText(locale, "Skapa konto", "Create account")}
           footer={
             <FieldDescription className="text-center">
-              Har du redan ett konto?{" "}
+              {localizedText(locale, "Har du redan ett konto?", "Already have an account?")}{" "}
               <Link href="/login" className="font-medium text-[#004225] no-underline">
-                Logga in
+                {localizedText(locale, "Logga in", "Log in")}
               </Link>
             </FieldDescription>
           }
@@ -189,7 +193,7 @@ export default function RegisterPage() {
                 <Link
                   href="/registrera/freja-id?start=freja"
                   className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#252525] transition-colors hover:bg-[#e8e8e8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
-                  aria-label="Registrera med Freja ID"
+                  aria-label={localizedText(locale, "Registrera med Freja ID", "Register with Freja ID")}
                 >
                   <Image
                     src="/FrejaBrandingPackNew/FrejaBrandingPack/Freja Logo/Freja/SVG/FrejaIndigo.svg"
@@ -198,11 +202,11 @@ export default function RegisterPage() {
                     height={14}
                     className="h-auto w-11"
                   />
-                  <span>Registrera med Freja ID</span>
+                  <span>{localizedText(locale, "Registrera med Freja ID", "Register with Freja ID")}</span>
                 </Link>
 
                 <GoogleAuthButton
-                  label="Registrera med Google"
+                  label={localizedText(locale, "Registrera med Google", "Register with Google")}
                   disabled={loading}
                   onCredential={onGoogleCredential}
                   onError={setError}
@@ -210,11 +214,11 @@ export default function RegisterPage() {
               </div>
 
               <FieldSeparator className="my-0 [&_[data-slot=field-separator-content]]:bg-card">
-                Eller
+                {localizedText(locale, "Eller", "Or")}
               </FieldSeparator>
 
               <Field>
-                <FieldLabel htmlFor="email">E-postadress</FieldLabel>
+                <FieldLabel htmlFor="email">{localizedText(locale, "E-postadress", "Email address")}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
@@ -229,12 +233,12 @@ export default function RegisterPage() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="password">Lägg till ett lösenord</FieldLabel>
+                <FieldLabel htmlFor="password">{localizedText(locale, "Lägg till ett lösenord", "Add a password")}</FieldLabel>
                 <div className="relative">
                   <Input
                     id="password"
                     type={isPasswordVisible ? "text" : "password"}
-                    placeholder="Välj ett lösenord"
+                    placeholder={localizedText(locale, "Välj ett lösenord", "Choose a password")}
                     value={form.password}
                     onChange={(event) =>
                       updateField("password", event.target.value)
@@ -258,7 +262,9 @@ export default function RegisterPage() {
                       <EyeIcon className="h-5 w-5" />
                     )}
                     <span className="sr-only">
-                      {isPasswordVisible ? "Dölj lösenord" : "Visa lösenord"}
+                      {isPasswordVisible
+                        ? localizedText(locale, "Dölj lösenord", "Hide password")
+                        : localizedText(locale, "Visa lösenord", "Show password")}
                     </span>
                   </button>
                 </div>
@@ -280,19 +286,19 @@ export default function RegisterPage() {
                 </div>
 
                 <p className="text-right text-sm font-normal text-[#7a7a7a]">
-                  {getPasswordStrengthText(passwordStrengthScore)}
+                  {getPasswordStrengthText(passwordStrengthScore, locale)}
                 </p>
               </div>
 
               <Field>
                 <FieldLabel htmlFor="confirmPassword">
-                  Bekräfta lösenordet
+                  {localizedText(locale, "Bekräfta lösenordet", "Confirm password")}
                 </FieldLabel>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
                     type={isConfirmPasswordVisible ? "text" : "password"}
-                    placeholder="Skriv lösenordet igen"
+                    placeholder={localizedText(locale, "Skriv lösenordet igen", "Enter the password again")}
                     value={form.confirmPassword}
                     onChange={(event) =>
                       updateField("confirmPassword", event.target.value)
@@ -319,8 +325,8 @@ export default function RegisterPage() {
                     )}
                     <span className="sr-only">
                       {isConfirmPasswordVisible
-                        ? "Dölj lösenord"
-                        : "Visa lösenord"}
+                        ? localizedText(locale, "Dölj lösenord", "Hide password")
+                        : localizedText(locale, "Visa lösenord", "Show password")}
                     </span>
                   </button>
                 </div>
@@ -333,8 +339,8 @@ export default function RegisterPage() {
                     )}
                   >
                     {passwordsMatch
-                      ? "Lösenorden matchar."
-                      : "Lösenorden matchar inte."}
+                      ? localizedText(locale, "Lösenorden matchar.", "The passwords match.")
+                      : localizedText(locale, "Lösenorden matchar inte.", "The passwords do not match.")}
                   </FieldDescription>
                 )}
               </Field>
@@ -346,7 +352,9 @@ export default function RegisterPage() {
                   className="mt-1 h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
                   disabled={loading}
                 >
-                  {loading ? "Skapar konto..." : "Skapa konto"}
+                  {loading
+                    ? localizedText(locale, "Skapar konto...", "Creating account...")
+                    : localizedText(locale, "Skapa konto", "Create account")}
                 </Button>
               </Field>
 

@@ -24,6 +24,8 @@ import {
   RequirementsProfileDTO,
 } from "@/types/listing";
 import { AdvertiserSummary } from "@/types";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
   ssr: false,
@@ -37,14 +39,14 @@ import ListingCardSmall from "@/features/listings/components/ListingCard_Small";
 const NEARBY_LISTINGS_LIMIT = 8;
 const NEARBY_LISTINGS_FETCH_SIZE = NEARBY_LISTINGS_LIMIT + 1;
 
-const splitListingLocation = (location?: string | null) => {
+const splitListingLocation = (location: string | null | undefined, fallback: string) => {
   const [area, ...cityParts] = (location ?? "").split(",");
   const trimmedArea = area?.trim();
   const trimmedCity = cityParts.join(",").trim();
 
   return {
-    area: trimmedArea || "Ej angivet",
-    city: trimmedCity || trimmedArea || "Ej angivet",
+    area: trimmedArea || fallback,
+    city: trimmedCity || trimmedArea || fallback,
   };
 };
 
@@ -58,6 +60,7 @@ function Lightbox({
   startIndex: number;
   onClose: () => void;
 }) {
+  const { locale } = useI18n();
   const [current, setCurrent] = useState(startIndex);
 
   // Close on Escape, navigate with arrow keys
@@ -86,7 +89,7 @@ function Lightbox({
       <button
         className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
         onClick={onClose}
-        aria-label="Stäng"
+        aria-label={localizedText(locale, "Stäng", "Close")}
       >
         <X className="h-5 w-5" />
       </button>
@@ -101,7 +104,7 @@ function Lightbox({
         <button
           className="absolute left-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
           onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c - 1 + images.length) % images.length); }}
-          aria-label="Föregående bild"
+          aria-label={localizedText(locale, "Föregående bild", "Previous image")}
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
@@ -111,7 +114,7 @@ function Lightbox({
       <div className="max-h-[85vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
         <img
           src={images[current]}
-          alt={`Bild ${current + 1}`}
+          alt={localizedText(locale, `Bild ${current + 1}`, `Image ${current + 1}`)}
           className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
         />
       </div>
@@ -121,7 +124,7 @@ function Lightbox({
         <button
           className="absolute right-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
           onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c + 1) % images.length); }}
-          aria-label="Nästa bild"
+          aria-label={localizedText(locale, "Nästa bild", "Next image")}
         >
           <ChevronRight className="h-6 w-6" />
         </button>
@@ -155,6 +158,7 @@ function ImagePreviewGrid({
   images: string[];
   onImageClick: (index: number) => void;
 }) {
+  const { locale } = useI18n();
   if (images.length === 0) return null;
 
   const shown = images.slice(0, 5);
@@ -165,7 +169,7 @@ function ImagePreviewGrid({
         className="relative w-full h-[420px] overflow-hidden rounded-2xl"
         onClick={() => onImageClick(0)}
       >
-        <img src={shown[0]} alt="Bild 1" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={shown[0]} alt={localizedText(locale, "Bild 1", "Image 1")} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
       </button>
     );
@@ -183,7 +187,7 @@ function ImagePreviewGrid({
             )}
             onClick={() => onImageClick(i)}
           >
-            <img src={src} alt={`Bild ${i + 1}`} className="absolute inset-0 h-full w-full object-cover" />
+            <img src={src} alt={localizedText(locale, `Bild ${i + 1}`, `Image ${i + 1}`)} className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
           </button>
         ))}
@@ -200,7 +204,7 @@ function ImagePreviewGrid({
         className="relative row-span-full overflow-hidden rounded-l-2xl"
         onClick={() => onImageClick(0)}
       >
-        <img src={shown[0]} alt="Bild 1" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={shown[0]} alt={localizedText(locale, "Bild 1", "Image 1")} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
       </button>
 
@@ -220,11 +224,11 @@ function ImagePreviewGrid({
               )}
               onClick={() => onImageClick(i + 1)}
             >
-              <img src={src} alt={`Bild ${i + 2}`} className="absolute inset-0 h-full w-full object-cover" />
+              <img src={src} alt={localizedText(locale, `Bild ${i + 2}`, `Image ${i + 2}`)} className="absolute inset-0 h-full w-full object-cover" />
               <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition flex items-center justify-center">
                 {isLast && (
                   <span className="text-white font-semibold text-lg drop-shadow-lg bg-black/40 px-3 py-1 rounded-lg">
-                    +{images.length - 5} fler
+                    +{images.length - 5} {localizedText(locale, "fler", "more")}
                   </span>
                 )}
               </div>
@@ -243,13 +247,16 @@ function RequirementsProfileSection({
   profile: RequirementsProfileDTO | null;
   loading: boolean;
 }) {
+  const { locale } = useI18n();
   if (loading) {
     return (
       <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-          Kravprofil
+          {localizedText(locale, "Kravprofil", "Requirements profile")}
         </h2>
-        <p className="mt-3 text-sm text-gray-500">Hämtar kravprofil...</p>
+        <p className="mt-3 text-sm text-gray-500">
+          {localizedText(locale, "Hämtar kravprofil...", "Loading requirements profile...")}
+        </p>
       </section>
     );
   }
@@ -259,8 +266,8 @@ function RequirementsProfileSection({
   const ageRange =
     profile.minAge || profile.maxAge
       ? [
-          profile.minAge ? `Min ${profile.minAge} år` : null,
-          profile.maxAge ? `Max ${profile.maxAge} år` : null,
+          profile.minAge ? `${localizedText(locale, "Min", "Min")} ${profile.minAge} ${localizedText(locale, "år", "years")}` : null,
+          profile.maxAge ? `${localizedText(locale, "Max", "Max")} ${profile.maxAge} ${localizedText(locale, "år", "years")}` : null,
         ]
           .filter(Boolean)
           .join(" / ")
@@ -270,10 +277,10 @@ function RequirementsProfileSection({
     <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
       <div className="flex flex-col gap-2">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-green-900">
-          Ansökningskrav
+          {localizedText(locale, "Ansökningskrav", "Application requirements")}
         </p>
         <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-          {profile.title || "Kravprofil"}
+          {profile.title || localizedText(locale, "Kravprofil", "Requirements profile")}
         </h2>
         {ageRange && <p className="text-sm font-medium text-gray-700">{ageRange}</p>}
         {profile.description && (
@@ -291,10 +298,10 @@ function RequirementsProfileSection({
               key={`${document.caption ?? "document"}-${index}`}
             >
               <p className="text-sm font-semibold text-gray-900">
-                {document.caption ?? "Dokument"}
+                {document.caption ?? localizedText(locale, "Dokument", "Document")}
               </p>
               <p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-gray-500">
-                {document.validTypes?.join(", ") || "Valfri filtyp"}
+                {document.validTypes?.join(", ") || localizedText(locale, "Valfri filtyp", "Any file type")}
               </p>
             </div>
           ))}
@@ -310,6 +317,7 @@ export default function ListingDetailPage() {
   const listingId = params?.id;
   const router = useRouter();
   const { user } = useAuth();
+  const { locale, localizedHref } = useI18n();
 
   const [listing, setListing] = useState<ListingDetailDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -335,8 +343,8 @@ export default function ListingDetailPage() {
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const [nearbyError, setNearbyError] = useState<string | null>(null);
   const applicationVerificationError = useMemo(
-    () => getApplicationVerificationError(user, "listing"),
-    [user]
+    () => getApplicationVerificationError(user, "listing", locale),
+    [locale, user]
   );
 
   // Ladda favoriter och kolla om redan ansökt
@@ -359,7 +367,7 @@ export default function ListingDetailPage() {
 
   const handleFavoriteToggle = useCallback(async (id: string, isFav: boolean) => {
     if (!user) {
-      alert("Du måste vara inloggad för att spara bostäder");
+      alert(localizedText(locale, "Du måste vara inloggad för att spara bostäder", "You must be signed in to save homes"));
       return;
     }
     
@@ -393,7 +401,7 @@ export default function ListingDetailPage() {
         return next;
       });
     });
-  }, [user]);
+  }, [locale, user]);
 
   const openLightbox = useCallback((index: number) => {
     setLightboxIndex(index);
@@ -417,13 +425,13 @@ export default function ListingDetailPage() {
       .catch((err: any) => {
         if (!active) return;
         console.error("Fetch error:", err);
-        setError("Kunde inte ladda annonsen.");
+        setError(localizedText(locale, "Kunde inte ladda annonsen.", "Could not load the listing."));
         setListing(null);
       })
       .finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };
-  }, [listingId]);
+  }, [listingId, locale]);
 
   useEffect(() => {
     if (!listing?.id) {
@@ -528,7 +536,7 @@ export default function ListingDetailPage() {
       } catch (err) {
         console.error("Failed to load nearby listings:", err);
         if (active) {
-          setNearbyError("Kunde inte ladda fler bostäder.");
+          setNearbyError(localizedText(locale, "Kunde inte ladda fler bostäder.", "Could not load more homes."));
           setNearbyListings([]);
         }
       } finally {
@@ -541,7 +549,7 @@ export default function ListingDetailPage() {
     loadNearbyListings();
 
     return () => { active = false; };
-  }, [listing]);
+  }, [listing, locale]);
 
   // Hämta företagets logga om det är en företagsannons
   useEffect(() => {
@@ -564,7 +572,7 @@ export default function ListingDetailPage() {
   const handleApply = useCallback(() => {
     if (!listingId || !listing) return;
     if (!user) {
-      setApplyError("Du måste vara inloggad för att skicka intresse.");
+      setApplyError(localizedText(locale, "Du måste vara inloggad för att skicka intresse.", "You must be signed in to send interest."));
       return;
     }
 
@@ -577,7 +585,7 @@ export default function ListingDetailPage() {
     setApplyError(null);
     setApplySuccess(null);
 
-    const message = "Hej! Jag är intresserad.";
+    const message = localizedText(locale, "Hej! Jag är intresserad.", "Hi! I am interested.");
     const action =
       listing.ownerType.toLowerCase() === "company"
         ? listingService.applyToListing(listingId, message)
@@ -585,12 +593,17 @@ export default function ListingDetailPage() {
 
     action
       .then(() => {
-        setApplySuccess("Ansökan skickad!");
+        setApplySuccess(localizedText(locale, "Ansökan skickad!", "Application sent!"));
         setHasApplied(true);
       })
-      .catch((err: any) => setApplyError(err?.message ?? "Kunde inte skicka ansökan."))
+      .catch((err: any) =>
+        setApplyError(
+          err?.message ??
+            localizedText(locale, "Kunde inte skicka ansökan.", "Could not send application."),
+        ),
+      )
       .finally(() => setApplying(false));
-  }, [applicationVerificationError, listingId, listing, user]);
+  }, [applicationVerificationError, listingId, listing, locale, user]);
 
   const galleryImages = useMemo(() => listing?.imageUrls || [], [listing]);
 
@@ -610,11 +623,15 @@ export default function ListingDetailPage() {
       phone: null,
       contactEmail: null,
       contactPhone: null,
-      contactNote: listing.provider ? `Förmedlas via ${listing.provider}` : null,
-      subtitle: isCompany ? "Företag" : "Privat hyresvärd",
+      contactNote: listing.provider
+        ? `${localizedText(locale, "Förmedlas via", "Managed through")} ${listing.provider}`
+        : null,
+      subtitle: isCompany
+        ? localizedText(locale, "Företag", "Company")
+        : localizedText(locale, "Privat hyresvärd", "Private landlord"),
       companyPageUrl: isCompany ? `/alla-koer/${listing.ownerId}` : undefined,
     };
-  }, [listing, companyLogoUrl]);
+  }, [companyLogoUrl, listing, locale]);
 
   const mapListings = useMemo<ListingCardDTO[]>(() => {
     if (!listing) return [];
@@ -639,7 +656,7 @@ export default function ListingDetailPage() {
     return (
       <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
         <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-gray-500">
-          Laddar annons...
+          {localizedText(locale, "Laddar annons...", "Loading listing...")}
         </div>
       </main>
     );
@@ -649,7 +666,7 @@ export default function ListingDetailPage() {
     return (
       <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center text-red-800">
-          {error ?? "Annonsen kunde inte hittas."}
+          {error ?? localizedText(locale, "Annonsen kunde inte hittas.", "The listing could not be found.")}
         </div>
       </main>
     );
@@ -706,7 +723,9 @@ export default function ListingDetailPage() {
 
           {/* 3. Map — own dedicated section */}
           <section className="w-full">
-            <h2 className="text-2xl font-bold text-gray-900 mb-5 tracking-tight">Karta</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-5 tracking-tight">
+              {localizedText(locale, "Karta", "Map")}
+            </h2>
             <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
               <ListingsMap
                 listings={mapListings}
@@ -730,7 +749,7 @@ export default function ListingDetailPage() {
           {/* 6. Nearby listings */}
           <section className="pt-8 border-t border-gray-100">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">
-              Fler bostäder i närheten
+              {localizedText(locale, "Fler bostäder i närheten", "More homes nearby")}
             </h2>
             <div className="relative group mx-auto">
               <button
@@ -739,7 +758,7 @@ export default function ListingDetailPage() {
                   if (el) el.scrollBy({ left: -320, behavior: "smooth" });
                 }}
                 className="absolute left-0 top-[40%] -translate-y-1/2 -ml-5 z-10 flex items-center justify-center h-12 w-12 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-md opacity-0 group-hover:opacity-100 hidden md:flex"
-                aria-label="Scrolla vänster"
+                aria-label={localizedText(locale, "Scrolla vänster", "Scroll left")}
               >
                 <ChevronLeft className="h-6 w-6 text-gray-600" />
               </button>
@@ -750,7 +769,7 @@ export default function ListingDetailPage() {
                   if (el) el.scrollBy({ left: 320, behavior: "smooth" });
                 }}
                 className="absolute right-0 top-[40%] -translate-y-1/2 -mr-5 z-10 flex items-center justify-center h-12 w-12 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-md opacity-0 group-hover:opacity-100 hidden md:flex"
-                aria-label="Scrolla höger"
+                aria-label={localizedText(locale, "Scrolla höger", "Scroll right")}
               >
                 <ChevronRight className="h-6 w-6 text-gray-600" />
               </button>
@@ -762,7 +781,7 @@ export default function ListingDetailPage() {
               >
                 {nearbyLoading && (
                   <div className="w-full py-8 text-sm text-gray-500">
-                    Hämtar fler bostäder...
+                    {localizedText(locale, "Hämtar fler bostäder...", "Loading more homes...")}
                   </div>
                 )}
 
@@ -774,12 +793,15 @@ export default function ListingDetailPage() {
 
                 {!nearbyLoading && !nearbyError && nearbyListings.length === 0 && (
                   <div className="w-full py-8 text-sm text-gray-500">
-                    Inga fler bostäder hittades just nu.
+                    {localizedText(locale, "Inga fler bostäder hittades just nu.", "No more homes were found right now.")}
                   </div>
                 )}
 
                 {!nearbyLoading && !nearbyError && nearbyListings.map((nearby) => {
-                  const { area, city } = splitListingLocation(nearby.location);
+                  const { area, city } = splitListingLocation(
+                    nearby.location,
+                    localizedText(locale, "Ej angivet", "Not specified"),
+                  );
 
                   return (
                     <div
@@ -791,7 +813,7 @@ export default function ListingDetailPage() {
                         title={nearby.title}
                         area={area}
                         city={city}
-                        dwellingType={nearby.dwellingType || "Bostad"}
+                        dwellingType={nearby.dwellingType || localizedText(locale, "Bostad", "Home")}
                         rooms={nearby.rooms || 0}
                         sizeM2={nearby.sizeM2 || 0}
                         rent={nearby.rent || 0}
@@ -803,7 +825,7 @@ export default function ListingDetailPage() {
                         onFavoriteToggle={handleFavoriteToggle}
                         imageUrl={nearby.imageUrl}
                         tags={nearby.tags}
-                        onClick={() => router.push(`/bostader/${nearby.id}`)}
+                        onClick={() => router.push(localizedHref(`/bostader/${nearby.id}`))}
                       />
                     </div>
                   );

@@ -18,6 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cx } from "@/lib/utils/cx";
+import type { Locale } from "@/i18n/config";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedDateTime, localizedText } from "@/i18n/text";
 import {
   documentService,
   type DocumentPropagationResult,
@@ -144,14 +147,8 @@ function isImageDocument(document: StudentDocument) {
   );
 }
 
-function formatUploadedAt(value: string) {
-  return new Intl.DateTimeFormat("sv-SE", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+function formatUploadedAt(value: string, locale: Locale) {
+  return formatLocalizedDateTime(locale, value);
 }
 
 const successResultKeys = [
@@ -193,7 +190,7 @@ function getPropagationCount(
   return list.length > 0 ? list.length : undefined;
 }
 
-function getPropagationSummary(result?: DocumentPropagationResult) {
+function getPropagationSummary(result: DocumentPropagationResult | undefined, locale: Locale) {
   if (!result) return null;
 
   const successCount = getPropagationCount(
@@ -212,17 +209,21 @@ function getPropagationSummary(result?: DocumentPropagationResult) {
     const failures = failureCount ?? 0;
 
     if (failures > 0) {
-      return `${successes} bolag tog emot dokumentet, ${failures} misslyckades.`;
+      return localizedText(
+        locale,
+        `${successes} bolag tog emot dokumentet, ${failures} misslyckades.`,
+        `${successes} companies received the document, ${failures} failed.`,
+      );
     }
 
     if (successes > 0) {
-      return `Dokumentet skickades till ${successes} bolag.`;
+      return localizedText(locale, `Dokumentet skickades till ${successes} bolag.`, `The document was sent to ${successes} companies.`);
     }
 
-    return "Dokumentet laddades upp, men inga mottagare rapporterades.";
+    return localizedText(locale, "Dokumentet laddades upp, men inga mottagare rapporterades.", "The document was uploaded, but no recipients were reported.");
   }
 
-  return result.message ?? "Dokumentet laddades upp till backend.";
+  return result.message ?? localizedText(locale, "Dokumentet laddades upp till backend.", "The document was uploaded to the backend.");
 }
 
 function hasPropagationFailures(result?: DocumentPropagationResult) {
@@ -237,9 +238,9 @@ function hasPropagationFailures(result?: DocumentPropagationResult) {
   return typeof failureCount === "number" && failureCount > 0;
 }
 
-function getUploadErrorMessage(error: unknown) {
+function getUploadErrorMessage(error: unknown, locale: Locale) {
   if (error instanceof Error && error.message) return error.message;
-  return "Kunde inte ladda upp dokumentet till backend.";
+  return localizedText(locale, "Kunde inte ladda upp dokumentet till backend.", "Could not upload the document to the backend.");
 }
 
 function createDocumentFromFile(file: File): StudentDocument {
@@ -271,6 +272,7 @@ function createDocumentFromUploaded(document: UploadedDocument): StudentDocument
 }
 
 export default function ProfileDocumentsSection() {
+  const { locale } = useI18n();
   const [documents, setDocuments] = useState<StudentDocument[]>([]);
   const [message, setMessage] = useState<StatusMessage | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -332,7 +334,7 @@ export default function ProfileDocumentsSection() {
           text:
             error instanceof Error
               ? error.message
-              : "Kunde inte hämta uppladdade dokument.",
+              : localizedText(locale, "Kunde inte hämta uppladdade dokument.", "Could not load uploaded documents."),
         });
       } finally {
         if (isActive) {
@@ -346,7 +348,7 @@ export default function ProfileDocumentsSection() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [locale]);
 
   const previewDocument =
     documents.find((document) => document.id === previewDocumentId) ?? null;
@@ -464,7 +466,7 @@ export default function ProfileDocumentsSection() {
 
       setMessage({
         tone: hasPropagationFailures(result) ? "warning" : "success",
-        text: getPropagationSummary(result) ?? "Dokumentet laddades upp.",
+        text: getPropagationSummary(result, locale) ?? localizedText(locale, "Dokumentet laddades upp.", "The document was uploaded."),
       });
     } catch (error) {
       stopProgress();
@@ -474,7 +476,7 @@ export default function ProfileDocumentsSection() {
 
       if (controller.signal.aborted) return;
 
-      const errorMessage = getUploadErrorMessage(error);
+      const errorMessage = getUploadErrorMessage(error, locale);
 
       setDocuments((current) =>
         current.map((item) =>
@@ -518,18 +520,18 @@ export default function ProfileDocumentsSection() {
   };
 
   const handleRejectedFiles = () => {
-    setMessage("Filtypen stöds inte. Ladda upp PDF, Word eller bild.");
+    setMessage(localizedText(locale, "Filtypen stöds inte. Ladda upp PDF, Word eller bild.", "This file type is not supported. Upload a PDF, Word document or image."));
   };
 
   const handleOversizedFiles = () => {
-    setMessage("Filen får vara max 20 MB.");
+    setMessage(localizedText(locale, "Filen får vara max 20 MB.", "The file can be up to 20 MB."));
   };
 
   const handleDeleteDocument = async (documentId: string) => {
     const document = documents.find((item) => item.id === documentId);
     if (!document) return;
 
-    const shouldDelete = window.confirm(`Ta bort "${document.title}"?`);
+    const shouldDelete = window.confirm(localizedText(locale, `Ta bort "${document.title}"?`, `Remove "${document.title}"?`));
     if (!shouldDelete) return;
 
     const uploadCleanup = uploadCleanupsRef.current.get(documentId);
@@ -550,7 +552,7 @@ export default function ProfileDocumentsSection() {
           text:
             error instanceof Error
               ? error.message
-              : "Kunde inte radera dokumentet.",
+              : localizedText(locale, "Kunde inte radera dokumentet.", "Could not delete the document."),
         });
         return;
       }
@@ -581,7 +583,7 @@ export default function ProfileDocumentsSection() {
     if (!document.file) {
       setMessage({
         tone: "error",
-        text: "Dokumentet saknar en lokal fil att ladda upp igen.",
+        text: localizedText(locale, "Dokumentet saknar en lokal fil att ladda upp igen.", "The document does not have a local file to upload again."),
       });
       return;
     }
@@ -607,7 +609,7 @@ export default function ProfileDocumentsSection() {
         text:
           error instanceof Error
             ? error.message
-            : "Kunde inte ladda ner dokumentet.",
+            : localizedText(locale, "Kunde inte ladda ner dokumentet.", "Could not download the document."),
       });
     } finally {
       setDownloadingDocumentId(null);
@@ -638,7 +640,7 @@ export default function ProfileDocumentsSection() {
         text:
           error instanceof Error
             ? error.message
-            : "Kunde inte hämta dokumentet för förhandsvisning.",
+            : localizedText(locale, "Kunde inte hämta dokumentet för förhandsvisning.", "Could not load the document for preview."),
       });
     } finally {
       setPreviewLoadingDocumentId(null);
@@ -662,7 +664,7 @@ export default function ProfileDocumentsSection() {
     const title = editDraft.title.trim();
 
     if (!title) {
-      setMessage("Ange ett namn för dokumentet.");
+      setMessage(localizedText(locale, "Ange ett namn för dokumentet.", "Enter a name for the document."));
       return;
     }
 
@@ -708,10 +710,10 @@ export default function ProfileDocumentsSection() {
         <div className="flex min-h-[360px] flex-col items-center justify-center rounded-lg bg-gray-50 px-6 text-center">
           <File05 className="h-10 w-10 text-gray-400" />
           <p className="mt-3 text-sm font-semibold text-gray-900">
-            Dokumentet kan inte visas just nu.
+            {localizedText(locale, "Dokumentet kan inte visas just nu.", "The document cannot be shown right now.")}
           </p>
           <p className="mt-1 max-w-md text-sm text-gray-500">
-            Ingen filadress finns tillgänglig för förhandsvisning.
+            {localizedText(locale, "Ingen filadress finns tillgänglig för förhandsvisning.", "No file URL is available for preview.")}
           </p>
         </div>
       );
@@ -721,7 +723,7 @@ export default function ProfileDocumentsSection() {
       return (
         <iframe
           src={documentHref}
-          title={`Förhandsvisning av ${document.title}`}
+          title={localizedText(locale, `Förhandsvisning av ${document.title}`, `Preview of ${document.title}`)}
           className="h-[70vh] min-h-[420px] w-full rounded-lg border border-gray-200 bg-white"
         />
       );
@@ -743,10 +745,10 @@ export default function ProfileDocumentsSection() {
       <div className="flex min-h-[360px] flex-col items-center justify-center rounded-lg bg-gray-50 px-6 text-center">
         <File05 className="h-10 w-10 text-gray-400" />
         <p className="mt-3 text-sm font-semibold text-gray-900">
-          Förhandsvisning stöds inte för den här filtypen.
+          {localizedText(locale, "Förhandsvisning stöds inte för den här filtypen.", "Preview is not supported for this file type.")}
         </p>
         <p className="mt-1 max-w-md text-sm text-gray-500">
-          Ladda ner dokumentet för att öppna det i rätt program.
+          {localizedText(locale, "Ladda ner dokumentet för att öppna det i rätt program.", "Download the document to open it in the right program.")}
         </p>
       </div>
     );
@@ -761,14 +763,17 @@ export default function ProfileDocumentsSection() {
         <div className="max-w-2xl">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#004225]">
-              Profilbilagor
+              {localizedText(locale, "Profilbilagor", "Profile attachments")}
             </p>
             <h2 className="mt-1 text-2xl font-bold text-gray-900">
-              Mina dokument
+              {localizedText(locale, "Mina dokument", "My documents")}
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
-              Samla intyg, studiebevis och andra filer som kan behövas i en
-              bostadsansökan. PDF fungerar bäst.
+              {localizedText(
+                locale,
+                "Samla intyg, studiebevis och andra filer som kan behövas i en bostadsansökan. PDF fungerar bäst.",
+                "Collect certificates, proof of studies and other files that may be needed for a housing application. PDF works best.",
+              )}
             </p>
           </div>
         </div>
@@ -778,10 +783,10 @@ export default function ProfileDocumentsSection() {
             <FileUpload.DropZone
               accept={ACCEPTED_FILE_TYPES}
               maxSize={MAX_FILE_SIZE}
-              buttonLabel="Klicka för att ladda upp"
-              mobileButtonSuffix="och bifoga filer"
-              dragAndDropLabel="eller dra och släpp"
-              hint="PDF, DOC, DOCX, PNG eller JPG. Max 20 MB."
+              buttonLabel={localizedText(locale, "Klicka för att ladda upp", "Click to upload")}
+              mobileButtonSuffix={localizedText(locale, "och bifoga filer", "and attach files")}
+              dragAndDropLabel={localizedText(locale, "eller dra och släpp", "or drag and drop")}
+              hint={localizedText(locale, "PDF, DOC, DOCX, PNG eller JPG. Max 20 MB.", "PDF, DOC, DOCX, PNG or JPG. Max 20 MB.")}
               onDropFiles={handleDropFiles}
               onDropUnacceptedFiles={handleRejectedFiles}
               onSizeLimitExceed={handleOversizedFiles}
@@ -807,16 +812,16 @@ export default function ProfileDocumentsSection() {
             {isLoadingDocuments ? (
               <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center">
                 <p className="text-sm font-medium text-gray-900">
-                  Hämtar uppladdade dokument...
+                  {localizedText(locale, "Hämtar uppladdade dokument...", "Loading uploaded documents...")}
                 </p>
               </div>
             ) : documents.length === 0 ? (
               <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center">
                 <p className="text-sm font-medium text-gray-900">
-                  Inga dokument uppladdade än.
+                  {localizedText(locale, "Inga dokument uppladdade än.", "No documents uploaded yet.")}
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
-                  Lägg till ett dokument för att se det här.
+                  {localizedText(locale, "Lägg till ett dokument för att se det här.", "Add a document to see it here.")}
                 </p>
               </div>
             ) : (
@@ -852,7 +857,7 @@ export default function ProfileDocumentsSection() {
                                 <Label
                                   htmlFor={`document-title-${document.id}`}
                                 >
-                                  Namn
+                                  {localizedText(locale, "Namn", "Name")}
                                 </Label>
                                 <Input
                                   id={`document-title-${document.id}`}
@@ -867,7 +872,7 @@ export default function ProfileDocumentsSection() {
                               </div>
 
                               <div className="space-y-2">
-                                <Label>Originalfil</Label>
+                                <Label>{localizedText(locale, "Originalfil", "Original file")}</Label>
                                 <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                                   {document.name}
                                 </div>
@@ -876,7 +881,7 @@ export default function ProfileDocumentsSection() {
 
                             <div className="space-y-2">
                               <Label htmlFor={`document-note-${document.id}`}>
-                                Anteckning
+                                {localizedText(locale, "Anteckning", "Note")}
                               </Label>
                               <Textarea
                                 id={`document-note-${document.id}`}
@@ -896,12 +901,12 @@ export default function ProfileDocumentsSection() {
                                 type: "button",
                                 onClick: handleCancelEdit,
                                 iconLeading: XClose,
-                                children: "Avbryt",
+                                children: localizedText(locale, "Avbryt", "Cancel"),
                               })}
                               {renderActionButton({
                                 type: "button",
                                 onClick: () => handleSaveEdit(document.id),
-                                children: "Spara ändringar",
+                                children: localizedText(locale, "Spara ändringar", "Save changes"),
                               })}
                             </div>
                           </div>
@@ -910,10 +915,12 @@ export default function ProfileDocumentsSection() {
                             <div className="min-w-0 text-sm text-gray-600">
                               <p>
                                 {document.uploadedAt
-                                  ? `Uppladdad ${formatUploadedAt(
-                                      document.uploadedAt
-                                    )}`
-                                  : "Uppladdad sedan tidigare"}
+                                  ? localizedText(
+                                      locale,
+                                      `Uppladdad ${formatUploadedAt(document.uploadedAt, locale)}`,
+                                      `Uploaded ${formatUploadedAt(document.uploadedAt, locale)}`,
+                                    )
+                                  : localizedText(locale, "Uppladdad sedan tidigare", "Uploaded previously")}
                               </p>
                               {document.note && (
                                 <p className="mt-1 leading-6">
@@ -937,7 +944,8 @@ export default function ProfileDocumentsSection() {
                                   )}
                                 >
                                   {getPropagationSummary(
-                                    document.propagationResult
+                                    document.propagationResult,
+                                    locale
                                   )}
                                 </p>
                               )}
@@ -950,8 +958,8 @@ export default function ProfileDocumentsSection() {
                                   void handlePreviewDocument(document.id),
                                 iconLeading: Eye,
                                 children: isPreviewLoading
-                                  ? "Hämtar..."
-                                  : "Förhandsvisa",
+                                  ? localizedText(locale, "Hämtar...", "Loading...")
+                                  : localizedText(locale, "Förhandsvisa", "Preview"),
                                 isDisabled:
                                   !canUseBackendDocument || isPreviewLoading,
                                 className:
@@ -965,8 +973,8 @@ export default function ProfileDocumentsSection() {
                                   void handleDownloadDocument(document.id),
                                 iconLeading: Download01,
                                 children: isDownloading
-                                  ? "Hämtar..."
-                                  : "Ladda ner",
+                                  ? localizedText(locale, "Hämtar...", "Loading...")
+                                  : localizedText(locale, "Ladda ner", "Download"),
                                 isDisabled:
                                   !canUseBackendDocument || isDownloading,
                                 className:
@@ -978,7 +986,7 @@ export default function ProfileDocumentsSection() {
                                 type: "button",
                                 onClick: () => handleStartEdit(document),
                                 iconLeading: Edit03,
-                                children: "Redigera",
+                                children: localizedText(locale, "Redigera", "Edit"),
                                 isDisabled: deletingDocumentId === document.id,
                                 className:
                                   deletingDocumentId === document.id
@@ -987,7 +995,7 @@ export default function ProfileDocumentsSection() {
                               })}
                               {deletingDocumentId === document.id && (
                                 <span className="self-center text-sm text-gray-500">
-                                  Raderar...
+                                  {localizedText(locale, "Raderar...", "Deleting...")}
                                 </span>
                               )}
                             </div>
@@ -1035,8 +1043,8 @@ export default function ProfileDocumentsSection() {
                   iconLeading: Download01,
                   children:
                     downloadingDocumentId === previewDocument.id
-                      ? "Hämtar..."
-                      : "Ladda ner",
+                      ? localizedText(locale, "Hämtar...", "Loading...")
+                      : localizedText(locale, "Ladda ner", "Download"),
                   isDisabled: downloadingDocumentId === previewDocument.id,
                   className:
                     downloadingDocumentId === previewDocument.id
@@ -1047,7 +1055,7 @@ export default function ProfileDocumentsSection() {
                   type="button"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"
                   onClick={() => setPreviewDocumentId(null)}
-                  aria-label="Stäng förhandsvisning"
+                  aria-label={localizedText(locale, "Stäng förhandsvisning", "Close preview")}
                 >
                   <XClose className="h-5 w-5" />
                 </button>

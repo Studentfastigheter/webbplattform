@@ -1,5 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type NotificationCardProps = {
   icon: React.ReactNode;
@@ -22,16 +24,17 @@ export function NotificationCard({
   const accentStyle = accentStyles[accentKey] ?? accentStyles.neutral;
   const iconStyle = accentStyles.neutral.icon;
   const [timeLabel, setTimeLabel] = React.useState("");
+  const { locale } = useI18n();
 
   React.useEffect(() => {
-    setTimeLabel(formatRelativeTime(createdAt));
+    setTimeLabel(formatRelativeTime(createdAt, locale));
 
     const id = window.setInterval(() => {
-      setTimeLabel(formatRelativeTime(createdAt));
+      setTimeLabel(formatRelativeTime(createdAt, locale));
     }, 60_000);
 
     return () => window.clearInterval(id);
-  }, [createdAt]);
+  }, [createdAt, locale]);
 
   return (
     <div
@@ -75,23 +78,23 @@ export function NotificationCard({
   );
 }
 
-export function formatRelativeTime(iso: string) {
+export function formatRelativeTime(iso: string, locale: "sv" | "en" = "sv") {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "invalid date";
+  if (Number.isNaN(date.getTime())) return localizedText(locale, "ogiltigt datum", "invalid date");
 
   const diffMs = Date.now() - date.getTime();
   const minutes = Math.floor(diffMs / 60000);
 
-  if (minutes < 1) return "just nu";
-  if (minutes < 60) return `${minutes} min sedan`;
+  if (minutes < 1) return localizedText(locale, "just nu", "just now");
+  if (minutes < 60) return localizedText(locale, `${minutes} min sedan`, `${minutes} min ago`);
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h sedan`;
+  if (hours < 24) return localizedText(locale, `${hours} h sedan`, `${hours}h ago`);
 
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} d sedan`;
+  if (days < 7) return localizedText(locale, `${days} d sedan`, `${days}d ago`);
 
-  return date.toLocaleDateString("sv-SE", { month: "short", day: "numeric" });
+  return date.toLocaleDateString(locale === "en" ? "en-US" : "sv-SE", { month: "short", day: "numeric" });
 }
 
 const accentStyles: Record<

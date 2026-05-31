@@ -11,6 +11,8 @@ import PropertyTypeSection from "@/features/listings/components/filter_sections/
 import FilterButton, {
   type FilterButtonProps,
 } from "./filterbutton";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
 type PriceBounds = {
   min: number;
@@ -69,8 +71,12 @@ type ListingsFilterButtonProps = Omit<
 
 const defaultBounds: PriceBounds = { min: 0, max: 10000 };
 
-const formatListingCount = (count: number) =>
-  `${count.toLocaleString("sv-SE")} ${count === 1 ? "bostad" : "bostäder"}`;
+const formatListingCount = (count: number, locale: "sv" | "en") =>
+  `${formatLocalizedNumber(locale, count)} ${
+    count === 1
+      ? localizedText(locale, "bostad", "home")
+      : localizedText(locale, "bostäder", "homes")
+  }`;
 
 const emptyState = (priceBounds: PriceBounds): ListingsFilterState => ({
   city: "",
@@ -173,6 +179,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
   onChange,
   ...buttonProps
 }) => {
+  const { locale } = useI18n();
   const resolvedInitial = useMemo<ListingsFilterState>(
     () => initialState ?? emptyState(priceBounds),
     [initialState, priceBounds]
@@ -205,21 +212,21 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
   const resultsLabel = useMemo(() => {
     if (typeof facetTotalCount !== "number" && facetsLoading) {
-      return "Hämtar träffar...";
+      return localizedText(locale, "Hämtar träffar...", "Loading matches...");
     }
     if (typeof facetTotalCount === "number") {
-      return `Visa ${formatListingCount(facetTotalCount)}`;
+      return `${localizedText(locale, "Visa", "Show")} ${formatListingCount(facetTotalCount, locale)}`;
     }
     return undefined;
-  }, [facetTotalCount, facetsLoading]);
+  }, [facetTotalCount, facetsLoading, locale]);
 
   const resultsMeta = useMemo(() => {
     if (facetsLoading && typeof facetTotalCount === "number") {
-      return "Uppdaterar träffar...";
+      return localizedText(locale, "Uppdaterar träffar...", "Updating matches...");
     }
     if (facetsError) return facetsError;
     return null;
-  }, [facetTotalCount, facetsError, facetsLoading]);
+  }, [facetTotalCount, facetsError, facetsLoading, locale]);
 
   const updateState = (next: ListingsFilterState) => {
     setState(next);
@@ -314,7 +321,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
     <div className="space-y-3">
       {propertyTypes.length > 0 && (
         <PropertyTypeSection
-          title="Boendetyp"
+          title={localizedText(locale, "Boendetyp", "Home type")}
           items={propertyTypes}
           selectedId={state.propertyType}
           onSelect={handlePropertyType}
@@ -324,7 +331,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
       {hostTypes.length > 0 && (
         <PropertyTypeSection
-          title="Hyresvärd"
+          title={localizedText(locale, "Hyresvärd", "Landlord")}
           items={hostTypes}
           selectedId={state.hostType}
           onSelect={handleHostType}
@@ -343,7 +350,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
       {amenities.length > 0 && (
         <AmenityGridSection
-          title="Bekvämligheter"
+          title={localizedText(locale, "Bekvämligheter", "Amenities")}
           items={amenities}
           selectedIds={state.amenities}
           onToggle={handleAmenityToggle}
@@ -351,12 +358,12 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
       )}
 
       <FilterSectionShell
-        title="Nära skola"
+        title={localizedText(locale, "Nära skola", "Near school")}
         withBorder={false}
       >
         <div className="space-y-3">
           <label>
-            <span className="sr-only">Skola</span>
+            <span className="sr-only">{localizedText(locale, "Skola", "School")}</span>
             <div className="relative">
               <input
                 type="text"
@@ -365,7 +372,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                 onChange={(event) =>
                   handleSchoolSearchChange(event.target.value)
                 }
-                placeholder="Sök skola eller universitet"
+                placeholder={localizedText(locale, "Sök skola eller universitet", "Search school or university")}
                 className="h-11 w-full rounded-lg border border-black/15 bg-white px-3.5 pr-24 text-sm outline-none transition focus:border-[#004225] focus:ring-2 focus:ring-[#004225]/10"
               />
               {state.schoolId && (
@@ -374,7 +381,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                   onClick={clearSchool}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold text-[#004225] transition hover:bg-[#004225]/10"
                 >
-                  Rensa
+                  {localizedText(locale, "Rensa", "Clear")}
                 </button>
               )}
             </div>
@@ -382,11 +389,11 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
           {schools.length === 0 ? (
             <p className="text-sm text-black/55">
-              Skolor laddas...
+              {localizedText(locale, "Skolor laddas...", "Loading schools...")}
             </p>
           ) : selectableSchools.length === 0 ? (
             <p className="text-sm text-black/55">
-              Inga skolor med position kunde hittas.
+              {localizedText(locale, "Inga skolor med position kunde hittas.", "No schools with a location were found.")}
             </p>
           ) : (
             <div
@@ -429,7 +436,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                       </span>
                       {isSelected && (
                         <span className="text-xs font-semibold">
-                          Klicka för att ta bort
+                          {localizedText(locale, "Klicka för att ta bort", "Click to remove")}
                         </span>
                       )}
                     </button>
@@ -437,7 +444,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                 })
               ) : (
                 <p className="px-3 py-2 text-sm text-black/55">
-                  Ingen skola matchar din sökning.
+                  {localizedText(locale, "Ingen skola matchar din sökning.", "No school matches your search.")}
                 </p>
               )}
             </div>
@@ -445,7 +452,11 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
           {state.schoolId && (
             <p className="text-xs text-black/55">
-              Filtret använder skolans position när träffarna räknas.
+              {localizedText(
+                locale,
+                "Filtret använder skolans position när träffarna räknas.",
+                "The filter uses the school's location when counting matches.",
+              )}
             </p>
           )}
         </div>

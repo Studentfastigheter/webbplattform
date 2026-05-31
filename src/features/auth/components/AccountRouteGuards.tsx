@@ -8,6 +8,8 @@ import { LoadingScreen } from "@/components/ui/loader";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { buildPortalUrl } from "@/lib/subdomain-routing";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type RouteGuardProps = {
   children: ReactNode;
@@ -21,6 +23,7 @@ function RouteFallback({ message }: { message: string }) {
 
 export function SiteAccountGuard({ children }: RouteGuardProps) {
   const router = useRouter();
+  const { locale, localizedHref } = useI18n();
   const { user, token, isLoading, logout } = useAuth();
 
   useEffect(() => {
@@ -33,19 +36,19 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
 
     if (!SITE_ACCOUNT_TYPES.has(user.accountType)) {
       logout();
-      router.replace("/login");
+      router.replace(localizedHref("/login"));
     }
-  }, [isLoading, logout, router, token, user]);
+  }, [isLoading, localizedHref, logout, router, token, user]);
 
   if (isLoading) {
-    return <RouteFallback message="Laddar..." />;
+    return <RouteFallback message={localizedText(locale, "Laddar...", "Loading...")} />;
   }
 
   if (
     user &&
     (!SITE_ACCOUNT_TYPES.has(user.accountType) || getActiveCompanyId(user) != null)
   ) {
-    return <RouteFallback message="Skickar dig vidare..." />;
+    return <RouteFallback message={localizedText(locale, "Skickar dig vidare...", "Redirecting you...")} />;
   }
 
   return children;

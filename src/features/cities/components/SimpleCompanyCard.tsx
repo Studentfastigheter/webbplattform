@@ -1,4 +1,6 @@
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 const getCompanyWebsiteUrl = (company: CompanyPublicDTO) => {
   const rawUrl = company.websiteUrl?.trim() || company.website?.trim() || "";
@@ -12,11 +14,12 @@ export default function SimpleCompanyCard({
 }: {
   company: CompanyPublicDTO;
 }) {
+  const { locale } = useI18n();
   const websiteUrl = getCompanyWebsiteUrl(company);
   const description =
     company.description?.trim() ||
     company.subtitle?.trim() ||
-    "Läs mer om företaget på deras hemsida.";
+    localizedText(locale, "Läs mer om företaget på deras hemsida.", "Read more about the company on its website.");
 
   const content = (
     <>
@@ -24,12 +27,12 @@ export default function SimpleCompanyCard({
         {company.logoUrl ? (
           <img
             src={company.logoUrl}
-            alt={`${company.name} logotyp`}
+            alt={localizedText(locale, `${company.name} logotyp`, `${company.name} logo`)}
             className="max-h-12 w-full max-w-[88px] object-contain sm:max-h-14"
           />
         ) : (
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-base font-semibold text-gray-500">
-            {company.name.trim().charAt(0).toUpperCase() || "F"}
+            {company.name.trim().charAt(0).toUpperCase() || localizedText(locale, "F", "C")}
           </div>
         )}
       </div>

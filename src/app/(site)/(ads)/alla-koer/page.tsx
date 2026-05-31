@@ -150,8 +150,8 @@ export default function Page() {
   const [joinError, setJoinError] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const queueVerificationError = useMemo(
-    () => getApplicationVerificationError(user, "queue"),
-    [user]
+    () => getApplicationVerificationError(user, "queue", locale),
+    [locale, user]
   );
 
   useEffect(() => {

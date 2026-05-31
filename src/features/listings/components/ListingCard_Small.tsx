@@ -5,6 +5,8 @@ import Tag from "@/components/ui/Tag";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { ListingTagDTO } from "@/types/listing";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedCurrency, localizedText } from "@/i18n/text";
 
 // ÄNDRING: Vi definierar props manuellt istället för att ärva från gamla ListingWithRelations
 export type ListingCardSmallProps = {
@@ -45,13 +47,8 @@ const IMAGE_ASPECT_RATIO = "16 / 10";
 const MIN_SCALE = 0.42;
 const MAX_SCALE = 1.26;
 
-const formatRent = (rent?: number | null) =>
-  typeof rent === "number"
-    ? `${rent.toLocaleString("sv-SE", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      })} kr/mån`
-    : "-";
+const formatRent = (rent: number | null | undefined, locale: "sv" | "en") =>
+  typeof rent === "number" ? formatLocalizedCurrency(locale, rent) : "-";
 
 const getTagLabel = (tag: string | ListingTagDTO) =>
   typeof tag === "string" ? tag : tag.displayName || tag.tagKey || "";
@@ -86,6 +83,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   } = props;
 
   const { user } = useAuth();
+  const { locale } = useI18n();
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
@@ -143,8 +141,10 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     lineHeight: (isCompact ? 12 : 13) * scale,
   };
   const safeTags = (tags ?? []).map(getTagLabel).filter(Boolean);
-  const locationText = [area, city].filter(Boolean).join(", ") || "Ej angivet";
-  const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} rum \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
+  const locationText =
+    [area, city].filter(Boolean).join(", ") ||
+    localizedText(locale, "Ej angivet", "Not specified");
+  const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} ${localizedText(locale, "rum", "rooms")} \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
   const logoSize = variant === "compact" ? 50 : 64;
   const contentPadding = isCompact ? 12 : 14;
   const logoRightOffset = showHostLogo ? 16 : 0;
@@ -155,8 +155,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
       ? contentPadding + 96
       : contentPadding;
   const logoAlt = hostName || landlordType
-    ? `${hostName ?? landlordType} logotyp`
-    : "Hyresvärdens logotyp";
+    ? `${hostName ?? landlordType} ${localizedText(locale, "logotyp", "logo")}`
+    : localizedText(locale, "Hyresvärdens logotyp", "Landlord logo");
 
   return (
     <div
@@ -197,7 +197,11 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
             type="button"
             onClick={handleFavoriteClick}
             className="absolute top-3 right-3 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all shadow-sm"
-            aria-label={isLiked ? "Ta bort från sparade" : "Spara bostad"}
+            aria-label={
+              isLiked
+                ? localizedText(locale, "Ta bort från sparade", "Remove from saved")
+                : localizedText(locale, "Spara bostad", "Save home")
+            }
           >
             <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
           </button>
@@ -221,7 +225,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
                 lineHeight: scaleValue(18),
               }}
             >
-              Ingen bild
+              {localizedText(locale, "Ingen bild", "No image")}
             </span>
           </div>
         )}
@@ -322,7 +326,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
                 lineHeight: scaleValue(isCompact ? 19 : 21),
               }}
             >
-              {formatRent(rent)}
+              {formatRent(rent, locale)}
             </p>
 
             <p

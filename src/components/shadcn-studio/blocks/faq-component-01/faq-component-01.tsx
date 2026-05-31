@@ -10,16 +10,24 @@ type FAQs = {
   answer: string;
 }[];
 
-const FAQ = ({ faqItems }: { faqItems: FAQs }) => {
+const FAQ = ({
+  faqItems,
+  title = "Behöver du hjälp? Vi har svaren",
+  description = "Här hittar du svar på de vanligaste frågorna och all information du behöver.",
+}: {
+  faqItems: FAQs;
+  title?: string;
+  description?: string;
+}) => {
   return (
     <section className="py-8 sm:py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-12 space-y-4 text-center sm:mb-16 lg:mb-24">
           <h2 className="text-2xl font-semibold md:text-3xl lg:text-4xl">
-            Behöver du hjälp? Vi har svaren
+            {title}
           </h2>
           <p className="text-xl text-muted-foreground">
-            Här hittar du svar på de vanligaste frågorna och all information du behöver.
+            {description}
           </p>
         </div>
 

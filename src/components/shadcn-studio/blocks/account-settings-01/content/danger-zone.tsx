@@ -17,9 +17,12 @@ import {
 } from '@/components/ui/dialog'
 import { useAuth } from '@/context/AuthContext'
 import { authService } from '@/features/auth/services/auth-service'
+import { useI18n } from '@/i18n/I18nProvider'
+import { localizedText } from '@/i18n/text'
 
 const DangerZone = () => {
   const router = useRouter()
+  const { locale, localizedHref } = useI18n()
   const { logout } = useAuth()
   const [open, setOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -43,16 +46,16 @@ const DangerZone = () => {
         throw new Error(
           typeof result.message === 'string'
             ? result.message
-            : 'Kontot kunde inte raderas.'
+            : localizedText(locale, 'Kontot kunde inte raderas.', 'The account could not be deleted.')
         )
       }
 
       logout()
       setOpen(false)
-      router.replace('/')
+      router.replace(localizedHref('/'))
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kontot kunde inte raderas.')
+      setError(err instanceof Error ? err.message : localizedText(locale, 'Kontot kunde inte raderas.', 'The account could not be deleted.'))
     } finally {
       setDeleting(false)
     }
@@ -61,7 +64,7 @@ const DangerZone = () => {
   return (
     <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
-        <h3 className='font-semibold'>Radera konto</h3>
+        <h3 className='font-semibold'>{localizedText(locale, 'Radera konto', 'Delete account')}</h3>
       </div>
 
       <div className='space-y-6 lg:col-span-2'>
@@ -69,7 +72,7 @@ const DangerZone = () => {
           <CardContent className='px-4 py-3'>
             <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
               <span className='text-sm font-semibold text-gray-950'>
-                Radera konto
+                {localizedText(locale, 'Radera konto', 'Delete account')}
               </span>
 
               <Dialog
@@ -87,15 +90,15 @@ const DangerZone = () => {
                     className='rounded-md border-red-200 text-red-700 hover:bg-red-50 sm:w-auto'
                   >
                     <Trash2Icon className='size-4' />
-                    Radera konto
+                    {localizedText(locale, 'Radera konto', 'Delete account')}
                   </Button>
                 </DialogTrigger>
 
                 <DialogContent className='sm:max-w-md'>
                   <DialogHeader className='space-y-2'>
-                    <DialogTitle>Radera konto</DialogTitle>
+                    <DialogTitle>{localizedText(locale, 'Radera konto', 'Delete account')}</DialogTitle>
                     <div className='text-muted-foreground text-sm'>
-                      Detta tar bort kontot permanent och går inte att ångra.
+                      {localizedText(locale, 'Detta tar bort kontot permanent och går inte att ångra.', 'This permanently deletes the account and cannot be undone.')}
                     </div>
                   </DialogHeader>
 
@@ -111,7 +114,7 @@ const DangerZone = () => {
                         className='rounded-md'
                         isDisabled={deleting}
                       >
-                        Avbryt
+                        {localizedText(locale, 'Avbryt', 'Cancel')}
                       </Button>
                     </DialogClose>
                     <Button
@@ -125,10 +128,10 @@ const DangerZone = () => {
                       {deleting ? (
                         <>
                           <Loader2Icon className='size-4 animate-spin' />
-                          Raderar...
+                          {localizedText(locale, 'Raderar...', 'Deleting...')}
                         </>
                       ) : (
-                        'Radera konto'
+                        localizedText(locale, 'Radera konto', 'Delete account')
                       )}
                     </Button>
                   </DialogFooter>

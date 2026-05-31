@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { useAuth } from "@/context/AuthContext";
 import {
   formatCityName,
@@ -19,6 +19,8 @@ import {
 import Que_ListingCard from "@/features/listings/components/Que_ListingCard";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import { listingService } from "@/features/listings/services/listing-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import type { ListingCardDTO } from "@/types/listing";
 
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
@@ -44,8 +46,9 @@ const decodeRouteParam = (value: string | undefined) => {
 export default function CityDetailPage() {
   const params = useParams<{ stad: string }>();
   const router = useRouter();
+  const { locale, localizedHref } = useI18n();
   const { user } = useAuth();
-  const cityName = formatCityName(decodeRouteParam(params?.stad)) || "Stad";
+  const cityName = formatCityName(decodeRouteParam(params?.stad)) || localizedText(locale, "Stad", "City");
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [companies, setCompanies] = useState<CompanyPublicDTO[]>([]);
@@ -72,7 +75,7 @@ export default function CityDetailPage() {
         if (!active) return;
         console.error(err);
         setListings([]);
-        setListingsError("Kunde inte ladda bostäder i staden.");
+        setListingsError(localizedText(locale, "Kunde inte ladda bostäder i staden.", "Could not load homes in the city."));
       })
       .finally(() => {
         if (active) setListingsLoading(false);
@@ -81,7 +84,7 @@ export default function CityDetailPage() {
     return () => {
       active = false;
     };
-  }, [cityName]);
+  }, [cityName, locale]);
 
   useEffect(() => {
     let active = true;
@@ -97,7 +100,7 @@ export default function CityDetailPage() {
         if (!active) return;
         console.error(err);
         setCompanies([]);
-        setCompaniesError("Kunde inte ladda företag.");
+        setCompaniesError(localizedText(locale, "Kunde inte ladda företag.", "Could not load companies."));
       })
       .finally(() => {
         if (active) setCompaniesLoading(false);
@@ -106,7 +109,7 @@ export default function CityDetailPage() {
     return () => {
       active = false;
     };
-  }, [cityName]);
+  }, [cityName, locale]);
 
   useEffect(() => {
     if (!user) {
@@ -122,7 +125,7 @@ export default function CityDetailPage() {
         if (active) setFavoriteIds(new Set(favorites.map((listing) => listing.id)));
       })
       .catch((err) => {
-        console.error("Kunde inte hämta sparade bostäder:", err);
+        console.error("Could not load saved homes:", err);
         if (active) setFavoriteIds(new Set());
       });
 
@@ -133,7 +136,7 @@ export default function CityDetailPage() {
 
   const handleFavoriteToggle = (id: string, isFavorite: boolean) => {
     if (!user) {
-      router.push("/login");
+      router.push(localizedHref("/login"));
       return;
     }
 
@@ -152,7 +155,7 @@ export default function CityDetailPage() {
       : listingService.removeFavorite(id);
 
     action.catch((err) => {
-      console.error("Kunde inte uppdatera sparad bostad:", err);
+      console.error("Could not update saved home:", err);
       setFavoriteIds((current) => {
         const next = new Set(current);
         if (isFavorite) {
@@ -187,7 +190,7 @@ export default function CityDetailPage() {
               {cityName}
             </h1>
             <p className="mt-4 text-base leading-relaxed text-gray-600">
-              {getCityDescription(cityName)}
+              {getCityDescription(cityName, locale)}
             </p>
           </div>
         </section>
@@ -195,14 +198,14 @@ export default function CityDetailPage() {
         <section className="mt-12 w-full">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              Bostäder i {cityName}
+              {localizedText(locale, `Bostäder i ${cityName}`, `Homes in ${cityName}`)}
             </h2>
-            <Link
+            <LocalizedLink
               href={`/bostader?city=${encodeURIComponent(cityName)}&page=1`}
               className={linkButtonClassName}
             >
-              Fler bostäder
-            </Link>
+              {localizedText(locale, "Fler bostäder", "More homes")}
+            </LocalizedLink>
           </div>
 
           {listingsError && (
@@ -213,11 +216,11 @@ export default function CityDetailPage() {
 
           {listingsLoading ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Hämtar bostäder...
+              {localizedText(locale, "Hämtar bostäder...", "Loading homes...")}
             </div>
           ) : listings.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Inga bostäder hittades i {cityName} just nu.
+              {localizedText(locale, `Inga bostäder hittades i ${cityName} just nu.`, `No homes were found in ${cityName} right now.`)}
             </div>
           ) : (
             <div className="grid grid-cols-1 justify-items-center gap-3 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
@@ -227,7 +230,7 @@ export default function CityDetailPage() {
                     listing={listing}
                     isFavorite={favoriteIds.has(listing.id)}
                     onFavoriteToggle={handleFavoriteToggle}
-                    onOpen={(id) => router.push(`/bostader/${id}`)}
+                    onOpen={(id) => router.push(localizedHref(`/bostader/${id}`))}
                   />
                 </div>
               ))}
@@ -237,7 +240,7 @@ export default function CityDetailPage() {
 
         <section className="mt-12 w-full">
           <h2 className="mb-5 text-lg font-semibold text-gray-900">
-            Karta
+            {localizedText(locale, "Karta", "Map")}
           </h2>
           <div className="relative isolate z-0 h-[70vh] min-h-[520px] max-h-[860px] w-full overflow-hidden rounded-3xl border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
             <ListingsMap
@@ -246,7 +249,7 @@ export default function CityDetailPage() {
               fillContainer
               getIsFavorite={(id) => favoriteIds.has(id)}
               onFavoriteToggle={handleFavoriteToggle}
-              onOpenListing={(id) => router.push(`/bostader/${id}`)}
+              onOpenListing={(id) => router.push(localizedHref(`/bostader/${id}`))}
             />
           </div>
         </section>
@@ -254,14 +257,14 @@ export default function CityDetailPage() {
         <section className="mt-12 w-full">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              Företag
+              {localizedText(locale, "Företag", "Companies")}
             </h2>
-            <Link
+            <LocalizedLink
               href={`/alla-koer?city=${encodeURIComponent(cityName)}`}
               className={linkButtonClassName}
             >
-              Fler företag
-            </Link>
+              {localizedText(locale, "Fler företag", "More companies")}
+            </LocalizedLink>
           </div>
 
           {companiesError && (
@@ -272,11 +275,11 @@ export default function CityDetailPage() {
 
           {companiesLoading ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Hämtar företag...
+              {localizedText(locale, "Hämtar företag...", "Loading companies...")}
             </div>
           ) : companies.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Inga företag hittades just nu.
+              {localizedText(locale, "Inga företag hittades just nu.", "No companies were found right now.")}
             </div>
           ) : (
             <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
@@ -292,15 +295,15 @@ export default function CityDetailPage() {
                       area=""
                       city={cities.join(", ")}
                       logoUrl={company.logoUrl || "/logos/campuslyan-logo.svg"}
-                      logoAlt={`${company.name} logotyp`}
+                      logoAlt={localizedText(locale, `${company.name} logotyp`, `${company.name} logo`)}
                       description={company.description ?? company.subtitle}
                       termsUrl={company.termsUrl}
                       privacyUrl={company.privacyUrl}
                       tags={[]}
                       isJoinDisabled
-                      joinDisabledLabel="Visa kö"
+                      joinDisabledLabel={localizedText(locale, "Visa kö", "View queue")}
                       onViewListings={() =>
-                        router.push(`/alla-koer/${company.id}`)
+                        router.push(localizedHref(`/alla-koer/${company.id}`))
                       }
                     />
                   </div>
@@ -312,7 +315,7 @@ export default function CityDetailPage() {
 
         <section className="mt-12 w-full">
           <h2 className="mb-5 text-lg font-semibold text-gray-900">
-            Andra företag
+            {localizedText(locale, "Andra företag", "Other companies")}
           </h2>
 
           {companiesError && (
@@ -323,11 +326,11 @@ export default function CityDetailPage() {
 
           {companiesLoading ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Hämtar företag...
+              {localizedText(locale, "Hämtar företag...", "Loading companies...")}
             </div>
           ) : companies.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              Inga andra företag hittades just nu.
+              {localizedText(locale, "Inga andra företag hittades just nu.", "No other companies were found right now.")}
             </div>
           ) : (
             <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">

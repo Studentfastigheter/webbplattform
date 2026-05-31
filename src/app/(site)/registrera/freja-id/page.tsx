@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import {
@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { authService, isAuthResponse } from "@/features/auth/services/auth-service";
 import type { FrejaAuthStatus } from "@/types";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 const pollIntervalMs = 2000;
 const frejaLogoPath =
@@ -33,23 +35,25 @@ const frejaAuthStatuses = [
   "CANCELED",
 ] as const satisfies readonly FrejaAuthStatus[];
 
-const statusMessages: Record<FrejaAuthStatus, string> = {
-  PENDING: "Väntar på godkännande i Freja.",
-  MATCHES: "Kontot är verifierat. Du skickas vidare.",
-  CLASHING:
-    "Freja-identiteten matchade inte registreringen, eller så finns kontot redan.",
-  DISAPPROVED: "Verifieringen nekades i Freja-appen.",
-  EXPIRED: "Verifieringen hann löpa ut innan den godkändes.",
-  CANCELED: "Verifieringen avbröts.",
+const statusMessages: Record<FrejaAuthStatus, { sv: string; en: string }> = {
+  PENDING: { sv: "Väntar på godkännande i Freja.", en: "Waiting for approval in Freja." },
+  MATCHES: { sv: "Kontot är verifierat. Du skickas vidare.", en: "The account is verified. You will be redirected." },
+  CLASHING: {
+    sv: "Freja-identiteten matchade inte registreringen, eller så finns kontot redan.",
+    en: "The Freja identity did not match the registration, or the account already exists.",
+  },
+  DISAPPROVED: { sv: "Verifieringen nekades i Freja-appen.", en: "The verification was rejected in the Freja app." },
+  EXPIRED: { sv: "Verifieringen hann löpa ut innan den godkändes.", en: "The verification expired before it was approved." },
+  CANCELED: { sv: "Verifieringen avbröts.", en: "The verification was canceled." },
 };
 
-const statusPillLabels: Record<FrejaAuthStatus, string> = {
-  PENDING: "Väntar på Freja",
-  MATCHES: "Verifierad",
-  CLASHING: "Kontrollera ärendet",
-  DISAPPROVED: "Nekad",
-  EXPIRED: "Tiden gick ut",
-  CANCELED: "Avbruten",
+const statusPillLabels: Record<FrejaAuthStatus, { sv: string; en: string }> = {
+  PENDING: { sv: "Väntar på Freja", en: "Waiting for Freja" },
+  MATCHES: { sv: "Verifierad", en: "Verified" },
+  CLASHING: { sv: "Kontrollera ärendet", en: "Check the case" },
+  DISAPPROVED: { sv: "Nekad", en: "Rejected" },
+  EXPIRED: { sv: "Tiden gick ut", en: "Expired" },
+  CANCELED: { sv: "Avbruten", en: "Canceled" },
 };
 
 function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
@@ -59,25 +63,25 @@ function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
   );
 }
 
-function getStatusAction(status: FrejaAuthStatus, flow: "registration" | "identity") {
+function getStatusAction(status: FrejaAuthStatus, flow: "registration" | "identity", locale: "sv" | "en") {
   if (flow === "identity") {
     return status === "MATCHES"
-      ? { href: "/profil", label: "Tillbaka till profilen" }
-      : { href: "/profil", label: "Tillbaka till profilen" };
+      ? { href: "/profil", label: localizedText(locale, "Tillbaka till profilen", "Back to profile") }
+      : { href: "/profil", label: localizedText(locale, "Tillbaka till profilen", "Back to profile") };
   }
 
   if (status === "MATCHES") {
-    return { href: "/", label: "Fortsätt" };
+    return { href: "/", label: localizedText(locale, "Fortsätt", "Continue") };
   }
 
   if (status === "EXPIRED" || status === "CANCELED") {
     return {
       href: "/registrera/freja-id?start=freja",
-      label: "Starta Freja igen",
+      label: localizedText(locale, "Starta Freja igen", "Start Freja again"),
     };
   }
 
-  return { href: "/registrera", label: "Tillbaka till registrering" };
+  return { href: "/registrera", label: localizedText(locale, "Tillbaka till registrering", "Back to registration") };
 }
 
 function buildFrejaAuthUrl(authRef: string) {
@@ -99,6 +103,7 @@ function getStatusTone(status: FrejaAuthStatus) {
 }
 
 function StatusPill({ status }: { status: FrejaAuthStatus }) {
+  const { locale } = useI18n();
   const tone = getStatusTone(status);
   const Icon =
     tone === "success"
@@ -118,7 +123,9 @@ function StatusPill({ status }: { status: FrejaAuthStatus }) {
       )}
     >
       <Icon className={cn("h-4 w-4", tone === "pending" && "animate-pulse")} />
-      <span className="truncate">{statusPillLabels[status]}</span>
+      <span className="truncate">
+        {localizedText(locale, statusPillLabels[status].sv, statusPillLabels[status].en)}
+      </span>
     </div>
   );
 }
@@ -127,6 +134,7 @@ function FrejaIdRegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { completeAuth, refreshUser } = useAuth();
+  const { locale, localizedHref } = useI18n();
   const initialAuthRef = searchParams.get("authRef")?.trim() ?? "";
   const shouldStartFrejaOnly = searchParams.get("start") === "freja";
   const flow = searchParams.get("flow") === "identity" ? "identity" : "registration";
@@ -164,8 +172,8 @@ function FrejaIdRegisterContent() {
           err instanceof Error
             ? err.message
             : flow === "identity"
-              ? "Kunde inte starta Freja-verifieringen."
-              : "Kunde inte starta Freja-registreringen."
+              ? localizedText(locale, "Kunde inte starta Freja-verifieringen.", "Could not start Freja verification.")
+              : localizedText(locale, "Kunde inte starta Freja-registreringen.", "Could not start Freja registration.")
         );
       } finally {
         if (active) {
@@ -194,12 +202,12 @@ function FrejaIdRegisterContent() {
 
         if (isAuthResponse(result)) {
           completeAuth(result);
-          router.replace("/");
+          router.replace(localizedHref("/"));
           return;
         }
 
         if (!isFrejaAuthStatus(result)) {
-          setPollError("Backend skickade en okänd Freja-status.");
+          setPollError(localizedText(locale, "Backend skickade en okänd Freja-status.", "The backend returned an unknown Freja status."));
           return;
         }
 
@@ -211,13 +219,13 @@ function FrejaIdRegisterContent() {
           timeout = setTimeout(poll, pollIntervalMs);
         } else if (nextStatus === "MATCHES" && flow === "identity") {
           await refreshUser();
-          timeout = setTimeout(() => router.replace("/profil"), 900);
+          timeout = setTimeout(() => router.replace(localizedHref("/profil")), 900);
         } else if (nextStatus === "MATCHES") {
-          timeout = setTimeout(() => router.replace("/"), 900);
+          timeout = setTimeout(() => router.replace(localizedHref("/")), 900);
         }
       } catch {
         if (!active) return;
-        setPollError("Kunde inte kontrollera verifieringen. Försöker igen.");
+        setPollError(localizedText(locale, "Kunde inte kontrollera verifieringen. Försöker igen.", "Could not check the verification. Trying again."));
         timeout = setTimeout(poll, pollIntervalMs);
       }
     }
@@ -231,22 +239,24 @@ function FrejaIdRegisterContent() {
   }, [authRef, completeAuth, flow, refreshUser, router]);
 
   const successText = isFrejaOnlyFlow
-    ? "Kontot är verifierat. Du skickas vidare till startsidan."
+    ? localizedText(locale, "Kontot är verifierat. Du skickas vidare till startsidan.", "The account is verified. You will be redirected to the homepage.")
     : flow === "identity"
-      ? "Identiteten är verifierad."
-    : statusMessages.MATCHES;
-  const statusAction = getStatusAction(status, flow);
+      ? localizedText(locale, "Identiteten är verifierad.", "Identity verified.")
+    : localizedText(locale, statusMessages.MATCHES.sv, statusMessages.MATCHES.en);
+  const statusAction = getStatusAction(status, flow, locale);
   const pageTitle =
-    flow === "identity" ? "Verifiera identitet" : "Verifiera med Freja";
+    flow === "identity"
+      ? localizedText(locale, "Verifiera identitet", "Verify identity")
+      : localizedText(locale, "Verifiera med Freja", "Verify with Freja");
   const pageSubtitle =
     flow === "identity"
-      ? "Skanna QR-koden i Freja-appen."
-      : "Skanna QR-koden med Freja.";
+      ? localizedText(locale, "Skanna QR-koden i Freja-appen.", "Scan the QR code in the Freja app.")
+      : localizedText(locale, "Skanna QR-koden med Freja.", "Scan the QR code with Freja.");
 
   return (
     <AuthCard
-      title={isStarting ? "Startar Freja" : pageTitle}
-      subtitle={isStarting ? "Vi förbereder verifieringen." : pageSubtitle}
+      title={isStarting ? localizedText(locale, "Startar Freja", "Starting Freja") : pageTitle}
+      subtitle={isStarting ? localizedText(locale, "Vi förbereder verifieringen.", "Preparing the verification.") : pageSubtitle}
       aside={
         <div className="flex h-full flex-col items-center justify-center bg-[#F4F5FA] px-8 text-center">
           <Image
@@ -292,8 +302,8 @@ function FrejaIdRegisterContent() {
             <div className="flex h-[224px] w-[224px] items-center justify-center p-4">
               <FieldError>
                 {isStarting
-                  ? "Startar verifiering..."
-                  : "Verifieringen saknar authRef. Starta registreringen igen."}
+                  ? localizedText(locale, "Startar verifiering...", "Starting verification...")
+                  : localizedText(locale, "Verifieringen saknar authRef. Starta registreringen igen.", "The verification is missing authRef. Start registration again.")}
               </FieldError>
             </div>
           ) : (
@@ -311,7 +321,9 @@ function FrejaIdRegisterContent() {
         <div className="mt-5 min-h-[24px] space-y-2">
           {status !== "PENDING" && (
             <p className="text-sm font-medium text-slate-950">
-              {status === "MATCHES" ? successText : statusMessages[status]}
+              {status === "MATCHES"
+                ? successText
+                : localizedText(locale, statusMessages[status].sv, statusMessages[status].en)}
             </p>
           )}
           {pollError && <FieldError>{pollError}</FieldError>}
@@ -322,12 +334,17 @@ function FrejaIdRegisterContent() {
 }
 
 export default function FrejaIdRegisterPage() {
+  const { locale } = useI18n();
+
   return (
     <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <Suspense
           fallback={
-            <AuthCard title="Verifiera med Freja" subtitle="Förbereder verifiering." />
+            <AuthCard
+              title={localizedText(locale, "Verifiera med Freja", "Verify with Freja")}
+              subtitle={localizedText(locale, "Förbereder verifiering.", "Preparing verification.")}
+            />
           }
         >
           <FrejaIdRegisterContent />

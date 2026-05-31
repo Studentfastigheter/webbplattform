@@ -1,14 +1,31 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { getRequestLocale } from "@/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Integritetspolicy",
-  description: "Integritetspolicy för CampusLyan.",
-  alternates: {
-    canonical: "/integritetspolicy",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+
+  if (locale === "en") {
+    return {
+      title: "Privacy Policy",
+      description: "Privacy Policy for CampusLyan.",
+      alternates: {
+        canonical: "/en/integritetspolicy",
+      },
+    };
+  }
+
+  return {
+    title: "Integritetspolicy",
+    description: "Integritetspolicy för CampusLyan.",
+    alternates: {
+      canonical: "/integritetspolicy",
+    },
+  };
+}
+
+export const dynamic = "force-dynamic";
 
 const lastUpdated = "21 maj 2026";
 const contactEmail = "privacy@campuslyan.se";
@@ -511,7 +528,98 @@ function PolicyTable({ columns, rows }: { columns: string[]; rows: PolicyTableRo
   );
 }
 
-export default function IntegritetspolicyPage() {
+function EnglishPrivacyPage() {
+  const dataRows: PolicyTableRow[] = [
+    {
+      id: "profile",
+      cells: ["Profile information", "Name, email address, phone number, address, date of birth and other contact or profile details you provide.", "You"],
+    },
+    {
+      id: "account",
+      cells: ["Account information", "Account activity, login details, settings, saved homes, watchlists, interest registrations and support questions.", "You and the CampusLyan platform"],
+    },
+    {
+      id: "verification",
+      cells: ["Verification information", "Information used to verify identity, student status or eligibility, for example information from Freja or another verification service.", "You, verification services and CampusLyan"],
+    },
+    {
+      id: "technical",
+      cells: ["Technical information", "IP address, browser, operating system, device information, logs, sessions and information about how you use the website.", "Your device, browser, CampusLyan and third-party services"],
+    },
+  ];
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <section className="pb-20 pt-10">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="mb-8">
+            <Link href="/en" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              ← Back to homepage
+            </Link>
+          </div>
+
+          <header className="mb-12 border-b border-border pb-8">
+            <p className="mb-4 text-xs font-semibold uppercase text-muted-foreground">CampusLyan</p>
+            <h1 className="text-4xl font-bold text-foreground md:text-6xl">Privacy Policy</h1>
+            <p className="mt-4 text-sm font-medium text-muted-foreground">Last updated: 21 May 2026</p>
+            <div className="mt-6 space-y-4">
+              <Paragraph>
+                This privacy policy explains how CampusLyan processes personal data within CampusLyan's website, platform and related services.
+              </Paragraph>
+              <Paragraph>
+                CampusLyan provides a student-focused housing platform that brings student housing, housing queues and housing-related information together in one place.
+              </Paragraph>
+            </div>
+          </header>
+
+          <div className="space-y-8">
+            <PolicySection title="Controller">
+              <Paragraph>
+                CampusLyan Nordics AB is responsible for the processing of personal data within the CampusLyan website, platform and related services unless otherwise stated.
+              </Paragraph>
+            </PolicySection>
+
+            <PolicySection title="Personal Data We Process">
+              <PolicyTable columns={["Category", "Examples", "Source"]} rows={dataRows} />
+            </PolicySection>
+
+            <PolicySection title="Purposes and Legal Bases">
+              <Paragraph>
+                We process personal data to create and manage accounts, provide housing search features, manage saved listings and applications, verify eligibility, communicate with users, maintain security, improve the service and comply with legal obligations.
+              </Paragraph>
+            </PolicySection>
+
+            <PolicySection title="Sharing">
+              <Paragraph>
+                We may share personal data with service providers, verification providers, partner housing actors or authorities when necessary for the purposes described in this policy or when required by law.
+              </Paragraph>
+            </PolicySection>
+
+            <PolicySection title="Storage and Rights">
+              <Paragraph>
+                We keep personal data only for as long as needed for the relevant purpose or as required by law. You may request access, rectification, erasure, restriction, portability or object to processing where applicable under GDPR.
+              </Paragraph>
+            </PolicySection>
+
+            <PolicySection title="Contact">
+              <Paragraph>
+                Questions about privacy can be sent to <InlineLink href={`mailto:${contactEmail}`}>{contactEmail}</InlineLink>.
+              </Paragraph>
+            </PolicySection>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export default async function IntegritetspolicyPage() {
+  const locale = await getRequestLocale();
+
+  if (locale === "en") {
+    return <EnglishPrivacyPage />;
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <section className="pb-20 pt-10">

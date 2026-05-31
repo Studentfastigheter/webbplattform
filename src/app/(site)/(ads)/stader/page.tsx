@@ -1,12 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { FieldSet } from "@/components/ui/field";
 import { getCityImageUrl, normalizeCityName } from "@/features/cities/city-utils";
 import { listingService } from "@/features/listings/services/listing-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedNumber, localizedCount, localizedText } from "@/i18n/text";
 import { toSearchString, uniqueOnly } from "@/lib/utils";
 
 type CityCardData = {
@@ -14,12 +16,13 @@ type CityCardData = {
 };
 
 function CityCard({ city }: { city: CityCardData }) {
+  const { locale } = useI18n();
   const cityHref = `/stader/${encodeURIComponent(city.name)}`;
 
   return (
-    <Link
+    <LocalizedLink
       href={cityHref}
-      aria-label={`Öppna ${city.name}`}
+      aria-label={localizedText(locale, `Öppna ${city.name}`, `Open ${city.name}`)}
       className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-gray-200 shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[245px]"
       style={{
         backgroundImage: `url("${getCityImageUrl(city.name, "900x620")}")`,
@@ -31,11 +34,12 @@ function CityCard({ city }: { city: CityCardData }) {
       <span className="absolute bottom-5 left-5 max-w-[calc(100%-2.5rem)] break-words text-[25px] font-medium leading-[1.05] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:text-[29px]">
         {city.name}
       </span>
-    </Link>
+    </LocalizedLink>
   );
 }
 
 export default function CitiesPage() {
+  const { locale } = useI18n();
   const [searchInput, setSearchInput] = useState("");
   const [searchValue, setSearchValue] = useState("");
   const [cities, setCities] = useState<string[]>([]);
@@ -62,7 +66,7 @@ export default function CitiesPage() {
       .catch((err) => {
         if (!active) return;
         console.error(err);
-        setError("Kunde inte ladda städer.");
+        setError(localizedText(locale, "Kunde inte ladda städer.", "Could not load cities."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -71,7 +75,7 @@ export default function CitiesPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [locale]);
 
   const filteredCities = useMemo<CityCardData[]>(() => {
     const query = toSearchString(searchValue);
@@ -101,13 +105,13 @@ export default function CitiesPage() {
                   type="text"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Sök efter stad"
+                  placeholder={localizedText(locale, "Sök efter stad", "Search by city")}
                   className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/45 sm:text-base"
                 />
                 {searchInput && (
                   <button
                     type="button"
-                    aria-label="Rensa sökning"
+                    aria-label={localizedText(locale, "Rensa sökning", "Clear search")}
                     onClick={() => {
                       setSearchInput("");
                       setSearchValue("");
@@ -121,7 +125,7 @@ export default function CitiesPage() {
                   type="submit"
                   className="h-8 shrink-0 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
                 >
-                  Sök
+                  {localizedText(locale, "Sök", "Search")}
                 </button>
               </form>
             </div>
@@ -134,10 +138,11 @@ export default function CitiesPage() {
             className="text-base font-semibold text-black sm:text-lg"
           >
             {loading && cities.length === 0
-              ? "Laddar städer..."
-              : `${totalCities.toLocaleString("sv-SE")} ${
-                  totalCities === 1 ? "stad" : "städer"
-                }`}
+              ? localizedText(locale, "Laddar städer...", "Loading cities...")
+              : localizedCount(locale, totalCities, "stad", "städer", "city", "cities").replace(
+                  String(totalCities),
+                  formatLocalizedNumber(locale, totalCities),
+                )}
           </h2>
         </section>
 
@@ -151,11 +156,11 @@ export default function CitiesPage() {
 
             {loading ? (
               <div className="py-12 text-center text-sm text-gray-500">
-                Laddar städer...
+                {localizedText(locale, "Laddar städer...", "Loading cities...")}
               </div>
             ) : filteredCities.length === 0 ? (
               <div className="py-12 text-center text-sm text-gray-500 sm:py-20 sm:text-base">
-                Inga städer matchade din sökning.
+                {localizedText(locale, "Inga städer matchade din sökning.", "No cities matched your search.")}
               </div>
             ) : (
               <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">

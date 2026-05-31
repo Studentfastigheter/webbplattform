@@ -12,18 +12,22 @@ import { ListingDetailDTO } from "@/types/listing";
 import { Check, Heart, Home, MapPin, Share2 } from "lucide-react";
 import React, { useState } from "react";
 import BostadForm from "./BostadForm";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
-const DWELLING_TYPE_LABELS: Record<string, string> = {
-  APARTMENT: "Lägenhet",
-  ROOM: "Rum",
-  CORRIDOR_ROOM: "Korridorsrum",
-  apartment: "Lägenhet",
-  room: "Rum",
-  corridor_room: "Korridorsrum",
+const DWELLING_TYPE_LABELS: Record<string, { sv: string; en: string }> = {
+  APARTMENT: { sv: "Lägenhet", en: "Apartment" },
+  ROOM: { sv: "Rum", en: "Room" },
+  CORRIDOR_ROOM: { sv: "Korridorsrum", en: "Corridor room" },
+  apartment: { sv: "Lägenhet", en: "Apartment" },
+  room: { sv: "Rum", en: "Room" },
+  corridor_room: { sv: "Korridorsrum", en: "Corridor room" },
 };
 
-function formatDwellingType(value: string) {
-  return DWELLING_TYPE_LABELS[value] ?? value;
+function formatDwellingType(value: string, locale: Locale) {
+  const label = DWELLING_TYPE_LABELS[value];
+  return label ? localizedText(locale, label.sv, label.en) : value;
 }
 
 const getListingTagLabel = (tag: ListingDetailDTO["tags"][number]) =>
@@ -49,6 +53,7 @@ function BostadAboutContent({
   onFavoriteToggle?: (id: string, isFav: boolean) => void | Promise<void>;
 }) {
   const { user } = useAuth();
+  const { locale } = useI18n();
   const [isFav, setIsFav] = useState(isFavorite ?? false);
   const [isLoadingFav, setIsLoadingFav] = useState(false);
 
@@ -83,7 +88,27 @@ function BostadAboutContent({
     typeof listing.rent === "number" &&
     Number.isFinite(listing.rent) &&
     listing.rent > 0;
-  const rentValue = isRentNumber ? listing.rent.toLocaleString("sv-SE") : "Ej angiven";
+  const rentValue = isRentNumber
+    ? formatLocalizedNumber(locale, listing.rent)
+    : localizedText(locale, "Ej angiven", "Not specified");
+  const dateItems = [
+    {
+      label: localizedText(locale, "Tillgänglig från", "Available from"),
+      value: listing.availableFrom || localizedText(locale, "Inte angivet", "Not specified"),
+    },
+    {
+      label: localizedText(locale, "Tillgänglig till", "Available until"),
+      value: listing.availableTo || localizedText(locale, "Tillsvidare", "Until further notice"),
+    },
+    {
+      label: localizedText(locale, "Inflyttning", "Move-in"),
+      value: listing.moveIn || localizedText(locale, "Inte angivet", "Not specified"),
+    },
+    {
+      label: localizedText(locale, "Sista ansökan", "Apply by"),
+      value: listing.applyBy || localizedText(locale, "Inte angivet", "Not specified"),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -109,12 +134,7 @@ function BostadAboutContent({
 
           {(listing.availableFrom || listing.availableTo || listing.moveIn || listing.applyBy) && (
             <div className="flex flex-wrap gap-y-4">
-              {[
-                { label: "Tillgänglig från", value: listing.availableFrom || "Inte angivet" },
-                { label: "Tillgänglig till", value: listing.availableTo || "Tillsvidare" },
-                { label: "Inflyttning", value: listing.moveIn || "Inte angivet" },
-                { label: "Sista ansökan", value: listing.applyBy || "Inte angivet" },
-              ].map((item, index) => (
+              {dateItems.map((item, index) => (
                 <div
                   key={item.label}
                   className={`flex flex-col pr-4 ${index > 0 ? "border-l border-gray-200 pl-4" : ""}`}
@@ -143,7 +163,11 @@ function BostadAboutContent({
                       ? "text-red-500 hover:bg-red-50"
                       : "text-gray-400 hover:bg-gray-100 hover:text-red-500",
                   )}
-                  aria-label={isFav ? "Ta bort från favoriter" : "Lägg till i favoriter"}
+                  aria-label={
+                    isFav
+                      ? localizedText(locale, "Ta bort från favoriter", "Remove from favorites")
+                      : localizedText(locale, "Lägg till i favoriter", "Add to favorites")
+                  }
                 >
                   <Heart className={cn("h-[18px] w-[18px]", isFav && "fill-current")} />
                 </button>
@@ -152,7 +176,7 @@ function BostadAboutContent({
               <ShareDialog>
                 <button
                   type="button"
-                  aria-label="Dela bostad"
+                  aria-label={localizedText(locale, "Dela bostad", "Share listing")}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
                   <Share2 className="h-[18px] w-[18px]" />
@@ -163,14 +187,16 @@ function BostadAboutContent({
 
           <div className="flex flex-col items-end gap-0.5">
             <span className="text-xs font-medium uppercase tracking-wider text-gray-400">
-              Månadshyra
+              {localizedText(locale, "Månadshyra", "Monthly rent")}
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold tracking-tight text-gray-900">
                 {rentValue}
               </span>
               {isRentNumber && (
-                <span className="text-sm font-medium text-gray-400">kr/mån</span>
+                <span className="text-sm font-medium text-gray-400">
+                  {localizedText(locale, "kr/mån", "SEK/mo")}
+                </span>
               )}
             </div>
           </div>
@@ -187,7 +213,7 @@ function BostadAboutContent({
                 )}
               >
                 <Check className="h-4 w-4" />
-                Du har ansökt
+                {localizedText(locale, "Du har ansökt", "You have applied")}
               </div>
             ) : (
               <Button
@@ -202,7 +228,7 @@ function BostadAboutContent({
                   "hover:bg-[#00331b] active:scale-[0.98]",
                 )}
               >
-                Skicka ansökan
+                {localizedText(locale, "Skicka ansökan", "Send application")}
               </Button>
             )
           )}
@@ -227,15 +253,17 @@ function BostadAboutContent({
       )}
 
       <div className="mt-2">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2 border-b border-gray-100 pb-2">Om boendet</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2 border-b border-gray-100 pb-2">
+          {localizedText(locale, "Om boendet", "About the home")}
+        </h2>
         <ReadMoreComponent
           text={listing.description ?? ""}
           variant="large"
           className="mt-2"
           textClassName="text-[15px] leading-relaxed text-gray-700"
           buttonWrapClassName="pb-4"
-          moreLabel="Läs mer"
-          lessLabel="Visa mindre"
+          moreLabel={localizedText(locale, "Läs mer", "Read more")}
+          lessLabel={localizedText(locale, "Visa mindre", "Show less")}
           scrollOffset={400}
         />
       </div>
@@ -264,13 +292,14 @@ export default function BostadAbout({
   hideStudentActions = false,
   onFavoriteToggle,
 }: Props) {
+  const { locale } = useI18n();
   const dwellingLabel = [
-    listing.dwellingType ? formatDwellingType(listing.dwellingType) : null,
-    listing.rooms ? `${listing.rooms} rum` : null,
+    listing.dwellingType ? formatDwellingType(listing.dwellingType, locale) : null,
+    listing.rooms ? `${listing.rooms} ${localizedText(locale, "rum", "rooms")}` : null,
     listing.sizeM2 ? `${listing.sizeM2} m²` : null,
   ]
     .filter(Boolean)
-    .join(" / ") || "Information saknas";
+    .join(" / ") || localizedText(locale, "Information saknas", "Information missing");
 
   const content = (
     <BostadAboutContent
@@ -288,7 +317,10 @@ export default function BostadAbout({
   return (
     <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
       {isEditable ? (
-        <EditWrapper isEditable={isEditable} tooltip="Redigera annonstext">
+        <EditWrapper
+          isEditable={isEditable}
+          tooltip={localizedText(locale, "Redigera annonstext", "Edit listing text")}
+        >
           <BostadForm listing={listing}>
             <div>{content}</div>
           </BostadForm>

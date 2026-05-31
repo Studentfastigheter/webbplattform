@@ -16,6 +16,9 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import { authService } from "@/features/auth/services/auth-service";
+import type { Locale } from "@/i18n/config";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import { type UpdateUserRequest, type User } from "@/types";
 import {
   AlertTriangle,
@@ -106,10 +109,10 @@ const parseTags = (value: string): string[] =>
     .map((tag) => tag.trim())
     .filter(Boolean);
 
-const buildProfileFromUser = (user: User): StudentProfileExtended => {
+const buildProfileFromUser = (user: User, locale: Locale = "sv"): StudentProfileExtended => {
   const fullName = getUserDisplayName(user);
   const city = getCityValue(user.city);
-  const studyProgram = user.studyProgram ?? user.tags?.[0] ?? "Ej angivet";
+  const studyProgram = user.studyProgram ?? user.tags?.[0] ?? localizedText(locale, "Ej angivet", "Not specified");
   const preferredArea = user.preferredArea ?? city;
 
   return {
@@ -119,7 +122,7 @@ const buildProfileFromUser = (user: User): StudentProfileExtended => {
     headline: user.schoolName || city || "Student",
     stats: {
       studyProgram,
-      studyPace: user.studyPace ?? "Ej angivet",
+      studyPace: user.studyPace ?? localizedText(locale, "Ej angivet", "Not specified"),
       preferredArea: preferredArea || undefined,
     },
     bannerImage: user.bannerUrl,
@@ -267,23 +270,26 @@ function EditableStudentProfile({
   success: string | null;
   hasUnsavedChanges: boolean;
 }) {
+  const { locale } = useI18n();
   const profile = buildProfileFromUser({
     ...student,
     ...buildUpdatePayload(draft),
     description: draft.description,
     tags: parseTags(draft.tagsText),
-  });
+  }, locale);
 
-  const age = profile.age ? `${profile.age} år` : "Ej angivet";
+  const age = profile.age
+    ? localizedText(locale, `${profile.age} år`, `${profile.age} years`)
+    : localizedText(locale, "Ej angivet", "Not specified");
   const verificationBadge = student.verifiedStudent
     ? {
-        text: "Verifierad student",
+        text: localizedText(locale, "Verifierad student", "Verified student"),
         Icon: ShieldCheck,
         className:
           "border-emerald-200/80 bg-white text-emerald-700 shadow-sm ring-1 ring-emerald-500/10",
       }
     : {
-        text: "Ej verifierad",
+        text: localizedText(locale, "Ej verifierad", "Not verified"),
         Icon: AlertTriangle,
         className:
           "border-amber-200/80 bg-white text-amber-700 shadow-sm ring-1 ring-amber-500/10",
@@ -326,22 +332,22 @@ function EditableStudentProfile({
               <div className="flex flex-wrap items-center gap-3">
                 <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
                   <input
-                    aria-label="Förnamn"
+                    aria-label={localizedText(locale, "Förnamn", "First name")}
                     value={draft.firstName}
                     onChange={(event) =>
                       onDraftChange("firstName", event.target.value)
                     }
                     className={`${inlineInputClass} text-2xl font-bold text-gray-900 sm:text-3xl`}
-                    placeholder="Förnamn"
+                    placeholder={localizedText(locale, "Förnamn", "First name")}
                   />
                   <input
-                    aria-label="Efternamn"
+                    aria-label={localizedText(locale, "Efternamn", "Last name")}
                     value={draft.surname}
                     onChange={(event) =>
                       onDraftChange("surname", event.target.value)
                     }
                     className={`${inlineInputClass} text-2xl font-bold text-gray-900 sm:text-3xl`}
-                    placeholder="Efternamn"
+                    placeholder={localizedText(locale, "Efternamn", "Last name")}
                   />
                 </div>
 
@@ -359,25 +365,25 @@ function EditableStudentProfile({
                 <label className="inline-flex min-w-[180px] flex-1 items-center gap-1.5">
                   <MapPin className="h-4 w-4 shrink-0 text-gray-400" />
                   <input
-                    aria-label="Stad"
+                    aria-label={localizedText(locale, "Stad", "City")}
                     value={draft.city}
                     onChange={(event) =>
                       onDraftChange("city", event.target.value)
                     }
                     className={`${inlineInputClass} w-full text-sm text-gray-700`}
-                    placeholder="Stad"
+                    placeholder={localizedText(locale, "Stad", "City")}
                   />
                 </label>
                 <label className="inline-flex min-w-[220px] flex-1 items-center gap-1.5">
                   <GraduationCap className="h-4 w-4 shrink-0 text-gray-400" />
                   <input
-                    aria-label="Skola"
+                    aria-label={localizedText(locale, "Skola", "School")}
                     value={draft.schoolName}
                     onChange={(event) =>
                       onDraftChange("schoolName", event.target.value)
                     }
                     className={`${inlineInputClass} w-full text-sm text-gray-700`}
-                    placeholder="Skola"
+                    placeholder={localizedText(locale, "Skola", "School")}
                   />
                 </label>
               </div>
@@ -392,7 +398,7 @@ function EditableStudentProfile({
                 isDisabled={isSaving}
               >
                 <X className="h-4 w-4" />
-                Avbryt
+                {localizedText(locale, "Avbryt", "Cancel")}
               </Button>
               <Button
                 type="submit"
@@ -401,7 +407,7 @@ function EditableStudentProfile({
                 isDisabled={isSaving || !hasUnsavedChanges}
               >
                 <Save className="h-4 w-4" />
-                Spara profil
+                {localizedText(locale, "Spara profil", "Save profile")}
               </Button>
             </div>
           </div>
@@ -410,41 +416,41 @@ function EditableStudentProfile({
             <div className="space-y-6">
               <section className={editPanelClass}>
                 <h2 className="mb-3 text-lg font-semibold text-gray-900">
-                  Om mig
+                  {localizedText(locale, "Om mig", "About me")}
                 </h2>
                 <textarea
-                  aria-label="Om mig"
+                  aria-label={localizedText(locale, "Om mig", "About me")}
                   value={draft.description}
                   onChange={(event) =>
                     onDraftChange("description", event.target.value)
                   }
                   className={`${inlineInputClass} min-h-44 w-full resize-y text-base leading-relaxed text-gray-600`}
-                  placeholder="Berätta lite om dig själv"
+                  placeholder={localizedText(locale, "Berätta lite om dig själv", "Tell us a little about yourself")}
                 />
               </section>
 
               <section className={editPanelClass}>
                 <h2 className="mb-3 text-lg font-semibold text-gray-900">
-                  Jag söker
+                  {localizedText(locale, "Jag söker", "I am looking for")}
                 </h2>
                 <div className="space-y-3">
                   <input
-                    aria-label="Önskat område"
+                    aria-label={localizedText(locale, "Önskat område", "Preferred area")}
                     value={draft.preferredArea}
                     onChange={(event) =>
                       onDraftChange("preferredArea", event.target.value)
                     }
                     className={`${inlineInputClass} w-full text-sm text-gray-700`}
-                    placeholder="Område eller stad du söker boende i"
+                    placeholder={localizedText(locale, "Område eller stad du söker boende i", "Area or city where you are looking for housing")}
                   />
                   <input
-                    aria-label="Taggar"
+                    aria-label={localizedText(locale, "Taggar", "Tags")}
                     value={draft.tagsText}
                     onChange={(event) =>
                       onDraftChange("tagsText", event.target.value)
                     }
                     className={`${inlineInputClass} w-full text-sm text-gray-700`}
-                    placeholder="Taggar separerade med komma"
+                    placeholder={localizedText(locale, "Taggar separerade med komma", "Tags separated by commas")}
                   />
                 </div>
               </section>
@@ -453,12 +459,12 @@ function EditableStudentProfile({
             <aside className="space-y-6">
               <section className={editPanelClass}>
                 <h2 className="mb-3 text-lg font-semibold text-gray-900">
-                  Kontakt
+                  {localizedText(locale, "Kontakt", "Contact")}
                 </h2>
                 <div className="grid gap-3">
                   <EditableRow
                     icon={<Mail className="h-4 w-4 shrink-0 text-gray-400" />}
-                    label="E-post"
+                    label={localizedText(locale, "E-post", "Email")}
                     type="email"
                     value={draft.email}
                     onChange={(value) => onDraftChange("email", value)}
@@ -466,7 +472,7 @@ function EditableStudentProfile({
                   />
                   <EditableRow
                     icon={<Phone className="h-4 w-4 shrink-0 text-gray-400" />}
-                    label="Telefon"
+                    label={localizedText(locale, "Telefon", "Phone")}
                     type="tel"
                     value={draft.phone}
                     onChange={(value) => onDraftChange("phone", value)}
@@ -476,7 +482,7 @@ function EditableStudentProfile({
               </section>
 
               <section className={editPanelClass}>
-                <InlineLabel>Sociala länkar</InlineLabel>
+                <InlineLabel>{localizedText(locale, "Sociala länkar", "Social links")}</InlineLabel>
                 <div className="mt-3 grid gap-3">
                   <EditableRow
                     icon={
@@ -513,30 +519,30 @@ function EditableStudentProfile({
 
               <section className={editPanelClass}>
                 <h2 className="mb-3 text-lg font-semibold text-gray-900">
-                  Snabbfakta
+                  {localizedText(locale, "Snabbfakta", "Quick facts")}
                 </h2>
                 <div className="overflow-hidden rounded-xl border border-gray-100 bg-white/70">
                   <div className="divide-y divide-gray-200">
-                    <EditableFactRow label="Ålder" value={age} readOnly />
+                    <EditableFactRow label={localizedText(locale, "Ålder", "Age")} value={age} readOnly />
                     <EditableFactRow
-                      label="Skola"
+                      label={localizedText(locale, "Skola", "School")}
                       value={draft.schoolName}
                       onChange={(value) => onDraftChange("schoolName", value)}
-                      placeholder="Ej angivet"
+                      placeholder={localizedText(locale, "Ej angivet", "Not specified")}
                     />
                     <EditableFactRow
-                      label="Utbildning"
+                      label={localizedText(locale, "Utbildning", "Education")}
                       value={draft.studyProgram}
                       onChange={(value) =>
                         onDraftChange("studyProgram", value)
                       }
-                      placeholder="Ej angivet"
+                      placeholder={localizedText(locale, "Ej angivet", "Not specified")}
                     />
                     <EditableFactRow
-                      label="Studietakt"
+                      label={localizedText(locale, "Studietakt", "Study pace")}
                       value={draft.studyPace}
                       onChange={(value) => onDraftChange("studyPace", value)}
-                      placeholder="Ej angivet"
+                      placeholder={localizedText(locale, "Ej angivet", "Not specified")}
                     />
                   </div>
                 </div>
@@ -550,10 +556,10 @@ function EditableStudentProfile({
         <div className="flex flex-col gap-1">
           {hasUnsavedChanges ? (
             <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-              Osparade ändringar
+              {localizedText(locale, "Osparade ändringar", "Unsaved changes")}
             </span>
           ) : (
-            <span className="text-sm text-gray-500">Inga lokala ändringar.</span>
+            <span className="text-sm text-gray-500">{localizedText(locale, "Inga lokala ändringar.", "No local changes.")}</span>
           )}
           {error && <span className="text-sm text-red-600">{error}</span>}
           {success && (
@@ -571,7 +577,7 @@ function EditableStudentProfile({
             onClick={onCancel}
             isDisabled={isSaving}
           >
-            Avbryt
+            {localizedText(locale, "Avbryt", "Cancel")}
           </Button>
           <Button
             type="submit"
@@ -579,7 +585,7 @@ function EditableStudentProfile({
             isDisabled={isSaving || !hasUnsavedChanges}
           >
             <Save className="h-4 w-4" />
-            Spara profil
+            {localizedText(locale, "Spara profil", "Save profile")}
           </Button>
         </div>
       </div>
@@ -589,6 +595,7 @@ function EditableStudentProfile({
 
 export default function Page() {
   const router = useRouter();
+  const { locale, localizedHref } = useI18n();
   const { token, isLoading: authLoading, updateUser } = useAuth();
   const [student, setStudent] = useState<User | null>(null);
   const [draft, setDraft] = useState<StudentProfileDraft | null>(null);
@@ -632,7 +639,7 @@ export default function Page() {
           setError(
             err instanceof Error
               ? err.message
-              : "Kunde inte hämta profilen från backend."
+              : localizedText(locale, "Kunde inte hämta profilen från backend.", "Could not load the profile from the backend.")
           );
         }
       } finally {
@@ -645,7 +652,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, token]);
+  }, [authLoading, locale, token]);
 
   const savedSnapshot = useMemo(
     () => (student ? getDraftSnapshot(buildDraftFromUser(student)) : ""),
@@ -708,10 +715,10 @@ export default function Page() {
       setStudent(mergedUser);
       setDraft(buildDraftFromUser(mergedUser));
       setEditMode(false);
-      setSaveSuccess("Profilen har sparats.");
+      setSaveSuccess(localizedText(locale, "Profilen har sparats.", "The profile has been saved."));
     } catch (err) {
       setSaveError(
-        err instanceof Error ? err.message : "Kunde inte spara profilen."
+        err instanceof Error ? err.message : localizedText(locale, "Kunde inte spara profilen.", "Could not save the profile.")
       );
     } finally {
       setSavingProfile(false);
@@ -727,15 +734,15 @@ export default function Page() {
     try {
       const response = await authService.verifyIdentity();
       router.push(
-        `/registrera/freja-id?flow=identity&authRef=${encodeURIComponent(
+        localizedHref(`/registrera/freja-id?flow=identity&authRef=${encodeURIComponent(
           response.authRef
-        )}`
+        )}`)
       );
     } catch (err) {
       setSaveError(
         err instanceof Error
           ? err.message
-          : "Kunde inte starta Freja-verifieringen."
+          : localizedText(locale, "Kunde inte starta Freja-verifieringen.", "Could not start Freja verification.")
       );
     } finally {
       setStartingIdentityVerification(false);
@@ -747,7 +754,7 @@ export default function Page() {
 
     const email = student?.email?.trim();
     if (!email) {
-      setSaveError("Profilen saknar e-postadress.");
+      setSaveError(localizedText(locale, "Profilen saknar e-postadress.", "The profile is missing an email address."));
       return;
     }
 
@@ -757,12 +764,12 @@ export default function Page() {
 
     try {
       await authService.verifyEmail({ email });
-      setSaveSuccess("Verifieringsmail är skickat.");
+      setSaveSuccess(localizedText(locale, "Verifieringsmail är skickat.", "The verification email has been sent."));
     } catch (err) {
       setSaveError(
         err instanceof Error
           ? err.message
-          : "Kunde inte skicka verifieringsmail."
+          : localizedText(locale, "Kunde inte skicka verifieringsmail.", "Could not send the verification email.")
       );
     } finally {
       setStartingEmailVerification(false);
@@ -772,7 +779,7 @@ export default function Page() {
   if (authLoading || (token && loadingProfile && !student)) {
     return (
       <div className="p-10 text-center text-muted-foreground">
-        Hämtar profil från backend...
+        {localizedText(locale, "Hämtar profil från backend...", "Loading profile from the backend...")}
       </div>
     );
   }
@@ -780,7 +787,7 @@ export default function Page() {
   if (!token) {
     return (
       <div className="p-10 text-center text-muted-foreground">
-        Logga in för att se din profil.
+        {localizedText(locale, "Logga in för att se din profil.", "Log in to view your profile.")}
       </div>
     );
   }
@@ -792,7 +799,7 @@ export default function Page() {
   if (!student || !draft) {
     return (
       <div className="p-10 text-center text-muted-foreground">
-        Ingen profil kunde laddas.
+        {localizedText(locale, "Ingen profil kunde laddas.", "No profile could be loaded.")}
       </div>
     );
   }
@@ -800,12 +807,12 @@ export default function Page() {
   if (student.accountType !== "student") {
     return (
       <div className="p-10 text-center text-muted-foreground">
-        Den här profilsidan finns bara för studentkonton.
+        {localizedText(locale, "Den här profilsidan finns bara för studentkonton.", "This profile page is only for student accounts.")}
       </div>
     );
   }
 
-  const profile = buildProfileFromUser(student);
+  const profile = buildProfileFromUser(student, locale);
   const needsIdentityVerification =
     !student.verifiedIdentity && !student.verifiedStudent;
   const needsEmailVerification = !student.verifiedEmail;
@@ -838,7 +845,7 @@ export default function Page() {
           )}
           {needsIdentityVerification && (
             <div className="mx-auto mb-4 flex max-w-4xl flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
-              <span>Verifiera din identitet med Freja för att markera studentprofilen som verifierad.</span>
+              <span>{localizedText(locale, "Verifiera din identitet med Freja för att markera studentprofilen som verifierad.", "Verify your identity with Freja to mark the student profile as verified.")}</span>
               <Button
                 type="button"
                 variant="secondary"
@@ -848,13 +855,13 @@ export default function Page() {
                 onPress={startIdentityVerification}
               >
                 <ShieldCheck className="h-4 w-4" />
-                Verifiera med Freja
+                {localizedText(locale, "Verifiera med Freja", "Verify with Freja")}
               </Button>
             </div>
           )}
           {needsEmailVerification && (
             <div className="mx-auto mb-4 flex max-w-4xl flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 sm:flex-row sm:items-center sm:justify-between">
-              <span>Verifiera din e-postadress för att säkra kontot.</span>
+              <span>{localizedText(locale, "Verifiera din e-postadress för att säkra kontot.", "Verify your email address to secure the account.")}</span>
               <Button
                 type="button"
                 variant="secondary"
@@ -864,7 +871,7 @@ export default function Page() {
                 onPress={startEmailVerification}
               >
                 <Mail className="h-4 w-4" />
-                Skicka verifieringsmail
+                {localizedText(locale, "Skicka verifieringsmail", "Send verification email")}
               </Button>
             </div>
           )}

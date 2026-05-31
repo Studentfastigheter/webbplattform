@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
@@ -17,15 +17,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { authService } from "@/features/auth/services/auth-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
-const passwordRequirements = [
-  { regex: /.{8,}/, text: "Minst 8 tecken" },
-  { regex: /[a-z]/, text: "Minst 1 liten bokstav" },
-  { regex: /[A-Z]/, text: "Minst 1 stor bokstav" },
-  { regex: /[0-9]/, text: "Minst 1 siffra" },
+const getPasswordRequirements = (locale: "sv" | "en") => [
+  { regex: /.{8,}/, text: localizedText(locale, "Minst 8 tecken", "At least 8 characters") },
+  { regex: /[a-z]/, text: localizedText(locale, "Minst 1 liten bokstav", "At least 1 lowercase letter") },
+  { regex: /[A-Z]/, text: localizedText(locale, "Minst 1 stor bokstav", "At least 1 uppercase letter") },
+  { regex: /[0-9]/, text: localizedText(locale, "Minst 1 siffra", "At least 1 number") },
   {
     regex: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
-    text: "Minst 1 specialtecken",
+    text: localizedText(locale, "Minst 1 specialtecken", "At least 1 special character"),
   },
 ];
 
@@ -39,17 +41,19 @@ function getPasswordStrengthColor(score: number) {
   return "bg-green-500";
 }
 
-function getPasswordStrengthText(score: number) {
-  if (score === 0) return "Ange ett lösenord";
-  if (score <= 2) return "Svagt lösenord";
-  if (score <= 3) return "Medelstarkt lösenord";
-  if (score === 4) return "Starkt lösenord";
+function getPasswordStrengthText(score: number, locale: "sv" | "en") {
+  if (score === 0) return localizedText(locale, "Ange ett lösenord", "Enter a password");
+  if (score <= 2) return localizedText(locale, "Svagt lösenord", "Weak password");
+  if (score <= 3) return localizedText(locale, "Medelstarkt lösenord", "Medium-strength password");
+  if (score === 4) return localizedText(locale, "Starkt lösenord", "Strong password");
 
-  return "Mycket starkt lösenord";
+  return localizedText(locale, "Mycket starkt lösenord", "Very strong password");
 }
 
 export default function ResetPasswordPage() {
+  const { locale } = useI18n();
   const params = useParams<{ id: string }>();
+  const passwordRequirements = getPasswordRequirements(locale);
   const resetId = useMemo(() => {
     const rawId = params?.id ?? "";
 
@@ -81,17 +85,17 @@ export default function ResetPasswordPage() {
     setError(null);
 
     if (!resetId) {
-      setError("Återställningslänken saknar ett giltigt id.");
+      setError(localizedText(locale, "Återställningslänken saknar ett giltigt id.", "The reset link is missing a valid id."));
       return;
     }
 
     if (password.length < 8) {
-      setError("Lösenordet måste vara minst 8 tecken.");
+      setError(localizedText(locale, "Lösenordet måste vara minst 8 tecken.", "The password must be at least 8 characters."));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Lösenorden måste vara identiska.");
+      setError(localizedText(locale, "Lösenorden måste vara identiska.", "The passwords must be identical."));
       return;
     }
 
@@ -107,7 +111,7 @@ export default function ResetPasswordPage() {
       setConfirmPassword("");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Kunde inte uppdatera lösenordet."
+        err instanceof Error ? err.message : localizedText(locale, "Kunde inte uppdatera lösenordet.", "Could not update the password.")
       );
     } finally {
       setSubmitting(false);
@@ -118,11 +122,15 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <AuthCard
-          title={hasSubmitted ? "Lösenordet är uppdaterat" : "Välj nytt lösenord"}
+          title={
+            hasSubmitted
+              ? localizedText(locale, "Lösenordet är uppdaterat", "The password has been updated")
+              : localizedText(locale, "Välj nytt lösenord", "Choose a new password")
+          }
           subtitle={
             hasSubmitted
-              ? "Du kan nu logga in med ditt nya lösenord."
-              : "Skriv in ditt nya lösenord två gånger för att återställa kontot."
+              ? localizedText(locale, "Du kan nu logga in med ditt nya lösenord.", "You can now sign in with your new password.")
+              : localizedText(locale, "Skriv in ditt nya lösenord två gånger för att återställa kontot.", "Enter your new password twice to reset the account.")
           }
           footer={
             <FieldDescription className="text-center">
@@ -130,7 +138,7 @@ export default function ResetPasswordPage() {
                 href="/login"
                 className="font-medium text-[#004225] no-underline"
               >
-                Tillbaka till inloggning
+                {localizedText(locale, "Tillbaka till inloggning", "Back to sign-in")}
               </Link>
             </FieldDescription>
           }
@@ -139,17 +147,17 @@ export default function ResetPasswordPage() {
             <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
               <div className="max-w-sm space-y-2">
                 <p className="text-base font-semibold text-[#004225]">
-                  Lösenordet har sparats
+                  {localizedText(locale, "Lösenordet har sparats", "The password has been saved")}
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Fortsätt till inloggningen och använd ditt nya lösenord.
+                  {localizedText(locale, "Fortsätt till inloggningen och använd ditt nya lösenord.", "Continue to sign-in and use your new password.")}
                 </p>
               </div>
               <Link
                 href="/login"
                 className="mt-6 inline-flex h-10 items-center justify-center rounded-full bg-[#004225] px-5 text-sm font-semibold text-white transition hover:bg-[#004225]/90"
               >
-                Logga in
+                {localizedText(locale, "Logga in", "Log in")}
               </Link>
             </div>
           ) : (
@@ -159,12 +167,12 @@ export default function ResetPasswordPage() {
             >
               <FieldGroup className="mx-auto w-full max-w-sm">
                 <Field>
-                  <FieldLabel htmlFor="password">Nytt lösenord</FieldLabel>
+                  <FieldLabel htmlFor="password">{localizedText(locale, "Nytt lösenord", "New password")}</FieldLabel>
                   <div className="relative">
                     <Input
                       id="password"
                       type={isPasswordVisible ? "text" : "password"}
-                      placeholder="Välj ett lösenord"
+                      placeholder={localizedText(locale, "Välj ett lösenord", "Choose a password")}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       autoComplete="new-password"
@@ -187,7 +195,9 @@ export default function ResetPasswordPage() {
                         <EyeIcon className="h-5 w-5" />
                       )}
                       <span className="sr-only">
-                        {isPasswordVisible ? "Dölj lösenord" : "Visa lösenord"}
+                        {isPasswordVisible
+                          ? localizedText(locale, "Dölj lösenord", "Hide password")
+                          : localizedText(locale, "Visa lösenord", "Show password")}
                       </span>
                     </button>
                   </div>
@@ -209,19 +219,19 @@ export default function ResetPasswordPage() {
                   </div>
 
                   <p className="text-right text-sm font-normal text-[#7a7a7a]">
-                    {getPasswordStrengthText(passwordStrengthScore)}
+                    {getPasswordStrengthText(passwordStrengthScore, locale)}
                   </p>
                 </div>
 
                 <Field>
                   <FieldLabel htmlFor="confirmPassword">
-                    Upprepa nytt lösenord
+                    {localizedText(locale, "Upprepa nytt lösenord", "Repeat new password")}
                   </FieldLabel>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
                       type={isConfirmPasswordVisible ? "text" : "password"}
-                      placeholder="Skriv lösenordet igen"
+                      placeholder={localizedText(locale, "Skriv lösenordet igen", "Enter the password again")}
                       value={confirmPassword}
                       onChange={(event) => setConfirmPassword(event.target.value)}
                       autoComplete="new-password"
@@ -247,8 +257,8 @@ export default function ResetPasswordPage() {
                       )}
                       <span className="sr-only">
                         {isConfirmPasswordVisible
-                          ? "Dölj lösenord"
-                          : "Visa lösenord"}
+                          ? localizedText(locale, "Dölj lösenord", "Hide password")
+                          : localizedText(locale, "Visa lösenord", "Show password")}
                       </span>
                     </button>
                   </div>
@@ -261,8 +271,8 @@ export default function ResetPasswordPage() {
                       )}
                     >
                       {passwordsMatch
-                        ? "Lösenorden matchar."
-                        : "Lösenorden matchar inte."}
+                        ? localizedText(locale, "Lösenorden matchar.", "The passwords match.")
+                        : localizedText(locale, "Lösenorden matchar inte.", "The passwords do not match.")}
                     </FieldDescription>
                   )}
                 </Field>
@@ -274,7 +284,9 @@ export default function ResetPasswordPage() {
                     disabled={submitting}
                     className="h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
                   >
-                    {submitting ? "Sparar..." : "Spara nytt lösenord"}
+                    {submitting
+                      ? localizedText(locale, "Sparar...", "Saving...")
+                      : localizedText(locale, "Spara nytt lösenord", "Save new password")}
                   </Button>
                 </Field>
 
