@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/I18nProvider";
-import { localizeHref, stripLocaleFromPathname, type Locale } from "@/i18n/config";
+import { localizeHref, type Locale } from "@/i18n/config";
 
 type LanguageSwitcherProps = {
   className?: string;
@@ -34,14 +34,22 @@ export function LanguageSwitcher({
   const pathname = usePathname() || "/";
   const searchParams = useSearchParams();
   const query = searchParams.toString();
-  const currentHref = `${stripLocaleFromPathname(pathname)}${query ? `?${query}` : ""}`;
+
+  const getCurrentHref = () => {
+    if (typeof window !== "undefined") {
+      return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    }
+
+    return `${pathname}${query ? `?${query}` : ""}`;
+  };
 
   const handleSelect = (nextLocale: Locale) => {
     if (nextLocale === locale) return;
 
+    const nextHref = localizeHref(getCurrentHref(), nextLocale);
+
     setLocale(nextLocale);
-    router.push(localizeHref(currentHref, nextLocale));
-    router.refresh();
+    router.push(nextHref);
   };
 
   const options: { locale: Locale; label: string; shortLabel: string }[] = [

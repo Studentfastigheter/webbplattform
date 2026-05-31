@@ -41,46 +41,7 @@ type CookieTableRow = {
 };
 
 const cookieRows: CookieTableRow[] = [
-  {
-    id: "consent",
-    nameAndDomain: "[COOKIE-NAMN] | campuslyan.se",
-    type: "Förstapart",
-    category: "Nödvändig",
-    purpose: "Exempelvis: sparar dina val för cookiesamtycke.",
-    retention: "Exempelvis: 12 månader",
-  },
-  {
-    id: "session",
-    nameAndDomain: "[COOKIE-NAMN] | campuslyan.se",
-    type: "Förstapart",
-    category: "Nödvändig",
-    purpose: "Exempelvis: håller reda på din session när du använder Tjänsten.",
-    retention: "Exempelvis: session",
-  },
-  {
-    id: "preferences",
-    nameAndDomain: "[COOKIE-NAMN] | campuslyan.se",
-    type: "Förstapart",
-    category: "Funktionell",
-    purpose: "Exempelvis: sparar språkval eller användarinställningar.",
-    retention: "Exempelvis: 30 dagar",
-  },
-  {
-    id: "analytics",
-    nameAndDomain: "[COOKIE-NAMN] | [TREDJEPARTSDOMÄN]",
-    type: "Tredjepart",
-    category: "Analys",
-    purpose: "Exempelvis: analyserar användning av Hemsidan.",
-    retention: "Exempelvis: 13 månader",
-  },
-  {
-    id: "marketing",
-    nameAndDomain: "[COOKIE-NAMN] | [TREDJEPARTSDOMÄN]",
-    type: "Tredjepart",
-    category: "Marknadsföring",
-    purpose: "Exempelvis: mäter kampanjprestanda eller annonsklick.",
-    retention: "Exempelvis: 90 dagar",
-  },
+
 ];
 
 function Paragraph({ children }: { children: ReactNode }) {
@@ -135,46 +96,7 @@ function CookieTable() {
 
 function EnglishCookiePage() {
   const englishRows: CookieTableRow[] = [
-    {
-      id: "consent",
-      nameAndDomain: "[COOKIE NAME] | campuslyan.se",
-      type: "First-party",
-      category: "Necessary",
-      purpose: "For example: stores your cookie consent choices.",
-      retention: "For example: 12 months",
-    },
-    {
-      id: "session",
-      nameAndDomain: "[COOKIE NAME] | campuslyan.se",
-      type: "First-party",
-      category: "Necessary",
-      purpose: "For example: keeps track of your session when you use the service.",
-      retention: "For example: session",
-    },
-    {
-      id: "preferences",
-      nameAndDomain: "[COOKIE NAME] | campuslyan.se",
-      type: "First-party",
-      category: "Functional",
-      purpose: "For example: stores language choice or user settings.",
-      retention: "For example: 30 days",
-    },
-    {
-      id: "analytics",
-      nameAndDomain: "[COOKIE NAME] | [THIRD-PARTY DOMAIN]",
-      type: "Third-party",
-      category: "Analytics",
-      purpose: "For example: analyses use of the website.",
-      retention: "For example: 13 months",
-    },
-    {
-      id: "marketing",
-      nameAndDomain: "[COOKIE NAME] | [THIRD-PARTY DOMAIN]",
-      type: "Third-party",
-      category: "Marketing",
-      purpose: "For example: measures campaign performance or ad clicks.",
-      retention: "For example: 90 days",
-    },
+
   ];
 
   return (
