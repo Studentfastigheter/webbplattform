@@ -1,4 +1,5 @@
 import { promises as fs } from "node:fs";
+import { createSign } from "node:crypto";
 import path from "node:path";
 import { NextResponse } from "next/server";
 
@@ -24,6 +25,29 @@ type FirestoreErrorResponse = {
   };
 };
 
+type FirebaseServiceAccount = {
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+};
+
+type GoogleAccessTokenResponse = {
+  access_token?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+};
+
+type FirestoreAuth =
+  | {
+      type: "service-account";
+      accessToken: string;
+    }
+  | {
+      type: "api-key";
+      apiKey: string;
+    };
+
 class FirestoreWriteError extends Error {
   constructor(
     message: string,
@@ -33,6 +57,8 @@ class FirestoreWriteError extends Error {
     this.name = "FirestoreWriteError";
   }
 }
+
+let cachedGoogleAccessToken: { token: string; expiresAt: number } | null = null;
 
 function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -45,7 +71,59 @@ function validateEmail(email: string): string | null {
   return null;
 }
 
-function getFirestoreConfig() {
+function normalizePrivateKey(value: string): string {
+  return value.replace(/\\n/g, "\n");
+}
+
+function getServiceAccountFromJson(value: string): FirebaseServiceAccount | null {
+  try {
+    const parsed = JSON.parse(value) as {
+      project_id?: unknown;
+      client_email?: unknown;
+      private_key?: unknown;
+    };
+
+    if (
+      typeof parsed.project_id !== "string" ||
+      typeof parsed.client_email !== "string" ||
+      typeof parsed.private_key !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      projectId: parsed.project_id,
+      clientEmail: parsed.client_email,
+      privateKey: normalizePrivateKey(parsed.private_key),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getFirebaseServiceAccount(): FirebaseServiceAccount | null {
+  const rawJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+
+  if (rawJson) {
+    return getServiceAccountFromJson(rawJson);
+  }
+
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (!projectId || !clientEmail || !privateKey) {
+    return null;
+  }
+
+  return {
+    projectId,
+    clientEmail,
+    privateKey: normalizePrivateKey(privateKey),
+  };
+}
+
+function getPublicFirestoreConfig() {
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
@@ -54,6 +132,63 @@ function getFirestoreConfig() {
     projectId,
     isConfigured: Boolean(apiKey && projectId),
   };
+}
+
+function base64UrlEncode(value: string | Buffer): string {
+  return Buffer.from(value).toString("base64url");
+}
+
+function createServiceAccountJwt(serviceAccount: FirebaseServiceAccount): string {
+  const now = Math.floor(Date.now() / 1000);
+  const header = {
+    alg: "RS256",
+    typ: "JWT",
+  };
+  const claims = {
+    iss: serviceAccount.clientEmail,
+    scope: "https://www.googleapis.com/auth/datastore",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  };
+  const unsignedToken = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(claims))}`;
+  const signer = createSign("RSA-SHA256");
+
+  signer.update(unsignedToken);
+  signer.end();
+
+  return `${unsignedToken}.${base64UrlEncode(signer.sign(serviceAccount.privateKey))}`;
+}
+
+async function getGoogleAccessToken(serviceAccount: FirebaseServiceAccount): Promise<string> {
+  if (cachedGoogleAccessToken && cachedGoogleAccessToken.expiresAt > Date.now() + 60_000) {
+    return cachedGoogleAccessToken.token;
+  }
+
+  const body = new URLSearchParams({
+    grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+    assertion: createServiceAccountJwt(serviceAccount),
+  });
+
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const payload = (await response.json().catch(() => null)) as GoogleAccessTokenResponse | null;
+
+  if (!response.ok || !payload?.access_token) {
+    throw new Error(payload?.error_description || payload?.error || "Firebase service account token request failed");
+  }
+
+  cachedGoogleAccessToken = {
+    token: payload.access_token,
+    expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
+  };
+
+  return cachedGoogleAccessToken.token;
 }
 
 function isTimeoutError(error: unknown): boolean {
@@ -83,24 +218,30 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   });
 }
 
-async function saveToFirestoreWaitlist(email: string): Promise<{ alreadyRegistered: boolean }> {
-  const { apiKey, projectId, isConfigured } = getFirestoreConfig();
-
-  if (!isConfigured || !apiKey || !projectId) {
-    throw new Error("WAITLIST_FIREBASE_NOT_CONFIGURED");
-  }
-
+async function writeFirestoreWaitlistDocument(
+  projectId: string,
+  email: string,
+  auth: FirestoreAuth,
+): Promise<{ alreadyRegistered: boolean }> {
   const url = new URL(
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/waitlist`,
   );
+
   url.searchParams.set("documentId", email);
-  url.searchParams.set("key", apiKey);
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (auth.type === "service-account") {
+    headers.Authorization = `Bearer ${auth.accessToken}`;
+  } else {
+    url.searchParams.set("key", auth.apiKey);
+  }
 
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({
       fields: {
         Email: { stringValue: email },
@@ -121,6 +262,29 @@ async function saveToFirestoreWaitlist(email: string): Promise<{ alreadyRegister
   }
 
   throw new FirestoreWriteError(payload?.error?.message || "Firestore waitlist write failed", status);
+}
+
+async function saveToFirestoreWaitlist(email: string): Promise<{ alreadyRegistered: boolean }> {
+  const serviceAccount = getFirebaseServiceAccount();
+
+  if (serviceAccount) {
+    const accessToken = await getGoogleAccessToken(serviceAccount);
+    return writeFirestoreWaitlistDocument(serviceAccount.projectId, email, {
+      type: "service-account",
+      accessToken,
+    });
+  }
+
+  const { apiKey, projectId, isConfigured } = getPublicFirestoreConfig();
+
+  if (!isConfigured || !apiKey || !projectId) {
+    throw new Error("WAITLIST_FIREBASE_NOT_CONFIGURED");
+  }
+
+  return writeFirestoreWaitlistDocument(projectId, email, {
+    type: "api-key",
+    apiKey,
+  });
 }
 
 async function readLocalWaitlist(): Promise<LocalWaitlistEntry[]> {
@@ -178,7 +342,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (getFirestoreConfig().isConfigured) {
+    if (getFirebaseServiceAccount() || getPublicFirestoreConfig().isConfigured) {
       try {
         const firestoreResult = await withTimeout(saveToFirestoreWaitlist(email), firebaseWriteTimeoutMs);
         return NextResponse.json({ ok: true, ...firestoreResult });

@@ -11,6 +11,30 @@ npm run dev
 
 Miljovariabeln `NEXT_PUBLIC_API_URL` maste finnas i `.env.local`. Vardet normaliseras automatiskt till en backend-bas som slutar med `/api`.
 
+## Waitlist i produktion
+
+Waitlisten sparas via `src/app/api/waitlist`. Lokalt kan den falla tillbaka till
+`data/waitlist.local.json`, men pa Vercel maste Firestore-skrivningen ha
+server-side behorighet.
+
+Rekommenderad Vercel-konfiguration:
+
+```text
+FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+```
+
+Alternativt kan samma service account delas upp:
+
+```text
+FIREBASE_PROJECT_ID=...
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
+```
+
+De publika `NEXT_PUBLIC_FIREBASE_*`-variablerna racker for Firebase-klienter,
+men de ger inte automatiskt servern ratt att skriva till Firestore om reglerna
+nekar publika writes.
+
 ## Launch-lage
 
 Utan extra konfiguration kor frontend i pre-launch-lage. Da ar bara startsidan,
