@@ -75,6 +75,20 @@ function parseListInput(value: string) {
     .filter(Boolean);
 }
 
+function getStringOptions(values: Array<string | null | undefined>, selectedValue = "") {
+  const options = new Set(
+    values
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value))
+  );
+  const selected = selectedValue.trim();
+  if (selected) {
+    options.add(selected);
+  }
+
+  return Array.from(options).sort((left, right) => left.localeCompare(right, "sv"));
+}
+
 function parseSocialLinksInput(value: string) {
   const entries = value
     .split("\n")
@@ -398,15 +412,17 @@ function TagsFormFields({
   form,
   onChange,
   includeValues,
+  lockTag = false,
 }: {
   form: TagFormState;
   onChange: (patch: Partial<TagFormState>) => void;
   includeValues: boolean;
+  lockTag?: boolean;
 }) {
   return (
     <>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <FormInput label="Tagg" value={form.tag} onChange={(tag) => onChange({ tag })} />
+        <FormInput label="Tagg" value={form.tag} onChange={(tag) => onChange({ tag })} disabled={lockTag} />
         <FormInput
           label="Visningsnamn"
           value={form.displayName}
@@ -514,7 +530,7 @@ function TagsForm() {
             </option>
           ))}
         </FormSelect>
-        <TagsFormFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeValues />
+        <TagsFormFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeValues lockTag />
         <SubmitButton isLoading={updateState.status === "loading"} onPress={updateTag} disabled={!updateForm.tag.trim()}>
           Uppdatera vald
         </SubmitButton>
@@ -558,11 +574,15 @@ function buildSchoolPayload(form: SchoolFormState, requireId: boolean): AdminAdd
   if (requireId && !schoolId) {
     throw new Error("Välj en skola eller ange schoolId innan du uppdaterar.");
   }
+  const city = form.city.trim();
+  if (!city) {
+    throw new Error("Välj en stad.");
+  }
 
   return {
     ...(schoolId ? { schoolId } : {}),
     schoolName: form.schoolName.trim(),
-    city: form.city.trim(),
+    city,
     lat: parseRequiredNumber(form.lat, "Latitud"),
     lng: parseRequiredNumber(form.lng, "Longitud"),
   };
@@ -572,18 +592,36 @@ function SchoolFields({
   form,
   onChange,
   includeId,
+  cityOptions,
+  citiesLoading,
 }: {
   form: SchoolFormState;
   onChange: (patch: Partial<SchoolFormState>) => void;
   includeId: boolean;
+  cityOptions: string[];
+  citiesLoading: boolean;
 }) {
   return (
     <div className="mt-4 grid gap-3 md:grid-cols-2">
       {includeId && (
-        <FormInput label="SchoolId" value={form.schoolId ?? ""} onChange={(schoolId) => onChange({ schoolId })} />
+        <FormInput label="SchoolId" value={form.schoolId ?? ""} onChange={(schoolId) => onChange({ schoolId })} disabled />
       )}
       <FormInput label="Skolnamn" value={form.schoolName} onChange={(schoolName) => onChange({ schoolName })} />
-      <FormInput label="Stad" value={form.city} onChange={(city) => onChange({ city })} />
+      <FormSelect
+        label="Stad"
+        value={form.city}
+        onChange={(city) => onChange({ city })}
+        disabled={citiesLoading || cityOptions.length === 0}
+      >
+        <option value="">
+          {citiesLoading ? "Hämtar städer..." : "Välj stad"}
+        </option>
+        {cityOptions.map((city) => (
+          <option key={city} value={city}>
+            {city}
+          </option>
+        ))}
+      </FormSelect>
       <FormInput label="Latitud" value={form.lat} onChange={(lat) => onChange({ lat })} />
       <FormInput label="Longitud" value={form.lng} onChange={(lng) => onChange({ lng })} />
     </div>
@@ -592,11 +630,15 @@ function SchoolFields({
 
 function SchoolsForm() {
   const { items, state: listState, refresh } = useResourceList<School>(adminService.getSchools);
+  const { items: cities, state: cityState } = useResourceList<string>(adminService.getCities);
   const [selectedId, setSelectedId] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [updateForm, setUpdateForm] = useState<SchoolFormState>(emptySchoolForm);
   const [createForm, setCreateForm] = useState<SchoolFormState>(emptySchoolForm);
+  const citiesLoading = cityState.status === "loading";
+  const updateCityOptions = getStringOptions(cities, updateForm.city);
+  const createCityOptions = getStringOptions(cities, createForm.city);
 
   function selectSchool(id: string) {
     setSelectedId(id);
@@ -644,11 +686,12 @@ function SchoolsForm() {
     <div className="grid gap-4">
       <ActionShell
         title="Hämta och uppdatera skola"
-        description="GET hämtar alla skolor. Välj en skola och uppdatera den med PUT."
+        description="GET hämtar alla skolor och städer. Välj en skola och uppdatera den med PUT."
         method="GET/PUT"
-        endpoint="/api/schools, /api/admin/school"
+        endpoint="/api/schools, /api/listings/cities, /api/admin/school"
       >
         <ResultBlock state={listState} />
+        <ResultBlock state={cityState} />
         <FormSelect label="Välj befintlig skola" value={selectedId} onChange={selectSchool}>
           <option value="">Välj skola</option>
           {items.map((school) => (
@@ -657,7 +700,13 @@ function SchoolsForm() {
             </option>
           ))}
         </FormSelect>
-        <SchoolFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeId />
+        <SchoolFields
+          form={updateForm}
+          onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))}
+          includeId
+          cityOptions={updateCityOptions}
+          citiesLoading={citiesLoading}
+        />
         <SubmitButton isLoading={updateState.status === "loading"} onPress={updateSchool} disabled={!updateForm.schoolId?.trim()}>
           Uppdatera vald
         </SubmitButton>
@@ -666,12 +715,19 @@ function SchoolsForm() {
 
       <ActionShell
         title="Skapa ny skola"
-        description="POST är separat och skapar en ny skola."
+        description="POST är separat och skapar en ny skola. Stad väljs från GET-listan."
         method="POST"
         endpoint="/api/admin/school"
       >
-        <SchoolFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeId={false} />
-        <SubmitButton isLoading={createState.status === "loading"} onPress={createSchool}>
+        <ResultBlock state={cityState} />
+        <SchoolFields
+          form={createForm}
+          onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
+          includeId={false}
+          cityOptions={createCityOptions}
+          citiesLoading={citiesLoading}
+        />
+        <SubmitButton isLoading={createState.status === "loading"} onPress={createSchool} disabled={!createForm.city.trim()}>
           Skapa
         </SubmitButton>
         <ResultBlock state={createState} />
@@ -847,7 +903,7 @@ function ActivityFields({
 }) {
   return (
     <div className="mt-4 grid gap-3 md:grid-cols-2">
-      {includeId && <FormInput label="Id" value={form.id ?? ""} onChange={(id) => onChange({ id })} />}
+      {includeId && <FormInput label="Id" value={form.id ?? ""} onChange={(id) => onChange({ id })} disabled />}
       <FormSelect
         label="Kategori"
         value={form.category}
@@ -1149,7 +1205,7 @@ function CompanyFields({
   return (
     <>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {includeId && <FormInput label="CompanyId" value={form.companyId ?? ""} onChange={(companyId) => onChange({ companyId })} />}
+        {includeId && <FormInput label="CompanyId" value={form.companyId ?? ""} onChange={(companyId) => onChange({ companyId })} disabled />}
         <FormInput label="Företagsnamn" value={form.companyName} onChange={(companyName) => onChange({ companyName })} />
         <FormInput label="Underrubrik" value={form.subtitle} onChange={(subtitle) => onChange({ subtitle })} />
         <FormInput label="Logo URL" value={form.logoUrl} onChange={(logoUrl) => onChange({ logoUrl })} />
@@ -1323,6 +1379,7 @@ function CompaniesForm() {
 }
 
 function CompanyAccountForm() {
+  const { items: companies, state: companiesState } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
   const [state, setState] = useState<AdminActionState>({ status: "idle" });
   const [form, setForm] = useState({
     id: "",
@@ -1341,6 +1398,12 @@ function CompanyAccountForm() {
   function patchForm(patch: Partial<typeof form>) {
     setForm((current) => ({ ...current, ...patch }));
   }
+
+  const companiesLoading = companiesState.status === "loading";
+  const companyOptions = companies.filter(
+    (company): company is AdminCompanyPublicDTO & { id: number } =>
+      typeof company.id === "number"
+  );
 
   async function run() {
     setState({ status: "loading", message: "Sparar företagskonto..." });
@@ -1374,13 +1437,28 @@ function CompanyAccountForm() {
   return (
     <ActionShell
       title="Företagskonto"
-      description="Backend saknar GET-listning för konton här, så den här delen är ett fältbaserat PUT-flöde."
+      description="Backend saknar GET-listning för konton här, men företag väljs från GET /companies innan PUT."
       method="PUT"
-      endpoint="/api/admin/company/account"
+      endpoint="/api/companies, /api/admin/company/account"
     >
+      <ResultBlock state={companiesState} />
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <FormInput label="Konto-id" value={form.id} onChange={(id) => patchForm({ id })} placeholder="Tomt vid nytt konto" />
-        <FormInput label="CompanyId" value={form.companyId} onChange={(companyId) => patchForm({ companyId })} />
+        <FormSelect
+          label="Företag"
+          value={form.companyId}
+          onChange={(companyId) => patchForm({ companyId })}
+          disabled={companiesLoading || companyOptions.length === 0}
+        >
+          <option value="">
+            {companiesLoading ? "Hämtar företag..." : "Välj företag"}
+          </option>
+          {companyOptions.map((company) => (
+            <option key={company.id} value={String(company.id)}>
+              {[company.name, company.id].filter(Boolean).join(" - ")}
+            </option>
+          ))}
+        </FormSelect>
         <FormInput label="Rollnamn" value={form.roleName} onChange={(roleName) => patchForm({ roleName })} placeholder="MANAGER" />
         <FormInput label="Rollbeskrivning" value={form.roleDescription} onChange={(roleDescription) => patchForm({ roleDescription })} />
         <FormInput label="Access level" value={form.roleAccessLevel} onChange={(roleAccessLevel) => patchForm({ roleAccessLevel })} />
@@ -1391,7 +1469,7 @@ function CompanyAccountForm() {
         <FormInput label="Banner URL" value={form.bannerUrl} onChange={(bannerUrl) => patchForm({ bannerUrl })} />
         <FormInput label="Logo URL" value={form.logoUrl} onChange={(logoUrl) => patchForm({ logoUrl })} />
       </div>
-      <SubmitButton isLoading={state.status === "loading"} onPress={run}>
+      <SubmitButton isLoading={state.status === "loading"} onPress={run} disabled={!form.companyId.trim()}>
         Spara konto
       </SubmitButton>
       <ResultBlock state={state} />

@@ -19,6 +19,7 @@ import type {
   School,
 } from "@/types";
 import { schoolService } from "@/features/schools/services/school-service";
+import { listingService } from "@/features/listings/services/listing-service";
 
 function jsonBody(value: unknown) {
   return JSON.stringify(value);
@@ -46,6 +47,10 @@ export const adminService = {
 
   getSchools: async (): Promise<School[]> => {
     return schoolService.list();
+  },
+
+  getCities: async (): Promise<string[]> => {
+    return listingService.getCities();
   },
 
   createSchool: async (school: AdminAddSchoolRequest): Promise<void> => {
