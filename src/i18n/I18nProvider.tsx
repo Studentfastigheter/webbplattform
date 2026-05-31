@@ -98,6 +98,10 @@ export function I18nProvider({
   const dictionary = dictionaries[locale];
 
   useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
+  useEffect(() => {
     const nextLocale =
       getLocaleFromPathname(pathname) ??
       readLocaleCookie() ??
