@@ -11,6 +11,7 @@ import { type User } from "@/types";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
+import { isPlatformLaunched } from "@/lib/platform-launch";
 import {
   MobileNav,
   MobileNavHeader,
@@ -67,12 +68,13 @@ function AccountAvatar({
 export default function SiteHeader() {
   const { user, token, logout, isLoading } = useAuth();
   const { localizedHref, t } = useI18n();
+  const platformLaunched = isPlatformLaunched();
   const [authMeUser, setAuthMeUser] = useState<User | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const currentUser = authMeUser ?? user;
+  const currentUser = platformLaunched ? authMeUser ?? user : null;
   const userType = currentUser?.accountType;
   const roleLabel =
     userType === "student"
@@ -87,13 +89,21 @@ export default function SiteHeader() {
   const avatarSrc = getLogoUrl(currentUser);
 
   const publicNavItems = useMemo<NavItem[]>(
-    () => [
-      { name: t("siteHeader.nav.home"), link: localizedHref("/") },
-      { name: t("siteHeader.nav.housing"), link: localizedHref("/bostader") },
-      { name: t("siteHeader.nav.allQueues"), link: localizedHref("/alla-koer") },
-      { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
-    ],
-    [localizedHref, t],
+    () =>
+      platformLaunched
+        ? [
+            { name: t("siteHeader.nav.home"), link: localizedHref("/") },
+            { name: t("siteHeader.nav.housing"), link: localizedHref("/bostader") },
+            { name: t("siteHeader.nav.allQueues"), link: localizedHref("/alla-koer") },
+            { name: t("siteHeader.nav.cities"), link: localizedHref("/stader") },
+          ]
+        : [
+            { name: t("siteHeader.nav.home"), link: localizedHref("/") },
+            { name: t("siteFooter.links.forBusiness"), link: localizedHref("/for-foretag") },
+            { name: t("siteFooter.links.ourPartners"), link: localizedHref("/partners") },
+            { name: t("siteFooter.links.about"), link: localizedHref("/om-oss") },
+          ],
+    [localizedHref, platformLaunched, t],
   );
 
   const studentNavItems = useMemo<NavItem[]>(
@@ -195,6 +205,11 @@ export default function SiteHeader() {
   };
 
   useEffect(() => {
+    if (!platformLaunched) {
+      setAuthMeUser(null);
+      return;
+    }
+
     if (isLoading) return;
 
     if (!token) {
@@ -218,7 +233,7 @@ export default function SiteHeader() {
     return () => {
       active = false;
     };
-  }, [isLoading, token, user]);
+  }, [isLoading, platformLaunched, token, user]);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
@@ -259,7 +274,7 @@ export default function SiteHeader() {
     };
   }, [isMobileMenuOpen]);
 
-  if (isLoading) {
+  if (platformLaunched && isLoading) {
     return (
       <Navbar className="top-4 opacity-0">
         <NavBody>
@@ -293,7 +308,7 @@ export default function SiteHeader() {
 
         <div className="relative z-20 hidden items-center gap-2 lg:flex">
           <LanguageSwitcher compact />
-          {!currentUser ? (
+          {platformLaunched && !currentUser ? (
             <>
               <Link
                 href="/login"
@@ -308,7 +323,7 @@ export default function SiteHeader() {
                 {t("siteHeader.auth.createAccount")}
               </Link>
             </>
-          ) : (
+          ) : platformLaunched && currentUser ? (
             <div ref={accountMenuRef} className="relative">
               <button
                 type="button"
@@ -378,7 +393,7 @@ export default function SiteHeader() {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </NavBody>
 
@@ -431,7 +446,7 @@ export default function SiteHeader() {
               </div>
             ))}
 
-            {!currentUser ? (
+            {platformLaunched && !currentUser ? (
               <>
                 <Link
                   href="/login"
@@ -448,7 +463,7 @@ export default function SiteHeader() {
                   {t("siteHeader.auth.createAccount")}
                 </Link>
               </>
-            ) : (
+            ) : platformLaunched && currentUser ? (
               <div className="mt-2 w-full border-t border-neutral-200 pt-4">
                 <div className="mb-3 flex items-center gap-3 px-1">
                   <AccountAvatar
@@ -489,7 +504,7 @@ export default function SiteHeader() {
                   {t("siteHeader.auth.logout")}
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
         </MobileNavMenu>
       </MobileNav>

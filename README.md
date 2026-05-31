@@ -11,6 +11,16 @@ npm run dev
 
 Miljovariabeln `NEXT_PUBLIC_API_URL` maste finnas i `.env.local`. Vardet normaliseras automatiskt till en backend-bas som slutar med `/api`.
 
+## Launch-lage
+
+Utan extra konfiguration kor frontend i pre-launch-lage. Da ar bara startsidan,
+`/for-foretag`, `/partners`, `/om-oss`, `/anvandarvillkor`,
+`/integritetspolicy` och `/cookiepolicy` publika pa huvuddomanen.
+
+Satt `NEXT_PUBLIC_PLATFORM_LAUNCHED=true` och redeploya nar hela plattformen ska
+oppnas. Det slar pa plattformsnavigation, publika bostads-/ko-sidor och
+studentlogin/registrering igen.
+
 ## Vanliga kommandon
 
 ```bash

@@ -10,6 +10,10 @@ import {
   stripLocaleFromPathname,
   type Locale,
 } from "@/i18n/config";
+import {
+  isPlatformLaunched,
+  isPrelaunchPublicSitePath,
+} from "@/lib/platform-launch";
 
 function getHostname(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
@@ -78,6 +82,12 @@ function redirectWithLocale(url: URL, locale: Locale) {
   return response;
 }
 
+function redirectToPrelaunchHome(url: URL, locale: Locale) {
+  url.pathname = localizePathname("/", locale);
+  url.search = "";
+  return redirectWithLocale(url, locale);
+}
+
 export function proxy(req: NextRequest) {
   const hostname = getHostname(req);
   const url = req.nextUrl.clone();
@@ -88,11 +98,6 @@ export function proxy(req: NextRequest) {
 
   if (isPublicAssetPath(pathname)) {
     return nextWithLocale(req, locale);
-  }
-
-  if (!urlLocale && locale === "en") {
-    url.pathname = localizePathname(pathname, "en");
-    return redirectWithLocale(url, locale);
   }
 
   const isPortalSubdomain = hostname.startsWith("portal.");
@@ -137,6 +142,15 @@ export function proxy(req: NextRequest) {
   ) {
     url.pathname = "/404";
     return rewriteWithLocale(req, url, locale);
+  }
+
+  if (!isPlatformLaunched() && !isPrelaunchPublicSitePath(routingPathname)) {
+    return redirectToPrelaunchHome(url, locale);
+  }
+
+  if (!urlLocale && locale === "en") {
+    url.pathname = localizePathname(pathname, "en");
+    return redirectWithLocale(url, locale);
   }
 
   if (urlLocale) {

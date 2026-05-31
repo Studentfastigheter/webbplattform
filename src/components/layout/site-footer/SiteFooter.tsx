@@ -9,6 +9,7 @@ import { SiThreads } from "react-icons/si";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
+import { isPlatformLaunched } from "@/lib/platform-launch";
 
 const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 
@@ -29,11 +30,16 @@ const SOCIAL_LINKS = [
 export default function SiteFooter() {
   const year = new Date().getFullYear();
   const { t } = useI18n();
-  const platformLinks = [
-    { href: "/bostader", label: t("siteFooter.links.housing") },
-    { href: "/alla-koer", label: t("siteFooter.links.allQueues") },
-    { href: "/for-foretag", label: t("siteFooter.links.forBusiness") },
-  ];
+  const platformLaunched = isPlatformLaunched();
+  const platformLinks = platformLaunched
+    ? [
+        { href: "/bostader", label: t("siteFooter.links.housing") },
+        { href: "/alla-koer", label: t("siteFooter.links.allQueues") },
+        { href: "/for-foretag", label: t("siteFooter.links.forBusiness") },
+      ]
+    : [
+        { href: "/for-foretag", label: t("siteFooter.links.forBusiness") },
+      ];
   const partnerLinks = [
     { href: "/partners", label: t("siteFooter.links.ourPartners") },
   ];
