@@ -28,7 +28,7 @@ export const Hero: React.FC<HeroProps> = ({
   flipWordsClassName = "text-emerald-600",
   subtitle,
   backgroundClassName = "bg-background",
-  previewImageSrc = "/platform-demo.png",
+  previewImageSrc = "/CampusLyan-Mockup.svg",
   previewImageAlt,
   waitlistHref = "#register-waitlist",
   businessHref = "/for-business",
