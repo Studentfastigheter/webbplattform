@@ -35,15 +35,10 @@ function CityCard({ city }: { city: CityCardData }) {
       }}
     >
       <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/70 transition-opacity group-hover:opacity-95" />
-      <span className="absolute bottom-5 left-5 right-5 flex max-w-[calc(100%-2.5rem)] flex-col gap-2 text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:right-6">
+      <span className="absolute bottom-5 left-5 right-5 block max-w-[calc(100%-2.5rem)] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:right-6">
         <span className="break-words text-[25px] font-medium leading-[1.05] sm:text-[29px]">
           {city.name}
         </span>
-        {city.description && (
-          <span className="line-clamp-2 text-sm font-medium leading-5 text-white/90">
-            {city.description}
-          </span>
-        )}
       </span>
     </LocalizedLink>
   );
