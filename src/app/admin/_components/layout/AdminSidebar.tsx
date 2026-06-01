@@ -55,6 +55,11 @@ const accountItems: AdminNavItem[] = [
     icon: <Building2Icon className="h-5 w-5" />,
   },
   {
+    name: "External Companies",
+    path: "/external-companies",
+    icon: <Building2Icon className="h-5 w-5" />,
+  },
+  {
     name: "Accounts",
     path: "/accounts",
     icon: <UsersIcon className="h-5 w-5" />,

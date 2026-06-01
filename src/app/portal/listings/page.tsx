@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Eye,
   MousePointerClick,
+  RefreshCw,
   Search,
   X,
 } from "lucide-react";
@@ -15,6 +17,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type ListingViewCounts } from "@/features/companies/services/company-service";
@@ -274,11 +277,35 @@ export default function PortalAdsPage() {
   const [dateSort, setDateSort] = useState<DateSort>("newest");
   const [cityFilter, setCityFilter] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [refreshingListings, setRefreshingListings] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [ads, setAds] = useState<PortalListing[]>([]);
   const hasActiveFilters = statusFilter !== "all" || cityFilter !== "all";
 
   const companyId = getActiveCompanyId(user);
+
+  const handleRefreshListings = useCallback(async () => {
+    if (!companyId || refreshingListings) {
+      return;
+    }
+
+    setRefreshingListings(true);
+
+    try {
+      await companyService.refreshCompanyListings(companyId);
+      toast.success("Annonssynken har startats.");
+      setReloadKey((current) => current + 1);
+    } catch (refreshError) {
+      toast.error(
+        refreshError instanceof Error
+          ? refreshError.message
+          : "Kunde inte starta annonssynken."
+      );
+    } finally {
+      setRefreshingListings(false);
+    }
+  }, [companyId, refreshingListings]);
 
   useEffect(() => {
     if (authLoading || !companyId) {
@@ -365,7 +392,7 @@ export default function PortalAdsPage() {
     return () => {
       active = false;
     };
-  }, [authLoading, companyId]);
+  }, [authLoading, companyId, reloadKey]);
 
   const availableCities = useMemo(() => {
     const cities = new Set<string>();
@@ -446,8 +473,18 @@ export default function PortalAdsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div>
-          <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-semibold text-gray-900">Mina annonser</h1>
+            <Button
+              className="w-full sm:w-auto"
+              isDisabled={loading || refreshingListings}
+              isLoading={refreshingListings}
+              onPress={() => void handleRefreshListings()}
+              variant="outline"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Synka annonser
+            </Button>
           </div>
         </div>
 

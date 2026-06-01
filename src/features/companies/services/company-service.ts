@@ -1157,6 +1157,15 @@ export const companyService = {
     return normalizeListingViewCounts(result);
   },
 
+  refreshCompanyListings: async (id: number): Promise<void> => {
+    await apiClient<void>(
+      `/admin/company/${pathSegment(id)}/refresh-listings`,
+      {
+        method: "POST",
+      }
+    );
+  },
+
   generalAnalytics: async (
     id: number
   ): Promise<AnalyticalQuantities> => {
