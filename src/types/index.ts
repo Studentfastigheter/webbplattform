@@ -3,6 +3,7 @@ export * from "./user";
 export * from "./listing";
 export * from "./queue";
 export * from "./school";
+export * from "./city";
 export * from "./notification";
 export * from "./api";
 export * from "./ui";

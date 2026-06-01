@@ -6,8 +6,8 @@ import {
 } from "@/lib/api/client";
 import type {
   AdminAddSchoolRequest,
-  AdminCityPayload,
   AdminCompanyDetailedDTO,
+  AdminCompanyCredentialDTO,
   AdminCompanyPublicDTO,
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
@@ -18,10 +18,14 @@ import type {
   AdminPointOfInterestDTO,
   AdminUserTrendDTO,
   AdminWaitlistStatsDTO,
+  CityDTO,
+  CityDetailedDTO,
+  CreateCityRequest,
+  ModifyCityRequest,
   School,
 } from "@/types";
 import { schoolService } from "@/features/schools/services/school-service";
-import { listingService } from "@/features/listings/services/listing-service";
+import { cityService } from "@/features/cities/services/city-service";
 
 function jsonBody(value: unknown) {
   return JSON.stringify(value);
@@ -52,7 +56,15 @@ export const adminService = {
   },
 
   getCities: async (): Promise<string[]> => {
-    return listingService.getCities();
+    return cityService.listNames();
+  },
+
+  getCitySummaries: async (): Promise<CityDTO[]> => {
+    return cityService.list();
+  },
+
+  getCity: async (code: string): Promise<CityDetailedDTO> => {
+    return cityService.get(code);
   },
 
   createSchool: async (school: AdminAddSchoolRequest): Promise<void> => {
@@ -144,25 +156,41 @@ export const adminService = {
     });
   },
 
-  createCity: async (city: AdminCityPayload): Promise<void> => {
-    await apiClient<void>("/admin/city", {
-      method: "POST",
-      body: jsonBody(city),
-    });
+  refreshCompanyListings: async (companyId: number): Promise<void> => {
+    await apiClient<void>(
+      `/admin/company/${pathSegment(companyId)}/refresh-listings`,
+      {
+        method: "POST",
+      }
+    );
   },
 
-  modifyCity: async (city: AdminCityPayload): Promise<void> => {
-    await apiClient<void>("/admin/city", {
-      method: "PUT",
-      body: jsonBody(city),
-    });
+  updateCompanyCredentials: async (
+    companyId: number,
+    credentials: AdminCompanyCredentialDTO
+  ): Promise<void> => {
+    await apiClient<void>(
+      `/admin/company/${pathSegment(companyId)}/credentials`,
+      {
+        method: "POST",
+        body: jsonBody(credentials),
+      }
+    );
   },
 
-  deleteCity: async (cityId: number): Promise<void> => {
-    await apiClient<void>("/admin/city/delete", {
-      method: "PUT",
-      body: jsonBody(cityId),
-    });
+  createCity: async (city: CreateCityRequest): Promise<void> => {
+    await cityService.create(city);
+  },
+
+  modifyCity: async (
+    code: string,
+    city: ModifyCityRequest
+  ): Promise<void> => {
+    await cityService.update(code, city);
+  },
+
+  deleteCity: async (code: string): Promise<void> => {
+    await cityService.delete(code);
   },
 
   getActivities: async (): Promise<AdminPointOfInterestDTO[]> => {

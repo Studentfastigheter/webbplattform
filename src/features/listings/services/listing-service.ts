@@ -4,6 +4,7 @@ import {
   buildQuery,
   pathSegment,
 } from "@/lib/api/client";
+import { cityService } from "@/features/cities/services/city-service";
 import {
   DWELLING_TYPE_VALUES,
   HOST_TYPE_VALUES,
@@ -94,6 +95,7 @@ export type ListingSearchParams = {
   schoolTargetLat?: number | null;
   schoolTargetLng?: number | null;
   maxDistanceToSchool?: number | null;
+  companyId?: number | null;
   /** @deprecated Use schoolTargetLat. Kept so older UI call sites still map to the current backend query name. */
   school_lat?: number | null;
   /** @deprecated Use schoolTargetLng. Kept so older UI call sites still map to the current backend query name. */
@@ -201,6 +203,7 @@ function buildListingSearchQuery(
     schoolTargetLat: params.schoolTargetLat ?? params.school_lat,
     schoolTargetLng: params.schoolTargetLng ?? params.school_lng,
     maxDistanceToSchool: params.maxDistanceToSchool,
+    companyId: params.companyId,
     amenities: params.amenities,
     seed: params.seed?.trim(),
   });
@@ -608,10 +611,7 @@ export const listingService = {
   },
 
   getCities: async (): Promise<string[]> => {
-    const cities = await apiClient<unknown>("/listings/cities", { auth: false });
-    return Array.isArray(cities)
-      ? cities.filter((city): city is string => typeof city === "string")
-      : [];
+    return cityService.listNames();
   },
 
   create: async (payload: PublishListingRequest): Promise<void> => {
@@ -672,6 +672,29 @@ export const listingService = {
 
   getMyListings: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
     const res = await listingService.getMyListingsPage(page, size);
+    return res.content ?? [];
+  },
+
+  getByQueuePage: async (
+    queueId: string,
+    page = 0,
+    size = 50
+  ): Promise<PageResponse<ListingCardDTO>> => {
+    const query = buildQuery({ page, size });
+    const res = await apiClient<unknown>(
+      `/listings/queue/${pathSegment(queueId)}${query}`,
+      { auth: false }
+    );
+    const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
+    return normalizePageResponse(res, content, page, size);
+  },
+
+  getByQueue: async (
+    queueId: string,
+    page = 0,
+    size = 50
+  ): Promise<ListingCardDTO[]> => {
+    const res = await listingService.getByQueuePage(queueId, page, size);
     return res.content ?? [];
   },
 
@@ -798,6 +821,22 @@ export const listingService = {
     return arrayFromApiResponse<unknown>(res)
       .map(normalizeListingTagDTO)
       .filter((tag): tag is ListingTagDTO => tag !== null);
+  },
+
+  getLocationCategories: async (): Promise<string[]> => {
+    const categories = await apiClient<unknown>("/listings/location-categories", {
+      auth: false,
+    });
+
+    return arrayFromApiResponse<unknown>(categories)
+      .map((category) =>
+        typeof category === "string"
+          ? category
+          : isRecord(category)
+            ? firstString(category.category, category.name, category.googleType)
+            : undefined
+      )
+      .filter((category): category is string => Boolean(category));
   },
 
   getRequirementsProfile: async (

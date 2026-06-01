@@ -21,9 +21,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminService } from "@/features/admin/services/admin-service";
+import { normalizeCityCode } from "@/features/cities/services/city-service";
 import type {
   AdminAddSchoolRequest,
-  AdminCityPayload,
   AdminCompanyCredentialDTO,
   AdminCompanyDetailedDTO,
   AdminCompanyUserDTO,
@@ -36,6 +36,10 @@ import type {
   AdminCompanyPublicDTO,
   AdminWaitlistEntryDTO,
   AdminWaitlistStatsDTO,
+  CityDTO,
+  CityDetailedDTO,
+  CreateCityRequest,
+  ModifyCityRequest,
   School,
 } from "@/types";
 
@@ -47,13 +51,13 @@ type AdminActionState = {
 const ADMIN_TABS = [
   "tags",
   "schools",
+  "cities",
   "locations",
   "companies",
   "accounts",
   "activities",
   "waitlist",
   "statistics",
-  "legacy",
 ] as const;
 
 export type AdminSection = (typeof ADMIN_TABS)[number];
@@ -357,61 +361,6 @@ function SubmitButton({
   );
 }
 
-function DeleteIdAction({
-  title,
-  description,
-  endpoint,
-  label,
-  onSubmit,
-}: {
-  title: string;
-  description: string;
-  endpoint: string;
-  label: string;
-  onSubmit: (id: number) => Promise<unknown>;
-}) {
-  const [id, setId] = useState("");
-  const [state, setState] = useState<AdminActionState>({ status: "idle" });
-
-  async function run() {
-    const numericId = Number(id);
-    if (!Number.isInteger(numericId) || numericId <= 0) {
-      setState({ status: "error", message: "Ange ett numeriskt id." });
-      return;
-    }
-
-    setState({ status: "loading", message: "Tar bort..." });
-    try {
-      await onSubmit(numericId);
-      setState({ status: "success", message: "Delete-anropet gick igenom." });
-    } catch (error) {
-      setState({
-        status: "error",
-        message: error instanceof Error ? error.message : "Anropet misslyckades.",
-      });
-    }
-  }
-
-  return (
-    <ActionShell title={title} description={description} method="PUT" endpoint={endpoint}>
-      <div className="mt-4 rounded-[8px] border border-red-100 bg-red-50/60 p-3">
-        <FormInput label={label} value={id} onChange={setId} placeholder="Ange numeriskt id" />
-        <Button
-          type="button"
-          isLoading={state.status === "loading"}
-          onPress={run}
-          variant="destructive"
-          className="mt-3 bg-red-700 text-white hover:bg-red-800"
-        >
-          <Trash2Icon className="h-4 w-4" />
-          Ta bort
-        </Button>
-      </div>
-      <ResultBlock state={state} />
-    </ActionShell>
-  );
-}
-
 type TagFormState = {
   tag: string;
   displayName: string;
@@ -699,7 +648,7 @@ function SchoolsForm() {
         title="Hämta och uppdatera skola"
         description="GET hämtar alla skolor och städer. Välj en skola och uppdatera den med PUT."
         method="GET/PUT"
-        endpoint="/api/schools, /api/listings/cities, /api/admin/school"
+        endpoint="/api/schools, /api/cities, /api/admin/school"
       >
         <ResultBlock state={listState} />
         <ResultBlock state={cityState} />
@@ -1135,6 +1084,25 @@ const emptyCompanyForm: CompanyFormState = {
   propertySystem: "",
 };
 
+type CompanyCredentialFormState = Pick<
+  CompanyFormState,
+  | "companyId"
+  | "credentialCompanyName"
+  | "companySystemUrlOrigin"
+  | "propertySystemUsername"
+  | "propertySystemPassword"
+  | "propertySystem"
+>;
+
+const emptyCompanyCredentialForm: CompanyCredentialFormState = {
+  companyId: "",
+  credentialCompanyName: "",
+  companySystemUrlOrigin: "",
+  propertySystemUsername: "",
+  propertySystemPassword: "",
+  propertySystem: "",
+};
+
 function companyDetailsToForm(details: AdminCompanyDetailedDTO): CompanyFormState {
   return {
     ...emptyCompanyForm,
@@ -1151,6 +1119,36 @@ function companyDetailsToForm(details: AdminCompanyDetailedDTO): CompanyFormStat
     pictureUrlList: (details.pictureUrlList ?? []).join("\n"),
     videoUrlList: (details.videoUrlList ?? []).join("\n"),
     credentialCompanyName: details.companyName ?? "",
+  };
+}
+
+function buildCompanyCredentialPayload(form: CompanyCredentialFormState): {
+  companyId: number;
+  credentials: AdminCompanyCredentialDTO;
+} {
+  const companyId = parseOptionalNumber(form.companyId ?? "");
+  if (!companyId) {
+    throw new Error("Välj ett företag.");
+  }
+
+  if (
+    !form.companySystemUrlOrigin.trim() ||
+    !form.propertySystemUsername.trim() ||
+    !form.propertySystemPassword.trim() ||
+    !form.propertySystem.trim()
+  ) {
+    throw new Error("System origin, username, password och property system krävs.");
+  }
+
+  return {
+    companyId,
+    credentials: {
+      companyName: form.credentialCompanyName.trim(),
+      companySystemUrlOrigin: form.companySystemUrlOrigin.trim(),
+      propertySystemUsername: form.propertySystemUsername.trim(),
+      propertySystemPassword: form.propertySystemPassword.trim(),
+      propertySystem: form.propertySystem.trim() as AdminCompanyCredentialDTO["propertySystem"],
+    },
   };
 }
 
@@ -1249,11 +1247,15 @@ function CompaniesForm() {
   const { items, state: listState, refresh } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
   const [selectedId, setSelectedId] = useState("");
   const [deleteId, setDeleteId] = useState("");
+  const [refreshId, setRefreshId] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
+  const [refreshState, setRefreshState] = useState<AdminActionState>({ status: "idle" });
+  const [credentialState, setCredentialState] = useState<AdminActionState>({ status: "idle" });
   const [updateForm, setUpdateForm] = useState<CompanyFormState>(emptyCompanyForm);
   const [createForm, setCreateForm] = useState<CompanyFormState>(emptyCompanyForm);
+  const [credentialForm, setCredentialForm] = useState<CompanyCredentialFormState>(emptyCompanyCredentialForm);
 
   async function selectCompany(id: string) {
     setSelectedId(id);
@@ -1270,6 +1272,15 @@ function CompaniesForm() {
         message: error instanceof Error ? error.message : "Kunde inte hämta företaget.",
       });
     }
+  }
+
+  function selectCredentialCompany(companyId: string) {
+    const company = items.find((item) => String(item.id) === companyId);
+    setCredentialForm((current) => ({
+      ...current,
+      companyId,
+      credentialCompanyName: company?.name ?? current.credentialCompanyName,
+    }));
   }
 
   async function save(action: "create" | "update") {
@@ -1321,6 +1332,40 @@ function CompaniesForm() {
     }
   }
 
+  async function refreshListings() {
+    const id = parseOptionalNumber(refreshId);
+    if (!id) {
+      setRefreshState({ status: "error", message: "Välj ett företag att synka." });
+      return;
+    }
+
+    setRefreshState({ status: "loading", message: "Startar annonssynk..." });
+    try {
+      await adminService.refreshCompanyListings(id);
+      setRefreshState({ status: "success", message: "Annonssynken startades." });
+    } catch (error) {
+      setRefreshState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Annonssynken kunde inte startas.",
+      });
+    }
+  }
+
+  async function saveCredentials() {
+    setCredentialState({ status: "loading", message: "Sparar systemuppgifter..." });
+    try {
+      const payload = buildCompanyCredentialPayload(credentialForm);
+      await adminService.updateCompanyCredentials(payload.companyId, payload.credentials);
+      setCredentialForm(emptyCompanyCredentialForm);
+      setCredentialState({ status: "success", message: "Systemuppgifterna sparades och synk startades." });
+    } catch (error) {
+      setCredentialState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Systemuppgifterna kunde inte sparas.",
+      });
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <ActionShell
@@ -1356,6 +1401,53 @@ function CompaniesForm() {
           Skapa
         </SubmitButton>
         <ResultBlock state={createState} />
+      </ActionShell>
+
+      <ActionShell
+        title="Synka företagsannonser"
+        description="POST startar en ny import av företagets annonser i bakgrunden."
+        method="POST"
+        endpoint="/api/admin/company/{id}/refresh-listings"
+      >
+        <FormSelect label="Välj företag" value={refreshId} onChange={setRefreshId}>
+          <option value="">Välj företag</option>
+          {items.map((company) => (
+            <option key={company.id} value={company.id}>
+              {[company.name, company.id].filter(Boolean).join(" - ")}
+            </option>
+          ))}
+        </FormSelect>
+        <SubmitButton isLoading={refreshState.status === "loading"} onPress={() => void refreshListings()} disabled={!refreshId}>
+          Starta synk
+        </SubmitButton>
+        <ResultBlock state={refreshState} />
+      </ActionShell>
+
+      <ActionShell
+        title="Uppdatera systemuppgifter"
+        description="POST lägger till eller roterar credentials för ett befintligt företag."
+        method="POST"
+        endpoint="/api/admin/company/{id}/credentials"
+      >
+        <FormSelect label="Välj företag" value={credentialForm.companyId ?? ""} onChange={selectCredentialCompany}>
+          <option value="">Välj företag</option>
+          {items.map((company) => (
+            <option key={company.id} value={company.id}>
+              {[company.name, company.id].filter(Boolean).join(" - ")}
+            </option>
+          ))}
+        </FormSelect>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <FormInput label="Credential company name" value={credentialForm.credentialCompanyName} onChange={(credentialCompanyName) => setCredentialForm((current) => ({ ...current, credentialCompanyName }))} />
+          <FormInput label="System origin" value={credentialForm.companySystemUrlOrigin} onChange={(companySystemUrlOrigin) => setCredentialForm((current) => ({ ...current, companySystemUrlOrigin }))} />
+          <FormInput label="System username" value={credentialForm.propertySystemUsername} onChange={(propertySystemUsername) => setCredentialForm((current) => ({ ...current, propertySystemUsername }))} />
+          <FormInput label="System password" value={credentialForm.propertySystemPassword} onChange={(propertySystemPassword) => setCredentialForm((current) => ({ ...current, propertySystemPassword }))} type="password" />
+          <FormInput label="Property system" value={credentialForm.propertySystem} onChange={(propertySystem) => setCredentialForm((current) => ({ ...current, propertySystem }))} placeholder="DEMO, HOGIA..." />
+        </div>
+        <SubmitButton isLoading={credentialState.status === "loading"} onPress={() => void saveCredentials()} disabled={!credentialForm.companyId?.trim()}>
+          Spara systemuppgifter
+        </SubmitButton>
+        <ResultBlock state={credentialState} />
       </ActionShell>
 
       <ActionShell
@@ -1719,41 +1811,205 @@ function CompanyAccountForm() {
   );
 }
 
-function CityForm() {
-  const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
-  const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
-  const [createForm, setCreateForm] = useState({ id: "", name: "" });
-  const [updateForm, setUpdateForm] = useState({ id: "", name: "" });
+type CityFormState = {
+  code: string;
+  name: string;
+  description: string;
+  bannerUrl: string;
+};
 
-  function buildPayload(form: typeof createForm): AdminCityPayload {
-    return {
-      id: parseOptionalNumber(form.id),
-      name: form.name.trim(),
-    };
+const emptyCityForm: CityFormState = {
+  code: "",
+  name: "",
+  description: "",
+  bannerUrl: "",
+};
+
+function cityCode(city: CityDTO) {
+  return normalizeCityCode(city.code ?? city.city ?? "");
+}
+
+function cityToForm(city: CityDTO | CityDetailedDTO): CityFormState {
+  return {
+    code: cityCode(city),
+    name: city.city ?? "",
+    description: city.description ?? "",
+    bannerUrl: city.bannerUrl ?? "",
+  };
+}
+
+function buildCreateCityPayload(form: CityFormState): CreateCityRequest {
+  const code = normalizeCityCode(form.code);
+  const name = form.name.trim();
+
+  if (!code) {
+    throw new Error("Ange en stadskod.");
+  }
+  if (!name) {
+    throw new Error("Ange ett stadsnamn.");
   }
 
-  async function run(action: "create" | "update") {
-    const source = action === "create" ? createForm : updateForm;
-    const setState = action === "create" ? setCreateState : setUpdateState;
-    setState({
-      status: "loading",
-      message: action === "create" ? "Skapar stad..." : "Uppdaterar stad...",
-    });
+  return {
+    code,
+    name,
+    description: form.description.trim() || null,
+    bannerUrl: form.bannerUrl.trim() || null,
+  };
+}
+
+function buildModifyCityPayload(form: CityFormState): ModifyCityRequest {
+  const name = form.name.trim();
+  if (!name) {
+    throw new Error("Ange ett stadsnamn.");
+  }
+
+  return {
+    name,
+    description: form.description.trim() || null,
+    bannerUrl: form.bannerUrl.trim() || null,
+  };
+}
+
+function CityFields({
+  form,
+  onChange,
+  lockCode = false,
+}: {
+  form: CityFormState;
+  onChange: (patch: Partial<CityFormState>) => void;
+  lockCode?: boolean;
+}) {
+  return (
+    <>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <FormInput
+          label="Kod"
+          value={form.code}
+          onChange={(code) => onChange({ code })}
+          placeholder="LUND"
+          disabled={lockCode}
+        />
+        <FormInput label="Namn" value={form.name} onChange={(name) => onChange({ name })} />
+        <FormInput
+          label="Banner URL"
+          value={form.bannerUrl}
+          onChange={(bannerUrl) => onChange({ bannerUrl })}
+          placeholder="https://..."
+        />
+      </div>
+      <div className="mt-3">
+        <FormTextarea
+          label="Beskrivning"
+          value={form.description}
+          onChange={(description) => onChange({ description })}
+        />
+      </div>
+    </>
+  );
+}
+
+function CitiesForm() {
+  const { items, state: listState, refresh } = useResourceList<CityDTO>(adminService.getCitySummaries);
+  const [selectedCode, setSelectedCode] = useState("");
+  const [deleteCode, setDeleteCode] = useState("");
+  const [cityDetail, setCityDetail] = useState<CityDetailedDTO | null>(null);
+  const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
+  const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
+  const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
+  const [createForm, setCreateForm] = useState<CityFormState>(emptyCityForm);
+  const [updateForm, setUpdateForm] = useState<CityFormState>(emptyCityForm);
+
+  async function selectCity(code: string) {
+    setSelectedCode(code);
+    setCityDetail(null);
+    if (!code) {
+      setUpdateForm(emptyCityForm);
+      return;
+    }
+
+    setUpdateState({ status: "loading", message: "Hämtar stadsdetaljer..." });
     try {
-      if (action === "create") {
-        await adminService.createCity(buildPayload(source));
-        setCreateForm({ id: "", name: "" });
-      } else {
-        await adminService.modifyCity(buildPayload(source));
-      }
-      setState({
-        status: "success",
-        message: action === "create" ? "Staden skapades." : "Staden uppdaterades.",
-      });
+      const detail = await adminService.getCity(code);
+      setCityDetail(detail);
+      setUpdateForm(cityToForm(detail));
+      setUpdateState({ status: "idle" });
     } catch (error) {
-      setState({
+      const fallback = items.find((city) => cityCode(city) === code);
+      if (fallback) {
+        setUpdateForm(cityToForm(fallback));
+      }
+      setUpdateState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Kunde inte hämta staden.",
+      });
+    }
+  }
+
+  async function createCity() {
+    setCreateState({ status: "loading", message: "Skapar stad..." });
+    try {
+      const payload = buildCreateCityPayload(createForm);
+      await adminService.createCity(payload);
+      setCreateForm(emptyCityForm);
+      setSelectedCode(payload.code);
+      setUpdateForm({
+        code: payload.code,
+        name: payload.name ?? "",
+        description: payload.description ?? "",
+        bannerUrl: payload.bannerUrl ?? "",
+      });
+      setCreateState({ status: "success", message: "Staden sparades." });
+      await refresh();
+    } catch (error) {
+      setCreateState({
         status: "error",
         message: error instanceof Error ? error.message : "Staden kunde inte sparas.",
+      });
+    }
+  }
+
+  async function updateCity() {
+    const code = normalizeCityCode(updateForm.code || selectedCode);
+    if (!code) {
+      setUpdateState({ status: "error", message: "Välj en stad att uppdatera." });
+      return;
+    }
+
+    setUpdateState({ status: "loading", message: "Uppdaterar stad..." });
+    try {
+      await adminService.modifyCity(code, buildModifyCityPayload(updateForm));
+      setUpdateState({ status: "success", message: "Staden uppdaterades." });
+      await refresh();
+    } catch (error) {
+      setUpdateState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Staden kunde inte uppdateras.",
+      });
+    }
+  }
+
+  async function deleteCity() {
+    const code = normalizeCityCode(deleteCode);
+    if (!code) {
+      setDeleteState({ status: "error", message: "Välj en stad att ta bort." });
+      return;
+    }
+
+    setDeleteState({ status: "loading", message: "Tar bort stad..." });
+    try {
+      await adminService.deleteCity(code);
+      setDeleteCode("");
+      if (selectedCode === code) {
+        setSelectedCode("");
+        setUpdateForm(emptyCityForm);
+        setCityDetail(null);
+      }
+      setDeleteState({ status: "success", message: "Staden togs bort." });
+      await refresh();
+    } catch (error) {
+      setDeleteState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Staden kunde inte tas bort.",
       });
     }
   }
@@ -1761,35 +2017,95 @@ function CityForm() {
   return (
     <div className="grid gap-4">
       <ActionShell
-        title="Uppdatera stad"
-        description="Legacy-flödet saknar GET-listning, så ange id och uppdatera med PUT."
-        method="PUT"
-        endpoint="/api/admin/city"
+        title="Hämta och uppdatera stad"
+        description="GET hämtar alla städer. Välj en stad och spara namn, beskrivning och bannerbild med PUT."
+        method="GET/PUT"
+        endpoint="/api/cities, /api/cities/{code}"
       >
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <FormInput label="Id" value={updateForm.id} onChange={(id) => setUpdateForm((current) => ({ ...current, id }))} />
-          <FormInput label="Namn" value={updateForm.name} onChange={(name) => setUpdateForm((current) => ({ ...current, name }))} />
-        </div>
-        <SubmitButton isLoading={updateState.status === "loading"} onPress={() => void run("update")} disabled={!updateForm.id.trim()}>
-          Uppdatera
+        <ResultBlock state={listState} />
+        <FormSelect label="Välj befintlig stad" value={selectedCode} onChange={(code) => void selectCity(code)}>
+          <option value="">Välj stad</option>
+          {items.map((city) => {
+            const code = cityCode(city);
+            if (!code) return null;
+
+            return (
+              <option key={code} value={code}>
+                {[city.city, code].filter(Boolean).join(" - ")}
+              </option>
+            );
+          })}
+        </FormSelect>
+        <CityFields
+          form={updateForm}
+          onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))}
+          lockCode
+        />
+        {cityDetail && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[8px] border border-[#edf2ef] bg-[#fbfcfb] px-3 py-2">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-[#476e66]">Företag</span>
+              <span className="mt-1 block text-lg font-semibold text-[#111827]">{cityDetail.companies?.length ?? 0}</span>
+            </div>
+            <div className="rounded-[8px] border border-[#edf2ef] bg-[#fbfcfb] px-3 py-2">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-[#476e66]">Externa företag</span>
+              <span className="mt-1 block text-lg font-semibold text-[#111827]">{cityDetail.externalCompanies?.length ?? 0}</span>
+            </div>
+          </div>
+        )}
+        <SubmitButton isLoading={updateState.status === "loading"} onPress={() => void updateCity()} disabled={!updateForm.code.trim()}>
+          Uppdatera vald
         </SubmitButton>
         <ResultBlock state={updateState} />
       </ActionShell>
 
       <ActionShell
         title="Skapa ny stad"
-        description="POST är separat och skapar en ny stad."
+        description="POST skapar eller uppdaterar staden via den nya cities-endpointen."
         method="POST"
-        endpoint="/api/admin/city"
+        endpoint="/api/cities"
       >
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <FormInput label="Id" value={createForm.id} onChange={(id) => setCreateForm((current) => ({ ...current, id }))} />
-          <FormInput label="Namn" value={createForm.name} onChange={(name) => setCreateForm((current) => ({ ...current, name }))} />
-        </div>
-        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void run("create")}>
-          Skapa
+        <CityFields
+          form={createForm}
+          onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
+        />
+        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void createCity()} disabled={!createForm.code.trim() || !createForm.name.trim()}>
+          Spara stad
         </SubmitButton>
         <ResultBlock state={createState} />
+      </ActionShell>
+
+      <ActionShell
+        title="Ta bort stad"
+        description="DELETE tar bort vald stad via kod."
+        method="DELETE"
+        endpoint="/api/cities/{code}"
+      >
+        <FormSelect label="Välj stad" value={deleteCode} onChange={setDeleteCode}>
+          <option value="">Välj stad</option>
+          {items.map((city) => {
+            const code = cityCode(city);
+            if (!code) return null;
+
+            return (
+              <option key={code} value={code}>
+                {[city.city, code].filter(Boolean).join(" - ")}
+              </option>
+            );
+          })}
+        </FormSelect>
+        <Button
+          type="button"
+          isLoading={deleteState.status === "loading"}
+          isDisabled={!deleteCode}
+          onPress={() => void deleteCity()}
+          variant="destructive"
+          className="mt-4 bg-red-700 text-white hover:bg-red-800"
+        >
+          <Trash2Icon className="h-4 w-4" />
+          Ta bort vald
+        </Button>
+        <ResultBlock state={deleteState} />
       </ActionShell>
     </div>
   );
@@ -2128,6 +2444,10 @@ export function AdminToolPage({ section }: { section: AdminSection }) {
           <SchoolsForm />
         </SectionContent>
 
+        <SectionContent active={section} value="cities">
+          <CitiesForm />
+        </SectionContent>
+
         <SectionContent active={section} value="locations">
           <LocationCategoriesForm />
         </SectionContent>
@@ -2151,13 +2471,6 @@ export function AdminToolPage({ section }: { section: AdminSection }) {
         <SectionContent active={section} value="statistics">
           <div className="grid gap-4 xl:grid-cols-2">
             <UserStatisticsAction />
-          </div>
-        </SectionContent>
-
-        <SectionContent active={section} value="legacy">
-          <div className="grid gap-4">
-            <CityForm />
-            <DeleteIdAction title="Ta bort stad" description="Ta bort eller avaktivera en stad med numeriskt id." endpoint="/api/admin/city/delete" label="Stads-id" onSubmit={adminService.deleteCity} />
           </div>
         </SectionContent>
       </div>

@@ -6,7 +6,7 @@ import {
   ActivityIcon,
   BarChart3Icon,
   Building2Icon,
-  ListChecksIcon,
+  MapIcon,
   MailIcon,
   MapPinIcon,
   MoreHorizontalIcon,
@@ -35,6 +35,11 @@ const operationsItems: AdminNavItem[] = [
     name: "Schools",
     path: "/schools",
     icon: <SchoolIcon className="h-5 w-5" />,
+  },
+  {
+    name: "Cities",
+    path: "/cities",
+    icon: <MapIcon className="h-5 w-5" />,
   },
   {
     name: "Locations",
@@ -68,11 +73,6 @@ const accountItems: AdminNavItem[] = [
     name: "Statistics",
     path: "/statistics",
     icon: <BarChart3Icon className="h-5 w-5" />,
-  },
-  {
-    name: "Legacy",
-    path: "/legacy",
-    icon: <ListChecksIcon className="h-5 w-5" />,
   },
 ];
 

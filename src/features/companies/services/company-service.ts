@@ -83,6 +83,26 @@ export type CompanyListParams = {
   city?: string | null;
 };
 
+export type CreateExternalCompanyRequest = {
+  name: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  bannerUrl?: string | null;
+  cityCodes?: string[];
+  schoolIds?: number[];
+};
+
+export type ModifyExternalCompanyRequest = {
+  id: number;
+  name?: string | null;
+  description?: string | null;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  bannerUrl?: string | null;
+  cities?: string[];
+};
+
 export type CompanyRole = {
   name?: string;
   description?: string;
@@ -1176,5 +1196,23 @@ export const companyService = {
     return arrayFromApiResponse<unknown>(platforms)
       .map(normalizeSocialPlatform)
       .filter((platform): platform is SocialPlatform => platform !== null);
+  },
+
+  createExternalCompany: async (
+    payload: CreateExternalCompanyRequest
+  ): Promise<void> => {
+    await apiClient<void>("/companies/external-company", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateExternalCompany: async (
+    payload: ModifyExternalCompanyRequest
+  ): Promise<void> => {
+    await apiClient<void>("/companies/external-company", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
   },
 };

@@ -8,19 +8,17 @@ import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { useAuth } from "@/context/AuthContext";
 import {
   formatCityName,
-  getCityDescription,
   getCityImageUrl,
 } from "@/features/cities/city-utils";
 import SimpleCompanyCard from "@/features/cities/components/SimpleCompanyCard";
-import {
-  companyService,
-  type CompanyPublicDTO,
-} from "@/features/companies/services/company-service";
+import { cityService } from "@/features/cities/services/city-service";
+import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
 import Que_ListingCard from "@/features/listings/components/Que_ListingCard";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import { listingService } from "@/features/listings/services/listing-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
+import type { CityCompanyDTO, CityDetailedDTO } from "@/types/city";
 import type { ListingCardDTO } from "@/types/listing";
 
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
@@ -43,15 +41,39 @@ const decodeRouteParam = (value: string | undefined) => {
   }
 };
 
+const cityCompanyToPublicCompany = (
+  company: CityCompanyDTO,
+  cityName: string
+): CompanyPublicDTO | null => {
+  if (typeof company.id !== "number" || !company.name?.trim()) {
+    return null;
+  }
+
+  return {
+    id: company.id,
+    name: company.name.trim(),
+    subtitle: company.subtitle ?? null,
+    logoUrl: company.logoUrl ?? null,
+    bannerUrl: company.bannerUrl ?? null,
+    cities: [cityName],
+  };
+};
+
 export default function CityDetailPage() {
   const params = useParams<{ city: string }>();
   const router = useRouter();
   const { locale, localizedHref } = useI18n();
   const { user } = useAuth();
-  const cityName = formatCityName(decodeRouteParam(params?.city)) || localizedText(locale, "Stad", "City");
+  const routeCity = decodeRouteParam(params?.city);
+  const fallbackCityName = formatCityName(routeCity) || localizedText(locale, "Stad", "City");
+  const [cityDetail, setCityDetail] = useState<CityDetailedDTO | null>(null);
+  const cityName = formatCityName(cityDetail?.city ?? fallbackCityName) || fallbackCityName;
+  const cityDescription = cityDetail?.description?.trim() || "";
+  const cityBannerUrl = cityDetail?.bannerUrl?.trim() || getCityImageUrl(cityName);
   const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [companies, setCompanies] = useState<CompanyPublicDTO[]>([]);
+  const [externalCompanies, setExternalCompanies] = useState<CompanyPublicDTO[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [companiesLoading, setCompaniesLoading] = useState(true);
   const [listingsError, setListingsError] = useState<string | null>(null);
@@ -91,15 +113,30 @@ export default function CityDetailPage() {
     setCompaniesLoading(true);
     setCompaniesError(null);
 
-    companyService
-      .listCompanies({ city: cityName })
-      .then((items) => {
-        if (active) setCompanies(items);
+    cityService
+      .findByRouteValue(routeCity || fallbackCityName)
+      .then((detail) => {
+        if (!active) return;
+
+        const nextCityName = formatCityName(detail.city ?? fallbackCityName) || fallbackCityName;
+        setCityDetail(detail);
+        setCompanies(
+          (detail.companies ?? [])
+            .map((company) => cityCompanyToPublicCompany(company, nextCityName))
+            .filter((company): company is CompanyPublicDTO => company !== null)
+        );
+        setExternalCompanies(
+          (detail.externalCompanies ?? [])
+            .map((company) => cityCompanyToPublicCompany(company, nextCityName))
+            .filter((company): company is CompanyPublicDTO => company !== null)
+        );
       })
       .catch((err) => {
         if (!active) return;
         console.error(err);
+        setCityDetail(null);
         setCompanies([]);
+        setExternalCompanies([]);
         setCompaniesError(localizedText(locale, "Kunde inte ladda företag.", "Could not load companies."));
       })
       .finally(() => {
@@ -109,7 +146,7 @@ export default function CityDetailPage() {
     return () => {
       active = false;
     };
-  }, [cityName, locale]);
+  }, [fallbackCityName, locale, routeCity]);
 
   useEffect(() => {
     if (!user) {
@@ -179,7 +216,7 @@ export default function CityDetailPage() {
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
-                backgroundImage: `url("${getCityImageUrl(cityName)}")`,
+                backgroundImage: `url("${cityBannerUrl}")`,
               }}
               aria-hidden
             />
@@ -189,9 +226,11 @@ export default function CityDetailPage() {
             <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
               {cityName}
             </h1>
-            <p className="mt-4 text-base leading-relaxed text-gray-600">
-              {getCityDescription(cityName, locale)}
-            </p>
+            {cityDescription && (
+              <p className="mt-4 text-base leading-relaxed text-gray-600">
+                {cityDescription}
+              </p>
+            )}
           </div>
         </section>
 
@@ -328,13 +367,13 @@ export default function CityDetailPage() {
             <div className="py-12 text-center text-sm text-gray-500">
               {localizedText(locale, "Hämtar företag...", "Loading companies...")}
             </div>
-          ) : companies.length === 0 ? (
+          ) : externalCompanies.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
               {localizedText(locale, "Inga andra företag hittades just nu.", "No other companies were found right now.")}
             </div>
           ) : (
             <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
-              {companies.map((company) => (
+              {externalCompanies.map((company) => (
                 <SimpleCompanyCard key={company.id} company={company} />
               ))}
             </div>

@@ -6,18 +6,22 @@ import { Search, X } from "lucide-react";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { FieldSet } from "@/components/ui/field";
 import { getCityImageUrl, normalizeCityName } from "@/features/cities/city-utils";
-import { listingService } from "@/features/listings/services/listing-service";
+import { cityService } from "@/features/cities/services/city-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedNumber, localizedCount, localizedText } from "@/i18n/text";
-import { toSearchString, uniqueOnly } from "@/lib/utils";
+import { toSearchString } from "@/lib/utils";
+import type { CityDTO } from "@/types/city";
 
 type CityCardData = {
   name: string;
+  code: string;
+  imageUrl: string;
+  description?: string | null;
 };
 
 function CityCard({ city }: { city: CityCardData }) {
   const { locale } = useI18n();
-  const cityHref = `/cities/${encodeURIComponent(city.name)}`;
+  const cityHref = `/cities/${encodeURIComponent(city.code)}`;
 
   return (
     <LocalizedLink
@@ -25,16 +29,54 @@ function CityCard({ city }: { city: CityCardData }) {
       aria-label={localizedText(locale, `Öppna ${city.name}`, `Open ${city.name}`)}
       className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-gray-200 shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[245px]"
       style={{
-        backgroundImage: `url("${getCityImageUrl(city.name, "900x620")}")`,
+        backgroundImage: `url("${city.imageUrl}")`,
         backgroundPosition: "center",
         backgroundSize: "cover",
       }}
     >
       <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/70 transition-opacity group-hover:opacity-95" />
-      <span className="absolute bottom-5 left-5 max-w-[calc(100%-2.5rem)] break-words text-[25px] font-medium leading-[1.05] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:text-[29px]">
-        {city.name}
+      <span className="absolute bottom-5 left-5 right-5 flex max-w-[calc(100%-2.5rem)] flex-col gap-2 text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:right-6">
+        <span className="break-words text-[25px] font-medium leading-[1.05] sm:text-[29px]">
+          {city.name}
+        </span>
+        {city.description && (
+          <span className="line-clamp-2 text-sm font-medium leading-5 text-white/90">
+            {city.description}
+          </span>
+        )}
       </span>
     </LocalizedLink>
+  );
+}
+
+function normalizeCityCard(city: CityDTO): CityCardData | null {
+  const name = normalizeCityName(city.city ?? city.code);
+  if (!name) return null;
+
+  const code = city.code?.trim() || name;
+  const imageUrl = city.bannerUrl?.trim() || getCityImageUrl(name, "900x620");
+  const description = city.description?.trim() || null;
+
+  return {
+    name,
+    code,
+    imageUrl,
+    description,
+  };
+}
+
+function uniqueCityCards(cities: CityCardData[]) {
+  const byKey = new Map<string, CityCardData>();
+
+  cities.forEach((city) => {
+    const key = city.code || city.name;
+    if (!byKey.has(key)) {
+      byKey.set(key, city);
+    }
+  });
+
+  return Array.from(byKey.values()).sort((a, b) =>
+    a.name.localeCompare(b.name, "sv-SE")
   );
 }
 
@@ -42,7 +84,7 @@ export default function CitiesPage() {
   const { locale } = useI18n();
   const [searchInput, setSearchInput] = useState("");
   const [searchValue, setSearchValue] = useState("");
-  const [cities, setCities] = useState<string[]>([]);
+  const [cities, setCities] = useState<CityCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,16 +93,16 @@ export default function CitiesPage() {
     setLoading(true);
     setError(null);
 
-    listingService
-      .getCities()
+    cityService
+      .list()
       .then((cityResult) => {
         if (!active) return;
         setCities(
-          uniqueOnly(
+          uniqueCityCards(
             cityResult
-              .map(normalizeCityName)
-              .filter((city) => city.length > 0)
-          ).sort((a, b) => a.localeCompare(b, "sv-SE"))
+              .map(normalizeCityCard)
+              .filter((city): city is CityCardData => city !== null)
+          )
         );
       })
       .catch((err) => {
@@ -81,8 +123,12 @@ export default function CitiesPage() {
     const query = toSearchString(searchValue);
 
     return cities
-      .filter((city) => !query || toSearchString(city).includes(query))
-      .map((city) => ({ name: city }));
+      .filter((city) =>
+        !query ||
+        toSearchString(city.name).includes(query) ||
+        toSearchString(city.code).includes(query) ||
+        toSearchString(city.description ?? "").includes(query)
+      );
   }, [cities, searchValue]);
 
   const totalCities = filteredCities.length;

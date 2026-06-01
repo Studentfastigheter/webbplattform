@@ -149,13 +149,10 @@ function normalizeCityEnum(value: string | undefined | null): string | undefined
     return undefined;
   }
 
-  const key = trimmed
-    .toUpperCase()
-    .replace(/\s+/g, "_")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+  const enumKey = trimmed.toLocaleUpperCase("sv-SE").replace(/[\s-]+/g, "_");
+  const asciiKey = enumKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  return SWEDISH_CITY_ENUMS[key] ?? SWEDISH_CITY_ENUMS[trimmed.toUpperCase()] ?? trimmed.toUpperCase();
+  return SWEDISH_CITY_ENUMS[enumKey] ?? SWEDISH_CITY_ENUMS[asciiKey] ?? enumKey;
 }
 
 function requireCityEnum(value: string | undefined | null): string {
