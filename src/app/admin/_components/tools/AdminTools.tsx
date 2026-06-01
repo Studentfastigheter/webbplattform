@@ -18,6 +18,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminService } from "@/features/admin/services/admin-service";
@@ -1036,7 +1037,7 @@ function ActivitiesForm() {
           className="mt-4 bg-red-700 text-white hover:bg-red-800"
         >
           <Trash2Icon className="h-4 w-4" />
-          Ta bort vald
+          Ta bort valda
         </Button>
         <ResultBlock state={deleteState} />
       </ActionShell>
@@ -1838,6 +1839,10 @@ function cityToForm(city: CityDTO | CityDetailedDTO): CityFormState {
   };
 }
 
+function cityOptionLabel(city: CityDTO) {
+  return [city.city, cityCode(city)].filter(Boolean).join(" - ");
+}
+
 function buildCreateCityPayload(form: CityFormState): CreateCityRequest {
   const code = normalizeCityCode(form.code);
   const name = form.name.trim();
@@ -1911,13 +1916,33 @@ function CityFields({
 function CitiesForm() {
   const { items, state: listState, refresh } = useResourceList<CityDTO>(adminService.getCitySummaries);
   const [selectedCode, setSelectedCode] = useState("");
-  const [deleteCode, setDeleteCode] = useState("");
+  const [deleteCodes, setDeleteCodes] = useState<string[]>([]);
   const [cityDetail, setCityDetail] = useState<CityDetailedDTO | null>(null);
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
   const [createForm, setCreateForm] = useState<CityFormState>(emptyCityForm);
   const [updateForm, setUpdateForm] = useState<CityFormState>(emptyCityForm);
+  const deletableCities = items
+    .map((city) => ({ city, code: cityCode(city) }))
+    .filter((item): item is { city: CityDTO; code: string } => Boolean(item.code));
+
+  function setCityDeleteSelection(code: string, checked: boolean) {
+    const normalizedCode = normalizeCityCode(code);
+    if (!normalizedCode) return;
+
+    setDeleteCodes((current) => {
+      if (checked) {
+        return Array.from(new Set([...current, normalizedCode]));
+      }
+
+      return current.filter((item) => item !== normalizedCode);
+    });
+  }
+
+  function selectAllDeleteCities() {
+    setDeleteCodes(Array.from(new Set(deletableCities.map((city) => city.code))));
+  }
 
   async function selectCity(code: string) {
     setSelectedCode(code);
@@ -1988,30 +2013,68 @@ function CitiesForm() {
     }
   }
 
-  async function deleteCity() {
-    const code = normalizeCityCode(deleteCode);
-    if (!code) {
-      setDeleteState({ status: "error", message: "Välj en stad att ta bort." });
+  async function deleteCities() {
+    const codes = Array.from(
+      new Set(deleteCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
+    );
+    if (codes.length === 0) {
+      setDeleteState({ status: "error", message: "Välj minst en stad att ta bort." });
       return;
     }
 
-    setDeleteState({ status: "loading", message: "Tar bort stad..." });
-    try {
-      await adminService.deleteCity(code);
-      setDeleteCode("");
-      if (selectedCode === code) {
-        setSelectedCode("");
-        setUpdateForm(emptyCityForm);
-        setCityDetail(null);
+    setDeleteState({
+      status: "loading",
+      message:
+        codes.length === 1
+          ? "Tar bort stad..."
+          : `Tar bort ${codes.length} städer...`,
+    });
+
+    const failures: Array<{ code: string; message: string }> = [];
+
+    for (const code of codes) {
+      try {
+        await adminService.deleteCity(code);
+      } catch (error) {
+        failures.push({
+          code,
+          message: error instanceof Error ? error.message : "Okänt fel.",
+        });
       }
-      setDeleteState({ status: "success", message: "Staden togs bort." });
-      await refresh();
-    } catch (error) {
+    }
+
+    const failedCodes = new Set(failures.map((failure) => failure.code));
+    const deletedCodes = codes.filter((code) => !failedCodes.has(code));
+
+    if (deletedCodes.includes(selectedCode)) {
+      setSelectedCode("");
+      setUpdateForm(emptyCityForm);
+      setCityDetail(null);
+    }
+
+    const refreshedItems = await refresh();
+    const refreshedCodes = new Set(refreshedItems.map(cityCode).filter(Boolean));
+    setDeleteCodes(codes.filter((code) => failedCodes.has(code) && refreshedCodes.has(code)));
+
+    if (failures.length > 0) {
+      const failedSummary = failures
+        .slice(0, 3)
+        .map((failure) => `${failure.code}: ${failure.message}`)
+        .join(" ");
       setDeleteState({
         status: "error",
-        message: error instanceof Error ? error.message : "Staden kunde inte tas bort.",
+        message:
+          deletedCodes.length > 0
+            ? `${deletedCodes.length} av ${codes.length} städer togs bort. Kunde inte ta bort: ${failedSummary}`
+            : `Kunde inte ta bort valda städer: ${failedSummary}`,
       });
+      return;
     }
+
+    setDeleteState({
+      status: "success",
+      message: codes.length === 1 ? "Staden togs bort." : `${codes.length} städer togs bort.`,
+    });
   }
 
   return (
@@ -2031,7 +2094,7 @@ function CitiesForm() {
 
             return (
               <option key={code} value={code}>
-                {[city.city, code].filter(Boolean).join(" - ")}
+                {cityOptionLabel(city)}
               </option>
             );
           })}
@@ -2077,28 +2140,67 @@ function CitiesForm() {
 
       <ActionShell
         title="Ta bort stad"
-        description="DELETE tar bort vald stad via kod."
+        description="DELETE tar bort valda städer via kod, en stad i taget."
         method="DELETE"
         endpoint="/api/cities/{code}"
       >
-        <FormSelect label="Välj stad" value={deleteCode} onChange={setDeleteCode}>
-          <option value="">Välj stad</option>
-          {items.map((city) => {
-            const code = cityCode(city);
-            if (!code) return null;
-
-            return (
-              <option key={code} value={code}>
-                {[city.city, code].filter(Boolean).join(" - ")}
-              </option>
-            );
-          })}
-        </FormSelect>
+        <div className="mt-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+              Välj städer
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isDisabled={deletableCities.length === 0 || deleteState.status === "loading"}
+                onPress={selectAllDeleteCities}
+                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              >
+                Markera alla
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isDisabled={deleteCodes.length === 0 || deleteState.status === "loading"}
+                onPress={() => setDeleteCodes([])}
+                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              >
+                Rensa
+              </Button>
+            </div>
+          </div>
+          <div className="mt-2 grid max-h-72 gap-2 overflow-auto rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-3 sm:grid-cols-2">
+            {deletableCities.length === 0 ? (
+              <p className="text-sm text-[#66716f]">Inga städer att visa.</p>
+            ) : (
+              deletableCities.map(({ city, code }) => (
+                <label
+                  key={code}
+                  className="flex cursor-pointer items-start gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 text-sm text-[#111827] transition hover:bg-[#f3f8f5]"
+                >
+                  <Checkbox
+                    checked={deleteCodes.includes(code)}
+                    disabled={deleteState.status === "loading"}
+                    onCheckedChange={(checked) => setCityDeleteSelection(code, checked === true)}
+                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                  />
+                  <span>{cityOptionLabel(city)}</span>
+                </label>
+              ))
+            )}
+          </div>
+          <p className="mt-2 text-sm text-[#66716f]">
+            {deleteCodes.length} valda
+          </p>
+        </div>
         <Button
           type="button"
           isLoading={deleteState.status === "loading"}
-          isDisabled={!deleteCode}
-          onPress={() => void deleteCity()}
+          isDisabled={deleteCodes.length === 0}
+          onPress={() => void deleteCities()}
           variant="destructive"
           className="mt-4 bg-red-700 text-white hover:bg-red-800"
         >
