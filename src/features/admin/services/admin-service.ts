@@ -26,6 +26,11 @@ import type {
 } from "@/types";
 import { schoolService } from "@/features/schools/services/school-service";
 import { cityService } from "@/features/cities/services/city-service";
+import {
+  companyService,
+  type CreateExternalCompanyRequest,
+  type ModifyExternalCompanyRequest,
+} from "@/features/companies/services/company-service";
 
 function jsonBody(value: unknown) {
   return JSON.stringify(value);
@@ -120,6 +125,18 @@ export const adminService = {
       method: "PUT",
       body: jsonBody(company),
     });
+  },
+
+  createExternalCompany: async (
+    company: CreateExternalCompanyRequest
+  ): Promise<void> => {
+    await companyService.createExternalCompany(company);
+  },
+
+  updateExternalCompany: async (
+    company: ModifyExternalCompanyRequest
+  ): Promise<void> => {
+    await companyService.updateExternalCompany(company);
   },
 
   getCompanies: async (): Promise<AdminCompanyPublicDTO[]> => {
