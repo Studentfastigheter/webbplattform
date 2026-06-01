@@ -9,6 +9,8 @@ export type CityCompanyDTO = {
   id?: number;
   name?: string | null;
   subtitle?: string | null;
+  description?: string | null;
+  websiteUrl?: string | null;
   bannerUrl?: string | null;
   logoUrl?: string | null;
 };

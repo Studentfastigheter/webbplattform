@@ -11,7 +11,7 @@ import {
   getCityImageUrl,
 } from "@/features/cities/city-utils";
 import SimpleCompanyCard from "@/features/cities/components/SimpleCompanyCard";
-import { cityService } from "@/features/cities/services/city-service";
+import { cityService, normalizeCityCode } from "@/features/cities/services/city-service";
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
 import Que_ListingCard from "@/features/listings/components/Que_ListingCard";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
@@ -53,6 +53,8 @@ const cityCompanyToPublicCompany = (
     id: company.id,
     name: company.name.trim(),
     subtitle: company.subtitle ?? null,
+    description: company.description ?? company.subtitle ?? null,
+    websiteUrl: company.websiteUrl ?? null,
     logoUrl: company.logoUrl ?? null,
     bannerUrl: company.bannerUrl ?? null,
     cities: [cityName],
@@ -114,7 +116,7 @@ export default function CityDetailPage() {
     setCompaniesError(null);
 
     cityService
-      .findByRouteValue(routeCity || fallbackCityName)
+      .get(normalizeCityCode(routeCity || fallbackCityName))
       .then((detail) => {
         if (!active) return;
 
@@ -372,7 +374,7 @@ export default function CityDetailPage() {
               {localizedText(locale, "Inga andra företag hittades just nu.", "No other companies were found right now.")}
             </div>
           ) : (
-            <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
+            <div className="grid w-full grid-cols-1 justify-start gap-3 sm:grid-cols-[repeat(auto-fill,minmax(360px,380px))] sm:gap-5 lg:gap-6">
               {externalCompanies.map((company) => (
                 <SimpleCompanyCard key={company.id} company={company} />
               ))}

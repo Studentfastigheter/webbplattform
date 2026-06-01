@@ -35,17 +35,6 @@ export const normalizeCityCode = (value: string | null | undefined) =>
     .toLocaleUpperCase("sv-SE")
     .replace(/[\s-]+/g, "_") ?? "";
 
-export const normalizeCityRouteValue = (value: string | null | undefined) => {
-  const trimmed = value?.normalize("NFC").trim();
-  if (!trimmed) return "";
-
-  try {
-    return decodeURIComponent(trimmed);
-  } catch {
-    return trimmed;
-  }
-};
-
 const normalizeCity = (value: unknown): CityDTO | null => {
   if (typeof value === "string") {
     const city = value.trim();
@@ -87,6 +76,8 @@ const normalizeCityCompany = (value: unknown): CityCompanyDTO | null => {
     id,
     name,
     subtitle: firstString(value.subtitle) ?? null,
+    description: firstString(value.description, value.companyDescription) ?? null,
+    websiteUrl: firstString(value.websiteUrl, value.website, value.companyUrl) ?? null,
     bannerUrl: firstString(value.bannerUrl, value.bannerURL) ?? null,
     logoUrl: firstString(value.logoUrl, value.logoURL) ?? null,
   };
@@ -130,19 +121,6 @@ export const cityService = {
       auth: false,
     });
     return normalizeCityDetail(city);
-  },
-
-  findByRouteValue: async (value: string): Promise<CityDetailedDTO> => {
-    const routeValue = normalizeCityRouteValue(value);
-    const cities = await cityService.list();
-    const normalizedCode = normalizeCityCode(routeValue);
-    const city = cities.find((candidate) => {
-      const candidateCode = normalizeCityCode(candidate.code);
-      const candidateName = normalizeCityCode(candidate.city);
-      return candidateCode === normalizedCode || candidateName === normalizedCode;
-    });
-
-    return cityService.get(city?.code ?? normalizedCode);
   },
 
   create: async (payload: CreateCityRequest): Promise<void> => {
