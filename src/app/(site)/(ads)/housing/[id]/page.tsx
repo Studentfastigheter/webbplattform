@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import BostadAbout from "@/features/ads/components/BostadAbout";
 import BostadLandlord from "@/features/ads/components/BostadLandlord";
 import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
+import QueueListings from "@/features/ads/components/QueueListings";
 
 import { listingService } from "@/features/listings/services/listing-service";
 import { queueService } from "@/features/queues/services/queue-service";
@@ -34,21 +35,10 @@ const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"),
   ),
 });
 
-import ListingCardSmall from "@/features/listings/components/ListingCard_Small";
-
-const NEARBY_LISTINGS_LIMIT = 8;
-const NEARBY_LISTINGS_FETCH_SIZE = NEARBY_LISTINGS_LIMIT + 1;
-
-const splitListingLocation = (location: string | null | undefined, fallback: string) => {
-  const [area, ...cityParts] = (location ?? "").split(",");
-  const trimmedArea = area?.trim();
-  const trimmedCity = cityParts.join(",").trim();
-
-  return {
-    area: trimmedArea || fallback,
-    city: trimmedCity || trimmedArea || fallback,
-  };
-};
+const DETAIL_PAGE_CONTAINER_CLASS =
+  "container mx-auto min-h-screen bg-white px-3 pb-12 pt-4 sm:px-4 md:px-6 lg:px-8 lg:pt-10";
+const NEARBY_LISTINGS_PAGE_SIZE = 6;
+const NEARBY_LISTINGS_FETCH_SIZE = 60;
 
 // ─── Lightbox ────────────────────────────────────────────────────────────────
 function Lightbox({
@@ -315,9 +305,8 @@ function RequirementsProfileSection({
 export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
   const listingId = params?.id;
-  const router = useRouter();
   const { user } = useAuth();
-  const { locale, localizedHref } = useI18n();
+  const { locale } = useI18n();
 
   const [listing, setListing] = useState<ListingDetailDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -340,6 +329,7 @@ export default function ListingDetailPage() {
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [nearbyListings, setNearbyListings] = useState<ListingCardDTO[]>([]);
+  const [nearbyListingsPage, setNearbyListingsPage] = useState(1);
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const [nearbyError, setNearbyError] = useState<string | null>(null);
   const applicationVerificationError = useMemo(
@@ -500,14 +490,16 @@ export default function ListingDetailPage() {
       setNearbyLoading(true);
       setNearbyError(null);
       setNearbyListings([]);
+      setNearbyListingsPage(1);
 
       try {
         const location = listing.city || listing.area || null;
-        const nearbyResponse = await listingService.getAll(
-          0,
-          NEARBY_LISTINGS_FETCH_SIZE,
-          location
-        );
+        const nearbyResponse = await listingService.getAll({
+          page: 0,
+          size: NEARBY_LISTINGS_FETCH_SIZE,
+          city: location,
+          seed: listing.id,
+        });
 
         const byId = new Map<string, ListingCardDTO>();
         const addCandidates = (items: ListingCardDTO[] = []) => {
@@ -520,18 +512,17 @@ export default function ListingDetailPage() {
 
         addCandidates(nearbyResponse.content);
 
-        if (byId.size < NEARBY_LISTINGS_LIMIT) {
-          const fallbackResponse = await listingService.getAll(
-            0,
-            NEARBY_LISTINGS_LIMIT * 3
-          );
+        if (byId.size < NEARBY_LISTINGS_PAGE_SIZE) {
+          const fallbackResponse = await listingService.getAll({
+            page: 0,
+            size: NEARBY_LISTINGS_FETCH_SIZE,
+            seed: listing.id,
+          });
           addCandidates(fallbackResponse.content);
         }
 
         if (active) {
-          setNearbyListings(
-            Array.from(byId.values()).slice(0, NEARBY_LISTINGS_LIMIT)
-          );
+          setNearbyListings(Array.from(byId.values()));
         }
       } catch (err) {
         console.error("Failed to load nearby listings:", err);
@@ -550,6 +541,36 @@ export default function ListingDetailPage() {
 
     return () => { active = false; };
   }, [listing, locale]);
+
+  const nearbyTotalPages = useMemo(
+    () =>
+      Math.max(
+        1,
+        Math.ceil(nearbyListings.length / NEARBY_LISTINGS_PAGE_SIZE),
+      ),
+    [nearbyListings.length],
+  );
+  const nearbyCurrentPage = Math.min(
+    Math.max(1, nearbyListingsPage),
+    nearbyTotalPages,
+  );
+  const nearbyPageListings = useMemo(() => {
+    const start = (nearbyCurrentPage - 1) * NEARBY_LISTINGS_PAGE_SIZE;
+    return nearbyListings.slice(start, start + NEARBY_LISTINGS_PAGE_SIZE);
+  }, [nearbyCurrentPage, nearbyListings]);
+
+  useEffect(() => {
+    if (nearbyListingsPage > nearbyTotalPages) {
+      setNearbyListingsPage(nearbyTotalPages);
+    }
+  }, [nearbyListingsPage, nearbyTotalPages]);
+
+  const handleNearbyPageChange = useCallback((nextPage: number) => {
+    setNearbyListingsPage(nextPage);
+    document
+      .getElementById("nearby-listings")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   // Hämta företagets logga om det är en företagsannons
   useEffect(() => {
@@ -654,7 +675,7 @@ export default function ListingDetailPage() {
 
   if (loading) {
     return (
-      <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
+      <main className={DETAIL_PAGE_CONTAINER_CLASS}>
         <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-gray-500">
           {localizedText(locale, "Laddar annons...", "Loading listing...")}
         </div>
@@ -664,7 +685,7 @@ export default function ListingDetailPage() {
 
   if (error || !listing || !advertiser) {
     return (
-      <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
+      <main className={DETAIL_PAGE_CONTAINER_CLASS}>
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center text-red-800">
           {error ?? localizedText(locale, "Annonsen kunde inte hittas.", "The listing could not be found.")}
         </div>
@@ -683,7 +704,7 @@ export default function ListingDetailPage() {
         />
       )}
 
-      <main className="container mx-auto px-4 pb-12 pt-6 lg:pt-10 max-w-6xl">
+      <main className={DETAIL_PAGE_CONTAINER_CLASS}>
         <div className="flex w-full flex-col gap-10">
 
           {/* Feedback messages */}
@@ -747,91 +768,36 @@ export default function ListingDetailPage() {
           )}
 
           {/* 6. Nearby listings */}
-          <section className="pt-8 border-t border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">
-              {localizedText(locale, "Fler bostäder i närheten", "More homes nearby")}
-            </h2>
-            <div className="relative group mx-auto">
-              <button
-                onClick={() => {
-                  const el = document.getElementById("nearby-slider");
-                  if (el) el.scrollBy({ left: -320, behavior: "smooth" });
-                }}
-                className="absolute left-0 top-[40%] -translate-y-1/2 -ml-5 z-10 flex items-center justify-center h-12 w-12 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-md opacity-0 group-hover:opacity-100 hidden md:flex"
-                aria-label={localizedText(locale, "Scrolla vänster", "Scroll left")}
-              >
-                <ChevronLeft className="h-6 w-6 text-gray-600" />
-              </button>
+          <section id="nearby-listings" className="scroll-mt-24 pt-8 border-t border-gray-100">
+            {!nearbyLoading && !nearbyError && nearbyPageListings.length > 0 ? (
+              <QueueListings
+                listings={nearbyPageListings}
+                title={localizedText(locale, "Fler bostäder i närheten", "More homes nearby")}
+                page={nearbyCurrentPage}
+                totalPages={nearbyTotalPages}
+                onPageChange={handleNearbyPageChange}
+              />
+            ) : (
+              <>
+                <h2 className="mb-6 text-2xl font-bold tracking-tight text-gray-900">
+                  {localizedText(locale, "Fler bostäder i närheten", "More homes nearby")}
+                </h2>
 
-              <button
-                onClick={() => {
-                  const el = document.getElementById("nearby-slider");
-                  if (el) el.scrollBy({ left: 320, behavior: "smooth" });
-                }}
-                className="absolute right-0 top-[40%] -translate-y-1/2 -mr-5 z-10 flex items-center justify-center h-12 w-12 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-md opacity-0 group-hover:opacity-100 hidden md:flex"
-                aria-label={localizedText(locale, "Scrolla höger", "Scroll right")}
-              >
-                <ChevronRight className="h-6 w-6 text-gray-600" />
-              </button>
-
-              <div
-                id="nearby-slider"
-                className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory px-1"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
-                {nearbyLoading && (
-                  <div className="w-full py-8 text-sm text-gray-500">
-                    {localizedText(locale, "Hämtar fler bostäder...", "Loading more homes...")}
-                  </div>
-                )}
-
-                {!nearbyLoading && nearbyError && (
-                  <div className="w-full py-8 text-sm text-red-700">
-                    {nearbyError}
-                  </div>
-                )}
-
-                {!nearbyLoading && !nearbyError && nearbyListings.length === 0 && (
-                  <div className="w-full py-8 text-sm text-gray-500">
-                    {localizedText(locale, "Inga fler bostäder hittades just nu.", "No more homes were found right now.")}
-                  </div>
-                )}
-
-                {!nearbyLoading && !nearbyError && nearbyListings.map((nearby) => {
-                  const { area, city } = splitListingLocation(
-                    nearby.location,
-                    localizedText(locale, "Ej angivet", "Not specified"),
-                  );
-
-                  return (
-                    <div
-                      key={nearby.id}
-                      className="w-[380px] max-w-[calc(100vw-2rem)] shrink-0 snap-start"
-                    >
-                      <ListingCardSmall
-                        id={nearby.id}
-                        title={nearby.title}
-                        area={area}
-                        city={city}
-                        dwellingType={nearby.dwellingType || localizedText(locale, "Bostad", "Home")}
-                        rooms={nearby.rooms || 0}
-                        sizeM2={nearby.sizeM2 || 0}
-                        rent={nearby.rent || 0}
-                        landlordType={nearby.hostType}
-                        hostName={nearby.hostName}
-                        hostLogoUrl={nearby.hostLogoUrl}
-                        isVerified={nearby.verifiedHost}
-                        isFavorite={favoriteIds.has(nearby.id)}
-                        onFavoriteToggle={handleFavoriteToggle}
-                        imageUrl={nearby.imageUrl}
-                        tags={nearby.tags}
-                        onClick={() => router.push(localizedHref(`/housing/${nearby.id}`))}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                <div
+                  className={`rounded-xl border border-dashed p-10 text-center ${
+                    nearbyError
+                      ? "border-red-200 bg-red-50 text-red-700"
+                      : "border-gray-300 bg-gray-50 text-gray-500"
+                  }`}
+                >
+                  {nearbyLoading
+                    ? localizedText(locale, "Hämtar fler bostäder...", "Loading more homes...")
+                    : nearbyError
+                    ? nearbyError
+                    : localizedText(locale, "Inga fler bostäder hittades just nu.", "No more homes were found right now.")}
+                </div>
+              </>
+            )}
           </section>
 
         </div>
