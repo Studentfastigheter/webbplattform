@@ -17,6 +17,7 @@ import {
   getClientDeviceType,
 } from "@/features/analytics/services/demographics-service";
 import { mediaService } from "@/features/media/services/media-service";
+import { formatCityName } from "@/features/cities/city-utils";
 import { useAuth } from "@/context/AuthContext";
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
 import { type ListingCardDTO } from "@/types/listing";
@@ -54,6 +55,18 @@ const getExternalLink = (value: string | null | undefined) => {
   if (!trimmed) return null;
   if (/^(https?:\/\/|mailto:|\/)/i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
+};
+
+const uniqueCityLabels = (values: Array<string | null | undefined>) => {
+  const labels = new Map<string, string>();
+
+  values.forEach((value) => {
+    const label = formatCityName(value?.replace(/_/g, " ") ?? "");
+    if (!label) return;
+    labels.set(label.toLocaleLowerCase("sv-SE"), label);
+  });
+
+  return Array.from(labels.values());
 };
 
 export default function QueueDetailPage() {
@@ -343,6 +356,8 @@ export default function QueueDetailPage() {
   const companyWebsite =
     firstNonEmptyString(companyRecord?.websiteUrl, companyRecord?.website) ??
     undefined;
+  const companyCities = uniqueCityLabels(company?.cities ?? []);
+  const companyCitiesLabel = companyCities.join(", ");
   const companyTermsUrl = getExternalLink(
     firstNonEmptyString(companyRecord?.termsUrl)
   );
@@ -362,7 +377,7 @@ export default function QueueDetailPage() {
         id: String(resolvedCompanyId),
         companyId: resolvedCompanyId,
         name: companyName,
-        city: company.cities?.[0] ?? queues[0]?.city ?? "",
+        city: companyCitiesLabel,
         logoUrl: companyLogoUrl,
         bannerUrl: companyBannerUrl,
         description: company.description ?? undefined,

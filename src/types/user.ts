@@ -13,6 +13,7 @@ export type AccountType =
   | "private_landlord"
   | "landlord"
   | "quick_register"
+  | "superadmin"
   | "admin";
 
 export type RegistrationAccountType = "student" | "company" | "private_landlord";
@@ -156,6 +157,7 @@ export interface RegisterRequest {
   surname?: string;
   fullName?: string;
   companyName?: string;
+  roleName?: string;
   phone?: string;
   city?: string;
   ssn?: string; // Personnummer eller Organisationsnummer

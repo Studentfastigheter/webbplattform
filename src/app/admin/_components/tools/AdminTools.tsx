@@ -23,10 +23,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminService } from "@/features/admin/services/admin-service";
 import { normalizeCityCode } from "@/features/cities/services/city-service";
+import type { ExternalCompanyDTO } from "@/features/companies/services/company-service";
 import type {
   AdminAddSchoolRequest,
   AdminCompanyCredentialDTO,
   AdminCompanyDetailedDTO,
+  AdminCompanyRole,
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
   AdminCreatePOIRequest,
@@ -1056,6 +1058,7 @@ type CompanyFormState = {
   bannerUrl: string;
   description: string;
   websiteUrl: string;
+  cityCodes: string[];
   socialLinks: string;
   pictureUrlList: string;
   videoUrlList: string;
@@ -1076,6 +1079,7 @@ const emptyCompanyForm: CompanyFormState = {
   bannerUrl: "",
   description: "",
   websiteUrl: "",
+  cityCodes: [],
   socialLinks: "",
   pictureUrlList: "",
   videoUrlList: "",
@@ -1117,6 +1121,9 @@ function companyDetailsToForm(details: AdminCompanyDetailedDTO): CompanyFormStat
     bannerUrl: details.bannerUrl ?? "",
     description: details.description ?? "",
     websiteUrl: details.websiteUrl ?? "",
+    cityCodes: (details.cities ?? [])
+      .map((code) => normalizeCityCode(code))
+      .filter(Boolean),
     socialLinks: formatSocialLinksInput(details.socialLinks),
     pictureUrlList: (details.pictureUrlList ?? []).join("\n"),
     videoUrlList: (details.videoUrlList ?? []).join("\n"),
@@ -1189,6 +1196,9 @@ function buildCompanyPayload(form: CompanyFormState, requireId: boolean): AdminC
       pictureUrlList: parseListInput(form.pictureUrlList),
       videoUrlList: parseListInput(form.videoUrlList),
       websiteUrl: form.websiteUrl.trim(),
+      cities: Array.from(
+        new Set(form.cityCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
+      ),
     },
     ...(credentialsTouched
       ? {
@@ -1208,11 +1218,26 @@ function CompanyFields({
   form,
   onChange,
   includeId,
+  cityOptions,
+  citiesLoading,
 }: {
   form: CompanyFormState;
   onChange: (patch: Partial<CompanyFormState>) => void;
   includeId: boolean;
+  cityOptions: Array<{ city: CityDTO; code: string }>;
+  citiesLoading: boolean;
 }) {
+  function setCompanyCitySelection(code: string, checked: boolean) {
+    const normalizedCode = normalizeCityCode(code);
+    if (!normalizedCode) return;
+
+    onChange({
+      cityCodes: checked
+        ? Array.from(new Set([...form.cityCodes, normalizedCode]))
+        : form.cityCodes.filter((item) => item !== normalizedCode),
+    });
+  }
+
   return (
     <>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -1231,6 +1256,64 @@ function CompanyFields({
         <FormTextarea label="Bild-URL:er" value={form.pictureUrlList} onChange={(pictureUrlList) => onChange({ pictureUrlList })} placeholder="En per rad" />
         <FormTextarea label="Video-URL:er" value={form.videoUrlList} onChange={(videoUrlList) => onChange({ videoUrlList })} placeholder="En per rad" />
       </div>
+      <div className="mt-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+            Städer
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              isDisabled={citiesLoading || cityOptions.length === 0}
+              onPress={() =>
+                onChange({ cityCodes: cityOptions.map((option) => option.code) })
+              }
+              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+            >
+              Markera alla
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              isDisabled={form.cityCodes.length === 0}
+              onPress={() => onChange({ cityCodes: [] })}
+              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+            >
+              Rensa
+            </Button>
+          </div>
+        </div>
+        <div className="mt-2 grid max-h-80 gap-2 overflow-auto rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-3 sm:grid-cols-2">
+          {citiesLoading ? (
+            <p className="text-sm text-[#66716f]">Hämtar städer...</p>
+          ) : cityOptions.length === 0 ? (
+            <p className="text-sm text-[#66716f]">Inga städer att visa.</p>
+          ) : (
+            cityOptions.map(({ city, code }) => (
+              <label
+                key={code}
+                className="flex cursor-pointer items-start gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 text-sm text-[#111827] transition hover:bg-[#f3f8f5]"
+              >
+                <Checkbox
+                  checked={form.cityCodes.includes(code)}
+                  disabled={citiesLoading}
+                  onCheckedChange={(checked) =>
+                    setCompanyCitySelection(code, checked === true)
+                  }
+                  className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                />
+                <span>{cityOptionLabel(city)}</span>
+              </label>
+            ))
+          )}
+        </div>
+        <p className="mt-2 text-sm text-[#66716f]">
+          {form.cityCodes.length} valda
+        </p>
+      </div>
       <div className="mt-4 rounded-[8px] border border-[#edf2ef] bg-[#fbfcfb] p-3">
         <h4 className="text-sm font-semibold text-[#111827]">Systemkoppling</h4>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -1247,6 +1330,9 @@ function CompanyFields({
 
 function CompaniesForm() {
   const { items, state: listState, refresh } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
+  const { items: cities, state: citiesState } = useResourceList<CityDTO>(
+    adminService.getCitySummaries
+  );
   const [selectedId, setSelectedId] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [refreshId, setRefreshId] = useState("");
@@ -1259,6 +1345,10 @@ function CompaniesForm() {
   const [updateForm, setUpdateForm] = useState<CompanyFormState>(emptyCompanyForm);
   const [createForm, setCreateForm] = useState<CompanyFormState>(emptyCompanyForm);
   const [credentialForm, setCredentialForm] = useState<CompanyCredentialFormState>(emptyCompanyCredentialForm);
+  const citiesLoading = citiesState.status === "loading";
+  const cityOptions = cities
+    .map((city) => ({ city, code: cityCode(city) }))
+    .filter((item): item is { city: CityDTO; code: string } => Boolean(item.code));
 
   async function selectCompany(id: string) {
     setSelectedId(id);
@@ -1409,7 +1499,13 @@ function CompaniesForm() {
             </option>
           ))}
         </FormSelect>
-        <CompanyFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeId />
+        <CompanyFields
+          form={updateForm}
+          onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))}
+          includeId
+          cityOptions={cityOptions}
+          citiesLoading={citiesLoading}
+        />
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Button
             type="button"
@@ -1441,7 +1537,13 @@ function CompaniesForm() {
         method="POST"
         endpoint="/api/admin/company"
       >
-        <CompanyFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeId={false} />
+        <CompanyFields
+          form={createForm}
+          onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
+          includeId={false}
+          cityOptions={cityOptions}
+          citiesLoading={citiesLoading}
+        />
         <SubmitButton isLoading={createState.status === "loading"} onPress={() => void save("create")}>
           Skapa
         </SubmitButton>
@@ -1531,7 +1633,6 @@ type ExternalCompanyFormState = {
   description: string;
   logoUrl: string;
   websiteUrl: string;
-  bannerUrl: string;
   cityCodes: string[];
   schoolIds: number[];
 };
@@ -1541,7 +1642,6 @@ const emptyExternalCompanyForm: ExternalCompanyFormState = {
   description: "",
   logoUrl: "",
   websiteUrl: "",
-  bannerUrl: "",
   cityCodes: [],
   schoolIds: [],
 };
@@ -1560,7 +1660,6 @@ const emptyExternalCompanyUpdateForm: ExternalCompanyUpdateFormState = {
   description: "",
   logoUrl: "",
   websiteUrl: "",
-  bannerUrl: "",
   cityCodes: [],
   replaceCities: false,
 };
@@ -1577,7 +1676,6 @@ function buildExternalCompanyPayload(form: ExternalCompanyFormState) {
     description: form.description.trim() || null,
     logoUrl: form.logoUrl.trim() || null,
     websiteUrl: form.websiteUrl.trim() || null,
-    bannerUrl: form.bannerUrl.trim() || null,
     cityCodes: Array.from(
       new Set(form.cityCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
     ),
@@ -1594,7 +1692,6 @@ function buildExternalCompanyUpdatePayload(form: ExternalCompanyUpdateFormState)
     description?: string;
     logoUrl?: string;
     websiteUrl?: string;
-    bannerUrl?: string;
     cities?: string[];
   } = {
     id: parseRequiredNumber(form.id, "External company id"),
@@ -1611,9 +1708,6 @@ function buildExternalCompanyUpdatePayload(form: ExternalCompanyUpdateFormState)
   }
   if (form.websiteUrl.trim()) {
     payload.websiteUrl = form.websiteUrl.trim();
-  }
-  if (form.bannerUrl.trim()) {
-    payload.bannerUrl = form.bannerUrl.trim();
   }
   if (form.replaceCities) {
     payload.cities = Array.from(
@@ -1632,6 +1726,10 @@ function schoolOptionLabel(school: School) {
   return [school.name, school.city, schoolId(school)].filter(Boolean).join(" - ");
 }
 
+function externalCompanyOptionLabel(company: ExternalCompanyDTO) {
+  return [company.name, company.id].filter(Boolean).join(" - ");
+}
+
 function ExternalCompaniesForm() {
   const { items: cities, state: citiesState } = useResourceList<CityDTO>(
     adminService.getCitySummaries
@@ -1639,14 +1737,21 @@ function ExternalCompaniesForm() {
   const { items: schools, state: schoolsState } = useResourceList<School>(
     adminService.getSchools
   );
+  const {
+    items: externalCompanies,
+    state: externalCompaniesState,
+    refresh: refreshExternalCompanies,
+  } = useResourceList<ExternalCompanyDTO>(adminService.getExternalCompanies);
   const [form, setForm] = useState<ExternalCompanyFormState>(
     emptyExternalCompanyForm
   );
   const [updateForm, setUpdateForm] = useState<ExternalCompanyUpdateFormState>(
     emptyExternalCompanyUpdateForm
   );
+  const [deleteId, setDeleteId] = useState("");
   const [state, setState] = useState<AdminActionState>({ status: "idle" });
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
+  const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
 
   const cityOptions = cities
     .map((city) => ({ city, code: cityCode(city) }))
@@ -1661,6 +1766,26 @@ function ExternalCompaniesForm() {
 
   function patchUpdateForm(patch: Partial<ExternalCompanyUpdateFormState>) {
     setUpdateForm((current) => ({ ...current, ...patch }));
+  }
+
+  function selectExternalCompany(id: string) {
+    const selected = externalCompanies.find((company) => String(company.id) === id);
+    if (!selected) {
+      setUpdateForm(emptyExternalCompanyUpdateForm);
+      return;
+    }
+
+    setUpdateForm({
+      id,
+      name: selected.name,
+      description: selected.description ?? "",
+      logoUrl: selected.logoUrl ?? "",
+      websiteUrl: selected.websiteUrl ?? "",
+      cityCodes: (selected.cityCodes ?? [])
+        .map((code) => normalizeCityCode(code))
+        .filter(Boolean),
+      replaceCities: true,
+    });
   }
 
   function setCitySelection(code: string, checked: boolean) {
@@ -1705,6 +1830,7 @@ function ExternalCompaniesForm() {
       await adminService.createExternalCompany(buildExternalCompanyPayload(form));
       setForm(emptyExternalCompanyForm);
       setState({ status: "success", message: "Det externa företaget skapades." });
+      await refreshExternalCompanies();
     } catch (error) {
       setState({
         status: "error",
@@ -1725,6 +1851,7 @@ function ExternalCompaniesForm() {
       );
       setUpdateForm(emptyExternalCompanyUpdateForm);
       setUpdateState({ status: "success", message: "Det externa företaget uppdaterades." });
+      await refreshExternalCompanies();
     } catch (error) {
       setUpdateState({
         status: "error",
@@ -1732,6 +1859,33 @@ function ExternalCompaniesForm() {
           error instanceof Error
             ? error.message
             : "Det externa företaget kunde inte uppdateras.",
+      });
+    }
+  }
+
+  async function deleteExternalCompany() {
+    const id = parseOptionalNumber(deleteId);
+    if (!id) {
+      setDeleteState({ status: "error", message: "Ange id för externt företag." });
+      return;
+    }
+
+    setDeleteState({ status: "loading", message: "Tar bort externt företag..." });
+    try {
+      await adminService.deleteExternalCompany(id);
+      setDeleteId("");
+      if (updateForm.id.trim() === String(id)) {
+        setUpdateForm(emptyExternalCompanyUpdateForm);
+      }
+      setDeleteState({ status: "success", message: "Det externa företaget togs bort." });
+      await refreshExternalCompanies();
+    } catch (error) {
+      setDeleteState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Det externa företaget kunde inte tas bort.",
       });
     }
   }
@@ -1762,12 +1916,6 @@ function ExternalCompaniesForm() {
           label="Logo URL"
           value={form.logoUrl}
           onChange={(logoUrl) => patchForm({ logoUrl })}
-          placeholder="https://..."
-        />
-        <FormInput
-          label="Banner URL"
-          value={form.bannerUrl}
-          onChange={(bannerUrl) => patchForm({ bannerUrl })}
           placeholder="https://..."
         />
       </div>
@@ -1907,13 +2055,28 @@ function ExternalCompaniesForm() {
       method="PUT"
       endpoint="/api/companies/external-company"
     >
+      <ResultBlock state={externalCompaniesState} />
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <FormInput
-          label="External company id"
+        <FormSelect
+          label="Välj externt företag"
           value={updateForm.id}
-          onChange={(id) => patchUpdateForm({ id })}
-          placeholder="1"
-        />
+          onChange={selectExternalCompany}
+          disabled={
+            externalCompaniesState.status === "loading" ||
+            externalCompanies.length === 0
+          }
+        >
+          <option value="">
+            {externalCompaniesState.status === "loading"
+              ? "Hämtar externa företag..."
+              : "Välj externt företag"}
+          </option>
+          {externalCompanies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {externalCompanyOptionLabel(company)}
+            </option>
+          ))}
+        </FormSelect>
         <FormInput
           label="Företagsnamn"
           value={updateForm.name}
@@ -1929,12 +2092,6 @@ function ExternalCompaniesForm() {
           label="Logo URL"
           value={updateForm.logoUrl}
           onChange={(logoUrl) => patchUpdateForm({ logoUrl })}
-          placeholder="https://..."
-        />
-        <FormInput
-          label="Banner URL"
-          value={updateForm.bannerUrl}
-          onChange={(bannerUrl) => patchUpdateForm({ bannerUrl })}
           placeholder="https://..."
         />
       </div>
@@ -2034,6 +2191,49 @@ function ExternalCompaniesForm() {
       </SubmitButton>
       <ResultBlock state={updateState} />
     </ActionShell>
+
+    <ActionShell
+      title="Ta bort externt företag"
+      description="DELETE tar bort ett externt företag via id och rensar dess kopplingar till städer och skolor."
+      method="DELETE"
+      endpoint="/api/companies/external-company?id={id}"
+    >
+      <ResultBlock state={externalCompaniesState} />
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <FormSelect
+          label="Välj externt företag"
+          value={deleteId}
+          onChange={setDeleteId}
+          disabled={
+            externalCompaniesState.status === "loading" ||
+            externalCompanies.length === 0
+          }
+        >
+          <option value="">
+            {externalCompaniesState.status === "loading"
+              ? "Hämtar externa företag..."
+              : "Välj externt företag"}
+          </option>
+          {externalCompanies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {externalCompanyOptionLabel(company)}
+            </option>
+          ))}
+        </FormSelect>
+      </div>
+      <Button
+        type="button"
+        isLoading={deleteState.status === "loading"}
+        isDisabled={!deleteId.trim()}
+        onPress={() => void deleteExternalCompany()}
+        variant="destructive"
+        className="mt-4 bg-red-700 text-white hover:bg-red-800"
+      >
+        <Trash2Icon className="h-4 w-4" />
+        Ta bort externt företag
+      </Button>
+      <ResultBlock state={deleteState} />
+    </ActionShell>
   </div>
   );
 }
@@ -2084,22 +2284,59 @@ function companyAccountName(account: AdminCompanyUserDTO) {
   return name || account.email?.trim() || `Konto ${account.id ?? ""}`.trim() || "Namnlöst konto";
 }
 
+function companyRoleDisplayName(roleName: string) {
+  const normalizedRoleName = roleName.trim().toUpperCase();
+  if (normalizedRoleName === "ADMIN") return "Admin";
+  if (normalizedRoleName === "MANAGER") return "Manager";
+  if (normalizedRoleName === "AGENT") return "Agent";
+  return roleName;
+}
+
 function companyAccountRoleLabel(account: AdminCompanyUserDTO) {
   const roleName = account.role?.name?.trim();
   const accessLevel = account.role?.accessLevel;
   return [
-    roleName,
+    roleName ? companyRoleDisplayName(roleName) : undefined,
     typeof accessLevel === "number" ? `Access ${accessLevel}` : undefined,
   ]
     .filter(Boolean)
     .join(" · ");
 }
 
+function companyRoleOptionLabel(role: AdminCompanyRole) {
+  const roleName = role.name?.trim() || "Namnlös roll";
+  return typeof role.accessLevel === "number"
+    ? `${companyRoleDisplayName(roleName)} · Access ${role.accessLevel}`
+    : companyRoleDisplayName(roleName);
+}
+
+function CompanyAccountVerificationBadge({ verified }: { verified?: boolean }) {
+  const isVerified = verified === true;
+  const Icon = isVerified ? CheckCircle2Icon : XCircleIcon;
+
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+        isVerified
+          ? "bg-emerald-50 text-emerald-700"
+          : "bg-amber-50 text-amber-700",
+      ].join(" ")}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {isVerified ? "Verifierad" : "Ej verifierad"}
+    </span>
+  );
+}
+
 function CompanyAccountForm() {
   const { items: companies, state: companiesState } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
+  const { items: roles, state: rolesState } = useResourceList<AdminCompanyRole>(adminService.getCompanyRoles);
   const [saveState, setSaveState] = useState<AdminActionState>({ status: "idle" });
   const [accountsState, setAccountsState] = useState<AdminActionState>({ status: "idle" });
+  const [verifyState, setVerifyState] = useState<AdminActionState>({ status: "idle" });
   const [accounts, setAccounts] = useState<AdminCompanyUserDTO[]>([]);
+  const [verifyingAccountId, setVerifyingAccountId] = useState<number | null>(null);
   const [form, setForm] = useState<CompanyAccountFormState>(() => createEmptyCompanyAccountForm());
 
   function patchForm(patch: Partial<CompanyAccountFormState>) {
@@ -2122,6 +2359,8 @@ function CompanyAccountForm() {
     (company): company is AdminCompanyPublicDTO & { id: number } =>
       typeof company.id === "number"
   );
+  const roleOptions = roles.filter((role) => Boolean(role.name?.trim()));
+  const rolesLoading = rolesState.status === "loading";
 
   useEffect(() => {
     const companyIdValue = form.companyId.trim();
@@ -2170,17 +2409,30 @@ function CompanyAccountForm() {
 
   function selectCompany(companyId: string) {
     setSaveState({ status: "idle" });
+    setVerifyState({ status: "idle" });
     setForm(createEmptyCompanyAccountForm(companyId));
   }
 
   function selectAccount(account: AdminCompanyUserDTO) {
     setSaveState({ status: "idle" });
+    setVerifyState({ status: "idle" });
     setForm(companyAccountToForm(account, form.companyId));
   }
 
   function startNewAccount() {
     setSaveState({ status: "idle" });
+    setVerifyState({ status: "idle" });
     setForm(createEmptyCompanyAccountForm(form.companyId));
+  }
+
+  function selectRole(roleName: string) {
+    const normalizedRoleName = roleName.trim();
+    const selectedRole = roleOptions.find((role) => role.name?.trim() === normalizedRoleName);
+    patchForm({
+      roleName: normalizedRoleName,
+      roleDescription: selectedRole?.description ?? "",
+      roleAccessLevel: toInputValue(selectedRole?.accessLevel),
+    });
   }
 
   async function refreshAccounts() {
@@ -2243,14 +2495,54 @@ function CompanyAccountForm() {
     }
   }
 
+  async function verifyAccount(account: AdminCompanyUserDTO) {
+    const companyId = parseRequiredNumber(form.companyId, "CompanyId");
+    const accountId = account.id;
+
+    if (typeof accountId !== "number") {
+      setVerifyState({
+        status: "error",
+        message: "Kontot saknar id och kan inte verifieras.",
+      });
+      return;
+    }
+
+    setVerifyingAccountId(accountId);
+    setVerifyState({ status: "loading", message: "Verifierar företagskonto..." });
+
+    try {
+      await adminService.verifyCompanyAccount(companyId, accountId);
+      setAccounts((current) =>
+        current.map((entry) =>
+          entry.id === accountId ? { ...entry, verified: true } : entry
+        )
+      );
+      setVerifyState({
+        status: "success",
+        message: `${companyAccountName(account)} är verifierad.`,
+      });
+    } catch (error) {
+      setVerifyState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Kunde inte verifiera företagskontot.",
+      });
+    } finally {
+      setVerifyingAccountId(null);
+    }
+  }
+
   return (
     <ActionShell
       title="Företagskonto"
-      description="Välj företag för att hämta kopplade konton med GET innan du skapar eller uppdaterar ett konto."
+      description="Välj företag för att hämta kopplade konton, skapa eller uppdatera konto och verifiera anställda."
       method="GET/PUT"
-      endpoint="/api/companies/{id}/users, /api/admin/company/account"
+      endpoint="/api/companies/roles, /api/admin/company/{id}/users, /api/admin/company/account"
     >
       <ResultBlock state={companiesState} />
+      <ResultBlock state={rolesState} />
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <FormInput label="Konto-id" value={form.id} onChange={(id) => patchForm({ id })} placeholder="Tomt vid nytt konto" />
         <FormSelect
@@ -2268,9 +2560,28 @@ function CompanyAccountForm() {
             </option>
           ))}
         </FormSelect>
-        <FormInput label="Rollnamn" value={form.roleName} onChange={(roleName) => patchForm({ roleName })} placeholder="MANAGER" />
-        <FormInput label="Rollbeskrivning" value={form.roleDescription} onChange={(roleDescription) => patchForm({ roleDescription })} />
-        <FormInput label="Access level" value={form.roleAccessLevel} onChange={(roleAccessLevel) => patchForm({ roleAccessLevel })} />
+        <FormSelect
+          label="Roll"
+          value={form.roleName}
+          onChange={selectRole}
+          disabled={rolesLoading || roleOptions.length === 0}
+        >
+          <option value="">
+            {rolesLoading ? "Hämtar roller..." : "Välj roll"}
+          </option>
+          {roleOptions.map((role) => {
+            const roleName = role.name?.trim();
+            if (!roleName) return null;
+
+            return (
+              <option key={roleName} value={roleName}>
+                {companyRoleOptionLabel(role)}
+              </option>
+            );
+          })}
+        </FormSelect>
+        <FormInput label="Rollbeskrivning" value={form.roleDescription} onChange={(roleDescription) => patchForm({ roleDescription })} disabled />
+        <FormInput label="Access level" value={form.roleAccessLevel} onChange={(roleAccessLevel) => patchForm({ roleAccessLevel })} disabled />
         <FormInput label="Förnamn" value={form.firstName} onChange={(firstName) => patchForm({ firstName })} />
         <FormInput label="Efternamn" value={form.surname} onChange={(surname) => patchForm({ surname })} />
         <FormInput label="E-post" value={form.email} onChange={(email) => patchForm({ email })} type="email" />
@@ -2283,7 +2594,7 @@ function CompanyAccountForm() {
           <div>
             <h4 className="text-sm font-semibold text-[#111827]">Kopplade konton</h4>
             <p className="mt-1 text-xs text-[#66716f]">
-              Listan uppdateras från GET /api/companies/{form.companyId || "{id}"}/users.
+              Listan uppdateras från GET /api/admin/company/{form.companyId || "{id}"}/users.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -2314,6 +2625,7 @@ function CompanyAccountForm() {
         </div>
         <div className="border-t border-[#dfe7e3] p-4">
           <ResultBlock state={accountsState} />
+          <ResultBlock state={verifyState} />
           {!form.companyId.trim() ? (
             <p className="text-sm text-[#66716f]">
               Välj ett företag för att hämta kopplade konton.
@@ -2329,31 +2641,58 @@ function CompanyAccountForm() {
               {accounts.map((account, index) => {
                 const accountId = toInputValue(account.id);
                 const isSelected = Boolean(accountId && accountId === form.id);
+                const numericAccountId =
+                  typeof account.id === "number" ? account.id : undefined;
+                const isVerifying =
+                  numericAccountId != null && verifyingAccountId === numericAccountId;
 
                 return (
-                  <button
+                  <article
                     key={account.id ?? account.email ?? index}
-                    type="button"
-                    onClick={() => selectAccount(account)}
                     className={[
-                      "grid gap-1 rounded-[8px] border px-3 py-2 text-left text-sm transition",
+                      "grid gap-3 rounded-[8px] border px-3 py-2 text-sm transition sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center",
                       isSelected
                         ? "border-[#004225] bg-white text-[#111827]"
                         : "border-[#dfe7e3] bg-white/70 text-[#36534d] hover:bg-white",
                     ].join(" ")}
                   >
-                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
-                      <span>{companyAccountName(account)}</span>
-                      {accountId && (
-                        <span className="font-mono text-xs text-[#66716f]">#{accountId}</span>
-                      )}
-                    </span>
-                    <span className="text-xs text-[#66716f]">
-                      {[account.email?.trim(), account.phone?.trim(), companyAccountRoleLabel(account)]
-                        .filter(Boolean)
-                        .join(" · ") || "Saknar kontaktuppgifter"}
-                    </span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => selectAccount(account)}
+                      className="min-w-0 text-left"
+                    >
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
+                        <span>{companyAccountName(account)}</span>
+                        {accountId && (
+                          <span className="font-mono text-xs text-[#66716f]">#{accountId}</span>
+                        )}
+                        <CompanyAccountVerificationBadge verified={account.verified} />
+                      </span>
+                      <span className="mt-1 block text-xs text-[#66716f]">
+                        {[account.email?.trim(), account.phone?.trim(), companyAccountRoleLabel(account)]
+                          .filter(Boolean)
+                          .join(" · ") || "Saknar kontaktuppgifter"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void verifyAccount(account)}
+                      disabled={
+                        account.verified === true ||
+                        numericAccountId == null ||
+                        verifyingAccountId !== null
+                      }
+                      className="inline-flex h-8 items-center justify-center gap-2 rounded-[8px] border border-[#004225] bg-white px-3 text-xs font-semibold text-[#004225] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:border-[#dfe7e3] disabled:text-[#9aa7a4] disabled:opacity-70"
+                    >
+                      <CheckCircle2Icon
+                        className={[
+                          "h-4 w-4",
+                          isVerifying ? "animate-spin" : "",
+                        ].join(" ")}
+                      />
+                      {account.verified === true ? "Verifierad" : "Verifiera"}
+                    </button>
+                  </article>
                 );
               })}
             </div>

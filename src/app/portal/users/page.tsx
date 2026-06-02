@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Loader2, Pencil, Plus, ShieldCheck, UserCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -13,56 +24,112 @@ import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
   companyService,
+  type CompanyRole,
   type CompanyUserDTO,
 } from "@/features/companies/services/company-service";
 import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
 
-type UserRole = "admin" | "editor" | "reviewer";
+type UserRole = "admin" | "manager" | "agent";
+type RoleSource = CompanyUserDTO["role"] | string | null | undefined;
 
 type CompanyPortalUser = {
   id: string;
+  backendId: number;
   companyId: number;
+  firstName: string;
+  surname: string;
   name: string;
   email: string;
   phone: string | null;
   role: UserRole;
+  roleDetails: CompanyUserDTO["role"] | null;
+  verified: boolean;
+};
+
+type UserAccountFormState = {
+  firstName: string;
+  surname: string;
+  email: string;
+  phone: string;
+  password: string;
+  roleName: string;
 };
 
 const roleLabels: Record<UserRole, string> = {
-  admin: "Administratör",
-  editor: "Redaktör",
-  reviewer: "Granskare",
+  admin: "Admin",
+  manager: "Manager",
+  agent: "Agent",
 };
 
-function mapBackendRole(role?: CompanyUserDTO["role"] | null): UserRole {
-  const roleName = role?.name?.trim().toLowerCase() ?? "";
-  const accessLevel = role?.accessLevel ?? 0;
+function createEmptyUserAccountForm(roleName = ""): UserAccountFormState {
+  return {
+    firstName: "",
+    surname: "",
+    email: "",
+    phone: "",
+    password: "",
+    roleName,
+  };
+}
 
-  if (
-    roleName.includes("admin") ||
-    roleName.includes("manager") ||
-    roleName.includes("owner") ||
-    accessLevel >= 80
-  ) {
+function getRoleName(role?: RoleSource) {
+  if (typeof role === "string") {
+    return role.trim().toUpperCase();
+  }
+
+  return role?.name?.trim().toUpperCase() ?? "";
+}
+
+function canRoleVerifyUsers(role?: RoleSource) {
+  const roleName = getRoleName(role);
+  return roleName === "ADMIN" || roleName === "MANAGER";
+}
+
+function canRoleManageUsers(role?: RoleSource) {
+  return getRoleName(role) === "ADMIN";
+}
+
+function getPreferredCreateRoleName(roles: CompanyRole[]) {
+  return (
+    roles.find((role) => getRoleName(role) === "AGENT")?.name ??
+    roles.find((role) => getRoleName(role) !== "ADMIN")?.name ??
+    roles[0]?.name ??
+    ""
+  );
+}
+
+function getRoleDisplayName(roleName: string) {
+  const normalizedRoleName = roleName.trim().toUpperCase();
+  if (normalizedRoleName === "ADMIN") return "Admin";
+  if (normalizedRoleName === "MANAGER") return "Manager";
+  if (normalizedRoleName === "AGENT") return "Agent";
+  return roleName;
+}
+
+function getRoleOptionLabel(role: CompanyRole) {
+  const roleName = role.name?.trim() || "Okänd roll";
+  return getRoleDisplayName(roleName);
+}
+
+function mapBackendRole(role?: CompanyUserDTO["role"] | null): UserRole {
+  const roleName = getRoleName(role);
+
+  if (roleName === "ADMIN") {
     return "admin";
   }
 
-  if (
-    roleName.includes("review") ||
-    roleName.includes("viewer") ||
-    roleName.includes("read") ||
-    accessLevel <= 20
-  ) {
-    return "reviewer";
+  if (roleName === "MANAGER") {
+    return "manager";
   }
 
-  return "editor";
+  return "agent";
 }
 
 function mapBackendUser(dto: CompanyUserDTO): CompanyPortalUser | null {
+  const backendId = Number(dto.id);
   const email = dto.email?.trim();
   const phone = dto.phone?.trim() || null;
-  if (!dto.id || !email) {
+  if (!Number.isFinite(backendId) || !email) {
     return null;
   }
 
@@ -73,12 +140,17 @@ function mapBackendUser(dto: CompanyUserDTO): CompanyPortalUser | null {
   const role = mapBackendRole(dto.role);
 
   return {
-    id: `backend-${dto.id}`,
+    id: `backend-${backendId}`,
+    backendId,
     companyId: dto.companyId,
+    firstName: dto.firstName?.trim() ?? "",
+    surname: dto.surname?.trim() ?? "",
     name: name || email,
     email,
     phone,
     role,
+    roleDetails: dto.role ?? null,
+    verified: dto.verified === true,
   };
 }
 
@@ -99,15 +171,99 @@ function dedupeUsers(users: CompanyPortalUser[]) {
   );
 }
 
+function VerificationBadge({ verified }: { verified: boolean }) {
+  return (
+    <span
+      className={[
+        "inline-flex h-7 items-center rounded-full px-3 text-xs font-semibold",
+        verified
+          ? "bg-emerald-50 text-emerald-700"
+          : "bg-amber-50 text-amber-700",
+      ].join(" ")}
+    >
+      {verified ? "Verifierad" : "Ej verifierad"}
+    </span>
+  );
+}
+
 export default function UsersPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [users, setUsers] = useState<CompanyPortalUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all");
+  const [verifyingUserId, setVerifyingUserId] = useState<number | null>(null);
+  const [roles, setRoles] = useState<CompanyRole[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [rolesError, setRolesError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [editingUser, setEditingUser] = useState<CompanyPortalUser | null>(null);
+  const [accountForm, setAccountForm] = useState<UserAccountFormState>(() =>
+    createEmptyUserAccountForm()
+  );
+  const [savingAccount, setSavingAccount] = useState(false);
 
   const hasActiveFilters = roleFilter !== "all";
   const companyId = getActiveCompanyId(user);
+  const defaultCreateRoleName = useMemo(() => getPreferredCreateRoleName(roles), [roles]);
+
+  const loadUsers = useCallback(async () => {
+    if (!companyId) {
+      setUsers([]);
+      setLoadingUsers(false);
+      setUsersError(null);
+      return;
+    }
+
+    setLoadingUsers(true);
+    setUsersError(null);
+
+    try {
+      const result = await companyService.users(companyId);
+      const backendUsers = result
+        .map(mapBackendUser)
+        .filter((entry): entry is CompanyPortalUser => Boolean(entry));
+      setUsers(dedupeUsers(backendUsers));
+    } catch (error) {
+      setUsers([]);
+      setUsersError(
+        error instanceof Error
+          ? error.message
+          : "Kunde inte hämta användare från backend."
+      );
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    let active = true;
+    setRolesLoading(true);
+    setRolesError(null);
+
+    companyService
+      .roles()
+      .then((result) => {
+        if (!active) return;
+        setRoles(result);
+        setRolesLoading(false);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setRoles([]);
+        setRolesError(
+          error instanceof Error
+            ? error.message
+            : "Kunde inte hämta roller från backend."
+        );
+        setRolesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!companyId) {
@@ -117,35 +273,14 @@ export default function UsersPage() {
       return;
     }
 
-    let active = true;
-    setLoadingUsers(true);
-    setUsersError(null);
+    void loadUsers();
+  }, [companyId, loadUsers]);
 
-    companyService
-      .users(companyId)
-      .then((result) => {
-        if (!active) return;
-        const backendUsers = result
-          .map(mapBackendUser)
-          .filter((entry): entry is CompanyPortalUser => Boolean(entry));
-        setUsers(dedupeUsers(backendUsers));
-        setLoadingUsers(false);
-      })
-      .catch((error) => {
-        if (!active) return;
-        setUsers([]);
-        setUsersError(
-          error instanceof Error
-            ? error.message
-            : "Kunde inte hämta användare från backend."
-        );
-        setLoadingUsers(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [companyId]);
+  useEffect(() => {
+    if (dialogOpen && !accountForm.roleName && defaultCreateRoleName) {
+      setAccountForm((current) => ({ ...current, roleName: defaultCreateRoleName }));
+    }
+  }, [accountForm.roleName, defaultCreateRoleName, dialogOpen]);
 
   const filteredUsers = useMemo(() => {
     return users.filter((entry) => {
@@ -154,6 +289,175 @@ export default function UsersPage() {
       return matchesRole;
     });
   }, [roleFilter, users]);
+
+  const currentCompanyUser = useMemo(() => {
+    const currentEmail = user?.email?.trim().toLowerCase();
+    const currentUserId =
+      typeof user?.id === "number" && Number.isFinite(user.id) ? user.id : null;
+
+    return (
+      users.find((entry) => {
+        if (entry.companyId !== companyId) {
+          return false;
+        }
+
+        if (currentUserId != null && entry.backendId === currentUserId) {
+          return true;
+        }
+
+        return Boolean(currentEmail && entry.email.trim().toLowerCase() === currentEmail);
+      }) ?? null
+    );
+  }, [companyId, user?.email, user?.id, users]);
+
+  const canVerifyUsers =
+    currentCompanyUser?.verified === true &&
+    canRoleVerifyUsers(currentCompanyUser.roleDetails);
+
+  const canManageUsers =
+    currentCompanyUser?.verified === true &&
+    canRoleManageUsers(currentCompanyUser.roleDetails);
+
+  const patchAccountForm = useCallback((patch: Partial<UserAccountFormState>) => {
+    setAccountForm((current) => ({ ...current, ...patch }));
+  }, []);
+
+  const openCreateDialog = useCallback(() => {
+    if (!canManageUsers) {
+      toast.error("Endast verifierad ADMIN kan skapa företagskonton.");
+      return;
+    }
+
+    setFormMode("create");
+    setEditingUser(null);
+    setAccountForm(createEmptyUserAccountForm(defaultCreateRoleName));
+    setDialogOpen(true);
+  }, [canManageUsers, defaultCreateRoleName]);
+
+  const openEditDialog = useCallback(
+    (entry: CompanyPortalUser) => {
+      if (!canManageUsers) {
+        toast.error("Endast verifierad ADMIN kan uppdatera företagskonton.");
+        return;
+      }
+
+      setFormMode("edit");
+      setEditingUser(entry);
+      setAccountForm({
+        firstName: entry.firstName,
+        surname: entry.surname,
+        email: entry.email,
+        phone: entry.phone ?? "",
+        password: "",
+        roleName: getRoleName(entry.roleDetails) || defaultCreateRoleName,
+      });
+      setDialogOpen(true);
+    },
+    [canManageUsers, defaultCreateRoleName]
+  );
+
+  const handleSaveAccount = useCallback(async () => {
+    if (!companyId || !canManageUsers) {
+      return;
+    }
+
+    const roleName = accountForm.roleName.trim();
+    const email = accountForm.email.trim();
+    const password = accountForm.password.trim();
+
+    if (!roleName) {
+      toast.error("Välj roll.");
+      return;
+    }
+
+    if (formMode === "create") {
+      if (!email || !password) {
+        toast.error("E-post och lösenord krävs.");
+        return;
+      }
+      if (password.length < 6) {
+        toast.error("Lösenordet måste vara minst 6 tecken.");
+        return;
+      }
+    }
+
+    if (formMode === "edit" && !editingUser) {
+      toast.error("Välj ett konto att uppdatera.");
+      return;
+    }
+
+    setSavingAccount(true);
+
+    try {
+      if (formMode === "create") {
+        await companyService.createUser({
+          email,
+          password,
+          firstName: accountForm.firstName.trim(),
+          surname: accountForm.surname.trim(),
+          phone: accountForm.phone.trim(),
+          roleName,
+        });
+        toast.success("Företagskontot skapades.");
+      } else if (editingUser) {
+        await companyService.updateUser(companyId, editingUser.backendId, {
+          firstName: accountForm.firstName.trim(),
+          surname: accountForm.surname.trim(),
+          phone: accountForm.phone.trim(),
+          roleName,
+        });
+        toast.success("Företagskontot uppdaterades.");
+      }
+
+      setDialogOpen(false);
+      setEditingUser(null);
+      await loadUsers();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Kunde inte spara företagskontot."
+      );
+    } finally {
+      setSavingAccount(false);
+    }
+  }, [
+    accountForm,
+    canManageUsers,
+    companyId,
+    editingUser,
+    formMode,
+    loadUsers,
+  ]);
+
+  const handleVerifyUser = useCallback(
+    async (entry: CompanyPortalUser) => {
+      if (!companyId || !canVerifyUsers || entry.verified) {
+        return;
+      }
+
+      setVerifyingUserId(entry.backendId);
+
+      try {
+        await companyService.verifyUser(companyId, entry.backendId);
+        setUsers((current) =>
+          current.map((userEntry) =>
+            userEntry.backendId === entry.backendId
+              ? { ...userEntry, verified: true }
+              : userEntry
+          )
+        );
+        toast.success(`${entry.name} är verifierad.`);
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Kunde inte verifiera användaren."
+        );
+      } finally {
+        setVerifyingUserId(null);
+      }
+    },
+    [canVerifyUsers, companyId]
+  );
 
   if (authLoading) {
     return (
@@ -186,6 +490,12 @@ export default function UsersPage() {
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Användare</h1>
           </div>
+          {canManageUsers ? (
+            <Button type="button" size="sm" onPress={openCreateDialog}>
+              <Plus className="h-4 w-4" />
+              Nytt konto
+            </Button>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-3 border-b border-gray-200 pb-3">
@@ -205,9 +515,9 @@ export default function UsersPage() {
                   </PortalControlSelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alla roller</SelectItem>
-                    <SelectItem value="admin">Administratörer</SelectItem>
-                    <SelectItem value="editor">Redaktörer</SelectItem>
-                    <SelectItem value="reviewer">Granskare</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="manager">Managers</SelectItem>
+                    <SelectItem value="agent">Agents</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -228,8 +538,142 @@ export default function UsersPage() {
         </div>
       </div>
 
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!savingAccount) {
+            setDialogOpen(open);
+          }
+        }}
+      >
+        <DialogContent className="bg-white sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {formMode === "create" ? "Nytt företagskonto" : "Uppdatera företagskonto"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="company-user-first-name">Förnamn</Label>
+                <Input
+                  id="company-user-first-name"
+                  value={accountForm.firstName}
+                  onChange={(event) => patchAccountForm({ firstName: event.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="company-user-surname">Efternamn</Label>
+                <Input
+                  id="company-user-surname"
+                  value={accountForm.surname}
+                  onChange={(event) => patchAccountForm({ surname: event.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="company-user-email">E-post</Label>
+                <Input
+                  id="company-user-email"
+                  type="email"
+                  value={accountForm.email}
+                  disabled={formMode === "edit"}
+                  onChange={(event) => patchAccountForm({ email: event.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="company-user-phone">Telefon</Label>
+                <Input
+                  id="company-user-phone"
+                  value={accountForm.phone}
+                  onChange={(event) => patchAccountForm({ phone: event.target.value })}
+                />
+              </div>
+            </div>
+
+            {formMode === "create" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="company-user-password">Lösenord</Label>
+                <Input
+                  id="company-user-password"
+                  type="password"
+                  value={accountForm.password}
+                  onChange={(event) => patchAccountForm({ password: event.target.value })}
+                />
+              </div>
+            ) : null}
+
+            <div className="grid gap-2">
+              <Label>Roll</Label>
+              <Select
+                value={accountForm.roleName}
+                disabled={rolesLoading || roles.length === 0}
+                onValueChange={(roleName) => patchAccountForm({ roleName })}
+              >
+                <PortalControlSelectTrigger aria-label="Välj roll">
+                  <SelectValue
+                    placeholder={rolesLoading ? "Hämtar roller..." : "Välj roll"}
+                  />
+                </PortalControlSelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => {
+                    const roleName = role.name?.trim();
+                    if (!roleName) return null;
+
+                    return (
+                      <SelectItem key={roleName} value={roleName}>
+                        {getRoleOptionLabel(role)}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {rolesError ? (
+              <div className="rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                {rolesError}
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              isDisabled={savingAccount}
+              onPress={() => setDialogOpen(false)}
+            >
+              Avbryt
+            </Button>
+            <Button
+              type="button"
+              isLoading={savingAccount}
+              isDisabled={rolesLoading || roles.length === 0}
+              onPress={handleSaveAccount}
+            >
+              {formMode === "create" ? "Skapa konto" : "Spara ändringar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card className="border-gray-200 bg-white shadow-sm">
         <CardContent className="px-0">
+          {!loadingUsers && users.length > 0 && !canVerifyUsers ? (
+            <div className="border-b border-gray-100 bg-gray-50 px-6 py-3 text-sm text-gray-600">
+              Endast verifierade ADMIN och MANAGER kan verifiera användare.
+            </div>
+          ) : null}
+          {!loadingUsers && users.length > 0 && !canManageUsers ? (
+            <div className="border-b border-gray-100 bg-gray-50 px-6 py-3 text-sm text-gray-600">
+              Endast verifierad ADMIN kan skapa och uppdatera användare.
+            </div>
+          ) : null}
+
           {loadingUsers ? (
             <div className="flex items-center gap-2 px-6 py-10 text-sm text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -255,38 +699,86 @@ export default function UsersPage() {
                   {usersError}
                 </div>
               ) : null}
-              <div className="hidden grid-cols-[minmax(0,1.25fr)_minmax(0,1.3fr)_160px] gap-4 border-b border-gray-100 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
+              <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_220px] gap-4 border-b border-gray-100 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
                 <span>Namn</span>
                 <span>Kontaktuppgifter</span>
                 <span>Roll</span>
+                <span>Status</span>
+                <span>Åtgärd</span>
               </div>
 
               <div className="divide-y divide-gray-100">
-                {filteredUsers.map((entry) => (
-                  <article
-                    key={entry.id}
-                    className="grid gap-4 px-6 py-4 transition-colors hover:bg-gray-50/80 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1.3fr)_160px] md:items-center"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-gray-900">{entry.name}</p>
-                    </div>
+                {filteredUsers.map((entry) => {
+                  const isCurrentUser = currentCompanyUser?.backendId === entry.backendId;
+                  const isVerifying = verifyingUserId === entry.backendId;
 
-                    <div className="min-w-0">
-                      <p className="truncate text-sm text-gray-600">{entry.email}</p>
-                      {entry.phone ? (
-                        <p className="mt-1 truncate text-sm text-gray-500">
-                          {entry.phone}
-                        </p>
-                      ) : null}
-                    </div>
+                  return (
+                    <article
+                      key={entry.id}
+                      className="grid gap-4 px-6 py-4 transition-colors hover:bg-gray-50/80 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_220px] md:items-center"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-gray-900">{entry.name}</p>
+                        {isCurrentUser ? (
+                          <p className="mt-1 text-xs font-medium text-[#004225]">
+                            Inloggat konto
+                          </p>
+                        ) : null}
+                      </div>
 
-                    <div>
-                      <span className="text-sm text-gray-700">
-                        {roleLabels[entry.role]}
-                      </span>
-                    </div>
-                  </article>
-                ))}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-gray-600">{entry.email}</p>
+                        {entry.phone ? (
+                          <p className="mt-1 truncate text-sm text-gray-500">
+                            {entry.phone}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <div>
+                        <span className="text-sm text-gray-700">
+                          {roleLabels[entry.role]}
+                        </span>
+                      </div>
+
+                      <div>
+                        <VerificationBadge verified={entry.verified} />
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {canManageUsers ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="min-w-[90px]"
+                            isDisabled={savingAccount}
+                            onPress={() => openEditDialog(entry)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Ändra
+                          </Button>
+                        ) : null}
+                        {canVerifyUsers && !entry.verified && !isCurrentUser ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="min-w-[126px]"
+                            isLoading={isVerifying}
+                            isDisabled={verifyingUserId !== null}
+                            onPress={() => handleVerifyUser(entry)}
+                          >
+                            <UserCheck className="h-4 w-4" />
+                            Verifiera
+                          </Button>
+                        ) : !canManageUsers ? (
+                          <span className="text-sm text-gray-400">-</span>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </>
           )}

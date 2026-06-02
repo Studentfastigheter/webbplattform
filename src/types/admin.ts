@@ -40,6 +40,7 @@ export type AdminCompanyDetailedDTO = {
   pictureUrlList?: string[];
   videoUrlList?: string[];
   websiteUrl?: string;
+  cities?: string[];
 };
 
 export type AdminCompanyPublicDTO = {
@@ -50,6 +51,7 @@ export type AdminCompanyPublicDTO = {
   housingQueueId?: string;
   privacyUrl?: string;
   termsUrl?: string;
+  cities?: string[];
 };
 
 export type AdminCreateCompanyRequest = {
@@ -65,6 +67,7 @@ export type AdminCompanyUserDTO = {
   surname?: string;
   email?: string;
   phone?: string;
+  verified?: boolean;
   bannerUrl?: string;
   logoUrl?: string;
 };

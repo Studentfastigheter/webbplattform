@@ -17,6 +17,10 @@ type RouteGuardProps = {
 
 const SITE_ACCOUNT_TYPES = new Set(["student"]);
 
+function isSuperadminAccount(accountType: string | undefined) {
+  return accountType === "superadmin" || accountType === "admin";
+}
+
 function RouteFallback({ message }: { message: string }) {
   return <LoadingScreen label={message} />;
 }
@@ -106,17 +110,17 @@ export function AdminAccountGuard({ children }: RouteGuardProps) {
       return;
     }
 
-    if (user.accountType !== "admin") {
+    if (!isSuperadminAccount(user.accountType)) {
       logout();
       router.replace("/login");
     }
   }, [isLoading, logout, router, user]);
 
   if (isLoading) {
-    return <RouteFallback message="Laddar admin..." />;
+    return <RouteFallback message="Laddar superadmin..." />;
   }
 
-  if (!user || user.accountType !== "admin") {
+  if (!user || !isSuperadminAccount(user.accountType)) {
     return <RouteFallback message="Kontrollerar behörighet..." />;
   }
 

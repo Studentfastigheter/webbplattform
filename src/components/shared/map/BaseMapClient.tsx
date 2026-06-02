@@ -42,6 +42,7 @@ export type PopupRenderer = (opts: {
 export type BaseMarker = {
   id: string;
   position: [number, number];
+  variant?: "listing" | "school" | "activity";
   /**
    * Antingen ett statiskt ReactNode (som förr),
    * eller en funktion som får zoom + isActive så vi kan
@@ -508,11 +509,12 @@ const BaseMap: React.FC<BaseMapProps> = ({
   }, []);
 
   const markerIconCache = useRef<Record<string, L.DivIcon>>({});
-  const getMarkerIcon = useCallback((isActive: boolean) => {
-    const key = isActive ? "active" : "default";
+  const getMarkerIcon = useCallback((variant: BaseMarker["variant"], isActive: boolean) => {
+    const markerVariant = variant ?? "listing";
+    const key = `${markerVariant}-${isActive ? "active" : "default"}`;
     if (!markerIconCache.current[key]) {
       markerIconCache.current[key] = L.divIcon({
-        html: `<div class="map-listing-marker ${isActive ? "is-active" : ""}"><span></span></div>`,
+        html: `<div class="map-listing-marker map-${markerVariant}-marker ${isActive ? "is-active" : ""}"><span></span></div>`,
         className: "map-listing-icon",
         iconSize: [22, 22],
         iconAnchor: [11, 11],
@@ -532,7 +534,7 @@ const BaseMap: React.FC<BaseMapProps> = ({
         <Fragment key={marker.id}>
           <Marker
             position={marker.position}
-            icon={getMarkerIcon(isActive)}
+            icon={getMarkerIcon(marker.variant, isActive)}
             zIndexOffset={isActive ? 500 : 0}
             riseOnHover
             ref={(ref) => {

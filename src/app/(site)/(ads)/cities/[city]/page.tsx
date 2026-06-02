@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
+import { GraduationCapIcon, HomeIcon, MapPinIcon } from "lucide-react";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
+import type { BaseMarker } from "@/components/shared/map/BaseMap";
 import { useAuth } from "@/context/AuthContext";
 import {
   formatCityName,
@@ -21,6 +23,13 @@ import { localizedText } from "@/i18n/text";
 import type { CityCompanyDTO, CityDetailedDTO } from "@/types/city";
 import type { ListingCardDTO } from "@/types/listing";
 
+const CityPointsMap = dynamic(() => import("@/components/shared/map/BaseMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full animate-pulse rounded-3xl bg-gray-100" />
+  ),
+});
+
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
   ssr: false,
   loading: () => (
@@ -30,6 +39,8 @@ const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"),
 
 const linkButtonClassName =
   "inline-flex h-9 items-center justify-center rounded-full border border-black/10 px-4 text-sm font-semibold text-[#004225] transition-colors hover:bg-[#004225]/5";
+
+type CityMapLayer = "homes" | "schools" | "activities";
 
 const decodeRouteParam = (value: string | undefined) => {
   if (!value) return "";
@@ -61,6 +72,41 @@ const cityCompanyToPublicCompany = (
   };
 };
 
+const hasMapCoordinates = (value: { lat?: number | null; lng?: number | null }) =>
+  Number.isFinite(value.lat) && Number.isFinite(value.lng);
+
+function CityPointPopup({
+  title,
+  meta,
+  variant,
+}: {
+  title: string;
+  meta: string;
+  variant: "school" | "activity";
+}) {
+  return (
+    <div className="w-[260px] rounded-2xl bg-white p-4 text-sm shadow-sm">
+      <div
+        className={
+          variant === "school"
+            ? "mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-700"
+            : "mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-pink-50 text-pink-700"
+        }
+      >
+        {variant === "school" ? (
+          <GraduationCapIcon className="h-5 w-5" />
+        ) : (
+          <MapPinIcon className="h-5 w-5" />
+        )}
+      </div>
+      <p className="font-semibold leading-snug text-gray-950">{title}</p>
+      <p className="mt-1 text-xs font-medium uppercase tracking-normal text-gray-500">
+        {meta}
+      </p>
+    </div>
+  );
+}
+
 export default function CityDetailPage() {
   const params = useParams<{ city: string }>();
   const router = useRouter();
@@ -80,6 +126,10 @@ export default function CityDetailPage() {
   const [companiesLoading, setCompaniesLoading] = useState(true);
   const [listingsError, setListingsError] = useState<string | null>(null);
   const [companiesError, setCompaniesError] = useState<string | null>(null);
+  const [mapLayer, setMapLayer] = useState<CityMapLayer>("homes");
+  const [selectedActivityCategories, setSelectedActivityCategories] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     let active = true;
@@ -207,6 +257,113 @@ export default function CityDetailPage() {
     });
   };
 
+  const schools = cityDetail?.schools ?? [];
+  const studentActivities = cityDetail?.studentActivities ?? [];
+  const activityCategories = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          studentActivities
+            .map((activity) => activity.category?.trim())
+            .filter((category): category is string => Boolean(category))
+        )
+      ).sort((left, right) => left.localeCompare(right, locale === "en" ? "en" : "sv")),
+    [studentActivities, locale]
+  );
+  const activityCategoryKey = activityCategories.join("|");
+
+  useEffect(() => {
+    setSelectedActivityCategories(new Set(activityCategories));
+  }, [activityCategoryKey, cityDetail?.code]);
+
+  const toggleActivityCategory = (category: string) => {
+    setSelectedActivityCategories((current) => {
+      const next = new Set(current);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
+
+  const visibleStudentActivities = useMemo(
+    () =>
+      studentActivities.filter((activity) => {
+        const category = activity.category?.trim();
+        return category ? selectedActivityCategories.has(category) : false;
+      }),
+    [studentActivities, selectedActivityCategories]
+  );
+
+  const schoolMarkers = useMemo<BaseMarker[]>(
+    () =>
+      schools
+        .filter(hasMapCoordinates)
+        .map((school, index) => {
+          const name = school.name?.trim() || localizedText(locale, "Skola", "School");
+          return {
+            id: `school-${school.id ?? `${name}-${index}`}`,
+            position: [school.lat as number, school.lng as number],
+            variant: "school",
+            popup: (
+              <CityPointPopup
+                title={name}
+                meta={localizedText(locale, "Skola", "School")}
+                variant="school"
+              />
+            ),
+          };
+        }),
+    [schools, locale]
+  );
+
+  const activityMarkers = useMemo<BaseMarker[]>(
+    () =>
+      visibleStudentActivities
+        .filter(hasMapCoordinates)
+        .map((activity, index) => {
+          const name = activity.name?.trim() || localizedText(locale, "Aktivitet", "Activity");
+          const category = activity.category?.trim() || localizedText(locale, "Aktivitet", "Activity");
+          return {
+            id: `activity-${activity.id ?? `${name}-${category}-${index}`}`,
+            position: [activity.lat as number, activity.lng as number],
+            variant: "activity",
+            popup: <CityPointPopup title={name} meta={category} variant="activity" />,
+          };
+        }),
+    [visibleStudentActivities, locale]
+  );
+
+  const activePointMarkers = mapLayer === "schools" ? schoolMarkers : activityMarkers;
+  const mapLayerOptions = [
+    {
+      value: "homes" as const,
+      label: localizedText(locale, "Bostäder", "Homes"),
+      count: listings.length,
+      icon: HomeIcon,
+    },
+    {
+      value: "schools" as const,
+      label: localizedText(locale, "Skolor", "Schools"),
+      count: schools.length,
+      icon: GraduationCapIcon,
+    },
+    {
+      value: "activities" as const,
+      label: localizedText(locale, "Aktiviteter", "Activities"),
+      count: studentActivities.length,
+      icon: MapPinIcon,
+    },
+  ];
+  const emptyMapMessage =
+    mapLayer === "schools" && schoolMarkers.length === 0
+      ? localizedText(locale, "Inga skolor med koordinater.", "No schools with coordinates.")
+      : mapLayer === "activities" && activityMarkers.length === 0
+        ? localizedText(locale, "Inga aktiviteter valda.", "No activities selected.")
+        : null;
+
   return (
     <main className="flex h-auto w-full flex-col gap-6 pb-12 pt-4 sm:gap-8">
       <div className="container mx-auto h-auto px-3 sm:px-4 md:px-6 lg:px-8">
@@ -280,18 +437,107 @@ export default function CityDetailPage() {
         </section>
 
         <section className="mt-12 w-full">
-          <h2 className="mb-5 text-lg font-semibold text-gray-900">
-            {localizedText(locale, "Karta", "Map")}
-          </h2>
+          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {localizedText(locale, "Karta", "Map")}
+            </h2>
+            <div className="flex flex-col gap-3 lg:items-end">
+              <div
+                role="tablist"
+                aria-label={localizedText(locale, "Kartlager", "Map layer")}
+                className="inline-flex w-full overflow-hidden rounded-full border border-black/10 bg-white p-1 shadow-sm sm:w-auto"
+              >
+                {mapLayerOptions.map((option) => {
+                  const Icon = option.icon;
+                  const isActive = mapLayer === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setMapLayer(option.value)}
+                      className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:flex-none sm:px-4 ${
+                        isActive
+                          ? "bg-[#004225] text-white shadow-sm"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{option.label}</span>
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[11px] ${
+                          isActive ? "bg-white/15 text-white" : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {option.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {mapLayer === "activities" && activityCategories.length > 0 && (
+                <div className="flex max-w-full flex-wrap justify-start gap-2 lg:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedActivityCategories(new Set(activityCategories))}
+                    className="h-8 rounded-full border border-black/10 px-3 text-xs font-semibold text-[#004225] transition hover:bg-[#004225]/5"
+                  >
+                    {localizedText(locale, "Alla", "All")}
+                  </button>
+                  {activityCategories.map((category) => {
+                    const isActive = selectedActivityCategories.has(category);
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => toggleActivityCategory(category)}
+                        className={`inline-flex h-8 max-w-full items-center gap-2 rounded-full border px-3 text-xs font-semibold transition ${
+                          isActive
+                            ? "border-pink-200 bg-pink-50 text-pink-800"
+                            : "border-black/10 bg-white text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${
+                            isActive ? "bg-pink-600" : "bg-gray-300"
+                          }`}
+                        />
+                        <span className="truncate">{category}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="relative isolate z-0 h-[70vh] min-h-[520px] max-h-[860px] w-full overflow-hidden rounded-3xl border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-            <ListingsMap
-              listings={listings}
-              className="h-full w-full"
-              fillContainer
-              getIsFavorite={(id) => favoriteIds.has(id)}
-              onFavoriteToggle={handleFavoriteToggle}
-              onOpenListing={(id) => router.push(localizedHref(`/housing/${id}`))}
-            />
+            {emptyMapMessage && (
+              <div className="pointer-events-none absolute left-4 top-4 z-[600] rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
+                {emptyMapMessage}
+              </div>
+            )}
+            {mapLayer === "homes" ? (
+              <ListingsMap
+                listings={listings}
+                className="h-full w-full"
+                fillContainer
+                getIsFavorite={(id) => favoriteIds.has(id)}
+                onFavoriteToggle={handleFavoriteToggle}
+                onOpenListing={(id) => router.push(localizedHref(`/housing/${id}`))}
+              />
+            ) : (
+              <CityPointsMap
+                key={mapLayer}
+                markers={activePointMarkers}
+                className="h-full w-full"
+                fillContainer
+                center={[62, 15]}
+                zoom={5}
+              />
+            )}
           </div>
         </section>
 

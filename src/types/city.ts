@@ -15,9 +15,26 @@ export type CityCompanyDTO = {
   logoUrl?: string | null;
 };
 
+export type CitySchoolDTO = {
+  id?: number;
+  name?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+};
+
+export type CityStudentActivityDTO = {
+  id?: number;
+  name?: string | null;
+  category?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+};
+
 export type CityDetailedDTO = CityDTO & {
   companies?: CityCompanyDTO[];
   externalCompanies?: CityCompanyDTO[];
+  schools?: CitySchoolDTO[];
+  studentActivities?: CityStudentActivityDTO[];
 };
 
 export type CreateCityRequest = {

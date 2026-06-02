@@ -611,10 +611,30 @@ img, svg, video, canvas {
   opacity: 0.92;
 }
 
+.map-school-marker {
+  background: #2563eb;
+}
+
+.map-activity-marker {
+  background: #db2777;
+}
+
 .map-listing-icon:hover .map-listing-marker,
 .map-listing-marker.is-active {
   background: #004225;
   box-shadow: 0 7px 18px rgba(0, 66, 37, 0.24);
+}
+
+.map-listing-icon:hover .map-school-marker,
+.map-school-marker.is-active {
+  background: #1d4ed8;
+  box-shadow: 0 7px 18px rgba(37, 99, 235, 0.24);
+}
+
+.map-listing-icon:hover .map-activity-marker,
+.map-activity-marker.is-active {
+  background: #be185d;
+  box-shadow: 0 7px 18px rgba(219, 39, 119, 0.24);
 }
 
 .map-listing-marker.is-active::after {

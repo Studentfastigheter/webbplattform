@@ -17,7 +17,7 @@ import { useAdminSidebar } from "./AdminSidebarContext";
 export default function AdminHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useAdminSidebar();
   const { user, logout } = useAuth();
-  const displayName = user?.displayName || user?.email || "Admin";
+  const displayName = user?.displayName || user?.email || "Superadmin";
   const email = user?.email || "";
   const initials = displayName
     .split(" ")
@@ -59,7 +59,7 @@ export default function AdminHeader() {
         <div className="flex shrink-0 items-center justify-end gap-3">
           <span className="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 sm:inline-flex">
             <ShieldCheckIcon className="h-4 w-4" />
-            Admin portal
+            Superadmin portal
           </span>
 
           <DropdownMenu>
@@ -88,7 +88,7 @@ export default function AdminHeader() {
                   {email}
                 </span>
                 <span className="mt-1 block text-theme-xs text-gray-400">
-                  Administrator account
+                  Superadmin account
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuItem

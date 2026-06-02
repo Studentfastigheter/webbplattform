@@ -3,6 +3,8 @@ import type {
   CityCompanyDTO,
   CityDTO,
   CityDetailedDTO,
+  CitySchoolDTO,
+  CityStudentActivityDTO,
   CreateCityRequest,
   ModifyCityRequest,
 } from "@/types/city";
@@ -83,6 +85,52 @@ const normalizeCityCompany = (value: unknown): CityCompanyDTO | null => {
   };
 };
 
+const normalizeCitySchool = (value: unknown): CitySchoolDTO | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const name = firstString(value.name, value.schoolName);
+  const lat = firstNumber(value.lat, value.latitude);
+  const lng = firstNumber(value.lng, value.longitude);
+
+  if (!name || lat === undefined || lng === undefined) {
+    return null;
+  }
+
+  return {
+    id: firstNumber(value.id, value.schoolId),
+    name,
+    lat,
+    lng,
+  };
+};
+
+const normalizeCityStudentActivity = (
+  value: unknown
+): CityStudentActivityDTO | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const name = firstString(value.name, value.activityName);
+  const category = firstString(value.category);
+  const lat = firstNumber(value.lat, value.latitude);
+  const lng = firstNumber(value.lng, value.longitude);
+
+  if (!name || !category || lat === undefined || lng === undefined) {
+    return null;
+  }
+
+  return {
+    id: firstNumber(value.id, value.activityId, value.pointOfInterestId),
+    name,
+    category,
+    lat,
+    lng,
+  };
+};
+
 const normalizeCityDetail = (value: unknown): CityDetailedDTO => {
   const city = normalizeCity(value);
 
@@ -98,6 +146,14 @@ const normalizeCityDetail = (value: unknown): CityDetailedDTO => {
     externalCompanies: arrayFromApiResponse<unknown>(value.externalCompanies)
       .map(normalizeCityCompany)
       .filter((company): company is CityCompanyDTO => company !== null),
+    schools: arrayFromApiResponse<unknown>(value.schools)
+      .map(normalizeCitySchool)
+      .filter((school): school is CitySchoolDTO => school !== null),
+    studentActivities: arrayFromApiResponse<unknown>(value.studentActivities)
+      .map(normalizeCityStudentActivity)
+      .filter(
+        (activity): activity is CityStudentActivityDTO => activity !== null
+      ),
   };
 };
 

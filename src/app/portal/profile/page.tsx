@@ -13,6 +13,7 @@ import {
 } from "@/features/companies/services/company-service";
 import { queueService } from "@/features/queues/services/queue-service";
 import { type HousingQueueDTO } from "@/types/queue";
+import { formatCityName } from "@/features/cities/city-utils";
 import {
   Globe,
   ImageIcon,
@@ -49,6 +50,7 @@ type ProfileDraft = {
   termsUrl: string;
   contactEmail: string;
   contactPhone: string;
+  cities: string[];
   logoUrl: string;
   bannerUrl: string;
   additionalSocialLinks: SocialLinkDraft[];
@@ -127,6 +129,18 @@ function parseUrlListText(value: string) {
     .filter(Boolean);
 }
 
+function uniqueCityLabels(values: Array<string | null | undefined>) {
+  const labels = new Map<string, string>();
+
+  values.forEach((value) => {
+    const label = formatCityName(value?.replace(/_/g, " ") ?? "");
+    if (!label) return;
+    labels.set(label.toLocaleLowerCase("sv-SE"), label);
+  });
+
+  return Array.from(labels.values());
+}
+
 function draftString(value: unknown) {
   return typeof value === "string" ? value : "";
 }
@@ -182,6 +196,7 @@ function withPublicProfileFields(
         ? companyData.videoUrlList
         : publicCompanyData.videoUrlList,
     socialLinks: publicCompanyData.socialLinks ?? companyData.socialLinks,
+    cities: publicCompanyData.cities ?? companyData.cities,
   };
 }
 
@@ -201,6 +216,7 @@ function buildInitialDraft(
     termsUrl: companyData.termsUrl ?? "",
     contactEmail: companyData.contactEmail ?? companyData.email ?? "",
     contactPhone: companyData.contactPhone ?? companyData.phone ?? "",
+    cities: companyData.cities ?? [],
     logoUrl: companyData.logoUrl ?? "",
     bannerUrl: companyData.bannerUrl ?? "",
     additionalSocialLinks: buildAdditionalSocialLinks(
@@ -279,6 +295,7 @@ function mergeSavedCompany(
     contactEmail: draft.contactEmail,
     contactPhone: draft.contactPhone,
     phone: draft.contactPhone,
+    cities: company?.cities ?? draft.cities,
     logoUrl: isLocalObjectUrl(draft.logoUrl)
       ? company?.logoUrl ?? ""
       : draft.logoUrl,
@@ -401,6 +418,9 @@ function EditableCompanyPreview({
   const visibleSocialLinks = draft.additionalSocialLinks.filter(
     (link) => draftString(link.platform) && draftString(link.url)
   );
+  const cityLabel =
+    uniqueCityLabels(draft.cities).join(", ") ||
+    formatCityName(companyQueue?.city?.replace(/_/g, " ") ?? "");
 
   return (
     <section
@@ -477,10 +497,10 @@ function EditableCompanyPreview({
               placeholder="Kort underrubrik för företaget"
             />
 
-            {companyQueue?.city && (
+            {cityLabel && (
               <div className="mt-3 flex items-center gap-1.5 text-sm text-gray-600">
                 <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                <span>{companyQueue.city}</span>
+                <span>{cityLabel}</span>
               </div>
             )}
           </div>

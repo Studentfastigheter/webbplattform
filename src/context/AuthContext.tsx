@@ -47,8 +47,9 @@ function getJwtSubject(token: string | null): string {
 
 function getAdminUserFromToken(token: string): User | null {
   const payload = getJwtPayload(token);
+  const accountType = payload.accountType?.toLowerCase();
 
-  if (payload.accountType?.toLowerCase() !== "admin") {
+  if (accountType !== "superadmin" && accountType !== "admin") {
     return null;
   }
 
@@ -58,8 +59,8 @@ function getAdminUserFromToken(token: string): User | null {
   return {
     id: Number.isFinite(numericId) ? numericId : 0,
     email,
-    accountType: "admin",
-    displayName: email || "Admin",
+    accountType: "superadmin",
+    displayName: email || "Superadmin",
     createdAt: new Date(0).toISOString(),
     verified: true,
   };

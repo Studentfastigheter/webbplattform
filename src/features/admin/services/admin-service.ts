@@ -9,6 +9,7 @@ import type {
   AdminCompanyDetailedDTO,
   AdminCompanyCredentialDTO,
   AdminCompanyPublicDTO,
+  AdminCompanyRole,
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
   AdminCreatePOIRequest,
@@ -29,6 +30,7 @@ import { cityService } from "@/features/cities/services/city-service";
 import {
   companyService,
   type CreateExternalCompanyRequest,
+  type ExternalCompanyDTO,
   type ModifyExternalCompanyRequest,
 } from "@/features/companies/services/company-service";
 
@@ -139,6 +141,14 @@ export const adminService = {
     await companyService.updateExternalCompany(company);
   },
 
+  getExternalCompanies: async (): Promise<ExternalCompanyDTO[]> => {
+    return companyService.getExternalCompanies();
+  },
+
+  deleteExternalCompany: async (companyId: number): Promise<void> => {
+    await companyService.deleteExternalCompany(companyId);
+  },
+
   getCompanies: async (): Promise<AdminCompanyPublicDTO[]> => {
     const response = await apiClient<unknown>("/companies", { auth: false });
     return arrayFromApiResponse<AdminCompanyPublicDTO>(response);
@@ -150,9 +160,16 @@ export const adminService = {
     });
   },
 
+  getCompanyRoles: async (): Promise<AdminCompanyRole[]> => {
+    const response = await apiClient<unknown>("/companies/roles", {
+      auth: false,
+    });
+    return arrayFromApiResponse<AdminCompanyRole>(response);
+  },
+
   getCompanyUsers: async (companyId: number): Promise<AdminCompanyUserDTO[]> => {
     const response = await apiClient<unknown>(
-      `/companies/${pathSegment(companyId)}/users`
+      `/admin/company/${pathSegment(companyId)}/users`
     );
     return arrayFromApiResponse<AdminCompanyUserDTO>(response);
   },
@@ -171,6 +188,18 @@ export const adminService = {
       method: "PUT",
       body: jsonBody(account),
     });
+  },
+
+  verifyCompanyAccount: async (
+    companyId: number,
+    userId: number
+  ): Promise<void> => {
+    await apiClient<void>(
+      `/admin/company/${pathSegment(companyId)}/verify/${pathSegment(userId)}`,
+      {
+        method: "PUT",
+      }
+    );
   },
 
   refreshCompanyListings: async (companyId: number): Promise<void> => {

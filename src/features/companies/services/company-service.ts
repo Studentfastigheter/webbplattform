@@ -49,6 +49,7 @@ export type CompanyPrivateDTO = {
   organisationNumber?: string | null;
   organizationNumber?: string | null;
   internalContactNote?: string | null;
+  cities?: string[];
   pictureUrlList?: string[];
   videoUrlList?: string[];
   socialLinks?: Record<string, string>;
@@ -88,7 +89,6 @@ export type CreateExternalCompanyRequest = {
   description?: string | null;
   logoUrl?: string | null;
   websiteUrl?: string | null;
-  bannerUrl?: string | null;
   cityCodes?: string[];
   schoolIds?: number[];
 };
@@ -99,8 +99,17 @@ export type ModifyExternalCompanyRequest = {
   description?: string | null;
   logoUrl?: string | null;
   websiteUrl?: string | null;
-  bannerUrl?: string | null;
   cities?: string[];
+};
+
+export type ExternalCompanyDTO = {
+  id: number;
+  name: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  cityCodes?: string[];
+  schoolIds?: number[];
 };
 
 export type CompanyRole = {
@@ -121,6 +130,26 @@ export type CompanyUserDTO = {
   surname?: string | null;
   email?: string | null;
   phone?: string | null;
+  verified?: boolean | null;
+  bannerUrl?: string | null;
+  logoUrl?: string | null;
+};
+
+export type CompanyUserCreateRequest = {
+  email: string;
+  password: string;
+  firstName?: string | null;
+  surname?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  roleName?: string | null;
+};
+
+export type CompanyUserUpdateRequest = {
+  firstName?: string | null;
+  surname?: string | null;
+  phone?: string | null;
+  roleName?: string | null;
   bannerUrl?: string | null;
   logoUrl?: string | null;
 };
@@ -664,6 +693,36 @@ function normalizeCompanyPublic(value: unknown): CompanyPublicDTO | null {
   };
 }
 
+function normalizeExternalCompany(value: unknown): ExternalCompanyDTO | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = firstNumber(value.id, value.companyId);
+  const name = firstString(value.name, value.companyName);
+
+  if (id === undefined || !name) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    description: firstString(value.description, value.companyDescription) ?? null,
+    logoUrl: firstString(value.logoUrl, value.logoURL) ?? null,
+    websiteUrl: firstString(value.websiteUrl, value.website, value.companyUrl) ?? null,
+    cityCodes: toArray<string>(value.cityCodes ?? value.cities ?? value.companyCities),
+    schoolIds: toArray<unknown>(value.schoolIds ?? value.schools ?? value.companySchools)
+      .map((school) => {
+        if (isRecord(school)) {
+          return firstNumber(school.id, school.schoolId);
+        }
+        return firstNumber(school);
+      })
+      .filter((schoolId): schoolId is number => schoolId !== undefined),
+  };
+}
+
 function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
   if (!isRecord(value)) {
     throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
@@ -675,6 +734,8 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
   if (id === undefined || !name) {
     throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
   }
+
+  const rawCities = value.cities ?? value.companyCities;
 
   return {
     ...(value as Partial<CompanyPrivateDTO>),
@@ -699,6 +760,7 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     ),
     internalContactNote: firstString(value.internalContactNote, value.contactNote),
     contactNote: firstString(value.contactNote, value.internalContactNote),
+    ...(rawCities !== undefined ? { cities: toArray<string>(rawCities) } : {}),
     pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
     videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
     socialLinks: normalizeStringRecord(value.socialLinks),
@@ -941,6 +1003,11 @@ export const companyService = {
     return normalizeCompanyPrivate(company);
   },
 
+  roles: async (): Promise<CompanyRole[]> => {
+    const roles = await apiClient<unknown>("/companies/roles", { auth: false });
+    return arrayFromApiResponse<CompanyRole>(roles);
+  },
+
   updateCompanyData: async (
     id: number,
     payload: CompanyChangeableDataDTO
@@ -1001,6 +1068,47 @@ export const companyService = {
   users: async (id: number): Promise<CompanyUserDTO[]> => {
     const users = await apiClient<unknown>(`/companies/${pathSegment(id)}/users`);
     return arrayFromApiResponse<CompanyUserDTO>(users);
+  },
+
+  createUser: async (
+    payload: CompanyUserCreateRequest
+  ): Promise<void> => {
+    await authService.registerWorker(
+      {
+        accountType: "company",
+        email: payload.email,
+        password: payload.password,
+        firstName: payload.firstName ?? undefined,
+        surname: payload.surname ?? undefined,
+        phone: payload.phone ?? undefined,
+        city: payload.city ?? undefined,
+        roleName: payload.roleName ?? undefined,
+      },
+      { auth: true }
+    );
+  },
+
+  updateUser: async (
+    id: number,
+    userId: number,
+    payload: CompanyUserUpdateRequest
+  ): Promise<CompanyUserDTO> => {
+    return apiClient<CompanyUserDTO>(
+      `/companies/${pathSegment(id)}/users/${pathSegment(userId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          id: userId,
+          companyId: id,
+          firstName: payload.firstName,
+          surname: payload.surname,
+          phone: payload.phone,
+          bannerUrl: payload.bannerUrl,
+          logoUrl: payload.logoUrl,
+          role: payload.roleName ? { name: payload.roleName } : undefined,
+        }),
+      }
+    );
   },
 
   verifyUser: async (id: number, userId: number): Promise<void> => {
@@ -1223,5 +1331,23 @@ export const companyService = {
       method: "PUT",
       body: JSON.stringify(payload),
     });
+  },
+
+  getExternalCompanies: async (): Promise<ExternalCompanyDTO[]> => {
+    const companies = await apiClient<unknown>("/companies/external-company", {
+      auth: false,
+    });
+    return arrayFromApiResponse<unknown>(companies)
+      .map(normalizeExternalCompany)
+      .filter((company): company is ExternalCompanyDTO => company !== null);
+  },
+
+  deleteExternalCompany: async (id: number): Promise<void> => {
+    await apiClient<void>(
+      `/companies/external-company${buildQuery({ id })}`,
+      {
+        method: "DELETE",
+      }
+    );
   },
 };
