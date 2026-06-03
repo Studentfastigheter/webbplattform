@@ -3,6 +3,7 @@ import {
   arrayFromApiResponse,
   buildQuery,
   pathSegment,
+  type ServiceOptions,
 } from "@/lib/api/client";
 import {
   DWELLING_TYPE_VALUES,
@@ -598,17 +599,21 @@ export const listingService = {
   },
 
   getFacets: async (
-    params: ListingSearchParams = {}
+    params: ListingSearchParams = {},
+    options?: ServiceOptions
   ): Promise<ListingSearchFacetsDTO> => {
     assertListingSearchEnums(params);
     return apiClient<ListingSearchFacetsDTO>(
       `/listings/facets${buildListingSearchQuery(params, false)}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
   },
 
-  getCities: async (): Promise<string[]> => {
-    const cities = await apiClient<unknown>("/listings/cities", { auth: false });
+  getCities: async (options?: ServiceOptions): Promise<string[]> => {
+    const cities = await apiClient<unknown>("/listings/cities", {
+      auth: false,
+      signal: options?.signal,
+    });
     return Array.isArray(cities)
       ? cities.filter((city): city is string => typeof city === "string")
       : [];
@@ -625,9 +630,13 @@ export const listingService = {
 
   // 2. HÄMTA EN ANNONS (Detaljvy)
   // Anropar: GET /api/listings/{id}
-  get: async (id: string): Promise<ListingDetailDTO> => {
+  get: async (
+    id: string,
+    options?: ServiceOptions
+  ): Promise<ListingDetailDTO> => {
     const detail = await apiClient<ListingDetailDTO>(`/listings/${pathSegment(id)}`, {
       auth: false,
+      signal: options?.signal,
     });
     return detail ? normalizeListingDetail(detail) : detail;
   },
@@ -662,28 +671,36 @@ export const listingService = {
 
   getMyListingsPage: async (
     page = 0,
-    size = 200
+    size = 200,
+    options?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<unknown>(`/listings/my${query}`);
+    const res = await apiClient<unknown>(`/listings/my${query}`, {
+      signal: options?.signal,
+    });
     const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
     return normalizePageResponse(res, content, page, size);
   },
 
-  getMyListings: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
-    const res = await listingService.getMyListingsPage(page, size);
+  getMyListings: async (
+    page = 0,
+    size = 200,
+    options?: ServiceOptions
+  ): Promise<ListingCardDTO[]> => {
+    const res = await listingService.getMyListingsPage(page, size, options);
     return res.content ?? [];
   },
 
   getQueueListings: async (
     queueId: string,
     page = 0,
-    size = 12
+    size = 12,
+    options?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<unknown>(
       `/listings/queue/${pathSegment(queueId)}${query}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
     const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
     return normalizePageResponse(res, content, page, size);
@@ -693,10 +710,13 @@ export const listingService = {
   // Anropar: GET /api/applications/my
   getMyApplicationsPage: async (
     page = 0,
-    size = 50
+    size = 50,
+    options?: ServiceOptions
   ): Promise<PageResponse<StudentApplicationDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<unknown>(`/applications/my${query}`);
+    const res = await apiClient<unknown>(`/applications/my${query}`, {
+      signal: options?.signal,
+    });
     // Hantera både paginerat svar (PageResponse) och ren array
     const content = Array.isArray(res)
       ? (res as StudentApplicationDTO[])
@@ -704,8 +724,12 @@ export const listingService = {
     return normalizePageResponse(res, content, page, size);
   },
 
-  getMyApplications: async (page = 0, size = 50): Promise<StudentApplicationDTO[]> => {
-    const res = await listingService.getMyApplicationsPage(page, size);
+  getMyApplications: async (
+    page = 0,
+    size = 50,
+    options?: ServiceOptions
+  ): Promise<StudentApplicationDTO[]> => {
+    const res = await listingService.getMyApplicationsPage(page, size, options);
     return res.content ?? [];
   },
 
@@ -733,18 +757,25 @@ export const listingService = {
 
   getFavoritesPage: async (
     page = 0,
-    size = 200
+    size = 200,
+    options?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<unknown>(`/listings/favorites${query}`);
+    const res = await apiClient<unknown>(`/listings/favorites${query}`, {
+      signal: options?.signal,
+    });
     const content = normalizeListingCards(
       Array.isArray(res) ? res : arrayFromApiResponse<unknown>(res)
     );
     return normalizePageResponse(res, content, page, size);
   },
 
-  getFavorites: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
-    const res = await listingService.getFavoritesPage(page, size);
+  getFavorites: async (
+    page = 0,
+    size = 200,
+    options?: ServiceOptions
+  ): Promise<ListingCardDTO[]> => {
+    const res = await listingService.getFavoritesPage(page, size, options);
     return res.content ?? [];
   },
 
@@ -806,8 +837,13 @@ export const listingService = {
 
   // Hämta tillgängliga annonstaggar.
   // Anropar: GET /api/listingtags
-  getListingTags: async (): Promise<ListingTagDTO[]> => {
-    const res = await apiClient<unknown>("/listingtags", { auth: false });
+  getListingTags: async (
+    options?: ServiceOptions
+  ): Promise<ListingTagDTO[]> => {
+    const res = await apiClient<unknown>("/listingtags", {
+      auth: false,
+      signal: options?.signal,
+    });
 
     return arrayFromApiResponse<unknown>(res)
       .map(normalizeListingTagDTO)
@@ -815,11 +851,12 @@ export const listingService = {
   },
 
   getRequirementsProfile: async (
-    requirementsProfileId: string
+    requirementsProfileId: string,
+    options?: ServiceOptions
   ): Promise<RequirementsProfileDTO> => {
     const profile = await apiClient<unknown>(
       `/requirements-profiles/${pathSegment(requirementsProfileId)}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
     return normalizeRequirementsProfile(profile) ?? {};
   },

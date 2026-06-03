@@ -4,6 +4,7 @@ import {
   arrayFromApiResponse,
   buildQuery,
   pathSegment,
+  type ServiceOptions,
 } from "@/lib/api/client";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 
@@ -843,16 +844,25 @@ function companyApplicationsEndpoint(id: number, page: number, size: number): st
 
 export const companyService = {
 
-  listCompanies: async (): Promise<CompanyPublicDTO[]> => {
-    const companies = await apiClient<unknown>("/companies", { auth: false });
+  listCompanies: async (
+    options?: ServiceOptions
+  ): Promise<CompanyPublicDTO[]> => {
+    const companies = await apiClient<unknown>("/companies", {
+      auth: false,
+      signal: options?.signal,
+    });
     return arrayFromApiResponse<unknown>(companies)
       .map(normalizeCompanyPublic)
       .filter((company): company is CompanyPublicDTO => company !== null);
   },
 
-  publicProfile: async (id: number): Promise<CompanyPublicDTO> => {
+  publicProfile: async (
+    id: number,
+    options?: ServiceOptions
+  ): Promise<CompanyPublicDTO> => {
     const company = await apiClient<unknown>(`/companies/${pathSegment(id)}`, {
       auth: false,
+      signal: options?.signal,
     });
     const normalizedCompany = normalizeCompanyPublic(company);
     if (!normalizedCompany) {
@@ -877,8 +887,14 @@ export const companyService = {
     return { userId: companyId, name: companyName };
   },
 
-  privateProfile: async (id: number): Promise<CompanyPrivateDTO> => {
-    const company = await apiClient<unknown>(`/companies/${pathSegment(id)}/private`);
+  privateProfile: async (
+    id: number,
+    options?: ServiceOptions
+  ): Promise<CompanyPrivateDTO> => {
+    const company = await apiClient<unknown>(
+      `/companies/${pathSegment(id)}/private`,
+      { signal: options?.signal }
+    );
     return normalizeCompanyPrivate(company);
   },
 
@@ -1063,12 +1079,14 @@ export const companyService = {
     id: number,
     from: string | Date,
     to: string | Date,
-    listingId: string | number
+    listingId: string | number,
+    options?: ServiceOptions
   ): Promise<ApplicationStatisticEntry[]> => {
     const fromValue = from instanceof Date ? from.toISOString() : from;
     const toValue = to instanceof Date ? to.toISOString() : to;
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/timed-applications/${pathSegment(fromValue)}/${pathSegment(toValue)}/${pathSegment(listingId)}`
+      `/analytics/${pathSegment(id)}/timed-applications/${pathSegment(fromValue)}/${pathSegment(toValue)}/${pathSegment(listingId)}`,
+      { signal: options?.signal }
     );
 
     return toArray<unknown>(result, true)
@@ -1076,10 +1094,15 @@ export const companyService = {
       .filter((entry): entry is ApplicationStatisticEntry => entry !== null);
   },
 
-  applicationCountsPerObject: async (id: number, limit: number = 5): Promise<ObjectApplicationCount[]> => {
+  applicationCountsPerObject: async (
+    id: number,
+    limit: number = 5,
+    options?: ServiceOptions
+  ): Promise<ObjectApplicationCount[]> => {
     const query = buildQuery({ limit: limit === null ? 5 : limit });
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/current_applications/by_object${query}`
+      `/analytics/${pathSegment(id)}/current_applications/by_object${query}`,
+      { signal: options?.signal }
     );
 
     return toArray<unknown>(result, true)
@@ -1089,10 +1112,12 @@ export const companyService = {
 
   listingViewCounts: async (
     id: number,
-    listingId: string | number
+    listingId: string | number,
+    options?: ServiceOptions
   ): Promise<ListingViewCounts> => {
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/listing/${pathSegment(listingId)}/`
+      `/analytics/${pathSegment(id)}/listing/${pathSegment(listingId)}/`,
+      { signal: options?.signal }
     );
 
     return normalizeListingViewCounts(result);

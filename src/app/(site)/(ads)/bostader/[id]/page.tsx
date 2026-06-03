@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
 import { cn } from "@/lib/utils";
@@ -13,13 +14,21 @@ import BostadLandlord from "@/features/ads/components/BostadLandlord";
 import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
 
 import { listingService } from "@/features/listings/services/listing-service";
-import { queueService } from "@/features/queues/services/queue-service";
+import {
+  useApplyToListing,
+  useFavorites,
+  useListing,
+  useMyApplications,
+  useRequirementsProfile,
+  useToggleFavorite,
+} from "@/features/listings/hooks/useListings";
+import { useQueueCompany } from "@/features/queues/hooks/useQueues";
 import {
   demographicsService,
   getClientDeviceType,
 } from "@/features/analytics/services/demographics-service";
+import { qk } from "@/lib/query/keys";
 import {
-  ListingDetailDTO,
   ListingCardDTO,
   RequirementsProfileDTO,
 } from "@/types/listing";
@@ -311,89 +320,141 @@ export default function ListingDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [listing, setListing] = useState<ListingDetailDTO | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [requirementsProfile, setRequirementsProfile] =
-    useState<RequirementsProfileDTO | null>(null);
-  const [requirementsLoading, setRequirementsLoading] = useState(false);
+  // Per-id increment + demographics guards. These are fire-and-forget,
+  // not server state, so they stay as direct service calls inside an
+  // effect with a Set-ref guard (same pattern as before).
   const detailedViewIncrementedIds = useRef<Set<string>>(new Set());
   const detailedViewDemographicsRecordedIds = useRef<Set<string>>(new Set());
 
-  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
-  const [applying, setApplying] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
+  // Local UI state — apply form, lightbox.
   const [applyError, setApplyError] = useState<string | null>(null);
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
-
-  // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [nearbyListings, setNearbyListings] = useState<ListingCardDTO[]>([]);
-  const [nearbyLoading, setNearbyLoading] = useState(false);
-  const [nearbyError, setNearbyError] = useState<string | null>(null);
   const applicationVerificationError = useMemo(
     () => getApplicationVerificationError(user, "listing"),
     [user]
   );
 
-  // Ladda favoriter och kolla om redan ansökt
-  useEffect(() => {
-    if (user) {
-      listingService.getFavorites().then(favs => {
-        setFavoriteIds(new Set(favs.map(f => f.id)));
-      }).catch(console.error);
+  // The listing detail — shared cache. If the user came from the search
+  // page card, that page seeded list data but not detail; detail caches
+  // its own slot keyed by id.
+  const {
+    data: listing,
+    isLoading: loading,
+    isError,
+  } = useListing(listingId);
+  const error = isError ? "Kunde inte ladda annonsen." : null;
 
-      if (listingId) {
-        listingService.getMyApplications().then(apps => {
-          setHasApplied(apps.some(a => a.listingId === listingId));
-        }).catch(console.error);
+  // Favorites + my-applications: both shared with other pages, so coming
+  // from search or sparade hits the cache instead of re-fetching.
+  const { data: favoritesData } = useFavorites();
+  const favoriteIds = useMemo<Set<string>>(
+    () => new Set((favoritesData ?? []).map((f) => f.id)),
+    [favoritesData]
+  );
+  const toggleFavorite = useToggleFavorite();
+
+  const { data: myApplications } = useMyApplications();
+  const hasApplied = useMemo(
+    () =>
+      Boolean(
+        listingId &&
+          (myApplications ?? []).some((a: any) => a.listingId === listingId)
+      ),
+    [myApplications, listingId]
+  );
+
+  // Requirements profile — only when listing has one.
+  const { data: requirementsProfile, isLoading: requirementsLoading } =
+    useRequirementsProfile(listing?.requirementsProfileId);
+
+  // Company logo for company-owned listings.
+  const companyId =
+    listing && listing.ownerType.toLowerCase() === "company"
+      ? listing.ownerId
+      : null;
+  const { data: company } = useQueueCompany(companyId);
+  const companyLogoUrl = company?.logoUrl ?? null;
+
+  // Nearby listings — preserves the same two-step fetch fallback the old
+  // code had (try city-filtered, then fall back to unfiltered if too few).
+  // Wrapped in a single useQuery so the whole "nearby" view caches under
+  // one key. Disabled until we have a listing.
+  const nearbyQuery = useQuery<ListingCardDTO[]>({
+    queryKey: qk.listings.nearby(
+      listing?.city || listing?.area || null,
+      NEARBY_LISTINGS_LIMIT
+    ),
+    enabled: Boolean(listing),
+    staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      void signal; // listingService.getAll doesn't thread signal (legacy sig)
+      if (!listing) return [];
+
+      const location = listing.city || listing.area || null;
+      const nearbyResponse = await listingService.getAll(
+        0,
+        NEARBY_LISTINGS_FETCH_SIZE,
+        location
+      );
+
+      const byId = new Map<string, ListingCardDTO>();
+      const addCandidates = (items: ListingCardDTO[] = []) => {
+        items.forEach((item) => {
+          if (item.id !== listing.id && !byId.has(item.id)) {
+            byId.set(item.id, item);
+          }
+        });
+      };
+
+      addCandidates(nearbyResponse.content);
+
+      if (byId.size < NEARBY_LISTINGS_LIMIT) {
+        const fallbackResponse = await listingService.getAll(
+          0,
+          NEARBY_LISTINGS_LIMIT * 3
+        );
+        addCandidates(fallbackResponse.content);
       }
-    } else {
-      setFavoriteIds(new Set());
-      setHasApplied(false);
-    }
-  }, [user, listingId]);
 
-  const handleFavoriteToggle = useCallback(async (id: string, isFav: boolean) => {
-    if (!user) {
-      alert("Du måste vara inloggad för att spara bostäder");
-      return;
-    }
-    
-    setFavoriteIds(prev => {
-      const next = new Set(prev);
-      if (isFav) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+      return Array.from(byId.values()).slice(0, NEARBY_LISTINGS_LIMIT);
+    },
+  });
+  const nearbyListings = nearbyQuery.data ?? [];
+  const nearbyLoading = nearbyQuery.isLoading;
+  const nearbyError = nearbyQuery.isError ? "Kunde inte ladda fler bostäder." : null;
 
-    const action = isFav
-      ? listingService.addFavorite(id).then(() =>
-          demographicsService
-            .recordListingView(id, {
-              deviceType: getClientDeviceType(),
-              viewType: "DETAILED",
-              resultedInLike: true,
-            })
-            .catch((err) =>
-              console.error("Failed to record favorite demographics:", err)
-            )
-        )
-      : listingService.removeFavorite(id);
+  // Apply mutation: invalidates myApplications on settle so hasApplied
+  // flips true automatically when the cache re-syncs.
+  const applyMutation = useApplyToListing();
 
-    return action.catch(err => {
-      console.error("Failed to toggle favorite:", err);
-      setFavoriteIds(prev => {
-        const next = new Set(prev);
-        if (isFav) next.delete(id);
-        else next.add(id);
-        return next;
-      });
-    });
-  }, [user]);
+  const handleFavoriteToggle = useCallback(
+    async (id: string, isFav: boolean) => {
+      if (!user) {
+        alert("Du måste vara inloggad för att spara bostäder");
+        return;
+      }
+
+      // Optimistic patch + rollback live inside useToggleFavorite. We keep
+      // the demographics side effect here — it's fire-and-forget.
+      toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFav });
+
+      if (isFav) {
+        demographicsService
+          .recordListingView(id, {
+            deviceType: getClientDeviceType(),
+            viewType: "DETAILED",
+            resultedInLike: true,
+          })
+          .catch((err) =>
+            console.error("Failed to record favorite demographics:", err)
+          );
+      }
+    },
+    [user, toggleFavorite]
+  );
 
   const openLightbox = useCallback((index: number) => {
     setLightboxIndex(index);
@@ -404,27 +465,8 @@ export default function ListingDetailPage() {
     setLightboxOpen(false);
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    if (!listingId) return;
-
-    setLoading(true);
-    setError(null);
-
-    listingService
-      .get(listingId)
-      .then((res) => { if (active) setListing(res); })
-      .catch((err: any) => {
-        if (!active) return;
-        console.error("Fetch error:", err);
-        setError("Kunde inte ladda annonsen.");
-        setListing(null);
-      })
-      .finally(() => { if (active) setLoading(false); });
-
-    return () => { active = false; };
-  }, [listingId]);
-
+  // Fire-and-forget: increment view count + record demographics, once per
+  // listing per session. Same Set-ref guard as before.
   useEffect(() => {
     if (!listing?.id) {
       return;
@@ -451,116 +493,6 @@ export default function ListingDetailPage() {
     }
   }, [favoriteIds, listing?.id, user]);
 
-  useEffect(() => {
-    if (!listing?.requirementsProfileId) {
-      setRequirementsProfile(null);
-      setRequirementsLoading(false);
-      return;
-    }
-
-    let active = true;
-    setRequirementsLoading(true);
-
-    listingService
-      .getRequirementsProfile(listing.requirementsProfileId)
-      .then((profile) => {
-        if (active) setRequirementsProfile(profile);
-      })
-      .catch(() => {
-        if (active) setRequirementsProfile(null);
-      })
-      .finally(() => {
-        if (active) setRequirementsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [listing?.requirementsProfileId]);
-
-  useEffect(() => {
-    if (!listing) {
-      setNearbyListings([]);
-      setNearbyError(null);
-      setNearbyLoading(false);
-      return;
-    }
-
-    let active = true;
-
-    const loadNearbyListings = async () => {
-      setNearbyLoading(true);
-      setNearbyError(null);
-      setNearbyListings([]);
-
-      try {
-        const location = listing.city || listing.area || null;
-        const nearbyResponse = await listingService.getAll(
-          0,
-          NEARBY_LISTINGS_FETCH_SIZE,
-          location
-        );
-
-        const byId = new Map<string, ListingCardDTO>();
-        const addCandidates = (items: ListingCardDTO[] = []) => {
-          items.forEach((item) => {
-            if (item.id !== listing.id && !byId.has(item.id)) {
-              byId.set(item.id, item);
-            }
-          });
-        };
-
-        addCandidates(nearbyResponse.content);
-
-        if (byId.size < NEARBY_LISTINGS_LIMIT) {
-          const fallbackResponse = await listingService.getAll(
-            0,
-            NEARBY_LISTINGS_LIMIT * 3
-          );
-          addCandidates(fallbackResponse.content);
-        }
-
-        if (active) {
-          setNearbyListings(
-            Array.from(byId.values()).slice(0, NEARBY_LISTINGS_LIMIT)
-          );
-        }
-      } catch (err) {
-        console.error("Failed to load nearby listings:", err);
-        if (active) {
-          setNearbyError("Kunde inte ladda fler bostäder.");
-          setNearbyListings([]);
-        }
-      } finally {
-        if (active) {
-          setNearbyLoading(false);
-        }
-      }
-    };
-
-    loadNearbyListings();
-
-    return () => { active = false; };
-  }, [listing]);
-
-  // Hämta företagets logga om det är en företagsannons
-  useEffect(() => {
-    if (!listing) return;
-    if (listing.ownerType.toLowerCase() !== "company") return;
-    if (!listing.ownerId) return;
-
-    let active = true;
-    queueService.getCompany(listing.ownerId)
-      .then((company) => {
-        if (active && company.logoUrl) {
-          setCompanyLogoUrl(company.logoUrl);
-        }
-      })
-      .catch(() => { /* ignorera */ });
-
-    return () => { active = false; };
-  }, [listing]);
-
   const handleApply = useCallback(() => {
     if (!listingId || !listing) return;
     if (!user) {
@@ -573,24 +505,26 @@ export default function ListingDetailPage() {
       return;
     }
 
-    setApplying(true);
     setApplyError(null);
     setApplySuccess(null);
 
-    const message = "Hej! Jag är intresserad.";
-    const action =
-      listing.ownerType.toLowerCase() === "company"
-        ? listingService.applyToListing(listingId, message)
-        : listingService.applyToPrivateListing(listingId, message);
-
-    action
-      .then(() => {
-        setApplySuccess("Ansökan skickad!");
-        setHasApplied(true);
-      })
-      .catch((err: any) => setApplyError(err?.message ?? "Kunde inte skicka ansökan."))
-      .finally(() => setApplying(false));
-  }, [applicationVerificationError, listingId, listing, user]);
+    const isCompany = listing.ownerType.toLowerCase() === "company";
+    applyMutation.mutate(
+      { listingId, message: "Hej! Jag är intresserad.", isPrivate: !isCompany },
+      {
+        onSuccess: () => setApplySuccess("Ansökan skickad!"),
+        onError: (err: any) =>
+          setApplyError(err?.message ?? "Kunde inte skicka ansökan."),
+      }
+    );
+  }, [
+    applicationVerificationError,
+    applyMutation,
+    listingId,
+    listing,
+    user,
+  ]);
+  const applying = applyMutation.isPending;
 
   const galleryImages = useMemo(() => listing?.imageUrls || [], [listing]);
 
@@ -700,7 +634,7 @@ export default function ListingDetailPage() {
           />
 
           <RequirementsProfileSection
-            profile={requirementsProfile}
+            profile={requirementsProfile ?? null}
             loading={requirementsLoading}
           />
 

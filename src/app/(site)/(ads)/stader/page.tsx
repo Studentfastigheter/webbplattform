@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 
 import { FieldSet } from "@/components/ui/field";
 import { getCityImageUrl, normalizeCityName } from "@/features/cities/city-utils";
-import { listingService } from "@/features/listings/services/listing-service";
+import { useListingCities } from "@/features/listings/hooks/useListings";
 import { toSearchString, uniqueOnly } from "@/lib/utils";
 
 type CityCardData = {
@@ -38,40 +38,19 @@ function CityCard({ city }: { city: CityCardData }) {
 export default function CitiesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchValue, setSearchValue] = useState("");
-  const [cities, setCities] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: cityResult, isLoading: loading, isError } = useListingCities();
+  const error = isError ? "Kunde inte ladda städer." : null;
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
-
-    listingService
-      .getCities()
-      .then((cityResult) => {
-        if (!active) return;
-        setCities(
-          uniqueOnly(
-            cityResult
-              .map(normalizeCityName)
-              .filter((city) => city.length > 0)
-          ).sort((a, b) => a.localeCompare(b, "sv-SE"))
-        );
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error(err);
-        setError("Kunde inte ladda städer.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Why useMemo for normalization: this runs only when the raw cityResult
+  // identity changes (i.e. on cache update), not on every keystroke.
+  const cities = useMemo<string[]>(() => {
+    if (!cityResult) return [];
+    return uniqueOnly(
+      cityResult
+        .map(normalizeCityName)
+        .filter((city) => city.length > 0)
+    ).sort((a, b) => a.localeCompare(b, "sv-SE"));
+  }, [cityResult]);
 
   const filteredCities = useMemo<CityCardData[]>(() => {
     const query = toSearchString(searchValue);

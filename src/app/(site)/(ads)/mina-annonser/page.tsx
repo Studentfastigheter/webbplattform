@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 import ListingCardSmall from "@/features/listings/components/ListingCard_Small";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { listingService } from "@/features/listings/services/listing-service";
-import { type ListingCardDTO } from "@/types/listing";
+import { useMyListings } from "@/features/listings/hooks/useListings";
 
 function splitLocation(location?: string | null) {
   const parts = location?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
@@ -21,40 +20,24 @@ function splitLocation(location?: string | null) {
 export default function Page() {
   const router = useRouter();
   const { user, token } = useAuth();
-  const [listings, setListings] = useState<ListingCardDTO[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const canManageListings =
     user?.accountType === "company" || user?.accountType === "private_landlord";
 
-  useEffect(() => {
-    if (!token || !canManageListings) {
-      setListings([]);
-      return;
-    }
-
-    let active = true;
-    setLoading(true);
-    setError(null);
-
-    listingService
-      .getMyListings(0, 200)
-      .then((items) => {
-        if (active) setListings(items);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : "Kunde inte ladda dina annonser.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [token, canManageListings]);
+  // useMyListings already gates on auth, but we also disable when the user
+  // can't manage listings — no point fetching for student accounts.
+  const {
+    data: listingsPage,
+    isLoading: loading,
+    error: queryError,
+  } = useMyListings(0, 200);
+  const enabled = Boolean(token) && canManageListings;
+  const listings = enabled ? listingsPage?.content ?? [] : [];
+  const error = enabled && queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : "Kunde inte ladda dina annonser."
+    : null;
 
   const gridListings = useMemo(() => listings ?? [], [listings]);
 

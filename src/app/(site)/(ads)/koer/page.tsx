@@ -1,11 +1,11 @@
 "use client";
 
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/features/queues/components/QueueRow";
 import { useAuth } from "@/context/AuthContext";
-import { queueService } from "@/features/queues/services/queue-service";
+import { useMyQueues } from "@/features/queues/hooks/useQueues";
 
 const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
   const normalized = status?.toLowerCase();
@@ -24,69 +24,44 @@ export default function Page() {
   ];
 
   const { user } = useAuth();
-  const [queueRows, setQueueRows] = useState<QueueRowProps[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // hydrated=true so we get queue + company info for the row rendering.
+  const {
+    data: userApplications,
+    isLoading: loading,
+    isError,
+  } = useMyQueues({ hydrated: true });
+  const error = isError ? "Kunde inte ladda dina köer." : null;
 
-  useEffect(() => {
-    if (!user) {
-      setQueueRows([]);
-      setLoading(false);
-      return;
-    }
+  const queueRows = useMemo<QueueRowProps[]>(() => {
+    if (!user || !userApplications) return [];
 
-    let active = true;
-    setLoading(true);
-    setError(null);
+    return userApplications
+      .filter((app) => app.queueId != null)
+      .map((app) => {
+        const queueId = String(app.queueId);
+        const queue = app.queue;
+        const company = queue?.company;
+        const companyId = company?.id;
+        const city = queue?.city ?? company?.city ?? null;
 
-    queueService
-      .getMyQueues()
-      .then((userApplications) => {
-        if (!active) return;
-
-        const rows = userApplications
-          .filter((app) => app.queueId != null)
-          .map((app) => {
-            const queueId = String(app.queueId);
-            const queue = app.queue;
-            const company = queue?.company;
-            const companyId = company?.id;
-            const city = queue?.city ?? company?.city ?? null;
-
-            return {
-              id: queueId,
-              name: app.queueName ?? queue?.name ?? "Okänd kö",
-              logoUrl:
-                queue?.logoUrl ??
-                company?.logoUrl ??
-                "/logos/campuslyan-logo.svg",
-              cities: city ? [city] : [],
-              status: statusToRowStatus(app.status ?? queue?.status ?? undefined),
-              days: app.queueDays ?? 0,
-              onManage: () => {
-                window.location.href = companyId != null
-                  ? `/alla-koer/${companyId}`
-                  : "/alla-koer";
-              },
-            };
-          });
-
-        setQueueRows(rows);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        console.error(err);
-        setError("Kunde inte ladda dina köer.");
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
+        return {
+          id: queueId,
+          name: app.queueName ?? queue?.name ?? "Okänd kö",
+          logoUrl:
+            queue?.logoUrl ??
+            company?.logoUrl ??
+            "/logos/campuslyan-logo.svg",
+          cities: city ? [city] : [],
+          status: statusToRowStatus(app.status ?? queue?.status ?? undefined),
+          days: app.queueDays ?? 0,
+          onManage: () => {
+            window.location.href = companyId != null
+              ? `/alla-koer/${companyId}`
+              : "/alla-koer";
+          },
+        };
       });
-
-    return () => {
-      active = false;
-    };
-  }, [user]);
+  }, [user, userApplications]);
 
   const rows = useMemo(() => queueRows.map(buildQueueRow), [queueRows]);
 

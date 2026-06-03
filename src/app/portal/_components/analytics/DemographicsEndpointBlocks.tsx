@@ -41,7 +41,7 @@ import {
   type GotListingFilter,
   type ListingDemography,
 } from "@/features/analytics/services/demographics-service";
-import { queueService } from "@/features/queues/services/queue-service";
+import { useAllCompanyListings } from "@/features/queues/hooks/useQueues";
 import type { ListingCardDTO } from "@/types/listing";
 import {
   ApplicationIntervalToggle,
@@ -925,6 +925,11 @@ export function ListingDemographyBatchBlock() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Shared cache: the same useAllCompanyListings(companyId) is called from
+  // 3 different analytics blocks on this page. Before migration each of
+  // them fired its own 200-row request; now they collapse to one.
+  const { data: cachedListings } = useAllCompanyListings(companyId, 0, 200);
+
   React.useEffect(() => {
     if (authLoading) return;
 
@@ -933,26 +938,24 @@ export function ListingDemographyBatchBlock() {
       return;
     }
 
+    // Wait for the shared listings query to resolve before kicking off the
+    // demographics call. Both have the same auth gate so this is the
+    // earliest we can run.
+    if (!cachedListings) return;
+
     const { from, to } = getApplicationIntervalRange(range);
     let cancelled = false;
 
     setIsLoading(true);
     setError(null);
 
-    async function load() {
-      const [listings, result] = await Promise.all([
-        queueService.getAllCompanyListings(companyId!, 0, 200),
-        demographicsService.getFullCompanyListingsByAllCategories(
-          companyId!,
-          from,
-          to
-        ),
-      ]);
-
-      if (!cancelled) setSummary(buildPortfolioSummary(result, listings));
-    }
-
-    load()
+    demographicsService
+      .getFullCompanyListingsByAllCategories(companyId, from, to)
+      .then((result) => {
+        if (!cancelled) {
+          setSummary(buildPortfolioSummary(result, cachedListings));
+        }
+      })
       .catch((requestError) => {
         if (!cancelled) {
           setSummary(null);
@@ -970,7 +973,7 @@ export function ListingDemographyBatchBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId, range]);
+  }, [authLoading, cachedListings, companyId, range]);
 
   return (
     <AnalyticsBlock
@@ -1008,6 +1011,14 @@ export function ApplicationDemographyPortfolioBlock() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Shared with ListingDemographyBatchBlock / ListingDemographyDrilldownBlock —
+  // same companyId hits the same cache slot.
+  const { data: companyListingsForApplications } = useAllCompanyListings(
+    companyId,
+    0,
+    200,
+  );
+
   React.useEffect(() => {
     if (authLoading) return;
 
@@ -1040,8 +1051,18 @@ export function ApplicationDemographyPortfolioBlock() {
     setIsLoading(true);
     setError(null);
 
+    // Wait for the shared listings cache before kicking off demographics.
+    // Without this, the effect would fire once before the cache resolves,
+    // bypass the dedupe, and never re-run when the cached value arrives.
+    if (!companyListingsForApplications) {
+      // Keep the loading spinner visible — the cache is in flight.
+      return () => {
+        cancelled = true;
+      };
+    }
+    const listings = companyListingsForApplications;
+
     async function load() {
-      const listings = await queueService.getAllCompanyListings(companyId!, 0, 200);
       const listingIds = listings.map((listing) => listing.id).filter(Boolean);
 
       if (listingIds.length === 0) {
@@ -1086,7 +1107,15 @@ export function ApplicationDemographyPortfolioBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, category, companyId, fromValue, gotListing, toValue]);
+  }, [
+    authLoading,
+    category,
+    companyId,
+    companyListingsForApplications,
+    fromValue,
+    gotListing,
+    toValue,
+  ]);
 
   const bucketData = React.useMemo(
     () => mergeApplicationBuckets(Object.values(demographies ?? {}), 10),
@@ -1202,31 +1231,25 @@ export function ListingDemographyDrilldownBlock() {
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
   const [category, setCategory] =
     React.useState<DemographyCategory>("DEVICE_TYPE");
-  const [listings, setListings] = React.useState<ListingCardDTO[]>([]);
   const [listingId, setListingId] = React.useState<string>("");
   const [demography, setDemography] = React.useState<ListingDemography | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Shared cache with the other two analytics blocks. One fetch per
+  // companyId, regardless of how many blocks mount.
+  const { data: listingsData } = useAllCompanyListings(companyId, 0, 200);
+  const listings = React.useMemo<ListingCardDTO[]>(
+    () => listingsData ?? [],
+    [listingsData]
+  );
+
+  // Auto-select the first listing in the dropdown when listings first
+  // resolve, but never overwrite an existing selection.
   React.useEffect(() => {
-    if (authLoading || !companyId) return;
-
-    let cancelled = false;
-    queueService
-      .getAllCompanyListings(companyId, 0, 200)
-      .then((items) => {
-        if (cancelled) return;
-        setListings(items);
-        setListingId((current) => current || items[0]?.id || "");
-      })
-      .catch(() => {
-        if (!cancelled) setListings([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId]);
+    if (listings.length === 0) return;
+    setListingId((current) => current || listings[0]?.id || "");
+  }, [listings]);
 
   React.useEffect(() => {
     if (authLoading) return;

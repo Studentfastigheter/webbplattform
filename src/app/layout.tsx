@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserEnvironmentProvider } from "@/context/UserEnvironmentContext";
+import { QueryProvider } from "@/lib/query/QueryProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { Theme } from "@radix-ui/themes";
@@ -93,26 +94,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <SpeedInsights />
         <Analytics />
-        <AuthProvider>
-          <UserEnvironmentProvider>
-            <Theme>
-              <ScrollToTop />
-              {children}
-              <OnboardingModal />
-              <Toaster
-                position="bottom-right"
-                richColors
-                toastOptions={{
-                  duration: 4000,
-                  classNames: {
-                    actionButton: "",
-                  },
-                }}
-                theme="light"
-              />
-            </Theme>
-          </UserEnvironmentProvider>
-        </AuthProvider>
+        {/*
+          QueryProvider sits OUTSIDE AuthProvider so that AuthContext can later
+          be migrated into a query (useAuthSession) without re-shuffling the
+          provider tree. No consumer of QueryClient at this layer depends on
+          auth state.
+        */}
+        <QueryProvider>
+          <AuthProvider>
+            <UserEnvironmentProvider>
+              <Theme>
+                <ScrollToTop />
+                {children}
+                <OnboardingModal />
+                <Toaster
+                  position="bottom-right"
+                  richColors
+                  toastOptions={{
+                    duration: 4000,
+                    classNames: {
+                      actionButton: "",
+                    },
+                  }}
+                  theme="light"
+                />
+              </Theme>
+            </UserEnvironmentProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

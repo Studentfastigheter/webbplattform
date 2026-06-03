@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -12,14 +12,14 @@ import {
   getCityImageUrl,
 } from "@/features/cities/city-utils";
 import SimpleCompanyCard from "@/features/cities/components/SimpleCompanyCard";
-import {
-  companyService,
-  type CompanyPublicDTO,
-} from "@/features/companies/services/company-service";
 import Que_ListingCard from "@/features/listings/components/Que_ListingCard";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
-import { listingService } from "@/features/listings/services/listing-service";
-import type { ListingCardDTO } from "@/types/listing";
+import {
+  useFavorites,
+  useListingsSearch,
+  useToggleFavorite,
+} from "@/features/listings/hooks/useListings";
+import { useCompanies } from "@/features/companies/hooks/useCompanies";
 
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
   ssr: false,
@@ -46,123 +46,43 @@ export default function CityDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const cityName = formatCityName(decodeRouteParam(params?.stad)) || "Stad";
-  const [listings, setListings] = useState<ListingCardDTO[]>([]);
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [companies, setCompanies] = useState<CompanyPublicDTO[]>([]);
-  const [listingsLoading, setListingsLoading] = useState(true);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
-  const [listingsError, setListingsError] = useState<string | null>(null);
-  const [companiesError, setCompaniesError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    setListingsLoading(true);
-    setListingsError(null);
+  // Server state: each hook caches independently. Navigating between cities
+  // reuses the cities-listing cache; the per-city listing search is keyed
+  // by city + page + size.
+  const {
+    data: listingsPage,
+    isLoading: listingsLoading,
+    isError: isListingsError,
+  } = useListingsSearch({ city: cityName, page: 0, size: 6 });
+  const listings = listingsPage?.content ?? [];
+  const listingsError = isListingsError
+    ? "Kunde inte ladda bostäder i staden."
+    : null;
 
-    listingService
-      .getAll({
-        city: cityName,
-        page: 0,
-        size: 6,
-      })
-      .then((res) => {
-        if (active) setListings(res.content ?? []);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error(err);
-        setListings([]);
-        setListingsError("Kunde inte ladda bostäder i staden.");
-      })
-      .finally(() => {
-        if (active) setListingsLoading(false);
-      });
+  const {
+    data: companies = [],
+    isLoading: companiesLoading,
+    isError: isCompaniesError,
+  } = useCompanies();
+  const companiesError = isCompaniesError ? "Kunde inte ladda företag." : null;
 
-    return () => {
-      active = false;
-    };
-  }, [cityName]);
-
-  useEffect(() => {
-    let active = true;
-    setCompaniesLoading(true);
-    setCompaniesError(null);
-
-    companyService
-      .listCompanies()
-      .then((items) => {
-        if (active) setCompanies(items);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error(err);
-        setCompanies([]);
-        setCompaniesError("Kunde inte ladda företag.");
-      })
-      .finally(() => {
-        if (active) setCompaniesLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      setFavoriteIds(new Set());
-      return;
-    }
-
-    let active = true;
-
-    listingService
-      .getFavorites()
-      .then((favorites) => {
-        if (active) setFavoriteIds(new Set(favorites.map((listing) => listing.id)));
-      })
-      .catch((err) => {
-        console.error("Kunde inte hämta sparade bostäder:", err);
-        if (active) setFavoriteIds(new Set());
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [user]);
+  // Favorites: shared with all other pages — same cache entry, no re-fetch
+  // unless stale.
+  const { data: favoritesData } = useFavorites();
+  const favoriteIds = useMemo(
+    () => new Set((favoritesData ?? []).map((listing) => listing.id)),
+    [favoritesData],
+  );
+  const toggleFavorite = useToggleFavorite();
 
   const handleFavoriteToggle = (id: string, isFavorite: boolean) => {
     if (!user) {
       router.push("/login");
       return;
     }
-
-    setFavoriteIds((current) => {
-      const next = new Set(current);
-      if (isFavorite) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
-
-    const action = isFavorite
-      ? listingService.addFavorite(id)
-      : listingService.removeFavorite(id);
-
-    action.catch((err) => {
-      console.error("Kunde inte uppdatera sparad bostad:", err);
-      setFavoriteIds((current) => {
-        const next = new Set(current);
-        if (isFavorite) {
-          next.delete(id);
-        } else {
-          next.add(id);
-        }
-        return next;
-      });
-    });
+    // Optimistic patch + rollback are handled inside useToggleFavorite.
+    toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFavorite });
   };
 
   return (
