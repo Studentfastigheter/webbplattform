@@ -169,7 +169,7 @@ export const adminService = {
 
   getCompanyUsers: async (companyId: number): Promise<AdminCompanyUserDTO[]> => {
     const response = await apiClient<unknown>(
-      `/admin/company/${pathSegment(companyId)}/users`
+      `/companies/${pathSegment(companyId)}/users`
     );
     return arrayFromApiResponse<AdminCompanyUserDTO>(response);
   },
@@ -184,10 +184,17 @@ export const adminService = {
   manageCompanyAccount: async (
     account: AdminCompanyUserDTO
   ): Promise<void> => {
-    await apiClient<void>("/admin/company/account", {
-      method: "PUT",
-      body: jsonBody(account),
-    });
+    if (typeof account.companyId !== "number" || typeof account.id !== "number") {
+      throw new Error("CompanyId och konto-id krävs för att uppdatera ett företagskonto.");
+    }
+
+    await apiClient<void>(
+      `/companies/${pathSegment(account.companyId)}/users/${pathSegment(account.id)}`,
+      {
+        method: "PUT",
+        body: jsonBody(account),
+      }
+    );
   },
 
   verifyCompanyAccount: async (
@@ -195,7 +202,7 @@ export const adminService = {
     userId: number
   ): Promise<void> => {
     await apiClient<void>(
-      `/admin/company/${pathSegment(companyId)}/verify/${pathSegment(userId)}`,
+      `/companies/${pathSegment(companyId)}/verify/${pathSegment(userId)}`,
       {
         method: "PUT",
       }

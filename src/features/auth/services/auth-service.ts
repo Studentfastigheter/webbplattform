@@ -170,7 +170,18 @@ function normalizeAccountTypeValue(value: string | undefined): User["accountType
     return undefined;
   }
 
-  return (accountType === "admin" ? "superadmin" : accountType) as User["accountType"];
+  if (
+    accountType === "student" ||
+    accountType === "company" ||
+    accountType === "private_landlord" ||
+    accountType === "landlord" ||
+    accountType === "quick_register" ||
+    accountType === "admin"
+  ) {
+    return accountType;
+  }
+
+  return undefined;
 }
 
 export function getAuthResponseToken(response: Partial<AuthResponse>): string {
@@ -420,7 +431,7 @@ export const authService = {
 
   adminLogin: async (payload: LoginRequest): Promise<AuthResponse> => {
     if (typeof window !== "undefined" && !isAdminSubdomain()) {
-      throw new Error("Superadmin-inloggning är endast tillgänglig på admin-subdomänen.");
+      throw new Error("Admin-inloggning är endast tillgänglig på admin-subdomänen.");
     }
 
     const email = payload.email.trim();

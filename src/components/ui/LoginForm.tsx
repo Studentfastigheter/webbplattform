@@ -71,22 +71,22 @@ const loginCopy: Record<
     showRegisterLink: false,
   },
   admin: {
-    title: "Superadmin-login",
-    titleEn: "Superadmin login",
+    title: "Admin-login",
+    titleEn: "Admin login",
     subtitle: "Endast för plattformsadministratörer.",
     subtitleEn: "For platform administrators only.",
     invalidAccountMessage:
-      "Det här kontot är inte ett superadminkonto.",
+      "Det här kontot är inte ett adminkonto.",
     invalidAccountMessageEn:
-      "This account is not a superadmin account.",
+      "This account is not an admin account.",
     successPath: "/",
     showGoogle: false,
     showRegisterLink: false,
   },
 };
 
-function isSuperadminAccount(accountType: User["accountType"]) {
-  return accountType === "superadmin" || accountType === "admin";
+function isAdminAccount(accountType: User["accountType"]) {
+  return accountType === "admin";
 }
 
 function isAllowedAccount(user: User, mode: LoginMode) {
@@ -95,10 +95,10 @@ function isAllowedAccount(user: User, mode: LoginMode) {
   }
 
   if (mode === "company") {
-    return getActiveCompanyId(user) != null && !isSuperadminAccount(user.accountType);
+    return getActiveCompanyId(user) != null && !isAdminAccount(user.accountType);
   }
 
-  return isSuperadminAccount(user.accountType);
+  return isAdminAccount(user.accountType);
 }
 
 export function LoginForm({ mode = "student", className, ...props }: LoginFormProps) {

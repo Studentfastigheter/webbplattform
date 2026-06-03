@@ -24,7 +24,7 @@ async function isAdminRequest(request: Request) {
   try {
     const session = await apiClient<AuthResponse>("/auth/me", {}, token);
     const accountType = getAuthResponseUser(session).accountType;
-    return accountType === "superadmin" || accountType === "admin";
+    return accountType === "admin";
   } catch {
     return false;
   }

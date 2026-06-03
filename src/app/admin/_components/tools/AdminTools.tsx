@@ -6,7 +6,6 @@ import {
   CheckCircle2Icon,
   RefreshCwIcon,
   Trash2Icon,
-  UserPlusIcon,
   XCircleIcon,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -2537,14 +2536,14 @@ function CompanyAccountForm() {
   return (
     <ActionShell
       title="Företagskonto"
-      description="Välj företag för att hämta kopplade konton, skapa eller uppdatera konto och verifiera anställda."
+      description="Välj företag för att hämta kopplade konton, uppdatera befintliga konton och verifiera anställda."
       method="GET/PUT"
-      endpoint="/api/companies/roles, /api/admin/company/{id}/users, /api/admin/company/account"
+      endpoint="/api/companies/roles, /api/companies/{id}/users, /api/companies/{id}/users/{userId}"
     >
       <ResultBlock state={companiesState} />
       <ResultBlock state={rolesState} />
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <FormInput label="Konto-id" value={form.id} onChange={(id) => patchForm({ id })} placeholder="Tomt vid nytt konto" />
+        <FormInput label="Konto-id" value={form.id} onChange={(id) => patchForm({ id })} placeholder="Välj ett konto i listan" />
         <FormSelect
           label="Företag"
           value={form.companyId}
@@ -2594,7 +2593,7 @@ function CompanyAccountForm() {
           <div>
             <h4 className="text-sm font-semibold text-[#111827]">Kopplade konton</h4>
             <p className="mt-1 text-xs text-[#66716f]">
-              Listan uppdateras från GET /api/admin/company/{form.companyId || "{id}"}/users.
+              Listan uppdateras från GET /api/companies/{form.companyId || "{id}"}/users.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -2618,8 +2617,7 @@ function CompanyAccountForm() {
               disabled={!form.companyId.trim()}
               className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm font-medium text-[#36534d] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <UserPlusIcon className="h-4 w-4" />
-              Nytt konto
+              Rensa val
             </button>
           </div>
         </div>

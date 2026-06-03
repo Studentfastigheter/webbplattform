@@ -13,7 +13,6 @@ export type AccountType =
   | "private_landlord"
   | "landlord"
   | "quick_register"
-  | "superadmin"
   | "admin";
 
 export type RegistrationAccountType = "student" | "company" | "private_landlord";
