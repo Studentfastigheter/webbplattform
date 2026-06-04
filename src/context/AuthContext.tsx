@@ -2,7 +2,6 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { normalizeAuthToken } from "@/lib/api/client";
-import { isAdminSubdomain } from "@/lib/subdomain-routing";
 import {
   authService,
   getOptionalAuthResponseToken,
@@ -43,26 +42,6 @@ function getJwtPayload(token: string | null): JwtPayload {
 function getJwtSubject(token: string | null): string {
   const payload = getJwtPayload(token);
   return typeof payload.sub === "string" ? payload.sub : "";
-}
-
-function getAdminUserFromToken(token: string): User | null {
-  const payload = getJwtPayload(token);
-
-  if (payload.accountType?.toLowerCase() !== "admin") {
-    return null;
-  }
-
-  const email = typeof payload.sub === "string" ? payload.sub : "";
-  const numericId = Number(payload.uid);
-
-  return {
-    id: Number.isFinite(numericId) ? numericId : 0,
-    email,
-    accountType: "admin",
-    displayName: email || "Admin",
-    createdAt: new Date(0).toISOString(),
-    verified: true,
-  };
 }
 
 function withSessionEmail(user: User, token: string | null): User {
@@ -139,14 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.setItem("token", storedToken);
         setToken(storedToken); // Synka state med localStorage
-
-        if (isAdminSubdomain()) {
-          const adminUser = getAdminUserFromToken(storedToken);
-          if (adminUser) {
-            setUser(adminUser);
-            return;
-          }
-        }
 
         const session = await authService.session(storedToken);
         const accessToken = getOptionalAuthResponseToken(session) ?? storedToken;

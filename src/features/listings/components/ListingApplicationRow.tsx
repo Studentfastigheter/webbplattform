@@ -6,6 +6,8 @@ import type { ListFrameRow } from "@/components/layout/ListFrame";
 import { Button } from "@/components/ui/button";
 import StatusTag, { type Status } from "@/components/ui/statusTag";
 import type { AdvertiserSummary, DateString } from "@/types";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
 type ListingSummary = {
   listingId: string;
@@ -36,15 +38,11 @@ export type ListingApplicationRowProps = ListingSummary & {
   onOpen?: () => void;
 };
 
-const formatCurrency = (value?: number | null) =>
-  typeof value === "number"
-    ? new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(value)
-    : null;
-
 const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
   listing,
   onOpen,
 }) => {
+  const { locale } = useI18n();
   const {
     title,
     rent,
@@ -60,11 +58,19 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
   } = listing;
 
   const resolvedImage = imageUrl || images?.find((image) => image.imageUrl)?.imageUrl;
-  const resolvedRent = formatCurrency(rent);
+  const resolvedRent =
+    typeof rent === "number" ? formatLocalizedNumber(locale, rent) : null;
   const locationLabel = [area, city].filter(Boolean).join(", ") || "-";
-  const landlordName = advertiser?.displayName ?? landlordType ?? "Hyresvärd";
+  const landlordName =
+    advertiser?.displayName ??
+    landlordType ??
+    localizedText(locale, "Hyresvärd", "Landlord");
   const landlordLogo = advertiser?.logoUrl;
-  const details = [dwellingType, rooms != null ? `${rooms} rum` : null, sizeM2 != null ? `${sizeM2} m²` : null]
+  const details = [
+    dwellingType,
+    rooms != null ? `${rooms} ${localizedText(locale, "rum", "rooms")}` : null,
+    sizeM2 != null ? `${sizeM2} m²` : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -98,10 +104,14 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
         </div>
         <div className="mt-1 inline-flex min-w-0 items-center gap-1.5 text-xs leading-4 text-gray-500">
           <Ruler className="h-3.5 w-3.5 flex-shrink-0" />
-          <span className="truncate">{details || "Bostadsinfo saknas"}</span>
+          <span className="truncate">
+            {details || localizedText(locale, "Bostadsinfo saknas", "Housing info missing")}
+          </span>
         </div>
         <div className="mt-2 text-sm font-semibold leading-5 text-gray-950">
-          {resolvedRent ? `${resolvedRent} kr/månad` : landlordName}
+          {resolvedRent
+            ? localizedText(locale, `${resolvedRent} kr/månad`, `SEK ${resolvedRent}/month`)
+            : landlordName}
         </div>
         <div className="mt-auto flex min-w-0 items-center gap-2 pt-2">
           <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-50">
@@ -187,8 +197,11 @@ const ActionsCell: React.FC<
   onRejectOffer,
   onWithdraw,
   onOpen,
-}) => (
-  <div className="flex min-h-16 flex-col items-center justify-center gap-2">
+}) => {
+  const { locale } = useI18n();
+
+  return (
+    <div className="flex min-h-16 flex-col items-center justify-center gap-2">
     <Button
       type="button"
       onClick={onOpen}
@@ -197,7 +210,7 @@ const ActionsCell: React.FC<
         "transition hover:border-gray-300 hover:bg-gray-50"
       )}
     >
-      Visa
+      {localizedText(locale, "Visa", "View")}
       <ChevronRight className="ml-1 h-3.5 w-3.5" />
     </Button>
     {hasOffer ? (
@@ -209,7 +222,7 @@ const ActionsCell: React.FC<
           onClick={onAcceptOffer}
           className="h-8 rounded-full bg-emerald-600 px-3 text-[12px] font-medium text-white transition hover:bg-emerald-700"
         >
-          Acceptera
+          {localizedText(locale, "Acceptera", "Accept")}
         </Button>
         <button
           type="button"
@@ -217,7 +230,7 @@ const ActionsCell: React.FC<
           onClick={onRejectOffer}
           className="text-[12px] text-red-600 transition hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Neka
+          {localizedText(locale, "Neka", "Reject")}
         </button>
       </div>
     ) : onWithdraw ? (
@@ -227,11 +240,12 @@ const ActionsCell: React.FC<
         className="flex items-center gap-1.5 text-[12px] text-red-600 transition hover:text-red-800"
       >
         <Trash2 size={14} />
-        Dra tillbaka
+        {localizedText(locale, "Dra tillbaka", "Withdraw")}
       </button>
     ) : null}
-  </div>
-);
+    </div>
+  );
+};
 
 export const buildListingApplicationRow = (
   props: ListingApplicationRowProps

@@ -42,6 +42,13 @@ import {
   type ListingDemography,
 } from "@/features/analytics/services/demographics-service";
 import { useAllCompanyListings } from "@/features/queues/hooks/useQueues";
+import {
+  useApplicationsBatchDemography,
+  useCompaniesBatchByAllCategoriesDemography,
+  useCompanyDemography,
+  useFullCompanyListingsByAllCategoriesDemography,
+  useListingDemography,
+} from "@/features/analytics/hooks/useDemographics";
 import type { ListingCardDTO } from "@/types/listing";
 import {
   ApplicationIntervalToggle,
@@ -770,53 +777,78 @@ function ListingPortfolioSummary({ summary }: { summary: PortfolioSummary }) {
   );
 }
 
-export function CompanyDemographyBlock() {
+type CompanyDemographyBlockProps = {
+  deferUntilSelection?: boolean;
+  description?: React.ReactNode;
+  title?: React.ReactNode;
+  useCompaniesQuery?: boolean;
+};
+
+export function CompanyDemographyBlock({
+  deferUntilSelection = false,
+  description = "Besökare uppdelade efter vald kategori.",
+  title = "Företagsprofil",
+  useCompaniesQuery = false,
+}: CompanyDemographyBlockProps = {}) {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
   const [category, setCategory] =
     React.useState<CompanyDemographyCategory>("VIEW_TYPE");
-  const [demography, setDemography] = React.useState<CompanyDemography | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [hasSelection, setHasSelection] = React.useState(!deferUntilSelection);
 
-  React.useEffect(() => {
-    if (authLoading) return;
-
-    if (!companyId) {
-      setError("Kunde inte hitta ett aktivt företag.");
-      return;
-    }
-
+  // Stable from/to strings for the query key — deriving them in a memo (vs
+  // re-computing on every render) keeps the key stable between renders, so
+  // refetches only happen when range actually changes.
+  const { fromIso, toIso } = React.useMemo(() => {
     const { from, to } = getApplicationIntervalRange(range);
-    let cancelled = false;
+    return { fromIso: from.toISOString(), toIso: to.toISOString() };
+  }, [range]);
 
-    setIsLoading(true);
-    setError(null);
+  const queryEnabled =
+    !authLoading && hasSelection && companyId != null && companyId > 0;
 
-    demographicsService
-      .getCompany(companyId, from, to, category)
-      .then((result) => {
-        if (!cancelled) setDemography(result);
-      })
-      .catch((requestError) => {
-        if (!cancelled) {
-          setDemography(null);
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Kunde inte hämta företagsdemografi."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+  // Two distinct hooks — the single-company endpoint vs the
+  // single-category-batch endpoint — picked from `useCompaniesQuery`. Both
+  // are gated by `queryEnabled` so the request fires only when needed.
+  const companyDemographyQuery = useCompanyDemography(
+    useCompaniesQuery ? null : companyId,
+    fromIso,
+    toIso,
+    category,
+    queryEnabled && !useCompaniesQuery,
+  );
+  const batchDemographyQuery = useCompaniesBatchByAllCategoriesDemography(
+    companyId != null && companyId > 0 ? [companyId] : [],
+    fromIso,
+    toIso,
+    queryEnabled && useCompaniesQuery,
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, category, companyId, range]);
+  const demography = useCompaniesQuery
+    ? (batchDemographyQuery.data?.[category]?.[String(companyId)] ?? null)
+    : companyDemographyQuery.data ?? null;
+  const activeQuery = useCompaniesQuery ? batchDemographyQuery : companyDemographyQuery;
+  const isLoading = hasSelection && (activeQuery.isLoading || activeQuery.isFetching);
+  const error = !hasSelection
+    ? null
+    : !companyId
+    ? "Kunde inte hitta ett aktivt företag."
+    : activeQuery.isError
+    ? activeQuery.error instanceof Error
+      ? activeQuery.error.message
+      : "Kunde inte hämta företagsdemografi."
+    : null;
+
+  const handleCategoryChange = (nextCategory: CompanyDemographyCategory) => {
+    setCategory(nextCategory);
+    setHasSelection(true);
+  };
+
+  const handleRangeChange = (nextRange: ApplicationIntervalValue) => {
+    setRange(nextRange);
+    setHasSelection(true);
+  };
 
   return (
     <AnalyticsBlock
@@ -824,20 +856,22 @@ export function CompanyDemographyBlock() {
         <div className="flex max-w-full flex-col gap-2 sm:flex-row">
           <CategorySelect
             categories={COMPANY_DEMOGRAPHY_CATEGORIES}
-            onChange={setCategory}
+            onChange={handleCategoryChange}
             value={category}
           />
-          <ApplicationIntervalToggle onChange={setRange} value={range} />
+          <ApplicationIntervalToggle onChange={handleRangeChange} value={range} />
         </div>
       }
       size="2x2"
-      title="Företagsprofil"
-      description="Besökare uppdelade efter vald kategori."
+      title={title}
+      description={description}
     >
       {authLoading || isLoading ? (
         <BlockSkeleton />
       ) : error ? (
         <ErrorState message={error} />
+      ) : deferUntilSelection && !hasSelection ? (
+        <EmptyState message="Välj kategori eller tidsintervall för att ladda demografi." />
       ) : category === "GENDER" || category === "VIEW_TYPE" || category === "DEVICE_TYPE" ? (
         <PieDistribution data={bucketsToData(demography)} />
       ) : (
@@ -851,53 +885,36 @@ export function CompanyDemographyBatchBlock() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
-  const [data, setData] = React.useState<Array<{ category: string; value: number }>>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (authLoading) return;
-
-    if (!companyId) {
-      setError("Kunde inte hitta ett aktivt företag.");
-      return;
-    }
-
+  const { fromIso, toIso } = React.useMemo(() => {
     const { from, to } = getApplicationIntervalRange(range);
-    let cancelled = false;
+    return { fromIso: from.toISOString(), toIso: to.toISOString() };
+  }, [range]);
 
-    setIsLoading(true);
-    setError(null);
+  const batchQuery = useCompaniesBatchByAllCategoriesDemography(
+    companyId != null && companyId > 0 ? [companyId] : [],
+    fromIso,
+    toIso,
+    !authLoading && companyId != null && companyId > 0,
+  );
 
-    demographicsService
-      .getCompaniesBatchByAllCategories([companyId], from, to)
-      .then((result) => {
-        if (cancelled) return;
-        setData(
-          COMPANY_DEMOGRAPHY_CATEGORIES.map((category) => ({
-            category: labels[category] ?? category,
-            value: totalViews(result[category]?.[String(companyId)] ?? null),
-          })).filter((item) => item.value > 0)
-        );
-      })
-      .catch((requestError) => {
-        if (!cancelled) {
-          setData([]);
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Kunde inte hämta batchdemografi."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId, range]);
+  // Derive the chart points from the cached batch result. Re-renders only
+  // when the query data changes — no manual setData/cancelled bookkeeping.
+  const data = React.useMemo(() => {
+    if (!batchQuery.data || !companyId) return [];
+    return COMPANY_DEMOGRAPHY_CATEGORIES.map((category) => ({
+      category: labels[category] ?? category,
+      value: totalViews(batchQuery.data?.[category]?.[String(companyId)] ?? null),
+    })).filter((item) => item.value > 0);
+  }, [batchQuery.data, companyId]);
+  const isLoading = batchQuery.isLoading || batchQuery.isFetching;
+  const error = !companyId
+    ? "Kunde inte hitta ett aktivt företag."
+    : batchQuery.isError
+    ? batchQuery.error instanceof Error
+      ? batchQuery.error.message
+      : "Kunde inte hämta batchdemografi."
+    : null;
 
   return (
     <AnalyticsBlock
@@ -921,59 +938,42 @@ export function ListingDemographyBatchBlock() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
-  const [summary, setSummary] = React.useState<PortfolioSummary | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
   // Shared cache: the same useAllCompanyListings(companyId) is called from
   // 3 different analytics blocks on this page. Before migration each of
   // them fired its own 200-row request; now they collapse to one.
   const { data: cachedListings } = useAllCompanyListings(companyId, 0, 200);
 
-  React.useEffect(() => {
-    if (authLoading) return;
-
-    if (!companyId) {
-      setError("Kunde inte hitta ett aktivt företag.");
-      return;
-    }
-
-    // Wait for the shared listings query to resolve before kicking off the
-    // demographics call. Both have the same auth gate so this is the
-    // earliest we can run.
-    if (!cachedListings) return;
-
+  const { fromIso, toIso } = React.useMemo(() => {
     const { from, to } = getApplicationIntervalRange(range);
-    let cancelled = false;
+    return { fromIso: from.toISOString(), toIso: to.toISOString() };
+  }, [range]);
 
-    setIsLoading(true);
-    setError(null);
+  // Only fetch demographics once the shared listings cache resolves; the
+  // portfolio summary needs both datasets and there's no point firing the
+  // demographics call until we have the listings to map them against.
+  const demographyQuery = useFullCompanyListingsByAllCategoriesDemography(
+    companyId,
+    fromIso,
+    toIso,
+    !authLoading && Boolean(cachedListings) && companyId != null && companyId > 0,
+  );
 
-    demographicsService
-      .getFullCompanyListingsByAllCategories(companyId, from, to)
-      .then((result) => {
-        if (!cancelled) {
-          setSummary(buildPortfolioSummary(result, cachedListings));
-        }
-      })
-      .catch((requestError) => {
-        if (!cancelled) {
-          setSummary(null);
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Kunde inte hämta annonsportfölj."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, cachedListings, companyId, range]);
+  const summary = React.useMemo<PortfolioSummary | null>(
+    () =>
+      demographyQuery.data && cachedListings
+        ? buildPortfolioSummary(demographyQuery.data, cachedListings)
+        : null,
+    [demographyQuery.data, cachedListings],
+  );
+  const isLoading = demographyQuery.isLoading || demographyQuery.isFetching;
+  const error = !companyId
+    ? "Kunde inte hitta ett aktivt företag."
+    : demographyQuery.isError
+    ? demographyQuery.error instanceof Error
+      ? demographyQuery.error.message
+      : "Kunde inte hämta annonsportfölj."
+    : null;
 
   return (
     <AnalyticsBlock
@@ -1008,8 +1008,6 @@ export function ApplicationDemographyPortfolioBlock() {
   const [demographies, setDemographies] =
     React.useState<Record<string, ApplicationDemography> | null>(null);
   const [listingRows, setListingRows] = React.useState<ApplicationListingRow[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
   // Shared with ListingDemographyBatchBlock / ListingDemographyDrilldownBlock —
   // same companyId hits the same cache slot.
@@ -1019,103 +1017,98 @@ export function ApplicationDemographyPortfolioBlock() {
     200,
   );
 
-  React.useEffect(() => {
-    if (authLoading) return;
-
-    if (!companyId) {
-      setError("Kunde inte hitta ett aktivt företag.");
-      return;
-    }
-
+  // Validate / normalise the user's date inputs into ISO strings. If the
+  // dates are invalid or inverted, the query stays disabled and we surface
+  // a specific error message — preserving the original UX.
+  const dateError = React.useMemo<string | null>(() => {
     const from = dateTimeLocalToIso(fromValue);
     const to = dateTimeLocalToIso(toValue);
-
-    if (!from || !to) {
-      setDemographies(null);
-      setListingRows([]);
-      setError("Välj giltiga datum för from och to.");
-      return;
-    }
-
+    if (!from || !to) return "Välj giltiga datum för from och to.";
     if (new Date(from).getTime() > new Date(to).getTime()) {
-      setDemographies(null);
-      setListingRows([]);
-      setError("From måste vara tidigare än to.");
+      return "From måste vara tidigare än to.";
+    }
+    return null;
+  }, [fromValue, toValue]);
+
+  const fromIso = React.useMemo(() => dateTimeLocalToIso(fromValue), [fromValue]);
+  const toIso = React.useMemo(() => dateTimeLocalToIso(toValue), [toValue]);
+
+  // Listing ids the batch request needs. Empty array stays an empty array so
+  // the hook's `enabled` gate (which requires listingIds.length > 0) shuts
+  // the request off cleanly.
+  const listingIds = React.useMemo(
+    () =>
+      (companyListingsForApplications ?? [])
+        .map((listing) => listing.id)
+        .filter(Boolean),
+    [companyListingsForApplications],
+  );
+
+  const queryEnabled =
+    !authLoading &&
+    !dateError &&
+    companyId != null &&
+    companyId > 0 &&
+    Boolean(companyListingsForApplications);
+
+  const applicationsBatchQuery = useApplicationsBatchDemography(
+    companyId,
+    listingIds,
+    fromIso ?? "",
+    toIso ?? "",
+    category,
+    gotListing,
+    queryEnabled,
+  );
+
+  // Derive the displayed datasets from the query result. If listings are
+  // empty (company has no listings), short-circuit to empty maps without
+  // firing the hook — matching the original behaviour.
+  React.useEffect(() => {
+    if (!queryEnabled) {
+      // Clear stale state when inputs are invalid; the rendered error comes
+      // from `error` below.
+      if (dateError) {
+        setDemographies(null);
+        setListingRows([]);
+      }
       return;
     }
-
-    const fromIso = from;
-    const toIso = to;
-    let cancelled = false;
-
-    setIsLoading(true);
-    setError(null);
-
-    // Wait for the shared listings cache before kicking off demographics.
-    // Without this, the effect would fire once before the cache resolves,
-    // bypass the dedupe, and never re-run when the cached value arrives.
-    if (!companyListingsForApplications) {
-      // Keep the loading spinner visible — the cache is in flight.
-      return () => {
-        cancelled = true;
-      };
+    if (listingIds.length === 0 && companyListingsForApplications) {
+      setDemographies({});
+      setListingRows([]);
+      return;
     }
-    const listings = companyListingsForApplications;
-
-    async function load() {
-      const listingIds = listings.map((listing) => listing.id).filter(Boolean);
-
-      if (listingIds.length === 0) {
-        if (!cancelled) {
-          setDemographies({});
-          setListingRows([]);
-        }
-        return;
-      }
-
-      const result = await demographicsService.getApplicationsBatch(
-        companyId!,
-        listingIds,
-        fromIso,
-        toIso,
-        category,
-        gotListing
+    if (applicationsBatchQuery.data && companyListingsForApplications) {
+      setDemographies(applicationsBatchQuery.data);
+      setListingRows(
+        mapApplicationListingRows(
+          applicationsBatchQuery.data,
+          companyListingsForApplications,
+        ),
       );
-
-      if (!cancelled) {
-        setDemographies(result);
-        setListingRows(mapApplicationListingRows(result, listings));
-      }
     }
-
-    load()
-      .catch((requestError) => {
-        if (!cancelled) {
-          setDemographies(null);
-          setListingRows([]);
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Kunde inte hämta ansökningsdemografi."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
   }, [
-    authLoading,
-    category,
-    companyId,
+    queryEnabled,
+    dateError,
+    listingIds.length,
+    applicationsBatchQuery.data,
     companyListingsForApplications,
-    fromValue,
-    gotListing,
-    toValue,
   ]);
+
+  const isLoading =
+    queryEnabled &&
+    listingIds.length > 0 &&
+    (applicationsBatchQuery.isLoading || applicationsBatchQuery.isFetching);
+  const error = !companyId
+    ? "Kunde inte hitta ett aktivt företag."
+    : dateError
+    ? dateError
+    : applicationsBatchQuery.isError
+    ? applicationsBatchQuery.error instanceof Error
+      ? applicationsBatchQuery.error.message
+      : "Kunde inte hämta ansökningsdemografi."
+    : null;
 
   const bucketData = React.useMemo(
     () => mergeApplicationBuckets(Object.values(demographies ?? {}), 10),
@@ -1232,9 +1225,6 @@ export function ListingDemographyDrilldownBlock() {
   const [category, setCategory] =
     React.useState<DemographyCategory>("DEVICE_TYPE");
   const [listingId, setListingId] = React.useState<string>("");
-  const [demography, setDemography] = React.useState<ListingDemography | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
   // Shared cache with the other two analytics blocks. One fetch per
   // companyId, regardless of how many blocks mount.
@@ -1251,43 +1241,28 @@ export function ListingDemographyDrilldownBlock() {
     setListingId((current) => current || listings[0]?.id || "");
   }, [listings]);
 
-  React.useEffect(() => {
-    if (authLoading) return;
-
-    if (!companyId || !listingId) {
-      setDemography(null);
-      return;
-    }
-
+  const { fromIso, toIso } = React.useMemo(() => {
     const { from, to } = getApplicationIntervalRange(range);
-    let cancelled = false;
+    return { fromIso: from.toISOString(), toIso: to.toISOString() };
+  }, [range]);
 
-    setIsLoading(true);
-    setError(null);
-
-    demographicsService
-      .getListing(listingId, from, to, category)
-      .then((result) => {
-        if (!cancelled) setDemography(result);
-      })
-      .catch((requestError) => {
-        if (!cancelled) {
-          setDemography(null);
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Kunde inte hämta annonsdemografi."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, category, companyId, listingId, range]);
+  const listingDemographyQuery = useListingDemography(
+    listingId || null,
+    fromIso,
+    toIso,
+    category,
+    !authLoading && Boolean(companyId) && Boolean(listingId),
+  );
+  const demography = listingDemographyQuery.data ?? null;
+  const isLoading =
+    listingDemographyQuery.isLoading || listingDemographyQuery.isFetching;
+  const error = !companyId
+    ? null
+    : listingDemographyQuery.isError
+    ? listingDemographyQuery.error instanceof Error
+      ? listingDemographyQuery.error.message
+      : "Kunde inte hämta annonsdemografi."
+    : null;
 
   return (
     <AnalyticsBlock

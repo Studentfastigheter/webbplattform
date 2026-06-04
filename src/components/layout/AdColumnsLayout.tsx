@@ -1,8 +1,9 @@
-"use client"; // Krävs för att useEffect ska fungera i Next.js App Router
+"use client";
 
-import { type ReactNode, useEffect, useState } from "react";
-import { listingService } from "@/features/listings/services/listing-service";
+import { type ReactNode, useMemo } from "react";
+import { useCurrentAds } from "@/features/ads/hooks/useAds";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/I18nProvider";
 
 type NormalizedAd = {
   id: string;
@@ -34,7 +35,6 @@ const extractImageFromData = (data: unknown): string | null => {
   }
 
   if (typeof data === "object") {
-    // FIX: Lade till "imageUrl" eftersom det är nyckeln som används i DataLoader.java
     const candidates = ["imageUrl", "image", "src", "url", "data"] as const;
     for (const key of candidates) {
       const maybe = (data as Record<string, unknown>)[key];
@@ -55,15 +55,17 @@ const AdSlot = ({
   ad,
   ariaLabel,
   className,
+  emptyLabel,
 }: {
   ad?: NormalizedAd;
   ariaLabel: string;
   className?: string;
+  emptyLabel: string;
 }) => (
   <div
     className={cn(
       "relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm",
-      className
+      className,
     )}
   >
     {ad ? (
@@ -78,82 +80,75 @@ const AdSlot = ({
         className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-400"
         aria-label={ariaLabel}
       >
-        Annonsutrymme
+        {emptyLabel}
       </div>
     )}
   </div>
 );
 
-// Vi gör om denna till en vanlig funktion som använder state för att fungera i webbläsaren
 export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
-  const [ads, setAds] = useState<NormalizedAd[]>([]);
+  const { t } = useI18n();
+  const { data: rawAds = [] } = useCurrentAds();
 
-  useEffect(() => {
-    async function loadAds() {
-      try {
-        const rawAds = await listingService.getCurrentAds();
-        const normalized = rawAds
-          .map((ad, idx) => {
-            const src = extractImageFromData(ad.data);
-            if (!src) return null;
-
-            return {
-              id: String(ad.id ?? idx),
-              src,
-              alt: ad.company ? `Annons från ${ad.company}` : "Annons",
-            } as NormalizedAd;
-          })
-          .filter((ad): ad is NormalizedAd => ad !== null);
-
-        setAds(normalized);
-      } catch (error) {
-        console.error("Failed to load ads:", error);
-      }
-    }
-    loadAds();
-  }, []);
+  // Normalize and translate alt text on read. Locale changes (t) re-derive
+  // alt without re-fetching — keeping the network call cached across SSR/CSR
+  // re-renders and across components that mount AdColumnsLayout in parallel.
+  const ads = useMemo<NormalizedAd[]>(
+    () =>
+      rawAds
+        .map((ad, idx) => {
+          const src = extractImageFromData(ad.data);
+          if (!src) return null;
+          return {
+            id: String(ad.id ?? idx),
+            src,
+            alt: ad.company ? t("ads.adFrom", { company: ad.company }) : t("ads.ad"),
+          } as NormalizedAd;
+        })
+        .filter((ad): ad is NormalizedAd => ad !== null),
+    [rawAds, t],
+  );
 
   const [firstAd, secondAd] = ads;
 
   return (
     <div className="flex w-full flex-col gap-6 lg:grid lg:grid-cols-[minmax(120px,15vw)_minmax(0,1fr)_minmax(120px,15vw)] lg:items-start">
-      {/* Mobile Top Ad */}
-      <div className="block lg:hidden w-full">
+      <div className="block w-full lg:hidden">
         <AdSlot
           ad={firstAd}
-          ariaLabel="Toppannons"
+          ariaLabel={t("ads.topAd")}
+          emptyLabel={t("ads.adSpace")}
           className="aspect-[4/1] min-h-[100px]"
         />
       </div>
 
-      {/* Desktop Left Ad */}
-      <div className="hidden lg:block sticky top-24 self-start">
+      <div className="sticky top-24 hidden self-start lg:block">
         <AdSlot
           ad={firstAd}
-          ariaLabel="Vänster annonsyta"
+          ariaLabel={t("ads.leftAd")}
+          emptyLabel={t("ads.adSpace")}
           className="aspect-[2/5] min-h-[480px] max-h-[760px]"
         />
       </div>
 
-      {/* Main Content */}
       <div className="w-full min-w-0">
         {children}
 
-        {/* Mobile Bottom Ad (inserted after content) */}
-        <div className="block lg:hidden w-full mt-8">
+        <div className="mt-8 block w-full lg:hidden">
           <AdSlot
             ad={secondAd}
-            ariaLabel="Bottenannons"
+            ariaLabel={t("ads.bottomAd")}
+            emptyLabel={t("ads.adSpace")}
             className="aspect-[4/1] min-h-[100px]"
           />
         </div>
       </div>
 
-      {/* Desktop Right Ad */}
-      <div className="hidden lg:block sticky top-24 self-start">
+      <div className="sticky top-24 hidden self-start lg:block">
         <AdSlot
           ad={secondAd}
-          ariaLabel="Höger annonsyta"
+          ariaLabel={t("ads.rightAd")}
+          emptyLabel={t("ads.adSpace")}
           className="aspect-[2/5] min-h-[480px] max-h-[760px]"
         />
       </div>

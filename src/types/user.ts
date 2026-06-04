@@ -156,6 +156,7 @@ export interface RegisterRequest {
   surname?: string;
   fullName?: string;
   companyName?: string;
+  roleName?: string;
   phone?: string;
   city?: string;
   ssn?: string; // Personnummer eller Organisationsnummer

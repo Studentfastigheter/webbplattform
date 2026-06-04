@@ -5,6 +5,8 @@ import ListingCardSmall, {
   type ListingCardSmallProps,
 } from "@/features/listings/components/ListingCard_Small";
 import type { ListingCardDTO } from "@/types/listing";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type ListingCardFromDTOProps = {
   listing: ListingCardDTO;
@@ -23,7 +25,7 @@ type ListingCardFromDTOProps = {
   | "contentTopRightContent"
 >;
 
-const splitLocation = (location?: string | null) => {
+const splitLocation = (location: string | null | undefined, fallback: string) => {
   const [area, ...cityParts] = (location ?? "")
     .split(",")
     .map((part) => part.trim())
@@ -31,8 +33,8 @@ const splitLocation = (location?: string | null) => {
   const city = cityParts.join(", ");
 
   return {
-    area: area || "Ej angivet",
-    city: city || location || "Ej angivet",
+    area: area || fallback,
+    city: city || location || fallback,
   };
 };
 
@@ -43,7 +45,9 @@ const ListingCardFromDTO: React.FC<ListingCardFromDTOProps> = ({
   onOpen,
   ...cardProps
 }) => {
-  const { area, city } = splitLocation(listing.location);
+  const { locale } = useI18n();
+  const fallback = localizedText(locale, "Ej angivet", "Not specified");
+  const { area, city } = splitLocation(listing.location, fallback);
 
   return (
     <ListingCardSmall
@@ -51,7 +55,7 @@ const ListingCardFromDTO: React.FC<ListingCardFromDTOProps> = ({
       title={listing.title}
       area={area}
       city={city}
-      dwellingType={listing.dwellingType || "Bostad"}
+      dwellingType={listing.dwellingType || localizedText(locale, "Bostad", "Home")}
       rooms={listing.rooms || 0}
       sizeM2={listing.sizeM2 || 0}
       rent={listing.rent || 0}

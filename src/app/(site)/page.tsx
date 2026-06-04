@@ -1,59 +1,133 @@
+import Image from "next/image";
+
 import { Features } from "@/features/marketing/components/home/landing/features";
+import { CityCarousel } from "@/features/marketing/components/home/landing/city-carousel";
 import { Hero } from "@/features/marketing/components/home/landing/hero";
 import { HeroWaitlist } from "@/features/marketing/components/home/landing/hero_waitlist";
 import StepsTimeline from "@/features/marketing/components/home/landing/StepsTimeline";
 import { StickyCards } from "@/features/marketing/components/home/landing/sticky-cards";
-import { featuresData, stickyCardsData, stepsData } from "@/data/home-page";
+import { getHomePageData } from "@/data/home-page";
+import { getDictionary } from "@/i18n/server";
 
-export default function Home() {
+const listingMockups = [
+  {
+    src: "/images/mockups/listing1.png",
+    className: "sm:mt-6 lg:mt-10",
+  },
+  {
+    src: "/images/mockups/listing2.png",
+    className: "",
+  },
+  {
+    src: "/images/mockups/listing3.png",
+    className: "sm:mt-3 lg:mt-6",
+  },
+  {
+    src: "/images/mockups/listing4.png",
+    className: "sm:mt-8 lg:mt-12",
+  },
+];
+
+function ListingMockupShowcase({
+  altPrefix,
+  label,
+}: {
+  altPrefix: string;
+  label: string;
+}) {
   return (
-    <main className="main-marketing-theme font-sans text-foreground bg-background">
-      <Hero
-        title="Lyor för studenter i"
-        flipWords={["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping"]}
-        flipWordsClassName="!text-pop-contrast !z-10 relative"
-        subtitle="Allt för studentboende i hela Sverige. Bostäder, köer, verifierade privatuthyrare och guider. Helt gratis."
-        waitlistHref="#register-waitlist"
-        businessHref="/for-foretag"
-        previewImageSrc="/platform-demo.png"
-        previewImageAlt="Preview av CampusLyan plattformen"
-        backgroundClassName="bg-background"
-      />
+    <section
+      className="relative bg-background px-4 pb-12 pt-2 sm:px-6 sm:pb-16 lg:pb-20"
+      aria-label={label}
+    >
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-2 items-center justify-items-center gap-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+        {listingMockups.map((mockup, index) => (
+          <div
+            key={mockup.src}
+            className={`w-full max-w-[176px] sm:max-w-[232px] md:max-w-[270px] lg:max-w-[292px] ${mockup.className}`}
+          >
+            <Image
+              src={mockup.src}
+              alt={`${altPrefix} ${index + 1}`}
+              width={777}
+              height={728}
+              sizes="(max-width: 640px) 44vw, (max-width: 1024px) 232px, 292px"
+              className="h-auto w-full rounded-[18px] object-contain shadow-[0_20px_45px_rgba(15,23,42,0.14)] ring-1 ring-black/5"
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-      <StickyCards
-        sectionClassName="bg-background"
-        heading={
-          <>
-            Mindre krångel.
-            <br />
-            <span className="text-pop-contrast">Större chans att få bostad.</span>
-          </>
-        }
-        cards={stickyCardsData}
+export default async function Home() {
+  const dictionary = await getDictionary();
+  const { featuresData, stickyCardsData, stepsData } = getHomePageData(dictionary);
+  const home = dictionary.home;
+
+  return (
+    <main className="main-marketing-theme relative overflow-x-clip bg-background font-sans text-foreground">
+      <Hero
+        title={home.hero.title}
+        flipWords={[...home.hero.flipWords]}
+        flipWordsClassName="!text-pop-contrast !z-10 relative"
+        subtitle={home.hero.subtitle}
+        waitlistHref="#register-waitlist"
+        businessHref="/for-business"
+        interestCta={home.hero.interestCta}
+        businessCta={home.hero.businessCta}
+        previewImageSrc="/CampusLyan-Mockup.svg"
+        previewImageAlt={home.hero.previewAlt}
+        backgroundClassName="bg-background"
       />
 
       <StepsTimeline
         heading={
           <>
-            Från registrering till <span className="text-pop-contrast">inflytt</span> i tre steg
+            {home.steps.headingStart}{" "}
+            <span className="text-pop-contrast">{home.steps.headingHighlight}</span>{" "}
+            {home.steps.headingEnd}
           </>
         }
         steps={stepsData}
       />
+      <ListingMockupShowcase
+        altPrefix={home.listingAltPrefix}
+        label={home.listingShowcaseLabel}
+      />
+      <StickyCards
+        sectionClassName="bg-background"
+        heading={
+          <>
+            {home.stickyCards.headingStart}
+            <br />
+            <span className="text-pop-contrast">{home.stickyCards.headingHighlight}</span>
+          </>
+        }
+        cards={stickyCardsData}
+      />
+      <CityCarousel />
 
       <Features
         sectionClassName="bg-background"
         heading={
           <>
-            Verktyg som gör skillnad.
+            {home.features.headingStart}
             <br />
-            <span className="text-pop-contrast">Före, under och efter studietiden.</span>
+            <span className="text-pop-contrast">{home.features.headingHighlight}</span>
           </>
         }
         features={featuresData}
+        moreLabel={dictionary.common.more}
       />
 
-      <HeroWaitlist id="register-waitlist" backgroundClassName="bg-background" />
+      <HeroWaitlist
+        id="register-waitlist"
+        backgroundClassName="bg-background"
+        heading={home.waitlist.heading}
+        subtitle={home.waitlist.subtitle}
+      />
     </main>
   );
 }

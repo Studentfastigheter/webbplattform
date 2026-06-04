@@ -21,6 +21,8 @@ import {
   type User,
 } from "@/types";
 import { FaLinkedin, FaInstagram, FaFacebook } from "react-icons/fa6";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type ProfileStats = {
   studyProgram?: string;
@@ -66,6 +68,7 @@ export default function ProfileHero({
   schoolsById,
   onEditProfile,
 }: ProfileHeroProps) {
+  const { locale } = useI18n();
   const fullName =
     student.displayName ||
     `${student.firstName} ${student.surname}`.trim();
@@ -82,32 +85,34 @@ export default function ProfileHero({
 
   const verificationBadge = student.verifiedStudent
     ? {
-        text: "Verifierad student",
+        text: localizedText(locale, "Verifierad student", "Verified student"),
         Icon: ShieldCheck,
         tone: "success" as const,
       }
     : {
-        text: "Ej verifierad",
+        text: localizedText(locale, "Ej verifierad", "Not verified"),
         Icon: AlertTriangle,
         tone: "warning" as const,
       };
 
   const infoItems: InfoItem[] = [
     {
-      label: "Ålder",
-      value: student.age ? `${student.age} år` : "Ej angivet",
+      label: localizedText(locale, "Ålder", "Age"),
+      value: student.age
+        ? localizedText(locale, `${student.age} år`, `${student.age} years`)
+        : localizedText(locale, "Ej angivet", "Not specified"),
     },
     {
-      label: "Skola",
-      value: schoolName ?? "Ej angivet",
+      label: localizedText(locale, "Skola", "School"),
+      value: schoolName ?? localizedText(locale, "Ej angivet", "Not specified"),
     },
     {
-      label: "Utbildning",
-      value: student.stats?.studyProgram ?? "Ej angivet",
+      label: localizedText(locale, "Utbildning", "Education"),
+      value: student.stats?.studyProgram ?? localizedText(locale, "Ej angivet", "Not specified"),
     },
     {
-      label: "Studietakt",
-      value: student.stats?.studyPace ?? "Ej angivet",
+      label: localizedText(locale, "Studietakt", "Study pace"),
+      value: student.stats?.studyPace ?? localizedText(locale, "Ej angivet", "Not specified"),
     },
   ];
 
@@ -150,7 +155,7 @@ export default function ProfileHero({
 
   const aboutText = student.description?.trim()
     ? student.description
-    : "Ingen profiltext tillagd än.";
+    : localizedText(locale, "Ingen profiltext tillagd än.", "No profile text added yet.");
 
   const contactRows = [
     student.email && {
@@ -171,28 +176,28 @@ export default function ProfileHero({
 
   const preferenceText =
     student.stats?.preferredArea?.trim()
-      ? `Jag söker boende i eller nära ${student.stats.preferredArea}.`
+      ? localizedText(locale, `Jag söker boende i eller nära ${student.stats.preferredArea}.`, `I am looking for housing in or near ${student.stats.preferredArea}.`)
       : cityLabel
-        ? `Jag söker boende i eller nära ${cityLabel}.`
-        : "Jag söker boende nära min studieort.";
+        ? localizedText(locale, `Jag söker boende i eller nära ${cityLabel}.`, `I am looking for housing in or near ${cityLabel}.`)
+        : localizedText(locale, "Jag söker boende nära min studieort.", "I am looking for housing near my place of study.");
 
   const sections = [
     {
       id: "about",
-      title: "Om mig",
+      title: localizedText(locale, "Om mig", "About me"),
       content: (
         <ReadMoreComponent
           text={aboutText}
           variant="large"
           textClassName="text-base leading-relaxed text-gray-600"
-          moreLabel="Läs mer"
-          lessLabel="Visa mindre"
+          moreLabel={localizedText(locale, "Läs mer", "Read more")}
+          lessLabel={localizedText(locale, "Visa mindre", "Show less")}
         />
       ),
     },
     {
       id: "seeking",
-      title: "Jag söker",
+      title: localizedText(locale, "Jag söker", "I am looking for"),
       content: (
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-100 bg-white/70 px-4 py-4 text-sm text-gray-700 sm:px-5 sm:py-5">
@@ -216,7 +221,7 @@ export default function ProfileHero({
     },
     {
       id: "facts",
-      title: "Snabbfakta",
+      title: localizedText(locale, "Snabbfakta", "Quick facts"),
       content: (
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white/70">
           <div className="divide-y divide-gray-200">
@@ -239,7 +244,7 @@ export default function ProfileHero({
     },
     contactRows.length > 0 && {
       id: "contact",
-      title: "Kontakt",
+      title: localizedText(locale, "Kontakt", "Contact"),
       content: (
         <ul className="flex flex-wrap gap-x-6 gap-y-2">
           {contactRows.map((item) => (
@@ -289,9 +294,9 @@ export default function ProfileHero({
       actionLinks={socialItems}
       headerActions={
         <ProfileHeroActions
-          editHref={onEditProfile ? undefined : "/installningar"}
+          editHref={onEditProfile ? undefined : "/settings"}
           onEdit={onEditProfile}
-          primaryLabel="Redigera profil"
+          primaryLabel={localizedText(locale, "Redigera profil", "Edit profile")}
         />
       }
       sections={sections}

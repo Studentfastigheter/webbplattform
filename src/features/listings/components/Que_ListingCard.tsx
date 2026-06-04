@@ -1,10 +1,12 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { Building2, Plus } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import VerifiedTag from "@/components/ui/VerifiedTag";
 import type { Tag as TagType } from "@/types";
+import { useI18n } from "@/i18n/I18nProvider";
 
 type QueueSummary = {
   name: string;
@@ -32,6 +34,7 @@ export type QueListingCardProps = QueueSummary & {
 };
 
 const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
+  const { t } = useI18n();
   const {
     name,
     isVerified = false,
@@ -44,15 +47,14 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     isAlreadyJoined = false,
     isJoinStatusLoading = false,
     isJoinDisabled = false,
-    joinDisabledLabel = "Ej tillgänglig",
+    joinDisabledLabel,
     onViewListings,
     onToggleSelect,
   } = props;
-  const fallbackDescription =
-    "Vi hjälper dig hitta studentboende på ett enkelt och tryggt sätt.";
+  const fallbackDescription = t("queueCard.fallbackDescription");
   const policyLinks = [
-    { label: "Villkor", href: termsUrl },
-    { label: "Integritetspolicy", href: privacyUrl },
+    { label: t("queueCard.terms"), href: termsUrl },
+    { label: t("queueCard.privacy"), href: privacyUrl },
   ];
 
   return (
@@ -93,7 +95,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
             </div>
 
             <nav
-              aria-label={`${name} policy-länkar`}
+              aria-label={t("queueCard.policyAria", { name })}
               className="flex min-h-[17px] flex-wrap items-center gap-x-4 gap-y-1 overflow-hidden text-[13px] font-medium leading-[17px] text-[#004225]"
             >
               {policyLinks.map((link, index) => (
@@ -137,8 +139,8 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
       <div className="mt-1 grid shrink-0 grid-cols-1 gap-2.5 sm:mt-2 sm:grid-cols-2 sm:gap-3">
         <Button
           type="button"
-          onClick={e => {
-            e.stopPropagation();
+          onClick={(event) => {
+            event.stopPropagation();
             if (isAlreadyJoined || isJoinStatusLoading || isJoinDisabled) return;
             onToggleSelect?.();
           }}
@@ -150,23 +152,23 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
               ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
               : isSelected
                 ? "bg-[#004225] text-white"
-              : ""
+                : ""
           }`}
         >
           {isJoinStatusLoading
-            ? "Kontrollerar..."
+            ? t("queueCard.checking")
             : isAlreadyJoined
-            ? "Du står redan i kön"
-            : isJoinDisabled
-            ? joinDisabledLabel
-            : isSelected
-              ? "Tillagd"
-              : (
-                <>
-                  <Plus className="h-4 w-4" strokeWidth={2.1} />
-                  Gå med
-                </>
-              )}
+              ? t("queueCard.alreadyJoined")
+              : isJoinDisabled
+                ? joinDisabledLabel ?? t("queueCard.unavailable")
+                : isSelected
+                  ? t("queueCard.added")
+                  : (
+                    <>
+                      <Plus className="h-4 w-4" strokeWidth={2.1} />
+                      {t("queueCard.join")}
+                    </>
+                  )}
         </Button>
 
         <Button
@@ -179,7 +181,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           variant="ghost"
           className="h-auto min-h-9 w-full min-w-0 whitespace-normal px-4 py-2 text-center text-sm font-semibold leading-tight text-[#004225] shadow-none hover:bg-transparent hover:opacity-75"
         >
-          Läs mer
+          {t("queueCard.readMore")}
         </Button>
       </div>
     </div>

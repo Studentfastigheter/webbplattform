@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { cn } from "@/lib/utils";
 import FilterSectionShell from "./FilterSectionShell";
 
 export type ChipCloudItem = {
@@ -39,12 +40,14 @@ const ChipCloudSection: React.FC<ChipCloudSectionProps> = ({
             <button
               key={item.id}
               type="button"
+              aria-pressed={active}
               onClick={() => onToggle(item.id)}
-              className={`rounded-full border px-4 py-2 text-sm transition ${
+              className={cn(
+                "rounded-lg border px-3.5 py-2 text-sm font-medium transition",
                 active
-                  ? "border-black bg-black text-white"
-                  : "border-black/15 text-black hover:border-black/40"
-              }`}
+                  ? "border-[#004225] bg-[#004225] text-white shadow-[0_6px_14px_rgba(0,66,37,0.14)]"
+                  : "border-black/10 bg-white text-black hover:border-[#004225]/30 hover:bg-[#f6faf8]"
+              )}
             >
               <span>{item.label}</span>
               {typeof item.count === "number" && (

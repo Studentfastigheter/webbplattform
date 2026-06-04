@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ControlledRange from "@/components/ui/sliders/Controlled_Range";
 import FilterSectionShell from "./FilterSectionShell";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
 type PriceRange = [number, number];
 
@@ -30,14 +32,15 @@ type PriceRangeSectionProps = {
 };
 
 const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
-  title = "Prisintervall",
+  title,
   description,
   histogram = [],
   bounds,
   value,
   onChange,
-  withBorder = false,
+  withBorder = true,
 }) => {
+  const { locale } = useI18n();
   const [inputValues, setInputValues] = useState<[string, string]>([
     value[0].toString(),
     value[1].toString(),
@@ -47,15 +50,16 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
     null,
   ]);
 
-  const formatCurrency = (val: number) => `kr${val.toLocaleString("sv-SE")}`;
+  const formatCurrency = (val: number) =>
+    `${formatLocalizedNumber(locale, val)} kr`;
 
   const formatInterval = (min?: number | null, max?: number | null) => {
     if (typeof min === "number" && typeof max === "number") {
-      return `${formatCurrency(min)}-${formatCurrency(max)}`;
+      return `${formatCurrency(min)} - ${formatCurrency(max)}`;
     }
-    if (typeof min === "number") return `Fr\u00e5n ${formatCurrency(min)}`;
-    if (typeof max === "number") return `Till ${formatCurrency(max)}`;
-    return "Prisintervall";
+    if (typeof min === "number") return `${localizedText(locale, "Från", "From")} ${formatCurrency(min)}`;
+    if (typeof max === "number") return `${localizedText(locale, "Till", "To")} ${formatCurrency(max)}`;
+    return localizedText(locale, "Hyra", "Rent");
   };
 
   const clampToBounds = (val: number, targetBounds: PriceBounds) =>
@@ -74,7 +78,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
           minRent: null,
           maxRent: null,
           count: Math.max(0, bucket),
-          label: `Intervall ${index + 1}`,
+        label: `${localizedText(locale, "Intervall", "Interval")} ${index + 1}`,
         };
       }
 
@@ -166,11 +170,6 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
     return Math.max(1, Math.round(width));
   }, [histogramBuckets]);
 
-  const histogramTotal = useMemo(
-    () => histogramBuckets.reduce((sum, bucket) => sum + bucket.count, 0),
-    [histogramBuckets]
-  );
-
   useEffect(() => {
     setInputValues([displayValue[0].toString(), displayValue[1].toString()]);
     setErrors([null, null]);
@@ -178,13 +177,13 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
 
   const validateInput = (index: 0 | 1, raw: string): string | null => {
     const parsed = parseNumeric(raw);
-    if (Number.isNaN(parsed)) return "Ange ett v\u00e4rde";
+    if (Number.isNaN(parsed)) return localizedText(locale, "Ange ett värde", "Enter a value");
 
     if (parsed < histogramScale.min) {
-      return `L\u00e4gsta till\u00e5tna \u00e4r ${formatCurrency(histogramScale.min)}`;
+      return `${localizedText(locale, "Lägsta tillåtna är", "Minimum allowed is")} ${formatCurrency(histogramScale.min)}`;
     }
     if (parsed > histogramScale.max) {
-      return `H\u00f6gsta till\u00e5tna \u00e4r ${formatCurrency(histogramScale.max)}`;
+      return `${localizedText(locale, "Högsta tillåtna är", "Maximum allowed is")} ${formatCurrency(histogramScale.max)}`;
     }
 
     const otherRaw = inputValues[index === 0 ? 1 : 0];
@@ -193,10 +192,10 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
       Number.isNaN(otherParsed) ? displayValue[index === 0 ? 1 : 0] : otherParsed;
 
     if (index === 0 && parsed > fallbackOther) {
-      return "M\u00e5ste vara l\u00e4gre \u00e4n eller lika med h\u00f6gsta v\u00e4rdet";
+      return localizedText(locale, "Måste vara lägre än eller lika med högsta värdet", "Must be less than or equal to the maximum value");
     }
     if (index === 1 && parsed < fallbackOther) {
-      return "M\u00e5ste vara h\u00f6gre \u00e4n eller lika med l\u00e4gsta v\u00e4rdet";
+      return localizedText(locale, "Måste vara högre än eller lika med lägsta värdet", "Must be greater than or equal to the minimum value");
     }
 
     return null;
@@ -246,51 +245,48 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
       description={description}
       withBorder={withBorder}
     >
-      <div className="space-y-4">
-        <div className="relative rounded-2xl bg-pink-50 px-4 pb-12 pt-6">
-          <div className="flex h-32 items-end gap-[2px] overflow-hidden">
-            {histogramBuckets.length > 0 ? (
-              histogramBuckets.map((bucket) => (
-                <span
-                  key={bucket.key}
-                  role="img"
-                  aria-label={`${bucket.label}: ${bucket.count.toLocaleString(
-                    "sv-SE"
-                  )} annonser`}
-                  title={`${bucket.label}: ${bucket.count.toLocaleString(
-                    "sv-SE"
-                  )} annonser`}
-                  className={`flex-1 rounded-full transition-[height,background-color,opacity] duration-200 ${
-                    bucket.count > 0
-                      ? bucket.overlapsSelectedRange
-                        ? "bg-[#FF2A6D]"
-                        : "bg-[#FF2A6D]/30"
-                      : "bg-black/10"
-                  }`}
-                  style={{
-                    height: `${
-                      bucket.count > 0 ? Math.max(bucket.height, 8) : 3
-                    }%`,
-                  }}
-                />
-              ))
-            ) : (
-              <p className="text-sm text-black/50">
-                Prisdata h\u00e4mtas automatiskt n\u00e4r statistik finns.
-              </p>
-            )}
+      <div className="space-y-3">
+        <div className="relative px-1 pb-10 pt-1">
+          <div className="flex h-24 items-end gap-[3px] overflow-hidden sm:h-28">
+              {histogramBuckets.length > 0 ? (
+                histogramBuckets.map((bucket) => (
+                  <span
+                    key={bucket.key}
+                    role="img"
+                    aria-label={`${bucket.label}: ${bucket.count.toLocaleString(
+                      locale === "en" ? "en-US" : "sv-SE"
+                    )} ${localizedText(locale, "annonser", "listings")}`}
+                    title={`${bucket.label}: ${bucket.count.toLocaleString(
+                      locale === "en" ? "en-US" : "sv-SE"
+                    )} ${localizedText(locale, "annonser", "listings")}`}
+                    className={`flex-1 rounded-t-sm transition-[height,background-color,opacity] duration-200 ${
+                      bucket.count > 0
+                        ? bucket.overlapsSelectedRange
+                          ? "bg-[#004225]"
+                          : "bg-[#004225]/20"
+                        : "bg-black/[0.08]"
+                    }`}
+                    style={{
+                      height: `${
+                        bucket.count > 0 ? Math.max(bucket.height, 8) : 3
+                      }%`,
+                    }}
+                  />
+                ))
+              ) : (
+                <p className="flex h-full w-full items-center justify-center text-center text-sm text-black/50">
+                  {localizedText(
+                    locale,
+                    "Prisdata hämtas automatiskt när statistik finns.",
+                    "Price data is loaded automatically when statistics are available.",
+                  )}
+                </p>
+              )}
           </div>
-          {histogramBuckets.length > 0 && (
-            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-black/55">
-              <span>
-                {histogramTotal.toLocaleString("sv-SE")} annonser i intervallen
-              </span>
-              <span>{histogramBuckets.length} prisniv\u00e5er</span>
-            </div>
-          )}
-          <div className="absolute inset-x-4 bottom-3">
+
+          <div className="absolute inset-x-1 bottom-1">
             <ControlledRange
-              ariaLabel="Prisintervall"
+              ariaLabel={localizedText(locale, "Månadshyra", "Monthly rent")}
               min={histogramScale.min}
               max={histogramScale.max}
               step={sliderStep}
@@ -301,13 +297,12 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-1 text-sm text-black/70">
-          <div className="space-y-1">
-            <span className="block text-xs uppercase text-black/60">
-              L\u00e4gst
+        <div className="grid grid-cols-1 gap-3 text-sm text-black/70 sm:grid-cols-2">
+          <label className="space-y-1.5">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-black/55">
+              {localizedText(locale, "Från", "From")}
             </span>
-            <div className="flex items-center gap-2 rounded-full border border-black/15 px-3 py-2 shadow-sm">
-              <span className="text-sm text-black/60">kr</span>
+            <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-[#004225] focus-within:ring-2 focus-within:ring-[#004225]/10">
               <input
                 type="text"
                 inputMode="numeric"
@@ -315,23 +310,20 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                 max={histogramScale.max}
                 value={inputValues[0]}
                 onChange={(e) => handleManualChange(0, e.target.value)}
-                className="w-full bg-transparent text-base font-semibold outline-none"
-                aria-label="L\u00e4gsta pris"
+                className="min-w-0 flex-1 bg-transparent text-right text-base font-semibold outline-none"
+                aria-label={localizedText(locale, "Lägsta pris", "Minimum price")}
               />
+              <span className="text-sm text-black/50">kr</span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-black/50">
-                Min: {formatCurrency(histogramScale.min)}
-              </span>
-              {errors[0] && <span className="text-red-600">{errors[0]}</span>}
-            </div>
-          </div>
-          <div className="space-y-1 text-right">
-            <span className="block text-xs uppercase text-black/60">
-              H\u00f6gst
+            {errors[0] && (
+              <p className="text-xs text-red-600">{errors[0]}</p>
+            )}
+          </label>
+          <label className="space-y-1.5 sm:text-right">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-black/55">
+              {localizedText(locale, "Till", "To")}
             </span>
-            <div className="flex items-center gap-2 rounded-full border border-black/15 px-3 py-2 shadow-sm">
-              <span className="text-sm text-black/60">kr</span>
+            <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-[#004225] focus-within:ring-2 focus-within:ring-[#004225]/10">
               <input
                 type="text"
                 inputMode="numeric"
@@ -339,17 +331,15 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                 max={histogramScale.max}
                 value={inputValues[1]}
                 onChange={(e) => handleManualChange(1, e.target.value)}
-                className="w-full bg-transparent text-right text-base font-semibold outline-none"
-                aria-label="H\u00f6gsta pris"
+                className="min-w-0 flex-1 bg-transparent text-right text-base font-semibold outline-none"
+                aria-label={localizedText(locale, "Högsta pris", "Maximum price")}
               />
+              <span className="text-sm text-black/50">kr</span>
             </div>
-            <div className="flex justify-between text-xs">
-              {errors[1] && <span className="text-red-600">{errors[1]}</span>}
-              <span className="text-black/50">
-                Max: {formatCurrency(histogramScale.max)}
-              </span>
-            </div>
-          </div>
+            {errors[1] && (
+              <p className="text-xs text-red-600">{errors[1]}</p>
+            )}
+          </label>
         </div>
       </div>
     </FilterSectionShell>

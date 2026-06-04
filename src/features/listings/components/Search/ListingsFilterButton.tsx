@@ -11,6 +11,8 @@ import PropertyTypeSection from "@/features/listings/components/filter_sections/
 import FilterButton, {
   type FilterButtonProps,
 } from "./filterbutton";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
 type PriceBounds = {
   min: number;
@@ -69,14 +71,12 @@ type ListingsFilterButtonProps = Omit<
 
 const defaultBounds: PriceBounds = { min: 0, max: 10000 };
 
-const formatListingCount = (count: number) =>
-  `${count.toLocaleString("sv-SE")} ${count === 1 ? "bostad" : "bost\u00e4der"}`;
-
-const formatRent = (value: number) =>
-  `${value.toLocaleString("sv-SE")} kr`;
-
-const hasCustomPriceRange = (range: PriceBounds, bounds: PriceBounds) =>
-  range.min > bounds.min || range.max < bounds.max;
+const formatListingCount = (count: number, locale: "sv" | "en") =>
+  `${formatLocalizedNumber(locale, count)} ${
+    count === 1
+      ? localizedText(locale, "bostad", "home")
+      : localizedText(locale, "bostäder", "homes")
+  }`;
 
 const emptyState = (priceBounds: PriceBounds): ListingsFilterState => ({
   city: "",
@@ -179,6 +179,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
   onChange,
   ...buttonProps
 }) => {
+  const { locale } = useI18n();
   const resolvedInitial = useMemo<ListingsFilterState>(
     () => initialState ?? emptyState(priceBounds),
     [initialState, priceBounds]
@@ -211,69 +212,21 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
   const resultsLabel = useMemo(() => {
     if (typeof facetTotalCount !== "number" && facetsLoading) {
-      return "H\u00e4mtar tr\u00e4ffar...";
+      return localizedText(locale, "Hämtar träffar...", "Loading matches...");
     }
     if (typeof facetTotalCount === "number") {
-      return `Visa ${formatListingCount(facetTotalCount)}`;
+      return `${localizedText(locale, "Visa", "Show")} ${formatListingCount(facetTotalCount, locale)}`;
     }
     return undefined;
-  }, [facetTotalCount, facetsLoading]);
+  }, [facetTotalCount, facetsLoading, locale]);
 
   const resultsMeta = useMemo(() => {
     if (facetsLoading && typeof facetTotalCount === "number") {
-      return "Uppdaterar tr\u00e4ffar...";
+      return localizedText(locale, "Uppdaterar träffar...", "Updating matches...");
     }
     if (facetsError) return facetsError;
     return null;
-  }, [facetTotalCount, facetsError, facetsLoading]);
-
-  const priceDescription = useMemo(() => {
-    const base = "M\u00e5nadshyra i SEK.";
-    if (
-      observedRentRange &&
-      Number.isFinite(observedRentRange.min) &&
-      Number.isFinite(observedRentRange.max)
-    ) {
-      return `${base} Matchande bost\u00e4der ligger mellan ${formatRent(
-        observedRentRange.min
-      )} och ${formatRent(observedRentRange.max)}.`;
-    }
-
-    return base;
-  }, [observedRentRange]);
-
-  const selectedSummary = useMemo(() => {
-    const items: string[] = [];
-    const propertyType = propertyTypes.find((item) => item.id === state.propertyType);
-    const hostType = hostTypes.find((item) => item.id === state.hostType);
-    const selectedSchool = selectableSchools.find(
-      (school) => school.normalizedId === state.schoolId
-    );
-
-    if (state.city.trim()) items.push(state.city.trim());
-    if (propertyType) items.push(propertyType.label);
-    if (hostType) items.push(hostType.label);
-    if (hasCustomPriceRange(state.priceRange, priceBounds)) {
-      items.push(`${formatRent(state.priceRange.min)}-${formatRent(state.priceRange.max)}`);
-    }
-    if (selectedSchool) items.push(selectedSchool.name);
-    if (state.amenities.length > 0) {
-      items.push(`${state.amenities.length} bekv\u00e4mligheter`);
-    }
-
-    return items;
-  }, [
-    hostTypes,
-    priceBounds,
-    propertyTypes,
-    selectableSchools,
-    state.amenities.length,
-    state.city,
-    state.hostType,
-    state.priceRange,
-    state.propertyType,
-    state.schoolId,
-  ]);
+  }, [facetTotalCount, facetsError, facetsLoading, locale]);
 
   const updateState = (next: ListingsFilterState) => {
     setState(next);
@@ -365,67 +318,10 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
   };
 
   const content = (
-    <>
-      <div
-        className={`mb-1 rounded-2xl border px-4 py-3 transition-colors ${
-          facetTotalCount === 0
-            ? "border-amber-200 bg-amber-50 text-amber-950"
-            : "border-[#004225]/15 bg-[#004225]/5 text-[#004225]"
-        }`}
-        aria-live="polite"
-      >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase opacity-70">
-              Matchande annonser
-            </p>
-            <p className="mt-1 text-2xl font-semibold leading-none">
-              {typeof facetTotalCount === "number"
-                ? facetTotalCount.toLocaleString("sv-SE")
-                : facetsLoading
-                  ? "..."
-                  : "-"}
-            </p>
-          </div>
-          <div className="text-sm sm:max-w-[340px] sm:text-right">
-            {typeof facetTotalCount === "number" ? (
-              facetTotalCount === 0 ? (
-                "Inga annonser matchar kombinationen. Testa att ta bort ett krav eller bredda prisintervallet."
-              ) : (
-                `${formatListingCount(facetTotalCount)} matchar dina val.`
-              )
-            ) : facetsError ? (
-              facetsError
-            ) : facetsLoading ? (
-              "H\u00e4mtar tr\u00e4ffar..."
-            ) : (
-              "Antal tr\u00e4ffar visas n\u00e4r statistik finns."
-            )}
-            {facetsLoading && typeof facetTotalCount === "number" && (
-              <span className="mt-1 block text-xs opacity-70">
-                Uppdaterar...
-              </span>
-            )}
-          </div>
-        </div>
-
-        {selectedSummary.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {selectedSummary.map((item) => (
-              <span
-                key={item}
-                className="rounded-full bg-white/70 px-2.5 py-1 text-xs font-medium text-black/70"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
+    <div className="space-y-3">
       {propertyTypes.length > 0 && (
         <PropertyTypeSection
-          title="Boendetyp"
+          title={localizedText(locale, "Boendetyp", "Home type")}
           items={propertyTypes}
           selectedId={state.propertyType}
           onSelect={handlePropertyType}
@@ -435,10 +331,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
       {hostTypes.length > 0 && (
         <PropertyTypeSection
-          title={"Hyresv\u00e4rd"}
-          description={
-            "Antalet visar hur m\u00e5nga annonser som finns kvar med dina andra val."
-          }
+          title={localizedText(locale, "Hyresvärd", "Landlord")}
           items={hostTypes}
           selectedId={state.hostType}
           onSelect={handleHostType}
@@ -448,8 +341,6 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
       {showPriceFilter && (
         <PriceRangeSection
-          title="Prisintervall"
-          description={priceDescription}
           histogram={priceHistogram}
           bounds={priceBounds}
           value={[state.priceRange.min, state.priceRange.max]}
@@ -459,10 +350,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
       {amenities.length > 0 && (
         <AmenityGridSection
-          title={"Bekv\u00e4mligheter"}
-          description={
-            "Alla valda bekv\u00e4mligheter m\u00e5ste finnas p\u00e5 annonsen."
-          }
+          title={localizedText(locale, "Bekvämligheter", "Amenities")}
           items={amenities}
           selectedIds={state.amenities}
           onToggle={handleAmenityToggle}
@@ -470,17 +358,12 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
       )}
 
       <FilterSectionShell
-        title={"N\u00e4ra skola"}
-        description={
-          "V\u00e4lj ett campus eller en skola f\u00f6r att hitta annonser i n\u00e4rheten."
-        }
+        title={localizedText(locale, "Nära skola", "Near school")}
         withBorder={false}
       >
-        <div className="space-y-2">
-          <label className="space-y-2">
-            <span className="block text-sm font-medium text-black/75">
-              Skola
-            </span>
+        <div className="space-y-3">
+          <label>
+            <span className="sr-only">{localizedText(locale, "Skola", "School")}</span>
             <div className="relative">
               <input
                 type="text"
@@ -489,32 +372,32 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                 onChange={(event) =>
                   handleSchoolSearchChange(event.target.value)
                 }
-                placeholder={"S\u00f6k skola eller universitet"}
-                className="h-11 w-full rounded-2xl border border-black/15 bg-white px-4 pr-24 text-sm outline-none transition focus:border-[#004225] focus:ring-2 focus:ring-[#004225]/10"
+                placeholder={localizedText(locale, "Sök skola eller universitet", "Search school or university")}
+                className="h-11 w-full rounded-lg border border-black/15 bg-white px-3.5 pr-24 text-sm outline-none transition focus:border-[#004225] focus:ring-2 focus:ring-[#004225]/10"
               />
               {state.schoolId && (
                 <button
                   type="button"
                   onClick={clearSchool}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-xs font-semibold text-[#004225] hover:bg-[#004225]/5"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold text-[#004225] transition hover:bg-[#004225]/10"
                 >
-                  Rensa
+                  {localizedText(locale, "Rensa", "Clear")}
                 </button>
               )}
             </div>
           </label>
 
           {schools.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-black/15 px-4 py-3 text-sm text-black/55">
-              Skolor laddas...
+            <p className="text-sm text-black/55">
+              {localizedText(locale, "Skolor laddas...", "Loading schools...")}
             </p>
           ) : selectableSchools.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-black/15 px-4 py-3 text-sm text-black/55">
-              Inga skolor med position kunde hittas.
+            <p className="text-sm text-black/55">
+              {localizedText(locale, "Inga skolor med position kunde hittas.", "No schools with a location were found.")}
             </p>
           ) : (
             <div
-              className={`max-h-56 overflow-y-auto rounded-2xl border border-black/10 bg-white p-2 ${
+              className={`max-h-56 overflow-y-auto rounded-lg border border-black/10 bg-white p-1.5 shadow-inner ${
                 isSchoolListOpen || !state.schoolId ? "block" : "hidden"
               }`}
             >
@@ -531,10 +414,10 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                       }}
                       onClick={() => handleSchoolSelect(school)}
                       aria-pressed={isSelected}
-                      className={`flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2 text-left transition ${
+                      className={`flex w-full items-start justify-between gap-3 rounded-md px-3 py-2 text-left transition ${
                         isSelected
                           ? "bg-[#004225] text-white"
-                          : "text-black hover:bg-[#004225]/5"
+                          : "text-black hover:bg-[#f6faf8]"
                       }`}
                     >
                       <span>
@@ -553,7 +436,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                       </span>
                       {isSelected && (
                         <span className="text-xs font-semibold">
-                          Klicka för att ta bort
+                          {localizedText(locale, "Klicka för att ta bort", "Click to remove")}
                         </span>
                       )}
                     </button>
@@ -561,7 +444,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                 })
               ) : (
                 <p className="px-3 py-2 text-sm text-black/55">
-                  {"Ingen skola matchar din s\u00f6kning."}
+                  {localizedText(locale, "Ingen skola matchar din sökning.", "No school matches your search.")}
                 </p>
               )}
             </div>
@@ -569,12 +452,16 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
 
           {state.schoolId && (
             <p className="text-xs text-black/55">
-              Filtret anv\u00e4nder skolans position n\u00e4r tr\u00e4ffarna r\u00e4knas.
+              {localizedText(
+                locale,
+                "Filtret använder skolans position när träffarna räknas.",
+                "The filter uses the school's location when counting matches.",
+              )}
             </p>
           )}
         </div>
       </FilterSectionShell>
-    </>
+    </div>
   );
 
   return (

@@ -10,6 +10,7 @@ import {
 } from "framer-motion";
 import Link from "next/link";
 import React, { useRef, useState } from "react";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export type NavbarItem = {
   name: string;
@@ -92,7 +93,8 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         boxShadow: visible
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
-        width: visible ? "40%" : "100%",
+        width: visible ? "88%" : "100%",
+        maxWidth: visible ? 1120 : 1280,
         y: visible ? 20 : 0,
       }}
       transition={{
@@ -101,7 +103,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         damping: 50,
       }}
       style={{
-        minWidth: "800px",
+        minWidth: "min(960px, calc(100vw - 2rem))",
       }}
       className={cn(
         "relative z-[60] mx-auto hidden w-full max-w-7xl flex-row items-center justify-between self-start rounded-full bg-transparent px-4 py-2 lg:flex dark:bg-transparent",
@@ -254,11 +256,13 @@ export const MobileNavToggle = ({
   isOpen: boolean;
   onClick: () => void;
 }) => {
+  const { t } = useI18n();
+
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={isOpen ? "Stang meny" : "Oppna meny"}
+      aria-label={isOpen ? t("siteHeader.closeMenu") : t("siteHeader.openMenu")}
       className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 bg-white text-black transition-colors hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
     >
       {isOpen ? <IconX className="h-5 w-5" /> : <IconMenu2 className="h-5 w-5" />}

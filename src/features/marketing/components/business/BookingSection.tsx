@@ -13,7 +13,7 @@ const DEFAULT_CALENDAR_URL =
   "https://calendly.com/campuslyan/30min?text_color=000000&hide_gdpr_banner=1&primary_color=004225";
 
 export function BookingSection({
-  id = "bokning",
+  id = "booking",
   title,
   description,
   calendarUrl = DEFAULT_CALENDAR_URL,

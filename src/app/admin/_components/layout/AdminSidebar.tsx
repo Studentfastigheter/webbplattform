@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ActivityIcon,
   BarChart3Icon,
   Building2Icon,
-  ListChecksIcon,
+  MapIcon,
+  MailIcon,
   MapPinIcon,
   MoreHorizontalIcon,
   SchoolIcon,
@@ -15,6 +15,7 @@ import {
   UsersIcon,
 } from "lucide-react";
 
+import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { cn, normalizeRoute } from "@/lib/utils";
 import { useAdminSidebar } from "./AdminSidebarContext";
 
@@ -26,17 +27,22 @@ type AdminNavItem = {
 
 const operationsItems: AdminNavItem[] = [
   {
-    name: "Taggar",
+    name: "Tags",
     path: "/tags",
     icon: <TagsIcon className="h-5 w-5" />,
   },
   {
-    name: "Skolor",
+    name: "Schools",
     path: "/schools",
     icon: <SchoolIcon className="h-5 w-5" />,
   },
   {
-    name: "Platser",
+    name: "Cities",
+    path: "/cities",
+    icon: <MapIcon className="h-5 w-5" />,
+  },
+  {
+    name: "Locations",
     path: "/locations",
     icon: <MapPinIcon className="h-5 w-5" />,
   },
@@ -44,34 +50,39 @@ const operationsItems: AdminNavItem[] = [
 
 const accountItems: AdminNavItem[] = [
   {
-    name: "Företag",
+    name: "Companies",
     path: "/companies",
     icon: <Building2Icon className="h-5 w-5" />,
   },
   {
-    name: "Konton",
+    name: "External Companies",
+    path: "/external-companies",
+    icon: <Building2Icon className="h-5 w-5" />,
+  },
+  {
+    name: "Accounts",
     path: "/accounts",
     icon: <UsersIcon className="h-5 w-5" />,
   },
   {
-    name: "Aktiviteter",
+    name: "Activities",
     path: "/activities",
     icon: <ActivityIcon className="h-5 w-5" />,
   },
   {
-    name: "Statistik",
-    path: "/statistics",
-    icon: <BarChart3Icon className="h-5 w-5" />,
+    name: "Waitlist",
+    path: "/waitlist",
+    icon: <MailIcon className="h-5 w-5" />,
   },
   {
-    name: "Legacy",
-    path: "/legacy",
-    icon: <ListChecksIcon className="h-5 w-5" />,
+    name: "Statistics",
+    path: "/statistics",
+    icon: <BarChart3Icon className="h-5 w-5" />,
   },
 ];
 
 const navSections = [
-  { key: "operations", title: "Plattform", items: operationsItems },
+  { key: "operations", title: "Platform", items: operationsItems },
   { key: "management", title: "Admin", items: accountItems },
 ] as const;
 
@@ -106,20 +117,13 @@ export default function AdminSidebar() {
           expanded ? "justify-start" : "lg:justify-center"
         )}
       >
-        <Link className="flex items-center gap-3" href="/">
-          <Image
-            alt="CampusLyan"
-            className="h-8 w-8 shrink-0"
-            height={32}
-            src="/campuslyan-logo.svg"
-            width={32}
-          />
-          {expanded && (
-            <span className="text-lg font-semibold tracking-tight text-gray-900">
-              Admin
-            </span>
-          )}
-        </Link>
+        <CampusLyanBrandLink
+          className="gap-3"
+          href="/"
+          logoClassName="h-8 w-8"
+          showText={expanded}
+          textClassName="text-lg"
+        />
       </div>
 
       <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto duration-300 ease-linear">

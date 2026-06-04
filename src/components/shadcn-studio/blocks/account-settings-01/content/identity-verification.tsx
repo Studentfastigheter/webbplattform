@@ -8,6 +8,9 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
 import { authService, isAuthResponse } from '@/features/auth/services/auth-service'
+import type { Locale } from '@/i18n/config'
+import { useI18n } from '@/i18n/I18nProvider'
+import { localizedText } from '@/i18n/text'
 import type { FrejaAuthStatus, User } from '@/types'
 
 const pollIntervalMs = 2000
@@ -23,13 +26,18 @@ const frejaAuthStatuses = [
   'CANCELED',
 ] as const satisfies readonly FrejaAuthStatus[]
 
-const statusMessages: Record<FrejaAuthStatus, string> = {
-  PENDING: 'Väntar på Freja.',
-  MATCHES: 'Identiteten är verifierad.',
-  CLASHING: 'Freja-identiteten matchade inte kontot.',
-  DISAPPROVED: 'Verifieringen nekades.',
-  EXPIRED: 'Verifieringen hann löpa ut.',
-  CANCELED: 'Verifieringen avbröts.',
+const statusMessages: Record<FrejaAuthStatus, { sv: string; en: string }> = {
+  PENDING: { sv: 'Väntar på Freja.', en: 'Waiting for Freja.' },
+  MATCHES: { sv: 'Identiteten är verifierad.', en: 'Identity verified.' },
+  CLASHING: { sv: 'Freja-identiteten matchade inte kontot.', en: 'The Freja identity did not match the account.' },
+  DISAPPROVED: { sv: 'Verifieringen nekades.', en: 'The verification was rejected.' },
+  EXPIRED: { sv: 'Verifieringen hann löpa ut.', en: 'The verification expired.' },
+  CANCELED: { sv: 'Verifieringen avbröts.', en: 'The verification was canceled.' },
+}
+
+function getStatusMessage(status: FrejaAuthStatus, locale: Locale) {
+  const message = statusMessages[status]
+  return localizedText(locale, message.sv, message.en)
 }
 
 function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
@@ -57,6 +65,7 @@ export default function IdentityVerification({
 }: {
   enabled: boolean
 }) {
+  const { locale } = useI18n()
   const { user, completeAuth, refreshUser } = useAuth()
   const [loading, setLoading] = useState(false)
   const [authRef, setAuthRef] = useState('')
@@ -93,13 +102,13 @@ export default function IdentityVerification({
       setError(
         err instanceof Error
           ? err.message
-          : 'Kunde inte läsa verifieringsstatus.'
+          : localizedText(locale, 'Kunde inte läsa verifieringsstatus.', 'Could not read verification status.')
       )
     } finally {
       setHasLoadedMe(true)
       setCheckingMe(false)
     }
-  }, [enabled, user])
+  }, [enabled, locale, user])
 
   useEffect(() => {
     setMeUser(null)
@@ -130,7 +139,7 @@ export default function IdentityVerification({
         }
 
         if (!isFrejaAuthStatus(result)) {
-          setError('Backend skickade en okänd Freja-status.')
+          setError(localizedText(locale, 'Backend skickade en okänd Freja-status.', 'The backend returned an unknown Freja status.'))
           setLoading(false)
           return
         }
@@ -151,7 +160,7 @@ export default function IdentityVerification({
         }
       } catch {
         if (!active) return
-        setError('Kunde inte kontrollera Freja-status. Försöker igen.')
+        setError(localizedText(locale, 'Kunde inte kontrollera Freja-status. Försöker igen.', 'Could not check Freja status. Trying again.'))
         timeout = setTimeout(poll, pollIntervalMs)
       }
     }
@@ -162,7 +171,7 @@ export default function IdentityVerification({
       active = false
       if (timeout) clearTimeout(timeout)
     }
-  }, [authRef, completeAuth, loadVerificationStatus, refreshUser])
+  }, [authRef, completeAuth, loadVerificationStatus, locale, refreshUser])
 
   const startIdentityVerification = async () => {
     if (loading || !canStartVerification) return
@@ -179,7 +188,7 @@ export default function IdentityVerification({
     } catch (err) {
       setLoading(false)
       setError(
-        err instanceof Error ? err.message : 'Kunde inte starta Freja-verifieringen.'
+        err instanceof Error ? err.message : localizedText(locale, 'Kunde inte starta Freja-verifieringen.', 'Could not start Freja verification.')
       )
     }
   }
@@ -189,7 +198,7 @@ export default function IdentityVerification({
   return (
     <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
-        <h3 className='font-semibold'>Konto</h3>
+        <h3 className='font-semibold'>{localizedText(locale, 'Konto', 'Account')}</h3>
       </div>
 
       <div className='lg:col-span-2'>
@@ -206,16 +215,16 @@ export default function IdentityVerification({
               {identityVerified ? (
                 <span className='inline-flex h-6 items-center gap-1.5 rounded-full border border-green-200 bg-white px-2 text-xs font-medium text-green-700'>
                   <CheckCircle2Icon className='size-3.5 text-green-700' />
-                  Verifierad
+                  {localizedText(locale, 'Verifierad', 'Verified')}
                 </span>
               ) : (
                 <span className='inline-flex h-6 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2 text-xs font-medium text-muted-foreground'>
-                  Ej verifierad
+                  {localizedText(locale, 'Ej verifierad', 'Not verified')}
                 </span>
               )}
               {!identityVerified && status ? (
                 <span className='text-xs text-muted-foreground'>
-                  {statusMessages[status]}
+                  {getStatusMessage(status, locale)}
                 </span>
               ) : null}
             </div>
@@ -229,7 +238,9 @@ export default function IdentityVerification({
                 isDisabled={loading || !canStartVerification}
                 onClick={startIdentityVerification}
               >
-                {hasFreshVerificationStatus ? 'Verifiera' : 'Kontrollerar'}
+                {hasFreshVerificationStatus
+                  ? localizedText(locale, 'Verifiera', 'Verify')
+                  : localizedText(locale, 'Kontrollerar', 'Checking')}
               </Button>
             ) : null}
           </div>

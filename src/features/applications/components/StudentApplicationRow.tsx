@@ -4,6 +4,8 @@ import type { ListFrameRow } from "@/components/layout/ListFrame";
 import { Button } from "@/components/ui/button";
 import StatusTag, { type Status } from "@/components/ui/statusTag";
 import type { DateString } from "@/types";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 export type StudentApplicationRowProps = {
   applicationId: string;
@@ -28,6 +30,11 @@ const initialsFromName = (name: string) =>
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
+
+const ViewApplicationText = () => {
+  const { locale } = useI18n();
+  return <>{localizedText(locale, "Se ansökan", "View application")}</>;
+};
 
 export const buildStudentApplicationRow = (
   props: StudentApplicationRowProps
@@ -143,7 +150,7 @@ export const buildStudentApplicationRow = (
         onClick={onOpen}
         className="h-9 rounded-full border border-gray-200 bg-white px-3 text-[12px] font-medium text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
       >
-        Se ansökan
+        <ViewApplicationText />
         <ChevronRight className="ml-1 h-3.5 w-3.5" />
       </Button>
     </div>

@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/context/AuthContext'
 import { authService } from '@/features/auth/services/auth-service'
+import { useI18n } from '@/i18n/I18nProvider'
+import { localizedText } from '@/i18n/text'
 import type { UpdateUserRequest } from '@/types'
 
 export type PersonalInfoOptions = {
@@ -64,6 +66,7 @@ const PersonalInfo = forwardRef<
   PersonalInfoHandle,
   { options?: PersonalInfoOptions }
 >(({ options = {} }, ref) => {
+  const { locale } = useI18n()
   const { user, isLoading: authLoading, updateUser } = useAuth()
   const showEmailVerification = options.showEmailVerification ?? false
 
@@ -91,7 +94,7 @@ const PersonalInfo = forwardRef<
     try {
       const trimmedEmail = email.trim()
       if (trimmedEmail && !isValidEmail(trimmedEmail)) {
-        throw new Error('Ange en giltig e-postadress.')
+        throw new Error(localizedText(locale, 'Ange en giltig e-postadress.', 'Enter a valid email address.'))
       }
 
       const payload: UpdateUserRequest = {
@@ -104,7 +107,7 @@ const PersonalInfo = forwardRef<
       await updateUser(payload)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Kunde inte spara ändringar.'
+        err instanceof Error ? err.message : localizedText(locale, 'Kunde inte spara ändringar.', 'Could not save changes.')
       )
       throw err
     }
@@ -115,12 +118,12 @@ const PersonalInfo = forwardRef<
 
     const trimmedEmail = email.trim()
     if (!trimmedEmail) {
-      setError('Ange en e-postadress först.')
+      setError(localizedText(locale, 'Ange en e-postadress först.', 'Enter an email address first.'))
       return
     }
 
     if (!isValidEmail(trimmedEmail)) {
-      setError('Ange en giltig e-postadress.')
+      setError(localizedText(locale, 'Ange en giltig e-postadress.', 'Enter a valid email address.'))
       return
     }
 
@@ -130,10 +133,10 @@ const PersonalInfo = forwardRef<
 
     try {
       await authService.verifyEmail({ email: trimmedEmail })
-      setEmailVerificationMessage('Verifieringsmail är skickat.')
+      setEmailVerificationMessage(localizedText(locale, 'Verifieringsmail är skickat.', 'The verification email has been sent.'))
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Kunde inte skicka verifieringsmail.'
+        err instanceof Error ? err.message : localizedText(locale, 'Kunde inte skicka verifieringsmail.', 'Could not send the verification email.')
       )
     } finally {
       setEmailVerificationLoading(false)
@@ -145,6 +148,7 @@ const PersonalInfo = forwardRef<
     surname,
     phone,
     email,
+    locale,
   ])
 
   const emailVerified = isVerified(user?.verifiedEmail)
@@ -153,11 +157,11 @@ const PersonalInfo = forwardRef<
     return (
       <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
         <div className='flex flex-col space-y-1'>
-          <h3 className='font-semibold'>Allmänt</h3>
+          <h3 className='font-semibold'>{localizedText(locale, 'Allmänt', 'General')}</h3>
         </div>
         <div className='flex items-center gap-2 text-muted-foreground lg:col-span-2'>
           <Loader2Icon className='size-4 animate-spin' />
-          Laddar...
+          {localizedText(locale, 'Laddar...', 'Loading...')}
         </div>
       </div>
     )
@@ -166,9 +170,9 @@ const PersonalInfo = forwardRef<
   return (
     <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
-        <h3 className='font-semibold'>Allmänt</h3>
+        <h3 className='font-semibold'>{localizedText(locale, 'Allmänt', 'General')}</h3>
         <p className='text-sm text-muted-foreground'>
-          Namn och kontaktuppgifter.
+          {localizedText(locale, 'Namn och kontaktuppgifter.', 'Name and contact details.')}
         </p>
       </div>
 
@@ -176,10 +180,10 @@ const PersonalInfo = forwardRef<
         <div className='space-y-5'>
           <div className='grid grid-cols-1 gap-5 sm:grid-cols-2'>
             <div className={fieldClassName}>
-              <Label htmlFor='personal-info-first-name'>Förnamn</Label>
+              <Label htmlFor='personal-info-first-name'>{localizedText(locale, 'Förnamn', 'First name')}</Label>
               <Input
                 id='personal-info-first-name'
-                placeholder='Förnamn'
+                placeholder={localizedText(locale, 'Förnamn', 'First name')}
                 value={firstName}
                 onChange={event => setFirstName(event.target.value)}
                 className={inputClassName}
@@ -187,10 +191,10 @@ const PersonalInfo = forwardRef<
             </div>
 
             <div className={fieldClassName}>
-              <Label htmlFor='personal-info-last-name'>Efternamn</Label>
+              <Label htmlFor='personal-info-last-name'>{localizedText(locale, 'Efternamn', 'Last name')}</Label>
               <Input
                 id='personal-info-last-name'
-                placeholder='Efternamn'
+                placeholder={localizedText(locale, 'Efternamn', 'Last name')}
                 value={surname}
                 onChange={event => setSurname(event.target.value)}
                 className={inputClassName}
@@ -199,7 +203,7 @@ const PersonalInfo = forwardRef<
           </div>
 
           <div className={fieldClassName}>
-            <Label htmlFor='personal-info-email'>E-post</Label>
+            <Label htmlFor='personal-info-email'>{localizedText(locale, 'E-post', 'Email')}</Label>
             <div className='relative w-full'>
               <Input
                 id='personal-info-email'
@@ -216,7 +220,7 @@ const PersonalInfo = forwardRef<
                 emailVerified ? (
                   <div className='pointer-events-none absolute inset-y-0 right-3 flex items-center gap-1.5 text-sm font-medium text-green-700'>
                     <CheckCircle2Icon className='size-4' />
-                    Verifierad
+                    {localizedText(locale, 'Verifierad', 'Verified')}
                   </div>
                 ) : (
                   <button
@@ -225,7 +229,9 @@ const PersonalInfo = forwardRef<
                     disabled={emailVerificationLoading}
                     onClick={startEmailVerification}
                   >
-                    {emailVerificationLoading ? 'Skickar...' : 'Verifiera nu'}
+                    {emailVerificationLoading
+                      ? localizedText(locale, 'Skickar...', 'Sending...')
+                      : localizedText(locale, 'Verifiera nu', 'Verify now')}
                   </button>
                 )
               ) : null}
@@ -236,7 +242,7 @@ const PersonalInfo = forwardRef<
           </div>
 
           <div className={fieldClassName}>
-            <Label htmlFor='personal-info-mobile'>Telefonnummer</Label>
+            <Label htmlFor='personal-info-mobile'>{localizedText(locale, 'Telefonnummer', 'Phone number')}</Label>
             <Input
               id='personal-info-mobile'
               name='phone'

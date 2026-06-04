@@ -5,6 +5,8 @@ import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type AuthCardProps = React.ComponentProps<"div"> & {
   title: string;
@@ -26,6 +28,8 @@ export function AuthCard({
   children,
   ...props
 }: AuthCardProps) {
+  const { locale } = useI18n();
+
   if (variant === "homeq") {
     return (
       <div
@@ -83,7 +87,7 @@ export function AuthCard({
             {aside ?? (
               <Image
                 src="/appartment.jpg"
-                alt="Studentbostäder"
+                alt={localizedText(locale, "Studentbostäder", "Student housing")}
                 fill
                 priority={false}
                 className="object-cover object-center dark:brightness-[0.2] dark:grayscale"

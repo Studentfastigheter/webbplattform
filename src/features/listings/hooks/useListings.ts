@@ -173,7 +173,7 @@ export function useQueueListings(
   return useQuery<PageResponse<ListingCardDTO>>({
     queryKey: qk.listings.queueListings(queueId ?? "", page, size),
     queryFn: ({ signal }) =>
-      listingService.getQueueListings(queueId!, page, size, { signal }),
+      listingService.getByQueuePage(queueId!, page, size, { signal }),
     enabled: Boolean(queueId),
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData,

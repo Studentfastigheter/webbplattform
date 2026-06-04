@@ -30,7 +30,13 @@ export type CompanyPrivateDTO = {
   name: string;
   subtitle?: string | null;
   description?: string | null;
+  companyDescription?: string | null;
   website?: string | null;
+  companyUrl?: string | null;
+  websiteUrl?: string | null;
+  privacyUrl?: string | null;
+  privacyPolicyUrl?: string | null;
+  termsUrl?: string | null;
   rating?: number | null;
   verified?: boolean | null;
   bannerUrl?: string | null;
@@ -44,6 +50,9 @@ export type CompanyPrivateDTO = {
   organisationNumber?: string | null;
   organizationNumber?: string | null;
   internalContactNote?: string | null;
+  cities?: string[];
+  pictureUrlList?: string[];
+  videoUrlList?: string[];
   socialLinks?: Record<string, string>;
 };
 
@@ -55,6 +64,7 @@ export type CompanyPublicDTO = {
   subtitle?: string | null;
   description?: string | null;
   website?: string | null;
+  companyUrl?: string | null;
   websiteUrl?: string | null;
   rating?: number | null;
   verified?: boolean | null;
@@ -69,6 +79,38 @@ export type CompanyPublicDTO = {
   pictureUrlList?: string[];
   videoUrlList?: string[];
   socialLinks?: Record<string, string>;
+};
+
+export type CompanyListParams = {
+  city?: string | null;
+};
+
+export type CreateExternalCompanyRequest = {
+  name: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  cityCodes?: string[];
+  schoolIds?: number[];
+};
+
+export type ModifyExternalCompanyRequest = {
+  id: number;
+  name?: string | null;
+  description?: string | null;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  cities?: string[];
+};
+
+export type ExternalCompanyDTO = {
+  id: number;
+  name: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  cityCodes?: string[];
+  schoolIds?: number[];
 };
 
 export type CompanyRole = {
@@ -89,6 +131,26 @@ export type CompanyUserDTO = {
   surname?: string | null;
   email?: string | null;
   phone?: string | null;
+  verified?: boolean | null;
+  bannerUrl?: string | null;
+  logoUrl?: string | null;
+};
+
+export type CompanyUserCreateRequest = {
+  email: string;
+  password: string;
+  firstName?: string | null;
+  surname?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  roleName?: string | null;
+};
+
+export type CompanyUserUpdateRequest = {
+  firstName?: string | null;
+  surname?: string | null;
+  phone?: string | null;
+  roleName?: string | null;
   bannerUrl?: string | null;
   logoUrl?: string | null;
 };
@@ -311,6 +373,16 @@ function normalizeStringRecord(value: unknown): Record<string, string> | undefin
     .filter((entry): entry is readonly [string, string] => entry[1] !== undefined);
 
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function normalizeSocialPlatform(value: unknown): SocialPlatform | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const platform = firstString(value.platform);
+
+  return platform ? { platform } : null;
 }
 
 function normalizeAnalyticalQuantity(value: unknown): AnalyticalQuantity | null {
@@ -607,6 +679,8 @@ function normalizeCompanyPublic(value: unknown): CompanyPublicDTO | null {
     name,
     companyId: firstNumber(value.companyId, value.id),
     companyName: firstString(value.companyName, value.name),
+    description: firstString(value.description, value.companyDescription),
+    companyUrl: firstString(value.companyUrl),
     website: firstString(value.website, value.websiteUrl),
     websiteUrl: firstString(value.websiteUrl, value.website),
     privacyUrl: firstString(value.privacyUrl, value.privacyPolicyUrl, value.policyUrl),
@@ -617,6 +691,36 @@ function normalizeCompanyPublic(value: unknown): CompanyPublicDTO | null {
     pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
     videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
     socialLinks: normalizeStringRecord(value.socialLinks),
+  };
+}
+
+function normalizeExternalCompany(value: unknown): ExternalCompanyDTO | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = firstNumber(value.id, value.companyId);
+  const name = firstString(value.name, value.companyName);
+
+  if (id === undefined || !name) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    description: firstString(value.description, value.companyDescription) ?? null,
+    logoUrl: firstString(value.logoUrl, value.logoURL) ?? null,
+    websiteUrl: firstString(value.websiteUrl, value.website, value.companyUrl) ?? null,
+    cityCodes: toArray<string>(value.cityCodes ?? value.cities ?? value.companyCities),
+    schoolIds: toArray<unknown>(value.schoolIds ?? value.schools ?? value.companySchools)
+      .map((school) => {
+        if (isRecord(school)) {
+          return firstNumber(school.id, school.schoolId);
+        }
+        return firstNumber(school);
+      })
+      .filter((schoolId): schoolId is number => schoolId !== undefined),
   };
 }
 
@@ -632,11 +736,20 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
   }
 
+  const rawCities = value.cities ?? value.companyCities;
+
   return {
     ...(value as Partial<CompanyPrivateDTO>),
     id,
     name,
+    description: firstString(value.description, value.companyDescription),
+    companyDescription: firstString(value.companyDescription, value.description),
+    companyUrl: firstString(value.companyUrl),
     website: firstString(value.website, value.websiteUrl),
+    websiteUrl: firstString(value.websiteUrl, value.website),
+    privacyUrl: firstString(value.privacyUrl, value.privacyPolicyUrl, value.policyUrl),
+    privacyPolicyUrl: firstString(value.privacyPolicyUrl, value.privacyUrl, value.policyUrl),
+    termsUrl: firstString(value.termsUrl),
     contactEmail: firstString(value.contactEmail, value.email),
     contactPhone: firstString(value.contactPhone, value.phone),
     email: firstString(value.email, value.contactEmail),
@@ -648,6 +761,9 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     ),
     internalContactNote: firstString(value.internalContactNote, value.contactNote),
     contactNote: firstString(value.contactNote, value.internalContactNote),
+    ...(rawCities !== undefined ? { cities: toArray<string>(rawCities) } : {}),
+    pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
+    videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
     socialLinks: normalizeStringRecord(value.socialLinks),
   };
 }
@@ -845,12 +961,16 @@ function companyApplicationsEndpoint(id: number, page: number, size: number): st
 export const companyService = {
 
   listCompanies: async (
+    params: CompanyListParams = {},
     options?: ServiceOptions
   ): Promise<CompanyPublicDTO[]> => {
-    const companies = await apiClient<unknown>("/companies", {
-      auth: false,
-      signal: options?.signal,
-    });
+    const companies = await apiClient<unknown>(
+      `/companies${buildQuery({ city: params.city?.trim() })}`,
+      {
+        auth: false,
+        signal: options?.signal,
+      }
+    );
     return arrayFromApiResponse<unknown>(companies)
       .map(normalizeCompanyPublic)
       .filter((company): company is CompanyPublicDTO => company !== null);
@@ -896,6 +1016,11 @@ export const companyService = {
       { signal: options?.signal }
     );
     return normalizeCompanyPrivate(company);
+  },
+
+  roles: async (): Promise<CompanyRole[]> => {
+    const roles = await apiClient<unknown>("/companies/roles", { auth: false });
+    return arrayFromApiResponse<CompanyRole>(roles);
   },
 
   updateCompanyData: async (
@@ -958,6 +1083,47 @@ export const companyService = {
   users: async (id: number): Promise<CompanyUserDTO[]> => {
     const users = await apiClient<unknown>(`/companies/${pathSegment(id)}/users`);
     return arrayFromApiResponse<CompanyUserDTO>(users);
+  },
+
+  createUser: async (
+    payload: CompanyUserCreateRequest
+  ): Promise<void> => {
+    await authService.registerWorker(
+      {
+        accountType: "company",
+        email: payload.email,
+        password: payload.password,
+        firstName: payload.firstName ?? undefined,
+        surname: payload.surname ?? undefined,
+        phone: payload.phone ?? undefined,
+        city: payload.city ?? undefined,
+        roleName: payload.roleName ?? undefined,
+      },
+      { auth: true }
+    );
+  },
+
+  updateUser: async (
+    id: number,
+    userId: number,
+    payload: CompanyUserUpdateRequest
+  ): Promise<CompanyUserDTO> => {
+    return apiClient<CompanyUserDTO>(
+      `/companies/${pathSegment(id)}/users/${pathSegment(userId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          id: userId,
+          companyId: id,
+          firstName: payload.firstName,
+          surname: payload.surname,
+          phone: payload.phone,
+          bannerUrl: payload.bannerUrl,
+          logoUrl: payload.logoUrl,
+          role: payload.roleName ? { name: payload.roleName } : undefined,
+        }),
+      }
+    );
   },
 
   verifyUser: async (id: number, userId: number): Promise<void> => {
@@ -1123,6 +1289,15 @@ export const companyService = {
     return normalizeListingViewCounts(result);
   },
 
+  refreshCompanyListings: async (id: number): Promise<void> => {
+    await apiClient<void>(
+      `/admin/company/${pathSegment(id)}/refresh-listings`,
+      {
+        method: "POST",
+      }
+    );
+  },
+
   generalAnalytics: async (
     id: number
   ): Promise<AnalyticalQuantities> => {
@@ -1159,6 +1334,44 @@ export const companyService = {
     const platforms = await apiClient<unknown>("/companies/all-platforms", {
       auth: false,
     });
-    return arrayFromApiResponse<SocialPlatform>(platforms);
+    return arrayFromApiResponse<unknown>(platforms)
+      .map(normalizeSocialPlatform)
+      .filter((platform): platform is SocialPlatform => platform !== null);
+  },
+
+  createExternalCompany: async (
+    payload: CreateExternalCompanyRequest
+  ): Promise<void> => {
+    await apiClient<void>("/companies/external-company", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateExternalCompany: async (
+    payload: ModifyExternalCompanyRequest
+  ): Promise<void> => {
+    await apiClient<void>("/companies/external-company", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getExternalCompanies: async (): Promise<ExternalCompanyDTO[]> => {
+    const companies = await apiClient<unknown>("/companies/external-company", {
+      auth: false,
+    });
+    return arrayFromApiResponse<unknown>(companies)
+      .map(normalizeExternalCompany)
+      .filter((company): company is ExternalCompanyDTO => company !== null);
+  },
+
+  deleteExternalCompany: async (id: number): Promise<void> => {
+    await apiClient<void>(
+      `/companies/external-company${buildQuery({ id })}`,
+      {
+        method: "DELETE",
+      }
+    );
   },
 };

@@ -10,6 +10,8 @@ import { Theme } from "@radix-ui/themes";
 import { Toaster } from "@/components/ui/sonner";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import OnboardingModal from "@/features/onboarding/components/OnboardingModal";
+import { I18nProvider } from "@/i18n/I18nProvider";
+import { getDictionary, getRequestLocale } from "@/i18n/server";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -19,76 +21,75 @@ export const viewport: Viewport = {
   themeColor: "#efefef",
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://www.campuslyan.se"),
-  title: {
-    default: "CampusLyan - Gratis studentbostäder samlade på ett ställe",
-    template: "%s | CampusLyan",
-  },
-  description:
-    "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag.",
-  keywords: [
-    "studentbostad",
-    "studentlägenhet",
-    "studentboende",
-    "bostad student",
-    "hyra rum student",
-    "CampusLyan",
-    "andrahand student",
-    "gratis bostadsplattform",
-    "StudentLyan",
-  ],
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    url: "/",
-    siteName: "CampusLyan",
-    title: "CampusLyan - Gratis plattform för studentbostäder",
-    description:
-      "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
-    images: [
-      { url: "/campuslyan-og.png", width: 1200, height: 630, alt: "CampusLyan" },
-    ],
-    locale: "sv_SE",
-  },
-  twitter: {
-    card: "summary_large_image",
-    site: "@campuslyan",
-    title: "CampusLyan - Gratis plattform för studentbostäder",
-    description:
-      "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
-    images: ["/campuslyan-og.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata(): Promise<Metadata> {
+  const [dictionary, locale] = await Promise.all([getDictionary(), getRequestLocale()]);
+  const metadata = dictionary.siteMetadata;
+
+  return {
+    metadataBase: new URL("https://www.campuslyan.se"),
+    title: {
+      default: metadata.titleDefault,
+      template: metadata.titleTemplate,
+    },
+    description: metadata.description,
+    keywords: [...metadata.keywords],
+    alternates: {
+      canonical: locale === "en" ? "/en" : "/",
+      languages: {
+        sv: "/",
+        en: "/en",
+      },
+    },
+    openGraph: {
+      type: "website",
+      url: locale === "en" ? "/en" : "/",
+      siteName: "CampusLyan",
+      title: metadata.ogTitle,
+      description: metadata.ogDescription,
+      images: [
+        { url: "/campuslyan-og.png", width: 1200, height: 630, alt: "CampusLyan" },
+      ],
+      locale: locale === "en" ? "en_US" : "sv_SE",
+      alternateLocale: locale === "en" ? "sv_SE" : "en_US",
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: "@campuslyan",
+      title: metadata.ogTitle,
+      description: metadata.ogDescription,
+      images: ["/campuslyan-og.png"],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-snippet": -1,
-      "max-image-preview": "large",
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-snippet": -1,
+        "max-image-preview": "large",
+      },
     },
-  },
-  icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
-    shortcut: ["/favicon.ico"],
-  },
-  manifest: "/site.webmanifest",
-  verification: {
-    google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes",
-  },
-};
+    icons: {
+      icon: [
+        { url: "/favicon.ico" },
+        { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+        { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      ],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+      shortcut: ["/favicon.ico"],
+    },
+    manifest: "/site.webmanifest",
+    verification: {
+      google: "Tmla2J0Fe5oLeIHO285cw0-ScDEBqySeIu_vg1nJMes",
+    },
+  };
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getRequestLocale();
+
   return (
-    <html lang="sv">
+    <html lang={locale}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans bg-background text-foreground`}
       >
@@ -101,6 +102,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           auth state.
         */}
         <QueryProvider>
+          <I18nProvider initialLocale={locale}>
           <AuthProvider>
             <UserEnvironmentProvider>
               <Theme>
@@ -121,6 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Theme>
             </UserEnvironmentProvider>
           </AuthProvider>
+          </I18nProvider>
         </QueryProvider>
       </body>
     </html>

@@ -9,7 +9,7 @@ export default function PortalBackdrop() {
 
   return (
     <button
-      aria-label="Stäng sidomenyn"
+      aria-label="Close sidebar"
       className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden"
       onClick={toggleMobileSidebar}
       type="button"

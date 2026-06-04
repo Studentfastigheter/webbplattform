@@ -1,8 +1,12 @@
+"use client";
+
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import Tag from "@/components/ui/Tag";
 import type { AdvertiserSummary } from "@/types";
 import { ArrowRight, Check, Star } from "lucide-react";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
 type Props = {
   advertiser: AdvertiserSummary & {
@@ -15,14 +19,15 @@ type Props = {
 };
 
 export default function BostadLandlord({ advertiser }: Props) {
+  const { locale } = useI18n();
   const requirements =
     advertiser.requirements && advertiser.requirements.length > 0
       ? advertiser.requirements
       : [
-          "Aktiv studentstatus kan krävas",
-          "Inga betalningsanmärkningar",
-          "Studieintyg kan behöva bifogas",
-          "Personnummer eller samordningsnummer kan krävas",
+          localizedText(locale, "Aktiv studentstatus kan krävas", "Active student status may be required"),
+          localizedText(locale, "Inga betalningsanmärkningar", "No payment remarks"),
+          localizedText(locale, "Studieintyg kan behöva bifogas", "A study certificate may need to be attached"),
+          localizedText(locale, "Personnummer eller samordningsnummer kan krävas", "A personal identity or coordination number may be required"),
         ];
 
   const highlights = advertiser.highlights ?? [];
@@ -62,10 +67,10 @@ export default function BostadLandlord({ advertiser }: Props) {
                     {hasApartments && (
                       <div>
                         <span className="font-semibold text-gray-900">
-                          {advertiser.totalApartments?.toLocaleString("sv-SE")}
+                          {formatLocalizedNumber(locale, advertiser.totalApartments ?? 0)}
                         </span>
                         <span className="ml-1 text-gray-500">
-                          studentbostäder
+                          {localizedText(locale, "studentbostäder", "student homes")}
                         </span>
                       </div>
                     )}
@@ -77,7 +82,11 @@ export default function BostadLandlord({ advertiser }: Props) {
                           {advertiser.rating?.toFixed(1)}
                         </span>
                         <span className="text-gray-500">
-                          ({advertiser.reviewCount ?? 0} omdömen)
+                          {localizedText(
+                            locale,
+                            `(${advertiser.reviewCount ?? 0} omdömen)`,
+                            `(${advertiser.reviewCount ?? 0} reviews)`,
+                          )}
                         </span>
                       </div>
                     )}
@@ -91,7 +100,7 @@ export default function BostadLandlord({ advertiser }: Props) {
                 href={advertiser.companyPageUrl}
                 className="group inline-flex h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#00331b] hover:shadow-md active:scale-[0.98]"
               >
-                Visa profil
+                {localizedText(locale, "Visa profil", "View profile")}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
             )}
@@ -101,12 +110,16 @@ export default function BostadLandlord({ advertiser }: Props) {
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_330px] lg:gap-8">
           <div className="min-w-0">
             <h3 className="text-lg font-semibold text-gray-900">
-              Beskrivning
+              {localizedText(locale, "Beskrivning", "Description")}
             </h3>
 
             <p className="mt-3 max-w-3xl text-[15px] leading-7 text-gray-700">
               {advertiser.description ||
-                "Här visas information om bostäderna, området och annat som kan vara relevant för dig som söker boende."}
+                localizedText(
+                  locale,
+                  "Här visas information om bostäderna, området och annat som kan vara relevant för dig som söker boende.",
+                  "This is where information about the homes, area and other relevant details is shown.",
+                )}
             </p>
 
             {highlights.length > 0 && (
@@ -126,7 +139,7 @@ export default function BostadLandlord({ advertiser }: Props) {
 
           <aside className="border-t border-gray-100 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
             <h3 className="text-base font-semibold text-gray-900">
-              Krav på hyresgäst
+              {localizedText(locale, "Krav på hyresgäst", "Tenant requirements")}
             </h3>
 
             <ul className="mt-4 grid gap-3.5">

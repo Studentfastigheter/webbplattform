@@ -13,6 +13,8 @@ import PersonalInfo, {
   type PersonalInfoHandle,
   type PersonalInfoOptions,
 } from '@/components/shadcn-studio/blocks/account-settings-01/content/personal-info'
+import { useI18n } from '@/i18n/I18nProvider'
+import { localizedText } from '@/i18n/text'
 
 export type UserGeneralOptions = {
   personalInfo?: PersonalInfoOptions
@@ -21,6 +23,7 @@ export type UserGeneralOptions = {
 }
 
 const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
+  const { locale } = useI18n()
   const showDangerZone = options.showDangerZone ?? true
   const showVerification = options.showVerification ?? false
   const personalInfoRef = useRef<PersonalInfoHandle>(null)
@@ -42,7 +45,7 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Kunde inte spara ändringar.'
+        err instanceof Error ? err.message : localizedText(locale, 'Kunde inte spara ändringar.', 'Could not save changes.')
       )
     } finally {
       setSaving(false)
@@ -64,7 +67,7 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
         {success ? (
           <p className='flex items-center gap-1 text-sm text-green-600'>
             <CheckIcon className='size-4' />
-            Ändringar sparade!
+            {localizedText(locale, 'Ändringar sparade!', 'Changes saved!')}
           </p>
         ) : null}
 
@@ -78,12 +81,12 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
             {saving ? (
               <>
                 <Loader2Icon className='size-4 animate-spin' />
-                Sparar...
+                {localizedText(locale, 'Sparar...', 'Saving...')}
               </>
             ) : (
               <>
                 <SaveIcon className='size-4' />
-                Spara ändringar
+                {localizedText(locale, 'Spara ändringar', 'Save changes')}
               </>
             )}
           </Button>

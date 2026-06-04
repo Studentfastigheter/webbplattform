@@ -45,6 +45,10 @@ type EntityHeroProps = {
   bannerAspectRatio?: string;
   contentClassName?: string;
   avatarWrapperClassName?: string;
+  titleClassName?: string;
+  metaClassName?: string;
+  actionLinksClassName?: string;
+  sectionTitleClassName?: string;
 };
 
 const badgeToneClassMap: Record<EntityHeroBadgeTone, string> = {
@@ -73,6 +77,10 @@ export default function EntityHero({
   bannerAspectRatio,
   contentClassName,
   avatarWrapperClassName,
+  titleClassName,
+  metaClassName,
+  actionLinksClassName,
+  sectionTitleClassName,
 }: EntityHeroProps) {
   const hasActions = actionLinks.length > 0 || Boolean(headerActions);
   const titleInitial = title.trim().charAt(0).toUpperCase() || "?";
@@ -141,7 +149,12 @@ export default function EntityHero({
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="min-w-0 text-2xl font-bold text-gray-900 sm:text-3xl">
+              <h1
+                className={cn(
+                  "min-w-0 text-2xl font-bold text-gray-900 sm:text-3xl",
+                  titleClassName
+                )}
+              >
                 {title}
               </h1>
 
@@ -163,14 +176,24 @@ export default function EntityHero({
             </div>
 
             {meta && (
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
+              <div
+                className={cn(
+                  "mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600",
+                  metaClassName
+                )}
+              >
                 {meta}
               </div>
             )}
           </div>
 
           {hasActions && (
-            <div className="flex shrink-0 flex-wrap items-center gap-1.5 md:justify-end">
+            <div
+              className={cn(
+                "flex shrink-0 flex-wrap items-center gap-1.5 md:justify-end",
+                actionLinksClassName
+              )}
+            >
               {actionLinks.map((item) => {
                 const baseClassName =
                   "inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors";
@@ -224,7 +247,12 @@ export default function EntityHero({
             key={section.id ?? section.title}
             className={cn("mt-8", section.className)}
           >
-            <h2 className="mb-3 text-lg font-semibold text-gray-900">
+            <h2
+              className={cn(
+                "mb-3 text-lg font-semibold text-gray-900",
+                sectionTitleClassName
+              )}
+            >
               {section.title}
             </h2>
             {section.content}

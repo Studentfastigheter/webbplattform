@@ -1,12 +1,6 @@
 import type { SystemProvider } from "./common";
 import type { AddSchoolRequest } from "./school";
 
-export type AdminListingTagDTO = {
-  tagKey?: string;
-  displayName?: string;
-  icon?: string;
-};
-
 export type AdminListingTagDetailDTO = {
   tag?: string;
   displayName?: string;
@@ -46,6 +40,7 @@ export type AdminCompanyDetailedDTO = {
   pictureUrlList?: string[];
   videoUrlList?: string[];
   websiteUrl?: string;
+  cities?: string[];
 };
 
 export type AdminCompanyPublicDTO = {
@@ -56,10 +51,11 @@ export type AdminCompanyPublicDTO = {
   housingQueueId?: string;
   privacyUrl?: string;
   termsUrl?: string;
+  cities?: string[];
 };
 
 export type AdminCreateCompanyRequest = {
-  companyDate?: AdminCompanyDetailedDTO;
+  companylDetails: AdminCompanyDetailedDTO;
   credentials?: AdminCompanyCredentialDTO;
 };
 
@@ -71,6 +67,7 @@ export type AdminCompanyUserDTO = {
   surname?: string;
   email?: string;
   phone?: string;
+  verified?: boolean;
   bannerUrl?: string;
   logoUrl?: string;
 };
@@ -101,6 +98,26 @@ export type AdminUserTrendDTO = {
   month?: number;
   day?: number;
   userCount?: number;
+};
+
+export type AdminWaitlistTrendPointDTO = {
+  date: string;
+  count: number;
+  cumulative: number;
+};
+
+export type AdminWaitlistEntryDTO = {
+  email: string;
+  createdAt: string;
+};
+
+export type AdminWaitlistStatsDTO = {
+  total: number;
+  entries: AdminWaitlistEntryDTO[];
+  daily: AdminWaitlistTrendPointDTO[];
+  unknownCreatedAtCount?: number;
+  storage?: "firestore" | "local";
+  generatedAt?: string;
 };
 
 export type AdminCityPayload = Record<string, unknown>;

@@ -22,8 +22,11 @@ import {
   type ApplicationStatisticEntry,
   type CompanyPrivateDTO,
   type CompanyPublicDTO,
+  type CompanyRole,
+  type CompanyUserDTO,
   type ListingViewCounts,
   type ObjectApplicationCount,
+  type SocialPlatform,
 } from "@/features/companies/services/company-service";
 
 const STALE_30_SECONDS = 30_000;
@@ -32,7 +35,10 @@ const STALE_5_MINUTES = 5 * 60_000;
 export function useCompanies() {
   return useQuery<CompanyPublicDTO[]>({
     queryKey: qk.companies.list(),
-    queryFn: ({ signal }) => companyService.listCompanies({ signal }),
+    // The service splits params (city filter) from ServiceOptions (signal).
+    // listCompanies(params, options) — pass an empty filter and forward signal
+    // via the second argument so cancellation works on unmount.
+    queryFn: ({ signal }) => companyService.listCompanies({}, { signal }),
     staleTime: STALE_5_MINUTES, // landlord list is reference-ish
   });
 }
@@ -106,5 +112,47 @@ export function useTimedApplicationsForListing(
     enabled:
       companyId != null && companyId > 0 && Boolean(listingId) && !!from && !!to,
     staleTime: STALE_30_SECONDS,
+  });
+}
+
+/**
+ * Social platforms list (LinkedIn, Instagram, etc.) used by the company
+ * profile editor. Reference data — long staleTime. Public endpoint, so no
+ * user gate.
+ */
+export function usePlatforms() {
+  return useQuery<SocialPlatform[]>({
+    queryKey: qk.companies.platforms(),
+    queryFn: () => companyService.getAllPlatforms(),
+    staleTime: STALE_5_MINUTES,
+  });
+}
+
+/**
+ * The list of CompanyUsers attached to a company (for the portal's
+ * "Användare" / users page). Requires an authenticated company user.
+ *
+ * No mutations here — Phase 1 is read-only. Create/update/verify mutations
+ * are added in Phase 2.
+ */
+export function useCompanyUsers(companyId: number | null | undefined) {
+  const { user } = useAuth();
+  return useQuery<CompanyUserDTO[]>({
+    queryKey: qk.companies.users(companyId ?? -1),
+    queryFn: () => companyService.users(companyId!),
+    enabled: Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+/**
+ * Roles the system recognises (admin / company_user / etc.). Reference data
+ * — shared between the create form and the table, long staleTime.
+ */
+export function useCompanyRoles() {
+  return useQuery<CompanyRole[]>({
+    queryKey: qk.companies.roles(),
+    queryFn: () => companyService.roles(),
+    staleTime: STALE_5_MINUTES,
   });
 }

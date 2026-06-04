@@ -471,7 +471,7 @@ function ListingListItem({
 function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
   const href =
     group.listingId != null
-      ? `${dashboardRelPath}/annonser/${encodeURIComponent(String(group.listingId))}`
+      ? `${dashboardRelPath}/listings/${encodeURIComponent(String(group.listingId))}`
       : null;
   const rent = formatRent(group.rent);
   const facts = [group.city, rent].filter(Boolean).join(" · ");

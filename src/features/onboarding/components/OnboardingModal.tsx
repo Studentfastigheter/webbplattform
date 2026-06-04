@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/field";
 import { authService } from "@/features/auth/services/auth-service";
 import { schoolService } from "@/features/schools/services/school-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import type { User } from "@/types/user";
 import type { School } from "@/types/school";
 
@@ -61,6 +63,7 @@ function getCityFromAuthMe(user: AuthMeUser) {
 }
 
 export default function OnboardingModal() {
+  const { locale } = useI18n();
   const { user, token, isLoading, completeAuth } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -146,7 +149,7 @@ export default function OnboardingModal() {
       const email = user?.email || getJwtSubject(token);
 
       if (!email) {
-        throw new Error("Kunde inte läsa e-postadress från sessionen.");
+        throw new Error(localizedText(locale, "Kunde inte läsa e-postadress från sessionen.", "Could not read the email address from the session."));
       }
 
       if (
@@ -156,7 +159,7 @@ export default function OnboardingModal() {
         !formData.ssn.trim() ||
         !formData.city.trim()
       ) {
-        throw new Error("Fyll i namn, stad, skola och personnummer.");
+        throw new Error(localizedText(locale, "Fyll i namn, stad, skola och personnummer.", "Enter name, city, school and personal identity number."));
       }
 
       const payload = {
@@ -173,8 +176,8 @@ export default function OnboardingModal() {
       completeAuth(response);
       setIsOpen(false);
     } catch (error) {
-      console.error("Kunde inte spara profil", error);
-      setError(error instanceof Error ? error.message : "Något gick fel. Försök igen.");
+      console.error("Could not save profile", error);
+      setError(error instanceof Error ? error.message : localizedText(locale, "Något gick fel. Försök igen.", "Something went wrong. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -187,10 +190,10 @@ export default function OnboardingModal() {
       <div className="w-full max-w-lg rounded-[8px] bg-white p-6 shadow-2xl md:p-10 animate-in zoom-in-95 duration-300">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-semibold text-gray-900">
-            Slutför studentkonto
+            {localizedText(locale, "Slutför studentkonto", "Complete student account")}
           </h2>
           <p className="mt-2 text-gray-600">
-            Fyll i de studentuppgifter som saknas för att aktivera kontot.
+            {localizedText(locale, "Fyll i de studentuppgifter som saknas för att aktivera kontot.", "Enter the missing student details to activate the account.")}
           </p>
         </div>
 
@@ -198,32 +201,32 @@ export default function OnboardingModal() {
           <FieldGroup>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
-                <FieldLabel htmlFor="onboarding-first-name">Förnamn</FieldLabel>
+                <FieldLabel htmlFor="onboarding-first-name">{localizedText(locale, "Förnamn", "First name")}</FieldLabel>
                 <Input
                   id="onboarding-first-name"
                   required
                   value={formData.firstName}
                   onChange={(e) => updateFormData({ firstName: e.target.value })}
-                  placeholder="Förnamn"
+                  placeholder={localizedText(locale, "Förnamn", "First name")}
                   autoComplete="given-name"
                 />
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="onboarding-surname">Efternamn</FieldLabel>
+                <FieldLabel htmlFor="onboarding-surname">{localizedText(locale, "Efternamn", "Last name")}</FieldLabel>
                 <Input
                   id="onboarding-surname"
                   required
                   value={formData.surname}
                   onChange={(e) => updateFormData({ surname: e.target.value })}
-                  placeholder="Efternamn"
+                  placeholder={localizedText(locale, "Efternamn", "Last name")}
                   autoComplete="family-name"
                 />
               </Field>
             </div>
 
             <Field>
-              <FieldLabel htmlFor="onboarding-school">Skola</FieldLabel>
+              <FieldLabel htmlFor="onboarding-school">{localizedText(locale, "Skola", "School")}</FieldLabel>
               <select
                 id="onboarding-school"
                 required
@@ -232,7 +235,9 @@ export default function OnboardingModal() {
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="">
-                  {schoolsLoading ? "Laddar skolor..." : "Välj skola"}
+                  {schoolsLoading
+                    ? localizedText(locale, "Laddar skolor...", "Loading schools...")
+                    : localizedText(locale, "Välj skola", "Choose school")}
                 </option>
                 {schools.map((school) => (
                   <option key={school.id} value={school.id}>
@@ -243,7 +248,7 @@ export default function OnboardingModal() {
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="onboarding-ssn">Personnummer</FieldLabel>
+              <FieldLabel htmlFor="onboarding-ssn">{localizedText(locale, "Personnummer", "Personal identity number")}</FieldLabel>
               <Input
                 id="onboarding-ssn"
                 required
@@ -253,25 +258,27 @@ export default function OnboardingModal() {
                 autoComplete="off"
               />
               <FieldDescription>
-                Uppgiften skickas till register-student för att slutföra studentkontot.
+                {localizedText(locale, "Uppgiften skickas till register-student för att slutföra studentkontot.", "This detail is sent to register-student to complete the student account.")}
               </FieldDescription>
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="onboarding-city">Stad</FieldLabel>
+              <FieldLabel htmlFor="onboarding-city">{localizedText(locale, "Stad", "City")}</FieldLabel>
               <Input 
                 id="onboarding-city"
                 required
                 value={formData.city}
                 onChange={(e) => updateFormData({ city: e.target.value })}
-                placeholder="T.ex. Stockholm"
+                placeholder={localizedText(locale, "T.ex. Stockholm", "E.g. Stockholm")}
               />
             </Field>
 
             {error && <FieldError>{error}</FieldError>}
 
             <Button type="submit" fullWidth disabled={loading} className="mt-4">
-              {loading ? "Skickar..." : "Skicka"}
+              {loading
+                ? localizedText(locale, "Skickar...", "Sending...")
+                : localizedText(locale, "Skicka", "Submit")}
             </Button>
           </FieldGroup>
         </form>

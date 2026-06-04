@@ -8,6 +8,8 @@ import React, {
 } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type Variant = "small" | "large";
 
@@ -60,10 +62,11 @@ export default function ReadMoreComponent({
   className = "",
   textClassName = "",
   buttonWrapClassName = "",
-  moreLabel = "Läs mer",
-  lessLabel = "Visa mindre",
+  moreLabel,
+  lessLabel,
   scrollOffset = 200,
 }: ReadMoreProps) {
+  const { locale } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [needsToggle, setNeedsToggle] = useState(false);
 
@@ -113,6 +116,8 @@ export default function ReadMoreComponent({
   }, [text, collapsedLines]);
 
   const targetHeight = expanded ? fullHeight : collapsedHeight;
+  const resolvedMoreLabel = moreLabel ?? localizedText(locale, "Läs mer", "Read more");
+  const resolvedLessLabel = lessLabel ?? localizedText(locale, "Visa mindre", "Show less");
 
   const handleToggle = () => {
     setExpanded((prev) => {
@@ -178,7 +183,7 @@ export default function ReadMoreComponent({
               variant="text"
               size="sm"
             >
-              <span>{expanded ? lessLabel : moreLabel}</span>
+              <span>{expanded ? resolvedLessLabel : resolvedMoreLabel}</span>
               
             </Button>
           </div>

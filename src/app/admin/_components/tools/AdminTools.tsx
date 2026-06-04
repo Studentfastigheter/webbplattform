@@ -3,40 +3,45 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
-  ActivityIcon,
-  BarChart3Icon,
-  Building2Icon,
   CheckCircle2Icon,
-  InfoIcon,
-  KeyRoundIcon,
-  ListChecksIcon,
-  MapPinIcon,
   RefreshCwIcon,
-  SchoolIcon,
-  TagsIcon,
   Trash2Icon,
-  UsersIcon,
   XCircleIcon,
 } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { Button } from "@/components/ui/button";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminService } from "@/features/admin/services/admin-service";
+import { normalizeCityCode } from "@/features/cities/services/city-service";
+import type { ExternalCompanyDTO } from "@/features/companies/services/company-service";
 import type {
   AdminAddSchoolRequest,
-  AdminCityPayload,
   AdminCompanyCredentialDTO,
   AdminCompanyDetailedDTO,
+  AdminCompanyRole,
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
   AdminCreatePOIRequest,
-  AdminListingTagDTO,
   AdminListingTagDetailDTO,
   AdminLocationCategoryDTO,
   AdminModifyPOIRequest,
   AdminPointOfInterestDTO,
   AdminCompanyPublicDTO,
+  AdminWaitlistEntryDTO,
+  AdminWaitlistStatsDTO,
+  CityDTO,
+  CityDetailedDTO,
+  CreateCityRequest,
+  ModifyCityRequest,
   School,
 } from "@/types";
 
@@ -48,58 +53,17 @@ type AdminActionState = {
 const ADMIN_TABS = [
   "tags",
   "schools",
+  "cities",
   "locations",
   "companies",
+  "external-companies",
   "accounts",
   "activities",
+  "waitlist",
   "statistics",
-  "legacy",
 ] as const;
 
 export type AdminSection = (typeof ADMIN_TABS)[number];
-
-const TAB_META: Record<AdminSection, { title: string; description: string }> = {
-  tags: {
-    title: "Taggar för bostadsannonser",
-    description:
-      "Skapa och uppdatera de attribut som används för att filtrera och beskriva annonser.",
-  },
-  schools: {
-    title: "Skolor och campus",
-    description:
-      "Lägg till eller uppdatera skolor med stad och koordinater så att sökfilter och kartor fungerar rätt.",
-  },
-  locations: {
-    title: "Platskategorier",
-    description:
-      "Hantera Google-kategorier som ligger bakom närliggande service och platsbaserade listor.",
-  },
-  companies: {
-    title: "Bostadsföretag",
-    description:
-      "Skapa, uppdatera eller avaktivera företagsprofiler och deras systemkopplingar.",
-  },
-  accounts: {
-    title: "Företagskonton",
-    description:
-      "Administrera användare, roller och kontaktuppgifter kopplade till företagsportalen.",
-  },
-  activities: {
-    title: "Studentaktiviteter och POI",
-    description:
-      "Lista, skapa, uppdatera och ta bort aktiviteter som visas nära skolor och bostäder.",
-  },
-  statistics: {
-    title: "Registrerade användare",
-    description:
-      "Hämta tidsserier för användarregistreringar inom ett valt datumintervall.",
-  },
-  legacy: {
-    title: "Äldre stads-endpoints",
-    description:
-      "Verktyg för äldre stadsdata som fortfarande finns kvar av bakåtkompatibilitetsskäl.",
-  },
-};
 
 function toInputValue(value: unknown) {
   return value === undefined || value === null ? "" : String(value);
@@ -127,6 +91,20 @@ function parseListInput(value: string) {
     .split(/[\n,]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getStringOptions(values: Array<string | null | undefined>, selectedValue = "") {
+  const options = new Set(
+    values
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value))
+  );
+  const selected = selectedValue.trim();
+  if (selected) {
+    options.add(selected);
+  }
+
+  return Array.from(options).sort((left, right) => left.localeCompare(right, "sv"));
 }
 
 function parseSocialLinksInput(value: string) {
@@ -172,7 +150,7 @@ function useResourceList<TItem>(onFetch: () => Promise<TItem[]>) {
     try {
       const result = await onFetch();
       setItems(result);
-      setState({ status: "success", message: `${result.length} poster hämtade.` });
+      setState({ status: "idle" });
       return result;
     } catch (error) {
       setItems([]);
@@ -230,37 +208,6 @@ function EndpointBadge({ method, endpoint }: { method: string; endpoint: string 
       </span>
       <span className="break-all">{endpoint}</span>
     </code>
-  );
-}
-
-function TabIntro({
-  icon,
-  title,
-  description,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  children?: ReactNode;
-}) {
-  return (
-    <section className="mb-4 rounded-[8px] border border-[#dfe7e3] bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex min-w-0 gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#004225] text-white">
-            {icon}
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-[#111827]">{title}</h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-[#66716f]">
-              {description}
-            </p>
-          </div>
-        </div>
-        {children}
-      </div>
-    </section>
   );
 }
 
@@ -371,17 +318,20 @@ function FormSelect({
   value,
   onChange,
   children,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   children: ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <FieldRow label={label}>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
         className="h-10 rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm normal-case tracking-normal text-[#111827] outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/20"
       >
         {children}
@@ -414,63 +364,7 @@ function SubmitButton({
   );
 }
 
-function DeleteIdAction({
-  title,
-  description,
-  endpoint,
-  label,
-  onSubmit,
-}: {
-  title: string;
-  description: string;
-  endpoint: string;
-  label: string;
-  onSubmit: (id: number) => Promise<unknown>;
-}) {
-  const [id, setId] = useState("");
-  const [state, setState] = useState<AdminActionState>({ status: "idle" });
-
-  async function run() {
-    const numericId = Number(id);
-    if (!Number.isInteger(numericId) || numericId <= 0) {
-      setState({ status: "error", message: "Ange ett numeriskt id." });
-      return;
-    }
-
-    setState({ status: "loading", message: "Tar bort..." });
-    try {
-      await onSubmit(numericId);
-      setState({ status: "success", message: "Delete-anropet gick igenom." });
-    } catch (error) {
-      setState({
-        status: "error",
-        message: error instanceof Error ? error.message : "Anropet misslyckades.",
-      });
-    }
-  }
-
-  return (
-    <ActionShell title={title} description={description} method="PUT" endpoint={endpoint}>
-      <div className="mt-4 rounded-[8px] border border-red-100 bg-red-50/60 p-3">
-        <FormInput label={label} value={id} onChange={setId} placeholder="Ange numeriskt id" />
-        <Button
-          type="button"
-          isLoading={state.status === "loading"}
-          onPress={run}
-          variant="destructive"
-          className="mt-3 bg-red-700 text-white hover:bg-red-800"
-        >
-          <Trash2Icon className="h-4 w-4" />
-          Ta bort
-        </Button>
-      </div>
-      <ResultBlock state={state} />
-    </ActionShell>
-  );
-}
-
 type TagFormState = {
-  tagKey: string;
   tag: string;
   displayName: string;
   icon: string;
@@ -481,18 +375,17 @@ function TagsFormFields({
   form,
   onChange,
   includeValues,
+  lockTag = false,
 }: {
   form: TagFormState;
   onChange: (patch: Partial<TagFormState>) => void;
   includeValues: boolean;
+  lockTag?: boolean;
 }) {
   return (
     <>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <FormInput label="Tag key" value={form.tagKey} onChange={(tagKey) => onChange({ tagKey })} />
-        {includeValues && (
-          <FormInput label="Tagg" value={form.tag} onChange={(tag) => onChange({ tag })} />
-        )}
+        <FormInput label="Tagg" value={form.tag} onChange={(tag) => onChange({ tag })} disabled={lockTag} />
         <FormInput
           label="Visningsnamn"
           value={form.displayName}
@@ -520,14 +413,12 @@ function TagsForm() {
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [updateForm, setUpdateForm] = useState<TagFormState>({
-    tagKey: "",
     tag: "",
     displayName: "",
     icon: "",
     tagValues: "",
   });
   const [createForm, setCreateForm] = useState<TagFormState>({
-    tagKey: "",
     tag: "",
     displayName: "",
     icon: "",
@@ -539,7 +430,6 @@ function TagsForm() {
     const selected = items.find((item) => item.tag === tag);
     if (!selected) return;
     setUpdateForm({
-      tagKey: selected.tag ?? "",
       tag: selected.tag ?? "",
       displayName: selected.displayName ?? "",
       icon: selected.icon ?? "",
@@ -570,11 +460,12 @@ function TagsForm() {
     setCreateState({ status: "loading", message: "Skapar tagg..." });
     try {
       await adminService.createTag({
-        tagKey: createForm.tagKey.trim(),
+        tag: createForm.tag.trim(),
         displayName: createForm.displayName.trim(),
         icon: createForm.icon.trim(),
+        tagValues: parseListInput(createForm.tagValues),
       });
-      setCreateForm({ tagKey: "", tag: "", displayName: "", icon: "", tagValues: "" });
+      setCreateForm({ tag: "", displayName: "", icon: "", tagValues: "" });
       setCreateState({ status: "success", message: "Taggen skapades." });
       await refresh();
     } catch (error) {
@@ -602,7 +493,7 @@ function TagsForm() {
             </option>
           ))}
         </FormSelect>
-        <TagsFormFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeValues />
+        <TagsFormFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeValues lockTag />
         <SubmitButton isLoading={updateState.status === "loading"} onPress={updateTag} disabled={!updateForm.tag.trim()}>
           Uppdatera vald
         </SubmitButton>
@@ -615,8 +506,8 @@ function TagsForm() {
         method="POST"
         endpoint="/api/admin/tag"
       >
-        <TagsFormFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeValues={false} />
-        <SubmitButton isLoading={createState.status === "loading"} onPress={createTag}>
+        <TagsFormFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeValues />
+        <SubmitButton isLoading={createState.status === "loading"} onPress={createTag} disabled={!createForm.tag.trim()}>
           Skapa
         </SubmitButton>
         <ResultBlock state={createState} />
@@ -646,11 +537,15 @@ function buildSchoolPayload(form: SchoolFormState, requireId: boolean): AdminAdd
   if (requireId && !schoolId) {
     throw new Error("Välj en skola eller ange schoolId innan du uppdaterar.");
   }
+  const city = form.city.trim();
+  if (!city) {
+    throw new Error("Välj en stad.");
+  }
 
   return {
     ...(schoolId ? { schoolId } : {}),
     schoolName: form.schoolName.trim(),
-    city: form.city.trim(),
+    city,
     lat: parseRequiredNumber(form.lat, "Latitud"),
     lng: parseRequiredNumber(form.lng, "Longitud"),
   };
@@ -660,18 +555,36 @@ function SchoolFields({
   form,
   onChange,
   includeId,
+  cityOptions,
+  citiesLoading,
 }: {
   form: SchoolFormState;
   onChange: (patch: Partial<SchoolFormState>) => void;
   includeId: boolean;
+  cityOptions: string[];
+  citiesLoading: boolean;
 }) {
   return (
     <div className="mt-4 grid gap-3 md:grid-cols-2">
       {includeId && (
-        <FormInput label="SchoolId" value={form.schoolId ?? ""} onChange={(schoolId) => onChange({ schoolId })} />
+        <FormInput label="SchoolId" value={form.schoolId ?? ""} onChange={(schoolId) => onChange({ schoolId })} disabled />
       )}
       <FormInput label="Skolnamn" value={form.schoolName} onChange={(schoolName) => onChange({ schoolName })} />
-      <FormInput label="Stad" value={form.city} onChange={(city) => onChange({ city })} />
+      <FormSelect
+        label="Stad"
+        value={form.city}
+        onChange={(city) => onChange({ city })}
+        disabled={citiesLoading || cityOptions.length === 0}
+      >
+        <option value="">
+          {citiesLoading ? "Hämtar städer..." : "Välj stad"}
+        </option>
+        {cityOptions.map((city) => (
+          <option key={city} value={city}>
+            {city}
+          </option>
+        ))}
+      </FormSelect>
       <FormInput label="Latitud" value={form.lat} onChange={(lat) => onChange({ lat })} />
       <FormInput label="Longitud" value={form.lng} onChange={(lng) => onChange({ lng })} />
     </div>
@@ -680,11 +593,15 @@ function SchoolFields({
 
 function SchoolsForm() {
   const { items, state: listState, refresh } = useResourceList<School>(adminService.getSchools);
+  const { items: cities, state: cityState } = useResourceList<string>(adminService.getCities);
   const [selectedId, setSelectedId] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [updateForm, setUpdateForm] = useState<SchoolFormState>(emptySchoolForm);
   const [createForm, setCreateForm] = useState<SchoolFormState>(emptySchoolForm);
+  const citiesLoading = cityState.status === "loading";
+  const updateCityOptions = getStringOptions(cities, updateForm.city);
+  const createCityOptions = getStringOptions(cities, createForm.city);
 
   function selectSchool(id: string) {
     setSelectedId(id);
@@ -732,11 +649,12 @@ function SchoolsForm() {
     <div className="grid gap-4">
       <ActionShell
         title="Hämta och uppdatera skola"
-        description="GET hämtar alla skolor. Välj en skola och uppdatera den med PUT."
+        description="GET hämtar alla skolor och städer. Välj en skola och uppdatera den med PUT."
         method="GET/PUT"
-        endpoint="/api/schools, /api/admin/school"
+        endpoint="/api/schools, /api/cities, /api/admin/school"
       >
         <ResultBlock state={listState} />
+        <ResultBlock state={cityState} />
         <FormSelect label="Välj befintlig skola" value={selectedId} onChange={selectSchool}>
           <option value="">Välj skola</option>
           {items.map((school) => (
@@ -745,7 +663,13 @@ function SchoolsForm() {
             </option>
           ))}
         </FormSelect>
-        <SchoolFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeId />
+        <SchoolFields
+          form={updateForm}
+          onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))}
+          includeId
+          cityOptions={updateCityOptions}
+          citiesLoading={citiesLoading}
+        />
         <SubmitButton isLoading={updateState.status === "loading"} onPress={updateSchool} disabled={!updateForm.schoolId?.trim()}>
           Uppdatera vald
         </SubmitButton>
@@ -754,12 +678,19 @@ function SchoolsForm() {
 
       <ActionShell
         title="Skapa ny skola"
-        description="POST är separat och skapar en ny skola."
+        description="POST är separat och skapar en ny skola. Stad väljs från GET-listan."
         method="POST"
         endpoint="/api/admin/school"
       >
-        <SchoolFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeId={false} />
-        <SubmitButton isLoading={createState.status === "loading"} onPress={createSchool}>
+        <ResultBlock state={cityState} />
+        <SchoolFields
+          form={createForm}
+          onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
+          includeId={false}
+          cityOptions={createCityOptions}
+          citiesLoading={citiesLoading}
+        />
+        <SubmitButton isLoading={createState.status === "loading"} onPress={createSchool} disabled={!createForm.city.trim()}>
           Skapa
         </SubmitButton>
         <ResultBlock state={createState} />
@@ -890,29 +821,67 @@ function buildActivityPayload(form: ActivityFormState, requireId: boolean): Admi
   if (requireId && !id) {
     throw new Error("Välj en aktivitet eller ange id innan du uppdaterar.");
   }
+  const category = form.category.trim();
+  if (!category) {
+    throw new Error("Välj en kategori.");
+  }
 
   return {
     ...(id ? { id } : {}),
-    category: form.category.trim(),
+    category,
     name: form.name.trim(),
     lat: parseRequiredNumber(form.lat, "Latitud"),
     lng: parseRequiredNumber(form.lng, "Longitud"),
   };
 }
 
+function getActivityCategoryOptions(
+  categories: AdminLocationCategoryDTO[],
+  selectedCategory: string
+) {
+  const values = new Set(
+    categories
+      .map((category) => category.category?.trim())
+      .filter((category): category is string => Boolean(category))
+  );
+  const selected = selectedCategory.trim();
+  if (selected) {
+    values.add(selected);
+  }
+  return Array.from(values).sort((left, right) => left.localeCompare(right, "sv"));
+}
+
 function ActivityFields({
   form,
   onChange,
   includeId,
+  categoryOptions,
+  categoriesLoading,
 }: {
   form: ActivityFormState;
   onChange: (patch: Partial<ActivityFormState>) => void;
   includeId: boolean;
+  categoryOptions: string[];
+  categoriesLoading: boolean;
 }) {
   return (
     <div className="mt-4 grid gap-3 md:grid-cols-2">
-      {includeId && <FormInput label="Id" value={form.id ?? ""} onChange={(id) => onChange({ id })} />}
-      <FormInput label="Kategori" value={form.category} onChange={(category) => onChange({ category })} />
+      {includeId && <FormInput label="Id" value={form.id ?? ""} onChange={(id) => onChange({ id })} disabled />}
+      <FormSelect
+        label="Kategori"
+        value={form.category}
+        onChange={(category) => onChange({ category })}
+        disabled={categoriesLoading || categoryOptions.length === 0}
+      >
+        <option value="">
+          {categoriesLoading ? "Hämtar kategorier..." : "Välj kategori"}
+        </option>
+        {categoryOptions.map((category) => (
+          <option key={category} value={category}>
+            {category}
+          </option>
+        ))}
+      </FormSelect>
       <FormInput label="Namn" value={form.name} onChange={(name) => onChange({ name })} />
       <FormInput label="Latitud" value={form.lat} onChange={(lat) => onChange({ lat })} />
       <FormInput label="Longitud" value={form.lng} onChange={(lng) => onChange({ lng })} />
@@ -922,6 +891,7 @@ function ActivityFields({
 
 function ActivitiesForm() {
   const { items, state: listState, refresh } = useResourceList<AdminPointOfInterestDTO>(adminService.getActivities);
+  const { items: categories, state: categoryState } = useResourceList<AdminLocationCategoryDTO>(adminService.getLocationCategories);
   const [selectedId, setSelectedId] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
@@ -929,6 +899,9 @@ function ActivitiesForm() {
   const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
   const [updateForm, setUpdateForm] = useState<ActivityFormState>(emptyActivityForm);
   const [createForm, setCreateForm] = useState<ActivityFormState>(emptyActivityForm);
+  const categoriesLoading = categoryState.status === "loading";
+  const updateCategoryOptions = getActivityCategoryOptions(categories, updateForm.category);
+  const createCategoryOptions = getActivityCategoryOptions(categories, createForm.category);
 
   function selectActivity(id: string) {
     setSelectedId(id);
@@ -1001,6 +974,7 @@ function ActivitiesForm() {
         endpoint="/api/admin/activities, /api/admin/activity"
       >
         <ResultBlock state={listState} />
+        <ResultBlock state={categoryState} />
         <FormSelect label="Välj befintlig aktivitet" value={selectedId} onChange={selectActivity}>
           <option value="">Välj aktivitet</option>
           {items.map((item) => (
@@ -1009,7 +983,13 @@ function ActivitiesForm() {
             </option>
           ))}
         </FormSelect>
-        <ActivityFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeId />
+        <ActivityFields
+          form={updateForm}
+          onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))}
+          includeId
+          categoryOptions={updateCategoryOptions}
+          categoriesLoading={categoriesLoading}
+        />
         <SubmitButton isLoading={updateState.status === "loading"} onPress={() => void save("update")} disabled={!updateForm.id?.trim()}>
           Uppdatera vald
         </SubmitButton>
@@ -1022,8 +1002,15 @@ function ActivitiesForm() {
         method="POST"
         endpoint="/api/admin/activity"
       >
-        <ActivityFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeId={false} />
-        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void save("create")}>
+        <ResultBlock state={categoryState} />
+        <ActivityFields
+          form={createForm}
+          onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
+          includeId={false}
+          categoryOptions={createCategoryOptions}
+          categoriesLoading={categoriesLoading}
+        />
+        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void save("create")} disabled={!createForm.category.trim()}>
           Skapa
         </SubmitButton>
         <ResultBlock state={createState} />
@@ -1052,7 +1039,7 @@ function ActivitiesForm() {
           className="mt-4 bg-red-700 text-white hover:bg-red-800"
         >
           <Trash2Icon className="h-4 w-4" />
-          Ta bort vald
+          Ta bort valda
         </Button>
         <ResultBlock state={deleteState} />
       </ActionShell>
@@ -1070,6 +1057,7 @@ type CompanyFormState = {
   bannerUrl: string;
   description: string;
   websiteUrl: string;
+  cityCodes: string[];
   socialLinks: string;
   pictureUrlList: string;
   videoUrlList: string;
@@ -1090,9 +1078,29 @@ const emptyCompanyForm: CompanyFormState = {
   bannerUrl: "",
   description: "",
   websiteUrl: "",
+  cityCodes: [],
   socialLinks: "",
   pictureUrlList: "",
   videoUrlList: "",
+  credentialCompanyName: "",
+  companySystemUrlOrigin: "",
+  propertySystemUsername: "",
+  propertySystemPassword: "",
+  propertySystem: "",
+};
+
+type CompanyCredentialFormState = Pick<
+  CompanyFormState,
+  | "companyId"
+  | "credentialCompanyName"
+  | "companySystemUrlOrigin"
+  | "propertySystemUsername"
+  | "propertySystemPassword"
+  | "propertySystem"
+>;
+
+const emptyCompanyCredentialForm: CompanyCredentialFormState = {
+  companyId: "",
   credentialCompanyName: "",
   companySystemUrlOrigin: "",
   propertySystemUsername: "",
@@ -1112,10 +1120,43 @@ function companyDetailsToForm(details: AdminCompanyDetailedDTO): CompanyFormStat
     bannerUrl: details.bannerUrl ?? "",
     description: details.description ?? "",
     websiteUrl: details.websiteUrl ?? "",
+    cityCodes: (details.cities ?? [])
+      .map((code) => normalizeCityCode(code))
+      .filter(Boolean),
     socialLinks: formatSocialLinksInput(details.socialLinks),
     pictureUrlList: (details.pictureUrlList ?? []).join("\n"),
     videoUrlList: (details.videoUrlList ?? []).join("\n"),
     credentialCompanyName: details.companyName ?? "",
+  };
+}
+
+function buildCompanyCredentialPayload(form: CompanyCredentialFormState): {
+  companyId: number;
+  credentials: AdminCompanyCredentialDTO;
+} {
+  const companyId = parseOptionalNumber(form.companyId ?? "");
+  if (!companyId) {
+    throw new Error("Välj ett företag.");
+  }
+
+  if (
+    !form.companySystemUrlOrigin.trim() ||
+    !form.propertySystemUsername.trim() ||
+    !form.propertySystemPassword.trim() ||
+    !form.propertySystem.trim()
+  ) {
+    throw new Error("System origin, username, password och property system krävs.");
+  }
+
+  return {
+    companyId,
+    credentials: {
+      companyName: form.credentialCompanyName.trim(),
+      companySystemUrlOrigin: form.companySystemUrlOrigin.trim(),
+      propertySystemUsername: form.propertySystemUsername.trim(),
+      propertySystemPassword: form.propertySystemPassword.trim(),
+      propertySystem: form.propertySystem.trim() as AdminCompanyCredentialDTO["propertySystem"],
+    },
   };
 }
 
@@ -1125,16 +1166,23 @@ function buildCompanyPayload(form: CompanyFormState, requireId: boolean): AdminC
     throw new Error("Välj ett företag eller ange companyId innan du uppdaterar.");
   }
 
-  const credentialsProvided = [
-    form.credentialCompanyName,
+  const credentialsTouched = [
     form.companySystemUrlOrigin,
     form.propertySystemUsername,
     form.propertySystemPassword,
     form.propertySystem,
   ].some((value) => value.trim().length > 0);
 
+  if (!requireId && !credentialsTouched) {
+    throw new Error("Systemkoppling krävs när du skapar ett företag.");
+  }
+
+  if (credentialsTouched && !form.propertySystem.trim()) {
+    throw new Error("Property system krävs när systemkoppling anges.");
+  }
+
   return {
-    companyDate: {
+    companylDetails: {
       ...(companyId ? { companyId } : {}),
       companyName: form.companyName.trim(),
       subtitle: form.subtitle.trim(),
@@ -1147,8 +1195,11 @@ function buildCompanyPayload(form: CompanyFormState, requireId: boolean): AdminC
       pictureUrlList: parseListInput(form.pictureUrlList),
       videoUrlList: parseListInput(form.videoUrlList),
       websiteUrl: form.websiteUrl.trim(),
+      cities: Array.from(
+        new Set(form.cityCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
+      ),
     },
-    ...(credentialsProvided
+    ...(credentialsTouched
       ? {
           credentials: {
             companyName: form.credentialCompanyName.trim() || form.companyName.trim(),
@@ -1166,15 +1217,30 @@ function CompanyFields({
   form,
   onChange,
   includeId,
+  cityOptions,
+  citiesLoading,
 }: {
   form: CompanyFormState;
   onChange: (patch: Partial<CompanyFormState>) => void;
   includeId: boolean;
+  cityOptions: Array<{ city: CityDTO; code: string }>;
+  citiesLoading: boolean;
 }) {
+  function setCompanyCitySelection(code: string, checked: boolean) {
+    const normalizedCode = normalizeCityCode(code);
+    if (!normalizedCode) return;
+
+    onChange({
+      cityCodes: checked
+        ? Array.from(new Set([...form.cityCodes, normalizedCode]))
+        : form.cityCodes.filter((item) => item !== normalizedCode),
+    });
+  }
+
   return (
     <>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {includeId && <FormInput label="CompanyId" value={form.companyId ?? ""} onChange={(companyId) => onChange({ companyId })} />}
+        {includeId && <FormInput label="CompanyId" value={form.companyId ?? ""} onChange={(companyId) => onChange({ companyId })} disabled />}
         <FormInput label="Företagsnamn" value={form.companyName} onChange={(companyName) => onChange({ companyName })} />
         <FormInput label="Underrubrik" value={form.subtitle} onChange={(subtitle) => onChange({ subtitle })} />
         <FormInput label="Logo URL" value={form.logoUrl} onChange={(logoUrl) => onChange({ logoUrl })} />
@@ -1188,6 +1254,64 @@ function CompanyFields({
         <FormTextarea label="Sociala länkar" value={form.socialLinks} onChange={(socialLinks) => onChange({ socialLinks })} placeholder="instagram=https://..." />
         <FormTextarea label="Bild-URL:er" value={form.pictureUrlList} onChange={(pictureUrlList) => onChange({ pictureUrlList })} placeholder="En per rad" />
         <FormTextarea label="Video-URL:er" value={form.videoUrlList} onChange={(videoUrlList) => onChange({ videoUrlList })} placeholder="En per rad" />
+      </div>
+      <div className="mt-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+            Städer
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              isDisabled={citiesLoading || cityOptions.length === 0}
+              onPress={() =>
+                onChange({ cityCodes: cityOptions.map((option) => option.code) })
+              }
+              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+            >
+              Markera alla
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              isDisabled={form.cityCodes.length === 0}
+              onPress={() => onChange({ cityCodes: [] })}
+              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+            >
+              Rensa
+            </Button>
+          </div>
+        </div>
+        <div className="mt-2 grid max-h-80 gap-2 overflow-auto rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-3 sm:grid-cols-2">
+          {citiesLoading ? (
+            <p className="text-sm text-[#66716f]">Hämtar städer...</p>
+          ) : cityOptions.length === 0 ? (
+            <p className="text-sm text-[#66716f]">Inga städer att visa.</p>
+          ) : (
+            cityOptions.map(({ city, code }) => (
+              <label
+                key={code}
+                className="flex cursor-pointer items-start gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 text-sm text-[#111827] transition hover:bg-[#f3f8f5]"
+              >
+                <Checkbox
+                  checked={form.cityCodes.includes(code)}
+                  disabled={citiesLoading}
+                  onCheckedChange={(checked) =>
+                    setCompanyCitySelection(code, checked === true)
+                  }
+                  className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                />
+                <span>{cityOptionLabel(city)}</span>
+              </label>
+            ))
+          )}
+        </div>
+        <p className="mt-2 text-sm text-[#66716f]">
+          {form.cityCodes.length} valda
+        </p>
       </div>
       <div className="mt-4 rounded-[8px] border border-[#edf2ef] bg-[#fbfcfb] p-3">
         <h4 className="text-sm font-semibold text-[#111827]">Systemkoppling</h4>
@@ -1205,17 +1329,33 @@ function CompanyFields({
 
 function CompaniesForm() {
   const { items, state: listState, refresh } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
+  const { items: cities, state: citiesState } = useResourceList<CityDTO>(
+    adminService.getCitySummaries
+  );
   const [selectedId, setSelectedId] = useState("");
   const [deleteId, setDeleteId] = useState("");
+  const [refreshId, setRefreshId] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
+  const [refreshState, setRefreshState] = useState<AdminActionState>({ status: "idle" });
+  const [selectedRefreshState, setSelectedRefreshState] = useState<AdminActionState>({ status: "idle" });
+  const [credentialState, setCredentialState] = useState<AdminActionState>({ status: "idle" });
   const [updateForm, setUpdateForm] = useState<CompanyFormState>(emptyCompanyForm);
   const [createForm, setCreateForm] = useState<CompanyFormState>(emptyCompanyForm);
+  const [credentialForm, setCredentialForm] = useState<CompanyCredentialFormState>(emptyCompanyCredentialForm);
+  const citiesLoading = citiesState.status === "loading";
+  const cityOptions = cities
+    .map((city) => ({ city, code: cityCode(city) }))
+    .filter((item): item is { city: CityDTO; code: string } => Boolean(item.code));
 
   async function selectCompany(id: string) {
     setSelectedId(id);
-    if (!id) return;
+    setSelectedRefreshState({ status: "idle" });
+    if (!id) {
+      setUpdateForm(emptyCompanyForm);
+      return;
+    }
 
     setUpdateState({ status: "loading", message: "Hämtar företagsdetaljer..." });
     try {
@@ -1228,6 +1368,15 @@ function CompaniesForm() {
         message: error instanceof Error ? error.message : "Kunde inte hämta företaget.",
       });
     }
+  }
+
+  function selectCredentialCompany(companyId: string) {
+    const company = items.find((item) => String(item.id) === companyId);
+    setCredentialForm((current) => ({
+      ...current,
+      companyId,
+      credentialCompanyName: company?.name ?? current.credentialCompanyName,
+    }));
   }
 
   async function save(action: "create" | "update") {
@@ -1279,6 +1428,59 @@ function CompaniesForm() {
     }
   }
 
+  async function refreshListings() {
+    const id = parseOptionalNumber(refreshId);
+    if (!id) {
+      setRefreshState({ status: "error", message: "Välj ett företag att synka." });
+      return;
+    }
+
+    setRefreshState({ status: "loading", message: "Startar annonssynk..." });
+    try {
+      await adminService.refreshCompanyListings(id);
+      setRefreshState({ status: "success", message: "Annonssynken startades." });
+    } catch (error) {
+      setRefreshState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Annonssynken kunde inte startas.",
+      });
+    }
+  }
+
+  async function refreshSelectedCompanyListings() {
+    const id = parseOptionalNumber(updateForm.companyId ?? "");
+    if (!id) {
+      setSelectedRefreshState({ status: "error", message: "Välj ett företag att synka." });
+      return;
+    }
+
+    setSelectedRefreshState({ status: "loading", message: "Startar annonssynk..." });
+    try {
+      await adminService.refreshCompanyListings(id);
+      setSelectedRefreshState({ status: "success", message: "Annonssynken startades." });
+    } catch (error) {
+      setSelectedRefreshState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Annonssynken kunde inte startas.",
+      });
+    }
+  }
+
+  async function saveCredentials() {
+    setCredentialState({ status: "loading", message: "Sparar systemuppgifter..." });
+    try {
+      const payload = buildCompanyCredentialPayload(credentialForm);
+      await adminService.updateCompanyCredentials(payload.companyId, payload.credentials);
+      setCredentialForm(emptyCompanyCredentialForm);
+      setCredentialState({ status: "success", message: "Systemuppgifterna sparades och synk startades." });
+    } catch (error) {
+      setCredentialState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Systemuppgifterna kunde inte sparas.",
+      });
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <ActionShell
@@ -1296,11 +1498,36 @@ function CompaniesForm() {
             </option>
           ))}
         </FormSelect>
-        <CompanyFields form={updateForm} onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))} includeId />
-        <SubmitButton isLoading={updateState.status === "loading"} onPress={() => void save("update")} disabled={!updateForm.companyId?.trim()}>
-          Uppdatera vald
-        </SubmitButton>
+        <CompanyFields
+          form={updateForm}
+          onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))}
+          includeId
+          cityOptions={cityOptions}
+          citiesLoading={citiesLoading}
+        />
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button
+            type="button"
+            isLoading={updateState.status === "loading"}
+            isDisabled={!updateForm.companyId?.trim()}
+            onPress={() => void save("update")}
+            className="bg-[#004225] text-white hover:bg-[#00351e]"
+          >
+            Uppdatera vald
+          </Button>
+          <Button
+            type="button"
+            isLoading={selectedRefreshState.status === "loading"}
+            isDisabled={!updateForm.companyId?.trim()}
+            onPress={() => void refreshSelectedCompanyListings()}
+            variant="outline"
+          >
+            <RefreshCwIcon className="h-4 w-4" />
+            Synka annonser via API
+          </Button>
+        </div>
         <ResultBlock state={updateState} />
+        <ResultBlock state={selectedRefreshState} />
       </ActionShell>
 
       <ActionShell
@@ -1309,11 +1536,64 @@ function CompaniesForm() {
         method="POST"
         endpoint="/api/admin/company"
       >
-        <CompanyFields form={createForm} onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))} includeId={false} />
+        <CompanyFields
+          form={createForm}
+          onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
+          includeId={false}
+          cityOptions={cityOptions}
+          citiesLoading={citiesLoading}
+        />
         <SubmitButton isLoading={createState.status === "loading"} onPress={() => void save("create")}>
           Skapa
         </SubmitButton>
         <ResultBlock state={createState} />
+      </ActionShell>
+
+      <ActionShell
+        title="Synka företagsannonser"
+        description="POST startar en ny import av företagets annonser i bakgrunden."
+        method="POST"
+        endpoint="/api/admin/company/{id}/refresh-listings"
+      >
+        <FormSelect label="Välj företag" value={refreshId} onChange={setRefreshId}>
+          <option value="">Välj företag</option>
+          {items.map((company) => (
+            <option key={company.id} value={company.id}>
+              {[company.name, company.id].filter(Boolean).join(" - ")}
+            </option>
+          ))}
+        </FormSelect>
+        <SubmitButton isLoading={refreshState.status === "loading"} onPress={() => void refreshListings()} disabled={!refreshId}>
+          Starta synk
+        </SubmitButton>
+        <ResultBlock state={refreshState} />
+      </ActionShell>
+
+      <ActionShell
+        title="Uppdatera systemuppgifter"
+        description="POST lägger till eller roterar credentials för ett befintligt företag."
+        method="POST"
+        endpoint="/api/admin/company/{id}/credentials"
+      >
+        <FormSelect label="Välj företag" value={credentialForm.companyId ?? ""} onChange={selectCredentialCompany}>
+          <option value="">Välj företag</option>
+          {items.map((company) => (
+            <option key={company.id} value={company.id}>
+              {[company.name, company.id].filter(Boolean).join(" - ")}
+            </option>
+          ))}
+        </FormSelect>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <FormInput label="Credential company name" value={credentialForm.credentialCompanyName} onChange={(credentialCompanyName) => setCredentialForm((current) => ({ ...current, credentialCompanyName }))} />
+          <FormInput label="System origin" value={credentialForm.companySystemUrlOrigin} onChange={(companySystemUrlOrigin) => setCredentialForm((current) => ({ ...current, companySystemUrlOrigin }))} />
+          <FormInput label="System username" value={credentialForm.propertySystemUsername} onChange={(propertySystemUsername) => setCredentialForm((current) => ({ ...current, propertySystemUsername }))} />
+          <FormInput label="System password" value={credentialForm.propertySystemPassword} onChange={(propertySystemPassword) => setCredentialForm((current) => ({ ...current, propertySystemPassword }))} type="password" />
+          <FormInput label="Property system" value={credentialForm.propertySystem} onChange={(propertySystem) => setCredentialForm((current) => ({ ...current, propertySystem }))} placeholder="DEMO, HOGIA..." />
+        </div>
+        <SubmitButton isLoading={credentialState.status === "loading"} onPress={() => void saveCredentials()} disabled={!credentialForm.companyId?.trim()}>
+          Spara systemuppgifter
+        </SubmitButton>
+        <ResultBlock state={credentialState} />
       </ActionShell>
 
       <ActionShell
@@ -1347,11 +1627,620 @@ function CompaniesForm() {
   );
 }
 
-function CompanyAccountForm() {
+type ExternalCompanyFormState = {
+  name: string;
+  description: string;
+  logoUrl: string;
+  websiteUrl: string;
+  cityCodes: string[];
+  schoolIds: number[];
+};
+
+const emptyExternalCompanyForm: ExternalCompanyFormState = {
+  name: "",
+  description: "",
+  logoUrl: "",
+  websiteUrl: "",
+  cityCodes: [],
+  schoolIds: [],
+};
+
+type ExternalCompanyUpdateFormState = Omit<
+  ExternalCompanyFormState,
+  "schoolIds"
+> & {
+  id: string;
+  replaceCities: boolean;
+};
+
+const emptyExternalCompanyUpdateForm: ExternalCompanyUpdateFormState = {
+  id: "",
+  name: "",
+  description: "",
+  logoUrl: "",
+  websiteUrl: "",
+  cityCodes: [],
+  replaceCities: false,
+};
+
+function buildExternalCompanyPayload(form: ExternalCompanyFormState) {
+  const name = form.name.trim();
+
+  if (!name) {
+    throw new Error("Ange ett företagsnamn.");
+  }
+
+  return {
+    name,
+    description: form.description.trim() || null,
+    logoUrl: form.logoUrl.trim() || null,
+    websiteUrl: form.websiteUrl.trim() || null,
+    cityCodes: Array.from(
+      new Set(form.cityCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
+    ),
+    schoolIds: Array.from(
+      new Set(form.schoolIds.filter((id) => Number.isFinite(id)))
+    ),
+  };
+}
+
+function buildExternalCompanyUpdatePayload(form: ExternalCompanyUpdateFormState) {
+  const payload: {
+    id: number;
+    name?: string;
+    description?: string;
+    logoUrl?: string;
+    websiteUrl?: string;
+    cities?: string[];
+  } = {
+    id: parseRequiredNumber(form.id, "External company id"),
+  };
+
+  if (form.name.trim()) {
+    payload.name = form.name.trim();
+  }
+  if (form.description.trim()) {
+    payload.description = form.description.trim();
+  }
+  if (form.logoUrl.trim()) {
+    payload.logoUrl = form.logoUrl.trim();
+  }
+  if (form.websiteUrl.trim()) {
+    payload.websiteUrl = form.websiteUrl.trim();
+  }
+  if (form.replaceCities) {
+    payload.cities = Array.from(
+      new Set(form.cityCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
+    );
+  }
+
+  return payload;
+}
+
+function schoolId(school: School) {
+  return school.schoolId ?? school.id;
+}
+
+function schoolOptionLabel(school: School) {
+  return [school.name, school.city, schoolId(school)].filter(Boolean).join(" - ");
+}
+
+function externalCompanyOptionLabel(company: ExternalCompanyDTO) {
+  return [company.name, company.id].filter(Boolean).join(" - ");
+}
+
+function ExternalCompaniesForm() {
+  const { items: cities, state: citiesState } = useResourceList<CityDTO>(
+    adminService.getCitySummaries
+  );
+  const { items: schools, state: schoolsState } = useResourceList<School>(
+    adminService.getSchools
+  );
+  const {
+    items: externalCompanies,
+    state: externalCompaniesState,
+    refresh: refreshExternalCompanies,
+  } = useResourceList<ExternalCompanyDTO>(adminService.getExternalCompanies);
+  const [form, setForm] = useState<ExternalCompanyFormState>(
+    emptyExternalCompanyForm
+  );
+  const [updateForm, setUpdateForm] = useState<ExternalCompanyUpdateFormState>(
+    emptyExternalCompanyUpdateForm
+  );
+  const [deleteId, setDeleteId] = useState("");
   const [state, setState] = useState<AdminActionState>({ status: "idle" });
-  const [form, setForm] = useState({
+  const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
+  const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
+
+  const cityOptions = cities
+    .map((city) => ({ city, code: cityCode(city) }))
+    .filter((item): item is { city: CityDTO; code: string } => Boolean(item.code));
+  const schoolOptions = schools
+    .map((school) => ({ school, id: schoolId(school) }))
+    .filter((item): item is { school: School; id: number } => Number.isFinite(item.id));
+
+  function patchForm(patch: Partial<ExternalCompanyFormState>) {
+    setForm((current) => ({ ...current, ...patch }));
+  }
+
+  function patchUpdateForm(patch: Partial<ExternalCompanyUpdateFormState>) {
+    setUpdateForm((current) => ({ ...current, ...patch }));
+  }
+
+  function selectExternalCompany(id: string) {
+    const selected = externalCompanies.find((company) => String(company.id) === id);
+    if (!selected) {
+      setUpdateForm(emptyExternalCompanyUpdateForm);
+      return;
+    }
+
+    setUpdateForm({
+      id,
+      name: selected.name,
+      description: selected.description ?? "",
+      logoUrl: selected.logoUrl ?? "",
+      websiteUrl: selected.websiteUrl ?? "",
+      cityCodes: (selected.cityCodes ?? [])
+        .map((code) => normalizeCityCode(code))
+        .filter(Boolean),
+      replaceCities: true,
+    });
+  }
+
+  function setCitySelection(code: string, checked: boolean) {
+    const normalizedCode = normalizeCityCode(code);
+    if (!normalizedCode) return;
+
+    setForm((current) => ({
+      ...current,
+      cityCodes: checked
+        ? Array.from(new Set([...current.cityCodes, normalizedCode]))
+        : current.cityCodes.filter((item) => item !== normalizedCode),
+    }));
+  }
+
+  function setUpdateCitySelection(code: string, checked: boolean) {
+    const normalizedCode = normalizeCityCode(code);
+    if (!normalizedCode) return;
+
+    setUpdateForm((current) => ({
+      ...current,
+      cityCodes: checked
+        ? Array.from(new Set([...current.cityCodes, normalizedCode]))
+        : current.cityCodes.filter((item) => item !== normalizedCode),
+    }));
+  }
+
+  function setSchoolSelection(id: number, checked: boolean) {
+    if (!Number.isFinite(id)) return;
+
+    setForm((current) => ({
+      ...current,
+      schoolIds: checked
+        ? Array.from(new Set([...current.schoolIds, id]))
+        : current.schoolIds.filter((item) => item !== id),
+    }));
+  }
+
+  async function createExternalCompany() {
+    setState({ status: "loading", message: "Skapar externt företag..." });
+
+    try {
+      await adminService.createExternalCompany(buildExternalCompanyPayload(form));
+      setForm(emptyExternalCompanyForm);
+      setState({ status: "success", message: "Det externa företaget skapades." });
+      await refreshExternalCompanies();
+    } catch (error) {
+      setState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Det externa företaget kunde inte skapas.",
+      });
+    }
+  }
+
+  async function updateExternalCompany() {
+    setUpdateState({ status: "loading", message: "Uppdaterar externt företag..." });
+
+    try {
+      await adminService.updateExternalCompany(
+        buildExternalCompanyUpdatePayload(updateForm)
+      );
+      setUpdateForm(emptyExternalCompanyUpdateForm);
+      setUpdateState({ status: "success", message: "Det externa företaget uppdaterades." });
+      await refreshExternalCompanies();
+    } catch (error) {
+      setUpdateState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Det externa företaget kunde inte uppdateras.",
+      });
+    }
+  }
+
+  async function deleteExternalCompany() {
+    const id = parseOptionalNumber(deleteId);
+    if (!id) {
+      setDeleteState({ status: "error", message: "Ange id för externt företag." });
+      return;
+    }
+
+    setDeleteState({ status: "loading", message: "Tar bort externt företag..." });
+    try {
+      await adminService.deleteExternalCompany(id);
+      setDeleteId("");
+      if (updateForm.id.trim() === String(id)) {
+        setUpdateForm(emptyExternalCompanyUpdateForm);
+      }
+      setDeleteState({ status: "success", message: "Det externa företaget togs bort." });
+      await refreshExternalCompanies();
+    } catch (error) {
+      setDeleteState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Det externa företaget kunde inte tas bort.",
+      });
+    }
+  }
+
+  return (
+    <div className="grid gap-4">
+      <ActionShell
+      title="Skapa externt företag"
+      description="POST skapar ett externt företag och kopplar det till valda städer och skolor."
+      method="POST"
+      endpoint="/api/companies/external-company"
+    >
+      <ResultBlock state={citiesState} />
+      <ResultBlock state={schoolsState} />
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <FormInput
+          label="Företagsnamn"
+          value={form.name}
+          onChange={(name) => patchForm({ name })}
+        />
+        <FormInput
+          label="Webbplats URL"
+          value={form.websiteUrl}
+          onChange={(websiteUrl) => patchForm({ websiteUrl })}
+          placeholder="https://..."
+        />
+        <FormInput
+          label="Logo URL"
+          value={form.logoUrl}
+          onChange={(logoUrl) => patchForm({ logoUrl })}
+          placeholder="https://..."
+        />
+      </div>
+      <div className="mt-3">
+        <FormTextarea
+          label="Beskrivning"
+          value={form.description}
+          onChange={(description) => patchForm({ description })}
+        />
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+              Städer
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isDisabled={cityOptions.length === 0 || state.status === "loading"}
+                onPress={() =>
+                  patchForm({ cityCodes: cityOptions.map((option) => option.code) })
+                }
+                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              >
+                Markera alla
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isDisabled={form.cityCodes.length === 0 || state.status === "loading"}
+                onPress={() => patchForm({ cityCodes: [] })}
+                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              >
+                Rensa
+              </Button>
+            </div>
+          </div>
+          <div className="mt-2 grid max-h-80 gap-2 overflow-auto rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-3">
+            {cityOptions.length === 0 ? (
+              <p className="text-sm text-[#66716f]">Inga städer att visa.</p>
+            ) : (
+              cityOptions.map(({ city, code }) => (
+                <label
+                  key={code}
+                  className="flex cursor-pointer items-start gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 text-sm text-[#111827] transition hover:bg-[#f3f8f5]"
+                >
+                  <Checkbox
+                    checked={form.cityCodes.includes(code)}
+                    disabled={state.status === "loading"}
+                    onCheckedChange={(checked) => setCitySelection(code, checked === true)}
+                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                  />
+                  <span>{cityOptionLabel(city)}</span>
+                </label>
+              ))
+            )}
+          </div>
+          <p className="mt-2 text-sm text-[#66716f]">
+            {form.cityCodes.length} valda
+          </p>
+        </div>
+
+        <div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+              Skolor
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isDisabled={schoolOptions.length === 0 || state.status === "loading"}
+                onPress={() =>
+                  patchForm({ schoolIds: schoolOptions.map((option) => option.id) })
+                }
+                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              >
+                Markera alla
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isDisabled={form.schoolIds.length === 0 || state.status === "loading"}
+                onPress={() => patchForm({ schoolIds: [] })}
+                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              >
+                Rensa
+              </Button>
+            </div>
+          </div>
+          <div className="mt-2 grid max-h-80 gap-2 overflow-auto rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-3">
+            {schoolOptions.length === 0 ? (
+              <p className="text-sm text-[#66716f]">Inga skolor att visa.</p>
+            ) : (
+              schoolOptions.map(({ school, id }) => (
+                <label
+                  key={id}
+                  className="flex cursor-pointer items-start gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 text-sm text-[#111827] transition hover:bg-[#f3f8f5]"
+                >
+                  <Checkbox
+                    checked={form.schoolIds.includes(id)}
+                    disabled={state.status === "loading"}
+                    onCheckedChange={(checked) => setSchoolSelection(id, checked === true)}
+                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                  />
+                  <span>{schoolOptionLabel(school)}</span>
+                </label>
+              ))
+            )}
+          </div>
+          <p className="mt-2 text-sm text-[#66716f]">
+            {form.schoolIds.length} valda
+          </p>
+        </div>
+      </div>
+
+      <SubmitButton
+        isLoading={state.status === "loading"}
+        onPress={() => void createExternalCompany()}
+        disabled={!form.name.trim()}
+      >
+        Skapa externt företag
+      </SubmitButton>
+      <ResultBlock state={state} />
+    </ActionShell>
+
+    <ActionShell
+      title="Uppdatera externt företag"
+      description="PUT uppdaterar ett befintligt externt företag via id. Städer skickas bara när ersätt stadskopplingar är markerat."
+      method="PUT"
+      endpoint="/api/companies/external-company"
+    >
+      <ResultBlock state={externalCompaniesState} />
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <FormSelect
+          label="Välj externt företag"
+          value={updateForm.id}
+          onChange={selectExternalCompany}
+          disabled={
+            externalCompaniesState.status === "loading" ||
+            externalCompanies.length === 0
+          }
+        >
+          <option value="">
+            {externalCompaniesState.status === "loading"
+              ? "Hämtar externa företag..."
+              : "Välj externt företag"}
+          </option>
+          {externalCompanies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {externalCompanyOptionLabel(company)}
+            </option>
+          ))}
+        </FormSelect>
+        <FormInput
+          label="Företagsnamn"
+          value={updateForm.name}
+          onChange={(name) => patchUpdateForm({ name })}
+        />
+        <FormInput
+          label="Webbplats URL"
+          value={updateForm.websiteUrl}
+          onChange={(websiteUrl) => patchUpdateForm({ websiteUrl })}
+          placeholder="https://..."
+        />
+        <FormInput
+          label="Logo URL"
+          value={updateForm.logoUrl}
+          onChange={(logoUrl) => patchUpdateForm({ logoUrl })}
+          placeholder="https://..."
+        />
+      </div>
+      <div className="mt-3">
+        <FormTextarea
+          label="Beskrivning"
+          value={updateForm.description}
+          onChange={(description) => patchUpdateForm({ description })}
+        />
+      </div>
+
+      <div className="mt-4">
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-[#111827]">
+          <Checkbox
+            checked={updateForm.replaceCities}
+            disabled={updateState.status === "loading"}
+            onCheckedChange={(checked) =>
+              patchUpdateForm({ replaceCities: checked === true })
+            }
+            className="border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+          />
+          Ersätt stadskopplingar
+        </label>
+
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+            Städer
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              isDisabled={
+                cityOptions.length === 0 ||
+                updateState.status === "loading" ||
+                !updateForm.replaceCities
+              }
+              onPress={() =>
+                patchUpdateForm({ cityCodes: cityOptions.map((option) => option.code) })
+              }
+              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+            >
+              Markera alla
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              isDisabled={
+                updateForm.cityCodes.length === 0 ||
+                updateState.status === "loading" ||
+                !updateForm.replaceCities
+              }
+              onPress={() => patchUpdateForm({ cityCodes: [] })}
+              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+            >
+              Rensa
+            </Button>
+          </div>
+        </div>
+        <div className="mt-2 grid max-h-80 gap-2 overflow-auto rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-3 sm:grid-cols-2">
+          {cityOptions.length === 0 ? (
+            <p className="text-sm text-[#66716f]">Inga städer att visa.</p>
+          ) : (
+            cityOptions.map(({ city, code }) => (
+              <label
+                key={code}
+                className="flex cursor-pointer items-start gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 text-sm text-[#111827] transition hover:bg-[#f3f8f5]"
+              >
+                <Checkbox
+                  checked={updateForm.cityCodes.includes(code)}
+                  disabled={
+                    updateState.status === "loading" || !updateForm.replaceCities
+                  }
+                  onCheckedChange={(checked) =>
+                    setUpdateCitySelection(code, checked === true)
+                  }
+                  className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                />
+                <span>{cityOptionLabel(city)}</span>
+              </label>
+            ))
+          )}
+        </div>
+        <p className="mt-2 text-sm text-[#66716f]">
+          {updateForm.cityCodes.length} valda
+        </p>
+      </div>
+
+      <SubmitButton
+        isLoading={updateState.status === "loading"}
+        onPress={() => void updateExternalCompany()}
+        disabled={!updateForm.id.trim()}
+      >
+        Uppdatera externt företag
+      </SubmitButton>
+      <ResultBlock state={updateState} />
+    </ActionShell>
+
+    <ActionShell
+      title="Ta bort externt företag"
+      description="DELETE tar bort ett externt företag via id och rensar dess kopplingar till städer och skolor."
+      method="DELETE"
+      endpoint="/api/companies/external-company?id={id}"
+    >
+      <ResultBlock state={externalCompaniesState} />
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <FormSelect
+          label="Välj externt företag"
+          value={deleteId}
+          onChange={setDeleteId}
+          disabled={
+            externalCompaniesState.status === "loading" ||
+            externalCompanies.length === 0
+          }
+        >
+          <option value="">
+            {externalCompaniesState.status === "loading"
+              ? "Hämtar externa företag..."
+              : "Välj externt företag"}
+          </option>
+          {externalCompanies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {externalCompanyOptionLabel(company)}
+            </option>
+          ))}
+        </FormSelect>
+      </div>
+      <Button
+        type="button"
+        isLoading={deleteState.status === "loading"}
+        isDisabled={!deleteId.trim()}
+        onPress={() => void deleteExternalCompany()}
+        variant="destructive"
+        className="mt-4 bg-red-700 text-white hover:bg-red-800"
+      >
+        <Trash2Icon className="h-4 w-4" />
+        Ta bort externt företag
+      </Button>
+      <ResultBlock state={deleteState} />
+    </ActionShell>
+  </div>
+  );
+}
+
+function createEmptyCompanyAccountForm(companyId = "") {
+  return {
     id: "",
-    companyId: "",
+    companyId,
     roleName: "",
     roleDescription: "",
     roleAccessLevel: "",
@@ -1361,18 +2250,215 @@ function CompanyAccountForm() {
     phone: "",
     bannerUrl: "",
     logoUrl: "",
-  });
+  };
+}
 
-  function patchForm(patch: Partial<typeof form>) {
+type CompanyAccountFormState = ReturnType<typeof createEmptyCompanyAccountForm>;
+
+function companyAccountToForm(
+  account: AdminCompanyUserDTO,
+  fallbackCompanyId: string
+): CompanyAccountFormState {
+  return {
+    id: toInputValue(account.id),
+    companyId: toInputValue(account.companyId ?? fallbackCompanyId),
+    roleName: account.role?.name ?? "",
+    roleDescription: account.role?.description ?? "",
+    roleAccessLevel: toInputValue(account.role?.accessLevel),
+    firstName: account.firstName ?? "",
+    surname: account.surname ?? "",
+    email: account.email ?? "",
+    phone: account.phone ?? "",
+    bannerUrl: account.bannerUrl ?? "",
+    logoUrl: account.logoUrl ?? "",
+  };
+}
+
+function companyAccountName(account: AdminCompanyUserDTO) {
+  const name = [account.firstName, account.surname]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .join(" ")
+    .trim();
+
+  return name || account.email?.trim() || `Konto ${account.id ?? ""}`.trim() || "Namnlöst konto";
+}
+
+function companyRoleDisplayName(roleName: string) {
+  const normalizedRoleName = roleName.trim().toUpperCase();
+  if (normalizedRoleName === "ADMIN") return "Admin";
+  if (normalizedRoleName === "MANAGER") return "Manager";
+  if (normalizedRoleName === "AGENT") return "Agent";
+  return roleName;
+}
+
+function companyAccountRoleLabel(account: AdminCompanyUserDTO) {
+  const roleName = account.role?.name?.trim();
+  const accessLevel = account.role?.accessLevel;
+  return [
+    roleName ? companyRoleDisplayName(roleName) : undefined,
+    typeof accessLevel === "number" ? `Access ${accessLevel}` : undefined,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function companyRoleOptionLabel(role: AdminCompanyRole) {
+  const roleName = role.name?.trim() || "Namnlös roll";
+  return typeof role.accessLevel === "number"
+    ? `${companyRoleDisplayName(roleName)} · Access ${role.accessLevel}`
+    : companyRoleDisplayName(roleName);
+}
+
+function CompanyAccountVerificationBadge({ verified }: { verified?: boolean }) {
+  const isVerified = verified === true;
+  const Icon = isVerified ? CheckCircle2Icon : XCircleIcon;
+
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+        isVerified
+          ? "bg-emerald-50 text-emerald-700"
+          : "bg-amber-50 text-amber-700",
+      ].join(" ")}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {isVerified ? "Verifierad" : "Ej verifierad"}
+    </span>
+  );
+}
+
+function CompanyAccountForm() {
+  const { items: companies, state: companiesState } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
+  const { items: roles, state: rolesState } = useResourceList<AdminCompanyRole>(adminService.getCompanyRoles);
+  const [saveState, setSaveState] = useState<AdminActionState>({ status: "idle" });
+  const [accountsState, setAccountsState] = useState<AdminActionState>({ status: "idle" });
+  const [verifyState, setVerifyState] = useState<AdminActionState>({ status: "idle" });
+  const [accounts, setAccounts] = useState<AdminCompanyUserDTO[]>([]);
+  const [verifyingAccountId, setVerifyingAccountId] = useState<number | null>(null);
+  const [form, setForm] = useState<CompanyAccountFormState>(() => createEmptyCompanyAccountForm());
+
+  function patchForm(patch: Partial<CompanyAccountFormState>) {
     setForm((current) => ({ ...current, ...patch }));
   }
 
-  async function run() {
-    setState({ status: "loading", message: "Sparar företagskonto..." });
+  function setLoadedAccounts(result: AdminCompanyUserDTO[]) {
+    setAccounts(result);
+    setAccountsState({
+      status: "success",
+      message:
+        result.length === 1
+          ? "1 konto hämtades för valt företag."
+          : `${result.length} konton hämtades för valt företag.`,
+    });
+  }
+
+  const companiesLoading = companiesState.status === "loading";
+  const companyOptions = companies.filter(
+    (company): company is AdminCompanyPublicDTO & { id: number } =>
+      typeof company.id === "number"
+  );
+  const roleOptions = roles.filter((role) => Boolean(role.name?.trim()));
+  const rolesLoading = rolesState.status === "loading";
+
+  useEffect(() => {
+    const companyIdValue = form.companyId.trim();
+    if (!companyIdValue) {
+      setAccounts([]);
+      setAccountsState({ status: "idle" });
+      return;
+    }
+
+    const companyId = Number(companyIdValue);
+    if (!Number.isFinite(companyId)) {
+      setAccounts([]);
+      setAccountsState({
+        status: "error",
+        message: "CompanyId måste vara ett nummer.",
+      });
+      return;
+    }
+
+    let active = true;
+    setAccounts([]);
+    setAccountsState({ status: "loading", message: "Hämtar konton för valt företag..." });
+
+    adminService
+      .getCompanyUsers(companyId)
+      .then((result) => {
+        if (!active) return;
+        setLoadedAccounts(result);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setAccounts([]);
+        setAccountsState({
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Kunde inte hämta konton för valt företag.",
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [form.companyId]);
+
+  function selectCompany(companyId: string) {
+    setSaveState({ status: "idle" });
+    setVerifyState({ status: "idle" });
+    setForm(createEmptyCompanyAccountForm(companyId));
+  }
+
+  function selectAccount(account: AdminCompanyUserDTO) {
+    setSaveState({ status: "idle" });
+    setVerifyState({ status: "idle" });
+    setForm(companyAccountToForm(account, form.companyId));
+  }
+
+  function startNewAccount() {
+    setSaveState({ status: "idle" });
+    setVerifyState({ status: "idle" });
+    setForm(createEmptyCompanyAccountForm(form.companyId));
+  }
+
+  function selectRole(roleName: string) {
+    const normalizedRoleName = roleName.trim();
+    const selectedRole = roleOptions.find((role) => role.name?.trim() === normalizedRoleName);
+    patchForm({
+      roleName: normalizedRoleName,
+      roleDescription: selectedRole?.description ?? "",
+      roleAccessLevel: toInputValue(selectedRole?.accessLevel),
+    });
+  }
+
+  async function refreshAccounts() {
+    const companyId = parseRequiredNumber(form.companyId, "CompanyId");
+    setAccountsState({ status: "loading", message: "Hämtar konton för valt företag..." });
     try {
+      const result = await adminService.getCompanyUsers(companyId);
+      setLoadedAccounts(result);
+    } catch (error) {
+      setAccounts([]);
+      setAccountsState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Kunde inte hämta konton för valt företag.",
+      });
+    }
+  }
+
+  async function run() {
+    setSaveState({ status: "loading", message: "Sparar företagskonto..." });
+    try {
+      const companyId = parseRequiredNumber(form.companyId, "CompanyId");
       const payload: AdminCompanyUserDTO = {
         id: parseOptionalNumber(form.id),
-        companyId: parseRequiredNumber(form.companyId, "CompanyId"),
+        companyId,
         role: {
           name: form.roleName.trim(),
           description: form.roleDescription.trim(),
@@ -1387,28 +2473,114 @@ function CompanyAccountForm() {
       };
 
       await adminService.manageCompanyAccount(payload);
-      setState({ status: "success", message: "Företagskontot sparades." });
+      setSaveState({ status: "success", message: "Företagskontot sparades." });
+      try {
+        const refreshedAccounts = await adminService.getCompanyUsers(companyId);
+        setLoadedAccounts(refreshedAccounts);
+      } catch (refreshError) {
+        setAccountsState({
+          status: "error",
+          message:
+            refreshError instanceof Error
+              ? refreshError.message
+              : "Kontot sparades, men listan kunde inte hämtas om.",
+        });
+      }
     } catch (error) {
-      setState({
+      setSaveState({
         status: "error",
         message: error instanceof Error ? error.message : "Kunde inte spara kontot.",
       });
     }
   }
 
+  async function verifyAccount(account: AdminCompanyUserDTO) {
+    const companyId = parseRequiredNumber(form.companyId, "CompanyId");
+    const accountId = account.id;
+
+    if (typeof accountId !== "number") {
+      setVerifyState({
+        status: "error",
+        message: "Kontot saknar id och kan inte verifieras.",
+      });
+      return;
+    }
+
+    setVerifyingAccountId(accountId);
+    setVerifyState({ status: "loading", message: "Verifierar företagskonto..." });
+
+    try {
+      await adminService.verifyCompanyAccount(companyId, accountId);
+      setAccounts((current) =>
+        current.map((entry) =>
+          entry.id === accountId ? { ...entry, verified: true } : entry
+        )
+      );
+      setVerifyState({
+        status: "success",
+        message: `${companyAccountName(account)} är verifierad.`,
+      });
+    } catch (error) {
+      setVerifyState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Kunde inte verifiera företagskontot.",
+      });
+    } finally {
+      setVerifyingAccountId(null);
+    }
+  }
+
   return (
     <ActionShell
       title="Företagskonto"
-      description="Backend saknar GET-listning för konton här, så den här delen är ett fältbaserat PUT-flöde."
-      method="PUT"
-      endpoint="/api/admin/company/account"
+      description="Välj företag för att hämta kopplade konton, uppdatera befintliga konton och verifiera anställda."
+      method="GET/PUT"
+      endpoint="/api/companies/roles, /api/companies/{id}/users, /api/companies/{id}/users/{userId}"
     >
+      <ResultBlock state={companiesState} />
+      <ResultBlock state={rolesState} />
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <FormInput label="Konto-id" value={form.id} onChange={(id) => patchForm({ id })} placeholder="Tomt vid nytt konto" />
-        <FormInput label="CompanyId" value={form.companyId} onChange={(companyId) => patchForm({ companyId })} />
-        <FormInput label="Rollnamn" value={form.roleName} onChange={(roleName) => patchForm({ roleName })} placeholder="MANAGER" />
-        <FormInput label="Rollbeskrivning" value={form.roleDescription} onChange={(roleDescription) => patchForm({ roleDescription })} />
-        <FormInput label="Access level" value={form.roleAccessLevel} onChange={(roleAccessLevel) => patchForm({ roleAccessLevel })} />
+        <FormInput label="Konto-id" value={form.id} onChange={(id) => patchForm({ id })} placeholder="Välj ett konto i listan" />
+        <FormSelect
+          label="Företag"
+          value={form.companyId}
+          onChange={selectCompany}
+          disabled={companiesLoading || companyOptions.length === 0}
+        >
+          <option value="">
+            {companiesLoading ? "Hämtar företag..." : "Välj företag"}
+          </option>
+          {companyOptions.map((company) => (
+            <option key={company.id} value={String(company.id)}>
+              {[company.name, company.id].filter(Boolean).join(" - ")}
+            </option>
+          ))}
+        </FormSelect>
+        <FormSelect
+          label="Roll"
+          value={form.roleName}
+          onChange={selectRole}
+          disabled={rolesLoading || roleOptions.length === 0}
+        >
+          <option value="">
+            {rolesLoading ? "Hämtar roller..." : "Välj roll"}
+          </option>
+          {roleOptions.map((role) => {
+            const roleName = role.name?.trim();
+            if (!roleName) return null;
+
+            return (
+              <option key={roleName} value={roleName}>
+                {companyRoleOptionLabel(role)}
+              </option>
+            );
+          })}
+        </FormSelect>
+        <FormInput label="Rollbeskrivning" value={form.roleDescription} onChange={(roleDescription) => patchForm({ roleDescription })} disabled />
+        <FormInput label="Access level" value={form.roleAccessLevel} onChange={(roleAccessLevel) => patchForm({ roleAccessLevel })} disabled />
         <FormInput label="Förnamn" value={form.firstName} onChange={(firstName) => patchForm({ firstName })} />
         <FormInput label="Efternamn" value={form.surname} onChange={(surname) => patchForm({ surname })} />
         <FormInput label="E-post" value={form.email} onChange={(email) => patchForm({ email })} type="email" />
@@ -1416,87 +2588,802 @@ function CompanyAccountForm() {
         <FormInput label="Banner URL" value={form.bannerUrl} onChange={(bannerUrl) => patchForm({ bannerUrl })} />
         <FormInput label="Logo URL" value={form.logoUrl} onChange={(logoUrl) => patchForm({ logoUrl })} />
       </div>
-      <SubmitButton isLoading={state.status === "loading"} onPress={run}>
+      <div className="mt-4 rounded-[8px] border border-[#dfe7e3] bg-[#f8fbfa]">
+        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-[#111827]">Kopplade konton</h4>
+            <p className="mt-1 text-xs text-[#66716f]">
+              Listan uppdateras från GET /api/companies/{form.companyId || "{id}"}/users.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              title="Hämta om konton"
+              onClick={() => void refreshAccounts()}
+              disabled={!form.companyId.trim() || accountsState.status === "loading"}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#dfe7e3] bg-white text-[#36534d] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCwIcon
+                className={[
+                  "h-4 w-4",
+                  accountsState.status === "loading" ? "animate-spin" : "",
+                ].join(" ")}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={startNewAccount}
+              disabled={!form.companyId.trim()}
+              className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm font-medium text-[#36534d] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Rensa val
+            </button>
+          </div>
+        </div>
+        <div className="border-t border-[#dfe7e3] p-4">
+          <ResultBlock state={accountsState} />
+          <ResultBlock state={verifyState} />
+          {!form.companyId.trim() ? (
+            <p className="text-sm text-[#66716f]">
+              Välj ett företag för att hämta kopplade konton.
+            </p>
+          ) : accountsState.status === "loading" ? (
+            <p className="text-sm text-[#66716f]">Hämtar konton...</p>
+          ) : accountsState.status === "error" ? null : accounts.length === 0 ? (
+            <p className="text-sm text-[#66716f]">
+              Inga konton hittades för valt företag.
+            </p>
+          ) : (
+            <div className="grid gap-2">
+              {accounts.map((account, index) => {
+                const accountId = toInputValue(account.id);
+                const isSelected = Boolean(accountId && accountId === form.id);
+                const numericAccountId =
+                  typeof account.id === "number" ? account.id : undefined;
+                const isVerifying =
+                  numericAccountId != null && verifyingAccountId === numericAccountId;
+
+                return (
+                  <article
+                    key={account.id ?? account.email ?? index}
+                    className={[
+                      "grid gap-3 rounded-[8px] border px-3 py-2 text-sm transition sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center",
+                      isSelected
+                        ? "border-[#004225] bg-white text-[#111827]"
+                        : "border-[#dfe7e3] bg-white/70 text-[#36534d] hover:bg-white",
+                    ].join(" ")}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => selectAccount(account)}
+                      className="min-w-0 text-left"
+                    >
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
+                        <span>{companyAccountName(account)}</span>
+                        {accountId && (
+                          <span className="font-mono text-xs text-[#66716f]">#{accountId}</span>
+                        )}
+                        <CompanyAccountVerificationBadge verified={account.verified} />
+                      </span>
+                      <span className="mt-1 block text-xs text-[#66716f]">
+                        {[account.email?.trim(), account.phone?.trim(), companyAccountRoleLabel(account)]
+                          .filter(Boolean)
+                          .join(" · ") || "Saknar kontaktuppgifter"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void verifyAccount(account)}
+                      disabled={
+                        account.verified === true ||
+                        numericAccountId == null ||
+                        verifyingAccountId !== null
+                      }
+                      className="inline-flex h-8 items-center justify-center gap-2 rounded-[8px] border border-[#004225] bg-white px-3 text-xs font-semibold text-[#004225] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:border-[#dfe7e3] disabled:text-[#9aa7a4] disabled:opacity-70"
+                    >
+                      <CheckCircle2Icon
+                        className={[
+                          "h-4 w-4",
+                          isVerifying ? "animate-spin" : "",
+                        ].join(" ")}
+                      />
+                      {account.verified === true ? "Verifierad" : "Verifiera"}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+      <SubmitButton isLoading={saveState.status === "loading"} onPress={run} disabled={!form.companyId.trim()}>
         Spara konto
       </SubmitButton>
-      <ResultBlock state={state} />
+      <ResultBlock state={saveState} />
     </ActionShell>
   );
 }
 
-function CityForm() {
-  const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
-  const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
-  const [createForm, setCreateForm] = useState({ id: "", name: "" });
-  const [updateForm, setUpdateForm] = useState({ id: "", name: "" });
+type CityFormState = {
+  code: string;
+  name: string;
+  description: string;
+  bannerUrl: string;
+};
 
-  function buildPayload(form: typeof createForm): AdminCityPayload {
-    return {
-      id: parseOptionalNumber(form.id),
-      name: form.name.trim(),
-    };
+const emptyCityForm: CityFormState = {
+  code: "",
+  name: "",
+  description: "",
+  bannerUrl: "",
+};
+
+function cityCode(city: CityDTO) {
+  return normalizeCityCode(city.code ?? city.city ?? "");
+}
+
+function cityToForm(city: CityDTO | CityDetailedDTO): CityFormState {
+  return {
+    code: cityCode(city),
+    name: city.city ?? "",
+    description: city.description ?? "",
+    bannerUrl: city.bannerUrl ?? "",
+  };
+}
+
+function cityOptionLabel(city: CityDTO) {
+  return [city.city, cityCode(city)].filter(Boolean).join(" - ");
+}
+
+function buildCreateCityPayload(form: CityFormState): CreateCityRequest {
+  const code = normalizeCityCode(form.code);
+  const name = form.name.trim();
+
+  if (!code) {
+    throw new Error("Ange en stadskod.");
+  }
+  if (!name) {
+    throw new Error("Ange ett stadsnamn.");
   }
 
-  async function run(action: "create" | "update") {
-    const source = action === "create" ? createForm : updateForm;
-    const setState = action === "create" ? setCreateState : setUpdateState;
-    setState({
-      status: "loading",
-      message: action === "create" ? "Skapar stad..." : "Uppdaterar stad...",
-    });
-    try {
-      if (action === "create") {
-        await adminService.createCity(buildPayload(source));
-        setCreateForm({ id: "", name: "" });
-      } else {
-        await adminService.modifyCity(buildPayload(source));
+  return {
+    code,
+    name,
+    description: form.description.trim() || null,
+    bannerUrl: form.bannerUrl.trim() || null,
+  };
+}
+
+function buildModifyCityPayload(form: CityFormState): ModifyCityRequest {
+  const name = form.name.trim();
+  if (!name) {
+    throw new Error("Ange ett stadsnamn.");
+  }
+
+  return {
+    name,
+    description: form.description.trim() || null,
+    bannerUrl: form.bannerUrl.trim() || null,
+  };
+}
+
+function CityFields({
+  form,
+  onChange,
+  lockCode = false,
+}: {
+  form: CityFormState;
+  onChange: (patch: Partial<CityFormState>) => void;
+  lockCode?: boolean;
+}) {
+  return (
+    <>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <FormInput
+          label="Kod"
+          value={form.code}
+          onChange={(code) => onChange({ code })}
+          placeholder="LUND"
+          disabled={lockCode}
+        />
+        <FormInput label="Namn" value={form.name} onChange={(name) => onChange({ name })} />
+        <FormInput
+          label="Banner URL"
+          value={form.bannerUrl}
+          onChange={(bannerUrl) => onChange({ bannerUrl })}
+          placeholder="https://..."
+        />
+      </div>
+      <div className="mt-3">
+        <FormTextarea
+          label="Beskrivning"
+          value={form.description}
+          onChange={(description) => onChange({ description })}
+        />
+      </div>
+    </>
+  );
+}
+
+function CitiesForm() {
+  const { items, state: listState, refresh } = useResourceList<CityDTO>(adminService.getCitySummaries);
+  const [selectedCode, setSelectedCode] = useState("");
+  const [deleteCodes, setDeleteCodes] = useState<string[]>([]);
+  const [cityDetail, setCityDetail] = useState<CityDetailedDTO | null>(null);
+  const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
+  const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
+  const [deleteState, setDeleteState] = useState<AdminActionState>({ status: "idle" });
+  const [createForm, setCreateForm] = useState<CityFormState>(emptyCityForm);
+  const [updateForm, setUpdateForm] = useState<CityFormState>(emptyCityForm);
+  const deletableCities = items
+    .map((city) => ({ city, code: cityCode(city) }))
+    .filter((item): item is { city: CityDTO; code: string } => Boolean(item.code));
+
+  function setCityDeleteSelection(code: string, checked: boolean) {
+    const normalizedCode = normalizeCityCode(code);
+    if (!normalizedCode) return;
+
+    setDeleteCodes((current) => {
+      if (checked) {
+        return Array.from(new Set([...current, normalizedCode]));
       }
-      setState({
-        status: "success",
-        message: action === "create" ? "Staden skapades." : "Staden uppdaterades.",
-      });
+
+      return current.filter((item) => item !== normalizedCode);
+    });
+  }
+
+  function selectAllDeleteCities() {
+    setDeleteCodes(Array.from(new Set(deletableCities.map((city) => city.code))));
+  }
+
+  async function selectCity(code: string) {
+    setSelectedCode(code);
+    setCityDetail(null);
+    if (!code) {
+      setUpdateForm(emptyCityForm);
+      return;
+    }
+
+    setUpdateState({ status: "loading", message: "Hämtar stadsdetaljer..." });
+    try {
+      const detail = await adminService.getCity(code);
+      setCityDetail(detail);
+      setUpdateForm(cityToForm(detail));
+      setUpdateState({ status: "idle" });
     } catch (error) {
-      setState({
+      const fallback = items.find((city) => cityCode(city) === code);
+      if (fallback) {
+        setUpdateForm(cityToForm(fallback));
+      }
+      setUpdateState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Kunde inte hämta staden.",
+      });
+    }
+  }
+
+  async function createCity() {
+    setCreateState({ status: "loading", message: "Skapar stad..." });
+    try {
+      const payload = buildCreateCityPayload(createForm);
+      await adminService.createCity(payload);
+      setCreateForm(emptyCityForm);
+      setSelectedCode(payload.code);
+      setUpdateForm({
+        code: payload.code,
+        name: payload.name ?? "",
+        description: payload.description ?? "",
+        bannerUrl: payload.bannerUrl ?? "",
+      });
+      setCreateState({ status: "success", message: "Staden sparades." });
+      await refresh();
+    } catch (error) {
+      setCreateState({
         status: "error",
         message: error instanceof Error ? error.message : "Staden kunde inte sparas.",
       });
     }
   }
 
+  async function updateCity() {
+    const code = normalizeCityCode(updateForm.code || selectedCode);
+    if (!code) {
+      setUpdateState({ status: "error", message: "Välj en stad att uppdatera." });
+      return;
+    }
+
+    setUpdateState({ status: "loading", message: "Uppdaterar stad..." });
+    try {
+      await adminService.modifyCity(code, buildModifyCityPayload(updateForm));
+      setUpdateState({ status: "success", message: "Staden uppdaterades." });
+      await refresh();
+    } catch (error) {
+      setUpdateState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Staden kunde inte uppdateras.",
+      });
+    }
+  }
+
+  async function deleteCities() {
+    const codes = Array.from(
+      new Set(deleteCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
+    );
+    if (codes.length === 0) {
+      setDeleteState({ status: "error", message: "Välj minst en stad att ta bort." });
+      return;
+    }
+
+    setDeleteState({
+      status: "loading",
+      message:
+        codes.length === 1
+          ? "Tar bort stad..."
+          : `Tar bort ${codes.length} städer...`,
+    });
+
+    const failures: Array<{ code: string; message: string }> = [];
+
+    for (const code of codes) {
+      try {
+        await adminService.deleteCity(code);
+      } catch (error) {
+        failures.push({
+          code,
+          message: error instanceof Error ? error.message : "Okänt fel.",
+        });
+      }
+    }
+
+    const failedCodes = new Set(failures.map((failure) => failure.code));
+    const deletedCodes = codes.filter((code) => !failedCodes.has(code));
+
+    if (deletedCodes.includes(selectedCode)) {
+      setSelectedCode("");
+      setUpdateForm(emptyCityForm);
+      setCityDetail(null);
+    }
+
+    const refreshedItems = await refresh();
+    const refreshedCodes = new Set(refreshedItems.map(cityCode).filter(Boolean));
+    setDeleteCodes(codes.filter((code) => failedCodes.has(code) && refreshedCodes.has(code)));
+
+    if (failures.length > 0) {
+      const failedSummary = failures
+        .slice(0, 3)
+        .map((failure) => `${failure.code}: ${failure.message}`)
+        .join(" ");
+      setDeleteState({
+        status: "error",
+        message:
+          deletedCodes.length > 0
+            ? `${deletedCodes.length} av ${codes.length} städer togs bort. Kunde inte ta bort: ${failedSummary}`
+            : `Kunde inte ta bort valda städer: ${failedSummary}`,
+      });
+      return;
+    }
+
+    setDeleteState({
+      status: "success",
+      message: codes.length === 1 ? "Staden togs bort." : `${codes.length} städer togs bort.`,
+    });
+  }
+
   return (
     <div className="grid gap-4">
       <ActionShell
-        title="Uppdatera stad"
-        description="Legacy-flödet saknar GET-listning, så ange id och uppdatera med PUT."
-        method="PUT"
-        endpoint="/api/admin/city"
+        title="Hämta och uppdatera stad"
+        description="GET hämtar alla städer. Välj en stad och spara namn, beskrivning och bannerbild med PUT."
+        method="GET/PUT"
+        endpoint="/api/cities, /api/cities/{code}"
       >
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <FormInput label="Id" value={updateForm.id} onChange={(id) => setUpdateForm((current) => ({ ...current, id }))} />
-          <FormInput label="Namn" value={updateForm.name} onChange={(name) => setUpdateForm((current) => ({ ...current, name }))} />
-        </div>
-        <SubmitButton isLoading={updateState.status === "loading"} onPress={() => void run("update")} disabled={!updateForm.id.trim()}>
-          Uppdatera
+        <ResultBlock state={listState} />
+        <FormSelect label="Välj befintlig stad" value={selectedCode} onChange={(code) => void selectCity(code)}>
+          <option value="">Välj stad</option>
+          {items.map((city) => {
+            const code = cityCode(city);
+            if (!code) return null;
+
+            return (
+              <option key={code} value={code}>
+                {cityOptionLabel(city)}
+              </option>
+            );
+          })}
+        </FormSelect>
+        <CityFields
+          form={updateForm}
+          onChange={(patch) => setUpdateForm((current) => ({ ...current, ...patch }))}
+          lockCode
+        />
+        {cityDetail && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[8px] border border-[#edf2ef] bg-[#fbfcfb] px-3 py-2">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-[#476e66]">Företag</span>
+              <span className="mt-1 block text-lg font-semibold text-[#111827]">{cityDetail.companies?.length ?? 0}</span>
+            </div>
+            <div className="rounded-[8px] border border-[#edf2ef] bg-[#fbfcfb] px-3 py-2">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-[#476e66]">Externa företag</span>
+              <span className="mt-1 block text-lg font-semibold text-[#111827]">{cityDetail.externalCompanies?.length ?? 0}</span>
+            </div>
+          </div>
+        )}
+        <SubmitButton isLoading={updateState.status === "loading"} onPress={() => void updateCity()} disabled={!updateForm.code.trim()}>
+          Uppdatera vald
         </SubmitButton>
         <ResultBlock state={updateState} />
       </ActionShell>
 
       <ActionShell
         title="Skapa ny stad"
-        description="POST är separat och skapar en ny stad."
+        description="POST skapar eller uppdaterar staden via den nya cities-endpointen."
         method="POST"
-        endpoint="/api/admin/city"
+        endpoint="/api/cities"
       >
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <FormInput label="Id" value={createForm.id} onChange={(id) => setCreateForm((current) => ({ ...current, id }))} />
-          <FormInput label="Namn" value={createForm.name} onChange={(name) => setCreateForm((current) => ({ ...current, name }))} />
-        </div>
-        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void run("create")}>
-          Skapa
+        <CityFields
+          form={createForm}
+          onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
+        />
+        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void createCity()} disabled={!createForm.code.trim() || !createForm.name.trim()}>
+          Spara stad
         </SubmitButton>
         <ResultBlock state={createState} />
       </ActionShell>
+
+      <ActionShell
+        title="Ta bort stad"
+        description="DELETE tar bort valda städer via kod, en stad i taget."
+        method="DELETE"
+        endpoint="/api/cities/{code}"
+      >
+        <div className="mt-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+              Välj städer
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isDisabled={deletableCities.length === 0 || deleteState.status === "loading"}
+                onPress={selectAllDeleteCities}
+                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              >
+                Markera alla
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isDisabled={deleteCodes.length === 0 || deleteState.status === "loading"}
+                onPress={() => setDeleteCodes([])}
+                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              >
+                Rensa
+              </Button>
+            </div>
+          </div>
+          <div className="mt-2 grid max-h-72 gap-2 overflow-auto rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-3 sm:grid-cols-2">
+            {deletableCities.length === 0 ? (
+              <p className="text-sm text-[#66716f]">Inga städer att visa.</p>
+            ) : (
+              deletableCities.map(({ city, code }) => (
+                <label
+                  key={code}
+                  className="flex cursor-pointer items-start gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 text-sm text-[#111827] transition hover:bg-[#f3f8f5]"
+                >
+                  <Checkbox
+                    checked={deleteCodes.includes(code)}
+                    disabled={deleteState.status === "loading"}
+                    onCheckedChange={(checked) => setCityDeleteSelection(code, checked === true)}
+                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                  />
+                  <span>{cityOptionLabel(city)}</span>
+                </label>
+              ))
+            )}
+          </div>
+          <p className="mt-2 text-sm text-[#66716f]">
+            {deleteCodes.length} valda
+          </p>
+        </div>
+        <Button
+          type="button"
+          isLoading={deleteState.status === "loading"}
+          isDisabled={deleteCodes.length === 0}
+          onPress={() => void deleteCities()}
+          variant="destructive"
+          className="mt-4 bg-red-700 text-white hover:bg-red-800"
+        >
+          <Trash2Icon className="h-4 w-4" />
+          Ta bort vald
+        </Button>
+        <ResultBlock state={deleteState} />
+      </ActionShell>
     </div>
+  );
+}
+
+const waitlistChartConfig = {
+  count: {
+    label: "Nya anmälningar",
+    color: "#004225",
+  },
+} satisfies ChartConfig;
+
+const waitlistDateFormatter = new Intl.DateTimeFormat("sv-SE", {
+  day: "numeric",
+  month: "short",
+});
+
+const waitlistFullDateFormatter = new Intl.DateTimeFormat("sv-SE", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const waitlistTimestampFormatter = new Intl.DateTimeFormat("sv-SE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+type WaitlistChartDatum = {
+  date: string;
+  label: string;
+  fullLabel: string;
+  count: number;
+  cumulative: number;
+};
+
+function parseDateOnly(value: string) {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatWaitlistTimestamp(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Tidpunkt saknas"
+    : waitlistTimestampFormatter.format(date);
+}
+
+function toWaitlistChartData(stats: AdminWaitlistStatsDTO | null): WaitlistChartDatum[] {
+  return (stats?.daily ?? [])
+    .map((point) => {
+      const date = parseDateOnly(point.date);
+      if (!date) return null;
+
+      return {
+        date: point.date,
+        label: waitlistDateFormatter.format(date).replace(".", ""),
+        fullLabel: waitlistFullDateFormatter.format(date),
+        count: point.count,
+        cumulative: point.cumulative,
+      };
+    })
+    .filter((point): point is WaitlistChartDatum => point !== null);
+}
+
+function WaitlistTrendChart({ data }: { data: WaitlistChartDatum[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="mt-5 flex min-h-[240px] items-center justify-center rounded-[8px] border border-dashed border-[#dfe7e3] px-4 text-center text-sm text-[#66716f]">
+        Ingen trenddata att visa ännu.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 min-h-[280px] min-w-0">
+      <ChartContainer
+        className="h-[clamp(260px,32vw,360px)] w-full"
+        config={waitlistChartConfig}
+      >
+        <BarChart
+          barCategoryGap={data.length > 18 ? "20%" : "32%"}
+          data={data}
+          margin={{ bottom: 0, left: 0, right: 8, top: 16 }}
+        >
+          <CartesianGrid stroke="#edf2ef" vertical={false} />
+          <XAxis
+            axisLine={false}
+            dataKey="label"
+            interval={data.length > 14 ? "preserveStartEnd" : 0}
+            minTickGap={8}
+            tick={{ fill: "#6b7280", fontSize: 11 }}
+            tickLine={false}
+            tickMargin={12}
+          />
+          <YAxis
+            allowDecimals={false}
+            axisLine={false}
+            tick={{ fill: "#6b7280", fontSize: 11 }}
+            tickLine={false}
+            tickMargin={8}
+            width={38}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                labelFormatter={(_, payload) => {
+                  const row = payload?.[0]?.payload as WaitlistChartDatum | undefined;
+                  return row?.fullLabel ?? "";
+                }}
+              />
+            }
+            cursor={false}
+          />
+          <Bar
+            dataKey="count"
+            fill="var(--color-count)"
+            maxBarSize={20}
+            name="Nya anmälningar"
+            radius={[4, 4, 0, 0]}
+          />
+        </BarChart>
+      </ChartContainer>
+    </div>
+  );
+}
+
+function storageLabel(storage: AdminWaitlistStatsDTO["storage"]) {
+  if (storage === "firestore") return "Firestore";
+  if (storage === "local") return "Lokal dev-fil";
+  return "Okänd källa";
+}
+
+function WaitlistEntriesList({ entries }: { entries: AdminWaitlistEntryDTO[] }) {
+  return (
+    <div className="mt-6 min-w-0">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-[#111827]">Alla registrerade</h3>
+          <p className="text-sm text-[#66716f]">
+            E-post och registreringstid för alla poster som hämtades från databasen.
+          </p>
+        </div>
+        <span className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+          {entries.length.toLocaleString("sv-SE")} poster
+        </span>
+      </div>
+
+      {entries.length === 0 ? (
+        <div className="mt-3 rounded-[8px] border border-dashed border-[#dfe7e3] px-4 py-8 text-center text-sm text-[#66716f]">
+          Inga e-postadresser finns i waitlisten ännu.
+        </div>
+      ) : (
+        <div className="mt-3 max-h-[440px] overflow-auto rounded-[8px] border border-[#dfe7e3]">
+          <table className="min-w-full divide-y divide-[#edf2ef] text-left text-sm">
+            <thead className="sticky top-0 bg-[#fbfcfb] text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+              <tr>
+                <th className="px-4 py-3">E-post</th>
+                <th className="px-4 py-3">Registrerad</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#edf2ef] bg-white">
+              {entries.map((entry) => (
+                <tr key={`${entry.email}-${entry.createdAt}`}>
+                  <td className="break-all px-4 py-3 font-medium text-[#111827]">
+                    {entry.email}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-[#36534d]">
+                    {formatWaitlistTimestamp(entry.createdAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WaitlistDashboard() {
+  const [stats, setStats] = useState<AdminWaitlistStatsDTO | null>(null);
+  const [state, setState] = useState<AdminActionState>({
+    status: "loading",
+    message: "Hämtar waitlist...",
+  });
+
+  async function refresh() {
+    setState({ status: "loading", message: "Hämtar waitlist..." });
+
+    try {
+      const result = await adminService.getWaitlistStats();
+      setStats(result);
+      setState({ status: "idle" });
+    } catch (error) {
+      setStats(null);
+      setState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Kunde inte hämta waitlist-statistik.",
+      });
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  const chartData = toWaitlistChartData(stats);
+  const lastSevenDays = (stats?.daily ?? [])
+    .slice(-7)
+    .reduce((sum, point) => sum + point.count, 0);
+  const latestDay = stats?.daily.at(-1);
+
+  return (
+    <ActionShell
+      title="Waitlist"
+      description="Översikt, daglig graf och alla registrerade e-postadresser i waitlisten."
+      method="GET"
+      endpoint="/api/admin/waitlist"
+    >
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <ResultBlock state={state} />
+        <Button
+          type="button"
+          isLoading={state.status === "loading"}
+          onPress={() => void refresh()}
+          className="bg-[#004225] text-white hover:bg-[#00351e]"
+        >
+          <RefreshCwIcon className="h-4 w-4" />
+          Uppdatera
+        </Button>
+      </div>
+
+      {stats ? (
+        <>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+                Totalt
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-[#111827]">
+                {stats.total.toLocaleString("sv-SE")}
+              </p>
+            </div>
+            <div className="rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+                Senaste 7 dagarna
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-[#111827]">
+                {lastSevenDays.toLocaleString("sv-SE")}
+              </p>
+            </div>
+            <div className="rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+                Källa
+              </p>
+              <p className="mt-2 text-lg font-semibold text-[#111827]">
+                {storageLabel(stats.storage)}
+              </p>
+              {latestDay ? (
+                <p className="mt-1 text-xs text-[#66716f]">
+                  Senaste datum: {latestDay.date}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <WaitlistTrendChart data={chartData} />
+
+          <WaitlistEntriesList entries={stats.entries} />
+
+          {stats.unknownCreatedAtCount ? (
+            <p className="mt-3 text-xs text-[#66716f]">
+              {stats.unknownCreatedAtCount.toLocaleString("sv-SE")} poster saknar
+              giltigt datum och visas inte i diagrammet.
+            </p>
+          ) : null}
+        </>
+      ) : null}
+    </ActionShell>
   );
 }
 
@@ -1545,62 +3432,44 @@ export function AdminToolPage({ section }: { section: AdminSection }) {
     <main className="flex flex-col gap-6 text-[#1f2937]">
       <div className="flex flex-col gap-5">
         <SectionContent active={section} value="tags">
-          <TabIntro icon={<TagsIcon className="h-5 w-5" />} title={TAB_META.tags.title} description={TAB_META.tags.description} />
           <TagsForm />
         </SectionContent>
 
         <SectionContent active={section} value="schools">
-          <TabIntro icon={<SchoolIcon className="h-5 w-5" />} title={TAB_META.schools.title} description={TAB_META.schools.description} />
           <SchoolsForm />
         </SectionContent>
 
+        <SectionContent active={section} value="cities">
+          <CitiesForm />
+        </SectionContent>
+
         <SectionContent active={section} value="locations">
-          <TabIntro icon={<MapPinIcon className="h-5 w-5" />} title={TAB_META.locations.title} description={TAB_META.locations.description} />
           <LocationCategoriesForm />
         </SectionContent>
 
         <SectionContent active={section} value="companies">
-          <TabIntro icon={<Building2Icon className="h-5 w-5" />} title={TAB_META.companies.title} description={TAB_META.companies.description}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800">
-              <Trash2Icon className="h-4 w-4" />
-              Soft delete via id
-            </span>
-          </TabIntro>
           <CompaniesForm />
         </SectionContent>
 
+        <SectionContent active={section} value="external-companies">
+          <ExternalCompaniesForm />
+        </SectionContent>
+
         <SectionContent active={section} value="accounts">
-          <TabIntro icon={<UsersIcon className="h-5 w-5" />} title={TAB_META.accounts.title} description={TAB_META.accounts.description}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#dfe7e3] bg-[#fbfcfb] px-3 py-1.5 text-xs font-medium text-[#36534d]">
-              <KeyRoundIcon className="h-4 w-4 text-[#004225]" />
-              Rollstyrt konto
-            </span>
-          </TabIntro>
           <CompanyAccountForm />
         </SectionContent>
 
         <SectionContent active={section} value="activities">
-          <TabIntro icon={<ActivityIcon className="h-5 w-5" />} title={TAB_META.activities.title} description={TAB_META.activities.description} />
           <ActivitiesForm />
         </SectionContent>
 
-        <SectionContent active={section} value="statistics">
-          <TabIntro icon={<BarChart3Icon className="h-5 w-5" />} title={TAB_META.statistics.title} description={TAB_META.statistics.description} />
-          <div className="grid gap-4 xl:grid-cols-2">
-            <UserStatisticsAction />
-          </div>
+        <SectionContent active={section} value="waitlist">
+          <WaitlistDashboard />
         </SectionContent>
 
-        <SectionContent active={section} value="legacy">
-          <TabIntro icon={<ListChecksIcon className="h-5 w-5" />} title={TAB_META.legacy.title} description={TAB_META.legacy.description}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900">
-              <InfoIcon className="h-4 w-4" />
-              Bakåtkompatibilitet
-            </span>
-          </TabIntro>
-          <div className="grid gap-4">
-            <CityForm />
-            <DeleteIdAction title="Ta bort stad" description="Ta bort eller avaktivera en stad med numeriskt id." endpoint="/api/admin/city/delete" label="Stads-id" onSubmit={adminService.deleteCity} />
+        <SectionContent active={section} value="statistics">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <UserStatisticsAction />
           </div>
         </SectionContent>
       </div>

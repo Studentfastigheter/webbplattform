@@ -1,4 +1,8 @@
+"use client";
+
 import Tag from "./Tag";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 export type Status =
   | "Antagen"
@@ -30,6 +34,7 @@ const colorMap: Record<Status, string> = {
 };
 
 export default function StatusTag(props: StatusTagProps) {
+  const { locale } = useI18n();
   const {
     status,
     bgColorOverride,
@@ -41,10 +46,19 @@ export default function StatusTag(props: StatusTagProps) {
   } = props;
 
   const bgColor = bgColorOverride ?? colorMap[status];
+  const displayText: Record<Status, string> = {
+    Antagen: localizedText(locale, "Antagen", "Accepted"),
+    Aktiv: localizedText(locale, "Aktiv", "Active"),
+    "Under granskning": localizedText(locale, "Under granskning", "Under review"),
+    Bearbetas: localizedText(locale, "Bearbetas", "Processing"),
+    Erbjudande: localizedText(locale, "Erbjudande", "Offer"),
+    Nekad: localizedText(locale, "Nekad", "Rejected"),
+    Inaktiv: localizedText(locale, "Inaktiv", "Inactive"),
+  };
 
   return (
     <Tag
-      text={status}
+      text={displayText[status] ?? status}
       bgColor={bgColor}
       textColor={textColor}
       height={height}

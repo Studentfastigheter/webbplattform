@@ -4,9 +4,12 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import { LoadingScreen } from "@/components/ui/loader";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { buildPortalUrl } from "@/lib/subdomain-routing";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type RouteGuardProps = {
   children: ReactNode;
@@ -14,16 +17,17 @@ type RouteGuardProps = {
 
 const SITE_ACCOUNT_TYPES = new Set(["student"]);
 
+function isAdminAccount(accountType: string | undefined) {
+  return accountType === "admin";
+}
+
 function RouteFallback({ message }: { message: string }) {
-  return (
-    <div className="flex min-h-svh items-center justify-center bg-white px-6 text-sm text-neutral-500">
-      {message}
-    </div>
-  );
+  return <LoadingScreen label={message} />;
 }
 
 export function SiteAccountGuard({ children }: RouteGuardProps) {
   const router = useRouter();
+  const { locale, localizedHref } = useI18n();
   const { user, token, isLoading, logout } = useAuth();
 
   useEffect(() => {
@@ -36,19 +40,19 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
 
     if (!SITE_ACCOUNT_TYPES.has(user.accountType)) {
       logout();
-      router.replace("/login");
+      router.replace(localizedHref("/login"));
     }
-  }, [isLoading, logout, router, token, user]);
+  }, [isLoading, localizedHref, logout, router, token, user]);
 
   if (isLoading) {
-    return <RouteFallback message="Laddar..." />;
+    return <RouteFallback message={localizedText(locale, "Laddar...", "Loading...")} />;
   }
 
   if (
     user &&
     (!SITE_ACCOUNT_TYPES.has(user.accountType) || getActiveCompanyId(user) != null)
   ) {
-    return <RouteFallback message="Skickar dig vidare..." />;
+    return <RouteFallback message={localizedText(locale, "Skickar dig vidare...", "Redirecting you...")} />;
   }
 
   return children;
@@ -106,7 +110,7 @@ export function AdminAccountGuard({ children }: RouteGuardProps) {
       return;
     }
 
-    if (user.accountType !== "admin") {
+    if (!isAdminAccount(user.accountType)) {
       logout();
       router.replace("/login");
     }
@@ -116,7 +120,7 @@ export function AdminAccountGuard({ children }: RouteGuardProps) {
     return <RouteFallback message="Laddar admin..." />;
   }
 
-  if (!user || user.accountType !== "admin") {
+  if (!user || !isAdminAccount(user.accountType)) {
     return <RouteFallback message="Kontrollerar behörighet..." />;
   }
 

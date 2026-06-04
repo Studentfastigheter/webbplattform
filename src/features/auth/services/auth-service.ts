@@ -149,13 +149,10 @@ function normalizeCityEnum(value: string | undefined | null): string | undefined
     return undefined;
   }
 
-  const key = trimmed
-    .toUpperCase()
-    .replace(/\s+/g, "_")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+  const enumKey = trimmed.toLocaleUpperCase("sv-SE").replace(/[\s-]+/g, "_");
+  const asciiKey = enumKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  return SWEDISH_CITY_ENUMS[key] ?? SWEDISH_CITY_ENUMS[trimmed.toUpperCase()] ?? trimmed.toUpperCase();
+  return SWEDISH_CITY_ENUMS[enumKey] ?? SWEDISH_CITY_ENUMS[asciiKey] ?? enumKey;
 }
 
 function requireCityEnum(value: string | undefined | null): string {
@@ -165,6 +162,26 @@ function requireCityEnum(value: string | undefined | null): string {
   }
 
   return city;
+}
+
+function normalizeAccountTypeValue(value: string | undefined): User["accountType"] | undefined {
+  const accountType = value?.toLowerCase();
+  if (!accountType) {
+    return undefined;
+  }
+
+  if (
+    accountType === "student" ||
+    accountType === "company" ||
+    accountType === "private_landlord" ||
+    accountType === "landlord" ||
+    accountType === "quick_register" ||
+    accountType === "admin"
+  ) {
+    return accountType;
+  }
+
+  return undefined;
 }
 
 export function getAuthResponseToken(response: Partial<AuthResponse>): string {
@@ -212,7 +229,7 @@ function createUserFromFlatAuthResponse(
     ...(response as Partial<User>),
     id,
     email,
-    accountType: (accountType?.toLowerCase() ?? "quick_register") as User["accountType"],
+    accountType: normalizeAccountTypeValue(accountType) ?? "quick_register",
     displayName,
     createdAt: firstString(response.createdAt) ?? new Date(0).toISOString(),
     verified:
@@ -271,7 +288,7 @@ export function getAuthResponseUser(response: AuthResponse): User {
           "Användare";
     const accountType =
       typeof profile.accountType === "string"
-        ? (profile.accountType.toLowerCase() as User["accountType"])
+        ? normalizeAccountTypeValue(profile.accountType)
         : fallbackUser.accountType;
 
     return {
@@ -285,7 +302,7 @@ export function getAuthResponseUser(response: AuthResponse): User {
         typeof profile.email === "string" && profile.email.trim()
           ? profile.email.trim()
           : fallbackUser.email,
-      accountType,
+      accountType: accountType ?? fallbackUser.accountType,
       displayName,
       createdAt:
         typeof profile.createdAt === "string"
@@ -414,7 +431,7 @@ export const authService = {
 
   adminLogin: async (payload: LoginRequest): Promise<AuthResponse> => {
     if (typeof window !== "undefined" && !isAdminSubdomain()) {
-      throw new Error("Admininloggning är endast tillgänglig på admin-subdomänen.");
+      throw new Error("Admin-inloggning är endast tillgänglig på admin-subdomänen.");
     }
 
     const email = payload.email.trim();
@@ -485,7 +502,10 @@ export const authService = {
     });
   },
 
-  registerWorker: async (payload: RegisterRequest): Promise<AuthResponse> => {
+  registerWorker: async (
+    payload: RegisterRequest,
+    options: { auth?: boolean } = {}
+  ): Promise<AuthResponse> => {
     if (payload.accountType !== "company") {
       throw new Error("Aktuell backend stöder bara företagsregistrering via register-worker.");
     }
@@ -494,16 +514,19 @@ export const authService = {
       accountType: payload.accountType,
       email: payload.email.trim(),
       password: payload.password,
+      firstName: payload.firstName?.trim(),
+      surname: payload.surname?.trim(),
       phone: payload.phone?.trim(),
       city: normalizeCityEnum(payload.city),
       companyName: payload.companyName?.trim(),
+      roleName: payload.roleName?.trim(),
       fullName: payload.fullName?.trim(),
     });
 
     return apiClient<AuthResponse>("/auth/register-worker", {
       method: "POST",
       body: JSON.stringify(requestPayload),
-      auth: false,
+      auth: options.auth ?? false,
     });
   },
 

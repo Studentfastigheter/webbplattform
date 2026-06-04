@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -42,13 +42,21 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
-  companyService,
   type ApplicationStatisticEntry,
   type ListingViewCounts,
   type ObjectApplicationCount,
 } from "@/features/companies/services/company-service";
 import { listingService } from "@/features/listings/services/listing-service";
-import { queueService } from "@/features/queues/services/queue-service";
+import {
+  useApplicationCountsPerObject,
+  useListingViewCounts,
+  useTimedApplicationsForListing,
+} from "@/features/companies/hooks/useCompanies";
+import { useAllCompanyListings } from "@/features/queues/hooks/useQueues";
+import {
+  useListing,
+  useRequirementsProfile,
+} from "@/features/listings/hooks/useListings";
 import {
   type ListingCardDTO,
   type ListingDetailDTO,
@@ -534,70 +542,80 @@ function ListingPreview({
 export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const [listing, setListing] = useState<ListingDetailDTO | null>(null);
-  const [requirementsProfile, setRequirementsProfile] =
-    useState<RequirementsProfileDTO | null>(null);
+  // Action state for the status / delete mutations (Phase 2 will replace these
+  // with proper mutation hooks; meta still mirrors locally so the chip flips
+  // immediately after a status change without waiting for an invalidation).
   const [meta, setMeta] = useState<ListingMeta>(emptyMeta);
-  const [isOwnListing, setIsOwnListing] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [metaInitialized, setMetaInitialized] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionState, setActionState] = useState<ListingActionState>("idle");
   const [applicationInterval, setApplicationInterval] =
     useState<ApplicationIntervalValue>("1m");
-  const [timedApplicationCount, setTimedApplicationCount] = useState(0);
-  const [timedApplicationsLoading, setTimedApplicationsLoading] = useState(false);
-  const [timedApplicationsError, setTimedApplicationsError] =
-    useState<string | null>(null);
-  const [applicationTrendPoints, setApplicationTrendPoints] = useState<
-    TrendBarChartPoint[]
-  >([]);
-  const [applicationTrendLoading, setApplicationTrendLoading] = useState(false);
-  const [applicationTrendError, setApplicationTrendError] =
-    useState<string | null>(null);
 
   const companyId = getActiveCompanyId(user);
 
-  const fetchListingData = useCallback(async () => {
-    const companyListingsPromise = companyId
-      ? queueService.getAllCompanyListings(companyId, 0, 200)
-      : Promise.resolve<ListingCardDTO[]>([]);
-    const applicationsPromise = companyId
-      ? companyService.applicationCountsPerObject(companyId, 200).catch(() => [])
-      : Promise.resolve<ObjectApplicationCount[]>([]);
-    const viewCountsPromise = companyId
-      ? companyService.listingViewCounts(companyId, id).catch(() => null)
-      : Promise.resolve<ListingViewCounts | null>(null);
+  // Core reads — every query has an `enabled` gate so we don't fire while
+  // auth is loading or before we know the company id.
+  const {
+    data: listing = null,
+    isLoading: listingLoading,
+    isError: isListingError,
+    error: listingErr,
+  } = useListing(id, { enabled: !authLoading });
+  const { data: companyListings = [] } = useAllCompanyListings(companyId, 0, 200);
+  const { data: applicationsByObject = [] } = useApplicationCountsPerObject(
+    companyId,
+    200,
+  );
+  const { data: viewCounts = null } = useListingViewCounts(companyId, id);
+  const { data: requirementsProfile = null } = useRequirementsProfile(
+    listing?.requirementsProfileId ?? null,
+  );
 
-    const [listingDetail, companyListings, applicationsByObject, viewCounts] = await Promise.all([
-      listingService.get(id),
-      companyListingsPromise,
-      applicationsPromise,
-      viewCountsPromise,
-    ]);
-    const requirementsProfile = listingDetail.requirementsProfileId
-      ? await listingService
-          .getRequirementsProfile(listingDetail.requirementsProfileId)
-          .catch(() => null)
-      : null;
+  const isOwnListing = useMemo(
+    () =>
+      listing
+        ? (companyListings as RawListing[]).some(
+            (item) => String(item.id) === String(listing.id),
+          )
+        : true,
+    [companyListings, listing],
+  );
 
+  // Recompute meta from server data unless a local mutation (status change)
+  // has overridden it. `metaInitialized` is false until the listing arrives,
+  // then becomes true; the status mutation pushes a transient override and
+  // the next read replaces it.
+  const computedMeta = useMemo<ListingMeta>(() => {
+    if (!listing) return emptyMeta;
     const matchedCompanyListing =
       (companyListings as RawListing[]).find(
-        (item) => String(item.id) === String(listingDetail.id)
+        (item) => String(item.id) === String(listing.id),
       ) ?? null;
+    return resolveListingMeta(
+      listing,
+      matchedCompanyListing,
+      applicationsByObject as ObjectApplicationCount[],
+      viewCounts as ListingViewCounts | null,
+    );
+  }, [listing, companyListings, applicationsByObject, viewCounts]);
 
-    return {
-      listingDetail,
-      requirementsProfile,
-      isOwnListing: Boolean(matchedCompanyListing),
-      meta: resolveListingMeta(
-        listingDetail,
-        matchedCompanyListing,
-        applicationsByObject,
-        viewCounts
-      ),
-    };
-  }, [companyId, id]);
+  useMemo(() => {
+    if (!metaInitialized && listing) {
+      setMeta(computedMeta);
+      setMetaInitialized(true);
+    } else if (metaInitialized && actionState === "idle") {
+      setMeta(computedMeta);
+    }
+  }, [computedMeta, listing, metaInitialized, actionState]);
+
+  const loading = authLoading || listingLoading;
+  const error =
+    isListingError && listingErr
+      ? listingErr instanceof Error
+        ? listingErr.message
+        : "Kunde inte ladda annonsen."
+      : null;
 
   const selectedApplicationInterval = useMemo(
     () => getApplicationInterval(applicationInterval),
@@ -608,97 +626,38 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     [applicationInterval]
   );
 
-  useEffect(() => {
-    if (authLoading) {
-      return;
-    }
+  // Timed applications for the trend chart. Empty `id` is still a valid
+  // string, but `useTimedApplicationsForListing` is gated by id presence.
+  const {
+    data: timedEntries,
+    isLoading: timedApplicationsLoading,
+    isError: timedApplicationsIsError,
+    error: timedApplicationsErr,
+  } = useTimedApplicationsForListing(
+    companyId,
+    analyticsRange.from.toISOString(),
+    analyticsRange.to.toISOString(),
+    id || null,
+  );
+  const timedApplicationCount = useMemo(
+    () => (timedEntries ? sumApplicationStatistics(timedEntries) : 0),
+    [timedEntries],
+  );
+  const applicationTrendPoints = useMemo(
+    () => (timedEntries ? applicationStatisticsToTrendPoints(timedEntries) : []),
+    [timedEntries],
+  );
+  const timedApplicationsErrorMessage = timedApplicationsIsError
+    ? timedApplicationsErr instanceof Error
+      ? timedApplicationsErr.message
+      : "Kunde inte hämta ansökningar för perioden."
+    : null;
+  const timedApplicationsError = timedApplicationsErrorMessage;
+  const applicationTrendLoading = timedApplicationsLoading;
+  const applicationTrendError = timedApplicationsErrorMessage;
 
-    let active = true;
-    setLoading(true);
-    setError(null);
-    setListing(null);
-    setRequirementsProfile(null);
-    setMeta(emptyMeta);
-    setIsOwnListing(true);
-
-    fetchListingData()
-      .then(({
-        listingDetail,
-        requirementsProfile,
-        isOwnListing: ownListing,
-        meta: listingMeta,
-      }) => {
-        if (!active) return;
-
-        setListing(listingDetail);
-        setRequirementsProfile(requirementsProfile);
-        setIsOwnListing(ownListing);
-        setMeta(listingMeta);
-      })
-      .catch((requestError) => {
-        if (!active) return;
-        setError(
-          requestError instanceof Error ? requestError.message : "Kunde inte ladda annonsen."
-        );
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, fetchListingData]);
-
-  useEffect(() => {
-    if (authLoading || !companyId || !id) {
-      return;
-    }
-
-    const { from, to } = analyticsRange;
-    let active = true;
-
-    setTimedApplicationsLoading(true);
-    setTimedApplicationsError(null);
-    setApplicationTrendLoading(true);
-    setApplicationTrendError(null);
-
-    companyService
-      .timedApplicationsForListing(companyId, from, to, id)
-      .then((entries) => {
-        if (!active) return;
-        setTimedApplicationCount(sumApplicationStatistics(entries));
-        setApplicationTrendPoints(applicationStatisticsToTrendPoints(entries));
-      })
-      .catch((requestError) => {
-        if (!active) return;
-        setTimedApplicationCount(0);
-        setApplicationTrendPoints([]);
-        const message =
-          requestError instanceof Error
-            ? requestError.message
-            : "Kunde inte hämta ansökningar för perioden.";
-        setTimedApplicationsError(
-          message
-        );
-        setApplicationTrendError(message);
-      })
-      .finally(() => {
-        if (active) {
-          setTimedApplicationsLoading(false);
-          setApplicationTrendLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [analyticsRange, authLoading, companyId, id]);
-
-  const editHref = `${dashboardRelPath}/annonser/${encodeURIComponent(id)}/redigera`;
-  const applicationsHref = `${dashboardRelPath}/ansokningar?listingId=${encodeURIComponent(id)}`;
+  const editHref = `${dashboardRelPath}/listings/${encodeURIComponent(id)}/edit`;
+  const applicationsHref = `${dashboardRelPath}/applications?listingId=${encodeURIComponent(id)}`;
   const galleryImages = useMemo(
     () => listing?.imageUrls?.filter(Boolean) ?? [],
     [listing]
@@ -736,7 +695,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       await listingService.delete(id);
       toast.success("Annonsen har raderats.");
       setDeleteDialogOpen(false);
-      router.push(`${dashboardRelPath}/annonser`);
+      router.push(`${dashboardRelPath}/listings`);
       router.refresh();
     } catch (deleteError) {
       toast.error(
@@ -815,7 +774,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       <Tabs defaultValue="info" className="space-y-6">
         <header className="space-y-5 border-b border-gray-200 pb-5">
           <Link
-            href={`${dashboardRelPath}/annonser`}
+            href={`${dashboardRelPath}/listings`}
             className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
           >
             <ArrowLeft className="h-4 w-4" />

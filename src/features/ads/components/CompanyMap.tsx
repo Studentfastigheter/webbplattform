@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import type { ListingCardDTO } from "@/types/listing";
 
-// Reuse the same map component the bostader detail page uses so the visual
+// Reuse the same map component the housing detail page uses so the visual
 // rhythm (markers, clusters, popups, padding) is consistent across the app.
 // `dynamic` with ssr:false because react-leaflet has no SSR support.
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
@@ -42,7 +42,7 @@ export default function CompanyMap({
 
   const handleOpenListing = useCallback(
     (id: string) => {
-      router.push(`/bostader/${id}`);
+      router.push(`/housing/${id}`);
     },
     [router],
   );
@@ -53,13 +53,13 @@ export default function CompanyMap({
   return (
     <section className="w-full">
       {/*
-        Map shell — matches the bostader detail page's map preview frame
+        Map shell — matches the housing detail page's map preview frame
         (height, radius, border, shadow). `isolate` creates a new stacking
         context so Leaflet's internal z-indexes (panes go up to 700) stay
         local to this container; without it the dropdown / lightbox would
         render under the map.
       */}
-      <div className="relative isolate z-0 h-[400px] w-full overflow-hidden rounded-3xl border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+      <div className="relative isolate z-0 h-[70vh] min-h-[520px] max-h-[860px] w-full overflow-hidden rounded-3xl border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
         <ListingsMap
           listings={mapListings}
           className="h-full w-full"

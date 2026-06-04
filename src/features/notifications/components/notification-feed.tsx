@@ -9,12 +9,16 @@ import {
   useMarkNotificationRead,
   useNotifications,
 } from "@/features/notifications/hooks/useNotifications";
+import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type Props = {
   items?: NotificationItem[]; // Möjlighet att skicka in data utifrån
 };
 
 export function NotificationsFeed({ items: initialItems }: Props) {
+  const { locale } = useI18n();
   // The optional `initialItems` path is rare (caller-supplied data, e.g. from
   // a mock). When present, skip the network entirely (enabled: false) and
   // render those items. Otherwise, use the cached notifications query — the
@@ -43,7 +47,7 @@ export function NotificationsFeed({ items: initialItems }: Props) {
   );
 
   if (loading) {
-    return <div className="p-4 text-center text-sm text-muted-foreground">Laddar notiser...</div>;
+    return <div className="p-4 text-center text-sm text-muted-foreground">{localizedText(locale, "Laddar notiser...", "Loading notifications...")}</div>;
   }
 
   return (
@@ -52,12 +56,12 @@ export function NotificationsFeed({ items: initialItems }: Props) {
         <div className="space-y-2 p-3">
           {ordered.length === 0 ? (
             <div className="bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-              Inga notiser ännu.
+              {localizedText(locale, "Inga notiser ännu.", "No notifications yet.")}
             </div>
           ) : (
             ordered.map((n) => (
               <div key={n.id} onClick={() => !n.opened && handleMarkAsRead(n.id)}>
-                {renderNotification(n)}
+                {renderNotification(n, locale)}
               </div>
             ))
           )}
@@ -67,7 +71,7 @@ export function NotificationsFeed({ items: initialItems }: Props) {
   );
 }
 
-function renderNotification(notification: NotificationItem) {
+function renderNotification(notification: NotificationItem, locale: "sv" | "en") {
   // Samma switch-logik som tidigare...
   switch (notification.type) {
     case "message":
@@ -79,7 +83,7 @@ function renderNotification(notification: NotificationItem) {
     default:
       return (
         <div className={`p-4 border rounded-lg shadow-sm text-sm ${notification.opened ? 'bg-white' : 'bg-blue-50 border-blue-100'}`}>
-          <p className="font-medium">{notification.title || "Notis"}</p>
+          <p className="font-medium">{notification.title || localizedText(locale, "Notis", "Notification")}</p>
           <p className="text-muted-foreground">{notification.body}</p>
         </div>
       );

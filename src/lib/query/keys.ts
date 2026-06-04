@@ -90,6 +90,8 @@ export const qk = {
     publicProfile: (id: number) => ["companies", "public", id] as const,
     privateProfile: (id: number) => ["companies", "private", id] as const,
     users: (id: number) => ["companies", "users", id] as const,
+    platforms: () => ["companies", "platforms"] as const,
+    roles: () => ["companies", "roles"] as const,
     viewCounts: (companyId: number, listingId: string) =>
       ["companies", "view-counts", companyId, listingId] as const,
     applicationCounts: (companyId: number, size: number) =>
@@ -235,5 +237,20 @@ export const qk = {
     activities: () => ["admin", "activities"] as const,
     companyDetail: (companyId: number) =>
       ["admin", "company", companyId] as const,
+  },
+
+  // City detail (the working_main rename). Keyed on the normalized city code
+  // so two different display spellings ("Göteborg" / "Goteborg") collapse to
+  // the same cache entry.
+  cities: {
+    all: ["cities"] as const,
+    list: () => ["cities", "list"] as const,
+    detail: (code: string) => ["cities", "detail", code] as const,
+  },
+
+  // Rolling marketing ads. Public, low-churn — single cache entry.
+  ads: {
+    all: ["ads"] as const,
+    current: () => ["ads", "current"] as const,
   },
 } as const;

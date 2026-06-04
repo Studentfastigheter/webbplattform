@@ -1,4 +1,6 @@
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 const getCompanyWebsiteUrl = (company: CompanyPublicDTO) => {
   const rawUrl = company.websiteUrl?.trim() || company.website?.trim() || "";
@@ -12,34 +14,32 @@ export default function SimpleCompanyCard({
 }: {
   company: CompanyPublicDTO;
 }) {
+  const { locale } = useI18n();
   const websiteUrl = getCompanyWebsiteUrl(company);
   const description =
     company.description?.trim() ||
     company.subtitle?.trim() ||
-    "Läs mer om företaget på deras hemsida.";
+    localizedText(locale, "Läs mer om företaget på deras hemsida.", "Read more about the company on its website.");
 
   const content = (
     <>
-      <div className="flex h-14 w-20 shrink-0 items-center justify-center border-black/[0.04] sm:h-16 sm:w-24 sm:border-r sm:pr-4">
+      <div className="flex w-[108px] shrink-0 self-stretch items-center justify-center bg-white p-1 sm:w-[120px]">
         {company.logoUrl ? (
           <img
             src={company.logoUrl}
-            alt={`${company.name} logotyp`}
-            className="max-h-12 w-full max-w-[88px] object-contain sm:max-h-14"
+            alt={localizedText(locale, `${company.name} logotyp`, `${company.name} logo`)}
+            className="h-full max-h-[118px] w-full object-contain"
           />
         ) : (
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-base font-semibold text-gray-500">
-            {company.name.trim().charAt(0).toUpperCase() || "F"}
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gray-100 text-xl font-semibold text-gray-500">
+            {company.name.trim().charAt(0).toUpperCase() || localizedText(locale, "F", "C")}
           </div>
         )}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h3 className="truncate text-[16px] font-medium leading-5 text-[#111111]">
-          {company.name}
-        </h3>
-        <p
-          className="text-left text-[13px] leading-[18px] text-[#202020]"
+      <div className="flex min-w-0 flex-1 flex-col justify-start px-3.5 py-4 sm:px-4 sm:py-5">
+        <h3
+          className="text-[17px] font-semibold leading-[21px] text-[#111111] sm:text-lg sm:leading-6"
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -49,10 +49,23 @@ export default function SimpleCompanyCard({
             wordBreak: "break-word",
           }}
         >
+          {company.name}
+        </h3>
+        <p
+          className="mt-1.5 text-left text-[13px] leading-[18px] text-[#202020] sm:text-[13.5px] sm:leading-[19px]"
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            wordBreak: "break-word",
+          }}
+        >
           {description}
         </p>
         {websiteUrl && (
-          <span className="mt-1 truncate text-xs font-semibold text-[#004225]">
+          <span className="mt-auto truncate pt-2 text-xs font-semibold text-[#004225]">
             {websiteUrl.replace(/^https?:\/\//i, "")}
           </span>
         )}
@@ -61,7 +74,7 @@ export default function SimpleCompanyCard({
   );
 
   const className =
-    "flex h-full min-h-[132px] w-full items-center gap-3 overflow-hidden rounded-2xl border border-black/[0.04] bg-white px-4 py-4 shadow-md transition-shadow duration-200 hover:shadow-lg sm:min-h-[148px] sm:gap-4 sm:px-5";
+    "flex h-full min-h-[142px] w-full overflow-hidden rounded-lg border border-black/[0.04] bg-white shadow-[0_10px_26px_rgba(17,24,39,0.06)] transition-shadow duration-200 hover:shadow-[0_14px_32px_rgba(17,24,39,0.09)] sm:min-h-[150px]";
 
   if (!websiteUrl) {
     return <article className={className}>{content}</article>;
