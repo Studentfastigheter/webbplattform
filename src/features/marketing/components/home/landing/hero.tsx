@@ -57,14 +57,14 @@ export const Hero: React.FC<HeroProps> = ({
               <FlipWords words={words} duration={2500} className={flipWordsClassName} />
             </span>
           </h1>
-          <div className="order-2 mt-8 w-full max-w-[1400px] md:order-4 md:mt-14">
+          <div className="order-2 mt-8 w-full max-w-[700px] md:order-4 md:mt-14">
             <div className="pointer-events-none absolute inset-x-4 -bottom-8 hidden h-24 rounded-full bg-emerald-300/25 blur-3xl sm:inset-x-8 md:block" />
             <Image
               src={previewImageSrc}
               alt={previewImageAlt ?? t("home.hero.previewAlt")}
-              width={1920}
-              height={1080}
-              sizes="(max-width: 640px) 96vw, (max-width: 1024px) 92vw, (max-width: 1536px) 88vw, 1400px"
+              width={1920/2}
+              height={1080/2}
+              sizes="(max-width: 640px) 96vw, 700px"
               className="relative z-10 h-auto w-full object-contain drop-shadow-[0_24px_45px_rgba(15,23,42,0.22)]"
               priority
             />

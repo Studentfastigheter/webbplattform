@@ -77,7 +77,7 @@ export default async function Home() {
         businessHref="/for-business"
         interestCta={home.hero.interestCta}
         businessCta={home.hero.businessCta}
-        previewImageSrc="/CampusLyan-Mockup.svg"
+        previewImageSrc="/mockup.svg"
         previewImageAlt={home.hero.previewAlt}
         backgroundClassName="bg-background"
       />
