@@ -26,7 +26,11 @@ import {
   type DocumentPropagationResult,
   type UploadedDocument,
 } from "@/features/documents/services/document-service";
-import { useMyDocuments } from "@/features/documents/hooks/useDocuments";
+import {
+  useDeleteDocument,
+  useMyDocuments,
+  useUploadDocument,
+} from "@/features/documents/hooks/useDocuments";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf";
@@ -274,6 +278,8 @@ function createDocumentFromUploaded(document: UploadedDocument): StudentDocument
 
 export default function ProfileDocumentsSection() {
   const { locale } = useI18n();
+  const uploadDocument = useUploadDocument();
+  const deleteDocument = useDeleteDocument();
   // `documents` is local state because uploads add transient items (with
   // progress) before they exist server-side. We seed and merge from the
   // useMyDocuments cache via the effect below.
@@ -433,7 +439,8 @@ export default function ProfileDocumentsSection() {
     uploadCleanupsRef.current.set(documentId, cleanupUpload);
 
     try {
-      const result = await documentService.upload(file, {
+      const result = await uploadDocument.mutateAsync({
+        file,
         signal: controller.signal,
       });
 
@@ -536,7 +543,7 @@ export default function ProfileDocumentsSection() {
       setDeletingDocumentId(documentId);
 
       try {
-        await documentService.delete(document.name);
+        await deleteDocument.mutateAsync(document.name);
       } catch (error) {
         setDeletingDocumentId(null);
         setMessage({

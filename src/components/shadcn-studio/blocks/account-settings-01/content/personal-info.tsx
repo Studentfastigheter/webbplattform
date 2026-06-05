@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/context/AuthContext'
-import { authService } from '@/features/auth/services/auth-service'
+import { useVerifyEmail } from '@/features/auth/hooks/useAuthMutations'
 import { useI18n } from '@/i18n/I18nProvider'
 import { localizedText } from '@/i18n/text'
 import type { UpdateUserRequest } from '@/types'
@@ -75,7 +75,8 @@ const PersonalInfo = forwardRef<
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [emailVerificationLoading, setEmailVerificationLoading] = useState(false)
+  const verifyEmail = useVerifyEmail()
+  const emailVerificationLoading = verifyEmail.isPending
   const [emailVerificationMessage, setEmailVerificationMessage] = useState<
     string | null
   >(null)
@@ -127,19 +128,16 @@ const PersonalInfo = forwardRef<
       return
     }
 
-    setEmailVerificationLoading(true)
     setEmailVerificationMessage(null)
     setError(null)
 
     try {
-      await authService.verifyEmail({ email: trimmedEmail })
+      await verifyEmail.mutateAsync({ email: trimmedEmail })
       setEmailVerificationMessage(localizedText(locale, 'Verifieringsmail är skickat.', 'The verification email has been sent.'))
     } catch (err) {
       setError(
         err instanceof Error ? err.message : localizedText(locale, 'Kunde inte skicka verifieringsmail.', 'Could not send the verification email.')
       )
-    } finally {
-      setEmailVerificationLoading(false)
     }
   }
 

@@ -14,16 +14,20 @@
  * staying as-is.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import { useAuth } from "@/context/AuthContext";
 import {
   companyService,
   type ApplicationStatisticEntry,
+  type CompanyChangeableDataDTO,
+  type CompanyImageTarget,
   type CompanyPrivateDTO,
   type CompanyPublicDTO,
   type CompanyRole,
+  type CompanyUserCreateRequest,
   type CompanyUserDTO,
+  type CompanyUserUpdateRequest,
   type ListingViewCounts,
   type ObjectApplicationCount,
   type SocialPlatform,
@@ -154,5 +158,169 @@ export function useCompanyRoles() {
     queryKey: qk.companies.roles(),
     queryFn: () => companyService.roles(),
     staleTime: STALE_5_MINUTES,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// MUTATIONS (Phase 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Mutation conventions in this file:
+ * - Mutations own their invalidation. Callers should NOT call qc.invalidate
+ *   themselves; that's a footgun.
+ * - For per-call concerns (toast on success, navigate on failure), callers
+ *   pass `{ onSuccess, onError }` into `mutate(vars, { ... })` — those run
+ *   alongside the hook's own callbacks, they don't replace them.
+ * - `onSettled` (not `onSuccess`) is used for invalidation so we still
+ *   refetch after a failed write — never trust optimistic state on errors.
+ */
+
+/**
+ * Save the editable fields of a company (profile page).
+ * Invalidates: privateProfile + publicProfile + queues by-company (logos
+ * shown in queue cards).
+ */
+export function useUpdateCompanyData() {
+  const qc = useQueryClient();
+  return useMutation<
+    void,
+    Error,
+    { id: number; payload: CompanyChangeableDataDTO }
+  >({
+    mutationFn: ({ id, payload }) =>
+      companyService.updateCompanyData(id, payload),
+    onSettled: (_data, _err, { id }) => {
+      qc.invalidateQueries({ queryKey: qk.companies.privateProfile(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.publicProfile(id) });
+      qc.invalidateQueries({ queryKey: qk.queues.byCompany(id) });
+    },
+  });
+}
+
+/**
+ * Upload company logo / banner. Two convenience wrappers around the same
+ * `uploadImage` endpoint so call-sites read naturally.
+ */
+export function useUploadCompanyImage() {
+  const qc = useQueryClient();
+  return useMutation<
+    string | null,
+    Error,
+    { id: number; target: CompanyImageTarget; file: File; mediaType?: string }
+  >({
+    mutationFn: ({ id, target, file, mediaType }) =>
+      companyService.uploadImage(id, target, file, { mediaType }),
+    onSettled: (_data, _err, { id }) => {
+      qc.invalidateQueries({ queryKey: qk.companies.privateProfile(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.publicProfile(id) });
+      qc.invalidateQueries({ queryKey: qk.queues.byCompany(id) });
+    },
+  });
+}
+
+export function useUploadCompanyLogo() {
+  return useUploadCompanyImage();
+}
+
+export function useUploadCompanyBanner() {
+  return useUploadCompanyImage();
+}
+
+/**
+ * Create a company user. Invalidates the users list so the new row appears
+ * after the create. We don't optimistically patch because the created row
+ * needs the server-assigned id.
+ */
+export function useCreateCompanyUser() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, { companyId: number; payload: CompanyUserCreateRequest }>({
+    mutationFn: ({ payload }) => companyService.createUser(payload),
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
+    },
+  });
+}
+
+/**
+ * Update a company user. Returns the freshly server-serialised row, but we
+ * still invalidate to keep the table in lockstep with any backend-side
+ * derived fields (verified, role).
+ */
+export function useUpdateCompanyUser() {
+  const qc = useQueryClient();
+  return useMutation<
+    CompanyUserDTO,
+    Error,
+    {
+      companyId: number;
+      userId: number;
+      payload: CompanyUserUpdateRequest;
+    }
+  >({
+    mutationFn: ({ companyId, userId, payload }) =>
+      companyService.updateUser(companyId, userId, payload),
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
+    },
+  });
+}
+
+/**
+ * Verify a company user. Uses optimistic patch on the cached list (the
+ * verified badge needs to flip immediately for UX), and rolls back on error.
+ */
+export function useVerifyCompanyUser() {
+  const qc = useQueryClient();
+
+  type Vars = { companyId: number; userId: number };
+  type Ctx = { previous: CompanyUserDTO[] | undefined };
+
+  return useMutation<void, Error, Vars, Ctx>({
+    mutationFn: ({ companyId, userId }) =>
+      companyService.verifyUser(companyId, userId),
+
+    onMutate: async ({ companyId, userId }) => {
+      await qc.cancelQueries({ queryKey: qk.companies.users(companyId) });
+      const previous = qc.getQueryData<CompanyUserDTO[]>(
+        qk.companies.users(companyId),
+      );
+      qc.setQueryData<CompanyUserDTO[]>(
+        qk.companies.users(companyId),
+        (current) =>
+          (current ?? []).map((entry) =>
+            entry.id === userId ? { ...entry, verified: true } : entry,
+          ),
+      );
+      return { previous };
+    },
+
+    onError: (_err, { companyId }, ctx) => {
+      if (ctx?.previous !== undefined) {
+        qc.setQueryData(qk.companies.users(companyId), ctx.previous);
+      }
+    },
+
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
+    },
+  });
+}
+
+/**
+ * Trigger the backend sync that pulls fresh listings for an external
+ * company. The backend kicks off an async job; we invalidate both the
+ * listings list and the analytics surfaces so the UI re-fetches whenever
+ * the sync has produced new data.
+ */
+export function useRefreshCompanyListings() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, number>({
+    mutationFn: (id) => companyService.refreshCompanyListings(id),
+    onSettled: (_data, _err, id) => {
+      qc.invalidateQueries({ queryKey: qk.queues.allCompanyListings(id, 0, 200) });
+      qc.invalidateQueries({ queryKey: qk.companies.applicationCounts(id, 200) });
+      qc.invalidateQueries({ queryKey: ["companies", "view-counts", id] });
+    },
   });
 }

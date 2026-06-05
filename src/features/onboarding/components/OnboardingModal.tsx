@@ -11,12 +11,11 @@ import {
   FieldLabel,
   FieldGroup,
 } from "@/components/ui/field";
-import { authService } from "@/features/auth/services/auth-service";
-import { schoolService } from "@/features/schools/services/school-service";
+import { useRegisterStudent } from "@/features/auth/hooks/useAuthMutations";
+import { useSchools } from "@/features/schools/hooks/useSchools";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import type { User } from "@/types/user";
-import type { School } from "@/types/school";
 
 type AuthMeUser = User & Record<string, unknown>;
 
@@ -65,13 +64,18 @@ function getCityFromAuthMe(user: AuthMeUser) {
 export default function OnboardingModal() {
   const { locale } = useI18n();
   const { user, token, isLoading, completeAuth } = useAuth();
+  const registerStudent = useRegisterStudent();
+  const loading = registerStudent.isPending;
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [schoolsLoading, setSchoolsLoading] = useState(false);
-  const [schoolsLoaded, setSchoolsLoaded] = useState(false);
-  const [schools, setSchools] = useState<School[]>([]);
   const [error, setError] = useState<string | null>(null);
-  
+
+  // Schools are loaded only when the modal is open; the hook stays disabled
+  // until then so quick-register users who never need this modal don't pay
+  // for the reference-data fetch.
+  const { data: schools = [], isFetching: schoolsLoading } = useSchools(
+    isOpen ? undefined : undefined,
+  );
+
   const [formData, setFormData] = useState({
     firstName: "",
     surname: "",
@@ -83,32 +87,6 @@ export default function OnboardingModal() {
   const updateFormData = (patch: Partial<typeof formData>) => {
     setFormData((current) => ({ ...current, ...patch }));
   };
-
-  useEffect(() => {
-    if (!isOpen || schoolsLoaded) return;
-
-    let active = true;
-    setSchoolsLoading(true);
-
-    schoolService
-      .list()
-      .then((items) => {
-        if (active) setSchools(items);
-      })
-      .catch(() => {
-        if (active) setSchools([]);
-      })
-      .finally(() => {
-        if (active) {
-          setSchoolsLoaded(true);
-          setSchoolsLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [isOpen, schoolsLoaded]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -142,7 +120,6 @@ export default function OnboardingModal() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
     try {
@@ -171,15 +148,16 @@ export default function OnboardingModal() {
         ssn: formData.ssn.trim(),
       };
 
-      const response = await authService.registerStudent(payload);
+      // Mutation only handles the network round-trip. Token + user-state
+      // setup happens here via AuthContext.completeAuth — same as the
+      // existing flow.
+      const response = await registerStudent.mutateAsync(payload);
 
       completeAuth(response);
       setIsOpen(false);
     } catch (error) {
       console.error("Could not save profile", error);
       setError(error instanceof Error ? error.message : localizedText(locale, "Något gick fel. Försök igen.", "Something went wrong. Please try again."));
-    } finally {
-      setLoading(false);
     }
   };
 

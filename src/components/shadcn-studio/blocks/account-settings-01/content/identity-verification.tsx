@@ -8,6 +8,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
 import { authService, isAuthResponse } from '@/features/auth/services/auth-service'
+import { useVerifyIdentity } from '@/features/auth/hooks/useAuthMutations'
 import type { Locale } from '@/i18n/config'
 import { useI18n } from '@/i18n/I18nProvider'
 import { localizedText } from '@/i18n/text'
@@ -67,6 +68,7 @@ export default function IdentityVerification({
 }) {
   const { locale } = useI18n()
   const { user, completeAuth, refreshUser } = useAuth()
+  const verifyIdentity = useVerifyIdentity()
   const [loading, setLoading] = useState(false)
   const [authRef, setAuthRef] = useState('')
   const [status, setStatus] = useState<FrejaAuthStatus | null>(null)
@@ -182,7 +184,7 @@ export default function IdentityVerification({
     setError(null)
 
     try {
-      const response = await authService.verifyIdentity()
+      const response = await verifyIdentity.mutateAsync()
       setAuthRef(response.authRef)
       setStatus('PENDING')
     } catch (err) {

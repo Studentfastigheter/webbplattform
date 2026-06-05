@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
@@ -16,9 +15,11 @@ import {
   useCompanyPrivate,
   useCompanyPublic,
   usePlatforms,
+  useUpdateCompanyData,
+  useUploadCompanyBanner,
+  useUploadCompanyLogo,
 } from "@/features/companies/hooks/useCompanies";
 import { useQueuesByCompany } from "@/features/queues/hooks/useQueues";
-import { qk } from "@/lib/query/keys";
 import { type HousingQueueDTO } from "@/types/queue";
 import { formatCityName } from "@/features/cities/city-utils";
 import {
@@ -756,7 +757,9 @@ export default function ProfilePage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const companyId = getActiveCompanyId(user);
-  const qc = useQueryClient();
+  const updateCompanyData = useUpdateCompanyData();
+  const uploadLogo = useUploadCompanyLogo();
+  const uploadBanner = useUploadCompanyBanner();
 
   useEffect(() => {
     return () => {
@@ -912,13 +915,23 @@ export default function ProfilePage() {
       const savedDraft = company
         ? buildInitialDraft(draft.companyId, company, companyQueue ?? undefined)
         : null;
+      // Each mutation invalidates the related caches on settle. We still
+      // run them in parallel because they target different endpoints.
       const [uploadedLogoUrl, uploadedBannerUrl] = await Promise.all([
         selectedImages.logoUrl
-          ? companyService.uploadLogo(draft.companyId, selectedImages.logoUrl)
-          : Promise.resolve(null),
+          ? uploadLogo.mutateAsync({
+              id: draft.companyId,
+              target: "logo",
+              file: selectedImages.logoUrl,
+            })
+          : Promise.resolve<string | null>(null),
         selectedImages.bannerUrl
-          ? companyService.uploadBanner(draft.companyId, selectedImages.bannerUrl)
-          : Promise.resolve(null),
+          ? uploadBanner.mutateAsync({
+              id: draft.companyId,
+              target: "banner",
+              file: selectedImages.bannerUrl,
+            })
+          : Promise.resolve<string | null>(null),
       ]);
       const uploadResolvedDraft: ProfileDraft = {
         ...draft,
@@ -934,10 +947,10 @@ export default function ProfilePage() {
         getCompanyDataSnapshot(savedDraft);
 
       if (hasCompanyDataChanges) {
-        await companyService.updateCompanyData(
-          uploadResolvedDraft.companyId,
-          buildCompanyChangePayload(uploadResolvedDraft)
-        );
+        await updateCompanyData.mutateAsync({
+          id: uploadResolvedDraft.companyId,
+          payload: buildCompanyChangePayload(uploadResolvedDraft),
+        });
       }
 
       const previewImageUrls = previewImageUrlsRef.current;
@@ -979,18 +992,10 @@ export default function ProfilePage() {
           savedQueue ?? undefined
         )
       );
-      // Drop every cache entry the editor reads so re-mounts pick up the
-      // fresh state, and so that the public profile (read on landing pages)
-      // reflects the new banner/logo immediately.
-      qc.invalidateQueries({
-        queryKey: qk.companies.privateProfile(uploadResolvedDraft.companyId),
-      });
-      qc.invalidateQueries({
-        queryKey: qk.companies.publicProfile(uploadResolvedDraft.companyId),
-      });
-      qc.invalidateQueries({
-        queryKey: qk.queues.byCompany(uploadResolvedDraft.companyId),
-      });
+      // Note: invalidation is already handled by the mutation hooks above
+      // (uploadLogo / uploadBanner / updateCompanyData each drop the
+      // private + public + queue caches on settle). No manual invalidate
+      // needed here.
       setSaveMessage("Företagsprofilen har sparats.");
     } catch (saveError) {
       setError(

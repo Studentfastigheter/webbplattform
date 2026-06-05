@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
-import { authService } from '@/features/auth/services/auth-service'
+import { useStartPasswordReset } from '@/features/auth/hooks/useAuthMutations'
 import { getAuthErrorMessage } from '@/lib/auth-error-messages'
 import { useI18n } from '@/i18n/I18nProvider'
 import { localizedText } from '@/i18n/text'
@@ -16,7 +16,8 @@ import { localizedText } from '@/i18n/text'
 export default function PasswordSection() {
   const { locale } = useI18n()
   const { user } = useAuth()
-  const [loading, setLoading] = useState(false)
+  const startReset = useStartPasswordReset()
+  const loading = startReset.isPending
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,7 +26,6 @@ export default function PasswordSection() {
   const startPasswordReset = async () => {
     if (loading) return
 
-    setLoading(true)
     setMessage(null)
     setError(null)
 
@@ -34,12 +34,10 @@ export default function PasswordSection() {
         throw new Error(localizedText(locale, 'Kontot saknar e-postadress.', 'The account is missing an email address.'))
       }
 
-      await authService.startPasswordReset({ userEmail: email })
+      await startReset.mutateAsync({ userEmail: email })
       setMessage(localizedText(locale, 'Vi har skickat en länk för lösenordsbyte till din e-post.', 'We have sent a password reset link to your email.'))
     } catch (err) {
       setError(getAuthErrorMessage(err, 'forgot-password', locale))
-    } finally {
-      setLoading(false)
     }
   }
 

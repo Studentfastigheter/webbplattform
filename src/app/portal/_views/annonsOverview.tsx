@@ -46,7 +46,6 @@ import {
   type ListingViewCounts,
   type ObjectApplicationCount,
 } from "@/features/companies/services/company-service";
-import { listingService } from "@/features/listings/services/listing-service";
 import {
   useApplicationCountsPerObject,
   useListingViewCounts,
@@ -54,8 +53,10 @@ import {
 } from "@/features/companies/hooks/useCompanies";
 import { useAllCompanyListings } from "@/features/queues/hooks/useQueues";
 import {
+  useDeleteListing,
   useListing,
   useRequirementsProfile,
+  useUpdateListing,
 } from "@/features/listings/hooks/useListings";
 import {
   type ListingCardDTO,
@@ -663,12 +664,18 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     [listing]
   );
 
+  const updateListing = useUpdateListing();
+  const deleteListing = useDeleteListing();
+
   const handleStatusChange = async (status: ListingStatus) => {
     const option = listingStatusOptions.find((item) => item.value === status);
     setActionState("status");
 
     try {
-      await listingService.update(id, { status });
+      // Mutation owns cache invalidation (listings.all + queues.all). We
+      // still patch local `meta` for the chip flip because the meta mirror
+      // is local state, not derived from the cached listing payload.
+      await updateListing.mutateAsync({ id, payload: { status } });
       const mapped = mapStatus(status);
       setMeta((current) => ({
         ...current,
@@ -692,7 +699,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     setActionState("delete");
 
     try {
-      await listingService.delete(id);
+      await deleteListing.mutateAsync(id);
       toast.success("Annonsen har raderats.");
       setDeleteDialogOpen(false);
       router.push(`${dashboardRelPath}/listings`);

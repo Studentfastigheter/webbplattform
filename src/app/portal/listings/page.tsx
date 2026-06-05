@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import {
   Eye,
   MousePointerClick,
@@ -24,6 +24,7 @@ import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type ListingViewCounts } from "@/features/companies/services/company-service";
 import {
   useApplicationCountsPerObject,
+  useRefreshCompanyListings,
 } from "@/features/companies/hooks/useCompanies";
 import { useAllCompanyListings } from "@/features/queues/hooks/useQueues";
 import { qk } from "@/lib/query/keys";
@@ -281,11 +282,11 @@ export default function PortalAdsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [dateSort, setDateSort] = useState<DateSort>("newest");
   const [cityFilter, setCityFilter] = useState("all");
-  const [refreshingListings, setRefreshingListings] = useState(false);
   const hasActiveFilters = statusFilter !== "all" || cityFilter !== "all";
 
   const companyId = getActiveCompanyId(user);
-  const qc = useQueryClient();
+  const refreshListingsMutation = useRefreshCompanyListings();
+  const refreshingListings = refreshListingsMutation.isPending;
 
   // Core reads — both shared with the analytics dashboard via the same
   // query keys, so navigating between portal pages reuses cached data.
@@ -330,34 +331,25 @@ export default function PortalAdsPage() {
         : "Kunde inte hämta annonser för företaget."
       : null;
 
-  // `refresh` mutation stays a direct service call (Phase 2 will migrate
-  // it). We invalidate the company-listings cache + the view-counts cache
-  // for this company so the UI re-fetches once the backend sync starts.
+  // Refresh mutation owns its invalidation (listings list, application
+  // counts, per-listing view counts). The hook reports `isPending` which
+  // we surface as `refreshingListings` for the button-disabled state.
   const handleRefreshListings = useCallback(async () => {
     if (!companyId || refreshingListings) {
       return;
     }
 
-    setRefreshingListings(true);
-
     try {
-      await companyService.refreshCompanyListings(companyId);
+      await refreshListingsMutation.mutateAsync(companyId);
       toast.success("Annonssynken har startats.");
-      // Drop both the listings list AND the per-listing view counts so the
-      // UI refetches with the fresh state once the sync kicks in.
-      qc.invalidateQueries({ queryKey: qk.queues.allCompanyListings(companyId, 0, 200) });
-      qc.invalidateQueries({ queryKey: qk.companies.applicationCounts(companyId, 200) });
-      qc.invalidateQueries({ queryKey: ["companies", "view-counts", companyId] });
     } catch (refreshError) {
       toast.error(
         refreshError instanceof Error
           ? refreshError.message
           : "Kunde inte starta annonssynken."
       );
-    } finally {
-      setRefreshingListings(false);
     }
-  }, [companyId, refreshingListings, qc]);
+  }, [companyId, refreshingListings, refreshListingsMutation]);
 
   const ads = useMemo<PortalListing[]>(() => {
     if (!companyListings || companyListings.length === 0) return [];

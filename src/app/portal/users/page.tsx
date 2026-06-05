@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Pencil, Plus, ShieldCheck, UserCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,15 +23,16 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
-  companyService,
   type CompanyRole,
   type CompanyUserDTO,
 } from "@/features/companies/services/company-service";
 import {
   useCompanyRoles,
   useCompanyUsers,
+  useCreateCompanyUser,
+  useUpdateCompanyUser,
+  useVerifyCompanyUser,
 } from "@/features/companies/hooks/useCompanies";
-import { qk } from "@/lib/query/keys";
 import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
 
 type UserRole = "admin" | "manager" | "agent";
@@ -194,9 +194,11 @@ function VerificationBadge({ verified }: { verified: boolean }) {
 
 export default function UsersPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const qc = useQueryClient();
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all");
   const [verifyingUserId, setVerifyingUserId] = useState<number | null>(null);
+  const createUserMutation = useCreateCompanyUser();
+  const updateUserMutation = useUpdateCompanyUser();
+  const verifyUserMutation = useVerifyCompanyUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingUser, setEditingUser] = useState<CompanyPortalUser | null>(null);
@@ -247,13 +249,12 @@ export default function UsersPage() {
 
   const defaultCreateRoleName = useMemo(() => getPreferredCreateRoleName(roles), [roles]);
 
-  // Mutations (createUser/updateUser/verifyUser) are still direct service
-  // calls; this helper invalidates the users key so the table refreshes
-  // after the mutation lands.
+  // No-op refresh hook for callers that previously triggered a manual
+  // refetch. Each mutation hook owns its own invalidation, so this just
+  // exists for backwards compatibility with the closure deps below.
   const loadUsers = useCallback(async () => {
-    if (!companyId) return;
-    await qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
-  }, [companyId, qc]);
+    // Mutation hooks invalidate qk.companies.users on settle; nothing to do.
+  }, []);
 
   useEffect(() => {
     if (dialogOpen && !accountForm.roleName && defaultCreateRoleName) {
@@ -369,28 +370,34 @@ export default function UsersPage() {
 
     try {
       if (formMode === "create") {
-        await companyService.createUser({
-          email,
-          password,
-          firstName: accountForm.firstName.trim(),
-          surname: accountForm.surname.trim(),
-          phone: accountForm.phone.trim(),
-          roleName,
+        await createUserMutation.mutateAsync({
+          companyId,
+          payload: {
+            email,
+            password,
+            firstName: accountForm.firstName.trim(),
+            surname: accountForm.surname.trim(),
+            phone: accountForm.phone.trim(),
+            roleName,
+          },
         });
         toast.success("Företagskontot skapades.");
       } else if (editingUser) {
-        await companyService.updateUser(companyId, editingUser.backendId, {
-          firstName: accountForm.firstName.trim(),
-          surname: accountForm.surname.trim(),
-          phone: accountForm.phone.trim(),
-          roleName,
+        await updateUserMutation.mutateAsync({
+          companyId,
+          userId: editingUser.backendId,
+          payload: {
+            firstName: accountForm.firstName.trim(),
+            surname: accountForm.surname.trim(),
+            phone: accountForm.phone.trim(),
+            roleName,
+          },
         });
         toast.success("Företagskontot uppdaterades.");
       }
 
       setDialogOpen(false);
       setEditingUser(null);
-      await loadUsers();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Kunde inte spara företagskontot."
@@ -402,9 +409,10 @@ export default function UsersPage() {
     accountForm,
     canManageUsers,
     companyId,
+    createUserMutation,
     editingUser,
     formMode,
-    loadUsers,
+    updateUserMutation,
   ]);
 
   const handleVerifyUser = useCallback(
@@ -416,19 +424,12 @@ export default function UsersPage() {
       setVerifyingUserId(entry.backendId);
 
       try {
-        await companyService.verifyUser(companyId, entry.backendId);
-        // Optimistic patch on the cached users list so the badge flips
-        // immediately. The next refetch confirms; if it fails we'd see the
-        // server state on the next read, which is acceptable for this UX.
-        qc.setQueryData<CompanyUserDTO[]>(
-          qk.companies.users(companyId),
-          (current) =>
-            (current ?? []).map((userEntry) =>
-              userEntry.id === entry.backendId
-                ? { ...userEntry, verified: true }
-                : userEntry,
-            ),
-        );
+        // The mutation owns the optimistic patch (verified badge flips
+        // immediately) and the rollback if the request fails.
+        await verifyUserMutation.mutateAsync({
+          companyId,
+          userId: entry.backendId,
+        });
         toast.success(`${entry.name} är verifierad.`);
       } catch (error) {
         toast.error(
@@ -440,7 +441,7 @@ export default function UsersPage() {
         setVerifyingUserId(null);
       }
     },
-    [canVerifyUsers, companyId, qc]
+    [canVerifyUsers, companyId, verifyUserMutation]
   );
 
   if (authLoading) {

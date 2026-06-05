@@ -1,18 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Home, MapPin, Pencil } from "lucide-react";
 
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
-import { listingService } from "@/features/listings/services/listing-service";
 import {
   useListing,
   useListingTags,
+  useUpdateListing,
 } from "@/features/listings/hooks/useListings";
-import { qk } from "@/lib/query/keys";
 import {
   ListingDetailDTO,
   ListingTagDTO,
@@ -491,7 +489,7 @@ export default function Annons({ id }: AnnonsPageProps) {
   const [draft, setDraft] = useState<EditableListingDraft | null>(null);
   const [saveState, setSaveState] = useState<SaveState>(emptySaveState);
   const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
-  const qc = useQueryClient();
+  const updateListing = useUpdateListing();
 
   const {
     data: serverListing,
@@ -585,12 +583,9 @@ export default function Annons({ id }: AnnonsPageProps) {
     setSaveState({ status: "saving", message: null });
 
     try {
-      await listingService.update(id, payload);
-      // Drop the detail and any list/search/favorite cache that surfaces this
-      // listing. The useListing query above re-fetches and rehydrates the
-      // editor via the hydration effect.
-      await qc.invalidateQueries({ queryKey: qk.listings.detail(id) });
-      await qc.invalidateQueries({ queryKey: qk.listings.all });
+      // Mutation hook owns invalidation (listings.all + queues.all). The
+      // useListing query re-fetches and the hydration effect re-seeds draft.
+      await updateListing.mutateAsync({ id, payload });
       setSaveState({ status: "success", message: "Ändringarna är sparade." });
     } catch (err) {
       setSaveState({
