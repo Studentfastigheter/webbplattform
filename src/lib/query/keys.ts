@@ -230,13 +230,29 @@ export const qk = {
     myInfo: () => ["documents", "my", "info"] as const,
   },
 
+  // Admin namespace. The admin tools page mounts several sections in
+  // parallel; sharing keys with the public-facing portal queries would be
+  // wrong because the admin endpoints return richer DTOs. Keep them
+  // namespaced.
   admin: {
     all: ["admin"] as const,
     tags: () => ["admin", "tags"] as const,
+    schools: () => ["admin", "schools"] as const,
+    cityNames: () => ["admin", "city-names"] as const,
+    citySummaries: () => ["admin", "city-summaries"] as const,
+    cityDetail: (code: string) => ["admin", "city-detail", code] as const,
     locationCategories: () => ["admin", "location-categories"] as const,
     activities: () => ["admin", "activities"] as const,
+    companies: () => ["admin", "companies"] as const,
     companyDetail: (companyId: number) =>
       ["admin", "company", companyId] as const,
+    companyRoles: () => ["admin", "company-roles"] as const,
+    companyUsers: (companyId: number) =>
+      ["admin", "company-users", companyId] as const,
+    externalCompanies: () => ["admin", "external-companies"] as const,
+    userStatistics: (from?: string, to?: string) =>
+      ["admin", "user-statistics", from ?? "", to ?? ""] as const,
+    waitlistStats: () => ["admin", "waitlist-stats"] as const,
   },
 
   // City detail (the working_main rename). Keyed on the normalized city code
