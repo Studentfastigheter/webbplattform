@@ -61,7 +61,7 @@
   },
   "siteFooter": {
     "homeAria": "CampusLyan startsida",
-    "tagline": "Vi gör det enkelt att hitta, jämföra och hyra studentbostäder runt om i landet.",
+    "tagline": "Sveriges studentbostadsplattform",
     "sections": {
       "platform": "Plattform",
       "partners": "Partners",
@@ -72,12 +72,15 @@
       "allQueues": "Alla köer",
       "forBusiness": "För företag",
       "ourPartners": "Våra partners",
+      "foundingPartners": "Grundande partners",
+      "housingCompanies": "Bostadsföretag",
+      "otherPartners": "Övriga partners",
       "about": "Om oss",
       "terms": "Användarvillkor",
       "privacy": "Integritetspolicy",
       "cookies": "Cookiepolicy"
     },
-    "copyright": "Copyright © {year} CampusLyan. Alla rättigheter förbehållna."
+    "copyright": "Copyright © {year} CampusLyan Nordics AB, org.nr 559587-0048. Alla rättigheter förbehållna."
   },
   "home": {
     "listingShowcaseLabel": "Exempelannonser",

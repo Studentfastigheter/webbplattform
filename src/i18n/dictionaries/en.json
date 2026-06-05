@@ -61,7 +61,7 @@
   },
   "siteFooter": {
     "homeAria": "CampusLyan homepage",
-    "tagline": "We make it simple to find, compare and rent student housing across Sweden.",
+    "tagline": "Sweden's student housing platform",
     "sections": {
       "platform": "Platform",
       "partners": "Partners",
@@ -72,12 +72,15 @@
       "allQueues": "All queues",
       "forBusiness": "For companies",
       "ourPartners": "Our partners",
+      "foundingPartners": "Founding partners",
+      "housingCompanies": "Housing companies",
+      "otherPartners": "Other partners",
       "about": "About us",
       "terms": "Terms of use",
       "privacy": "Privacy policy",
       "cookies": "Cookie policy"
     },
-    "copyright": "Copyright © {year} CampusLyan. All rights reserved."
+    "copyright": "Copyright © {year} CampusLyan Nordics AB, org.nr 559587-0048. All rights reserved."
   },
   "home": {
     "listingShowcaseLabel": "Example listings",

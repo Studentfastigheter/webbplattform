@@ -41,7 +41,9 @@ export default function SiteFooter() {
         { href: "/for-business", label: t("siteFooter.links.forBusiness") },
       ];
   const partnerLinks = [
-    { href: "/partners", label: t("siteFooter.links.ourPartners") },
+    { href: "/partners#grundande-partners", label: t("siteFooter.links.foundingPartners") },
+    { href: "/partners#bostadsforetag", label: t("siteFooter.links.housingCompanies") },
+    { href: "/partners#ovriga-partners", label: t("siteFooter.links.otherPartners") },
   ];
   const companyLinks = [
     { href: "/about-us", label: t("siteFooter.links.about") },
@@ -79,10 +81,15 @@ export default function SiteFooter() {
 
               <div className="border-l-2 py-1 pl-5" style={{ borderColor: COLORS.accent }}>
                 <Text
-                  className="max-w-md text-sm font-light leading-relaxed"
+                  className="max-w-md leading-tight"
                   style={{ color: COLORS.lightestText }}
                 >
-                  {t("siteFooter.tagline")}
+                  <span className="block text-2xl font-bold leading-none sm:text-[1.7rem]">
+                    CampusLyan
+                  </span>
+                  <span className="mt-1.5 block text-sm font-light leading-relaxed sm:text-[0.95rem]">
+                    {t("siteFooter.tagline")}
+                  </span>
                 </Text>
               </div>
             </div>
@@ -113,7 +120,7 @@ export default function SiteFooter() {
               ].map((section) => (
                 <div key={section.title}>
                   <div
-                    className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest"
+                    className="mb-5 flex items-center gap-2 text-[0.8rem] font-bold uppercase tracking-widest sm:text-sm"
                     style={{ color: COLORS.lightestText }}
                   >
                     <span className="h-4 w-[2px]" style={{ backgroundColor: COLORS.accent }} />
