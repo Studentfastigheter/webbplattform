@@ -41,8 +41,10 @@ import {
 } from "@/features/listings/hooks/useListings";
 import { useSchools } from "@/features/schools/hooks/useSchools";
 import {
+  canRecordDemographicsForUser,
   demographicsService,
   getClientDeviceType,
+  ignoreDemographicsRecordError,
 } from "@/features/analytics/services/demographics-service";
 import { qk } from "@/lib/query/keys";
 import { ListingCardDTO } from "@/types/listing";
@@ -363,16 +365,14 @@ export default function ListingsPage() {
       // recording stays as a fire-and-forget side effect.
       toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFav });
 
-      if (isFav) {
+      if (isFav && canRecordDemographicsForUser(user)) {
         demographicsService
           .recordListingView(id, {
             deviceType: getClientDeviceType(),
             viewType: "QUICK",
             resultedInLike: true,
           })
-          .catch((err) =>
-            console.error("Failed to record favorite demographics:", err)
-          );
+          .catch(ignoreDemographicsRecordError);
       }
     },
     [user, toggleFavorite, locale]
@@ -521,7 +521,10 @@ export default function ListingsPage() {
           );
       }
 
-      if (user && !quickViewDemographicsRecordedIds.current.has(listing.id)) {
+      if (
+        canRecordDemographicsForUser(user) &&
+        !quickViewDemographicsRecordedIds.current.has(listing.id)
+      ) {
         quickViewDemographicsRecordedIds.current.add(listing.id);
         demographicsService
           .recordListingView(listing.id, {
@@ -529,9 +532,7 @@ export default function ListingsPage() {
             viewType: "QUICK",
             resultedInLike: false,
           })
-          .catch((err) =>
-            console.error("Failed to record quick-view demographics:", err)
-          );
+          .catch(ignoreDemographicsRecordError);
       }
     });
     // listings identity is stable across re-renders unless data actually

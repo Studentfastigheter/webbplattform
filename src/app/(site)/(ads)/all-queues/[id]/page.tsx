@@ -22,8 +22,10 @@ import {
   useToggleFavorite,
 } from "@/features/listings/hooks/useListings";
 import {
+  canRecordDemographicsForUser,
   demographicsService,
   getClientDeviceType,
+  ignoreDemographicsRecordError,
 } from "@/features/analytics/services/demographics-service";
 import { mediaService } from "@/features/media/services/media-service";
 import { useCompanyPublicMedia } from "@/features/media/hooks/useMedia";
@@ -139,7 +141,7 @@ export default function QueueDetailPage() {
   useEffect(() => {
     if (
       authLoading ||
-      !user ||
+      !canRecordDemographicsForUser(user) ||
       companyIdNumber === null ||
       companyViewDemographicsRecordedIds.current.has(companyIdNumber)
     ) {
@@ -152,9 +154,7 @@ export default function QueueDetailPage() {
         deviceType: getClientDeviceType(),
         viewType: "DETAILED",
       })
-      .catch((err) =>
-        console.error("Kunde inte registrera f\u00f6retagsvisning:", err)
-      );
+      .catch(ignoreDemographicsRecordError);
   }, [authLoading, companyIdNumber, user]);
 
   // Listings query — keyed on (companyId, page, size), so paging back to a
@@ -211,7 +211,11 @@ export default function QueueDetailPage() {
   }, [listingsPage, listingsTotalPages]);
 
   useEffect(() => {
-    if (authLoading || !user || listings.length === 0) {
+    if (
+      authLoading ||
+      !canRecordDemographicsForUser(user) ||
+      listings.length === 0
+    ) {
       return;
     }
 
@@ -227,9 +231,7 @@ export default function QueueDetailPage() {
           viewType: "QUICK",
           resultedInLike: favoriteIds.has(listing.id),
         })
-        .catch((err) =>
-          console.error("Kunde inte registrera annonsvisning:", err)
-        );
+        .catch(ignoreDemographicsRecordError);
     });
   }, [authLoading, favoriteIds, listings, user]);
 
@@ -383,16 +385,14 @@ export default function QueueDetailPage() {
     // fire-and-forget side effect that we keep here.
     toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFav });
 
-    if (isFav) {
+    if (isFav && canRecordDemographicsForUser(user)) {
       demographicsService
         .recordListingView(id, {
           deviceType: getClientDeviceType(),
           viewType: "QUICK",
           resultedInLike: true,
         })
-        .catch((err) =>
-          console.error("Kunde inte registrera favoritdemografi:", err),
-        );
+        .catch(ignoreDemographicsRecordError);
     }
   };
 

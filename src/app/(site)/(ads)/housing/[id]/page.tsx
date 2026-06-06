@@ -25,8 +25,10 @@ import {
 } from "@/features/listings/hooks/useListings";
 import { useQueueCompany } from "@/features/queues/hooks/useQueues";
 import {
+  canRecordDemographicsForUser,
   demographicsService,
   getClientDeviceType,
+  ignoreDemographicsRecordError,
 } from "@/features/analytics/services/demographics-service";
 import { qk } from "@/lib/query/keys";
 import {
@@ -485,16 +487,14 @@ export default function ListingDetailPage() {
       // the demographics side effect here — it's fire-and-forget.
       toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFav });
 
-      if (isFav) {
+      if (isFav && canRecordDemographicsForUser(user)) {
         demographicsService
           .recordListingView(id, {
             deviceType: getClientDeviceType(),
             viewType: "DETAILED",
             resultedInLike: true,
           })
-          .catch((err) =>
-            console.error("Failed to record favorite demographics:", err)
-          );
+          .catch(ignoreDemographicsRecordError);
       }
     },
     [user, toggleFavorite, locale]

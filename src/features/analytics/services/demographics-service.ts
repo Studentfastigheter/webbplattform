@@ -136,6 +136,16 @@ export function getClientDeviceType(): DemographicsDeviceType {
     : "DESKTOP";
 }
 
+export function canRecordDemographicsForUser(
+  user: { accountType?: string | null } | null | undefined
+) {
+  return user?.accountType === "student";
+}
+
+export function ignoreDemographicsRecordError() {
+  // Demographics writes are best-effort telemetry and must not interrupt browsing.
+}
+
 export const demographicsService = {
   getListing: async (
     listingId: string,
