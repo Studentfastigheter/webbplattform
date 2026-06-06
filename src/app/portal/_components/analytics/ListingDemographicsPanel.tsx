@@ -20,6 +20,9 @@ import {
   type DemographyCategory,
   type ListingDemography,
 } from "@/features/analytics/services/demographics-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 
 type ChartDatum = {
   label: string;
@@ -30,13 +33,13 @@ type ChartDatum = {
 
 const colors = ["#004225", "#2563eb", "#e11d48", "#d97706", "#0891b2", "#64748b"];
 
-const labels: Record<string, string> = {
-  QUICK: "Snabb",
-  DETAILED: "Detalj",
-  MOBILE: "Mobil",
-  DESKTOP: "Desktop",
-  true: "Favorit",
-  false: "Ingen favorit",
+const labels: Record<string, { sv: string; en: string }> = {
+  QUICK: { sv: "Snabb", en: "Quick" },
+  DETAILED: { sv: "Detalj", en: "Detailed" },
+  MOBILE: { sv: "Mobil", en: "Mobile" },
+  DESKTOP: { sv: "Desktop", en: "Desktop" },
+  true: { sv: "Favorit", en: "Favorite" },
+  false: { sv: "Ingen favorit", en: "No favorite" },
 };
 
 const swedishLabelCorrections: Record<string, string> = {
@@ -67,18 +70,31 @@ function repairMojibake(value: string) {
   }
 }
 
-function formatNumber(value: number) {
-  return value.toLocaleString("sv-SE");
+function labelFor(locale: Locale, value: string) {
+  const label = labels[value];
+  return label ? localizedText(locale, label.sv, label.en) : value;
 }
 
-function formatPercent(value: number) {
-  return `${value.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}%`;
+function formatNumber(value: number, locale: Locale) {
+  return value.toLocaleString(numberLocale(locale));
 }
 
-function keyLabel(value: unknown) {
-  if (value === null || value === undefined) return "Okänt";
+function formatPercent(value: number, locale: Locale) {
+  return `${value.toLocaleString(numberLocale(locale), { maximumFractionDigits: 1 })}%`;
+}
+
+function keyLabel(value: unknown, locale: Locale) {
+  if (value === null || value === undefined) return localizedText(locale, "Okänt", "Unknown");
   const raw = repairMojibake(String(value).trim());
-  return labels[raw] ?? swedishLabelCorrections[raw] ?? (raw || "Okänt");
+  if (labels[raw]) {
+    return labelFor(locale, raw);
+  }
+
+  if (raw === "Okant") {
+    return localizedText(locale, "Okänt", "Unknown");
+  }
+
+  return swedishLabelCorrections[raw] ?? (raw || localizedText(locale, "Okänt", "Unknown"));
 }
 
 function totalViews(value: ListingDemography | null) {
@@ -90,13 +106,13 @@ function totalViews(value: ListingDemography | null) {
   );
 }
 
-function toData(value: ListingDemography | null): ChartDatum[] {
+function toData(value: ListingDemography | null, locale: Locale): ChartDatum[] {
   const total = totalViews(value);
   return (value?.buckets ?? [])
     .map((bucket, index) => {
       const count = Number(bucket.totalViews ?? 0);
       return {
-        label: keyLabel(bucket.key),
+        label: keyLabel(bucket.key, locale),
         value: count,
         share: total > 0 ? (count / total) * 100 : 0,
         fill: colors[index % colors.length],
@@ -113,16 +129,16 @@ function getRange() {
   return { from, to };
 }
 
-function EmptyState() {
+function EmptyState({ locale }: { locale: Locale }) {
   return (
     <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-4 text-center text-sm text-gray-500">
-      Ingen demografidata för den här annonsen ännu.
+      {localizedText(locale, "Ingen demografidata för den här annonsen ännu.", "No demographic data for this listing yet.")}
     </div>
   );
 }
 
-function MiniPie({ data }: { data: ChartDatum[] }) {
-  if (data.length === 0) return <EmptyState />;
+function MiniPie({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
+  if (data.length === 0) return <EmptyState locale={locale} />;
 
   return (
     <div className="h-[210px] min-w-0">
@@ -135,8 +151,8 @@ function MiniPie({ data }: { data: ChartDatum[] }) {
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
             }}
             formatter={(value, _, item) => [
-              `${formatNumber(Number(value))} (${formatPercent(item.payload.share)})`,
-              "Visningar",
+              `${formatNumber(Number(value), locale)} (${formatPercent(item.payload.share, locale)})`,
+              localizedText(locale, "Visningar", "Views"),
             ]}
           />
           <Pie
@@ -159,9 +175,8 @@ function MiniPie({ data }: { data: ChartDatum[] }) {
   );
 }
 
-function MiniBars({ data }: { data: ChartDatum[] }) {
-  if (data.length === 0) return <EmptyState />;
-  console.log("where are you",data);
+function MiniBars({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
+  if (data.length === 0) return <EmptyState locale={locale} />;
 
   return (
     <div className="h-[210px] min-w-0">
@@ -185,7 +200,7 @@ function MiniBars({ data }: { data: ChartDatum[] }) {
               borderRadius: 12,
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
             }}
-            formatter={(value) => [formatNumber(Number(value)), "Visningar"]}
+            formatter={(value) => [formatNumber(Number(value), locale), localizedText(locale, "Visningar", "Views")]}
           />
           <Bar dataKey="value" radius={[8, 8, 0, 0]}>
             {data.map((entry) => (
@@ -202,13 +217,15 @@ function StatCard({
   icon,
   label,
   data,
+  locale,
 }: {
   icon: React.ReactNode;
   label: string;
   data: ListingDemography | null;
+  locale: Locale;
 }) {
   const total = totalViews(data);
-  const top = toData(data)[0];
+  const top = toData(data, locale)[0];
 
   return (
     <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
@@ -216,7 +233,7 @@ function StatCard({
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-500">{label}</p>
           <p className="mt-1 text-2xl font-semibold text-gray-950">
-            {formatNumber(total)}
+            {formatNumber(total, locale)}
           </p>
         </div>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#004225] shadow-sm">
@@ -224,7 +241,7 @@ function StatCard({
         </span>
       </div>
       <p className="mt-2 truncate text-xs text-gray-500">
-        {top ? `${top.label}: ${formatPercent(top.share)}` : "Inget toppsegment"}
+        {top ? `${top.label}: ${formatPercent(top.share, locale)}` : localizedText(locale, "Inget toppsegment", "No top segment")}
       </p>
     </div>
   );
@@ -241,6 +258,7 @@ export default function ListingDemographicsPanel({
   to?: Date;
   periodLabel?: string;
 }) {
+  const { locale } = useI18n();
   const [data, setData] = React.useState<Record<DemographyCategory, ListingDemography | null>>({
     VIEW_TYPE: null,
     DEVICE_TYPE: null,
@@ -273,7 +291,7 @@ export default function ListingDemographicsPanel({
         setError(
           requestError instanceof Error
             ? requestError.message
-            : "Kunde inte hämta annonsdemografi."
+            : localizedText(locale, "Kunde inte hämta annonsdemografi.", "Could not load listing demographics.")
         );
       })
       .finally(() => {
@@ -283,7 +301,12 @@ export default function ListingDemographicsPanel({
     return () => {
       cancelled = true;
     };
-  }, [from, listingId, to]);
+  }, [from, listingId, locale, to]);
+
+  const localizedPeriodLabel =
+    periodLabel === "senaste 90 dagarna"
+      ? localizedText(locale, "senaste 90 dagarna", "the last 90 days")
+      : periodLabel;
 
   if (isLoading) {
     return (
@@ -310,10 +333,10 @@ export default function ListingDemographicsPanel({
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-gray-950">
-            Demografi {periodLabel}
+            {localizedText(locale, `Demografi ${localizedPeriodLabel}`, `Demographics ${localizedPeriodLabel}`)}
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Annonsens visningar uppdelade på beteende, enhet, favorit och stad.
+            {localizedText(locale, "Annonsens visningar uppdelade på beteende, enhet, favorit och stad.", "Listing views split by behavior, device, favorite status and city.")}
           </p>
         </div>
       </div>
@@ -322,51 +345,54 @@ export default function ListingDemographicsPanel({
         <StatCard
           data={data.VIEW_TYPE}
           icon={<MousePointerClick className="h-4 w-4" />}
-          label="Visningstyper"
+          label={localizedText(locale, "Visningstyper", "View types")}
+          locale={locale}
         />
         <StatCard
           data={data.DEVICE_TYPE}
           icon={<Smartphone className="h-4 w-4" />}
-          label="Enheter"
+          label={localizedText(locale, "Enheter", "Devices")}
+          locale={locale}
         />
         <StatCard
           data={data.RESULTED_IN_LIKE}
           icon={<Heart className="h-4 w-4" />}
-          label="Favoritutfall"
+          label={localizedText(locale, "Favoritutfall", "Favorite outcome")}
+          locale={locale}
         />
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Enheter</h3>
-          <MiniPie data={toData(data.DEVICE_TYPE)} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Enheter", "Devices")}</h3>
+          <MiniPie data={toData(data.DEVICE_TYPE, locale)} locale={locale} />
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">
-            Visningstyp
+            {localizedText(locale, "Visningstyp", "View type")}
           </h3>
-          <MiniPie data={toData(data.VIEW_TYPE)} />
+          <MiniPie data={toData(data.VIEW_TYPE, locale)} locale={locale} />
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">
-            Städer
+            {localizedText(locale, "Städer", "Cities")}
           </h3>
-          <MiniBars data={toData(data.CITY)} />
+          <MiniBars data={toData(data.CITY, locale)} locale={locale} />
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Skolor</h3>
-          <MiniBars data={toData(data.SCHOOL)} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Skolor", "Schools")}</h3>
+          <MiniBars data={toData(data.SCHOOL, locale)} locale={locale} />
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Ålder</h3>
-          <MiniBars data={toData(data.AGE)} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Ålder", "Age")}</h3>
+          <MiniBars data={toData(data.AGE, locale)} locale={locale} />
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Kön</h3>
-          <MiniPie data={toData(data.GENDER)} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Kön", "Gender")}</h3>
+          <MiniPie data={toData(data.GENDER, locale)} locale={locale} />
         </div>
       </div>
     </section>

@@ -6,6 +6,9 @@ import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks"
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type NewApplication } from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../../_statics/variables";
@@ -25,19 +28,25 @@ type ObjectApplicationRow = {
   numApplications: number;
 };
 
-function formatListingFacts(item: ObjectApplicationRow) {
+function formatListingFacts(item: ObjectApplicationRow, locale: Locale) {
   return [
     item.dwellingType,
-    item.rooms ? `${item.rooms} rum` : null,
+    item.rooms
+      ? localizedText(locale, `${item.rooms} rum`, `${item.rooms} rooms`)
+      : null,
     item.sizeM2 ? `${item.sizeM2} m²` : null,
   ]
     .filter(Boolean)
     .join(" • ");
 }
 
-function formatRent(rent?: number) {
+function formatRent(rent: number | undefined, locale: Locale) {
   return typeof rent === "number" && Number.isFinite(rent)
-    ? `${rent.toLocaleString("sv-SE")} kr/mån`
+    ? localizedText(
+        locale,
+        `${rent.toLocaleString(numberLocale(locale))} kr/mån`,
+        `SEK ${rent.toLocaleString(numberLocale(locale))}/mo`
+      )
     : null;
 }
 
@@ -55,7 +64,11 @@ function getApplicationListingKey(application: NewApplication) {
     .join("|") || "unknown";
 }
 
-function buildApplicationRows(applications: NewApplication[], limit: Limit) {
+function buildApplicationRows(
+  applications: NewApplication[],
+  limit: Limit,
+  locale: Locale
+) {
   const grouped = new Map<string, NewApplication[]>();
 
   applications.forEach((application) => {
@@ -70,7 +83,7 @@ function buildApplicationRows(applications: NewApplication[], limit: Limit) {
 
       return {
         listingId: first.listingId,
-        title: first.listingTitle || first.address || "Okänd annons",
+        title: first.listingTitle || first.address || localizedText(locale, "Okänd annons", "Unknown listing"),
         imageUrl: first.listingImage,
         address: first.address || location || undefined,
         location,
@@ -124,14 +137,16 @@ function LimitToggle({
 function ListingApplicationPreviewRow({
   item,
   index,
+  locale,
 }: {
   item: ObjectApplicationRow;
   index: number;
+  locale: Locale;
 }) {
-  const title = item.title || item.address || `Annons ${index + 1}`;
+  const title = item.title || item.address || localizedText(locale, `Annons ${index + 1}`, `Listing ${index + 1}`);
   const location = item.location || item.address;
-  const rent = formatRent(item.rent);
-  const facts = formatListingFacts(item);
+  const rent = formatRent(item.rent, locale);
+  const facts = formatListingFacts(item, locale);
   const href =
     item.listingId != null
       ? `${dashboardRelPath}/listings/${encodeURIComponent(String(item.listingId))}`
@@ -148,7 +163,7 @@ function ListingApplicationPreviewRow({
           />
         ) : (
           <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-brand-50 text-xs font-semibold text-brand-500">
-            Ingen bild
+            {localizedText(locale, "Ingen bild", "No image")}
           </div>
         )}
 
@@ -160,7 +175,7 @@ function ListingApplicationPreviewRow({
       <div className="flex min-w-0 flex-1 flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-4">
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs leading-5 text-gray-500">
-            {location || "Annons"}
+            {location || localizedText(locale, "Annons", "Listing")}
           </p>
           <h3 className="truncate text-base font-semibold leading-6 text-gray-900">
             {title}
@@ -182,10 +197,10 @@ function ListingApplicationPreviewRow({
 
         <div className="flex w-full shrink-0 items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-center sm:ml-auto sm:w-[86px] sm:flex-col sm:justify-center sm:rounded-2xl sm:py-3">
           <span className="text-xl font-semibold leading-7 tracking-normal text-gray-900 tabular-nums sm:text-3xl sm:leading-8">
-            {item.numApplications.toLocaleString("sv-SE")}
+            {item.numApplications.toLocaleString(numberLocale(locale))}
           </span>
           <span className="text-xs font-medium leading-4 text-gray-500 sm:mt-1">
-            ans.
+            {localizedText(locale, "ans.", "apps")}
           </span>
         </div>
       </div>
@@ -212,13 +227,15 @@ function ListingApplicationPreviewRow({
 
 function ApplicationsByObjectList({
   items,
+  locale,
 }: {
   items: ObjectApplicationRow[];
+  locale: Locale;
 }) {
   if (items.length === 0) {
     return (
       <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-theme-sm text-gray-500">
-        Det finns inga ansökningar per annons att visa ännu.
+        {localizedText(locale, "Det finns inga ansökningar per annons att visa ännu.", "There are no applications per listing to show yet.")}
       </div>
     );
   }
@@ -230,6 +247,7 @@ function ApplicationsByObjectList({
           <ListingApplicationPreviewRow
             index={index}
             item={item}
+            locale={locale}
             key={`${item.listingId ?? item.title}-${index}`}
           />
         ))}
@@ -267,6 +285,7 @@ function LoadingList() {
 }
 
 export default function AnalyticsApplicationsByObjectBlock() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [limit, setLimit] = React.useState<Limit>(5);
@@ -281,7 +300,7 @@ export default function AnalyticsApplicationsByObjectBlock() {
 
     if (!companyId) {
       setItems([]);
-      setError("Kunde inte hitta ett aktivt företag för statistiken.");
+      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag för statistiken.", "Could not find an active company for the statistics."));
       setIsLoading(false);
       return;
     }
@@ -294,7 +313,7 @@ export default function AnalyticsApplicationsByObjectBlock() {
       .applications(companyId)
       .then((result) => {
         if (!cancelled) {
-          setItems(buildApplicationRows(result, limit));
+          setItems(buildApplicationRows(result, limit, locale));
         }
       })
       .catch((err: unknown) => {
@@ -303,7 +322,7 @@ export default function AnalyticsApplicationsByObjectBlock() {
           setError(
             err instanceof Error
               ? err.message
-              : "Kunde inte hämta ansökningar per annons."
+              : localizedText(locale, "Kunde inte hämta ansökningar per annons.", "Could not load applications per listing.")
           );
         }
       })
@@ -316,14 +335,14 @@ export default function AnalyticsApplicationsByObjectBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId, limit]);
+  }, [authLoading, companyId, limit, locale]);
 
   return (
     <AnalyticsBlock
       action={<LimitToggle onChange={setLimit} value={limit} />}
       contentClassName="overflow-hidden"
       size="2x2"
-      title="Ansökningar per annons"
+      title={localizedText(locale, "Ansökningar per annons", "Applications per listing")}
     >
       {authLoading || isLoading ? (
         <LoadingList />
@@ -332,7 +351,7 @@ export default function AnalyticsApplicationsByObjectBlock() {
           {error}
         </div>
       ) : (
-        <ApplicationsByObjectList items={items} />
+        <ApplicationsByObjectList items={items} locale={locale} />
       )}
     </AnalyticsBlock>
   );

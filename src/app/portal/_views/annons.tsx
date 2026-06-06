@@ -7,6 +7,9 @@ import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreview
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
 import { listingService } from "@/features/listings/services/listing-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText } from "@/i18n/text";
 import {
   ListingDetailDTO,
   ListingTagDTO,
@@ -17,9 +20,17 @@ type AnnonsPageProps = {
   id: string;
 };
 
+type SaveStateMessageKey =
+  | "noChanges"
+  | "tagsStillLoading"
+  | "tagsUnavailable"
+  | "saved"
+  | "saveFailed";
+
 type SaveState = {
   status: "idle" | "saving" | "success" | "error";
   message: string | null;
+  messageKey?: SaveStateMessageKey;
 };
 
 type EditableListingDraft = Omit<ListingDetailDTO, "tags"> & {
@@ -30,6 +41,8 @@ const emptySaveState: SaveState = {
   status: "idle",
   message: null,
 };
+
+const genericTagsLoadError = "__TAGS_LOAD_ERROR__";
 
 const inlineInputClass =
   "min-w-0 rounded-md border border-[#004225]/10 bg-[#004225]/[0.035] px-2 py-1 outline-none transition hover:border-[#004225]/25 hover:bg-white focus:border-[#004225] focus:bg-white focus:ring-4 focus:ring-[#004225]/10";
@@ -227,6 +240,45 @@ function createUpdatePayload(
   return payload;
 }
 
+function getSaveStateMessage(locale: Locale, saveState: SaveState) {
+  if (saveState.message) {
+    return saveState.message;
+  }
+
+  switch (saveState.messageKey) {
+    case "noChanges":
+      return localizedText(locale, "Inga ändringar att spara.", "No changes to save.");
+    case "tagsStillLoading":
+      return localizedText(
+        locale,
+        "Taggar laddas fortfarande. Försök igen om en stund.",
+        "Tags are still loading. Try again in a moment."
+      );
+    case "tagsUnavailable":
+      return localizedText(
+        locale,
+        "Kunde inte spara taggar eftersom de inte kunde laddas.",
+        "Could not save tags because they could not be loaded."
+      );
+    case "saved":
+      return localizedText(locale, "Ändringarna är sparade.", "Your changes have been saved.");
+    case "saveFailed":
+      return localizedText(locale, "Kunde inte spara ändringarna.", "Could not save changes.");
+    default:
+      return null;
+  }
+}
+
+function getTagsErrorMessage(locale: Locale, error: string | null) {
+  if (!error) {
+    return null;
+  }
+
+  return error === genericTagsLoadError
+    ? localizedText(locale, "Kunde inte ladda taggar.", "Could not load tags.")
+    : error;
+}
+
 function InlineLabel({ children }: { children: string }) {
   return (
     <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -236,6 +288,7 @@ function InlineLabel({ children }: { children: string }) {
 }
 
 function EditableListingPreview({
+  locale,
   draft,
   galleryImages,
   availableTags,
@@ -245,6 +298,7 @@ function EditableListingPreview({
   onDraftChange,
   onNumberChange,
 }: {
+  locale: Locale;
   draft: EditableListingDraft;
   galleryImages: string[];
   availableTags: ListingTagDTO[];
@@ -270,7 +324,7 @@ function EditableListingPreview({
 
   return (
     <section
-      aria-label="Förhandsvisning"
+      aria-label={localizedText(locale, "Förhandsvisning", "Preview")}
       className="mx-auto flex w-full max-w-6xl flex-col gap-10"
     >
       <div className="relative">
@@ -278,7 +332,11 @@ function EditableListingPreview({
           <BostadImagePreviewGrid images={galleryImages} readOnly />
         ) : (
           <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
-            Inga bilder visas i förhandsvisningen.
+            {localizedText(
+              locale,
+              "Inga bilder visas i förhandsvisningen.",
+              "No images are shown in the preview."
+            )}
           </div>
         )}
 
@@ -289,7 +347,7 @@ function EditableListingPreview({
           className="absolute right-4 top-4 bg-white/95 shadow-sm backdrop-blur"
         >
           <Pencil className="h-4 w-4" />
-          Bilder
+          {localizedText(locale, "Bilder", "Images")}
         </Button>
       </div>
 
@@ -298,64 +356,66 @@ function EditableListingPreview({
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 flex-1">
               <input
-                aria-label="Titel"
+                aria-label={localizedText(locale, "Titel", "Title")}
                 value={draft.title ?? ""}
                 onChange={(event) => onDraftChange({ title: event.target.value })}
                 className={`${inlineInputClass} -mx-2 w-full text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl`}
-                placeholder="Titel"
+                placeholder={localizedText(locale, "Titel", "Title")}
               />
 
               <div className="mt-4 grid gap-3 text-sm text-gray-600">
                 <div className="grid gap-1">
-                  <InlineLabel>Plats</InlineLabel>
+                  <InlineLabel>{localizedText(locale, "Plats", "Location")}</InlineLabel>
                   <div className="flex flex-wrap items-center gap-2">
                     <MapPin className="h-4 w-4 shrink-0 text-green-700" />
                     <input
-                      aria-label="Adress"
+                      aria-label={localizedText(locale, "Adress", "Address")}
                       value={draft.fullAddress ?? ""}
                       readOnly
                       className={`${inlineInputClass} w-full flex-1 font-medium sm:min-w-[220px]`}
-                      placeholder="Adress"
+                      placeholder={localizedText(locale, "Adress", "Address")}
                     />
                     <input
-                      aria-label="Område"
+                      aria-label={localizedText(locale, "Område", "Area")}
                       value={draft.area ?? ""}
                       readOnly
                       className={`${inlineInputClass} w-full font-medium sm:w-40`}
-                      placeholder="Område"
+                      placeholder={localizedText(locale, "Område", "Area")}
                     />
                     <input
-                      aria-label="Stad"
+                      aria-label={localizedText(locale, "Stad", "City")}
                       value={draft.city ?? ""}
                       readOnly
                       className={`${inlineInputClass} w-full font-medium sm:w-40`}
-                      placeholder="Stad"
+                      placeholder={localizedText(locale, "Stad", "City")}
                     />
                   </div>
                 </div>
 
                 <div className="grid gap-1">
-                  <InlineLabel>Bostad</InlineLabel>
+                  <InlineLabel>{localizedText(locale, "Bostad", "Dwelling")}</InlineLabel>
                   <div className="flex flex-wrap items-center gap-2">
                     <Home className="h-4 w-4 shrink-0 text-green-700" />
                     <input
-                      aria-label="Bostadstyp"
+                      aria-label={localizedText(locale, "Bostadstyp", "Dwelling type")}
                       value={draft.dwellingType ?? ""}
                       readOnly
                       className={`${inlineInputClass} w-full font-medium sm:w-auto sm:min-w-[150px]`}
-                      placeholder="Bostadstyp"
+                      placeholder={localizedText(locale, "Bostadstyp", "Dwelling type")}
                     />
                     <input
-                      aria-label="Rum"
+                      aria-label={localizedText(locale, "Rum", "Rooms")}
                       type="number"
                       value={draft.rooms ?? ""}
                       onChange={(event) => onNumberChange("rooms", event.target.value)}
                       className={`${inlineInputClass} w-20 font-medium`}
-                      placeholder="Rum"
+                      placeholder={localizedText(locale, "Rum", "Rooms")}
                     />
-                    <span className="font-medium">rum</span>
+                    <span className="font-medium">
+                      {localizedText(locale, "rum", "rooms")}
+                    </span>
                     <input
-                      aria-label="Storlek"
+                      aria-label={localizedText(locale, "Storlek", "Size")}
                       type="number"
                       value={draft.sizeM2 ?? ""}
                       onChange={(event) => onNumberChange("sizeM2", event.target.value)}
@@ -369,9 +429,18 @@ function EditableListingPreview({
 
               <div className="mt-6 flex flex-wrap gap-y-4">
                 {[
-                  { label: "Tillgänglig från", key: "availableFrom" as const },
-                  { label: "Tillgänglig till", key: "availableTo" as const },
-                  { label: "Sista ansökan", key: "applyBy" as const },
+                  {
+                    label: localizedText(locale, "Tillgänglig från", "Available from"),
+                    key: "availableFrom" as const,
+                  },
+                  {
+                    label: localizedText(locale, "Tillgänglig till", "Available until"),
+                    key: "availableTo" as const,
+                  },
+                  {
+                    label: localizedText(locale, "Sista ansökan", "Application deadline"),
+                    key: "applyBy" as const,
+                  },
                 ].map((item, index) => (
                   <div
                     key={item.key}
@@ -397,26 +466,28 @@ function EditableListingPreview({
             </div>
 
             <div className="flex shrink-0 flex-col items-start gap-1 lg:items-end">
-              <InlineLabel>Månadshyra</InlineLabel>
+              <InlineLabel>{localizedText(locale, "Månadshyra", "Monthly rent")}</InlineLabel>
               <div className="flex items-baseline gap-1.5">
                 <input
-                  aria-label="Månadshyra"
+                  aria-label={localizedText(locale, "Månadshyra", "Monthly rent")}
                   type="number"
                   value={draft.rent ?? ""}
                   onChange={(event) => onNumberChange("rent", event.target.value)}
                   className={`${inlineInputClass} w-40 text-right text-2xl font-bold tracking-tight text-gray-900`}
-                  placeholder="Hyra"
+                  placeholder={localizedText(locale, "Hyra", "Rent")}
                 />
-                <span className="text-sm font-medium text-gray-400">kr/mån</span>
+                <span className="text-sm font-medium text-gray-400">
+                  {localizedText(locale, "kr/mån", "SEK/mo")}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="grid gap-2">
-            <InlineLabel>Taggar</InlineLabel>
+            <InlineLabel>{localizedText(locale, "Taggar", "Tags")}</InlineLabel>
             {tagsLoading ? (
               <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500">
-                Laddar taggar...
+                {localizedText(locale, "Laddar taggar...", "Loading tags...")}
               </div>
             ) : tagsError ? (
               <div className="rounded-md border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-800">
@@ -424,10 +495,17 @@ function EditableListingPreview({
               </div>
             ) : availableTags.length === 0 ? (
               <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500">
-                Inga taggar finns tillgängliga.
+                {localizedText(
+                  locale,
+                  "Inga taggar finns tillgängliga.",
+                  "No tags are available."
+                )}
               </div>
             ) : (
-              <div className="flex flex-wrap gap-2" aria-label="Taggar">
+              <div
+                className="flex flex-wrap gap-2"
+                aria-label={localizedText(locale, "Taggar", "Tags")}
+              >
                 {availableTags.map((tag) => {
                   const selected = isTagSelected(selectedTags, tag);
 
@@ -451,7 +529,7 @@ function EditableListingPreview({
             )}
             <input
               type="hidden"
-              aria-label="Taggar"
+              aria-label={localizedText(locale, "Taggar", "Tags")}
               value={(draft.tags ?? []).join(", ")}
               readOnly
             />
@@ -459,14 +537,14 @@ function EditableListingPreview({
 
           <div className="mt-2">
             <h2 className="mb-2 border-b border-gray-100 pb-2 text-lg font-semibold text-gray-900">
-              Om boendet
+              {localizedText(locale, "Om boendet", "About the dwelling")}
             </h2>
             <textarea
-              aria-label="Beskrivning"
+              aria-label={localizedText(locale, "Beskrivning", "Description")}
               value={draft.description ?? ""}
               onChange={(event) => onDraftChange({ description: event.target.value })}
               className={`${inlineInputClass} min-h-44 w-full resize-y text-[15px] leading-relaxed text-gray-700`}
-              placeholder="Beskriv bostaden"
+              placeholder={localizedText(locale, "Beskriv bostaden", "Describe the dwelling")}
             />
           </div>
         </div>
@@ -476,6 +554,7 @@ function EditableListingPreview({
 }
 
 export default function Annons({ id }: AnnonsPageProps) {
+  const { locale } = useI18n();
   const [listing, setListing] = useState<EditableListingDraft | null>(null);
   const [draft, setDraft] = useState<EditableListingDraft | null>(null);
   const [loading, setLoading] = useState(true);
@@ -510,7 +589,7 @@ export default function Annons({ id }: AnnonsPageProps) {
       .catch((err: unknown) => {
         if (!active) return;
         console.error("Kunde inte hämta annonsen:", err);
-        setError(err instanceof Error ? err.message : "Kunde inte ladda annonsen.");
+        setError(err instanceof Error ? err.message : "");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -525,9 +604,7 @@ export default function Annons({ id }: AnnonsPageProps) {
       .catch((err: unknown) => {
         if (!active) return;
         console.error("Kunde inte hämta annonstaggar:", err);
-        setListingTagsError(
-          err instanceof Error ? err.message : "Kunde inte ladda taggar."
-        );
+        setListingTagsError(err instanceof Error ? err.message : genericTagsLoadError);
       })
       .finally(() => {
         if (active) setListingTagsLoading(false);
@@ -571,14 +648,19 @@ export default function Annons({ id }: AnnonsPageProps) {
     const payload = createUpdatePayload(draft, listing, availableTags);
 
     if (Object.keys(payload).length === 0) {
-      setSaveState({ status: "success", message: "Inga ändringar att spara." });
+      setSaveState({
+        status: "success",
+        message: null,
+        messageKey: "noChanges",
+      });
       return;
     }
 
     if (payload.tags && listingTagsLoading) {
       setSaveState({
         status: "error",
-        message: "Taggar laddas fortfarande. Försök igen om en stund.",
+        message: null,
+        messageKey: "tagsStillLoading",
       });
       return;
     }
@@ -586,7 +668,8 @@ export default function Annons({ id }: AnnonsPageProps) {
     if (payload.tags && listingTagsError) {
       setSaveState({
         status: "error",
-        message: "Kunde inte spara taggar eftersom de inte kunde laddas.",
+        message: null,
+        messageKey: "tagsUnavailable",
       });
       return;
     }
@@ -601,11 +684,19 @@ export default function Annons({ id }: AnnonsPageProps) {
         .catch(() => draft);
       setListing(normalized);
       setDraft({ ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] });
-      setSaveState({ status: "success", message: "Ändringarna är sparade." });
+      setSaveState({
+        status: "success",
+        message: null,
+        messageKey: "saved",
+      });
     } catch (err) {
       setSaveState({
         status: "error",
-        message: err instanceof Error ? err.message : "Kunde inte spara ändringarna.",
+        message:
+          err instanceof Error
+            ? err.message
+            : null,
+        messageKey: err instanceof Error ? undefined : "saveFailed",
       });
     }
   };
@@ -617,12 +708,14 @@ export default function Annons({ id }: AnnonsPageProps) {
   };
 
   const openImageEditor = () => setUploadGalleryVisible(true);
+  const tagsErrorMessage = getTagsErrorMessage(locale, listingTagsError);
+  const saveMessage = getSaveStateMessage(locale, saveState);
 
   if (loading) {
     return (
       <main className="pb-12">
         <div className="rounded-2xl border border-gray-200 bg-white px-4 py-12 text-center text-gray-500 shadow-theme-xs">
-          Laddar annons...
+          {localizedText(locale, "Laddar annons...", "Loading listing...")}
         </div>
       </main>
     );
@@ -632,7 +725,7 @@ export default function Annons({ id }: AnnonsPageProps) {
     return (
       <main className="pb-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center text-red-800">
-          {error ?? "Annonsen kunde inte hittas."}
+          {error ?? localizedText(locale, "Annonsen kunde inte hittas.", "The listing could not be found.")}
         </div>
       </main>
     );
@@ -642,24 +735,27 @@ export default function Annons({ id }: AnnonsPageProps) {
     <>
       <main className="pb-12">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Redigera annons</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            {localizedText(locale, "Redigera annons", "Edit listing")}
+          </h1>
         </div>
 
         <form onSubmit={handleSave} className="grid gap-6">
           <EditableListingPreview
+            locale={locale}
             draft={draft}
             galleryImages={galleryImages}
             availableTags={availableTags}
             tagsLoading={listingTagsLoading}
-            tagsError={listingTagsError}
+            tagsError={tagsErrorMessage}
             onImageEdit={openImageEditor}
             onDraftChange={updateDraft}
             onNumberChange={updateNumber}
           />
 
-          {saveState.status === "error" && saveState.message && (
+          {saveState.status === "error" && saveMessage && (
             <div className="mx-auto w-full max-w-6xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-              {saveState.message}
+              {saveMessage}
             </div>
           )}
 
@@ -667,10 +763,12 @@ export default function Annons({ id }: AnnonsPageProps) {
             <div className="flex items-center gap-3">
               {hasUnsavedChanges ? (
                 <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                  Osparade ändringar
+                  {localizedText(locale, "Osparade ändringar", "Unsaved changes")}
                 </span>
               ) : (
-                <span className="text-sm text-gray-500">Alla ändringar är sparade.</span>
+                <span className="text-sm text-gray-500">
+                  {localizedText(locale, "Alla ändringar är sparade.", "All changes are saved.")}
+                </span>
               )}
             </div>
 
@@ -680,7 +778,7 @@ export default function Annons({ id }: AnnonsPageProps) {
                 isLoading={saveState.status === "saving"}
                 isDisabled={saveState.status === "saving"}
               >
-                Spara ändringar
+                {localizedText(locale, "Spara ändringar", "Save changes")}
               </Button>
               {hasUnsavedChanges && (
                 <Button
@@ -689,7 +787,7 @@ export default function Annons({ id }: AnnonsPageProps) {
                   onClick={resetDraft}
                   isDisabled={saveState.status === "saving"}
                 >
-                  Återställ
+                  {localizedText(locale, "Återställ", "Reset")}
                 </Button>
               )}
             </div>
@@ -702,6 +800,7 @@ export default function Annons({ id }: AnnonsPageProps) {
         setOpen={setUploadGalleryVisible}
         imageUrls={draft.imageUrls}
         onSave={(imageUrls) => updateDraft({ imageUrls })}
+        locale={locale}
       />
     </>
   );

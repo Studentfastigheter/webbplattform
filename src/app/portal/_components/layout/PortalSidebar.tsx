@@ -18,38 +18,47 @@ import {
   Users,
 } from "lucide-react";
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
+import { useI18n } from "@/i18n/I18nProvider";
+import { stripLocaleFromPathname } from "@/i18n/config";
+import { localizedText } from "@/i18n/text";
 import { cn, normalizeRoute } from "@/lib/utils";
 import { dashboardRelPath } from "../../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
 type PortalNavItem = {
-  name: string;
+  nameSv: string;
+  nameEn: string;
   path: string;
   icon: React.ReactNode;
   subItems?: {
-    name: string;
+    nameSv: string;
+    nameEn: string;
     path: string;
   }[];
 };
 
 const portalItems: PortalNavItem[] = [
   {
-    name: "Overview",
+    nameSv: "Översikt",
+    nameEn: "Overview",
     path: dashboardRelPath,
     icon: <Home className="h-5 w-5" />,
   },
   {
-    name: "Listings",
+    nameSv: "Annonser",
+    nameEn: "Listings",
     path: `${dashboardRelPath}/listings`,
     icon: <FileText className="h-5 w-5" />,
   },
   {
-    name: "Applications",
+    nameSv: "Ansökningar",
+    nameEn: "Applications",
     path: `${dashboardRelPath}/applications`,
     icon: <Users className="h-5 w-5" />,
   },
   {
-    name: "Housing queue",
+    nameSv: "Bostadskö",
+    nameEn: "Housing queue",
     path: `${dashboardRelPath}/housing-queue`,
     icon: <Building2 className="h-5 w-5" />,
   },
@@ -58,17 +67,20 @@ const portalItems: PortalNavItem[] = [
 
 const insightItems: PortalNavItem[] = [
   {
-    name: "Analytics",
+    nameSv: "Analys",
+    nameEn: "Analytics",
     path: `${dashboardRelPath}/analytics`,
     icon: <BarChart3 className="h-5 w-5" />,
   },
   {
-    name: "Product news",
+    nameSv: "Produktnyheter",
+    nameEn: "Product news",
     path: `${dashboardRelPath}/product-news`,
     icon: <Newspaper className="h-5 w-5" />,
   },
   {
-    name: "Guides",
+    nameSv: "Guider",
+    nameEn: "Guides",
     path: `${dashboardRelPath}/guides`,
     icon: <BookOpen className="h-5 w-5" />,
   },
@@ -76,31 +88,35 @@ const insightItems: PortalNavItem[] = [
 
 const settingsItems: PortalNavItem[] = [
   {
-    name: "My settings",
+    nameSv: "Mina inställningar",
+    nameEn: "My settings",
     path: `${dashboardRelPath}/settings`,
     icon: <Settings className="h-5 w-5" />,
   },
   {
-    name: "Requirement profiles",
+    nameSv: "Kravprofiler",
+    nameEn: "Requirement profiles",
     path: `${dashboardRelPath}/requirement-profiles`,
     icon: <FileCheck2 className="h-5 w-5" />,
   },
   {
-    name: "Users",
+    nameSv: "Användare",
+    nameEn: "Users",
     path: `${dashboardRelPath}/users`,
     icon: <Users className="h-5 w-5" />,
   },
   {
-    name: "Company profile",
+    nameSv: "Företagsprofil",
+    nameEn: "Company profile",
     path: `${dashboardRelPath}/profile`,
     icon: <UserCircle className="h-5 w-5" />,
   },
 ];
 
 const navSections = [
-  { key: "portal", title: "Portal", items: portalItems },
-  { key: "insights", title: "Insights", items: insightItems },
-  { key: "settings", title: "Settings", items: settingsItems },
+  { key: "portal", titleSv: "Portal", titleEn: "Portal", items: portalItems },
+  { key: "insights", titleSv: "Insikter", titleEn: "Insights", items: insightItems },
+  { key: "settings", titleSv: "Inställningar", titleEn: "Settings", items: settingsItems },
 ] as const;
 
 type SectionKey = (typeof navSections)[number]["key"];
@@ -110,13 +126,19 @@ type OpenSubmenu = {
 } | null;
 
 function stripQuery(path: string) {
-  return normalizeRoute(path.split("?")[0]);
+  const normalized = normalizeRoute(stripLocaleFromPathname(path.split("?")[0]));
+
+  if (normalized === dashboardRelPath || normalized.startsWith(`${dashboardRelPath}/`)) {
+    return normalized;
+  }
+
+  return normalizeRoute(`${dashboardRelPath}${normalized === "/" ? "" : normalized}`);
 }
 
 function isCurrentRoute(targetPath: string, pathname: string, search: string) {
   const [targetBase, targetQuery] = targetPath.split("?");
 
-  if (stripQuery(targetBase) !== normalizeRoute(pathname)) {
+  if (stripQuery(targetBase) !== stripQuery(pathname)) {
     return false;
   }
 
@@ -129,6 +151,7 @@ function isCurrentRoute(targetPath: string, pathname: string, search: string) {
 
 export default function PortalSidebar() {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = usePortalSidebar();
+  const { locale } = useI18n();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
@@ -232,7 +255,7 @@ export default function PortalSidebar() {
                     expanded ? "justify-start" : "lg:justify-center"
                   )}
                 >
-                  {expanded ? section.title : <MoreHorizontal className="h-4 w-4" />}
+                  {expanded ? localizedText(locale, section.titleSv, section.titleEn) : <MoreHorizontal className="h-4 w-4" />}
                 </h2>
 
                 <ul className="flex flex-col gap-1">
@@ -247,7 +270,7 @@ export default function PortalSidebar() {
                       item.subItems?.some((subItem) => isActive(subItem.path));
 
                     return (
-                      <li key={item.name}>
+                      <li key={item.path}>
                         {hasSubItems ? (
                           <button
                             className={cn(
@@ -265,7 +288,11 @@ export default function PortalSidebar() {
                             >
                               {item.icon}
                             </span>
-                            {expanded && <span className="menu-item-text">{item.name}</span>}
+                            {expanded && (
+                              <span className="menu-item-text">
+                                {localizedText(locale, item.nameSv, item.nameEn)}
+                              </span>
+                            )}
                             {expanded && (
                               <ChevronDown
                                 className={cn(
@@ -293,7 +320,11 @@ export default function PortalSidebar() {
                             >
                               {item.icon}
                             </span>
-                            {expanded && <span className="menu-item-text">{item.name}</span>}
+                            {expanded && (
+                              <span className="menu-item-text">
+                                {localizedText(locale, item.nameSv, item.nameEn)}
+                              </span>
+                            )}
                           </Link>
                         )}
 
@@ -322,7 +353,7 @@ export default function PortalSidebar() {
                                       )}
                                       href={subItem.path}
                                     >
-                                      {subItem.name}
+                                      {localizedText(locale, subItem.nameSv, subItem.nameEn)}
                                     </Link>
                                   </li>
                                 );

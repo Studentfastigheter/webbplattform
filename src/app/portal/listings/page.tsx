@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type ListingViewCounts } from "@/features/companies/services/company-service";
 import { queueService } from "@/features/queues/services/queue-service";
@@ -104,7 +107,7 @@ function normalizeKey(value: string): string {
     .replace(/[|]/g, "");
 }
 
-function mapStatus(statusRaw?: string): {
+function mapStatus(statusRaw: string | undefined, locale: Locale): {
   label: string;
   tone: PortalListingStatusTone;
 } {
@@ -121,7 +124,7 @@ function mapStatus(statusRaw?: string): {
       "live",
     ].includes(status)
   ) {
-    return { label: "Aktiv", tone: "success" };
+    return { label: localizedText(locale, "Aktiv", "Active"), tone: "success" };
   }
 
   if (
@@ -137,18 +140,18 @@ function mapStatus(statusRaw?: string): {
       "uthyrd",
     ].includes(status)
   ) {
-    return { label: "Inaktiv", tone: "warning" };
+    return { label: localizedText(locale, "Inaktiv", "Inactive"), tone: "warning" };
   }
 
-  return { label: statusRaw ?? "Okänd", tone: "neutral" };
+  return { label: statusRaw ?? localizedText(locale, "Okänd", "Unknown"), tone: "neutral" };
 }
 
-function formatDate(value?: string): string {
+function formatDate(value: string | undefined, locale: Locale): string {
   if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "-";
 
-  return new Intl.DateTimeFormat("sv-SE", {
+  return new Intl.DateTimeFormat(numberLocale(locale), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -248,9 +251,11 @@ function resolveListingViewCounts(
   };
 }
 
-function splitLocation(location?: string): { area: string; city: string } {
+function splitLocation(location: string | undefined, locale: Locale): { area: string; city: string } {
+  const fallback = localizedText(locale, "Ej angivet", "Not specified");
+
   if (!location) {
-    return { area: "Ej angivet", city: "Ej angivet" };
+    return { area: fallback, city: fallback };
   }
 
   const parts = location
@@ -259,16 +264,17 @@ function splitLocation(location?: string): { area: string; city: string } {
     .filter(Boolean);
 
   if (parts.length === 0) {
-    return { area: "Ej angivet", city: "Ej angivet" };
+    return { area: fallback, city: fallback };
   }
 
   return {
-    area: parts[0] ?? "Ej angivet",
-    city: parts[1] ?? parts[0] ?? "Ej angivet",
+    area: parts[0] ?? fallback,
+    city: parts[1] ?? parts[0] ?? fallback,
   };
 }
 
 export default function PortalAdsPage() {
+  const { locale } = useI18n();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [searchInput, setSearchInput] = useState("");
@@ -294,18 +300,18 @@ export default function PortalAdsPage() {
 
     try {
       await companyService.refreshCompanyListings(companyId);
-      toast.success("Annonssynken har startats.");
+      toast.success(localizedText(locale, "Annonssynken har startats.", "Listing sync has started."));
       setReloadKey((current) => current + 1);
     } catch (refreshError) {
       toast.error(
         refreshError instanceof Error
           ? refreshError.message
-          : "Kunde inte starta annonssynken."
+          : localizedText(locale, "Kunde inte starta annonssynken.", "Could not start listing sync.")
       );
     } finally {
       setRefreshingListings(false);
     }
-  }, [companyId, refreshingListings]);
+  }, [companyId, locale, refreshingListings]);
 
   useEffect(() => {
     if (authLoading || !companyId) {
@@ -359,7 +365,8 @@ export default function PortalAdsPage() {
           const applications = resolveApplicationCount(raw, applicationsLookup) ?? 0;
           const publishedAtRaw = pickString(raw, ["published"]);
           const { label, tone } = mapStatus(
-            pickString(raw, ["status", "listingStatus", "state"])
+            pickString(raw, ["status", "listingStatus", "state"]),
+            locale
           );
 
           return {
@@ -367,7 +374,7 @@ export default function PortalAdsPage() {
             quickViews,
             detailedViews,
             applications,
-            publishedAt: formatDate(publishedAtRaw),
+            publishedAt: formatDate(publishedAtRaw, locale),
             publishedAtTime: parseDateTime(publishedAtRaw),
             statusLabel: label,
             statusTone: tone,
@@ -379,9 +386,9 @@ export default function PortalAdsPage() {
       .catch((requestError) => {
         if (!active) return;
         setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Kunde inte hämta annonser för företaget."
+            requestError instanceof Error
+              ? requestError.message
+            : localizedText(locale, "Kunde inte hämta annonser för företaget.", "Could not load company listings.")
         );
       })
       .finally(() => {
@@ -392,20 +399,20 @@ export default function PortalAdsPage() {
     return () => {
       active = false;
     };
-  }, [authLoading, companyId, reloadKey]);
+  }, [authLoading, companyId, locale, reloadKey]);
 
   const availableCities = useMemo(() => {
     const cities = new Set<string>();
 
     ads.forEach((item) => {
-      const { city } = splitLocation(item.listing.location);
-      if (city && city !== "Ej angivet") {
+      const { city } = splitLocation(item.listing.location, locale);
+      if (city && city !== localizedText(locale, "Ej angivet", "Not specified")) {
         cities.add(city);
       }
     });
 
-    return Array.from(cities).sort((a, b) => a.localeCompare(b, "sv-SE"));
-  }, [ads]);
+    return Array.from(cities).sort((a, b) => a.localeCompare(b, numberLocale(locale)));
+  }, [ads, locale]);
 
   const filteredAds = useMemo(() => {
     const normalizedQuery = search.trim().toLowerCase();
@@ -421,7 +428,7 @@ export default function PortalAdsPage() {
 
         if (!statusPass) return false;
 
-        const { city } = splitLocation(item.listing.location);
+        const { city } = splitLocation(item.listing.location, locale);
         if (cityFilter !== "all" && city !== cityFilter) {
           return false;
         }
@@ -443,12 +450,12 @@ export default function PortalAdsPage() {
           ? b.publishedAtTime - a.publishedAtTime
           : a.publishedAtTime - b.publishedAtTime;
       });
-  }, [ads, cityFilter, dateSort, search, statusFilter]);
+  }, [ads, cityFilter, dateSort, locale, search, statusFilter]);
 
   if (authLoading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-        Laddar annonser...
+        {localizedText(locale, "Laddar annonser...", "Loading listings...")}
       </div>
     );
   }
@@ -456,7 +463,7 @@ export default function PortalAdsPage() {
   if (!user) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Logga in för att se företagets annonser.
+        {localizedText(locale, "Logga in för att se företagets annonser.", "Log in to view the company's listings.")}
       </div>
     );
   }
@@ -464,7 +471,7 @@ export default function PortalAdsPage() {
   if (!companyId) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Denna sida är bara tillgänglig för företagskonton.
+        {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
       </div>
     );
   }
@@ -474,7 +481,9 @@ export default function PortalAdsPage() {
       <div className="flex flex-col gap-4">
         <div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl font-semibold text-gray-900">Mina annonser</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              {localizedText(locale, "Mina annonser", "My listings")}
+            </h1>
             <Button
               className="w-full sm:w-auto"
               isDisabled={loading || refreshingListings}
@@ -483,7 +492,7 @@ export default function PortalAdsPage() {
               variant="outline"
             >
               <RefreshCw className="h-4 w-4" />
-              Synka annonser
+              {localizedText(locale, "Synka annonser", "Sync listings")}
             </Button>
           </div>
         </div>
@@ -501,14 +510,14 @@ export default function PortalAdsPage() {
                       }
                     >
                       <PortalControlSelectTrigger
-                        aria-label="Filtrera på status"
+                        aria-label={localizedText(locale, "Filtrera på status", "Filter by status")}
                       >
                         <SelectValue />
                       </PortalControlSelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Alla statusar</SelectItem>
-                        <SelectItem value="active">Aktiva</SelectItem>
-                        <SelectItem value="inactive">Inaktiva</SelectItem>
+                        <SelectItem value="all">{localizedText(locale, "Alla statusar", "All statuses")}</SelectItem>
+                        <SelectItem value="active">{localizedText(locale, "Aktiva", "Active")}</SelectItem>
+                        <SelectItem value="inactive">{localizedText(locale, "Inaktiva", "Inactive")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -516,12 +525,12 @@ export default function PortalAdsPage() {
                   <div className="min-w-0">
                     <Select value={cityFilter} onValueChange={setCityFilter}>
                       <PortalControlSelectTrigger
-                        aria-label="Filtrera på stad"
+                        aria-label={localizedText(locale, "Filtrera på stad", "Filter by city")}
                       >
                         <SelectValue />
                       </PortalControlSelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Alla städer</SelectItem>
+                        <SelectItem value="all">{localizedText(locale, "Alla städer", "All cities")}</SelectItem>
                         {availableCities.map((city) => (
                           <SelectItem key={city} value={city}>
                             {city}
@@ -541,7 +550,7 @@ export default function PortalAdsPage() {
                     }}
                     className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-[#004225]"
                   >
-                    Rensa filter
+                    {localizedText(locale, "Rensa filter", "Clear filters")}
                   </button>
                 )}
               </div>
@@ -561,13 +570,13 @@ export default function PortalAdsPage() {
                 type="text"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Sök på titel, stad eller område"
+                placeholder={localizedText(locale, "Sök på titel, stad eller område", "Search by title, city or area")}
                 className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/45 sm:text-base"
               />
               {searchInput && (
                 <button
                   type="button"
-                  aria-label="Rensa sökning"
+                  aria-label={localizedText(locale, "Rensa sökning", "Clear search")}
                   onClick={() => {
                     setSearchInput("");
                     setSearch("");
@@ -581,13 +590,13 @@ export default function PortalAdsPage() {
                 type="submit"
                 className="h-8 shrink-0 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
               >
-                Sök
+                {localizedText(locale, "Sök", "Search")}
               </button>
             </form>
 
             <div className="hidden">
               <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
-                Filtrera
+                {localizedText(locale, "Filtrera", "Filter")}
               </span>
               <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="min-w-0">
@@ -598,14 +607,14 @@ export default function PortalAdsPage() {
                     }
                   >
                     <PortalControlSelectTrigger
-                      aria-label="Filtrera på status"
+                      aria-label={localizedText(locale, "Filtrera på status", "Filter by status")}
                     >
                       <SelectValue />
                     </PortalControlSelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Alla statusar</SelectItem>
-                      <SelectItem value="active">Aktiva</SelectItem>
-                      <SelectItem value="inactive">Inaktiva</SelectItem>
+                      <SelectItem value="all">{localizedText(locale, "Alla statusar", "All statuses")}</SelectItem>
+                      <SelectItem value="active">{localizedText(locale, "Aktiva", "Active")}</SelectItem>
+                      <SelectItem value="inactive">{localizedText(locale, "Inaktiva", "Inactive")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -613,12 +622,12 @@ export default function PortalAdsPage() {
                 <div className="min-w-0">
                   <Select value={cityFilter} onValueChange={setCityFilter}>
                     <PortalControlSelectTrigger
-                      aria-label="Filtrera på stad"
+                      aria-label={localizedText(locale, "Filtrera på stad", "Filter by city")}
                     >
                       <SelectValue />
                     </PortalControlSelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Alla städer</SelectItem>
+                      <SelectItem value="all">{localizedText(locale, "Alla städer", "All cities")}</SelectItem>
                       {availableCities.map((city) => (
                         <SelectItem key={city} value={city}>
                           {city}
@@ -638,7 +647,7 @@ export default function PortalAdsPage() {
                   }}
                   className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-[#004225]"
                 >
-                  Rensa filter
+                  {localizedText(locale, "Rensa filter", "Clear filters")}
                 </button>
               )}
             </div>
@@ -651,13 +660,13 @@ export default function PortalAdsPage() {
                 onValueChange={(value) => setDateSort(value as DateSort)}
               >
                 <PortalControlSelectTrigger
-                  aria-label="Sortera annonser"
+                  aria-label={localizedText(locale, "Sortera annonser", "Sort listings")}
                 >
                   <SelectValue />
                 </PortalControlSelectTrigger>
                 <SelectContent>
-                  <SelectItem value="newest">Nyast först</SelectItem>
-                  <SelectItem value="oldest">Äldst först</SelectItem>
+                  <SelectItem value="newest">{localizedText(locale, "Nyast först", "Newest first")}</SelectItem>
+                  <SelectItem value="oldest">{localizedText(locale, "Äldst först", "Oldest first")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -673,16 +682,16 @@ export default function PortalAdsPage() {
 
       {loading ? (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
-          Hämtar företagets annonser...
+          {localizedText(locale, "Hämtar företagets annonser...", "Loading company listings...")}
         </div>
       ) : filteredAds.length === 0 ? (
         <div className="mt-6 rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
-          Inga annonser matchade ditt filter.
+          {localizedText(locale, "Inga annonser matchade ditt filter.", "No listings matched your filters.")}
         </div>
       ) : (
         <div className="mt-6 grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredAds.map((item) => {
-            const { area, city } = splitLocation(item.listing.location);
+            const { area, city } = splitLocation(item.listing.location, locale);
             return (
               <div key={item.listing.id} className="flex min-w-0 w-full justify-center">
                 <ListingCardSmall
@@ -690,7 +699,7 @@ export default function PortalAdsPage() {
                   title={item.listing.title}
                   area={area}
                   city={city}
-                  dwellingType={item.listing.dwellingType || "Bostad"}
+                  dwellingType={item.listing.dwellingType || localizedText(locale, "Bostad", "Home")}
                   rooms={item.listing.rooms || 0}
                   sizeM2={item.listing.sizeM2 || 0}
                   rent={item.listing.rent || 0}
@@ -714,15 +723,15 @@ export default function PortalAdsPage() {
                       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
                           <Eye className="h-3 w-3 text-gray-500" />
-                          {item.quickViews.toLocaleString("sv-SE")} snabb
+                          {item.quickViews.toLocaleString(numberLocale(locale))} {localizedText(locale, "snabb", "quick")}
                         </span>
                         <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
                           <MousePointerClick className="h-3 w-3 text-gray-500" />
-                          {item.detailedViews.toLocaleString("sv-SE")} klicks
+                          {item.detailedViews.toLocaleString(numberLocale(locale))} {localizedText(locale, "klicks", "clicks")}
                         </span>
                       </div>
                       <span className="shrink-0 whitespace-nowrap text-right">
-                        Publicerad {item.publishedAt}
+                        {localizedText(locale, `Publicerad ${item.publishedAt}`, `Published ${item.publishedAt}`)}
                       </span>
                     </div>
                   }

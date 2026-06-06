@@ -11,6 +11,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
 import { companyService, type TimelineEntry } from "@/features/companies/services/company-service";
@@ -18,6 +21,7 @@ import { companyService, type TimelineEntry } from "@/features/companies/service
 type Interval = {
   value: string;
   label: string;
+  labelEn: string;
   days?: number;
   months?: number;
 };
@@ -43,33 +47,13 @@ type AnalyticsApplicationsTrendProps = {
 };
 
 const intervals: Interval[] = [
-  { value: "1d", label: "1 dag", days: 1 },
-  { value: "1w", label: "1 vecka", days: 7 },
-  { value: "1m", label: "1 månad", months: 1 },
-  { value: "3m", label: "3 månader", months: 3 },
-  { value: "6m", label: "6 månader", months: 6 },
-  { value: "1y", label: "1 år", months: 12 },
+  { value: "1d", label: "1 dag", labelEn: "1 day", days: 1 },
+  { value: "1w", label: "1 vecka", labelEn: "1 week", days: 7 },
+  { value: "1m", label: "1 månad", labelEn: "1 month", months: 1 },
+  { value: "3m", label: "3 månader", labelEn: "3 months", months: 3 },
+  { value: "6m", label: "6 månader", labelEn: "6 months", months: 6 },
+  { value: "1y", label: "1 år", labelEn: "1 year", months: 12 },
 ];
-
-const monthFormatter = new Intl.DateTimeFormat("sv-SE", {
-  month: "short",
-});
-
-const monthYearFormatter = new Intl.DateTimeFormat("sv-SE", {
-  month: "long",
-  year: "numeric",
-});
-
-const chartConfig = {
-  applications: {
-    label: "Ansökningar",
-    color: "var(--color-brand-500)",
-  },
-  comparisonApplications: {
-    label: "Föregående år",
-    color: "var(--color-brand-200)",
-  },
-} satisfies ChartConfig;
 
 function parseTrendDate(entry: TimelineEntry) {
   const date =
@@ -78,7 +62,10 @@ function parseTrendDate(entry: TimelineEntry) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function formatShortMonth(date: Date, includeYear: boolean) {
+function formatShortMonth(date: Date, includeYear: boolean, locale: Locale) {
+  const monthFormatter = new Intl.DateTimeFormat(numberLocale(locale), {
+    month: "short",
+  });
   const month = monthFormatter.format(date).replace(".", "");
 
   if (!includeYear) {
@@ -88,7 +75,11 @@ function formatShortMonth(date: Date, includeYear: boolean) {
   return `${month} ${String(date.getFullYear()).slice(-2)}`;
 }
 
-function normalizeData(data: ApplicationTrendPoint[]): ChartDatum[] {
+function normalizeData(data: ApplicationTrendPoint[], locale: Locale): ChartDatum[] {
+  const monthYearFormatter = new Intl.DateTimeFormat(numberLocale(locale), {
+    month: "long",
+    year: "numeric",
+  });
   const parsed = data
     .map((entry) => {
       const timestamp = parseTrendDate(entry);
@@ -121,7 +112,7 @@ function normalizeData(data: ApplicationTrendPoint[]): ChartDatum[] {
 
   return parsed.map((entry) => ({
     ...entry,
-    label: formatShortMonth(entry.timestamp, hasMultipleYears),
+    label: formatShortMonth(entry.timestamp, hasMultipleYears, locale),
   }));
 }
 
@@ -143,14 +134,16 @@ function filterByInterval(data: ChartDatum[], interval?: Interval) {
   return data.filter((entry) => entry.timestamp >= firstIncluded);
 }
 
-function formatAxisValue(value: string | number) {
+function formatAxisValue(value: string | number, locale: Locale) {
   const numericValue = Number(value);
 
   if (!Number.isFinite(numericValue) || numericValue < 1000) {
     return String(value);
   }
 
-  return `${numericValue / 1000}K`;
+  return `${(numericValue / 1000).toLocaleString(numberLocale(locale), {
+    maximumFractionDigits: 1,
+  })}K`;
 }
 
 function ErrorState({ message }: { message: string }) {
@@ -176,6 +169,7 @@ export default function AnalyticsApplicationsTrend({
   className,
   chartClassName,
 }: AnalyticsApplicationsTrendProps) {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [trend, setTrend] = React.useState<ApplicationTrendPoint[]>([]);
@@ -190,7 +184,7 @@ export default function AnalyticsApplicationsTrend({
 
     if (!companyId) {
       setTrend([]);
-      setError("Kunde inte hitta ett aktivt företag för analysen.");
+      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag för analysen.", "Could not find an active company for the analytics."));
       setIsLoading(false);
       return;
     }
@@ -212,7 +206,7 @@ export default function AnalyticsApplicationsTrend({
           setError(
             err instanceof Error
               ? err.message
-              : "Kunde inte hämta ansökningstrenden."
+              : localizedText(locale, "Kunde inte hämta ansökningstrenden.", "Could not load the application trend.")
           );
         }
       })
@@ -225,15 +219,29 @@ export default function AnalyticsApplicationsTrend({
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId]);
+  }, [authLoading, companyId, locale]);
 
   const selectedIntervalConfig =
     intervals.find((interval) => interval.value === selectedInterval) ??
     intervals[2]!;
 
   const chartData = React.useMemo(
-    () => filterByInterval(normalizeData(trend), selectedIntervalConfig),
-    [selectedIntervalConfig, trend]
+    () => filterByInterval(normalizeData(trend, locale), selectedIntervalConfig),
+    [locale, selectedIntervalConfig, trend]
+  );
+  const chartConfig = React.useMemo(
+    () =>
+      ({
+        applications: {
+          label: localizedText(locale, "Ansökningar", "Applications"),
+          color: "var(--color-brand-500)",
+        },
+        comparisonApplications: {
+          label: localizedText(locale, "Föregående år", "Previous year"),
+          color: "var(--color-brand-200)",
+        },
+      }) satisfies ChartConfig,
+    [locale]
   );
 
   const total = React.useMemo(
@@ -261,10 +269,10 @@ export default function AnalyticsApplicationsTrend({
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <h2 className="truncate text-sm font-semibold text-gray-800">
-              Ansökningstrend
+              {localizedText(locale, "Ansökningstrend", "Application trend")}
             </h2>
             <p className="mt-1 max-w-[36rem] text-theme-xs text-gray-400">
-              Antal mottagna ansökningar per kalendermånad.
+              {localizedText(locale, "Antal mottagna ansökningar per kalendermånad.", "Number of received applications per calendar month.")}
             </p>
           </div>
 
@@ -281,12 +289,12 @@ export default function AnalyticsApplicationsTrend({
           >
             {intervals.map((interval) => (
               <ToggleGroupItem
-                aria-label={interval.label}
+                aria-label={localizedText(locale, interval.label, interval.labelEn)}
                 className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-700 data-[state=on]:bg-gray-50 data-[state=on]:text-gray-900"
                 key={interval.value}
                 value={interval.value}
               >
-                {interval.label}
+                {localizedText(locale, interval.label, interval.labelEn)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -303,7 +311,7 @@ export default function AnalyticsApplicationsTrend({
         </div>
       ) : chartData.length === 0 ? (
         <div className={cn("flex flex-1", showHeader ? "mt-6" : "mt-0")}>
-          <EmptyState message="Det finns inga ansökningar registrerade för perioden ännu." />
+          <EmptyState message={localizedText(locale, "Det finns inga ansökningar registrerade för perioden ännu.", "There are no applications registered for this period yet.")} />
         </div>
       ) : (
         <div
@@ -381,7 +389,7 @@ export default function AnalyticsApplicationsTrend({
                   allowDecimals={false}
                   axisLine={false}
                   tick={{ fill: "#9ca3af", fontSize: 11 }}
-                  tickFormatter={formatAxisValue}
+                  tickFormatter={(value) => formatAxisValue(value, locale)}
                   tickLine={false}
                   tickMargin={8}
                   width={embedded ? 34 : 44}
@@ -406,7 +414,7 @@ export default function AnalyticsApplicationsTrend({
                   <Area
                     dataKey="comparisonApplications"
                     fill="url(#applicationTrendComparisonFill)"
-                    name="Föregående år"
+                    name={localizedText(locale, "Föregående år", "Previous year")}
                     stroke="var(--color-comparisonApplications)"
                     strokeWidth={1.5}
                     type="monotone"
@@ -417,7 +425,7 @@ export default function AnalyticsApplicationsTrend({
                   activeDot={{ r: 4 }}
                   dataKey="applications"
                   fill="url(#applicationTrendFill)"
-                  name="Ansökningar"
+                  name={localizedText(locale, "Ansökningar", "Applications")}
                   stroke="var(--color-applications)"
                   strokeWidth={2}
                   type="monotone"
@@ -428,8 +436,8 @@ export default function AnalyticsApplicationsTrend({
 
           {showSummary ? (
             <div className="mt-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-[11px] text-gray-400">
-              <span>{total.toLocaleString("sv-SE")} totalt</span>
-              <span>{average.toLocaleString("sv-SE")} i snitt/mån</span>
+              <span>{localizedText(locale, `${total.toLocaleString(numberLocale(locale))} totalt`, `${total.toLocaleString(numberLocale(locale))} total`)}</span>
+              <span>{localizedText(locale, `${average.toLocaleString(numberLocale(locale))} i snitt/mån`, `${average.toLocaleString(numberLocale(locale))} avg/mo`)}</span>
             </div>
           ) : null}
         </div>

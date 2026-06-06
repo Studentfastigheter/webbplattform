@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { queueService } from "@/features/queues/services/queue-service";
 import type { HousingQueueDTO } from "@/types/queue";
@@ -12,6 +14,7 @@ import {
 } from "../_components/analytics/DemographicsEndpointBlocks";
 
 export default function Bostadsko() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
@@ -35,9 +38,9 @@ export default function Bostadsko() {
         if (!active) return;
         setQueues([]);
         setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Kunde inte hämta bostadsköer."
+            requestError instanceof Error
+              ? requestError.message
+            : localizedText(locale, "Kunde inte hämta bostadsköer.", "Could not load housing queues.")
         );
       })
       .finally(() => {
@@ -47,7 +50,7 @@ export default function Bostadsko() {
     return () => {
       active = false;
     };
-  }, [authLoading, companyId]);
+  }, [authLoading, companyId, locale]);
 
   if (authLoading || loadingQueues) {
     return (
@@ -60,7 +63,7 @@ export default function Bostadsko() {
   if (!user) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Logga in för att se företagets bostadsköer.
+        {localizedText(locale, "Logga in för att se företagets bostadsköer.", "Log in to view the company's housing queues.")}
       </div>
     );
   }
@@ -68,7 +71,7 @@ export default function Bostadsko() {
   if (!companyId) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Denna sida är bara tillgänglig för företagskonton.
+        {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
       </div>
     );
   }
@@ -83,7 +86,7 @@ export default function Bostadsko() {
 
       {queues.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
-          Inga bostadsköer hittades för företaget.
+          {localizedText(locale, "Inga bostadsköer hittades för företaget.", "No housing queues were found for the company.")}
         </div>
       ) : (
         <div>
@@ -92,7 +95,7 @@ export default function Bostadsko() {
               <CompanyDemographyBlock
                 deferUntilSelection
                 description={null}
-                title="Besökardemografi"
+                title={localizedText(locale, "Besökardemografi", "Visitor demographics")}
                 useCompaniesQuery
               />
             </AnalyticsGrid>

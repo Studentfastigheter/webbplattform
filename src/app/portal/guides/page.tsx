@@ -4,6 +4,7 @@ export default function GuidesPage() {
   return (
     <PortalPlaceholderPage
       title="Guider"
+      titleEn="Guides"
     />
   );
 }

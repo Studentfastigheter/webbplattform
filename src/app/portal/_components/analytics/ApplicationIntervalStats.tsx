@@ -6,6 +6,9 @@ import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks"
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type ApplicationStatisticEntry } from "@/features/companies/services/company-service";
 
@@ -77,11 +80,37 @@ export const applicationIntervals: ApplicationInterval[] = [
   },
 ];
 
+const applicationIntervalCopy: Record<
+  ApplicationIntervalValue,
+  { labelEn: string; detailLabelEn: string }
+> = {
+  "1d": { labelEn: "1 day", detailLabelEn: "the last 24 hours" },
+  "1w": { labelEn: "1 week", detailLabelEn: "the last week" },
+  "1m": { labelEn: "1 month", detailLabelEn: "the last month" },
+  "3m": { labelEn: "3 months", detailLabelEn: "the last 3 months" },
+  "6m": { labelEn: "6 months", detailLabelEn: "the last 6 months" },
+  "1y": { labelEn: "1 year", detailLabelEn: "the last year" },
+};
+
 export function getApplicationInterval(value: ApplicationIntervalValue) {
   return (
     applicationIntervals.find((interval) => interval.value === value) ??
     applicationIntervals[2]
   );
+}
+
+export function getLocalizedApplicationInterval(
+  locale: Locale,
+  value: ApplicationIntervalValue
+) {
+  const interval = getApplicationInterval(value);
+  const copy = applicationIntervalCopy[interval.value];
+
+  return {
+    ...interval,
+    label: localizedText(locale, interval.label, copy.labelEn),
+    detailLabel: localizedText(locale, interval.detailLabel, copy.detailLabelEn),
+  };
 }
 
 export function getApplicationIntervalRange(value: ApplicationIntervalValue) {
@@ -105,6 +134,8 @@ export function ApplicationIntervalToggle({
   value: ApplicationIntervalValue;
   onChange: (value: ApplicationIntervalValue) => void;
 }) {
+  const { locale } = useI18n();
+
   return (
     <ToggleGroup
       className="w-full max-w-full justify-start overflow-x-auto rounded-md bg-gray-50 p-0.5 sm:w-auto"
@@ -117,21 +148,26 @@ export function ApplicationIntervalToggle({
       value={value}
       variant="outline"
     >
-      {applicationIntervals.map((interval) => (
+      {applicationIntervals.map((interval) => {
+        const localizedInterval = getLocalizedApplicationInterval(locale, interval.value);
+
+        return (
         <ToggleGroupItem
-          aria-label={interval.label}
+          aria-label={localizedInterval.label}
           className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
           key={interval.value}
           value={interval.value}
         >
-          {interval.label}
+          {localizedInterval.label}
         </ToggleGroupItem>
-      ))}
+        );
+      })}
     </ToggleGroup>
   );
 }
 
 export default function ApplicationIntervalStats() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [interval, setInterval] =
@@ -147,7 +183,7 @@ export default function ApplicationIntervalStats() {
 
     if (!companyId) {
       setCount(0);
-      setError("Kunde inte hitta ett aktivt företag för statistiken.");
+      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag för statistiken.", "Could not find an active company for the statistics."));
       setIsLoading(false);
       return;
     }
@@ -171,7 +207,7 @@ export default function ApplicationIntervalStats() {
           setError(
             err instanceof Error
               ? err.message
-              : "Kunde inte hämta ansökningar för perioden."
+              : localizedText(locale, "Kunde inte hämta ansökningar för perioden.", "Could not load applications for the period.")
           );
         }
       })
@@ -184,15 +220,15 @@ export default function ApplicationIntervalStats() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId, interval]);
+  }, [authLoading, companyId, interval, locale]);
 
-  const selectedInterval = getApplicationInterval(interval);
+  const selectedInterval = getLocalizedApplicationInterval(locale, interval);
 
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setInterval} value={interval} />}
       size="2x2"
-      title="Ansökningar totalt"
+      title={localizedText(locale, "Ansökningar totalt", "Total applications")}
     >
       {authLoading || isLoading ? (
         <div className="flex h-full items-center gap-4">
@@ -213,7 +249,7 @@ export default function ApplicationIntervalStats() {
               {selectedInterval.detailLabel}
             </p>
             <p className="mt-0.5 text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[34px] sm:leading-9">
-              {count.toLocaleString("sv-SE")}
+              {count.toLocaleString(numberLocale(locale))}
             </p>
           </div>
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-100 bg-white text-brand-500 shadow-[0_8px_20px_rgba(0,66,37,0.08)] sm:h-12 sm:w-12">

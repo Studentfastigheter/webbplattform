@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
   companyService,
@@ -389,6 +391,7 @@ function EditableCompanyPreview({
   ) => void;
   onImageSelect: (field: "logoUrl" | "bannerUrl", file: File) => void;
 }) {
+  const { locale } = useI18n();
   const updateAdditionalSocialLink = (
     index: number,
     patch: Partial<SocialLinkDraft>
@@ -424,7 +427,7 @@ function EditableCompanyPreview({
 
   return (
     <section
-      aria-label="Förhandsvisning av företagsprofil"
+      aria-label={localizedText(locale, "Förhandsvisning av företagsprofil", "Company profile preview")}
       className="mx-auto flex w-full max-w-6xl flex-col gap-8"
     >
       <div className="relative">
@@ -450,7 +453,7 @@ function EditableCompanyPreview({
           className="absolute right-4 top-4 bg-white/95 shadow-sm backdrop-blur"
         >
           <Pencil className="h-4 w-4" />
-          Omslagsbild
+          {localizedText(locale, "Omslagsbild", "Cover image")}
         </UploadButton>
       </div>
 
@@ -473,8 +476,8 @@ function EditableCompanyPreview({
               type="button"
               size="icon-sm"
               variant="outline"
-              aria-label="Redigera logga"
-              title="Redigera logga"
+              aria-label={localizedText(locale, "Redigera logga", "Edit logo")}
+              title={localizedText(locale, "Redigera logga", "Edit logo")}
               onFileSelect={(file) => onImageSelect("logoUrl", file)}
               className="absolute right-1 top-1 min-w-0 bg-white/95 shadow-sm backdrop-blur"
             >
@@ -486,15 +489,15 @@ function EditableCompanyPreview({
         <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
             <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-              {draft.name || "Företagsprofil"}
+              {draft.name || localizedText(locale, "Företagsprofil", "Company profile")}
             </h2>
 
             <input
-              aria-label="Underrubrik"
+              aria-label={localizedText(locale, "Underrubrik", "Subtitle")}
               value={draft.subtitle}
               onChange={(event) => onDraftChange("subtitle", event.target.value)}
               className={`${inlineInputClass} mt-2 w-full max-w-2xl text-sm font-medium text-gray-600 sm:text-base`}
-              placeholder="Kort underrubrik för företaget"
+              placeholder={localizedText(locale, "Kort underrubrik för företaget", "Short company subtitle")}
             />
 
             {cityLabel && (
@@ -521,8 +524,8 @@ function EditableCompanyPreview({
             <button
               type="button"
               disabled
-              aria-label="Dela"
-              title="Dela"
+              aria-label={localizedText(locale, "Dela", "Share")}
+              title={localizedText(locale, "Dela", "Share")}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-300"
             >
               <Share2 className="h-[18px] w-[18px]" />
@@ -531,7 +534,7 @@ function EditableCompanyPreview({
         </div>
 
         <div className="mt-8 grid gap-2">
-          <InlineLabel>Sociala länkar</InlineLabel>
+          <InlineLabel>{localizedText(locale, "Sociala länkar", "Social links")}</InlineLabel>
           <div className="grid gap-3">
             {draft.additionalSocialLinks.map((link, index) => {
               const platformOptions = getSocialPlatformOptionsForLink(
@@ -548,13 +551,13 @@ function EditableCompanyPreview({
                   <span
                     aria-hidden="true"
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-500 shadow-sm"
-                    title={draftString(link.platform) || "Social plattform"}
+                    title={draftString(link.platform) || localizedText(locale, "Social plattform", "Social platform")}
                   >
                     <SocialPlatformIcon platform={draftString(link.platform)} />
                   </span>
                   {platformOptions.length > 0 ? (
                     <select
-                      aria-label="Social plattform"
+                      aria-label={localizedText(locale, "Social plattform", "Social platform")}
                       value={draftString(link.platform)}
                       onChange={(event) =>
                         updateAdditionalSocialLink(index, {
@@ -563,7 +566,7 @@ function EditableCompanyPreview({
                       }
                       className={iconInputClass}
                     >
-                      <option value="">Välj plattform</option>
+                      <option value="">{localizedText(locale, "Välj plattform", "Choose platform")}</option>
                       {platformOptions.map((platform) => (
                         <option key={platformKey(platform)} value={platform}>
                           {platform}
@@ -572,7 +575,7 @@ function EditableCompanyPreview({
                     </select>
                   ) : (
                     <input
-                      aria-label="Social plattform"
+                      aria-label={localizedText(locale, "Social plattform", "Social platform")}
                       value={draftString(link.platform)}
                       onChange={(event) =>
                         updateAdditionalSocialLink(index, {
@@ -580,11 +583,11 @@ function EditableCompanyPreview({
                         })
                       }
                       className={iconInputClass}
-                      placeholder="plattform"
+                      placeholder={localizedText(locale, "plattform", "platform")}
                     />
                   )}
                   <input
-                    aria-label="Social länk"
+                    aria-label={localizedText(locale, "Social länk", "Social link")}
                     type="url"
                     value={draftString(link.url)}
                     onChange={(event) =>
@@ -599,8 +602,8 @@ function EditableCompanyPreview({
                     type="button"
                     variant="outline"
                     size="icon"
-                    aria-label="Ta bort social länk"
-                    title="Ta bort social länk"
+                    aria-label={localizedText(locale, "Ta bort social länk", "Remove social link")}
+                    title={localizedText(locale, "Ta bort social länk", "Remove social link")}
                     onClick={() => removeAdditionalSocialLink(index)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -616,35 +619,35 @@ function EditableCompanyPreview({
               onClick={addAdditionalSocialLink}
             >
               <Plus className="h-4 w-4" />
-              Lägg till social länk
+              {localizedText(locale, "Lägg till social länk", "Add social link")}
             </Button>
           </div>
         </div>
 
         <div className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">Om oss</h2>
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">{localizedText(locale, "Om oss", "About us")}</h2>
           <textarea
-            aria-label="Om oss"
+            aria-label={localizedText(locale, "Om oss", "About us")}
             value={draft.description}
             onChange={(event) => onDraftChange("description", event.target.value)}
             className={`${inlineInputClass} min-h-40 w-full resize-y text-base leading-relaxed text-gray-600`}
-            placeholder="Beskriv företaget"
+            placeholder={localizedText(locale, "Beskriv företaget", "Describe the company")}
           />
         </div>
 
         <div className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">Kontakt</h2>
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">{localizedText(locale, "Kontakt", "Contact")}</h2>
           <div className="grid gap-3 lg:grid-cols-2">
             <EditableContactRow
               icon={<Phone className="h-4 w-4 shrink-0 text-gray-400" />}
-              label="Kontakt telefon"
+              label={localizedText(locale, "Kontakt telefon", "Contact phone")}
               value={draft.contactPhone}
               onChange={(value) => onDraftChange("contactPhone", value)}
               placeholder="070-000 00 00"
             />
             <EditableContactRow
               icon={<Mail className="h-4 w-4 shrink-0 text-gray-400" />}
-              label="Kontakt e-post"
+              label={localizedText(locale, "Kontakt e-post", "Contact email")}
               type="email"
               value={draft.contactEmail}
               onChange={(value) => onDraftChange("contactEmail", value)}
@@ -652,7 +655,7 @@ function EditableCompanyPreview({
             />
             <EditableContactRow
               icon={<Globe className="h-4 w-4 shrink-0 text-gray-400" />}
-              label="Hemsida"
+              label={localizedText(locale, "Hemsida", "Website")}
               type="url"
               value={draft.websiteUrl}
               onChange={(value) => onDraftChange("websiteUrl", value)}
@@ -660,7 +663,7 @@ function EditableCompanyPreview({
             />
             <EditableContactRow
               icon={<Link2 className="h-4 w-4 shrink-0 text-gray-400" />}
-              label="Integritetspolicy"
+              label={localizedText(locale, "Integritetspolicy", "Privacy policy")}
               type="url"
               value={draft.privacyPolicyUrl}
               onChange={(value) => onDraftChange("privacyPolicyUrl", value)}
@@ -668,7 +671,7 @@ function EditableCompanyPreview({
             />
             <EditableContactRow
               icon={<Link2 className="h-4 w-4 shrink-0 text-gray-400" />}
-              label="Villkor"
+              label={localizedText(locale, "Villkor", "Terms")}
               type="url"
               value={draft.termsUrl}
               onChange={(value) => onDraftChange("termsUrl", value)}
@@ -678,36 +681,36 @@ function EditableCompanyPreview({
         </div>
 
         <div className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">Media</h2>
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">{localizedText(locale, "Media", "Media")}</h2>
           <div className="grid gap-3 lg:grid-cols-2">
             <label className="grid gap-2 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
               <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
                 <ImageIcon className="h-4 w-4 text-gray-400" />
-                Bild-URL:er
+                {localizedText(locale, "Bild-URL:er", "Image URLs")}
               </span>
               <textarea
-                aria-label="Bild-URL:er"
+                aria-label={localizedText(locale, "Bild-URL:er", "Image URLs")}
                 value={draft.pictureUrlListText}
                 onChange={(event) =>
                   onDraftChange("pictureUrlListText", event.target.value)
                 }
                 className={`${iconInputClass} min-h-28 resize-y`}
-                placeholder="En bild-URL per rad"
+                placeholder={localizedText(locale, "En bild-URL per rad", "One image URL per row")}
               />
             </label>
             <label className="grid gap-2 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
               <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
                 <Video className="h-4 w-4 text-gray-400" />
-                Video-URL:er
+                {localizedText(locale, "Video-URL:er", "Video URLs")}
               </span>
               <textarea
-                aria-label="Video-URL:er"
+                aria-label={localizedText(locale, "Video-URL:er", "Video URLs")}
                 value={draft.videoUrlListText}
                 onChange={(event) =>
                   onDraftChange("videoUrlListText", event.target.value)
                 }
                 className={`${iconInputClass} min-h-28 resize-y`}
-                placeholder="En video-URL per rad"
+                placeholder={localizedText(locale, "En video-URL per rad", "One video URL per row")}
               />
             </label>
           </div>
@@ -718,6 +721,7 @@ function EditableCompanyPreview({
 }
 
 export default function ProfilePage() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const previewImageUrlsRef = useRef<{
     logoUrl: string | null;
@@ -765,7 +769,7 @@ export default function ProfilePage() {
     }
 
     if (companyId == null || Number.isNaN(companyId)) {
-      setError("Ogiltigt företags-ID.");
+      setError(localizedText(locale, "Ogiltigt företags-ID.", "Invalid company ID."));
       return;
     }
 
@@ -803,7 +807,7 @@ export default function ProfilePage() {
         setError(
           fetchError instanceof Error
             ? fetchError.message
-            : "Kunde inte ladda företagsprofilen."
+            : localizedText(locale, "Kunde inte ladda företagsprofilen.", "Could not load the company profile.")
         );
       })
       .finally(() => {
@@ -814,7 +818,7 @@ export default function ProfilePage() {
     return () => {
       active = false;
     };
-  }, [authLoading, companyId, user]);
+  }, [authLoading, companyId, locale, user]);
 
   const savedSnapshot = useMemo(() => {
     if (!company || !draft) return "";
@@ -952,12 +956,12 @@ export default function ProfilePage() {
           savedQueue ?? undefined
         )
       );
-      setSaveMessage("Företagsprofilen har sparats.");
+      setSaveMessage(localizedText(locale, "Företagsprofilen har sparats.", "The company profile has been saved."));
     } catch (saveError) {
       setError(
         saveError instanceof Error
           ? saveError.message
-          : "Kunde inte spara företagsprofilen."
+          : localizedText(locale, "Kunde inte spara företagsprofilen.", "Could not save the company profile.")
       );
     } finally {
       setSaving(false);
@@ -983,7 +987,7 @@ export default function ProfilePage() {
     return (
       <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Laddar profil...
+        {localizedText(locale, "Laddar profil...", "Loading profile...")}
       </div>
     );
   }
@@ -991,7 +995,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Logga in för att hantera företagsprofilen.
+        {localizedText(locale, "Logga in för att hantera företagsprofilen.", "Log in to manage the company profile.")}
       </div>
     );
   }
@@ -999,7 +1003,7 @@ export default function ProfilePage() {
   if (companyId == null || Number.isNaN(companyId)) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Denna profilsida gäller bara för företagskonton.
+        {localizedText(locale, "Denna profilsida gäller bara för företagskonton.", "This profile page is only for company accounts.")}
       </div>
     );
   }
@@ -1008,7 +1012,7 @@ export default function ProfilePage() {
     return (
       <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Hämtar företagsprofil...
+        {localizedText(locale, "Hämtar företagsprofil...", "Loading company profile...")}
       </div>
     );
   }
@@ -1016,7 +1020,9 @@ export default function ProfilePage() {
   return (
     <main className="pb-12">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Redigera profil</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {localizedText(locale, "Redigera profil", "Edit profile")}
+        </h1>
       </div>
 
       {error && (
@@ -1044,10 +1050,10 @@ export default function ProfilePage() {
           <div className="flex flex-col gap-1">
             {hasUnsavedChanges ? (
               <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                Osparade ändringar
+                {localizedText(locale, "Osparade ändringar", "Unsaved changes")}
               </span>
             ) : (
-              <span className="text-sm text-gray-500">Inga ändringar.</span>
+              <span className="text-sm text-gray-500">{localizedText(locale, "Inga ändringar.", "No changes.")}</span>
             )}
           </div>
 
@@ -1059,7 +1065,7 @@ export default function ProfilePage() {
                 isDisabled={saving}
                 onClick={resetDraft}
               >
-                Återställ
+                {localizedText(locale, "Återställ", "Reset")}
               </Button>
             )}
             <Button
@@ -1068,12 +1074,14 @@ export default function ProfilePage() {
               isLoading={saving}
               title={
                 hasUnsavedChanges
-                  ? "Spara företagsprofilen"
-                  : "Det finns inga ändringar att spara."
+                  ? localizedText(locale, "Spara företagsprofilen", "Save company profile")
+                  : localizedText(locale, "Det finns inga ändringar att spara.", "There are no changes to save.")
               }
             >
               {!saving && <Save className="h-4 w-4" />}
-              {saving ? "Sparar..." : "Spara ändringar"}
+              {saving
+                ? localizedText(locale, "Sparar...", "Saving...")
+                : localizedText(locale, "Spara ändringar", "Save changes")}
             </Button>
           </div>
         </div>

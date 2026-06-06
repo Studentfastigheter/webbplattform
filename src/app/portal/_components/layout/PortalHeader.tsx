@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Settings, UserCircle, X } from "lucide-react";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -13,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 import { queueService } from "@/features/queues/services/queue-service";
 import { dashboardRelPath } from "../../_statics/variables";
@@ -21,6 +24,7 @@ import { usePortalSidebar } from "./PortalSidebarContext";
 export default function PortalHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = usePortalSidebar();
   const { user, isLoading, logout } = useAuth();
+  const { locale } = useI18n();
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const activeCompany = getActiveCompanySummary(user);
   const companyId = getActiveCompanyId(user);
@@ -31,7 +35,9 @@ export default function PortalHeader() {
     user?.email ||
     "Account";
   const email = user?.email || "";
-  const role = activeCompany ? "Company account" : "Landlord";
+  const role = activeCompany
+    ? localizedText(locale, "Företagskonto", "Company account")
+    : localizedText(locale, "Hyresvärd", "Landlord");
   const avatarSrc =
     activeCompany
       ? companyLogoUrl || activeCompany.logoUrl || user?.logoUrl || ""
@@ -82,7 +88,7 @@ export default function PortalHeader() {
       <div className="flex min-w-0 grow items-center justify-between gap-3 px-3 py-3 sm:gap-4 lg:px-6 lg:py-4">
         <div className="flex min-w-0 items-center gap-3">
           <button
-            aria-label="Toggle sidebar"
+            aria-label={localizedText(locale, "Växla sidomeny", "Toggle sidebar")}
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 lg:h-11 lg:w-11"
             onClick={handleToggle}
             type="button"
@@ -100,13 +106,15 @@ export default function PortalHeader() {
 
         <div className="flex shrink-0 items-center justify-end gap-3">
           <button
-            aria-label="Notifications"
-            className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:bg-gray-50"
+            aria-label={localizedText(locale, "Notiser", "Notifications")}
+            className="relative flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-50"
             type="button"
           >
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-error-500" />
             <Bell className="h-5 w-5" />
           </button>
+
+          <LanguageSwitcher className="h-11 w-11 rounded-lg text-gray-600 transition hover:bg-gray-50 hover:opacity-100" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -154,7 +162,7 @@ export default function PortalHeader() {
                     href={`${dashboardRelPath}/profile`}
                   >
                     <UserCircle className="h-6 w-6 text-gray-500" />
-                    Edit profile
+                    {localizedText(locale, "Redigera profil", "Edit profile")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg p-0">
@@ -163,7 +171,7 @@ export default function PortalHeader() {
                     href={`${dashboardRelPath}/settings`}
                   >
                     <Settings className="h-6 w-6 text-gray-500" />
-                    Account settings
+                    {localizedText(locale, "Kontoinställningar", "Account settings")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg p-0">
@@ -172,7 +180,7 @@ export default function PortalHeader() {
                     href="/faq"
                   >
                     <HelpCircle className="h-6 w-6 text-gray-500" />
-                    Support
+                    {localizedText(locale, "Support", "Support")}
                   </Link>
                 </DropdownMenuItem>
               </div>
@@ -181,7 +189,7 @@ export default function PortalHeader() {
                 onSelect={() => logout()}
               >
                 <LogOut className="h-6 w-6 text-gray-500" />
-                Log out
+                {localizedText(locale, "Logga ut", "Log out")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

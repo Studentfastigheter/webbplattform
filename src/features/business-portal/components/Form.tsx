@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import Container from "@/app/portal/_components/Container";
 import React from "react";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 
 type FormGroupProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -25,11 +27,17 @@ export function FormGroup({
     comment,
     ...props
 }: FormGroupProps) {
+    const { locale } = useI18n();
+
     return (
         <div className="mb-8" {...props}>
             <div className={`flex items-center gap-2 align-middle  ${gap === "sm" ? "mb-1" : gap === "md" ? "mb-2" : "mb-4"}`}>
                 {heading && <h2 className={`text-sm font-medium text-neutral-800`}>{heading}</h2>}
-                {optional && <p className="text-xs text-neutral-500">(valfritt)</p>}
+                {optional && (
+                    <p className="text-xs text-neutral-500">
+                        {localizedText(locale, "(valfritt)", "(optional)")}
+                    </p>
+                )}
             </div>
             <div className="flex flex-col gap-3">
                 {children}
@@ -172,6 +180,7 @@ export function ImageUploadField({
   supportedFileTypes,
   ...props
 }: DragAndDropProps) {
+    const { locale } = useI18n();
 
 
     function handleUploadClick(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
@@ -188,8 +197,14 @@ export function ImageUploadField({
                 <Upload size={48} />
                 <div>
                     <p className="text-xl font-bold mb-1 text-center">{heading}</p>
-                    <p className="text-sm text-neutral-600 text-center">Maxstorlek: <span className="font-medium">{maxSize}</span></p>
-                    <p className="text-sm text-neutral-600 text-center">Stödda filtyper: <span className="font-medium">{supportedFileTypes.join(", ")}</span></p>
+                    <p className="text-sm text-neutral-600 text-center">
+                        {localizedText(locale, "Maxstorlek:", "Max size:")}{" "}
+                        <span className="font-medium">{maxSize}</span>
+                    </p>
+                    <p className="text-sm text-neutral-600 text-center">
+                        {localizedText(locale, "Stödda filtyper:", "Supported file types:")}{" "}
+                        <span className="font-medium">{supportedFileTypes.join(", ")}</span>
+                    </p>
                 </div>
             </div>
         </Container>

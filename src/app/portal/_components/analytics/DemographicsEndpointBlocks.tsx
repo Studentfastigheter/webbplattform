@@ -48,6 +48,9 @@ import {
   getApplicationIntervalRange,
   type ApplicationIntervalValue,
 } from "./ApplicationIntervalStats";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 
 type BucketDatum = {
   key: string;
@@ -94,30 +97,30 @@ const colors = [
   "#94a3b8",
 ];
 
-const labels: Record<string, string> = {
-  GENDER: "Kön",
-  AGE: "Ålder",
-  CITY: "Stad",
-  SCHOOL: "Skola",
-  RESULTED_IN_LIKE: "Favorit",
-  VIEW_TYPE: "Visningstyp",
-  DEVICE_TYPE: "Enhet",
-  PREFERRED_MAX_RENT: "Maxhyra",
-  DAYS_IN_QUEUE: "Dagar i kö",
-  APPLICANT_OTHER_APPLICATIONS: "Andra ansökningar",
-  GOT_LISTING: "Utfall",
-  QUICK: "Snabb",
-  DETAILED: "Detalj",
-  MOBILE: "Mobil",
-  DESKTOP: "Desktop",
-  true: "Favorit",
-  false: "Ingen favorit",
+const labels: Record<string, { sv: string; en: string }> = {
+  GENDER: { sv: "Kön", en: "Gender" },
+  AGE: { sv: "Ålder", en: "Age" },
+  CITY: { sv: "Stad", en: "City" },
+  SCHOOL: { sv: "Skola", en: "School" },
+  RESULTED_IN_LIKE: { sv: "Favorit", en: "Favorite" },
+  VIEW_TYPE: { sv: "Visningstyp", en: "View type" },
+  DEVICE_TYPE: { sv: "Enhet", en: "Device" },
+  PREFERRED_MAX_RENT: { sv: "Maxhyra", en: "Max rent" },
+  DAYS_IN_QUEUE: { sv: "Dagar i kö", en: "Days in queue" },
+  APPLICANT_OTHER_APPLICATIONS: { sv: "Andra ansökningar", en: "Other applications" },
+  GOT_LISTING: { sv: "Utfall", en: "Outcome" },
+  QUICK: { sv: "Snabb", en: "Quick" },
+  DETAILED: { sv: "Detalj", en: "Detailed" },
+  MOBILE: { sv: "Mobil", en: "Mobile" },
+  DESKTOP: { sv: "Desktop", en: "Desktop" },
+  true: { sv: "Favorit", en: "Favorite" },
+  false: { sv: "Ingen favorit", en: "No favorite" },
 };
 
-const gotListingLabels: Record<GotListingFilter, string> = {
-  BOTH: "Alla utfall",
-  ACCEPTED_ONLY: "Accepterade",
-  REJECTED_ONLY: "Nekade",
+const gotListingLabels: Record<GotListingFilter, { sv: string; en: string }> = {
+  BOTH: { sv: "Alla utfall", en: "All outcomes" },
+  ACCEPTED_ONLY: { sv: "Accepterade", en: "Accepted" },
+  REJECTED_ONLY: { sv: "Nekade", en: "Rejected" },
 };
 
 const swedishLabelCorrections: Record<string, string> = {
@@ -149,12 +152,22 @@ function repairMojibake(value: string) {
   }
 }
 
-function formatNumber(value: number) {
-  return value.toLocaleString("sv-SE");
+function labelFor(locale: Locale, value: string) {
+  const label = labels[value];
+  return label ? localizedText(locale, label.sv, label.en) : value;
 }
 
-function formatPercent(value: number) {
-  return `${value.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}%`;
+function gotListingLabelFor(locale: Locale, value: GotListingFilter) {
+  const label = gotListingLabels[value];
+  return localizedText(locale, label.sv, label.en);
+}
+
+function formatNumber(value: number, locale: Locale) {
+  return value.toLocaleString(numberLocale(locale));
+}
+
+function formatPercent(value: number, locale: Locale) {
+  return `${value.toLocaleString(numberLocale(locale), { maximumFractionDigits: 1 })}%`;
 }
 
 function toDateTimeLocalValue(value: Date) {
@@ -180,10 +193,18 @@ function dateTimeLocalToIso(value: string) {
   return date.toISOString();
 }
 
-function keyLabel(value: unknown) {
-  if (value === null || value === undefined) return "Okänt";
+function keyLabel(value: unknown, locale: Locale) {
+  if (value === null || value === undefined) return localizedText(locale, "Okänt", "Unknown");
   const raw = repairMojibake(String(value).trim());
-  return labels[raw] ?? swedishLabelCorrections[raw] ?? (raw || "Okänt");
+  if (labels[raw]) {
+    return labelFor(locale, raw);
+  }
+
+  if (raw === "Okant") {
+    return localizedText(locale, "Okänt", "Unknown");
+  }
+
+  return swedishLabelCorrections[raw] ?? (raw || localizedText(locale, "Okänt", "Unknown"));
 }
 
 function totalViews(value?: CompanyDemography | ListingDemography | null) {
@@ -209,15 +230,16 @@ function totalApplications(value?: ApplicationDemography | null) {
 
 function bucketsToData(
   value?: CompanyDemography | ListingDemography | null,
-  limit = 8
+  limit = 8,
+  locale: Locale = "sv"
 ): BucketDatum[] {
   const total = totalViews(value);
   return (value?.buckets ?? [])
     .map((bucket, index) => {
       const bucketValue = Number(bucket.totalViews ?? 0);
       return {
-        key: `${keyLabel(bucket.key)}-${index}`,
-        label: keyLabel(bucket.key),
+        key: `${keyLabel(bucket.key, locale)}-${index}`,
+        label: keyLabel(bucket.key, locale),
         value: bucketValue,
         share: total > 0 ? (bucketValue / total) * 100 : 0,
         fill: colors[index % colors.length],
@@ -230,18 +252,19 @@ function bucketsToData(
 
 function mapListingRows(
   batch: Record<string, ListingDemography>,
-  listings: ListingCardDTO[]
+  listings: ListingCardDTO[],
+  locale: Locale
 ): ListingRow[] {
   const titleById = new Map(listings.map((listing) => [String(listing.id), listing.title]));
 
   return Object.entries(batch)
     .map(([listingId, demography]) => {
-      const top = bucketsToData(demography, 1)[0];
+      const top = bucketsToData(demography, 1, locale)[0];
       return {
         listingId,
-        title: titleById.get(listingId) ?? `Annons ${listingId.slice(0, 8)}`,
+        title: titleById.get(listingId) ?? localizedText(locale, `Annons ${listingId.slice(0, 8)}`, `Listing ${listingId.slice(0, 8)}`),
         totalViews: totalViews(demography),
-        topLabel: top?.label ?? "Saknas",
+        topLabel: top?.label ?? localizedText(locale, "Saknas", "Missing"),
         topViews: top?.value ?? 0,
         topShare: top?.share ?? 0,
       };
@@ -253,7 +276,8 @@ function mapListingRows(
 
 function mapApplicationListingRows(
   batch: Record<string, ApplicationDemography>,
-  listings: ListingCardDTO[]
+  listings: ListingCardDTO[],
+  locale: Locale
 ): ApplicationListingRow[] {
   const titleById = new Map(
     listings.map((listing) => [String(listing.id), listing.title])
@@ -262,7 +286,7 @@ function mapApplicationListingRows(
   return Object.entries(batch)
     .map(([listingId, demography]) => ({
       listingId,
-      title: titleById.get(listingId) ?? `Annons ${listingId.slice(0, 8)}`,
+      title: titleById.get(listingId) ?? localizedText(locale, `Annons ${listingId.slice(0, 8)}`, `Listing ${listingId.slice(0, 8)}`),
       totalApplications: totalApplications(demography),
     }))
     .filter((row) => row.totalApplications > 0)
@@ -272,13 +296,14 @@ function mapApplicationListingRows(
 
 function mergeBuckets(
   values: Array<ListingDemography | null | undefined>,
-  limit = 8
+  limit = 8,
+  locale: Locale = "sv"
 ): BucketDatum[] {
   const counts = new Map<string, { key: unknown; totalViews: number }>();
 
   values.forEach((value) => {
     value?.buckets?.forEach((bucket) => {
-      const label = keyLabel(bucket.key);
+      const label = keyLabel(bucket.key, locale);
       const current = counts.get(label);
       counts.set(label, {
         key: bucket.key,
@@ -294,8 +319,8 @@ function mergeBuckets(
 
   return Array.from(counts.values())
     .map((bucket, index) => ({
-      key: `${keyLabel(bucket.key)}-${index}`,
-      label: keyLabel(bucket.key),
+      key: `${keyLabel(bucket.key, locale)}-${index}`,
+      label: keyLabel(bucket.key, locale),
       value: bucket.totalViews,
       share: total > 0 ? (bucket.totalViews / total) * 100 : 0,
       fill: colors[index % colors.length],
@@ -307,13 +332,14 @@ function mergeBuckets(
 
 function mergeApplicationBuckets(
   values: Array<ApplicationDemography | null | undefined>,
-  limit = 8
+  limit = 8,
+  locale: Locale = "sv"
 ): BucketDatum[] {
   const counts = new Map<string, { key: unknown; totalApplications: number }>();
 
   values.forEach((value) => {
     value?.buckets?.forEach((bucket) => {
-      const label = keyLabel(bucket.key);
+      const label = keyLabel(bucket.key, locale);
       const current = counts.get(label);
       counts.set(label, {
         key: bucket.key,
@@ -331,8 +357,8 @@ function mergeApplicationBuckets(
 
   return Array.from(counts.values())
     .map((bucket, index) => ({
-      key: `${keyLabel(bucket.key)}-${index}`,
-      label: keyLabel(bucket.key),
+      key: `${keyLabel(bucket.key, locale)}-${index}`,
+      label: keyLabel(bucket.key, locale),
       value: bucket.totalApplications,
       share: total > 0 ? (bucket.totalApplications / total) * 100 : 0,
       fill: colors[index % colors.length],
@@ -355,10 +381,11 @@ function bucketValue(
 
 function buildPortfolioSummary(
   data: Record<DemographyCategory, Record<string, ListingDemography>>,
-  listings: ListingCardDTO[]
+  listings: ListingCardDTO[],
+  locale: Locale
 ): PortfolioSummary {
   const viewTypeByListing = data.VIEW_TYPE ?? {};
-  const rows = mapListingRows(viewTypeByListing, listings);
+  const rows = mapListingRows(viewTypeByListing, listings, locale);
   const viewTypeValues = Object.values(viewTypeByListing);
   const resultedInLikeValues = Object.values(data.RESULTED_IN_LIKE ?? {});
 
@@ -382,17 +409,18 @@ function buildPortfolioSummary(
     ),
     listingsWithViews: viewTypeValues.filter((demography) => totalViews(demography) > 0)
       .length,
-    deviceData: mergeBuckets(Object.values(data.DEVICE_TYPE ?? {}), 6),
-    cityData: mergeBuckets(Object.values(data.CITY ?? {}), 6),
+    deviceData: mergeBuckets(Object.values(data.DEVICE_TYPE ?? {}), 6, locale),
+    cityData: mergeBuckets(Object.values(data.CITY ?? {}), 6, locale),
   };
 }
 
 function categoryOptions<TCategory extends string>(
-  categories: readonly TCategory[]
+  categories: readonly TCategory[],
+  locale: Locale
 ) {
   return categories.map((category) => ({
     value: category,
-    label: labels[category] ?? category,
+    label: labelFor(locale, category),
   }));
 }
 
@@ -405,13 +433,15 @@ function CategorySelect<TCategory extends string>({
   onChange: (value: TCategory) => void;
   categories: readonly TCategory[];
 }) {
+  const { locale } = useI18n();
+
   return (
     <Select onValueChange={(next) => onChange(next as TCategory)} value={value}>
       <SelectTrigger className="h-8 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:w-[170px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent className="border-gray-200 bg-white">
-        {categoryOptions(categories).map((category) => (
+        {categoryOptions(categories, locale).map((category) => (
           <SelectItem key={category.value} value={category.value}>
             {category.label}
           </SelectItem>
@@ -447,8 +477,18 @@ function BlockSkeleton({ rows = 2 }: { rows?: number }) {
   );
 }
 
-function PieDistribution({ data, compact }: { data: BucketDatum[]; compact?: boolean }) {
-  if (data.length === 0) return <EmptyState message="Ingen data för perioden." />;
+function PieDistribution({
+  data,
+  compact,
+  locale,
+}: {
+  data: BucketDatum[];
+  compact?: boolean;
+  locale: Locale;
+}) {
+  if (data.length === 0) {
+    return <EmptyState message={localizedText(locale, "Ingen data för perioden.", "No data for this period.")} />;
+  }
 
   return (
     <div className={compact ? "min-h-[180px] min-w-0 h-[180px]" : "min-h-[180px] min-w-0 h-[180px]"}>
@@ -462,8 +502,8 @@ function PieDistribution({ data, compact }: { data: BucketDatum[]; compact?: boo
               fontSize: 12,
             }}
             formatter={(value, _, item) => [
-              `${formatNumber(Number(value))} (${formatPercent(item.payload.share)})`,
-              "Visningar",
+              `${formatNumber(Number(value), locale)} (${formatPercent(item.payload.share, locale)})`,
+              localizedText(locale, "Visningar", "Views"),
             ]}
           />
           <Pie
@@ -492,14 +532,20 @@ function PieDistribution({ data, compact }: { data: BucketDatum[]; compact?: boo
 
 function HorizontalBars({
   data,
-  valueLabel = "Visningar",
+  valueLabel,
   compact,
+  locale,
 }: {
   data: BucketDatum[];
   valueLabel?: string;
   compact?: boolean;
+  locale: Locale;
 }) {
-  if (data.length === 0) return <EmptyState message="Ingen data för perioden." />;
+  const resolvedValueLabel = valueLabel ?? localizedText(locale, "Visningar", "Views");
+
+  if (data.length === 0) {
+    return <EmptyState message={localizedText(locale, "Ingen data för perioden.", "No data for this period.")} />;
+  }
 
   return (
     <div className={compact ? "min-h-[140px] min-w-0 h-[160px]" : "min-h-[140px] min-w-0 h-[160px]"}>
@@ -522,7 +568,7 @@ function HorizontalBars({
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
               fontSize: 12,
             }}
-            formatter={(value) => [formatNumber(Number(value)), valueLabel]}
+            formatter={(value) => [formatNumber(Number(value), locale), resolvedValueLabel]}
           />
           <Bar barSize={18} dataKey="value" radius={[0, 6, 6, 0]}>
             {data.map((entry) => (
@@ -537,12 +583,18 @@ function HorizontalBars({
 
 function CategoryBars({
   data,
-  valueLabel = "Visningar",
+  valueLabel,
+  locale,
 }: {
   data: Array<{ category: string; value: number }>;
   valueLabel?: string;
+  locale: Locale;
 }) {
-  if (data.length === 0) return <EmptyState message="Ingen batchdata för perioden." />;
+  const resolvedValueLabel = valueLabel ?? localizedText(locale, "Visningar", "Views");
+
+  if (data.length === 0) {
+    return <EmptyState message={localizedText(locale, "Ingen batchdata för perioden.", "No batch data for this period.")} />;
+  }
 
   return (
     <div className="min-h-[250px] min-w-0 h-[280px]">
@@ -569,7 +621,7 @@ function CategoryBars({
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
               fontSize: 12,
             }}
-            formatter={(value) => [formatNumber(Number(value)), valueLabel]}
+            formatter={(value) => [formatNumber(Number(value), locale), resolvedValueLabel]}
           />
           <Bar barSize={16} dataKey="value" fill="#16a34a" radius={[6, 6, 0, 0]} />
         </BarChart>
@@ -580,55 +632,59 @@ function CategoryBars({
 
 function ApplicationPortfolioSummary({
   data,
+  locale,
 }: {
   data: Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>;
+  locale: Locale;
 }) {
   const outcomeValues = Object.values(data.GOT_LISTING ?? {});
-  const schoolData = mergeApplicationBuckets(Object.values(data.SCHOOL ?? {}), 6);
-  const queueData = mergeApplicationBuckets(Object.values(data.DAYS_IN_QUEUE ?? {}), 6);
-  const rentData = mergeApplicationBuckets(Object.values(data.PREFERRED_MAX_RENT ?? {}), 6);
+  const schoolData = mergeApplicationBuckets(Object.values(data.SCHOOL ?? {}), 6, locale);
+  const queueData = mergeApplicationBuckets(Object.values(data.DAYS_IN_QUEUE ?? {}), 6, locale);
+  const rentData = mergeApplicationBuckets(Object.values(data.PREFERRED_MAX_RENT ?? {}), 6, locale);
   const total = outcomeValues.reduce(
     (sum, demography) => sum + totalApplications(demography),
     0
   );
-  const accepted = mergeApplicationBuckets(outcomeValues, 10)
-    .filter((item) => item.label === "Fick bostad" || item.label === "true")
+  const accepted = mergeApplicationBuckets(outcomeValues, 10, locale)
+    .filter((item) => item.label === localizedText(locale, "Fick bostad", "Got housing") || item.label === "true")
     .reduce((sum, item) => sum + item.value, 0);
-  const rejected = mergeApplicationBuckets(outcomeValues, 10)
-    .filter((item) => item.label === "Fick ej bostad" || item.label === "false")
+  const rejected = mergeApplicationBuckets(outcomeValues, 10, locale)
+    .filter((item) => item.label === localizedText(locale, "Fick ej bostad", "Did not get housing") || item.label === "false")
     .reduce((sum, item) => sum + item.value, 0);
 
   if (total === 0 && schoolData.length === 0 && queueData.length === 0) {
-    return <EmptyState message="Ingen ansökningsdemografi för perioden." />;
+    return <EmptyState message={localizedText(locale, "Ingen ansökningsdemografi för perioden.", "No application demographics for this period.")} />;
   }
 
   return (
     <div className="grid h-full min-h-0 gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <SummaryMetric label="Terminala ansökningar" value={total} />
-        <SummaryMetric label="Accepterade" value={accepted} />
-        <SummaryMetric label="Nekade" value={rejected} />
+        <SummaryMetric label={localizedText(locale, "Terminala ansökningar", "Terminal applications")} value={total} locale={locale} />
+        <SummaryMetric label={localizedText(locale, "Accepterade", "Accepted")} value={accepted} locale={locale} />
+        <SummaryMetric label={localizedText(locale, "Nekade", "Rejected")} value={rejected} locale={locale} />
       </div>
       <div className="grid min-h-0 gap-4 xl:grid-cols-3">
         <div className="rounded-xl border border-gray-100 bg-white p-4">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Skolor</h3>
-          <HorizontalBars data={schoolData} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Skolor", "Schools")}</h3>
+          <HorizontalBars data={schoolData} locale={locale} />
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Dagar i kö</h3>
-          <HorizontalBars data={queueData} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Dagar i kö", "Days in queue")}</h3>
+          <HorizontalBars data={queueData} locale={locale} />
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Maxhyra</h3>
-          <HorizontalBars data={rentData} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Maxhyra", "Max rent")}</h3>
+          <HorizontalBars data={rentData} locale={locale} />
         </div>
       </div>
     </div>
   );
 }
 
-function ListingPortfolioChart({ rows }: { rows: ListingRow[] }) {
-  if (rows.length === 0) return <EmptyState message="Ingen annonsdata för perioden." />;
+function ListingPortfolioChart({ rows, locale }: { rows: ListingRow[]; locale: Locale }) {
+  if (rows.length === 0) {
+    return <EmptyState message={localizedText(locale, "Ingen annonsdata för perioden.", "No listing data for this period.")} />;
+  }
 
   const data = rows.map((row, index) => ({
     ...row,
@@ -669,8 +725,8 @@ function ListingPortfolioChart({ rows }: { rows: ListingRow[] }) {
               fontSize: 12,
             }}
             formatter={(value, name) => [
-              name === "topShare" ? formatPercent(Number(value)) : formatNumber(Number(value)),
-              name === "topShare" ? "Andel toppsegment" : "Visningar",
+              name === "topShare" ? formatPercent(Number(value), locale) : formatNumber(Number(value), locale),
+              name === "topShare" ? localizedText(locale, "Andel toppsegment", "Top segment share") : localizedText(locale, "Visningar", "Views"),
             ]}
             labelFormatter={(_, payload: unknown[]) => {
               const item = payload?.[0] as { payload?: { title?: string } } | undefined;
@@ -681,14 +737,14 @@ function ListingPortfolioChart({ rows }: { rows: ListingRow[] }) {
             barSize={20}
             dataKey="totalViews"
             fill="#16a34a"
-            name="Visningar"
+            name={localizedText(locale, "Visningar", "Views")}
             radius={[6, 6, 0, 0]}
             yAxisId="views"
           />
           <Line
             dataKey="topShare"
             dot={{ r: 3 }}
-            name="Andel toppsegment"
+            name={localizedText(locale, "Andel toppsegment", "Top segment share")}
             stroke="#f472b6"
             strokeWidth={2}
             yAxisId="share"
@@ -703,10 +759,12 @@ function SummaryMetric({
   label,
   value,
   helper,
+  locale,
 }: {
   label: string;
   value: number;
   helper?: string;
+  locale: Locale;
 }) {
   return (
     <div className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
@@ -714,7 +772,7 @@ function SummaryMetric({
         {label}
       </p>
       <p className="mt-0.5 text-lg font-semibold text-gray-950 tabular-nums sm:text-xl">
-        {formatNumber(value)}
+        {formatNumber(value, locale)}
       </p>
       {helper ? (
         <p className="mt-0.5 truncate text-[11px] text-gray-400">{helper}</p>
@@ -723,25 +781,32 @@ function SummaryMetric({
   );
 }
 
-function ListingPortfolioSummary({ summary }: { summary: PortfolioSummary }) {
+function ListingPortfolioSummary({
+  summary,
+  locale,
+}: {
+  summary: PortfolioSummary;
+  locale: Locale;
+}) {
   const hasData = summary.totalViews > 0 || summary.rows.length > 0;
 
   if (!hasData) {
-    return <EmptyState message="Ingen annonsdata för perioden." />;
+    return <EmptyState message={localizedText(locale, "Ingen annonsdata för perioden.", "No listing data for this period.")} />;
   }
 
   return (
     <div className="grid h-full min-h-0 gap-4 w-full">
       {/* Compact metrics row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        <SummaryMetric label="Totala visningar" value={summary.totalViews} />
-        <SummaryMetric label="Snabbvisningar" value={summary.quickViews} />
-        <SummaryMetric label="Detaljvisningar" value={summary.detailedViews} />
-        <SummaryMetric label="Favoriter" value={summary.likes} />
+        <SummaryMetric label={localizedText(locale, "Totala visningar", "Total views")} value={summary.totalViews} locale={locale} />
+        <SummaryMetric label={localizedText(locale, "Snabbvisningar", "Quick views")} value={summary.quickViews} locale={locale} />
+        <SummaryMetric label={localizedText(locale, "Detaljvisningar", "Detailed views")} value={summary.detailedViews} locale={locale} />
+        <SummaryMetric label={localizedText(locale, "Favoriter", "Favorites")} value={summary.likes} locale={locale} />
         <SummaryMetric
-          helper="Med minst en visning"
-          label="Aktiva annonser"
+          helper={localizedText(locale, "Med minst en visning", "With at least one view")}
+          label={localizedText(locale, "Aktiva annonser", "Active listings")}
           value={summary.listingsWithViews}
+          locale={locale}
         />
       </div>
 
@@ -750,20 +815,20 @@ function ListingPortfolioSummary({ summary }: { summary: PortfolioSummary }) {
         <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-2">
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h3 className="text-sm font-semibold text-gray-900">
-              Toppannonser
+              {localizedText(locale, "Toppannonser", "Top listings")}
             </h3>
-            <span className="text-xs text-gray-500">Visningar</span>
+            <span className="text-xs text-gray-500">{localizedText(locale, "Visningar", "Views")}</span>
           </div>
-          <ListingPortfolioChart rows={summary.rows} />
+          <ListingPortfolioChart rows={summary.rows} locale={locale} />
         </div>
 
         <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-1">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Enheter</h3>
-          <PieDistribution compact data={summary.deviceData} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Enheter", "Devices")}</h3>
+          <PieDistribution compact data={summary.deviceData} locale={locale} />
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-1">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Städer</h3>
-          <HorizontalBars compact data={summary.cityData} />
+          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Städer", "Cities")}</h3>
+          <HorizontalBars compact data={summary.cityData} locale={locale} />
         </div>
       </div>
     </div>
@@ -779,10 +844,11 @@ type CompanyDemographyBlockProps = {
 
 export function CompanyDemographyBlock({
   deferUntilSelection = false,
-  description = "Besökare uppdelade efter vald kategori.",
-  title = "Företagsprofil",
+  description,
+  title,
   useCompaniesQuery = false,
 }: CompanyDemographyBlockProps = {}) {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
@@ -804,7 +870,7 @@ export function CompanyDemographyBlock({
     }
 
     if (!companyId) {
-      setError("Kunde inte hitta ett aktivt företag.");
+      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag.", "Could not find an active company."));
       return;
     }
 
@@ -830,7 +896,7 @@ export function CompanyDemographyBlock({
           setError(
             requestError instanceof Error
               ? requestError.message
-              : "Kunde inte hämta företagsdemografi."
+              : localizedText(locale, "Kunde inte hämta företagsdemografi.", "Could not load company demographics.")
           );
         }
       })
@@ -841,7 +907,7 @@ export function CompanyDemographyBlock({
     return () => {
       cancelled = true;
     };
-  }, [authLoading, category, companyId, hasSelection, range, useCompaniesQuery]);
+  }, [authLoading, category, companyId, hasSelection, locale, range, useCompaniesQuery]);
 
   const handleCategoryChange = (nextCategory: CompanyDemographyCategory) => {
     setCategory(nextCategory);
@@ -866,25 +932,26 @@ export function CompanyDemographyBlock({
         </div>
       }
       size="2x2"
-      title={title}
-      description={description}
+      title={title ?? localizedText(locale, "Företagsprofil", "Company profile")}
+      description={description ?? localizedText(locale, "Besökare uppdelade efter vald kategori.", "Visitors split by the selected category.")}
     >
       {authLoading || isLoading ? (
         <BlockSkeleton />
       ) : error ? (
         <ErrorState message={error} />
       ) : deferUntilSelection && !hasSelection ? (
-        <EmptyState message="Välj kategori eller tidsintervall för att ladda demografi." />
+        <EmptyState message={localizedText(locale, "Välj kategori eller tidsintervall för att ladda demografi.", "Choose a category or time interval to load demographics.")} />
       ) : category === "GENDER" || category === "VIEW_TYPE" || category === "DEVICE_TYPE" ? (
-        <PieDistribution data={bucketsToData(demography)} />
+        <PieDistribution data={bucketsToData(demography, 8, locale)} locale={locale} />
       ) : (
-        <HorizontalBars data={bucketsToData(demography)} />
+        <HorizontalBars data={bucketsToData(demography, 8, locale)} locale={locale} />
       )}
     </AnalyticsBlock>
   );
 }
 
 export function CompanyDemographyBatchBlock() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
@@ -896,7 +963,7 @@ export function CompanyDemographyBatchBlock() {
     if (authLoading) return;
 
     if (!companyId) {
-      setError("Kunde inte hitta ett aktivt företag.");
+      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag.", "Could not find an active company."));
       return;
     }
 
@@ -912,7 +979,7 @@ export function CompanyDemographyBatchBlock() {
         if (cancelled) return;
         setData(
           COMPANY_DEMOGRAPHY_CATEGORIES.map((category) => ({
-            category: labels[category] ?? category,
+            category: labelFor(locale, category),
             value: totalViews(result[category]?.[String(companyId)] ?? null),
           })).filter((item) => item.value > 0)
         );
@@ -923,7 +990,7 @@ export function CompanyDemographyBatchBlock() {
           setError(
             requestError instanceof Error
               ? requestError.message
-              : "Kunde inte hämta batchdemografi."
+              : localizedText(locale, "Kunde inte hämta batchdemografi.", "Could not load batch demographics.")
           );
         }
       })
@@ -934,27 +1001,28 @@ export function CompanyDemographyBatchBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId, range]);
+  }, [authLoading, companyId, locale, range]);
 
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setRange} value={range} />}
       size="2x2"
-      title="Demografi per kategori"
-      description="Samlad bild av företagets besökare."
+      title={localizedText(locale, "Demografi per kategori", "Demographics by category")}
+      description={localizedText(locale, "Samlad bild av företagets besökare.", "Overview of the company's visitors.")}
     >
       {authLoading || isLoading ? (
         <BlockSkeleton />
       ) : error ? (
         <ErrorState message={error} />
       ) : (
-        <CategoryBars data={data} />
+        <CategoryBars data={data} locale={locale} />
       )}
     </AnalyticsBlock>
   );
 }
 
 export function ListingDemographyBatchBlock() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
@@ -966,7 +1034,7 @@ export function ListingDemographyBatchBlock() {
     if (authLoading) return;
 
     if (!companyId) {
-      setError("Kunde inte hitta ett aktivt företag.");
+      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag.", "Could not find an active company."));
       return;
     }
 
@@ -986,7 +1054,7 @@ export function ListingDemographyBatchBlock() {
         ),
       ]);
 
-      if (!cancelled) setSummary(buildPortfolioSummary(result, listings));
+      if (!cancelled) setSummary(buildPortfolioSummary(result, listings, locale));
     }
 
     load()
@@ -996,7 +1064,7 @@ export function ListingDemographyBatchBlock() {
           setError(
             requestError instanceof Error
               ? requestError.message
-              : "Kunde inte hämta annonsportfölj."
+              : localizedText(locale, "Kunde inte hämta annonsportfölj.", "Could not load listing portfolio.")
           );
         }
       })
@@ -1007,30 +1075,31 @@ export function ListingDemographyBatchBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId, range]);
+  }, [authLoading, companyId, locale, range]);
 
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setRange} value={range} />}
       contentClassName="overflow-hidden p-4"
       size="4x4"
-      title="Annonsportfölj"
-      description="Summerad demografi för alla företagets annonser."
+      title={localizedText(locale, "Annonsportfölj", "Listing portfolio")}
+      description={localizedText(locale, "Summerad demografi för alla företagets annonser.", "Aggregated demographics for all company listings.")}
     >
       {authLoading || isLoading ? (
         <BlockSkeleton rows={4} />
       ) : error ? (
         <ErrorState message={error} />
       ) : summary ? (
-        <ListingPortfolioSummary summary={summary} />
+        <ListingPortfolioSummary summary={summary} locale={locale} />
       ) : (
-        <EmptyState message="Ingen annonsdata för perioden." />
+        <EmptyState message={localizedText(locale, "Ingen annonsdata för perioden.", "No listing data for this period.")} />
       )}
     </AnalyticsBlock>
   );
 }
 
 export function ApplicationDemographyPortfolioBlock() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const initialRange = React.useMemo(() => defaultDateTimeRange(), []);
@@ -1049,7 +1118,7 @@ export function ApplicationDemographyPortfolioBlock() {
     if (authLoading) return;
 
     if (!companyId) {
-      setError("Kunde inte hitta ett aktivt företag.");
+      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag.", "Could not find an active company."));
       return;
     }
 
@@ -1059,14 +1128,14 @@ export function ApplicationDemographyPortfolioBlock() {
     if (!from || !to) {
       setDemographies(null);
       setListingRows([]);
-      setError("Välj giltiga datum för from och to.");
+      setError(localizedText(locale, "Välj giltiga datum för från och till.", "Choose valid from and to dates."));
       return;
     }
 
     if (new Date(from).getTime() > new Date(to).getTime()) {
       setDemographies(null);
       setListingRows([]);
-      setError("From måste vara tidigare än to.");
+      setError(localizedText(locale, "Från måste vara tidigare än till.", "From must be earlier than to."));
       return;
     }
 
@@ -1100,7 +1169,7 @@ export function ApplicationDemographyPortfolioBlock() {
 
       if (!cancelled) {
         setDemographies(result);
-        setListingRows(mapApplicationListingRows(result, listings));
+        setListingRows(mapApplicationListingRows(result, listings, locale));
       }
     }
 
@@ -1112,7 +1181,7 @@ export function ApplicationDemographyPortfolioBlock() {
           setError(
             requestError instanceof Error
               ? requestError.message
-              : "Kunde inte hämta ansökningsdemografi."
+              : localizedText(locale, "Kunde inte hämta ansökningsdemografi.", "Could not load application demographics.")
           );
         }
       })
@@ -1123,11 +1192,11 @@ export function ApplicationDemographyPortfolioBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, category, companyId, fromValue, gotListing, toValue]);
+  }, [authLoading, category, companyId, fromValue, gotListing, locale, toValue]);
 
   const bucketData = React.useMemo(
-    () => mergeApplicationBuckets(Object.values(demographies ?? {}), 10),
-    [demographies]
+    () => mergeApplicationBuckets(Object.values(demographies ?? {}), 10, locale),
+    [demographies, locale]
   );
   const total = React.useMemo(
     () =>
@@ -1152,14 +1221,14 @@ export function ApplicationDemographyPortfolioBlock() {
       action={
         <div className="flex max-w-full flex-wrap items-center gap-2">
           <Input
-            aria-label="From"
+            aria-label={localizedText(locale, "Från", "From")}
             className="h-8 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
             onChange={(event) => setFromValue(event.target.value)}
             type="datetime-local"
             value={fromValue}
           />
           <Input
-            aria-label="To"
+            aria-label={localizedText(locale, "Till", "To")}
             className="h-8 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
             onChange={(event) => setToValue(event.target.value)}
             type="datetime-local"
@@ -1180,7 +1249,7 @@ export function ApplicationDemographyPortfolioBlock() {
             <SelectContent className="border-gray-200 bg-white">
               {(Object.keys(gotListingLabels) as GotListingFilter[]).map((filter) => (
                 <SelectItem key={filter} value={filter}>
-                  {gotListingLabels[filter]}
+                  {gotListingLabelFor(locale, filter)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1189,8 +1258,8 @@ export function ApplicationDemographyPortfolioBlock() {
       }
       contentClassName="overflow-hidden p-3 pt-1"
       size="2x4"
-      title="Ansökningsdemografi"
-      description="Ansökningsstatistik uppdelad per annons och vald kategori."
+      title={localizedText(locale, "Ansökningsdemografi", "Application demographics")}
+      description={localizedText(locale, "Ansökningsstatistik uppdelad per annons och vald kategori.", "Application statistics split by listing and selected category.")}
     >
       {authLoading || isLoading ? (
         <BlockSkeleton rows={3} />
@@ -1200,40 +1269,43 @@ export function ApplicationDemographyPortfolioBlock() {
         <div className="grid h-full min-h-0 gap-4">
           <div className="grid grid-cols-3 gap-3">
             <SummaryMetric
-              helper={labels[category] ?? category}
-              label="Ansökningar"
+              helper={labelFor(locale, category)}
+              label={localizedText(locale, "Ansökningar", "Applications")}
               value={total}
+              locale={locale}
             />
-            <SummaryMetric label="Annonser i fråga" value={Object.keys(demographies).length} />
+            <SummaryMetric label={localizedText(locale, "Annonser i fråga", "Listings queried")} value={Object.keys(demographies).length} locale={locale} />
             <SummaryMetric
-              helper={gotListingLabels[gotListing]}
-              label="Annonser med data"
+              helper={gotListingLabelFor(locale, gotListing)}
+              label={localizedText(locale, "Annonser med data", "Listings with data")}
               value={listingRows.length}
+              locale={locale}
             />
           </div>
           <div className="grid min-h-0 gap-4 xl:grid-cols-2">
             <div className="rounded-xl border border-gray-100 bg-white p-4">
               <h3 className="mb-2 text-sm font-semibold text-gray-900">
-                {labels[category] ?? category}
+                {labelFor(locale, category)}
               </h3>
-              <HorizontalBars data={bucketData} valueLabel="Ansökningar" />
+              <HorizontalBars data={bucketData} valueLabel={localizedText(locale, "Ansökningar", "Applications")} locale={locale} />
             </div>
             <div className="rounded-xl border border-gray-100 bg-white p-4">
               <h3 className="mb-2 text-sm font-semibold text-gray-900">
-                Ansökningar per annons
+                {localizedText(locale, "Ansökningar per annons", "Applications per listing")}
               </h3>
-              <CategoryBars data={listingChartData} valueLabel="Ansökningar" />
+              <CategoryBars data={listingChartData} valueLabel={localizedText(locale, "Ansökningar", "Applications")} locale={locale} />
             </div>
           </div>
         </div>
       ) : (
-        <EmptyState message="Ingen ansökningsdemografi för perioden." />
+        <EmptyState message={localizedText(locale, "Ingen ansökningsdemografi för perioden.", "No application demographics for this period.")} />
       )}
     </AnalyticsBlock>
   );
 }
 
 export function ListingDemographyDrilldownBlock() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
@@ -1290,7 +1362,7 @@ export function ListingDemographyDrilldownBlock() {
           setError(
             requestError instanceof Error
               ? requestError.message
-              : "Kunde inte hämta annonsdemografi."
+              : localizedText(locale, "Kunde inte hämta annonsdemografi.", "Could not load listing demographics.")
           );
         }
       })
@@ -1301,7 +1373,7 @@ export function ListingDemographyDrilldownBlock() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, category, companyId, listingId, range]);
+  }, [authLoading, category, companyId, listingId, locale, range]);
 
   return (
     <AnalyticsBlock
@@ -1309,7 +1381,7 @@ export function ListingDemographyDrilldownBlock() {
         <div className="flex max-w-full flex-col gap-2 sm:flex-row">
           <Select onValueChange={setListingId} value={listingId}>
             <SelectTrigger className="h-8 w-full min-w-[180px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:w-[210px]">
-              <SelectValue placeholder="Välj annons" />
+              <SelectValue placeholder={localizedText(locale, "Välj annons", "Choose listing")} />
             </SelectTrigger>
             <SelectContent className="border-gray-200 bg-white">
               {listings.map((listing) => (
@@ -1328,17 +1400,17 @@ export function ListingDemographyDrilldownBlock() {
         </div>
       }
       size="2x2"
-      title="Annonsdetalj"
-      description="Demografi för vald annons och period."
+      title={localizedText(locale, "Annonsdetalj", "Listing detail")}
+      description={localizedText(locale, "Demografi för vald annons och period.", "Demographics for the selected listing and period.")}
     >
       {authLoading || isLoading ? (
         <BlockSkeleton />
       ) : error ? (
         <ErrorState message={error} />
       ) : category === "GENDER" || category === "VIEW_TYPE" || category === "RESULTED_IN_LIKE" || category === "DEVICE_TYPE" ? (
-        <PieDistribution data={bucketsToData(demography)} />
+        <PieDistribution data={bucketsToData(demography, 8, locale)} locale={locale} />
       ) : (
-        <HorizontalBars data={bucketsToData(demography)} />
+        <HorizontalBars data={bucketsToData(demography, 8, locale)} locale={locale} />
       )}
     </AnalyticsBlock>
   );

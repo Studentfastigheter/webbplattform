@@ -14,6 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { Locale } from "@/i18n/config";
+import { localizedText } from "@/i18n/text";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -21,6 +23,7 @@ type Props = {
   setOpen: Dispatch<React.SetStateAction<boolean>>;
   imageUrls?: string[];
   onSave?: (imageUrls: string[]) => void;
+  locale: Locale;
 };
 
 const FALLBACK_IMAGES = [
@@ -41,6 +44,7 @@ export default function ImageUploadGallery({
   setOpen,
   imageUrls,
   onSave,
+  locale,
 }: Props) {
   const initialImages = useMemo(
     () => imageUrls ?? FALLBACK_IMAGES,
@@ -114,7 +118,13 @@ export default function ImageUploadGallery({
 
   const handleSave = () => {
     onSave?.(draftImages);
-    toast.success("Dina bildändringar har sparats.");
+    toast.success(
+      localizedText(
+        locale,
+        "Dina bildändringar har sparats.",
+        "Your image changes have been saved."
+      )
+    );
     setOpen(false);
   };
 
@@ -122,9 +132,13 @@ export default function ImageUploadGallery({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[1025px] max-h-11/12 overflow-auto">
         <DialogHeader>
-          <DialogTitle>Redigera bilder</DialogTitle>
+          <DialogTitle>{localizedText(locale, "Redigera bilder", "Edit images")}</DialogTitle>
           <DialogDescription>
-            Granska alla bilder, ändra ordning, byt ut, ta bort eller ladda upp nya.
+            {localizedText(
+              locale,
+              "Granska alla bilder, ändra ordning, byt ut, ta bort eller ladda upp nya.",
+              "Review all images, reorder, replace, remove, or upload new ones."
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -132,9 +146,15 @@ export default function ImageUploadGallery({
           <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center transition hover:border-gray-400 hover:bg-gray-100">
             <Upload className="h-6 w-6 text-gray-500" />
             <div>
-              <p className="text-sm font-medium text-gray-900">Ladda upp bilder</p>
+              <p className="text-sm font-medium text-gray-900">
+                {localizedText(locale, "Ladda upp bilder", "Upload images")}
+              </p>
               <p className="mt-1 text-xs text-gray-500">
-                Välj en eller flera bilder från datorn.
+                {localizedText(
+                  locale,
+                  "Välj en eller flera bilder från datorn.",
+                  "Choose one or more images from your computer."
+                )}
               </p>
             </div>
             <input
@@ -152,19 +172,26 @@ export default function ImageUploadGallery({
           <div>
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Alla bilder</h3>
+                <h3 className="text-sm font-semibold text-gray-900">
+                  {localizedText(locale, "Alla bilder", "All images")}
+                </h3>
                 <p className="mt-1 text-xs text-gray-500">
-                  Den första bilden används som huvudbild i previewn.
+                  {localizedText(
+                    locale,
+                    "Den första bilden används som huvudbild i previewn.",
+                    "The first image is used as the main image in the preview."
+                  )}
                 </p>
               </div>
               <span className="text-sm text-gray-500">
-                {draftImages.length} bilder
+                {draftImages.length}{" "}
+                {localizedText(locale, "bilder", draftImages.length === 1 ? "image" : "images")}
               </span>
             </div>
 
             {draftImages.length === 0 ? (
               <div className="mt-4 rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500">
-                Inga bilder valda.
+                {localizedText(locale, "Inga bilder valda.", "No images selected.")}
               </div>
             ) : (
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -209,7 +236,7 @@ export default function ImageUploadGallery({
                     <div className="relative aspect-[4/3] bg-gray-100">
                       <img
                         src={src}
-                        alt={`Bild ${index + 1}`}
+                        alt={localizedText(locale, `Bild ${index + 1}`, `Image ${index + 1}`)}
                         className="h-full w-full object-cover"
                       />
                       <div className="absolute left-2 top-2 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-sm">
@@ -218,7 +245,7 @@ export default function ImageUploadGallery({
                       </div>
                       {index === 0 && (
                         <span className="absolute bottom-2 left-2 rounded-full bg-[#004225] px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-                          Huvudbild
+                          {localizedText(locale, "Huvudbild", "Main image")}
                         </span>
                       )}
                     </div>
@@ -233,7 +260,7 @@ export default function ImageUploadGallery({
                           isDisabled={index === 0}
                         >
                           <ArrowUp className="h-4 w-4" />
-                          Upp
+                          {localizedText(locale, "Upp", "Up")}
                         </Button>
                         <Button
                           type="button"
@@ -243,14 +270,14 @@ export default function ImageUploadGallery({
                           isDisabled={index === draftImages.length - 1}
                         >
                           <ArrowDown className="h-4 w-4" />
-                          Ner
+                          {localizedText(locale, "Ner", "Down")}
                         </Button>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <label className="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-full border border-[#004225] px-3 text-sm font-semibold text-[#004225] transition-colors hover:bg-[#004225]/5">
                           <ImagePlus className="h-4 w-4" />
-                          Byt
+                          {localizedText(locale, "Byt", "Replace")}
                           <input
                             type="file"
                             accept="image/*"
@@ -268,7 +295,7 @@ export default function ImageUploadGallery({
                           onClick={() => removeImage(index)}
                         >
                           <Trash2 className="h-4 w-4" />
-                          Ta bort
+                          {localizedText(locale, "Ta bort", "Remove")}
                         </Button>
                       </div>
                     </div>
@@ -281,9 +308,11 @@ export default function ImageUploadGallery({
 
         <DialogFooter className="mt-6">
           <DialogClose asChild>
-            <Button variant="outline">Avbryt</Button>
+            <Button variant="outline">{localizedText(locale, "Avbryt", "Cancel")}</Button>
           </DialogClose>
-          <Button onClick={handleSave}>Spara ändringar</Button>
+          <Button onClick={handleSave}>
+            {localizedText(locale, "Spara ändringar", "Save changes")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

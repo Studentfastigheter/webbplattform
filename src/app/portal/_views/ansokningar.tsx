@@ -18,6 +18,9 @@ import {
 } from "@/features/analytics/components/TrendBarChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
 import { companyService, type NewApplication } from "@/features/companies/services/company-service";
@@ -47,15 +50,13 @@ type ListingApplicationGroup = {
   trend: TrendBarChartPoint[];
 };
 
-const dayFormatter = new Intl.DateTimeFormat("sv-SE", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
-
-function formatTimestamp(value: number) {
+function formatTimestamp(value: number, locale: Locale) {
   if (!Number.isFinite(value) || value <= 0) return "-";
-  return dayFormatter.format(new Date(value));
+  return new Intl.DateTimeFormat(numberLocale(locale), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 function parseDate(value?: string) {
@@ -70,12 +71,12 @@ function parseApplicationDate(application: NewApplication) {
   return timestamp > 0 ? new Date(timestamp) : null;
 }
 
-function toPortalApplication(application: NewApplication): PortalApplication {
+function toPortalApplication(application: NewApplication, locale: Locale): PortalApplication {
   const submittedAt = application.submittedAt ?? application.createdAt;
 
   return {
     ...application,
-    listingName: application.listingTitle || application.address || "Okänd annons",
+    listingName: application.listingTitle || application.address || localizedText(locale, "Okänd annons", "Unknown listing"),
     submittedAtTime: parseDate(submittedAt),
   };
 }
@@ -145,7 +146,8 @@ function getListingGroupKey(application: PortalApplication) {
 }
 
 function buildListingGroups(
-  applications: PortalApplication[]
+  applications: PortalApplication[],
+  locale: Locale
 ): ListingApplicationGroup[] {
   const grouped = new Map<string, PortalApplication[]>();
 
@@ -165,8 +167,8 @@ function buildListingGroups(
       return {
         key,
         listingId: latest.listingId,
-        title: latest.listingTitle || latest.address || "Okänd annons",
-        address: latest.address || latest.listingCity || "Ingen adress",
+        title: latest.listingTitle || latest.address || localizedText(locale, "Okänd annons", "Unknown listing"),
+        address: latest.address || latest.listingCity || localizedText(locale, "Ingen adress", "No address"),
         city: latest.listingCity,
         rent: latest.listingRent,
         imageUrl: latest.listingImage,
@@ -183,9 +185,13 @@ function buildListingGroups(
     });
 }
 
-function formatRent(value?: number) {
+function formatRent(value: number | undefined, locale: Locale) {
   return typeof value === "number" && Number.isFinite(value)
-    ? `${value.toLocaleString("sv-SE")} kr/mån`
+    ? localizedText(
+        locale,
+        `${value.toLocaleString(numberLocale(locale))} kr/mån`,
+        `SEK ${value.toLocaleString(numberLocale(locale))}/mo`
+      )
     : null;
 }
 
@@ -196,7 +202,7 @@ function getRecentCount(applications: PortalApplication[], start: Date, end: Dat
   }).length;
 }
 
-function formatPercentChange(current: number, previous: number) {
+function formatPercentChange(current: number, previous: number, locale: Locale) {
   if (previous === 0) {
     return current > 0 ? "+100%" : null;
   }
@@ -204,7 +210,7 @@ function formatPercentChange(current: number, previous: number) {
   const change = ((current - previous) / previous) * 100;
   const prefix = change > 0 ? "+" : "";
 
-  return `${prefix}${change.toLocaleString("sv-SE", {
+  return `${prefix}${change.toLocaleString(numberLocale(locale), {
     maximumFractionDigits: 1,
   })}%`;
 }
@@ -254,9 +260,11 @@ function StatTile({
 function ApplicationStatsGrid({
   applications,
   groups,
+  locale,
 }: {
   applications: PortalApplication[];
   groups: ListingApplicationGroup[];
+  locale: Locale;
 }) {
   const now = new Date();
   const currentStart = new Date(now);
@@ -270,32 +278,32 @@ function ApplicationStatsGrid({
   return (
     <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
       <StatTile
-        detail="alla öppna"
+        detail={localizedText(locale, "alla öppna", "all open")}
         icon={FileUser}
-        label="Totalt antal ansökningar"
+        label={localizedText(locale, "Totalt antal ansökningar", "Total applications")}
         tone="brand"
-        value={applications.length.toLocaleString("sv-SE")}
+        value={applications.length.toLocaleString(numberLocale(locale))}
       />
       <StatTile
-        detail="med ansökningar"
+        detail={localizedText(locale, "med ansökningar", "with applications")}
         icon={Home}
-        label="Annonser"
+        label={localizedText(locale, "Annonser", "Listings")}
         tone="blue"
-        value={groups.length.toLocaleString("sv-SE")}
+        value={groups.length.toLocaleString(numberLocale(locale))}
       />
       <StatTile
-        detail={formatPercentChange(current30, previous30) ?? "oför."}
+        detail={formatPercentChange(current30, previous30, locale) ?? localizedText(locale, "oför.", "unch.")}
         icon={CalendarDays}
-        label="Senaste 30 dagar"
+        label={localizedText(locale, "Senaste 30 dagar", "Last 30 days")}
         tone="rose"
-        value={current30.toLocaleString("sv-SE")}
+        value={current30.toLocaleString(numberLocale(locale))}
       />
       <StatTile
-        detail="per annons"
+        detail={localizedText(locale, "per annons", "per listing")}
         icon={BarChart3}
-        label="Snittansökningar"
+        label={localizedText(locale, "Snittansökningar", "Average applications")}
         tone="amber"
-        value={average.toLocaleString("sv-SE", {
+        value={average.toLocaleString(numberLocale(locale), {
           maximumFractionDigits: 1,
         })}
       />
@@ -303,7 +311,7 @@ function ApplicationStatsGrid({
   );
 }
 
-function LoadingApplicationsLayout() {
+function LoadingApplicationsLayout({ locale }: { locale: Locale }) {
   return (
     <div className="space-y-4">
       <AnalyticsGrid>
@@ -314,10 +322,10 @@ function LoadingApplicationsLayout() {
             ))}
           </div>
         </AnalyticsBlock>
-        <AnalyticsBlock size="2x2" title="Ansökningstrend">
+        <AnalyticsBlock size="2x2" title={localizedText(locale, "Ansökningstrend", "Application trend")}>
           <Skeleton className="h-full min-h-[220px] rounded-md" />
         </AnalyticsBlock>
-        <AnalyticsBlock size="2x2" title="Trending annonser">
+        <AnalyticsBlock size="2x2" title={localizedText(locale, "Trending annonser", "Trending listings")}>
           <Skeleton className="h-full min-h-[220px] rounded-md" />
         </AnalyticsBlock>
       </AnalyticsGrid>
@@ -353,17 +361,19 @@ function ListingApplicationsLayout({
   groups,
   selectedGroup,
   onSelect,
+  locale,
 }: {
   groups: ListingApplicationGroup[];
   selectedGroup: ListingApplicationGroup | null;
   onSelect: (key: string) => void;
+  locale: Locale;
 }) {
   return (
     <div className="grid min-h-[520px] gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-[340px_minmax(0,1fr)]">
       <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white">
         {groups.length === 0 ? (
           <div className="flex flex-1 items-center justify-center px-5 py-10 text-center text-theme-sm text-gray-500">
-            Det finns inga annonser med ansökningar att visa ännu.
+            {localizedText(locale, "Det finns inga annonser med ansökningar att visa ännu.", "There are no listings with applications to show yet.")}
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -373,6 +383,7 @@ function ListingApplicationsLayout({
                   group={group}
                   isSelected={selectedGroup?.key === group.key}
                   key={group.key}
+                  locale={locale}
                   onSelect={() => onSelect(group.key)}
                 />
               ))}
@@ -383,10 +394,10 @@ function ListingApplicationsLayout({
 
       <section className="min-h-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
         {selectedGroup ? (
-          <SelectedListingDetails group={selectedGroup} />
+          <SelectedListingDetails group={selectedGroup} locale={locale} />
         ) : (
           <div className="flex h-full min-h-[360px] items-center justify-center px-6 py-10 text-center text-theme-sm text-gray-500">
-            Välj en annons i listan för att visa ansökningarna.
+            {localizedText(locale, "Välj en annons i listan för att visa ansökningarna.", "Choose a listing in the list to view applications.")}
           </div>
         )}
       </section>
@@ -394,13 +405,13 @@ function ListingApplicationsLayout({
   );
 }
 
-function TrendingListings({ groups }: { groups: ListingApplicationGroup[] }) {
+function TrendingListings({ groups, locale }: { groups: ListingApplicationGroup[]; locale: Locale }) {
   const topGroups = groups.slice(0, 5);
 
   if (topGroups.length === 0) {
     return (
       <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-sm text-gray-500">
-        Det finns inga annonser med ansökningar ännu.
+        {localizedText(locale, "Det finns inga annonser med ansökningar ännu.", "There are no listings with applications yet.")}
       </div>
     );
   }
@@ -425,9 +436,9 @@ function TrendingListings({ groups }: { groups: ListingApplicationGroup[] }) {
           </div>
           <div className="shrink-0 text-right">
             <p className="text-lg font-semibold leading-6 text-gray-950 tabular-nums">
-              {group.total.toLocaleString("sv-SE")}
+              {group.total.toLocaleString(numberLocale(locale))}
             </p>
-            <p className="text-xs text-gray-500">ans.</p>
+            <p className="text-xs text-gray-500">{localizedText(locale, "ans.", "apps")}</p>
           </div>
         </div>
       ))}
@@ -439,10 +450,12 @@ function ListingListItem({
   group,
   isSelected,
   onSelect,
+  locale,
 }: {
   group: ListingApplicationGroup;
   isSelected: boolean;
   onSelect: () => void;
+  locale: Locale;
 }) {
   return (
     <button
@@ -462,18 +475,18 @@ function ListingListItem({
 
       <span className="block truncate text-sm font-semibold">{group.title}</span>
       <span className="mt-1 block truncate text-xs text-gray-500">
-        {group.city || "Stad saknas"}
+        {group.city || localizedText(locale, "Stad saknas", "City missing")}
       </span>
     </button>
   );
 }
 
-function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
+function SelectedListingDetails({ group, locale }: { group: ListingApplicationGroup; locale: Locale }) {
   const href =
     group.listingId != null
       ? `${dashboardRelPath}/listings/${encodeURIComponent(String(group.listingId))}`
       : null;
-  const rent = formatRent(group.rent);
+  const rent = formatRent(group.rent, locale);
   const facts = [group.city, rent].filter(Boolean).join(" · ");
 
   return (
@@ -490,7 +503,7 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-brand-50 text-xs font-semibold text-brand-500">
-                Ingen bild
+                {localizedText(locale, "Ingen bild", "No image")}
               </div>
             )}
           </div>
@@ -517,15 +530,15 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
                     href={href}
                   >
                     <ExternalLink className="h-4 w-4" />
-                    Öppna annons
+                    {localizedText(locale, "Öppna annons", "Open listing")}
                   </Link>
                 ) : null}
                 <div className="mt-3">
                   <p className="text-xs font-medium text-gray-500">
-                    Totalt antal ansökningar
+                    {localizedText(locale, "Totalt antal ansökningar", "Total applications")}
                   </p>
                   <p className="mt-0.5 text-xl font-semibold leading-7 text-gray-950 tabular-nums">
-                    {group.total.toLocaleString("sv-SE")}
+                    {group.total.toLocaleString(numberLocale(locale))}
                   </p>
                 </div>
               </div>
@@ -534,7 +547,7 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
         </div>
 
         <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-gray-950">Senaste ansökningar</h3>
+          <h3 className="text-sm font-semibold text-gray-950">{localizedText(locale, "Senaste ansökningar", "Latest applications")}</h3>
           <div className="mt-3 grid gap-2">
             {group.applications.slice(0, 12).map((application) => (
               <div
@@ -545,14 +558,14 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
                   <p className="truncate text-sm font-semibold text-gray-900">
                     {[application.firstName, application.surname].filter(Boolean).join(" ") ||
                       application.studentEmail ||
-                      "Sökande"}
+                      localizedText(locale, "Sökande", "Applicant")}
                   </p>
                   <p className="mt-0.5 truncate text-xs text-gray-500">
-                    {application.message || application.studentSchool || "Ingen kommentar"}
+                    {application.message || application.studentSchool || localizedText(locale, "Ingen kommentar", "No comment")}
                   </p>
                 </div>
                 <span className="shrink-0 text-xs font-medium text-gray-500">
-                  {formatTimestamp(application.submittedAtTime)}
+                  {formatTimestamp(application.submittedAtTime, locale)}
                 </span>
               </div>
             ))}
@@ -566,6 +579,7 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
 export default function Ansokningar({
   listingId = null,
 }: AnsokningarProps) {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [applications, setApplications] = useState<PortalApplication[]>([]);
@@ -595,7 +609,7 @@ export default function Ansokningar({
 
         setApplications(
           result
-            .map(toPortalApplication)
+            .map((application) => toPortalApplication(application, locale))
             .sort((a, b) => b.submittedAtTime - a.submittedAtTime)
         );
       })
@@ -605,9 +619,9 @@ export default function Ansokningar({
         setApplications([]);
         setSelectedListingKey(null);
         setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Kunde inte hämta ansökningar."
+            requestError instanceof Error
+              ? requestError.message
+            : localizedText(locale, "Kunde inte hämta ansökningar.", "Could not load applications.")
         );
       })
       .finally(() => {
@@ -618,7 +632,7 @@ export default function Ansokningar({
     return () => {
       active = false;
     };
-  }, [authLoading, companyId]);
+  }, [authLoading, companyId, locale]);
 
   const visibleApplications = useMemo(() => {
     if (!listingId) {
@@ -631,8 +645,8 @@ export default function Ansokningar({
   }, [applications, listingId]);
 
   const listingGroups = useMemo(
-    () => buildListingGroups(visibleApplications),
-    [visibleApplications]
+    () => buildListingGroups(visibleApplications, locale),
+    [locale, visibleApplications]
   );
   const applicationTrend = useMemo(
     () => buildMonthlyTrend(visibleApplications, 12),
@@ -667,7 +681,7 @@ export default function Ansokningar({
   if (authLoading) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
-        Laddar ansökningar...
+        {localizedText(locale, "Laddar ansökningar...", "Loading applications...")}
       </div>
     );
   }
@@ -675,7 +689,7 @@ export default function Ansokningar({
   if (!user) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Logga in för att se företagets ansökningar.
+        {localizedText(locale, "Logga in för att se företagets ansökningar.", "Log in to view the company's applications.")}
       </div>
     );
   }
@@ -683,7 +697,7 @@ export default function Ansokningar({
   if (!companyId) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Denna sida är bara tillgänglig för företagskonton.
+        {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
       </div>
     );
   }
@@ -691,7 +705,9 @@ export default function Ansokningar({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Ansökningar</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {localizedText(locale, "Ansökningar", "Applications")}
+        </h1>
       </div>
 
       {error && (
@@ -701,7 +717,7 @@ export default function Ansokningar({
       )}
 
       {loading ? (
-        <LoadingApplicationsLayout />
+        <LoadingApplicationsLayout locale={locale} />
       ) : (
         <>
           {showOverviewAnalytics ? (
@@ -710,19 +726,20 @@ export default function Ansokningar({
                 <ApplicationStatsGrid
                   applications={visibleApplications}
                   groups={listingGroups}
+                  locale={locale}
                 />
               </AnalyticsBlock>
 
-              <AnalyticsBlock size="2x2" title="Ansökningstrend">
+              <AnalyticsBlock size="2x2" title={localizedText(locale, "Ansökningstrend", "Application trend")}>
                 <TrendBarChart
                   data={applicationTrend}
                   defaultInterval="1m"
                   embedded
-                  emptyMessage="Det finns inga ansökningar registrerade ännu."
+                  emptyMessage={localizedText(locale, "Det finns inga ansökningar registrerade ännu.", "There are no applications registered yet.")}
                   showHeader={false}
                   showSummary={false}
-                  title="Ansökningstrend"
-                  valueLabel="Ansökningar"
+                  title={localizedText(locale, "Ansökningstrend", "Application trend")}
+                  valueLabel={localizedText(locale, "Ansökningar", "Applications")}
                 />
               </AnalyticsBlock>
 
@@ -730,9 +747,9 @@ export default function Ansokningar({
                 action={<TrendingUp className="h-5 w-5 text-brand-500" />}
                 contentClassName="overflow-hidden"
                 size="2x2"
-                title="Trending annonser"
+                title={localizedText(locale, "Trending annonser", "Trending listings")}
               >
-                <TrendingListings groups={listingGroups} />
+                <TrendingListings groups={listingGroups} locale={locale} />
               </AnalyticsBlock>
             </AnalyticsGrid>
           ) : null}
@@ -740,6 +757,7 @@ export default function Ansokningar({
           <ListingApplicationsLayout
             groups={listingGroups}
             selectedGroup={selectedGroup}
+            locale={locale}
             onSelect={setSelectedListingKey}
           />
         </>

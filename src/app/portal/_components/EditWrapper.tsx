@@ -1,6 +1,8 @@
 "use client";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
@@ -15,11 +17,13 @@ type Props = React.HTMLAttributes<HTMLDivElement> & {
 export default function EditWrapper({
     children,
     className,
-    tooltip = "Redigera",
+    tooltip,
     isEditable = false,
     ...props
 }: Props) {
 
+    const { locale } = useI18n();
+    const tooltipLabel = tooltip ?? localizedText(locale, "Redigera", "Edit");
     const [isHovered, setIsHovered] = useState(false);
 
     return (
@@ -41,7 +45,7 @@ export default function EditWrapper({
                         rounded-md bg-neutral-900 px-3 py-1.5 text-xs text-white shadow-md
                         opacity-0 group-hover:opacity-100 transition whitespace-nowrap
                     ">
-                        {tooltip}
+                        {tooltipLabel}
 
                         {/* Arrow */}
                         <div className="

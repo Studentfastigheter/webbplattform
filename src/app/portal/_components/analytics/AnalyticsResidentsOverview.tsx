@@ -13,6 +13,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +28,7 @@ import {
 type Interval = {
   value: string;
   label: string;
+  labelEn: string;
   days?: number;
   months?: number;
 };
@@ -43,29 +47,13 @@ type DistributionItem = {
 };
 
 const intervals: Interval[] = [
-  { value: "1d", label: "1 dag", days: 1 },
-  { value: "1w", label: "1 vecka", days: 7 },
-  { value: "1m", label: "1 månad", months: 1 },
-  { value: "3m", label: "3 månader", months: 3 },
-  { value: "6m", label: "6 månader", months: 6 },
-  { value: "1y", label: "1 år", months: 12 },
+  { value: "1d", label: "1 dag", labelEn: "1 day", days: 1 },
+  { value: "1w", label: "1 vecka", labelEn: "1 week", days: 7 },
+  { value: "1m", label: "1 månad", labelEn: "1 month", months: 1 },
+  { value: "3m", label: "3 månader", labelEn: "3 months", months: 3 },
+  { value: "6m", label: "6 månader", labelEn: "6 months", months: 6 },
+  { value: "1y", label: "1 år", labelEn: "1 year", months: 12 },
 ];
-
-const monthFormatter = new Intl.DateTimeFormat("sv-SE", {
-  month: "short",
-});
-
-const monthYearFormatter = new Intl.DateTimeFormat("sv-SE", {
-  month: "long",
-  year: "numeric",
-});
-
-const residentChartConfig = {
-  residents: {
-    label: "Boende",
-    color: "var(--color-brand-500)",
-  },
-} satisfies ChartConfig;
 
 const distributionToneClass = {
   brand: {
@@ -78,7 +66,10 @@ const distributionToneClass = {
   },
 } as const;
 
-function formatShortMonth(date: Date, includeYear: boolean) {
+function formatShortMonth(date: Date, includeYear: boolean, locale: Locale) {
+  const monthFormatter = new Intl.DateTimeFormat(numberLocale(locale), {
+    month: "short",
+  });
   const month = monthFormatter.format(date).replace(".", "");
 
   if (!includeYear) {
@@ -92,7 +83,11 @@ function getMonthKey(year: number, month: number) {
   return `${year}-${month}`;
 }
 
-function toResidentTrend(data: ResidentAnalyticsData | null): TrendDatum[] {
+function toResidentTrend(data: ResidentAnalyticsData | null, locale: Locale): TrendDatum[] {
+  const monthYearFormatter = new Intl.DateTimeFormat(numberLocale(locale), {
+    month: "long",
+    year: "numeric",
+  });
   const residentByMonth = new Map<string, number>();
 
   data?.residentTrend.forEach((entry) => {
@@ -122,7 +117,7 @@ function toResidentTrend(data: ResidentAnalyticsData | null): TrendDatum[] {
 
   return trend.map((entry) => ({
     ...entry,
-    label: formatShortMonth(entry.timestamp, hasMultipleYears),
+    label: formatShortMonth(entry.timestamp, hasMultipleYears, locale),
   }));
 }
 
@@ -144,29 +139,31 @@ function filterTrendByInterval(trend: TrendDatum[], interval: Interval) {
   return trend.filter((entry) => entry.timestamp >= firstIncluded);
 }
 
-function formatAxisValue(value: string | number) {
+function formatAxisValue(value: string | number, locale: Locale) {
   const numericValue = Number(value);
 
   if (!Number.isFinite(numericValue) || numericValue < 1000) {
     return String(value);
   }
 
-  return `${numericValue / 1000}K`;
+  return `${(numericValue / 1000).toLocaleString(numberLocale(locale), {
+    maximumFractionDigits: 1,
+  })}K`;
 }
 
-function toTownItems(towns: ResidentsTownCount[]): DistributionItem[] {
+function toTownItems(towns: ResidentsTownCount[], locale: Locale): DistributionItem[] {
   return towns
     .map((town) => ({
-      name: town.town || "Okänd stad",
+      name: town.town || localizedText(locale, "Okänd stad", "Unknown city"),
       residents: town.residents,
     }))
     .sort((a, b) => b.residents - a.residents);
 }
 
-function toSchoolItems(schools: ResidentsSchoolCount[]): DistributionItem[] {
+function toSchoolItems(schools: ResidentsSchoolCount[], locale: Locale): DistributionItem[] {
   return schools
     .map((entry) => ({
-      name: entry.school?.name || "Okänd skola",
+      name: entry.school?.name || localizedText(locale, "Okänd skola", "Unknown school"),
       detail: entry.school?.city,
       residents: entry.residents,
     }))
@@ -180,6 +177,8 @@ function IntervalToggle({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { locale } = useI18n();
+
   return (
     <ToggleGroup
       className="max-w-full justify-start overflow-x-auto rounded-md bg-gray-50 p-0.5"
@@ -194,12 +193,12 @@ function IntervalToggle({
     >
       {intervals.map((interval) => (
         <ToggleGroupItem
-          aria-label={interval.label}
+          aria-label={localizedText(locale, interval.label, interval.labelEn)}
           className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
           key={interval.value}
           value={interval.value}
         >
-          {interval.label}
+          {localizedText(locale, interval.label, interval.labelEn)}
         </ToggleGroupItem>
       ))}
     </ToggleGroup>
@@ -225,11 +224,13 @@ function EmptyState({ message }: { message: string }) {
 function ResidentsTrendChart({
   data,
   intervalValue,
+  locale,
 }: {
   data: ResidentAnalyticsData | null;
   intervalValue: string;
+  locale: Locale;
 }) {
-  const trend = React.useMemo(() => toResidentTrend(data), [data]);
+  const trend = React.useMemo(() => toResidentTrend(data, locale), [data, locale]);
   const selectedInterval =
     intervals.find((interval) => interval.value === intervalValue) ??
     intervals[0]!;
@@ -242,8 +243,15 @@ function ResidentsTrendChart({
     chartData.length > 0 ? Math.round(total / chartData.length) : 0;
 
   if (chartData.length === 0) {
-    return <EmptyState message="Det finns ingen boendedata för perioden ännu." />;
+    return <EmptyState message={localizedText(locale, "Det finns ingen boendedata för perioden ännu.", "There is no resident data for this period yet.")} />;
   }
+
+  const residentChartConfig = {
+    residents: {
+      label: localizedText(locale, "Boende", "Residents"),
+      color: "var(--color-brand-500)",
+    },
+  } satisfies ChartConfig;
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
@@ -275,7 +283,7 @@ function ResidentsTrendChart({
               allowDecimals={false}
               axisLine={false}
               tick={{ fill: "#9ca3af", fontSize: 11 }}
-              tickFormatter={formatAxisValue}
+              tickFormatter={(value) => formatAxisValue(value, locale)}
               tickLine={false}
               tickMargin={8}
               width={38}
@@ -296,7 +304,7 @@ function ResidentsTrendChart({
               dataKey="residents"
               fill="var(--color-residents)"
               fillOpacity={0.16}
-              name="Boende"
+              name={localizedText(locale, "Boende", "Residents")}
               stroke="var(--color-residents)"
               strokeWidth={2}
               type="monotone"
@@ -306,8 +314,8 @@ function ResidentsTrendChart({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-[11px] text-gray-400">
-        <span>{total.toLocaleString("sv-SE")} totalt</span>
-        <span>{average.toLocaleString("sv-SE")} i snitt/mån</span>
+        <span>{localizedText(locale, `${total.toLocaleString(numberLocale(locale))} totalt`, `${total.toLocaleString(numberLocale(locale))} total`)}</span>
+        <span>{localizedText(locale, `${average.toLocaleString(numberLocale(locale))} i snitt/mån`, `${average.toLocaleString(numberLocale(locale))} avg/mo`)}</span>
       </div>
     </div>
   );
@@ -318,11 +326,13 @@ function DistributionList({
   items,
   title,
   tone,
+  locale,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   items: DistributionItem[];
   title: string;
   tone: "brand" | "sky";
+  locale: Locale;
 }) {
   const total = items.reduce((sum, item) => sum + item.residents, 0);
   const maxResidents = Math.max(...items.map((item) => item.residents), 0);
@@ -340,12 +350,12 @@ function DistributionList({
           </h3>
         </div>
         <span className="shrink-0 text-xs font-medium text-gray-500">
-          {total.toLocaleString("sv-SE")} totalt
+          {localizedText(locale, `${total.toLocaleString(numberLocale(locale))} totalt`, `${total.toLocaleString(numberLocale(locale))} total`)}
         </span>
       </div>
 
       {items.length === 0 ? (
-        <EmptyState message={`Det finns inga boende per ${title.toLowerCase()} ännu.`} />
+        <EmptyState message={localizedText(locale, `Det finns inga boende per ${title.toLowerCase()} ännu.`, `There are no residents per ${title.toLowerCase()} yet.`)} />
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           <div className="space-y-3">
@@ -367,7 +377,7 @@ function DistributionList({
                       ) : null}
                     </div>
                     <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">
-                      {item.residents.toLocaleString("sv-SE")}
+                      {item.residents.toLocaleString(numberLocale(locale))}
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-gray-100">
@@ -411,6 +421,7 @@ function DistributionSkeleton() {
 }
 
 export default function AnalyticsResidentsOverview() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [data, setData] = React.useState<ResidentAnalyticsData | null>(null);
@@ -425,7 +436,7 @@ export default function AnalyticsResidentsOverview() {
 
     if (!companyId) {
       setData(null);
-      setError("Kunde inte hitta ett aktivt företag för boendestatistiken.");
+      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag för boendestatistiken.", "Could not find an active company for the resident statistics."));
       setIsLoading(false);
       return;
     }
@@ -447,7 +458,7 @@ export default function AnalyticsResidentsOverview() {
           setError(
             err instanceof Error
               ? err.message
-              : "Kunde inte hämta boendestatistik."
+              : localizedText(locale, "Kunde inte hämta boendestatistik.", "Could not load resident statistics.")
           );
         }
       })
@@ -460,16 +471,16 @@ export default function AnalyticsResidentsOverview() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, companyId]);
+  }, [authLoading, companyId, locale]);
 
   const loading = authLoading || isLoading;
   const townItems = React.useMemo(
-    () => toTownItems(data?.residentTowns ?? []),
-    [data]
+    () => toTownItems(data?.residentTowns ?? [], locale),
+    [data, locale]
   );
   const schoolItems = React.useMemo(
-    () => toSchoolItems(data?.residentSchools ?? []),
-    [data]
+    () => toSchoolItems(data?.residentSchools ?? [], locale),
+    [data, locale]
   );
 
   return (
@@ -478,23 +489,23 @@ export default function AnalyticsResidentsOverview() {
         action={
           <IntervalToggle onChange={setIntervalValue} value={intervalValue} />
         }
-        description="Nya boende grupperade per månad."
+        description={localizedText(locale, "Nya boende grupperade per månad.", "New residents grouped by month.")}
         size="2x2"
-        title="Residenttrend"
+        title={localizedText(locale, "Boendetrend", "Resident trend")}
       >
         {loading ? (
           <Skeleton className="h-full min-h-[220px] w-full rounded-md" />
         ) : error ? (
           <ErrorState message={error} />
         ) : (
-          <ResidentsTrendChart data={data} intervalValue={intervalValue} />
+          <ResidentsTrendChart data={data} intervalValue={intervalValue} locale={locale} />
         )}
       </AnalyticsBlock>
 
       <AnalyticsBlock
-        description="Totalt antal boende uppdelat på stad och skola."
+        description={localizedText(locale, "Totalt antal boende uppdelat på stad och skola.", "Total residents split by city and school.")}
         size="2x2"
-        title="Boende per stad och skola"
+        title={localizedText(locale, "Boende per stad och skola", "Residents by city and school")}
       >
         {loading ? (
           <DistributionSkeleton />
@@ -505,14 +516,16 @@ export default function AnalyticsResidentsOverview() {
             <DistributionList
               icon={MapPin}
               items={townItems}
-              title="Stad"
+              title={localizedText(locale, "Stad", "City")}
               tone="brand"
+              locale={locale}
             />
             <DistributionList
               icon={GraduationCap}
               items={schoolItems}
-              title="Skola"
+              title={localizedText(locale, "Skola", "School")}
               tone="sky"
+              locale={locale}
             />
           </div>
         )}

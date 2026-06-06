@@ -1,7 +1,11 @@
+"use client";
+
 import {
   AnalyticsBlock,
   AnalyticsGrid,
 } from "@/features/analytics/components/AnalyticsBlocks";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import ApplicationIntervalStats from "../_components/analytics/ApplicationIntervalStats";
 import AnalyticsApplicationsByObjectBlock from "../_components/analytics/AnalyticsApplicationsByObjectBlock";
 import AnalyticsApplicationsTrend from "../_components/analytics/AnalyticsApplicationsTrend";
@@ -15,12 +19,16 @@ import {
 } from "../_components/analytics/DemographicsEndpointBlocks";
 
 export default function Analytics() {
+  const { locale } = useI18n();
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Analys</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {localizedText(locale, "Analys", "Analytics")}
+        </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Överblick av ansökningar, visningar och demografi.
+          {localizedText(locale, "Överblick av ansökningar, visningar och demografi.", "Overview of applications, views and demographics.")}
         </p>
       </div>
 
@@ -30,7 +38,7 @@ export default function Analytics() {
         <AnalyticsBlock size="2x2">
           <AnalyticsGeneralStats variant="analytics" />
         </AnalyticsBlock>
-        <AnalyticsBlock size="2x2" title="Ansökningstrend">
+        <AnalyticsBlock size="2x2" title={localizedText(locale, "Ansökningstrend", "Application trend")}>
           <AnalyticsApplicationsTrend
             embedded
             showHeader={false}

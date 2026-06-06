@@ -30,6 +30,9 @@ import {
   type ApplicationDemographyCategory,
   type GotListingFilter,
 } from "@/features/analytics/services/demographics-service";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 
 type ChartDatum = {
   label: string;
@@ -40,30 +43,40 @@ type ChartDatum = {
 
 const colors = ["#004225", "#2563eb", "#e11d48", "#d97706", "#0891b2", "#64748b"];
 
-const labels: Record<string, string> = {
-  GENDER: "Kön",
-  AGE: "Ålder",
-  SCHOOL: "Skola",
-  PREFERRED_MAX_RENT: "Maxhyra",
-  DAYS_IN_QUEUE: "Dagar i kö",
-  APPLICANT_OTHER_APPLICATIONS: "Andra ansökningar",
-  GOT_LISTING: "Utfall",
-  true: "Fick bostad",
-  false: "Fick ej bostad",
+const labels: Record<string, { sv: string; en: string }> = {
+  GENDER: { sv: "Kön", en: "Gender" },
+  AGE: { sv: "Ålder", en: "Age" },
+  SCHOOL: { sv: "Skola", en: "School" },
+  PREFERRED_MAX_RENT: { sv: "Maxhyra", en: "Max rent" },
+  DAYS_IN_QUEUE: { sv: "Dagar i kö", en: "Days in queue" },
+  APPLICANT_OTHER_APPLICATIONS: { sv: "Andra ansökningar", en: "Other applications" },
+  GOT_LISTING: { sv: "Utfall", en: "Outcome" },
+  true: { sv: "Fick bostad", en: "Got housing" },
+  false: { sv: "Fick ej bostad", en: "Did not get housing" },
 };
 
-const filterLabels: Record<GotListingFilter, string> = {
-  BOTH: "Alla utfall",
-  ACCEPTED_ONLY: "Accepterade",
-  REJECTED_ONLY: "Nekade",
+const filterLabels: Record<GotListingFilter, { sv: string; en: string }> = {
+  BOTH: { sv: "Alla utfall", en: "All outcomes" },
+  ACCEPTED_ONLY: { sv: "Accepterade", en: "Accepted" },
+  REJECTED_ONLY: { sv: "Nekade", en: "Rejected" },
 };
 
-function formatNumber(value: number) {
-  return value.toLocaleString("sv-SE");
+function labelFor(locale: Locale, value: string) {
+  const label = labels[value];
+  return label ? localizedText(locale, label.sv, label.en) : value;
 }
 
-function formatPercent(value: number) {
-  return `${value.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}%`;
+function filterLabelFor(locale: Locale, value: GotListingFilter) {
+  const label = filterLabels[value];
+  return localizedText(locale, label.sv, label.en);
+}
+
+function formatNumber(value: number, locale: Locale) {
+  return value.toLocaleString(numberLocale(locale));
+}
+
+function formatPercent(value: number, locale: Locale) {
+  return `${value.toLocaleString(numberLocale(locale), { maximumFractionDigits: 1 })}%`;
 }
 
 function toDateTimeLocalValue(value: Date) {
@@ -78,10 +91,10 @@ function dateTimeLocalToIso(value: string) {
   return date.toISOString();
 }
 
-function keyLabel(value: unknown) {
-  if (value === null || value === undefined) return "Okänt";
+function keyLabel(value: unknown, locale: Locale) {
+  if (value === null || value === undefined) return localizedText(locale, "Okänt", "Unknown");
   const raw = String(value).trim();
-  return labels[raw] ?? (raw || "Okänt");
+  return labels[raw] ? labelFor(locale, raw) : (raw || localizedText(locale, "Okänt", "Unknown"));
 }
 
 function totalApplications(value: ApplicationDemography | null) {
@@ -96,13 +109,13 @@ function totalApplications(value: ApplicationDemography | null) {
   );
 }
 
-function toData(value: ApplicationDemography | null): ChartDatum[] {
+function toData(value: ApplicationDemography | null, locale: Locale): ChartDatum[] {
   const total = totalApplications(value);
   return (value?.buckets ?? [])
     .map((bucket, index) => {
       const count = Number(bucket.totalApplications ?? 0);
       return {
-        label: keyLabel(bucket.key),
+        label: keyLabel(bucket.key, locale),
         value: count,
         share: total > 0 ? (count / total) * 100 : 0,
         fill: colors[index % colors.length],
@@ -112,8 +125,8 @@ function toData(value: ApplicationDemography | null): ChartDatum[] {
     .sort((left, right) => right.value - left.value);
 }
 
-function MiniPie({ data }: { data: ChartDatum[] }) {
-  if (data.length === 0) return <EmptyState />;
+function MiniPie({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
+  if (data.length === 0) return <EmptyState locale={locale} />;
 
   return (
     <div className="h-[210px] min-w-0">
@@ -126,8 +139,8 @@ function MiniPie({ data }: { data: ChartDatum[] }) {
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
             }}
             formatter={(value, _, item) => [
-              `${formatNumber(Number(value))} (${formatPercent(item.payload.share)})`,
-              "Ansökningar",
+              `${formatNumber(Number(value), locale)} (${formatPercent(item.payload.share, locale)})`,
+              localizedText(locale, "Ansökningar", "Applications"),
             ]}
           />
           <Pie
@@ -150,8 +163,8 @@ function MiniPie({ data }: { data: ChartDatum[] }) {
   );
 }
 
-function MiniBars({ data }: { data: ChartDatum[] }) {
-  if (data.length === 0) return <EmptyState />;
+function MiniBars({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
+  if (data.length === 0) return <EmptyState locale={locale} />;
 
   return (
     <div className="h-[210px] min-w-0">
@@ -171,7 +184,7 @@ function MiniBars({ data }: { data: ChartDatum[] }) {
               borderRadius: 12,
               boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
             }}
-            formatter={(value) => [formatNumber(Number(value)), "Ansökningar"]}
+            formatter={(value) => [formatNumber(Number(value), locale), localizedText(locale, "Ansökningar", "Applications")]}
           />
           <Bar dataKey="value" radius={[8, 8, 0, 0]}>
             {data.map((entry) => (
@@ -184,10 +197,10 @@ function MiniBars({ data }: { data: ChartDatum[] }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ locale }: { locale: Locale }) {
   return (
     <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-4 text-center text-sm text-gray-500">
-      Ingen ansökningsdemografi för perioden.
+      {localizedText(locale, "Ingen ansökningsdemografi för perioden.", "No application demographics for this period.")}
     </div>
   );
 }
@@ -199,6 +212,8 @@ function CategorySelect({
   value: ApplicationDemographyCategory;
   onChange: (value: ApplicationDemographyCategory) => void;
 }) {
+  const { locale } = useI18n();
+
   return (
     <Select
       onValueChange={(next) => onChange(next as ApplicationDemographyCategory)}
@@ -210,7 +225,7 @@ function CategorySelect({
       <SelectContent className="border-gray-200 bg-white">
         {APPLICATION_DEMOGRAPHY_CATEGORIES.map((category) => (
           <SelectItem key={category} value={category}>
-            {labels[category] ?? category}
+            {labelFor(locale, category)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -259,6 +274,7 @@ export default function ApplicationDemographicsPanel({
   to: Date;
   periodLabel?: string;
 }) {
+  const { locale } = useI18n();
   const [fromValue, setFromValue] = React.useState(() => toDateTimeLocalValue(from));
   const [toValue, setToValue] = React.useState(() => toDateTimeLocalValue(to));
   const [category, setCategory] =
@@ -279,13 +295,13 @@ export default function ApplicationDemographicsPanel({
 
     if (!fromIso || !toIso) {
       setData(null);
-      setError("Välj giltiga datum för from och to.");
+      setError(localizedText(locale, "Välj giltiga datum för från och till.", "Choose valid from and to dates."));
       return;
     }
 
     if (new Date(fromIso).getTime() > new Date(toIso).getTime()) {
       setData(null);
-      setError("From måste vara tidigare än to.");
+      setError(localizedText(locale, "Från måste vara tidigare än till.", "From must be earlier than to."));
       return;
     }
 
@@ -305,7 +321,7 @@ export default function ApplicationDemographicsPanel({
         setError(
           requestError instanceof Error
             ? requestError.message
-            : "Kunde inte hämta ansökningsdemografi."
+            : localizedText(locale, "Kunde inte hämta ansökningsdemografi.", "Could not load application demographics.")
         );
       })
       .finally(() => {
@@ -315,9 +331,9 @@ export default function ApplicationDemographicsPanel({
     return () => {
       cancelled = true;
     };
-  }, [category, fromValue, gotListing, listingId, toValue]);
+  }, [category, fromValue, gotListing, listingId, locale, toValue]);
 
-  const chartData = React.useMemo(() => toData(data), [data]);
+  const chartData = React.useMemo(() => toData(data, locale), [data, locale]);
   const total = totalApplications(data);
   const top = chartData[0];
 
@@ -347,22 +363,22 @@ export default function ApplicationDemographicsPanel({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-gray-950">
-            Ansökningsdemografi
+            {localizedText(locale, "Ansökningsdemografi", "Application demographics")}
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Data från GET /demographics/applications/listing för vald annons.
+            {localizedText(locale, "Data från GET /demographics/applications/listing för vald annons.", "Data from GET /demographics/applications/listing for the selected listing.")}
           </p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:justify-end">
           <Input
-            aria-label="From"
+            aria-label={localizedText(locale, "Från", "From")}
             className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
             onChange={(event) => setFromValue(event.target.value)}
             type="datetime-local"
             value={fromValue}
           />
           <Input
-            aria-label="To"
+            aria-label={localizedText(locale, "Till", "To")}
             className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
             onChange={(event) => setToValue(event.target.value)}
             type="datetime-local"
@@ -379,7 +395,7 @@ export default function ApplicationDemographicsPanel({
             <SelectContent className="border-gray-200 bg-white">
               {(Object.keys(filterLabels) as GotListingFilter[]).map((filter) => (
                 <SelectItem key={filter} value={filter}>
-                  {filterLabels[filter]}
+                  {filterLabelFor(locale, filter)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -390,52 +406,52 @@ export default function ApplicationDemographicsPanel({
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <SummaryCard
           icon={<BadgeCheck className="h-4 w-4" />}
-          label={labels[category] ?? category}
-          value={formatNumber(total)}
-          helper="Ansökningar i urvalet"
+          label={labelFor(locale, category)}
+          value={formatNumber(total, locale)}
+          helper={localizedText(locale, "Ansökningar i urvalet", "Applications in the selection")}
         />
         <SummaryCard
           icon={<GraduationCap className="h-4 w-4" />}
-          label="Toppsegment"
-          value={top?.label ?? "Saknas"}
-          helper={top ? `${formatNumber(top.value)} (${formatPercent(top.share)})` : "Ingen data"}
+          label={localizedText(locale, "Toppsegment", "Top segment")}
+          value={top?.label ?? localizedText(locale, "Saknas", "Missing")}
+          helper={top ? `${formatNumber(top.value, locale)} (${formatPercent(top.share, locale)})` : localizedText(locale, "Ingen data", "No data")}
         />
         <SummaryCard
           icon={<WalletCards className="h-4 w-4" />}
-          label={filterLabels[gotListing]}
-          value={formatNumber(total)}
-          helper="Vald utfallstyp"
+          label={filterLabelFor(locale, gotListing)}
+          value={formatNumber(total, locale)}
+          helper={localizedText(locale, "Vald utfallstyp", "Selected outcome type")}
         />
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">
-            {labels[category] ?? category}
+            {labelFor(locale, category)}
           </h3>
           {category === "GENDER" || category === "GOT_LISTING" ? (
-            <MiniPie data={chartData} />
+            <MiniPie data={chartData} locale={locale} />
           ) : (
-            <MiniBars data={chartData} />
+            <MiniBars data={chartData} locale={locale} />
           )}
         </div>
         <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="text-sm font-semibold text-gray-900">Sammanfattning</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{localizedText(locale, "Sammanfattning", "Summary")}</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-gray-500">Ansökningar</dt>
-              <dd className="font-semibold text-gray-950">{formatNumber(total)}</dd>
+              <dt className="text-gray-500">{localizedText(locale, "Ansökningar", "Applications")}</dt>
+              <dd className="font-semibold text-gray-950">{formatNumber(total, locale)}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-gray-500">Toppsegment</dt>
+              <dt className="text-gray-500">{localizedText(locale, "Toppsegment", "Top segment")}</dt>
               <dd className="truncate font-semibold text-gray-950">
-                {top?.label ?? "Saknas"}
+                {top?.label ?? localizedText(locale, "Saknas", "Missing")}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-gray-500">Andel</dt>
+              <dt className="text-gray-500">{localizedText(locale, "Andel", "Share")}</dt>
               <dd className="font-semibold text-gray-950">
-                {top ? formatPercent(top.share) : "0%"}
+                {top ? formatPercent(top.share, locale) : "0%"}
               </dd>
             </div>
           </dl>

@@ -28,6 +28,9 @@ import {
   type CompanyUserDTO,
 } from "@/features/companies/services/company-service";
 import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 
 type UserRole = "admin" | "manager" | "agent";
 type RoleSource = CompanyUserDTO["role"] | string | null | undefined;
@@ -55,10 +58,10 @@ type UserAccountFormState = {
   roleName: string;
 };
 
-const roleLabels: Record<UserRole, string> = {
-  admin: "Admin",
-  manager: "Manager",
-  agent: "Agent",
+const roleLabels: Record<UserRole, { sv: string; en: string }> = {
+  admin: { sv: "Admin", en: "Admin" },
+  manager: { sv: "Manager", en: "Manager" },
+  agent: { sv: "Agent", en: "Agent" },
 };
 
 function createEmptyUserAccountForm(roleName = ""): UserAccountFormState {
@@ -98,17 +101,17 @@ function getPreferredCreateRoleName(roles: CompanyRole[]) {
   );
 }
 
-function getRoleDisplayName(roleName: string) {
+function getRoleDisplayName(roleName: string, locale: Locale) {
   const normalizedRoleName = roleName.trim().toUpperCase();
-  if (normalizedRoleName === "ADMIN") return "Admin";
-  if (normalizedRoleName === "MANAGER") return "Manager";
-  if (normalizedRoleName === "AGENT") return "Agent";
+  if (normalizedRoleName === "ADMIN") return localizedText(locale, "Admin", "Admin");
+  if (normalizedRoleName === "MANAGER") return localizedText(locale, "Manager", "Manager");
+  if (normalizedRoleName === "AGENT") return localizedText(locale, "Agent", "Agent");
   return roleName;
 }
 
-function getRoleOptionLabel(role: CompanyRole) {
-  const roleName = role.name?.trim() || "Okänd roll";
-  return getRoleDisplayName(roleName);
+function getRoleOptionLabel(role: CompanyRole, locale: Locale) {
+  const roleName = role.name?.trim() || localizedText(locale, "Okänd roll", "Unknown role");
+  return getRoleDisplayName(roleName, locale);
 }
 
 function mapBackendRole(role?: CompanyUserDTO["role"] | null): UserRole {
@@ -171,7 +174,7 @@ function dedupeUsers(users: CompanyPortalUser[]) {
   );
 }
 
-function VerificationBadge({ verified }: { verified: boolean }) {
+function VerificationBadge({ verified, locale }: { verified: boolean; locale: Locale }) {
   return (
     <span
       className={[
@@ -181,12 +184,15 @@ function VerificationBadge({ verified }: { verified: boolean }) {
           : "bg-amber-50 text-amber-700",
       ].join(" ")}
     >
-      {verified ? "Verifierad" : "Ej verifierad"}
+      {verified
+        ? localizedText(locale, "Verifierad", "Verified")
+        : localizedText(locale, "Ej verifierad", "Not verified")}
     </span>
   );
 }
 
 export default function UsersPage() {
+  const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const [users, setUsers] = useState<CompanyPortalUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -230,12 +236,12 @@ export default function UsersPage() {
       setUsersError(
         error instanceof Error
           ? error.message
-          : "Kunde inte hämta användare från backend."
+          : localizedText(locale, "Kunde inte hämta användare från backend.", "Could not load users from the backend.")
       );
     } finally {
       setLoadingUsers(false);
     }
-  }, [companyId]);
+  }, [companyId, locale]);
 
   useEffect(() => {
     let active = true;
@@ -255,7 +261,7 @@ export default function UsersPage() {
         setRolesError(
           error instanceof Error
             ? error.message
-            : "Kunde inte hämta roller från backend."
+            : localizedText(locale, "Kunde inte hämta roller från backend.", "Could not load roles from the backend.")
         );
         setRolesLoading(false);
       });
@@ -263,7 +269,7 @@ export default function UsersPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (!companyId) {
@@ -324,7 +330,7 @@ export default function UsersPage() {
 
   const openCreateDialog = useCallback(() => {
     if (!canManageUsers) {
-      toast.error("Endast verifierad ADMIN kan skapa företagskonton.");
+      toast.error(localizedText(locale, "Endast verifierad ADMIN kan skapa företagskonton.", "Only a verified ADMIN can create company accounts."));
       return;
     }
 
@@ -332,12 +338,12 @@ export default function UsersPage() {
     setEditingUser(null);
     setAccountForm(createEmptyUserAccountForm(defaultCreateRoleName));
     setDialogOpen(true);
-  }, [canManageUsers, defaultCreateRoleName]);
+  }, [canManageUsers, defaultCreateRoleName, locale]);
 
   const openEditDialog = useCallback(
     (entry: CompanyPortalUser) => {
       if (!canManageUsers) {
-        toast.error("Endast verifierad ADMIN kan uppdatera företagskonton.");
+        toast.error(localizedText(locale, "Endast verifierad ADMIN kan uppdatera företagskonton.", "Only a verified ADMIN can update company accounts."));
         return;
       }
 
@@ -353,7 +359,7 @@ export default function UsersPage() {
       });
       setDialogOpen(true);
     },
-    [canManageUsers, defaultCreateRoleName]
+    [canManageUsers, defaultCreateRoleName, locale]
   );
 
   const handleSaveAccount = useCallback(async () => {
@@ -366,23 +372,23 @@ export default function UsersPage() {
     const password = accountForm.password.trim();
 
     if (!roleName) {
-      toast.error("Välj roll.");
+      toast.error(localizedText(locale, "Välj roll.", "Choose a role."));
       return;
     }
 
     if (formMode === "create") {
       if (!email || !password) {
-        toast.error("E-post och lösenord krävs.");
+        toast.error(localizedText(locale, "E-post och lösenord krävs.", "Email and password are required."));
         return;
       }
       if (password.length < 6) {
-        toast.error("Lösenordet måste vara minst 6 tecken.");
+        toast.error(localizedText(locale, "Lösenordet måste vara minst 6 tecken.", "The password must be at least 6 characters."));
         return;
       }
     }
 
     if (formMode === "edit" && !editingUser) {
-      toast.error("Välj ett konto att uppdatera.");
+      toast.error(localizedText(locale, "Välj ett konto att uppdatera.", "Choose an account to update."));
       return;
     }
 
@@ -398,7 +404,7 @@ export default function UsersPage() {
           phone: accountForm.phone.trim(),
           roleName,
         });
-        toast.success("Företagskontot skapades.");
+        toast.success(localizedText(locale, "Företagskontot skapades.", "The company account was created."));
       } else if (editingUser) {
         await companyService.updateUser(companyId, editingUser.backendId, {
           firstName: accountForm.firstName.trim(),
@@ -406,7 +412,7 @@ export default function UsersPage() {
           phone: accountForm.phone.trim(),
           roleName,
         });
-        toast.success("Företagskontot uppdaterades.");
+        toast.success(localizedText(locale, "Företagskontot uppdaterades.", "The company account was updated."));
       }
 
       setDialogOpen(false);
@@ -414,7 +420,7 @@ export default function UsersPage() {
       await loadUsers();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Kunde inte spara företagskontot."
+        error instanceof Error ? error.message : localizedText(locale, "Kunde inte spara företagskontot.", "Could not save the company account.")
       );
     } finally {
       setSavingAccount(false);
@@ -425,6 +431,7 @@ export default function UsersPage() {
     companyId,
     editingUser,
     formMode,
+    locale,
     loadUsers,
   ]);
 
@@ -445,24 +452,24 @@ export default function UsersPage() {
               : userEntry
           )
         );
-        toast.success(`${entry.name} är verifierad.`);
+        toast.success(localizedText(locale, `${entry.name} är verifierad.`, `${entry.name} is verified.`));
       } catch (error) {
         toast.error(
           error instanceof Error
             ? error.message
-            : "Kunde inte verifiera användaren."
+            : localizedText(locale, "Kunde inte verifiera användaren.", "Could not verify the user.")
         );
       } finally {
         setVerifyingUserId(null);
       }
     },
-    [canVerifyUsers, companyId]
+    [canVerifyUsers, companyId, locale]
   );
 
   if (authLoading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-        Laddar användare...
+        {localizedText(locale, "Laddar användare...", "Loading users...")}
       </div>
     );
   }
@@ -470,7 +477,7 @@ export default function UsersPage() {
   if (!user) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Logga in för att visa användare i företagsportalen.
+        {localizedText(locale, "Logga in för att visa användare i företagsportalen.", "Log in to view users in the company portal.")}
       </div>
     );
   }
@@ -478,7 +485,7 @@ export default function UsersPage() {
   if (!companyId) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Denna sida är bara tillgänglig för företagskonton.
+        {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
       </div>
     );
   }
@@ -488,12 +495,14 @@ export default function UsersPage() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Användare</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              {localizedText(locale, "Användare", "Users")}
+            </h1>
           </div>
           {canManageUsers ? (
             <Button type="button" size="sm" onPress={openCreateDialog}>
               <Plus className="h-4 w-4" />
-              Nytt konto
+              {localizedText(locale, "Nytt konto", "New account")}
             </Button>
           ) : null}
         </div>
@@ -509,15 +518,15 @@ export default function UsersPage() {
                   }
                 >
                   <PortalControlSelectTrigger
-                    aria-label="Filtrera på roll"
+                    aria-label={localizedText(locale, "Filtrera på roll", "Filter by role")}
                   >
                     <SelectValue />
                   </PortalControlSelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alla roller</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Managers</SelectItem>
-                    <SelectItem value="agent">Agents</SelectItem>
+                    <SelectItem value="all">{localizedText(locale, "Alla roller", "All roles")}</SelectItem>
+                    <SelectItem value="admin">{localizedText(locale, "Admin", "Admin")}</SelectItem>
+                    <SelectItem value="manager">{localizedText(locale, "Managers", "Managers")}</SelectItem>
+                    <SelectItem value="agent">{localizedText(locale, "Agents", "Agents")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -530,7 +539,7 @@ export default function UsersPage() {
                   }}
                   className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-[#004225]"
                 >
-                  Rensa filter
+                  {localizedText(locale, "Rensa filter", "Clear filters")}
                 </button>
               )}
             </div>
@@ -549,14 +558,16 @@ export default function UsersPage() {
         <DialogContent className="bg-white sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {formMode === "create" ? "Nytt företagskonto" : "Uppdatera företagskonto"}
+              {formMode === "create"
+                ? localizedText(locale, "Nytt företagskonto", "New company account")
+                : localizedText(locale, "Uppdatera företagskonto", "Update company account")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4 py-2">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="company-user-first-name">Förnamn</Label>
+                <Label htmlFor="company-user-first-name">{localizedText(locale, "Förnamn", "First name")}</Label>
                 <Input
                   id="company-user-first-name"
                   value={accountForm.firstName}
@@ -564,7 +575,7 @@ export default function UsersPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="company-user-surname">Efternamn</Label>
+                <Label htmlFor="company-user-surname">{localizedText(locale, "Efternamn", "Last name")}</Label>
                 <Input
                   id="company-user-surname"
                   value={accountForm.surname}
@@ -575,7 +586,7 @@ export default function UsersPage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="company-user-email">E-post</Label>
+                <Label htmlFor="company-user-email">{localizedText(locale, "E-post", "Email")}</Label>
                 <Input
                   id="company-user-email"
                   type="email"
@@ -585,7 +596,7 @@ export default function UsersPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="company-user-phone">Telefon</Label>
+                <Label htmlFor="company-user-phone">{localizedText(locale, "Telefon", "Phone")}</Label>
                 <Input
                   id="company-user-phone"
                   value={accountForm.phone}
@@ -596,7 +607,7 @@ export default function UsersPage() {
 
             {formMode === "create" ? (
               <div className="grid gap-2">
-                <Label htmlFor="company-user-password">Lösenord</Label>
+                <Label htmlFor="company-user-password">{localizedText(locale, "Lösenord", "Password")}</Label>
                 <Input
                   id="company-user-password"
                   type="password"
@@ -607,15 +618,17 @@ export default function UsersPage() {
             ) : null}
 
             <div className="grid gap-2">
-              <Label>Roll</Label>
+              <Label>{localizedText(locale, "Roll", "Role")}</Label>
               <Select
                 value={accountForm.roleName}
                 disabled={rolesLoading || roles.length === 0}
                 onValueChange={(roleName) => patchAccountForm({ roleName })}
               >
-                <PortalControlSelectTrigger aria-label="Välj roll">
+                <PortalControlSelectTrigger aria-label={localizedText(locale, "Välj roll", "Choose role")}>
                   <SelectValue
-                    placeholder={rolesLoading ? "Hämtar roller..." : "Välj roll"}
+                    placeholder={rolesLoading
+                      ? localizedText(locale, "Hämtar roller...", "Loading roles...")
+                      : localizedText(locale, "Välj roll", "Choose role")}
                   />
                 </PortalControlSelectTrigger>
                 <SelectContent>
@@ -625,7 +638,7 @@ export default function UsersPage() {
 
                     return (
                       <SelectItem key={roleName} value={roleName}>
-                        {getRoleOptionLabel(role)}
+                        {getRoleOptionLabel(role, locale)}
                       </SelectItem>
                     );
                   })}
@@ -647,7 +660,7 @@ export default function UsersPage() {
               isDisabled={savingAccount}
               onPress={() => setDialogOpen(false)}
             >
-              Avbryt
+              {localizedText(locale, "Avbryt", "Cancel")}
             </Button>
             <Button
               type="button"
@@ -655,7 +668,9 @@ export default function UsersPage() {
               isDisabled={rolesLoading || roles.length === 0}
               onPress={handleSaveAccount}
             >
-              {formMode === "create" ? "Skapa konto" : "Spara ändringar"}
+              {formMode === "create"
+                ? localizedText(locale, "Skapa konto", "Create account")
+                : localizedText(locale, "Spara ändringar", "Save changes")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -665,31 +680,33 @@ export default function UsersPage() {
         <CardContent className="px-0">
           {!loadingUsers && users.length > 0 && !canVerifyUsers ? (
             <div className="border-b border-gray-100 bg-gray-50 px-6 py-3 text-sm text-gray-600">
-              Endast verifierade ADMIN och MANAGER kan verifiera användare.
+              {localizedText(locale, "Endast verifierade ADMIN och MANAGER kan verifiera användare.", "Only verified ADMIN and MANAGER users can verify users.")}
             </div>
           ) : null}
           {!loadingUsers && users.length > 0 && !canManageUsers ? (
             <div className="border-b border-gray-100 bg-gray-50 px-6 py-3 text-sm text-gray-600">
-              Endast verifierad ADMIN kan skapa och uppdatera användare.
+              {localizedText(locale, "Endast verifierad ADMIN kan skapa och uppdatera användare.", "Only a verified ADMIN can create and update users.")}
             </div>
           ) : null}
 
           {loadingUsers ? (
             <div className="flex items-center gap-2 px-6 py-10 text-sm text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Hämtar användarlista...
+              {localizedText(locale, "Hämtar användarlista...", "Loading user list...")}
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#004225]/8 text-[#004225]">
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <p className="mt-4 font-medium text-gray-900">Inga användare hittades</p>
+              <p className="mt-4 font-medium text-gray-900">
+                {localizedText(locale, "Inga användare hittades", "No users found")}
+              </p>
               <p className="mt-1 text-sm text-gray-500">
                 {usersError ??
                   (users.length > 0
-                    ? "Inga användare matchar valt filter."
-                    : "Endpointen returnerade inga användare.")}
+                    ? localizedText(locale, "Inga användare matchar valt filter.", "No users match the selected filter.")
+                    : localizedText(locale, "Endpointen returnerade inga användare.", "The endpoint returned no users."))}
               </p>
             </div>
           ) : (
@@ -700,11 +717,11 @@ export default function UsersPage() {
                 </div>
               ) : null}
               <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_220px] gap-4 border-b border-gray-100 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
-                <span>Namn</span>
-                <span>Kontaktuppgifter</span>
-                <span>Roll</span>
-                <span>Status</span>
-                <span>Åtgärd</span>
+                <span>{localizedText(locale, "Namn", "Name")}</span>
+                <span>{localizedText(locale, "Kontaktuppgifter", "Contact details")}</span>
+                <span>{localizedText(locale, "Roll", "Role")}</span>
+                <span>{localizedText(locale, "Status", "Status")}</span>
+                <span>{localizedText(locale, "Åtgärd", "Action")}</span>
               </div>
 
               <div className="divide-y divide-gray-100">
@@ -721,7 +738,7 @@ export default function UsersPage() {
                         <p className="truncate font-medium text-gray-900">{entry.name}</p>
                         {isCurrentUser ? (
                           <p className="mt-1 text-xs font-medium text-[#004225]">
-                            Inloggat konto
+                            {localizedText(locale, "Inloggat konto", "Signed-in account")}
                           </p>
                         ) : null}
                       </div>
@@ -737,12 +754,12 @@ export default function UsersPage() {
 
                       <div>
                         <span className="text-sm text-gray-700">
-                          {roleLabels[entry.role]}
+                          {localizedText(locale, roleLabels[entry.role].sv, roleLabels[entry.role].en)}
                         </span>
                       </div>
 
                       <div>
-                        <VerificationBadge verified={entry.verified} />
+                        <VerificationBadge verified={entry.verified} locale={locale} />
                       </div>
 
                       <div className="flex flex-wrap gap-2">
@@ -756,7 +773,7 @@ export default function UsersPage() {
                             onPress={() => openEditDialog(entry)}
                           >
                             <Pencil className="h-4 w-4" />
-                            Ändra
+                            {localizedText(locale, "Ändra", "Edit")}
                           </Button>
                         ) : null}
                         {canVerifyUsers && !entry.verified && !isCurrentUser ? (
@@ -770,7 +787,7 @@ export default function UsersPage() {
                             onPress={() => handleVerifyUser(entry)}
                           >
                             <UserCheck className="h-4 w-4" />
-                            Verifiera
+                            {localizedText(locale, "Verifiera", "Verify")}
                           </Button>
                         ) : !canManageUsers ? (
                           <span className="text-sm text-gray-400">-</span>

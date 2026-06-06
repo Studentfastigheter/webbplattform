@@ -60,7 +60,7 @@ import PortalListingStatusTag, {
 } from "../_components/shared/PortalListingStatusTag";
 import {
   ApplicationIntervalToggle,
-  getApplicationInterval,
+  getLocalizedApplicationInterval,
   getApplicationIntervalRange,
   sumApplicationStatistics,
   type ApplicationIntervalValue,
@@ -68,6 +68,9 @@ import {
 import ListingDemographicsPanel from "../_components/analytics/ListingDemographicsPanel";
 import ApplicationDemographicsPanel from "../_components/analytics/ApplicationDemographicsPanel";
 import { dashboardRelPath } from "../_statics/variables";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { Locale } from "@/i18n/config";
+import { localizedText, numberLocale } from "@/i18n/text";
 
 type AnnonsOverviewProps = {
   id: string;
@@ -100,13 +103,21 @@ const emptyMeta: ListingMeta = {
 
 const listingStatusOptions: Array<{
   value: ListingStatus;
-  label: string;
+  labelSv: string;
+  labelEn: string;
   icon: typeof CircleCheck;
 }> = [
-  { value: "AVAILABLE", label: "Aktiv", icon: CircleCheck },
-  { value: "HIDDEN", label: "Gömd", icon: CirclePause },
-  { value: "RENTED", label: "Uthyrd", icon: Home },
+  { value: "AVAILABLE", labelSv: "Aktiv", labelEn: "Active", icon: CircleCheck },
+  { value: "HIDDEN", labelSv: "Gömd", labelEn: "Hidden", icon: CirclePause },
+  { value: "RENTED", labelSv: "Uthyrd", labelEn: "Rented", icon: Home },
 ];
+
+function statusOptionLabel(
+  option: (typeof listingStatusOptions)[number],
+  locale: Locale
+) {
+  return localizedText(locale, option.labelSv, option.labelEn);
+}
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
   const parts = path.split(".");
@@ -158,7 +169,7 @@ function normalizeKey(value: string): string {
     .replace(/[|]/g, "");
 }
 
-function mapStatus(statusRaw?: string): {
+function mapStatus(statusRaw: string | undefined, locale: Locale): {
   label: string;
   tone: PortalListingStatusTone;
   value: ListingStatus | null;
@@ -176,11 +187,19 @@ function mapStatus(statusRaw?: string): {
       "live",
     ].includes(status)
   ) {
-    return { label: "Aktiv", tone: "success", value: "AVAILABLE" };
+    return {
+      label: localizedText(locale, "Aktiv", "Active"),
+      tone: "success",
+      value: "AVAILABLE",
+    };
   }
 
   if (["rented", "rentedout", "rented_out", "uthyrd"].includes(status)) {
-    return { label: "Uthyrd", tone: "neutral", value: "RENTED" };
+    return {
+      label: localizedText(locale, "Uthyrd", "Rented"),
+      tone: "neutral",
+      value: "RENTED",
+    };
   }
 
   if (
@@ -194,47 +213,56 @@ function mapStatus(statusRaw?: string): {
       "draft",
     ].includes(status)
   ) {
-    return { label: "Gömd", tone: "warning", value: "HIDDEN" };
+    return {
+      label: localizedText(locale, "Gömd", "Hidden"),
+      tone: "warning",
+      value: "HIDDEN",
+    };
   }
 
-  return { label: statusRaw ?? "Okänd", tone: "neutral", value: null };
+  return {
+    label: statusRaw ?? localizedText(locale, "Okänd", "Unknown"),
+    tone: "neutral",
+    value: null,
+  };
 }
 
-function formatDate(value?: string | null): string {
+function formatDate(value: string | null | undefined, locale: Locale): string {
   if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "-";
 
-  return new Intl.DateTimeFormat("sv-SE", {
+  return new Intl.DateTimeFormat(numberLocale(locale), {
     day: "numeric",
     month: "short",
     year: "numeric",
   }).format(parsed);
 }
 
-function formatNumber(value: number): string {
-  return value.toLocaleString("sv-SE");
+function formatNumber(value: number, locale: Locale): string {
+  return value.toLocaleString(numberLocale(locale));
 }
 
-function formatCurrency(value?: number | null): string {
+function formatCurrency(value: number | null | undefined, locale: Locale): string {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return "-";
   }
 
-  return `${value.toLocaleString("sv-SE")} kr/mån`;
+  const amount = value.toLocaleString(numberLocale(locale));
+  return localizedText(locale, `${amount} kr/mån`, `SEK ${amount}/mo`);
 }
 
-function formatArea(value?: number | null): string {
+function formatArea(value: number | null | undefined, locale: Locale): string {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return "-";
   }
 
-  return `${value.toLocaleString("sv-SE")} m²`;
+  return `${value.toLocaleString(numberLocale(locale))} m²`;
 }
 
-function formatPercent(value: number): string {
+function formatPercent(value: number, locale: Locale): string {
   if (!Number.isFinite(value)) return "-";
-  return `${value.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}%`;
+  return `${value.toLocaleString(numberLocale(locale), { maximumFractionDigits: 1 })}%`;
 }
 
 function applicationStatisticsToTrendPoints(
@@ -255,18 +283,19 @@ function applicationStatisticsToTrendPoints(
     });
 }
 
-function formatDwellingType(value?: string | null): string {
-  const labels: Record<string, string> = {
-    APARTMENT: "Lägenhet",
-    ROOM: "Rum",
-    CORRIDOR_ROOM: "Korridorsrum",
-    apartment: "Lägenhet",
-    room: "Rum",
-    corridor_room: "Korridorsrum",
+function formatDwellingType(value: string | null | undefined, locale: Locale): string {
+  const labels: Record<string, { sv: string; en: string }> = {
+    APARTMENT: { sv: "Lägenhet", en: "Apartment" },
+    ROOM: { sv: "Rum", en: "Room" },
+    CORRIDOR_ROOM: { sv: "Korridorsrum", en: "Corridor room" },
+    apartment: { sv: "Lägenhet", en: "Apartment" },
+    room: { sv: "Rum", en: "Room" },
+    corridor_room: { sv: "Korridorsrum", en: "Corridor room" },
   };
 
   if (!value) return "-";
-  return labels[value] ?? value;
+  const label = labels[value];
+  return label ? localizedText(locale, label.sv, label.en) : value;
 }
 
 function resolveApplicationCount(
@@ -316,7 +345,8 @@ function resolveListingMeta(
   listing: ListingDetailDTO,
   companyListing: RawListing | null,
   applicationsByObject: ObjectApplicationCount[],
-  viewCounts: ListingViewCounts | null
+  viewCounts: ListingViewCounts | null,
+  locale: Locale
 ): ListingMeta {
   const rawDetail = listing as unknown as Record<string, unknown>;
   const publishedAtRaw =
@@ -329,7 +359,8 @@ function resolveListingMeta(
   const { label, tone, value } = mapStatus(
     (companyListing
       ? pickString(companyListing, ["status", "listingStatus", "state"])
-      : undefined) ?? pickString(rawDetail, ["status", "listingStatus", "state"])
+      : undefined) ?? pickString(rawDetail, ["status", "listingStatus", "state"]),
+    locale
   );
 
   return {
@@ -368,8 +399,8 @@ function resolveListingMeta(
           ])
         : undefined) ??
       0,
-    publishedAt: formatDate(publishedAtRaw),
-    updatedAt: formatDate(updatedAtRaw),
+    publishedAt: formatDate(publishedAtRaw, locale),
+    updatedAt: formatDate(updatedAtRaw, locale),
     statusLabel: label,
     statusTone: tone,
     statusValue: value,
@@ -385,19 +416,27 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function formatAgeRange(profile: RequirementsProfileDTO): string {
+function formatAgeRange(profile: RequirementsProfileDTO, locale: Locale): string {
   const parts = [
-    typeof profile.minAge === "number" ? `Min ${profile.minAge} år` : null,
-    typeof profile.maxAge === "number" ? `Max ${profile.maxAge} år` : null,
+    typeof profile.minAge === "number"
+      ? `${localizedText(locale, "Min", "Min")} ${profile.minAge} ${localizedText(locale, "år", "years")}`
+      : null,
+    typeof profile.maxAge === "number"
+      ? `${localizedText(locale, "Max", "Max")} ${profile.maxAge} ${localizedText(locale, "år", "years")}`
+      : null,
   ].filter(Boolean);
 
-  return parts.length > 0 ? parts.join(" / ") : "Inga ålderskrav";
+  return parts.length > 0
+    ? parts.join(" / ")
+    : localizedText(locale, "Inga ålderskrav", "No age requirements");
 }
 
 function RequirementProfileCard({
+  locale,
   profile,
   profileId,
 }: {
+  locale: Locale;
   profile: RequirementsProfileDTO | null;
   profileId?: string | null;
 }) {
@@ -410,10 +449,13 @@ function RequirementProfileCard({
           </div>
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              Kravprofil
+              {localizedText(locale, "Kravprofil", "Requirement profile")}
             </p>
             <h2 className="mt-1 text-lg font-semibold text-gray-900">
-              {profile?.title || (profileId ? "Kopplad kravprofil" : "Ingen kravprofil")}
+              {profile?.title ||
+                (profileId
+                  ? localizedText(locale, "Kopplad kravprofil", "Linked requirement profile")
+                  : localizedText(locale, "Ingen kravprofil", "No requirement profile"))}
             </h2>
           </div>
         </div>
@@ -422,17 +464,25 @@ function RequirementProfileCard({
       {!profile ? (
         <p className="mt-4 text-sm leading-6 text-gray-500">
           {profileId
-            ? "Kravprofilen kunde inte laddas från backend."
-            : "Annonsen har ingen kravprofil kopplad."}
+            ? localizedText(
+                locale,
+                "Kravprofilen kunde inte laddas från backend.",
+                "The requirement profile could not be loaded from the backend."
+              )
+            : localizedText(
+                locale,
+                "Annonsen har ingen kravprofil kopplad.",
+                "This listing has no linked requirement profile."
+              )}
         </p>
       ) : (
         <div className="mt-4 space-y-4">
           <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              Ålderskrav
+              {localizedText(locale, "Ålderskrav", "Age requirements")}
             </p>
             <p className="mt-1 text-sm font-semibold text-gray-900">
-              {formatAgeRange(profile)}
+              {formatAgeRange(profile, locale)}
             </p>
           </div>
 
@@ -442,7 +492,9 @@ function RequirementProfileCard({
 
           {profile.requiredDocuments?.length ? (
             <div>
-              <p className="text-sm font-semibold text-gray-900">Obligatoriska dokument</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {localizedText(locale, "Obligatoriska dokument", "Required documents")}
+              </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {profile.requiredDocuments.map((document, index) => (
                   <div
@@ -450,17 +502,20 @@ function RequirementProfileCard({
                     key={`${document.caption ?? "document"}-${index}`}
                   >
                     <p className="text-sm font-medium text-gray-900">
-                      {document.caption ?? "Dokument"}
+                      {document.caption ?? localizedText(locale, "Dokument", "Document")}
                     </p>
                     <p className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-400">
-                      {document.validTypes?.join(", ") || "Valfri filtyp"}
+                      {document.validTypes?.join(", ") ||
+                        localizedText(locale, "Valfri filtyp", "Any file type")}
                     </p>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Inga dokumentkrav angivna.</p>
+            <p className="text-sm text-gray-500">
+              {localizedText(locale, "Inga dokumentkrav angivna.", "No document requirements specified.")}
+            </p>
           )}
         </div>
       )}
@@ -469,19 +524,21 @@ function RequirementProfileCard({
 }
 
 function ListingDetailsCard({
+  locale,
   listing,
   meta,
-  requirementsProfile,
 }: {
+  locale: Locale;
   listing: ListingDetailDTO;
   meta: ListingMeta;
-  requirementsProfile: RequirementsProfileDTO | null;
 }) {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="mt-1 text-base font-semibold text-gray-950">Översikt</h2>
+          <h2 className="mt-1 text-base font-semibold text-gray-950">
+            {localizedText(locale, "Översikt", "Overview")}
+          </h2>
         </div>
         <PortalListingStatusTag
           label={meta.statusLabel}
@@ -490,17 +547,20 @@ function ListingDetailsCard({
         />
       </div>
       <dl className="mt-4">
-        <DetailRow label="Hyra" value={formatCurrency(listing.rent)} />
-        <DetailRow label="Rum" value={listing.rooms || "-"} />
-        <DetailRow label="Yta" value={formatArea(listing.sizeM2)} />
-        <DetailRow label="Bostadstyp" value={formatDwellingType(listing.dwellingType)} />
-        <DetailRow label="Område" value={listing.area || "-"} />
-        <DetailRow label="Stad" value={listing.city || "-"} />
-        <DetailRow label="Tillgänglig från" value={listing.availableFrom || "-"} />
-        <DetailRow label="Tillgänglig till" value={listing.availableTo || "-"} />
-        <DetailRow label="Sista ansökan" value={listing.applyBy || "-"} />
-        <DetailRow label="Publicerad" value={meta.publishedAt} />
-        <DetailRow label="Senast ändrad" value={meta.updatedAt} />
+        <DetailRow label={localizedText(locale, "Hyra", "Rent")} value={formatCurrency(listing.rent, locale)} />
+        <DetailRow label={localizedText(locale, "Rum", "Rooms")} value={listing.rooms || "-"} />
+        <DetailRow label={localizedText(locale, "Yta", "Area")} value={formatArea(listing.sizeM2, locale)} />
+        <DetailRow
+          label={localizedText(locale, "Bostadstyp", "Dwelling type")}
+          value={formatDwellingType(listing.dwellingType, locale)}
+        />
+        <DetailRow label={localizedText(locale, "Område", "Area")} value={listing.area || "-"} />
+        <DetailRow label={localizedText(locale, "Stad", "City")} value={listing.city || "-"} />
+        <DetailRow label={localizedText(locale, "Tillgänglig från", "Available from")} value={listing.availableFrom || "-"} />
+        <DetailRow label={localizedText(locale, "Tillgänglig till", "Available until")} value={listing.availableTo || "-"} />
+        <DetailRow label={localizedText(locale, "Sista ansökan", "Application deadline")} value={listing.applyBy || "-"} />
+        <DetailRow label={localizedText(locale, "Publicerad", "Published")} value={meta.publishedAt} />
+        <DetailRow label={localizedText(locale, "Senast ändrad", "Last updated")} value={meta.updatedAt} />
       </dl>
     </section>
   );
@@ -509,9 +569,11 @@ function ListingDetailsCard({
 function ListingPreview({
   listing,
   images,
+  locale,
 }: {
   listing: ListingDetailDTO;
   images: string[];
+  locale: Locale;
 }) {
   return (
     <section className="space-y-4">
@@ -521,7 +583,7 @@ function ListingPreview({
         <div className="flex h-[320px] items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
           <div className="flex flex-col items-center gap-2">
             <ImageIcon className="h-8 w-8 text-gray-300" />
-            Ingen bild uppladdad
+            {localizedText(locale, "Ingen bild uppladdad", "No image uploaded")}
           </div>
         </div>
       )}
@@ -534,6 +596,7 @@ function ListingPreview({
 export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const { locale } = useI18n();
   const [listing, setListing] = useState<ListingDetailDTO | null>(null);
   const [requirementsProfile, setRequirementsProfile] =
     useState<RequirementsProfileDTO | null>(null);
@@ -594,14 +657,15 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         listingDetail,
         matchedCompanyListing,
         applicationsByObject,
-        viewCounts
+        viewCounts,
+        locale
       ),
     };
-  }, [companyId, id]);
+  }, [companyId, id, locale]);
 
   const selectedApplicationInterval = useMemo(
-    () => getApplicationInterval(applicationInterval),
-    [applicationInterval]
+    () => getLocalizedApplicationInterval(locale, applicationInterval),
+    [applicationInterval, locale]
   );
   const analyticsRange = useMemo(
     () => getApplicationIntervalRange(applicationInterval),
@@ -638,7 +702,9 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       .catch((requestError) => {
         if (!active) return;
         setError(
-          requestError instanceof Error ? requestError.message : "Kunde inte ladda annonsen."
+          requestError instanceof Error
+            ? requestError.message
+            : localizedText(locale, "Kunde inte ladda annonsen.", "Could not load the listing.")
         );
       })
       .finally(() => {
@@ -679,7 +745,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         const message =
           requestError instanceof Error
             ? requestError.message
-            : "Kunde inte hämta ansökningar för perioden.";
+            : localizedText(
+                locale,
+                "Kunde inte hämta ansökningar för perioden.",
+                "Could not fetch applications for the period."
+              );
         setTimedApplicationsError(
           message
         );
@@ -695,7 +765,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return () => {
       active = false;
     };
-  }, [analyticsRange, authLoading, companyId, id]);
+  }, [analyticsRange, authLoading, companyId, id, locale]);
 
   const editHref = `${dashboardRelPath}/listings/${encodeURIComponent(id)}/edit`;
   const applicationsHref = `${dashboardRelPath}/applications?listingId=${encodeURIComponent(id)}`;
@@ -710,19 +780,29 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
     try {
       await listingService.update(id, { status });
-      const mapped = mapStatus(status);
+      const mapped = mapStatus(status, locale);
       setMeta((current) => ({
         ...current,
-        statusLabel: option?.label ?? mapped.label,
+        statusLabel: option ? statusOptionLabel(option, locale) : mapped.label,
         statusTone: mapped.tone,
         statusValue: status,
       }));
-      toast.success("Annonsens status har uppdaterats.");
+      toast.success(
+        localizedText(
+          locale,
+          "Annonsens status har uppdaterats.",
+          "The listing status has been updated."
+        )
+      );
     } catch (statusError) {
       toast.error(
         statusError instanceof Error
           ? statusError.message
-          : "Kunde inte uppdatera annonsens status."
+          : localizedText(
+              locale,
+              "Kunde inte uppdatera annonsens status.",
+              "Could not update the listing status."
+            )
       );
     } finally {
       setActionState("idle");
@@ -734,13 +814,15 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
     try {
       await listingService.delete(id);
-      toast.success("Annonsen har raderats.");
+      toast.success(localizedText(locale, "Annonsen har raderats.", "The listing has been deleted."));
       setDeleteDialogOpen(false);
       router.push(`${dashboardRelPath}/listings`);
       router.refresh();
     } catch (deleteError) {
       toast.error(
-        deleteError instanceof Error ? deleteError.message : "Kunde inte radera annonsen."
+        deleteError instanceof Error
+          ? deleteError.message
+          : localizedText(locale, "Kunde inte radera annonsen.", "Could not delete the listing.")
       );
       setActionState("idle");
     }
@@ -750,7 +832,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return (
       <main className="pb-12">
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
-          Laddar annons...
+          {localizedText(locale, "Laddar annons...", "Loading listing...")}
         </div>
       </main>
     );
@@ -760,7 +842,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return (
       <main className="pb-12">
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-          Logga in för att se annonsen.
+          {localizedText(locale, "Logga in för att se annonsen.", "Sign in to view the listing.")}
         </div>
       </main>
     );
@@ -770,7 +852,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return (
       <main className="pb-12">
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-          Denna sida är bara tillgänglig för företagskonton.
+          {localizedText(
+            locale,
+            "Denna sida är bara tillgänglig för företagskonton.",
+            "This page is only available to company accounts."
+          )}
         </div>
       </main>
     );
@@ -780,7 +866,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return (
       <main className="pb-12">
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-800">
-          {error ?? "Annonsen kunde inte hittas."}
+          {error ?? localizedText(locale, "Annonsen kunde inte hittas.", "The listing could not be found.")}
         </div>
       </main>
     );
@@ -790,7 +876,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return (
       <main className="pb-12">
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-          Annonsen hittades inte bland företagets annonser.
+          {localizedText(
+            locale,
+            "Annonsen hittades inte bland företagets annonser.",
+            "The listing was not found among the company's listings."
+          )}
         </div>
       </main>
     );
@@ -800,10 +890,14 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     ? `${listing.fullAddress}, ${listing.city}`
     : [listing.area, listing.city].filter(Boolean).join(", ");
   const applicationsDetail = timedApplicationsLoading
-    ? "Hämtar ansökningar..."
+    ? localizedText(locale, "Hämtar ansökningar...", "Fetching applications...")
     : timedApplicationsError
       ? timedApplicationsError
-      : `${selectedApplicationInterval.detailLabel}. Totalt ${formatNumber(meta.applications)} mottagna.`;
+      : localizedText(
+          locale,
+          `${selectedApplicationInterval.detailLabel}. Totalt ${formatNumber(meta.applications, locale)} mottagna.`,
+          `${selectedApplicationInterval.detailLabel}. Total ${formatNumber(meta.applications, locale)} received.`
+        );
   const totalViews = meta.quickViews + meta.detailedViews;
   const detailShare =
     totalViews > 0 ? (meta.detailedViews / totalViews) * 100 : Number.NaN;
@@ -819,7 +913,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
             className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
           >
             <ArrowLeft className="h-4 w-4" />
-            Tillbaka till annonser
+            {localizedText(locale, "Tillbaka till annonser", "Back to listings")}
           </Link>
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
@@ -830,7 +924,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 </h1>
                 <p className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
                   <MapPin className="h-4 w-4 shrink-0" />
-                  {locationLabel || "Plats saknas"}
+                  {locationLabel || localizedText(locale, "Plats saknas", "Location missing")}
                 </p>
               </div>
 
@@ -841,10 +935,12 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                   className="w-fit shrink-0"
                 />
                 <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
-                  {formatNumber(meta.applications)} ansökningar
+                  {formatNumber(meta.applications, locale)}{" "}
+                  {localizedText(locale, "ansökningar", "applications")}
                 </span>
                 <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
-                  {formatNumber(totalViews)} visningar
+                  {formatNumber(totalViews, locale)}{" "}
+                  {localizedText(locale, "visningar", "views")}
                 </span>
               </div>
             </div>
@@ -856,14 +952,14 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                   value="info"
                 >
                   <FileText className="h-4 w-4" />
-                  Info
+                  {localizedText(locale, "Info", "Info")}
                 </TabsTrigger>
                 <TabsTrigger
                   className="h-8 flex-1 rounded-lg px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
                   value="analys"
                 >
                   <BarChart3 className="h-4 w-4" />
-                  Analys
+                  {localizedText(locale, "Analys", "Analytics")}
                 </TabsTrigger>
               </TabsList>
               <div className="flex w-full flex-col gap-2 lg:w-auto">
@@ -875,7 +971,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                     variant="default"
                   >
                     <Edit3 className="h-4 w-4" />
-                    Redigera
+                    {localizedText(locale, "Redigera", "Edit")}
                   </Button>
                   <Button
                     as="a"
@@ -884,7 +980,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                     variant="outline"
                   >
                     <FileUser className="h-4 w-4" />
-                    Ansökningar
+                    {localizedText(locale, "Ansökningar", "Applications")}
                   </Button>
                   <Button
                     className="w-full lg:w-auto"
@@ -893,13 +989,13 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                     variant="destructive"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Radera
+                    {localizedText(locale, "Radera", "Delete")}
                   </Button>
                 </div>
 
                 <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-2 sm:flex-row sm:items-center">
                   <span className="px-1 text-xs font-semibold uppercase tracking-wide text-gray-400 sm:px-2">
-                    Status
+                    {localizedText(locale, "Status", "Status")}
                   </span>
                   <div className="grid flex-1 grid-cols-3 gap-1.5">
                     {listingStatusOptions.map((option) => {
@@ -920,7 +1016,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                           onClick={() => handleStatusChange(option.value)}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{option.label}</span>
+                          <span className="truncate">{statusOptionLabel(option, locale)}</span>
                         </button>
                       );
                     })}
@@ -933,15 +1029,16 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
         <TabsContent className="mt-0" value="info">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <ListingPreview listing={listing} images={galleryImages} />
+            <ListingPreview listing={listing} images={galleryImages} locale={locale} />
 
             <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
               <ListingDetailsCard
+                locale={locale}
                 listing={listing}
                 meta={meta}
-                requirementsProfile={requirementsProfile}
               />
               <RequirementProfileCard
+                locale={locale}
                 profile={requirementsProfile}
                 profileId={listing.requirementsProfileId}
               />
@@ -953,9 +1050,15 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-950">Annonsanalys</h2>
+                <h2 className="text-lg font-semibold text-gray-950">
+                  {localizedText(locale, "Annonsanalys", "Listing analytics")}
+                </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Statistik och demografi för just den här annonsen.
+                  {localizedText(
+                    locale,
+                    "Statistik och demografi för just den här annonsen.",
+                    "Statistics and demographics for this listing."
+                  )}
                 </p>
               </div>
               <ApplicationIntervalToggle
@@ -965,7 +1068,10 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
             </div>
 
             <AnalyticsGrid rowHeightClassName="xl:auto-rows-[132px]">
-              <AnalyticsBlock size="1x1" title="Ansökningar">
+              <AnalyticsBlock
+                size="1x1"
+                title={localizedText(locale, "Ansökningar", "Applications")}
+              >
                 <div className="flex h-full min-h-[72px] flex-col justify-between">
                   <p className="text-[13px] font-medium leading-5 text-gray-500">
                     {selectedApplicationInterval.detailLabel}
@@ -973,7 +1079,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                   <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
                     {timedApplicationsLoading
                       ? "..."
-                      : formatNumber(timedApplicationCount)}
+                      : formatNumber(timedApplicationCount, locale)}
                   </p>
                   <p className="mt-2 line-clamp-2 text-xs leading-4 text-gray-500">
                     {applicationsDetail}
@@ -981,65 +1087,98 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 </div>
               </AnalyticsBlock>
 
-              <AnalyticsBlock size="1x1" title="Visningar">
+              <AnalyticsBlock size="1x1" title={localizedText(locale, "Visningar", "Views")}>
                 <div className="flex h-full min-h-[72px] flex-col justify-between">
                   <p className="text-[13px] font-medium leading-5 text-gray-500">
-                    Totalt för annonsen
+                    {localizedText(locale, "Totalt för annonsen", "Total for the listing")}
                   </p>
                   <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
-                    {formatNumber(totalViews)}
+                    {formatNumber(totalViews, locale)}
                   </p>
                   <p className="mt-2 text-xs leading-4 text-gray-500">
-                    {formatNumber(meta.quickViews)} snabba,{" "}
-                    {formatNumber(meta.detailedViews)} detaljerade
+                    {localizedText(
+                      locale,
+                      `${formatNumber(meta.quickViews, locale)} snabba, ${formatNumber(meta.detailedViews, locale)} detaljerade`,
+                      `${formatNumber(meta.quickViews, locale)} quick, ${formatNumber(meta.detailedViews, locale)} detailed`
+                    )}
                   </p>
                 </div>
               </AnalyticsBlock>
 
-              <AnalyticsBlock size="1x1" title="Detaljratio">
+              <AnalyticsBlock
+                size="1x1"
+                title={localizedText(locale, "Detaljratio", "Detail ratio")}
+              >
                 <div className="flex h-full min-h-[72px] flex-col justify-between">
                   <p className="text-[13px] font-medium leading-5 text-gray-500">
-                    Detaljvisningar av alla visningar
+                    {localizedText(
+                      locale,
+                      "Detaljvisningar av alla visningar",
+                      "Detailed views out of all views"
+                    )}
                   </p>
                   <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
-                    {formatPercent(detailShare)}
+                    {formatPercent(detailShare, locale)}
                   </p>
                   <p className="mt-2 text-xs leading-4 text-gray-500">
-                    Visar hur många som öppnar annonsen.
+                    {localizedText(
+                      locale,
+                      "Visar hur många som öppnar annonsen.",
+                      "Shows how many people open the listing."
+                    )}
                   </p>
                 </div>
               </AnalyticsBlock>
 
-              <AnalyticsBlock size="1x1" title="Ansökningsgrad">
+              <AnalyticsBlock
+                size="1x1"
+                title={localizedText(locale, "Ansökningsgrad", "Application rate")}
+              >
                 <div className="flex h-full min-h-[72px] flex-col justify-between">
                   <p className="text-[13px] font-medium leading-5 text-gray-500">
-                    Totala ansökningar per detaljvisning
+                    {localizedText(
+                      locale,
+                      "Totala ansökningar per detaljvisning",
+                      "Total applications per detailed view"
+                    )}
                   </p>
                   <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
-                    {formatPercent(applicationRate)}
+                    {formatPercent(applicationRate, locale)}
                   </p>
                   <p className="mt-2 text-xs leading-4 text-gray-500">
-                    Baserat på {formatNumber(meta.applications)} ansökningar.
+                    {localizedText(
+                      locale,
+                      `Baserat på ${formatNumber(meta.applications, locale)} ansökningar.`,
+                      `Based on ${formatNumber(meta.applications, locale)} applications.`
+                    )}
                   </p>
                 </div>
               </AnalyticsBlock>
 
               <AnalyticsBlock
                 size="2x2"
-                title="Ansökningstrend"
-                description={`Mottagna ansökningar ${selectedApplicationInterval.detailLabel}.`}
+                title={localizedText(locale, "Ansökningstrend", "Application trend")}
+                description={localizedText(
+                  locale,
+                  `Mottagna ansökningar ${selectedApplicationInterval.detailLabel}.`,
+                  `Received applications during ${selectedApplicationInterval.detailLabel}.`
+                )}
               >
                 <TrendBarChart
                   chartClassName="min-h-[210px]"
                   data={applicationTrendPoints}
                   embedded
-                  emptyMessage="Det finns inga ansökningar registrerade för perioden."
+                  emptyMessage={localizedText(
+                    locale,
+                    "Det finns inga ansökningar registrerade för perioden.",
+                    "There are no applications registered for this period."
+                  )}
                   error={applicationTrendError}
                   intervals={[]}
                   loading={applicationTrendLoading}
                   showHeader={false}
-                  title="Ansökningstrend"
-                  valueLabel="Ansökningar"
+                  title={localizedText(locale, "Ansökningstrend", "Application trend")}
+                  valueLabel={localizedText(locale, "Ansökningar", "Applications")}
                 />
               </AnalyticsBlock>
             </AnalyticsGrid>
@@ -1069,9 +1208,15 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
       >
         <AlertDialogContent className="border-gray-200 bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Radera annons?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {localizedText(locale, "Radera annons?", "Delete listing?")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Annonsen tas bort permanent och kan inte återställas.
+              {localizedText(
+                locale,
+                "Annonsen tas bort permanent och kan inte återställas.",
+                "The listing will be permanently deleted and cannot be restored."
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1080,7 +1225,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
               onPress={() => setDeleteDialogOpen(false)}
               isDisabled={actionState === "delete"}
             >
-              Avbryt
+              {localizedText(locale, "Avbryt", "Cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -1088,7 +1233,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
               isLoading={actionState === "delete"}
               isDisabled={actionState === "delete"}
             >
-              Radera annonsen
+              {localizedText(locale, "Radera annonsen", "Delete listing")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

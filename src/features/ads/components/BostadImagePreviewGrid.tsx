@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -65,6 +67,7 @@ export default function BostadImagePreviewGrid({
   onImageClick,
   readOnly = false,
 }: Props) {
+  const { locale } = useI18n();
   if (images.length === 0) return null;
 
   const shown = images.slice(0, 5);
@@ -73,7 +76,7 @@ export default function BostadImagePreviewGrid({
     return (
       <ImageTile
         src={shown[0]}
-        alt="Bild 1"
+        alt={localizedText(locale, "Bild 1", "Image 1")}
         index={0}
         onImageClick={onImageClick}
         readOnly={readOnly}
@@ -89,7 +92,7 @@ export default function BostadImagePreviewGrid({
           <ImageTile
             key={index}
             src={src}
-            alt={`Bild ${index + 1}`}
+            alt={localizedText(locale, `Bild ${index + 1}`, `Image ${index + 1}`)}
             index={index}
             onImageClick={onImageClick}
             readOnly={readOnly}
@@ -106,7 +109,7 @@ export default function BostadImagePreviewGrid({
     <div className="grid h-[460px] grid-cols-[1fr_0.5fr] gap-1.5">
       <ImageTile
         src={shown[0]}
-        alt="Bild 1"
+        alt={localizedText(locale, "Bild 1", "Image 1")}
         index={0}
         onImageClick={onImageClick}
         readOnly={readOnly}
@@ -127,7 +130,7 @@ export default function BostadImagePreviewGrid({
             <ImageTile
               key={imageIndex}
               src={src}
-              alt={`Bild ${imageIndex + 1}`}
+              alt={localizedText(locale, `Bild ${imageIndex + 1}`, `Image ${imageIndex + 1}`)}
               index={imageIndex}
               onImageClick={onImageClick}
               readOnly={readOnly}
@@ -138,7 +141,7 @@ export default function BostadImagePreviewGrid({
             >
               {isLast && (
                 <span className="rounded-lg bg-black/40 px-3 py-1 text-lg font-semibold text-white drop-shadow-lg">
-                  +{images.length - 5} fler
+                  +{images.length - 5} {localizedText(locale, "fler", "more")}
                 </span>
               )}
             </ImageTile>

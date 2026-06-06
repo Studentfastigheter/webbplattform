@@ -4,6 +4,7 @@ export default function ProductNewsPage() {
   return (
     <PortalPlaceholderPage
       title="Produktnyheter"
+      titleEn="Product news"
     />
   );
 }
