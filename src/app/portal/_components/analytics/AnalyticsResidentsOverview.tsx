@@ -15,8 +15,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
+import { useCompanyResidentAnalytics } from "@/features/companies/hooks/useCompanies";
 import {
-  companyService,
   type ResidentAnalyticsData,
   type ResidentsSchoolCount,
   type ResidentsTownCount,
@@ -413,56 +413,18 @@ function DistributionSkeleton() {
 export default function AnalyticsResidentsOverview() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [data, setData] = React.useState<ResidentAnalyticsData | null>(null);
   const [intervalValue, setIntervalValue] = React.useState("1m");
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setData(null);
-      setError("Kunde inte hitta ett aktivt företag för boendestatistiken.");
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-
-    companyService
-      .residentAnalyticsData(companyId)
-      .then((result) => {
-        if (!cancelled) {
-          setData(result);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setData(null);
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Kunde inte hämta boendestatistik."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId]);
-
-  const loading = authLoading || isLoading;
+  const residentAnalyticsQuery = useCompanyResidentAnalytics(companyId);
+  const data = residentAnalyticsQuery.data ?? null;
+  const error =
+    !authLoading && !companyId
+      ? "Kunde inte hitta ett aktivt företag för boendestatistiken."
+      : residentAnalyticsQuery.isError
+        ? residentAnalyticsQuery.error instanceof Error
+          ? residentAnalyticsQuery.error.message
+          : "Kunde inte hämta boendestatistik."
+        : null;
+  const loading = authLoading || residentAnalyticsQuery.isLoading;
   const townItems = React.useMemo(
     () => toTownItems(data?.residentTowns ?? []),
     [data]

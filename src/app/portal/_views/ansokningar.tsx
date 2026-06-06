@@ -20,7 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
-import { companyService, type NewApplication } from "@/features/companies/services/company-service";
+import { useCompanyApplications } from "@/features/companies/hooks/useCompanies";
+import type { NewApplication } from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../_statics/variables";
 
 type AnsokningarProps = {
@@ -75,7 +76,7 @@ function toPortalApplication(application: NewApplication): PortalApplication {
 
   return {
     ...application,
-    listingName: application.listingTitle || application.address || "Okänd annons",
+    listingName: application.listingTitle || application.address || "OkÃ¤nd annons",
     submittedAtTime: parseDate(submittedAt),
   };
 }
@@ -165,7 +166,7 @@ function buildListingGroups(
       return {
         key,
         listingId: latest.listingId,
-        title: latest.listingTitle || latest.address || "Okänd annons",
+        title: latest.listingTitle || latest.address || "OkÃ¤nd annons",
         address: latest.address || latest.listingCity || "Ingen adress",
         city: latest.listingCity,
         rent: latest.listingRent,
@@ -185,7 +186,7 @@ function buildListingGroups(
 
 function formatRent(value?: number) {
   return typeof value === "number" && Number.isFinite(value)
-    ? `${value.toLocaleString("sv-SE")} kr/mån`
+    ? `${value.toLocaleString("sv-SE")} kr/mÃ¥n`
     : null;
 }
 
@@ -270,21 +271,21 @@ function ApplicationStatsGrid({
   return (
     <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
       <StatTile
-        detail="alla öppna"
+        detail="alla Ã¶ppna"
         icon={FileUser}
-        label="Totalt antal ansökningar"
+        label="Totalt antal ansÃ¶kningar"
         tone="brand"
         value={applications.length.toLocaleString("sv-SE")}
       />
       <StatTile
-        detail="med ansökningar"
+        detail="med ansÃ¶kningar"
         icon={Home}
         label="Annonser"
         tone="blue"
         value={groups.length.toLocaleString("sv-SE")}
       />
       <StatTile
-        detail={formatPercentChange(current30, previous30) ?? "oför."}
+        detail={formatPercentChange(current30, previous30) ?? "ofÃ¶r."}
         icon={CalendarDays}
         label="Senaste 30 dagar"
         tone="rose"
@@ -293,7 +294,7 @@ function ApplicationStatsGrid({
       <StatTile
         detail="per annons"
         icon={BarChart3}
-        label="Snittansökningar"
+        label="SnittansÃ¶kningar"
         tone="amber"
         value={average.toLocaleString("sv-SE", {
           maximumFractionDigits: 1,
@@ -314,7 +315,7 @@ function LoadingApplicationsLayout() {
             ))}
           </div>
         </AnalyticsBlock>
-        <AnalyticsBlock size="2x2" title="Ansökningstrend">
+        <AnalyticsBlock size="2x2" title="AnsÃ¶kningstrend">
           <Skeleton className="h-full min-h-[220px] rounded-md" />
         </AnalyticsBlock>
         <AnalyticsBlock size="2x2" title="Trending annonser">
@@ -363,7 +364,7 @@ function ListingApplicationsLayout({
       <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white">
         {groups.length === 0 ? (
           <div className="flex flex-1 items-center justify-center px-5 py-10 text-center text-theme-sm text-gray-500">
-            Det finns inga annonser med ansökningar att visa ännu.
+            Det finns inga annonser med ansÃ¶kningar att visa Ã¤nnu.
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -386,7 +387,7 @@ function ListingApplicationsLayout({
           <SelectedListingDetails group={selectedGroup} />
         ) : (
           <div className="flex h-full min-h-[360px] items-center justify-center px-6 py-10 text-center text-theme-sm text-gray-500">
-            Välj en annons i listan för att visa ansökningarna.
+            VÃ¤lj en annons i listan fÃ¶r att visa ansÃ¶kningarna.
           </div>
         )}
       </section>
@@ -400,7 +401,7 @@ function TrendingListings({ groups }: { groups: ListingApplicationGroup[] }) {
   if (topGroups.length === 0) {
     return (
       <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-sm text-gray-500">
-        Det finns inga annonser med ansökningar ännu.
+        Det finns inga annonser med ansÃ¶kningar Ã¤nnu.
       </div>
     );
   }
@@ -474,7 +475,7 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
       ? `${dashboardRelPath}/listings/${encodeURIComponent(String(group.listingId))}`
       : null;
   const rent = formatRent(group.rent);
-  const facts = [group.city, rent].filter(Boolean).join(" · ");
+  const facts = [group.city, rent].filter(Boolean).join(" Â· ");
 
   return (
     <div className="h-full min-h-0 overflow-y-auto px-5 py-5 sm:px-6">
@@ -517,12 +518,12 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
                     href={href}
                   >
                     <ExternalLink className="h-4 w-4" />
-                    Öppna annons
+                    Ã–ppna annons
                   </Link>
                 ) : null}
                 <div className="mt-3">
                   <p className="text-xs font-medium text-gray-500">
-                    Totalt antal ansökningar
+                    Totalt antal ansÃ¶kningar
                   </p>
                   <p className="mt-0.5 text-xl font-semibold leading-7 text-gray-950 tabular-nums">
                     {group.total.toLocaleString("sv-SE")}
@@ -534,7 +535,7 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
         </div>
 
         <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-gray-950">Senaste ansökningar</h3>
+          <h3 className="text-sm font-semibold text-gray-950">Senaste ansÃ¶kningar</h3>
           <div className="mt-3 grid gap-2">
             {group.applications.slice(0, 12).map((application) => (
               <div
@@ -545,7 +546,7 @@ function SelectedListingDetails({ group }: { group: ListingApplicationGroup }) {
                   <p className="truncate text-sm font-semibold text-gray-900">
                     {[application.firstName, application.surname].filter(Boolean).join(" ") ||
                       application.studentEmail ||
-                      "Sökande"}
+                      "SÃ¶kande"}
                   </p>
                   <p className="mt-0.5 truncate text-xs text-gray-500">
                     {application.message || application.studentSchool || "Ingen kommentar"}
@@ -568,58 +569,24 @@ export default function Ansokningar({
 }: AnsokningarProps) {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [applications, setApplications] = useState<PortalApplication[]>([]);
   const [selectedListingKey, setSelectedListingKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setApplications([]);
-      setSelectedListingKey(null);
-      return;
-    }
-
-    let active = true;
-    setLoading(true);
-    setError(null);
-
-    companyService
-      .applications(companyId)
-      .then((result) => {
-        if (!active) return;
-
-        setApplications(
-          result
-            .map(toPortalApplication)
-            .sort((a, b) => b.submittedAtTime - a.submittedAtTime)
-        );
-      })
-      .catch((requestError) => {
-        if (!active) return;
-
-        setApplications([]);
-        setSelectedListingKey(null);
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Kunde inte hämta ansökningar."
-        );
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, companyId]);
-
+  const applicationsQuery = useCompanyApplications(companyId, {
+    enabled: !authLoading,
+  });
+  const applications = useMemo(
+    () =>
+      (applicationsQuery.data ?? [])
+        .map(toPortalApplication)
+        .sort((a, b) => b.submittedAtTime - a.submittedAtTime),
+    [applicationsQuery.data]
+  );
+  const loading = applicationsQuery.isLoading;
+  const error = applicationsQuery.isError
+    ? applicationsQuery.error instanceof Error
+      ? applicationsQuery.error.message
+      : "Kunde inte hämta ansökningar."
+    : null;
   const visibleApplications = useMemo(() => {
     if (!listingId) {
       return applications;
@@ -667,7 +634,7 @@ export default function Ansokningar({
   if (authLoading) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
-        Laddar ansökningar...
+        Laddar ansÃ¶kningar...
       </div>
     );
   }
@@ -675,7 +642,7 @@ export default function Ansokningar({
   if (!user) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Logga in för att se företagets ansökningar.
+        Logga in fÃ¶r att se fÃ¶retagets ansÃ¶kningar.
       </div>
     );
   }
@@ -683,7 +650,7 @@ export default function Ansokningar({
   if (!companyId) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        Denna sida är bara tillgänglig för företagskonton.
+        Denna sida Ã¤r bara tillgÃ¤nglig fÃ¶r fÃ¶retagskonton.
       </div>
     );
   }
@@ -691,7 +658,7 @@ export default function Ansokningar({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Ansökningar</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">AnsÃ¶kningar</h1>
       </div>
 
       {error && (
@@ -713,16 +680,16 @@ export default function Ansokningar({
                 />
               </AnalyticsBlock>
 
-              <AnalyticsBlock size="2x2" title="Ansökningstrend">
+              <AnalyticsBlock size="2x2" title="AnsÃ¶kningstrend">
                 <TrendBarChart
                   data={applicationTrend}
                   defaultInterval="1m"
                   embedded
-                  emptyMessage="Det finns inga ansökningar registrerade ännu."
+                  emptyMessage="Det finns inga ansÃ¶kningar registrerade Ã¤nnu."
                   showHeader={false}
                   showSummary={false}
-                  title="Ansökningstrend"
-                  valueLabel="Ansökningar"
+                  title="AnsÃ¶kningstrend"
+                  valueLabel="AnsÃ¶kningar"
                 />
               </AnalyticsBlock>
 

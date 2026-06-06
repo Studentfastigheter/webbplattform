@@ -1,4 +1,9 @@
-import { apiClient, arrayFromApiResponse, pathSegment } from "@/lib/api/client";
+import {
+  apiClient,
+  arrayFromApiResponse,
+  pathSegment,
+  type ServiceOptions,
+} from "@/lib/api/client";
 import type {
   CityCompanyDTO,
   CityDTO,
@@ -158,23 +163,27 @@ const normalizeCityDetail = (value: unknown): CityDetailedDTO => {
 };
 
 export const cityService = {
-  list: async (): Promise<CityDTO[]> => {
-    const cities = await apiClient<unknown>("/cities", { auth: false });
+  list: async (options?: ServiceOptions): Promise<CityDTO[]> => {
+    const cities = await apiClient<unknown>("/cities", {
+      auth: false,
+      signal: options?.signal,
+    });
     return arrayFromApiResponse<unknown>(cities)
       .map(normalizeCity)
       .filter((city): city is CityDTO => city !== null);
   },
 
-  listNames: async (): Promise<string[]> => {
-    const cities = await cityService.list();
+  listNames: async (options?: ServiceOptions): Promise<string[]> => {
+    const cities = await cityService.list(options);
     return cities
       .map((city) => firstString(city.city, city.code))
       .filter((city): city is string => Boolean(city));
   },
 
-  get: async (code: string): Promise<CityDetailedDTO> => {
+  get: async (code: string, options?: ServiceOptions): Promise<CityDetailedDTO> => {
     const city = await apiClient<unknown>(`/cities/${pathSegment(code)}`, {
       auth: false,
+      signal: options?.signal,
     });
     return normalizeCityDetail(city);
   },

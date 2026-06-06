@@ -28,6 +28,7 @@ import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
 import {
   listingService,
+  normalizeListingSearchParams,
   type ListingSearchFacetsDTO,
   type ListingSearchParams,
 } from "@/features/listings/services/listing-service";
@@ -540,16 +541,26 @@ export default function ListingsPage() {
   // Map view — a separate cache slot. The same filters produce TWO entries
   // (lista PAGE_SIZE vs karta MAP_PAGE_SIZE * pages); that's intentional.
   // Only fetches while in map view, via enabled.
+  const normalizedMapFilters = useMemo(
+    () =>
+      normalizeListingSearchParams(currentFilters, {
+        includePageable: false,
+      }),
+    [currentFilters]
+  );
   const mapQuery = useQuery<ListingCardDTO[]>({
-    queryKey: qk.listings.map(currentFilters),
+    queryKey: qk.listings.map(normalizedMapFilters),
     enabled: isMapView,
     staleTime: 30_000,
-    queryFn: async () => {
-      const firstPage = await listingService.getAll({
-        ...currentFilters,
-        page: 0,
-        size: MAP_PAGE_SIZE,
-      });
+    queryFn: async ({ signal }) => {
+      const firstPage = await listingService.getAll(
+        {
+          ...normalizedMapFilters,
+          page: 0,
+          size: MAP_PAGE_SIZE,
+        },
+        { signal }
+      );
 
       const pageCount = Math.max(1, getTotalPagesFromResponse(firstPage));
       const pages = [firstPage.content || []];
@@ -557,11 +568,14 @@ export default function ListingsPage() {
       if (pageCount > 1) {
         const remainingPages = await Promise.all(
           Array.from({ length: pageCount - 1 }, (_, index) =>
-            listingService.getAll({
-              ...currentFilters,
-              page: index + 1,
-              size: MAP_PAGE_SIZE,
-            })
+            listingService.getAll(
+              {
+                ...normalizedMapFilters,
+                page: index + 1,
+                size: MAP_PAGE_SIZE,
+              },
+              { signal }
+            )
           )
         );
 

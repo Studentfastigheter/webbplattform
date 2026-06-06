@@ -51,6 +51,8 @@ export const qk = {
 
     requirementsProfile: (id: string) =>
       ["listings", "requirements-profile", id] as const,
+    requirementsProfilesByCompany: (companyId: number) =>
+      ["listings", "requirements-profiles", "company", companyId] as const,
 
     cities: () => ["listings", "cities"] as const,
     tags: () => ["listings", "tags"] as const,
@@ -82,6 +84,10 @@ export const qk = {
       ["queues", "all-company-listings", companyId, page, size] as const,
     companyListingsPage: (companyId: number, page: number, size: number) =>
       ["queues", "company-listings-page", companyId, page, size] as const,
+    companyListingsPageByCompany: (companyId: number) =>
+      ["queues", "company-listings-page", companyId] as const,
+    allCompanyListingsByCompany: (companyId: number) =>
+      ["queues", "all-company-listings", companyId] as const,
   },
 
   companies: {
@@ -94,8 +100,22 @@ export const qk = {
     roles: () => ["companies", "roles"] as const,
     viewCounts: (companyId: number, listingId: string) =>
       ["companies", "view-counts", companyId, listingId] as const,
+    viewCountsByCompany: (companyId: number) =>
+      ["companies", "view-counts", companyId] as const,
     applicationCounts: (companyId: number, size: number) =>
       ["companies", "application-counts", companyId, size] as const,
+    applicationsByCompany: (companyId: number) =>
+      ["companies", "applications", companyId] as const,
+    applications: (companyId: number, pageSize: number, maxPages: number) =>
+      ["companies", "applications", companyId, pageSize, maxPages] as const,
+    applicationsTimeline: (companyId: number) =>
+      ["companies", "applications-timeline", companyId] as const,
+    timedApplicationsTotal: (companyId: number, from: string, to: string) =>
+      ["companies", "timed-applications-total", companyId, from, to] as const,
+    generalAnalytics: (companyId: number) =>
+      ["companies", "general-analytics", companyId] as const,
+    residentAnalytics: (companyId: number) =>
+      ["companies", "resident-analytics", companyId] as const,
     timedApplications: (
       companyId: number,
       from: string,
@@ -122,6 +142,9 @@ export const qk = {
       category: DemographyCategory,
     ) =>
       ["demographics", "listing", listingId, from, to, category] as const,
+
+    listingByAllCategories: (listingId: string, from: string, to: string) =>
+      ["demographics", "listing-all-categories", listingId, from, to] as const,
 
     listingsBatchByAllCategories: (
       companyId: number,
@@ -186,6 +209,21 @@ export const qk = {
         from,
         to,
         category,
+        gotListing,
+      ] as const,
+
+    applicationByAllCategories: (
+      listingId: string,
+      from: string,
+      to: string,
+      gotListing: GotListingFilter,
+    ) =>
+      [
+        "demographics",
+        "application-all-categories",
+        listingId,
+        from,
+        to,
         gotListing,
       ] as const,
 

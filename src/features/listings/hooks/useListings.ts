@@ -34,6 +34,7 @@ import { qk } from "@/lib/query/keys";
 import { useAuth } from "@/context/AuthContext";
 import {
   listingService,
+  normalizeListingSearchParams,
   type ListingSearchFacetsDTO,
   type ListingSearchParams,
 } from "@/features/listings/services/listing-service";
@@ -63,12 +64,14 @@ export function useListing(
   listingId: string | null | undefined,
   options?: Omit<UseQueryOptions<ListingDetailDTO>, "queryKey" | "queryFn">
 ) {
+  const { enabled = true, ...restOptions } = options ?? {};
+
   return useQuery<ListingDetailDTO>({
+    ...restOptions,
     queryKey: qk.listings.detail(listingId ?? ""),
     queryFn: ({ signal }) => listingService.get(listingId!, { signal }),
-    enabled: Boolean(listingId),
+    enabled: enabled && Boolean(listingId),
     staleTime: STALE_2_MINUTES,
-    ...options,
   });
 }
 
@@ -77,21 +80,25 @@ export function useListing(
  * recent filter shows instantly from cache.
  */
 export function useListingsSearch(params: ListingSearchParams) {
+  const normalizedParams = normalizeListingSearchParams(params);
+
   return useQuery<PageResponse<ListingCardDTO>>({
-    queryKey: qk.listings.list(params),
-    // listingService.getAll has the legacy positional overload; the object
-    // form is the supported one for new code. Signal is NOT threaded here —
-    // see audit; cancellation is a no-op for this call but caching still works.
-    queryFn: () => listingService.getAll(params),
+    queryKey: qk.listings.list(normalizedParams),
+    queryFn: ({ signal }) => listingService.getAll(normalizedParams, { signal }),
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData, // keep last page during pagination
   });
 }
 
 export function useListingFacets(params: ListingSearchParams, enabled = true) {
+  const normalizedParams = normalizeListingSearchParams(params, {
+    includePageable: false,
+  });
+
   return useQuery<ListingSearchFacetsDTO>({
-    queryKey: qk.listings.facets(params),
-    queryFn: ({ signal }) => listingService.getFacets(params, { signal }),
+    queryKey: qk.listings.facets(normalizedParams),
+    queryFn: ({ signal }) =>
+      listingService.getFacets(normalizedParams, { signal }),
     enabled,
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData,
@@ -124,6 +131,22 @@ export function useRequirementsProfile(
     queryFn: ({ signal }) =>
       listingService.getRequirementsProfile(requirementsProfileId!, { signal }),
     enabled: Boolean(requirementsProfileId),
+    staleTime: STALE_5_MINUTES,
+  });
+}
+
+export function useCompanyRequirementsProfiles(
+  companyId: number | null | undefined,
+  options?: Omit<UseQueryOptions<RequirementsProfileDTO[]>, "queryKey" | "queryFn">
+) {
+  const { enabled = true, ...restOptions } = options ?? {};
+
+  return useQuery<RequirementsProfileDTO[]>({
+    ...restOptions,
+    queryKey: qk.listings.requirementsProfilesByCompany(companyId ?? -1),
+    queryFn: ({ signal }) =>
+      listingService.getRequirementsProfilesByCompany(companyId!, { signal }),
+    enabled: enabled && companyId != null && companyId > 0,
     staleTime: STALE_5_MINUTES,
   });
 }

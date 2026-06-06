@@ -19,6 +19,7 @@ import { qk } from "@/lib/query/keys";
 import { useAuth } from "@/context/AuthContext";
 import {
   companyService,
+  type AnalyticalQuantities,
   type ApplicationStatisticEntry,
   type CompanyChangeableDataDTO,
   type CompanyImageTarget,
@@ -29,8 +30,11 @@ import {
   type CompanyUserDTO,
   type CompanyUserUpdateRequest,
   type ListingViewCounts,
+  type NewApplication,
   type ObjectApplicationCount,
+  type ResidentAnalyticsData,
   type SocialPlatform,
+  type Timeline,
 } from "@/features/companies/services/company-service";
 
 const STALE_30_SECONDS = 30_000;
@@ -119,6 +123,84 @@ export function useTimedApplicationsForListing(
   });
 }
 
+export function useCompanyApplications(
+  companyId: number | null | undefined,
+  {
+    pageSize = 200,
+    maxPages = 25,
+    enabled = true,
+  }: { pageSize?: number; maxPages?: number; enabled?: boolean } = {}
+) {
+  const { user } = useAuth();
+
+  return useQuery<NewApplication[]>({
+    queryKey: qk.companies.applications(companyId ?? -1, pageSize, maxPages),
+    queryFn: ({ signal }) =>
+      companyService.applications(companyId!, { pageSize, maxPages, signal }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyApplicationsTimeline(
+  companyId: number | null | undefined
+) {
+  const { user } = useAuth();
+
+  return useQuery<Timeline>({
+    queryKey: qk.companies.applicationsTimeline(companyId ?? -1),
+    queryFn: ({ signal }) =>
+      companyService.applicationsTimeline(companyId!, { signal }),
+    enabled: Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyTimedApplications(
+  companyId: number | null | undefined,
+  from: string,
+  to: string,
+  enabled = true
+) {
+  const { user } = useAuth();
+
+  return useQuery<ApplicationStatisticEntry[]>({
+    queryKey: qk.companies.timedApplicationsTotal(companyId ?? -1, from, to),
+    queryFn: ({ signal }) =>
+      companyService.timedApplications(companyId!, from, to, { signal }),
+    enabled:
+      enabled && Boolean(user) && companyId != null && companyId > 0 && !!from && !!to,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyGeneralAnalytics(
+  companyId: number | null | undefined
+) {
+  const { user } = useAuth();
+
+  return useQuery<AnalyticalQuantities>({
+    queryKey: qk.companies.generalAnalytics(companyId ?? -1),
+    queryFn: ({ signal }) => companyService.generalAnalytics(companyId!, { signal }),
+    enabled: Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyResidentAnalytics(
+  companyId: number | null | undefined
+) {
+  const { user } = useAuth();
+
+  return useQuery<ResidentAnalyticsData>({
+    queryKey: qk.companies.residentAnalytics(companyId ?? -1),
+    queryFn: ({ signal }) =>
+      companyService.residentAnalyticsData(companyId!, { signal }),
+    enabled: Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
 /**
  * Social platforms list (LinkedIn, Instagram, etc.) used by the company
  * profile editor. Reference data — long staleTime. Public endpoint, so no
@@ -127,7 +209,7 @@ export function useTimedApplicationsForListing(
 export function usePlatforms() {
   return useQuery<SocialPlatform[]>({
     queryKey: qk.companies.platforms(),
-    queryFn: () => companyService.getAllPlatforms(),
+    queryFn: ({ signal }) => companyService.getAllPlatforms({ signal }),
     staleTime: STALE_5_MINUTES,
   });
 }
@@ -143,7 +225,7 @@ export function useCompanyUsers(companyId: number | null | undefined) {
   const { user } = useAuth();
   return useQuery<CompanyUserDTO[]>({
     queryKey: qk.companies.users(companyId ?? -1),
-    queryFn: () => companyService.users(companyId!),
+    queryFn: ({ signal }) => companyService.users(companyId!, { signal }),
     enabled: Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -156,7 +238,7 @@ export function useCompanyUsers(companyId: number | null | undefined) {
 export function useCompanyRoles() {
   return useQuery<CompanyRole[]>({
     queryKey: qk.companies.roles(),
-    queryFn: () => companyService.roles(),
+    queryFn: ({ signal }) => companyService.roles({ signal }),
     staleTime: STALE_5_MINUTES,
   });
 }
@@ -318,9 +400,14 @@ export function useRefreshCompanyListings() {
   return useMutation<void, Error, number>({
     mutationFn: (id) => companyService.refreshCompanyListings(id),
     onSettled: (_data, _err, id) => {
-      qc.invalidateQueries({ queryKey: qk.queues.allCompanyListings(id, 0, 200) });
+      qc.invalidateQueries({ queryKey: qk.queues.allCompanyListingsByCompany(id) });
+      qc.invalidateQueries({ queryKey: qk.queues.companyListingsPageByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.companies.applicationCounts(id, 200) });
-      qc.invalidateQueries({ queryKey: ["companies", "view-counts", id] });
+      qc.invalidateQueries({ queryKey: qk.companies.applicationsByCompany(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.applicationsTimeline(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.generalAnalytics(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.residentAnalytics(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.viewCountsByCompany(id) });
     },
   });
 }

@@ -23,9 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useApplicationDemography } from "@/features/analytics/hooks/useDemographics";
 import {
   APPLICATION_DEMOGRAPHY_CATEGORIES,
-  demographicsService,
   type ApplicationDemography,
   type ApplicationDemographyCategory,
   type GotListingFilter,
@@ -264,64 +264,45 @@ export default function ApplicationDemographicsPanel({
   const [category, setCategory] =
     React.useState<ApplicationDemographyCategory>("GOT_LISTING");
   const [gotListing, setGotListing] = React.useState<GotListingFilter>("BOTH");
-  const [data, setData] = React.useState<ApplicationDemography | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const fromIso = React.useMemo(() => dateTimeLocalToIso(fromValue), [fromValue]);
+  const toIso = React.useMemo(() => dateTimeLocalToIso(toValue), [toValue]);
+  const dateError = React.useMemo(() => {
+    if (!fromIso || !toIso) {
+      return "Välj giltiga datum för from och to.";
+    }
+
+    if (new Date(fromIso).getTime() > new Date(toIso).getTime()) {
+      return "From måste vara tidigare än to.";
+    }
+
+    return null;
+  }, [fromIso, toIso]);
+  const applicationQuery = useApplicationDemography(
+    listingId,
+    fromIso ?? "",
+    toIso ?? "",
+    category,
+    gotListing,
+    !dateError
+  );
+  const data = applicationQuery.data ?? null;
+  const error =
+    dateError ??
+    (applicationQuery.isError
+      ? applicationQuery.error instanceof Error
+        ? applicationQuery.error.message
+        : "Kunde inte hämta ansökningsdemografi."
+      : null);
 
   React.useEffect(() => {
     setFromValue(toDateTimeLocalValue(from));
     setToValue(toDateTimeLocalValue(to));
   }, [from, to]);
-
-  React.useEffect(() => {
-    const fromIso = dateTimeLocalToIso(fromValue);
-    const toIso = dateTimeLocalToIso(toValue);
-
-    if (!fromIso || !toIso) {
-      setData(null);
-      setError("Välj giltiga datum för from och to.");
-      return;
-    }
-
-    if (new Date(fromIso).getTime() > new Date(toIso).getTime()) {
-      setData(null);
-      setError("From måste vara tidigare än to.");
-      return;
-    }
-
-    let cancelled = false;
-
-    setIsLoading(true);
-    setError(null);
-
-    demographicsService
-      .getApplication(listingId, fromIso, toIso, category, gotListing)
-      .then((result) => {
-        if (!cancelled) setData(result);
-      })
-      .catch((requestError) => {
-        if (cancelled) return;
-        setData(null);
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Kunde inte hämta ansökningsdemografi."
-        );
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [category, fromValue, gotListing, listingId, toValue]);
-
   const chartData = React.useMemo(() => toData(data), [data]);
   const total = totalApplications(data);
   const top = chartData[0];
 
-  if (isLoading) {
+  if (applicationQuery.isLoading) {
     return (
       <section className="rounded-xl border border-gray-200 bg-white p-5">
         <Skeleton className="h-6 w-52" />

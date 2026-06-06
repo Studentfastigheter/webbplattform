@@ -19,9 +19,17 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import { cityService, normalizeCityCode } from "@/features/cities/services/city-service";
-import type { CityDetailedDTO } from "@/types/city";
+import type { CityDTO, CityDetailedDTO } from "@/types/city";
 
 const STALE_5_MINUTES = 5 * 60_000;
+
+export function useCitiesList() {
+  return useQuery<CityDTO[]>({
+    queryKey: qk.cities.list(),
+    queryFn: ({ signal }) => cityService.list({ signal }),
+    staleTime: STALE_5_MINUTES,
+  });
+}
 
 /**
  * Detailed view for one city (companies + external companies + schools +
@@ -33,11 +41,13 @@ export function useCityDetail(
   options?: Omit<UseQueryOptions<CityDetailedDTO>, "queryKey" | "queryFn">,
 ) {
   const normalized = code ? normalizeCityCode(code) : "";
+  const { enabled = true, ...restOptions } = options ?? {};
+
   return useQuery<CityDetailedDTO>({
+    ...restOptions,
     queryKey: qk.cities.detail(normalized),
-    queryFn: () => cityService.get(normalized),
-    enabled: Boolean(normalized),
+    queryFn: ({ signal }) => cityService.get(normalized, { signal }),
+    enabled: enabled && Boolean(normalized),
     staleTime: STALE_5_MINUTES,
-    ...options,
   });
 }

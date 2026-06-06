@@ -56,7 +56,10 @@ export function useMyQueues(
   >
 ) {
   const { user } = useAuth();
+  const { enabled = true, ...restOptions } = options ?? {};
+
   return useQuery<QueueApplicationDTO[]>({
+    ...restOptions,
     queryKey: [...qk.queues.my(), { hydrated }] as const,
     queryFn: ({ signal }) =>
       queueService.getMyQueues({
@@ -66,9 +69,8 @@ export function useMyQueues(
         ...(hydrated ? {} : { hydrateQueues: false as const }),
         signal,
       }),
-    enabled: Boolean(user),
+    enabled: enabled && Boolean(user),
     staleTime: STALE_30_SECONDS,
-    ...options,
   });
 }
 

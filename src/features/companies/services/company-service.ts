@@ -1018,8 +1018,11 @@ export const companyService = {
     return normalizeCompanyPrivate(company);
   },
 
-  roles: async (): Promise<CompanyRole[]> => {
-    const roles = await apiClient<unknown>("/companies/roles", { auth: false });
+  roles: async (options?: ServiceOptions): Promise<CompanyRole[]> => {
+    const roles = await apiClient<unknown>("/companies/roles", {
+      auth: false,
+      signal: options?.signal,
+    });
     return arrayFromApiResponse<CompanyRole>(roles);
   },
 
@@ -1080,8 +1083,14 @@ export const companyService = {
     return companyService.uploadImage(id, "banner", file, options);
   },
 
-  users: async (id: number): Promise<CompanyUserDTO[]> => {
-    const users = await apiClient<unknown>(`/companies/${pathSegment(id)}/users`);
+  users: async (
+    id: number,
+    options?: ServiceOptions
+  ): Promise<CompanyUserDTO[]> => {
+    const users = await apiClient<unknown>(
+      `/companies/${pathSegment(id)}/users`,
+      { signal: options?.signal }
+    );
     return arrayFromApiResponse<CompanyUserDTO>(users);
   },
 
@@ -1137,10 +1146,11 @@ export const companyService = {
 
   newApplications: async (
     id: number,
-    options: { count?: number; since?: string } = {}
+    options: { count?: number; since?: string; signal?: AbortSignal } = {}
   ): Promise<NewApplication[]> => {
     const result = await apiClient<unknown>(
-      companyApplicationsEndpoint(id, 0, options.count ?? 10)
+      companyApplicationsEndpoint(id, 0, options.count ?? 10),
+      { signal: options.signal }
     );
 
     return toArray<unknown>(result, true)
@@ -1151,7 +1161,7 @@ export const companyService = {
 
   applications: async (
     id: number,
-    options: { pageSize?: number; maxPages?: number } = {}
+    options: { pageSize?: number; maxPages?: number; signal?: AbortSignal } = {}
   ): Promise<NewApplication[]> => {
     const pageSize = options.pageSize ?? 200;
     const maxPages = options.maxPages ?? 25;
@@ -1159,7 +1169,8 @@ export const companyService = {
 
     for (let page = 0; page < maxPages; page += 1) {
       const result = await apiClient<unknown>(
-        companyApplicationsEndpoint(id, page, pageSize)
+        companyApplicationsEndpoint(id, page, pageSize),
+        { signal: options.signal }
       );
       const rows = toArray<unknown>(result, true);
 
@@ -1202,7 +1213,7 @@ export const companyService = {
   
   applicationsTimeline: async (
     id: number,
-    options: { from?: string | Date; to?: string | Date } = {}
+    options: { from?: string | Date; to?: string | Date; signal?: AbortSignal } = {}
   ): Promise<Timeline> => {
     const now = new Date();
     const defaultFrom = new Date(now);
@@ -1211,7 +1222,8 @@ export const companyService = {
     const entries = await companyService.timedApplications(
       id,
       options.from ?? defaultFrom,
-      options.to ?? now
+      options.to ?? now,
+      { signal: options.signal }
     );
     const rows = toArray<unknown>(entries, true)
       .map(normalizeApplicationTrendEntry)
@@ -1228,12 +1240,14 @@ export const companyService = {
   timedApplications: async (
     id: number,
     from: string | Date,
-    to: string | Date
+    to: string | Date,
+    options?: ServiceOptions
   ): Promise<ApplicationStatisticEntry[]> => {
     const fromValue = from instanceof Date ? from.toISOString() : from;
     const toValue = to instanceof Date ? to.toISOString() : to;
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/timed-applications/${pathSegment(fromValue)}/${pathSegment(toValue)}`
+      `/analytics/${pathSegment(id)}/timed-applications/${pathSegment(fromValue)}/${pathSegment(toValue)}`,
+      { signal: options?.signal }
     );
 
     return toArray<unknown>(result, true)
@@ -1299,28 +1313,42 @@ export const companyService = {
   },
 
   generalAnalytics: async (
-    id: number
+    id: number,
+    options?: ServiceOptions
   ): Promise<AnalyticalQuantities> => {
-    const result = await apiClient<unknown>(`/analytics/${pathSegment(id)}/general`);
+    const result = await apiClient<unknown>(
+      `/analytics/${pathSegment(id)}/general`,
+      { signal: options?.signal }
+    );
 
     return normalizeAnalyticalQuantities(result);
   },
 
-  residentAnalyticsData: async (id: number): Promise<ResidentAnalyticsData> => {
+  residentAnalyticsData: async (
+    id: number,
+    options?: ServiceOptions
+  ): Promise<ResidentAnalyticsData> => {
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/residents/data`
+      `/analytics/${pathSegment(id)}/residents/data`,
+      { signal: options?.signal }
     );
 
     return normalizeResidentAnalyticsData(result);
   },
 
-  residentsByTown: async (id: number): Promise<unknown[]> => {
-    const data = await companyService.residentAnalyticsData(id);
+  residentsByTown: async (
+    id: number,
+    options?: ServiceOptions
+  ): Promise<unknown[]> => {
+    const data = await companyService.residentAnalyticsData(id, options);
     return data.residentTowns;
   },
 
-  residentsBySchool: async (id: number): Promise<ResidentsSchoolCount[]> => {
-    const data = await companyService.residentAnalyticsData(id);
+  residentsBySchool: async (
+    id: number,
+    options?: ServiceOptions
+  ): Promise<ResidentsSchoolCount[]> => {
+    const data = await companyService.residentAnalyticsData(id, options);
     return data.residentSchools;
   },
 
@@ -1330,9 +1358,10 @@ export const companyService = {
     });
   },
 
-  getAllPlatforms: async (): Promise<SocialPlatform[]> => {
+  getAllPlatforms: async (options?: ServiceOptions): Promise<SocialPlatform[]> => {
     const platforms = await apiClient<unknown>("/companies/all-platforms", {
       auth: false,
+      signal: options?.signal,
     });
     return arrayFromApiResponse<unknown>(platforms)
       .map(normalizeSocialPlatform)

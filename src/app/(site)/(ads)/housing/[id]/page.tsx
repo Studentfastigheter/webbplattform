@@ -388,16 +388,18 @@ export default function ListingDetailPage() {
     enabled: Boolean(listing),
     staleTime: 60_000,
     queryFn: async ({ signal }) => {
-      void signal; // listingService.getAll doesn't thread signal (legacy sig)
       if (!listing) return [];
 
       const location = listing.city || listing.area || null;
-      const nearbyResponse = await listingService.getAll({
-        page: 0,
-        size: NEARBY_LISTINGS_FETCH_SIZE,
-        city: location,
-        seed: listing.id,
-      });
+      const nearbyResponse = await listingService.getAll(
+        {
+          page: 0,
+          size: NEARBY_LISTINGS_FETCH_SIZE,
+          city: location,
+          seed: listing.id,
+        },
+        { signal }
+      );
 
       const byId = new Map<string, ListingCardDTO>();
       const addCandidates = (items: ListingCardDTO[] = []) => {
@@ -411,11 +413,14 @@ export default function ListingDetailPage() {
       addCandidates(nearbyResponse.content);
 
       if (byId.size < NEARBY_LISTINGS_PAGE_SIZE) {
-        const fallbackResponse = await listingService.getAll({
-          page: 0,
-          size: NEARBY_LISTINGS_FETCH_SIZE,
-          seed: listing.id,
-        });
+        const fallbackResponse = await listingService.getAll(
+          {
+            page: 0,
+            size: NEARBY_LISTINGS_FETCH_SIZE,
+            seed: listing.id,
+          },
+          { signal }
+        );
         addCandidates(fallbackResponse.content);
       }
 

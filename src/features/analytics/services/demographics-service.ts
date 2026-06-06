@@ -157,13 +157,18 @@ export const demographicsService = {
   getListingByAllCategories: async (
     listingId: string,
     from: string | Date,
-    to: string | Date
+    to: string | Date,
+    options?: ServiceOptions
   ): Promise<Record<DemographyCategory, ListingDemography | null>> => {
     const entries = await Promise.all(
       LISTING_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value = await demographicsService
-          .getListing(listingId, from, to, category)
-          .catch(() => null);
+        const value = await demographicsService.getListing(
+          listingId,
+          from,
+          to,
+          category,
+          options
+        );
         return [category, value] as const;
       })
     );
@@ -189,7 +194,8 @@ export const demographicsService = {
     listingIds: string[],
     from: string | Date,
     to: string | Date,
-    category: DemographyCategory
+    category: DemographyCategory,
+    options?: ServiceOptions
   ): Promise<Record<string, ListingDemography>> => {
     return apiClient<Record<string, ListingDemography>>(
       `/demographics/listings/query/${pathSegment(companyId)}${demographyQuery(
@@ -200,6 +206,7 @@ export const demographicsService = {
       {
         method: "POST",
         body: JSON.stringify(listingIds),
+        signal: options?.signal,
       }
     );
   },
@@ -208,15 +215,21 @@ export const demographicsService = {
     companyId: number,
     listingIds: string[],
     from: string | Date,
-    to: string | Date
+    to: string | Date,
+    options?: ServiceOptions
   ): Promise<Record<DemographyCategory, Record<string, ListingDemography>>> => {
     const entries = await Promise.all(
       LISTING_DEMOGRAPHY_CATEGORIES.map(async (category) => {
         const value =
           listingIds.length > 0
-            ? await demographicsService
-                .getListingsBatch(companyId, listingIds, from, to, category)
-                .catch(() => ({}))
+            ? await demographicsService.getListingsBatch(
+                companyId,
+                listingIds,
+                from,
+                to,
+                category,
+                options
+              )
             : {};
         return [category, value] as const;
       })
@@ -253,9 +266,13 @@ export const demographicsService = {
   ): Promise<Record<DemographyCategory, Record<string, ListingDemography>>> => {
     const entries = await Promise.all(
       LISTING_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value = await demographicsService
-          .getFullCompanyListings(companyId, from, to, category, options)
-          .catch(() => ({}));
+        const value = await demographicsService.getFullCompanyListings(
+          companyId,
+          from,
+          to,
+          category,
+          options
+        );
         return [category, value] as const;
       })
     );
@@ -286,13 +303,18 @@ export const demographicsService = {
   getCompanyByAllCategories: async (
     companyId: number,
     from: string | Date,
-    to: string | Date
+    to: string | Date,
+    options?: ServiceOptions
   ): Promise<Record<CompanyDemographyCategory, CompanyDemography | null>> => {
     const entries = await Promise.all(
       COMPANY_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value = await demographicsService
-          .getCompany(companyId, from, to, category)
-          .catch(() => null);
+        const value = await demographicsService.getCompany(
+          companyId,
+          from,
+          to,
+          category,
+          options
+        );
         return [category, value] as const;
       })
     );
@@ -340,9 +362,13 @@ export const demographicsService = {
       COMPANY_DEMOGRAPHY_CATEGORIES.map(async (category) => {
         const value =
           companyIds.length > 0
-            ? await demographicsService
-                .getCompaniesBatch(companyIds, from, to, category, options)
-                .catch(() => ({}))
+            ? await demographicsService.getCompaniesBatch(
+                companyIds,
+                from,
+                to,
+                category,
+                options
+              )
             : {};
         return [category, value] as const;
       })
@@ -367,23 +393,26 @@ export const demographicsService = {
         listingId
       )}${demographyQuery(from, to, category, gotListing)}`,
       { signal: options?.signal }
-    ).catch((err) => {
-      console.warn("Falling back to dummy data for getApplication:", err);
-      return getMockApplicationDemography(listingId, category, gotListing, from, to);
-    });
+    );
   },
 
   getApplicationByAllCategories: async (
     listingId: string,
     from: string | Date,
     to: string | Date,
-    gotListing?: GotListingFilter
+    gotListing?: GotListingFilter,
+    options?: ServiceOptions
   ): Promise<Record<ApplicationDemographyCategory, ApplicationDemography | null>> => {
     const entries = await Promise.all(
       APPLICATION_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value = await demographicsService
-          .getApplication(listingId, from, to, category, gotListing)
-          .catch(() => null);
+        const value = await demographicsService.getApplication(
+          listingId,
+          from,
+          to,
+          category,
+          gotListing,
+          options
+        );
         return [category, value] as const;
       })
     );
@@ -412,14 +441,7 @@ export const demographicsService = {
         body: JSON.stringify(listingIds),
         signal: options?.signal,
       }
-    ).catch((err) => {
-      console.warn("Falling back to dummy data for getApplicationsBatch:", err);
-      const result: Record<string, ApplicationDemography> = {};
-      listingIds.forEach((id) => {
-        result[id] = getMockApplicationDemography(id, category, gotListing, from, to);
-      });
-      return result;
-    });
+    );
   },
 
   getApplicationsBatchByAllCategories: async (
@@ -427,7 +449,8 @@ export const demographicsService = {
     listingIds: string[],
     from: string | Date,
     to: string | Date,
-    gotListing?: GotListingFilter
+    gotListing?: GotListingFilter,
+    options?: ServiceOptions
   ): Promise<
     Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>
   > => {
@@ -440,11 +463,11 @@ export const demographicsService = {
                   companyId,
                   listingIds,
                   from,
-                  to,
-                  category,
-                  gotListing
-                )
-                .catch(() => ({}))
+                to,
+                category,
+                gotListing,
+                options
+              )
             : {};
         return [category, value] as const;
       })
@@ -461,46 +484,36 @@ export const demographicsService = {
     from: string | Date,
     to: string | Date,
     category: ApplicationDemographyCategory,
-    gotListing?: GotListingFilter
+    gotListing?: GotListingFilter,
+    options?: ServiceOptions
   ): Promise<Record<string, ApplicationDemography>> => {
     return apiClient<Record<string, ApplicationDemography>>(
       `/demographics/applications/company/${pathSegment(
         companyId
-      )}/listings${demographyQuery(from, to, category, gotListing)}`
-    ).catch((err) => {
-      console.warn("Falling back to dummy data for getFullCompanyListingsApplications:", err);
-      const mockIds = [
-        "d3b07384-d113-49cd-a5d6-84dec414fa9e",
-        "e4c07384-e113-49cd-a5d6-84dec414fa9f",
-        "f5d07384-f113-49cd-a5d6-84dec414fa90"
-      ];
-      const result: Record<string, ApplicationDemography> = {};
-      mockIds.forEach((id) => {
-        result[id] = getMockApplicationDemography(id, category, gotListing, from, to);
-      });
-      return result;
-    });
+      )}/listings${demographyQuery(from, to, category, gotListing)}`,
+      { signal: options?.signal }
+    );
   },
 
   getFullCompanyListingsApplicationsByAllCategories: async (
     companyId: number,
     from: string | Date,
     to: string | Date,
-    gotListing?: GotListingFilter
+    gotListing?: GotListingFilter,
+    options?: ServiceOptions
   ): Promise<
     Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>
   > => {
     const entries = await Promise.all(
       APPLICATION_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value = await demographicsService
-          .getFullCompanyListingsApplications(
-            companyId,
-            from,
-            to,
-            category,
-            gotListing
-          )
-          .catch(() => ({}));
+        const value = await demographicsService.getFullCompanyListingsApplications(
+          companyId,
+          from,
+          to,
+          category,
+          gotListing,
+          options
+        );
         return [category, value] as const;
       })
     );
@@ -511,95 +524,3 @@ export const demographicsService = {
     >;
   },
 };
-
-function getMockApplicationDemography(
-  listingId: string,
-  category: ApplicationDemographyCategory,
-  gotListing?: GotListingFilter,
-  from?: string | Date,
-  to?: string | Date
-): ApplicationDemography {
-  let seed = 0;
-  const str = listingId + category + (gotListing || "");
-  for (let i = 0; i < str.length; i++) {
-    seed = (seed * 31 + str.charCodeAt(i)) & 0xffffffff;
-  }
-  const random = () => {
-    const x = Math.sin(seed++) * 10000;
-    return x - Math.floor(x);
-  };
-
-  const generateBuckets = () => {
-    switch (category) {
-      case "GOT_LISTING": {
-        const accepted = Math.floor(random() * 15) + 5;
-        const rejected = Math.floor(random() * 30) + 10;
-        if (gotListing === "ACCEPTED_ONLY") {
-          return [{ key: "true", totalApplications: accepted }];
-        }
-        if (gotListing === "REJECTED_ONLY") {
-          return [{ key: "false", totalApplications: rejected }];
-        }
-        return [
-          { key: "true", totalApplications: accepted },
-          { key: "false", totalApplications: rejected },
-        ];
-      }
-      case "GENDER":
-        return [
-          { key: "MALE", totalApplications: Math.floor(random() * 20) + 5 },
-          { key: "FEMALE", totalApplications: Math.floor(random() * 25) + 8 },
-          { key: "OTHER", totalApplications: Math.floor(random() * 5) + 1 },
-        ];
-      case "AGE":
-        return [
-          { key: "18-20", totalApplications: Math.floor(random() * 15) + 2 },
-          { key: "21-25", totalApplications: Math.floor(random() * 30) + 10 },
-          { key: "26-30", totalApplications: Math.floor(random() * 10) + 3 },
-          { key: "31+", totalApplications: Math.floor(random() * 5) + 1 },
-        ];
-      case "SCHOOL":
-        return [
-          { key: "Chalmers", totalApplications: Math.floor(random() * 25) + 5 },
-          { key: "Göteborgs universitet", totalApplications: Math.floor(random() * 20) + 4 },
-          { key: "Högskolan i Halmstad", totalApplications: Math.floor(random() * 10) + 1 },
-        ];
-      case "PREFERRED_MAX_RENT":
-        return [
-          { key: "4000", totalApplications: Math.floor(random() * 15) + 3 },
-          { key: "6000", totalApplications: Math.floor(random() * 25) + 5 },
-          { key: "8000", totalApplications: Math.floor(random() * 10) + 2 },
-          { key: "10000", totalApplications: Math.floor(random() * 5) + 1 },
-        ];
-      case "DAYS_IN_QUEUE":
-        return [
-          { key: "30", totalApplications: Math.floor(random() * 10) + 2 },
-          { key: "90", totalApplications: Math.floor(random() * 15) + 4 },
-          { key: "180", totalApplications: Math.floor(random() * 20) + 5 },
-          { key: "365", totalApplications: Math.floor(random() * 12) + 3 },
-          { key: "730", totalApplications: Math.floor(random() * 6) + 1 },
-        ];
-      case "APPLICANT_OTHER_APPLICATIONS":
-        return [
-          { key: "0", totalApplications: Math.floor(random() * 15) + 5 },
-          { key: "1", totalApplications: Math.floor(random() * 20) + 4 },
-          { key: "2", totalApplications: Math.floor(random() * 10) + 2 },
-          { key: "3+", totalApplications: Math.floor(random() * 8) + 1 },
-        ];
-      default:
-        return [];
-    }
-  };
-
-  const buckets = generateBuckets();
-  const total = buckets.reduce((sum, b) => sum + b.totalApplications, 0);
-
-  return {
-    listingId,
-    category,
-    totalApplications: total,
-    from: from instanceof Date ? from.toISOString() : from,
-    to: to instanceof Date ? to.toISOString() : to,
-    buckets,
-  };
-}

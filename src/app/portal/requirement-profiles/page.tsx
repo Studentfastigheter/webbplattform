@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FileText, Info } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { listingService } from "@/features/listings/services/listing-service";
+import { useCompanyRequirementsProfiles } from "@/features/listings/hooks/useListings";
 import type { RequirementsProfileDTO } from "@/types/listing";
 
 function getProfileKey(profile: RequirementsProfileDTO, index: number) {
@@ -14,59 +14,40 @@ function getProfileKey(profile: RequirementsProfileDTO, index: number) {
 export default function RequirementsProfilesPage() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [profiles, setProfiles] = useState<RequirementsProfileDTO[]>([]);
   const [selectedProfileKey, setSelectedProfileKey] = useState<string | null>(
     null
   );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const profilesQuery = useCompanyRequirementsProfiles(companyId, {
+    enabled: !authLoading,
+  });
+  const profiles = profilesQuery.data ?? [];
+  const loading = profilesQuery.isLoading;
+  const error =
+    !authLoading && !companyId
+      ? "Kunde inte hitta ett aktivt företag för kontot."
+      : profilesQuery.isError
+        ? profilesQuery.error instanceof Error
+          ? profilesQuery.error.message
+          : "Kunde inte hämta kravprofilerna."
+        : null;
 
   useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setProfiles([]);
+    if (profiles.length === 0) {
       setSelectedProfileKey(null);
-      setLoading(false);
-      setError("Kunde inte hitta ett aktivt företag för kontot.");
       return;
     }
 
-    let active = true;
-    setLoading(true);
-    setError(null);
+    setSelectedProfileKey((current) => {
+      if (
+        current &&
+        profiles.some((profile, index) => getProfileKey(profile, index) === current)
+      ) {
+        return current;
+      }
 
-    listingService
-      .getRequirementsProfilesByCompany(companyId)
-      .then((result) => {
-        if (!active) return;
-        setProfiles(result);
-        setSelectedProfileKey(
-          result.length > 0 ? getProfileKey(result[0], 0) : null
-        );
-      })
-      .catch((requestError) => {
-        if (!active) return;
-        setProfiles([]);
-        setSelectedProfileKey(null);
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Kunde inte hämta kravprofilerna."
-        );
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, companyId]);
-
+      return getProfileKey(profiles[0], 0);
+    });
+  }, [profiles]);
   const selectedProfile = useMemo(() => {
     if (!selectedProfileKey) return profiles[0] ?? null;
 
@@ -120,7 +101,7 @@ export default function RequirementsProfilesPage() {
 
             {profiles.length === 0 ? (
               <div className="flex flex-1 items-center justify-center px-5 py-10 text-center text-theme-sm text-gray-500">
-                Inga kravprofiler hittades för företaget.
+                Inga kravprofiler hittades fÃ¶r fÃ¶retaget.
               </div>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -146,7 +127,7 @@ export default function RequirementsProfilesPage() {
                           <span className="absolute bottom-2 left-1.5 top-2 w-1 rounded-full bg-[#004225]" />
                         ) : null}
                         <span className="block truncate">
-                          {profile.title || "Namnlös kravprofil"}
+                          {profile.title || "NamnlÃ¶s kravprofil"}
                         </span>
                       </button>
                     );
@@ -161,7 +142,7 @@ export default function RequirementsProfilesPage() {
               <div className="h-full min-h-0 overflow-y-auto px-5 py-5 sm:px-6">
                 <div className="mx-auto max-w-3xl">
                   <h2 className="break-words text-xl font-semibold text-gray-900">
-                    {selectedProfile.title || "Namnlös kravprofil"}
+                    {selectedProfile.title || "NamnlÃ¶s kravprofil"}
                   </h2>
 
                   <div>
@@ -178,7 +159,7 @@ export default function RequirementsProfilesPage() {
 
                   <div className="mt-6">
                     <h3 className="text-sm font-semibold text-gray-900">
-                      Dokument som krävs
+                      Dokument som krÃ¤vs
                     </h3>
                     {selectedDocuments.length > 0 ? (
                       <div className="mt-3 divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
@@ -208,7 +189,7 @@ export default function RequirementsProfilesPage() {
                     ) : (
                       <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-gray-300 px-4 py-5 text-theme-sm text-gray-500">
                         <Info className="h-4 w-4 shrink-0" />
-                        Inga dokumentkrav är angivna för den här profilen.
+                        Inga dokumentkrav Ã¤r angivna fÃ¶r den hÃ¤r profilen.
                       </div>
                     )}
                   </div>
@@ -216,7 +197,7 @@ export default function RequirementsProfilesPage() {
               </div>
             ) : (
               <div className="flex h-full min-h-[360px] items-center justify-center px-6 py-10 text-center text-theme-sm text-gray-500">
-                Välj en kravprofil i listan för att visa informationen.
+                VÃ¤lj en kravprofil i listan fÃ¶r att visa informationen.
               </div>
             )}
           </section>

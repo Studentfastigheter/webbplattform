@@ -307,7 +307,8 @@ export default function PortalAdsPage() {
   const viewCountQueries = useQueries({
     queries: companyListings.map((listing) => ({
       queryKey: qk.companies.viewCounts(companyId ?? -1, String(listing.id)),
-      queryFn: () => companyService.listingViewCounts(companyId!, listing.id),
+      queryFn: ({ signal }) =>
+        companyService.listingViewCounts(companyId!, listing.id, { signal }),
       enabled: companyId != null && companyId > 0,
       staleTime: 30_000,
     })),

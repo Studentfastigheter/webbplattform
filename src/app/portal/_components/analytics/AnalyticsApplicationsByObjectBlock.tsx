@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { companyService, type NewApplication } from "@/features/companies/services/company-service";
+import { useCompanyApplications } from "@/features/companies/hooks/useCompanies";
+import type { NewApplication } from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../../_statics/variables";
 
 type Limit = 5 | 10;
@@ -29,15 +30,15 @@ function formatListingFacts(item: ObjectApplicationRow) {
   return [
     item.dwellingType,
     item.rooms ? `${item.rooms} rum` : null,
-    item.sizeM2 ? `${item.sizeM2} m²` : null,
+    item.sizeM2 ? `${item.sizeM2} mÂ²` : null,
   ]
     .filter(Boolean)
-    .join(" • ");
+    .join(" â€¢ ");
 }
 
 function formatRent(rent?: number) {
   return typeof rent === "number" && Number.isFinite(rent)
-    ? `${rent.toLocaleString("sv-SE")} kr/mån`
+    ? `${rent.toLocaleString("sv-SE")} kr/mÃ¥n`
     : null;
 }
 
@@ -70,7 +71,7 @@ function buildApplicationRows(applications: NewApplication[], limit: Limit) {
 
       return {
         listingId: first.listingId,
-        title: first.listingTitle || first.address || "Okänd annons",
+        title: first.listingTitle || first.address || "OkÃ¤nd annons",
         imageUrl: first.listingImage,
         address: first.address || location || undefined,
         location,
@@ -218,7 +219,7 @@ function ApplicationsByObjectList({
   if (items.length === 0) {
     return (
       <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-theme-sm text-gray-500">
-        Det finns inga ansökningar per annons att visa ännu.
+        Det finns inga ansÃ¶kningar per annons att visa Ã¤nnu.
       </div>
     );
   }
@@ -270,62 +271,29 @@ export default function AnalyticsApplicationsByObjectBlock() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [limit, setLimit] = React.useState<Limit>(5);
-  const [items, setItems] = React.useState<ObjectApplicationRow[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setItems([]);
-      setError("Kunde inte hitta ett aktivt företag för statistiken.");
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-
-    companyService
-      .applications(companyId)
-      .then((result) => {
-        if (!cancelled) {
-          setItems(buildApplicationRows(result, limit));
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setItems([]);
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Kunde inte hämta ansökningar per annons."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId, limit]);
-
+  const applicationsQuery = useCompanyApplications(companyId, {
+    enabled: !authLoading,
+  });
+  const items = React.useMemo(
+    () => buildApplicationRows(applicationsQuery.data ?? [], limit),
+    [applicationsQuery.data, limit]
+  );
+  const error =
+    !authLoading && !companyId
+      ? "Kunde inte hitta ett aktivt företag för statistiken."
+      : applicationsQuery.isError
+        ? applicationsQuery.error instanceof Error
+          ? applicationsQuery.error.message
+          : "Kunde inte hämta ansökningar per annons."
+        : null;
   return (
     <AnalyticsBlock
       action={<LimitToggle onChange={setLimit} value={limit} />}
       contentClassName="overflow-hidden"
       size="2x2"
-      title="Ansökningar per annons"
+      title="AnsÃ¶kningar per annons"
     >
-      {authLoading || isLoading ? (
+      {authLoading || applicationsQuery.isLoading ? (
         <LoadingList />
       ) : error ? (
         <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">

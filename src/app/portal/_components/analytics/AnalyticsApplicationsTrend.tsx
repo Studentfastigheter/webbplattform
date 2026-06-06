@@ -13,7 +13,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
-import { companyService, type TimelineEntry } from "@/features/companies/services/company-service";
+import { useCompanyApplicationsTimeline } from "@/features/companies/hooks/useCompanies";
+import type { TimelineEntry } from "@/features/companies/services/company-service";
 
 type Interval = {
   value: string;
@@ -45,10 +46,10 @@ type AnalyticsApplicationsTrendProps = {
 const intervals: Interval[] = [
   { value: "1d", label: "1 dag", days: 1 },
   { value: "1w", label: "1 vecka", days: 7 },
-  { value: "1m", label: "1 månad", months: 1 },
-  { value: "3m", label: "3 månader", months: 3 },
-  { value: "6m", label: "6 månader", months: 6 },
-  { value: "1y", label: "1 år", months: 12 },
+  { value: "1m", label: "1 mÃ¥nad", months: 1 },
+  { value: "3m", label: "3 mÃ¥nader", months: 3 },
+  { value: "6m", label: "6 mÃ¥nader", months: 6 },
+  { value: "1y", label: "1 Ã¥r", months: 12 },
 ];
 
 const monthFormatter = new Intl.DateTimeFormat("sv-SE", {
@@ -62,11 +63,11 @@ const monthYearFormatter = new Intl.DateTimeFormat("sv-SE", {
 
 const chartConfig = {
   applications: {
-    label: "Ansökningar",
+    label: "AnsÃ¶kningar",
     color: "var(--color-brand-500)",
   },
   comparisonApplications: {
-    label: "Föregående år",
+    label: "FÃ¶regÃ¥ende Ã¥r",
     color: "var(--color-brand-200)",
   },
 } satisfies ChartConfig;
@@ -178,55 +179,17 @@ export default function AnalyticsApplicationsTrend({
 }: AnalyticsApplicationsTrendProps) {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [trend, setTrend] = React.useState<ApplicationTrendPoint[]>([]);
+  const trendQuery = useCompanyApplicationsTimeline(companyId);
+  const trend = trendQuery.data ?? [];
   const [selectedInterval, setSelectedInterval] = React.useState("1m");
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setTrend([]);
-      setError("Kunde inte hitta ett aktivt företag för analysen.");
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-
-    companyService
-      .applicationsTimeline(companyId)
-      .then((timeline) => {
-        if (!cancelled) {
-          setTrend(timeline);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setTrend([]);
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Kunde inte hämta ansökningstrenden."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId]);
-
+  const error =
+    !authLoading && !companyId
+      ? "Kunde inte hitta ett aktivt företag för analysen."
+      : trendQuery.isError
+        ? trendQuery.error instanceof Error
+          ? trendQuery.error.message
+          : "Kunde inte hämta ansökningstrenden."
+        : null;
   const selectedIntervalConfig =
     intervals.find((interval) => interval.value === selectedInterval) ??
     intervals[2]!;
@@ -245,7 +208,7 @@ export default function AnalyticsApplicationsTrend({
   const hasComparison = chartData.some(
     (entry) => entry.comparisonApplications !== undefined
   );
-  const loading = authLoading || isLoading;
+  const loading = authLoading || trendQuery.isLoading;
   const Root = embedded ? "div" : "section";
 
   return (
@@ -261,10 +224,10 @@ export default function AnalyticsApplicationsTrend({
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <h2 className="truncate text-sm font-semibold text-gray-800">
-              Ansökningstrend
+              AnsÃ¶kningstrend
             </h2>
             <p className="mt-1 max-w-[36rem] text-theme-xs text-gray-400">
-              Antal mottagna ansökningar per kalendermånad.
+              Antal mottagna ansÃ¶kningar per kalendermÃ¥nad.
             </p>
           </div>
 
@@ -303,7 +266,7 @@ export default function AnalyticsApplicationsTrend({
         </div>
       ) : chartData.length === 0 ? (
         <div className={cn("flex flex-1", showHeader ? "mt-6" : "mt-0")}>
-          <EmptyState message="Det finns inga ansökningar registrerade för perioden ännu." />
+          <EmptyState message="Det finns inga ansÃ¶kningar registrerade fÃ¶r perioden Ã¤nnu." />
         </div>
       ) : (
         <div
@@ -406,7 +369,7 @@ export default function AnalyticsApplicationsTrend({
                   <Area
                     dataKey="comparisonApplications"
                     fill="url(#applicationTrendComparisonFill)"
-                    name="Föregående år"
+                    name="FÃ¶regÃ¥ende Ã¥r"
                     stroke="var(--color-comparisonApplications)"
                     strokeWidth={1.5}
                     type="monotone"
@@ -417,7 +380,7 @@ export default function AnalyticsApplicationsTrend({
                   activeDot={{ r: 4 }}
                   dataKey="applications"
                   fill="url(#applicationTrendFill)"
-                  name="Ansökningar"
+                  name="AnsÃ¶kningar"
                   stroke="var(--color-applications)"
                   strokeWidth={2}
                   type="monotone"
@@ -429,7 +392,7 @@ export default function AnalyticsApplicationsTrend({
           {showSummary ? (
             <div className="mt-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-[11px] text-gray-400">
               <span>{total.toLocaleString("sv-SE")} totalt</span>
-              <span>{average.toLocaleString("sv-SE")} i snitt/mån</span>
+              <span>{average.toLocaleString("sv-SE")} i snitt/mÃ¥n</span>
             </div>
           ) : null}
         </div>

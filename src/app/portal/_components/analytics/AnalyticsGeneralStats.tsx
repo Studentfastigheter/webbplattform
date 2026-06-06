@@ -17,8 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
+import { useCompanyGeneralAnalytics } from "@/features/companies/hooks/useCompanies";
 import {
-  companyService,
   type AnalyticalQuantity,
   type AnalyticalQuantities,
 } from "@/features/companies/services/company-service";
@@ -323,61 +323,26 @@ export default function AnalyticsGeneralStats({
 }) {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [items, setItems] = React.useState<MetricItem[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setItems([]);
-      setError("Kunde inte hitta ett aktivt företag för statistiken.");
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-
-    companyService
-      .generalAnalytics(companyId)
-      .then((analytics) => {
-        if (!cancelled) {
-          setItems(buildMetricItems(analytics, variant));
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setItems([]);
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Kunde inte hämta generell statistik."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId, variant]);
-
+  const generalAnalyticsQuery = useCompanyGeneralAnalytics(companyId);
+  const items = React.useMemo(
+    () => buildMetricItems(generalAnalyticsQuery.data ?? {}, variant),
+    [generalAnalyticsQuery.data, variant]
+  );
+  const error =
+    !authLoading && !companyId
+      ? "Kunde inte hitta ett aktivt företag för statistiken."
+      : generalAnalyticsQuery.isError
+        ? generalAnalyticsQuery.error instanceof Error
+          ? generalAnalyticsQuery.error.message
+          : "Kunde inte hämta generell statistik."
+        : null;
   const skeletonCount = variant === "analytics" ? 6 : metrics.length;
   const gridClassName =
     variant === "analytics"
       ? "grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3"
       : "grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4";
 
-  if (authLoading || isLoading) {
+  if (authLoading || generalAnalyticsQuery.isLoading) {
     return (
       <div className={gridClassName}>
         {Array.from({ length: skeletonCount }).map((_, index) => (

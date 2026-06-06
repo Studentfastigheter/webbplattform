@@ -15,8 +15,8 @@ import {
 } from "recharts";
 import { Heart, MousePointerClick, Smartphone } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useListingByAllCategoriesDemography } from "@/features/analytics/hooks/useDemographics";
 import {
-  demographicsService,
   type DemographyCategory,
   type ListingDemography,
 } from "@/features/analytics/services/demographics-service";
@@ -161,7 +161,6 @@ function MiniPie({ data }: { data: ChartDatum[] }) {
 
 function MiniBars({ data }: { data: ChartDatum[] }) {
   if (data.length === 0) return <EmptyState />;
-  console.log("where are you",data);
 
   return (
     <div className="h-[210px] min-w-0">
@@ -241,7 +240,17 @@ export default function ListingDemographicsPanel({
   to?: Date;
   periodLabel?: string;
 }) {
-  const [data, setData] = React.useState<Record<DemographyCategory, ListingDemography | null>>({
+  const fallbackRange = React.useMemo(() => getRange(), []);
+  const fromValue = from ?? fallbackRange.from;
+  const toValue = to ?? fallbackRange.to;
+  const fromKey = fromValue.toISOString();
+  const toKey = toValue.toISOString();
+  const demographyQuery = useListingByAllCategoriesDemography(
+    listingId,
+    fromKey,
+    toKey
+  );
+  const data = demographyQuery.data ?? {
     VIEW_TYPE: null,
     DEVICE_TYPE: null,
     RESULTED_IN_LIKE: null,
@@ -249,43 +258,13 @@ export default function ListingDemographicsPanel({
     GENDER: null,
     AGE: null,
     SCHOOL: null,
-  });
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    const fallbackRange = getRange();
-    const fromValue = from ?? fallbackRange.from;
-    const toValue = to ?? fallbackRange.to;
-    let cancelled = false;
-
-    setIsLoading(true);
-    setError(null);
-
-    demographicsService
-      .getListingByAllCategories(listingId, fromValue, toValue)
-      .then((result) => {
-        if (cancelled) return;
-        setData(result);
-      })
-      .catch((requestError) => {
-        if (cancelled) return;
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Kunde inte hämta annonsdemografi."
-        );
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [from, listingId, to]);
-
-  if (isLoading) {
+  };
+  const error = demographyQuery.isError
+    ? demographyQuery.error instanceof Error
+      ? demographyQuery.error.message
+      : "Kunde inte hämta annonsdemografi."
+    : null;
+  if (demographyQuery.isLoading) {
     return (
       <section className="rounded-xl border border-gray-200 bg-white p-5">
         <Skeleton className="h-6 w-44" />

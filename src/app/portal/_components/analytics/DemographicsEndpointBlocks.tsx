@@ -32,7 +32,6 @@ import {
   COMPANY_DEMOGRAPHY_CATEGORIES,
   APPLICATION_DEMOGRAPHY_CATEGORIES,
   LISTING_DEMOGRAPHY_CATEGORIES,
-  demographicsService,
   type ApplicationDemography,
   type ApplicationDemographyCategory,
   type CompanyDemography,
@@ -1005,9 +1004,6 @@ export function ApplicationDemographyPortfolioBlock() {
   const [category, setCategory] =
     React.useState<ApplicationDemographyCategory>("GOT_LISTING");
   const [gotListing, setGotListing] = React.useState<GotListingFilter>("BOTH");
-  const [demographies, setDemographies] =
-    React.useState<Record<string, ApplicationDemography> | null>(null);
-  const [listingRows, setListingRows] = React.useState<ApplicationListingRow[]>([]);
 
   // Shared with ListingDemographyBatchBlock / ListingDemographyDrilldownBlock —
   // same companyId hits the same cache slot.
@@ -1061,40 +1057,23 @@ export function ApplicationDemographyPortfolioBlock() {
     queryEnabled,
   );
 
-  // Derive the displayed datasets from the query result. If listings are
-  // empty (company has no listings), short-circuit to empty maps without
-  // firing the hook — matching the original behaviour.
-  React.useEffect(() => {
-    if (!queryEnabled) {
-      // Clear stale state when inputs are invalid; the rendered error comes
-      // from `error` below.
-      if (dateError) {
-        setDemographies(null);
-        setListingRows([]);
-      }
-      return;
-    }
-    if (listingIds.length === 0 && companyListingsForApplications) {
-      setDemographies({});
-      setListingRows([]);
-      return;
-    }
-    if (applicationsBatchQuery.data && companyListingsForApplications) {
-      setDemographies(applicationsBatchQuery.data);
-      setListingRows(
-        mapApplicationListingRows(
-          applicationsBatchQuery.data,
-          companyListingsForApplications,
-        ),
-      );
-    }
+  const demographies = React.useMemo<Record<string, ApplicationDemography> | null>(() => {
+    if (!queryEnabled) return null;
+    if (listingIds.length === 0 && companyListingsForApplications) return {};
+    return applicationsBatchQuery.data ?? null;
   }, [
     queryEnabled,
-    dateError,
     listingIds.length,
-    applicationsBatchQuery.data,
     companyListingsForApplications,
+    applicationsBatchQuery.data,
   ]);
+  const listingRows = React.useMemo(
+    () =>
+      demographies && companyListingsForApplications
+        ? mapApplicationListingRows(demographies, companyListingsForApplications)
+        : [],
+    [demographies, companyListingsForApplications]
+  );
 
   const isLoading =
     queryEnabled &&

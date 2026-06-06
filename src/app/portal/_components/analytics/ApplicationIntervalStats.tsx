@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { companyService, type ApplicationStatisticEntry } from "@/features/companies/services/company-service";
+import { useCompanyTimedApplications } from "@/features/companies/hooks/useCompanies";
+import type { ApplicationStatisticEntry } from "@/features/companies/services/company-service";
 
 export type ApplicationIntervalValue = "1d" | "1w" | "1m" | "3m" | "6m" | "1y";
 
@@ -136,56 +137,30 @@ export default function ApplicationIntervalStats() {
   const companyId = getActiveCompanyId(user);
   const [interval, setInterval] =
     React.useState<ApplicationIntervalValue>("1m");
-  const [count, setCount] = React.useState(0);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setCount(0);
-      setError("Kunde inte hitta ett aktivt företag för statistiken.");
-      setIsLoading(false);
-      return;
-    }
-
-    const { from, to } = getApplicationIntervalRange(interval);
-    let cancelled = false;
-
-    setIsLoading(true);
-    setError(null);
-
-    companyService
-      .timedApplications(companyId, from, to)
-      .then((entries) => {
-        if (!cancelled) {
-          setCount(sumApplicationStatistics(entries));
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setCount(0);
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Kunde inte hämta ansökningar för perioden."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId, interval]);
-
+  const intervalRange = React.useMemo(
+    () => getApplicationIntervalRange(interval),
+    [interval]
+  );
+  const from = intervalRange.from.toISOString();
+  const to = intervalRange.to.toISOString();
+  const timedApplicationsQuery = useCompanyTimedApplications(
+    companyId,
+    from,
+    to,
+    !authLoading
+  );
+  const count = React.useMemo(
+    () => sumApplicationStatistics(timedApplicationsQuery.data ?? []),
+    [timedApplicationsQuery.data]
+  );
+  const error =
+    !authLoading && !companyId
+      ? "Kunde inte hitta ett aktivt företag för statistiken."
+      : timedApplicationsQuery.isError
+        ? timedApplicationsQuery.error instanceof Error
+          ? timedApplicationsQuery.error.message
+          : "Kunde inte hämta ansökningar för perioden."
+        : null;
   const selectedInterval = getApplicationInterval(interval);
 
   return (
@@ -194,7 +169,7 @@ export default function ApplicationIntervalStats() {
       size="2x2"
       title="Ansökningar totalt"
     >
-      {authLoading || isLoading ? (
+      {authLoading || timedApplicationsQuery.isLoading ? (
         <div className="flex h-full items-center gap-4">
           <Skeleton className="h-10 w-10 rounded-lg" />
           <div className="space-y-2">

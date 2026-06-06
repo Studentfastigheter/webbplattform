@@ -16,7 +16,7 @@
  * handlers / Set-guarded effects.
  */
 
-import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import {
   demographicsService,
@@ -42,6 +42,23 @@ export function useListingDemography(
     queryKey: qk.demographics.listing(listingId ?? "", from, to, category),
     queryFn: ({ signal }) =>
       demographicsService.getListing(listingId!, from, to, category, { signal }),
+    enabled: enabled && Boolean(listingId) && !!from && !!to,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useListingByAllCategoriesDemography(
+  listingId: string | null | undefined,
+  from: string,
+  to: string,
+  enabled = true
+) {
+  return useQuery<Record<DemographyCategory, ListingDemography | null>>({
+    queryKey: qk.demographics.listingByAllCategories(listingId ?? "", from, to),
+    queryFn: ({ signal }) =>
+      demographicsService.getListingByAllCategories(listingId!, from, to, {
+        signal,
+      }),
     enabled: enabled && Boolean(listingId) && !!from && !!to,
     staleTime: STALE_30_SECONDS,
   });
@@ -148,6 +165,36 @@ export function useApplicationsBatchDemography(
       listingIds.length > 0 &&
       !!from &&
       !!to,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useApplicationDemography(
+  listingId: string | null | undefined,
+  from: string,
+  to: string,
+  category: ApplicationDemographyCategory,
+  gotListing: GotListingFilter = "BOTH",
+  enabled = true
+) {
+  return useQuery<ApplicationDemography>({
+    queryKey: qk.demographics.application(
+      listingId ?? "",
+      from,
+      to,
+      category,
+      gotListing
+    ),
+    queryFn: ({ signal }) =>
+      demographicsService.getApplication(
+        listingId!,
+        from,
+        to,
+        category,
+        gotListing,
+        { signal }
+      ),
+    enabled: enabled && Boolean(listingId) && !!from && !!to,
     staleTime: STALE_30_SECONDS,
   });
 }
