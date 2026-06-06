@@ -95,65 +95,72 @@ export const PartnerGrid = ({
 
         <div className={gridColsClass}>
           {isHousingVariant ? (
-            partners.map((partner) => (
-              <div
-                key={partner.name}
-                className={housingCardClasses}
-              >
-                <div className="flex items-start gap-5">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center sm:h-24 sm:w-24">
-                    {partner.logoSrc ? (
-                      <img
-                        src={getLogoSrc(partner.logoSrc)}
-                        alt={localizedText(locale, `${partner.name} logotyp`, `${partner.name} logo`)}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <span className="text-lg font-bold text-muted-foreground/60">
+            partners.map((partner) => {
+              const partnerDescription = partner.description.trim();
+
+              return (
+                <div
+                  key={partner.name}
+                  className={housingCardClasses}
+                >
+                  <div className="flex items-start gap-5">
+                    <div className="flex h-20 w-20 shrink-0 items-center justify-center sm:h-24 sm:w-24">
+                      {partner.logoSrc ? (
+                        <img
+                          src={getLogoSrc(partner.logoSrc)}
+                          alt={localizedText(locale, `${partner.name} logotyp`, `${partner.name} logo`)}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-lg font-bold text-muted-foreground/60">
+                          {partner.name}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1 pt-2">
+                      <h3
+                        className="text-xl font-bold leading-tight text-foreground"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
                         {partner.name}
-                      </span>
-                    )}
+                      </h3>
+                      <Link
+                        href={localizedHref(partner.href)}
+                        {...(partner.href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}
+                        className="mt-3 inline-flex items-center text-sm font-semibold text-primary transition hover:underline"
+                      >
+                        {localizedText(locale, "Läs mer", "Read more")}
+                        <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                      </Link>
+                    </div>
                   </div>
 
-                  <div className="min-w-0 flex-1 pt-2">
-                    <h3
-                      className="text-xl font-bold leading-tight text-foreground"
-                      style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {partner.name}
-                    </h3>
-                    <Link
-                      href={localizedHref(partner.href)}
-                      {...(partner.href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}
-                      className="mt-3 inline-flex items-center text-sm font-semibold text-primary transition hover:underline"
-                    >
-                      {localizedText(locale, "Läs mer", "Read more")}
-                      <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </Link>
-                  </div>
+                  {partnerDescription && (
+                    <div className="mt-5 flex-1 border-t border-border/70 pt-5">
+                      <p
+                        className="text-sm leading-6 text-muted-foreground"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {partnerDescription}
+                      </p>
+                    </div>
+                  )}
                 </div>
-
-                <div className="mt-5 flex-1 border-t border-border/70 pt-5">
-                  <p
-                    className="text-sm leading-6 text-muted-foreground"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {partner.description}
-                  </p>
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : partners.map((partner, index) => {
             const isPlaceholder = partner.isPlaceholder;
+            const partnerDescription = partner.description.trim();
 
             return (
               <div
@@ -208,8 +215,14 @@ export const PartnerGrid = ({
                     </div>
 
                     <div className="flex-grow">
-                      <h3 className="text-xl font-bold text-foreground mb-3">{partner.name}</h3>
-                      <p className="text-muted-foreground text-base leading-relaxed mb-8">{partner.description}</p>
+                      <h3 className={`text-xl font-bold text-foreground ${partnerDescription ? "mb-3" : ""}`}>
+                        {partner.name}
+                      </h3>
+                      {partnerDescription && (
+                        <p className="text-muted-foreground text-base leading-relaxed mb-8">
+                          {partnerDescription}
+                        </p>
+                      )}
                     </div>
 
                     <div className="mt-auto">
