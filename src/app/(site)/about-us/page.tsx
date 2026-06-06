@@ -45,18 +45,8 @@ const getTeamCategories = (locale: Locale) => [
     ],
   },
   {
-    title: localizedText(locale, "Kommersiellt & Marknadsföring", "Commercial & Marketing"),
+    title: localizedText(locale, "Marknadsföring", "Marketing"),
     members: [
-      { name: "Alve Nilsson", 
-        role: "Commercial Associate",
-        image: "/team/Profilbild-Alve.jpg",
-        linkedin: "https://www.linkedin.com/in/alve-nilsson-47710a226/",
-      },
-      { name: "Malte Stål", 
-        role: "Commercial Associate",
-        image: "/team/Profilbild-Malte.jpg",
-        linkedin: "https://www.linkedin.com/in/malte-stal/",
-      },
       { name: "Isabelle Sumner", 
         role: "Marketing Associate",
         image: "/team/Profilbild-Isabelle.jpeg",
@@ -83,12 +73,6 @@ const getTeamCategories = (locale: Locale) => [
         role: "Backend Engineer",
         image: "/team/Profilbild-Mikael.jpeg",
         linkedin: "https://www.linkedin.com/in/mikael-överfjord-ba12663a0/",
-      },
-      {
-        name: "Lucas Ryefalk",
-        role: "Frontend Engineer",
-        image: "/team/Profilbild-Lucas.jpeg",
-        linkedin: "https://www.linkedin.com/in/lucas-ryefalk-a85a37292/",
       },
       {
         name: "William Jaarma",
