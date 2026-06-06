@@ -15,13 +15,23 @@ export const Testimonials = () => {
       ? [testimonials[testimonials.length - 1], ...testimonials, testimonials[0]]
       : testimonials;
   const activeTrackIndex = testimonials.length > 1 ? currentIndex + 1 : currentIndex;
+  const carouselRef = useRef<HTMLDivElement | null>(null);
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
-    slideRefs.current[activeTrackIndex]?.scrollIntoView({
+    const carousel = carouselRef.current;
+    const activeSlide = slideRefs.current[activeTrackIndex];
+
+    if (!carousel || !activeSlide) {
+      return;
+    }
+
+    const slideLeft = activeSlide.offsetLeft - carousel.offsetLeft;
+    const centeredLeft = slideLeft - (carousel.clientWidth - activeSlide.clientWidth) / 2;
+
+    carousel.scrollTo({
+      left: Math.max(0, centeredLeft),
       behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center',
     });
   }, [activeTrackIndex]);
 
@@ -65,6 +75,7 @@ export const Testimonials = () => {
         
         {/* Slider Window */}
         <div
+          ref={carouselRef}
           className="flex snap-x gap-4 overflow-x-auto scroll-smooth px-0 [scrollbar-width:none] md:gap-6 [&::-webkit-scrollbar]:hidden"
         >
           {carouselItems.map((item, index) => {
