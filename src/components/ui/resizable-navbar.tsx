@@ -9,7 +9,7 @@ import {
   useScroll,
 } from "framer-motion";
 import Link from "next/link";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export type NavbarItem = {
@@ -57,11 +57,7 @@ interface MobileNavMenuProps {
 }
 
 export const Navbar = ({ children, className }: NavbarProps) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
+  const { scrollY } = useScroll();
   const [visible, setVisible] = useState(false);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -70,7 +66,6 @@ export const Navbar = ({ children, className }: NavbarProps) => {
 
   return (
     <motion.div
-      ref={ref}
       className={cn("fixed inset-x-0 top-20 z-1000 w-full", className)}
     >
       {React.Children.map(children, (child) =>
@@ -94,7 +89,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
         width: visible ? "88%" : "100%",
-        maxWidth: visible ? 1120 : 1280,
+        maxWidth: visible ? "1120px" : "1280px",
         y: visible ? 20 : 0,
       }}
       transition={{

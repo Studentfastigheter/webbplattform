@@ -122,7 +122,13 @@ function MemberCard({ member, locale }: { member: TeamMember; locale: Locale }) 
       <div className="relative mb-6">
         <div className="relative z-10 h-40 w-40 overflow-hidden rounded-full border-4 border-background bg-card shadow-lg">
           {member.image ? (
-            <Image src={member.image} alt={member.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+            <Image
+              src={member.image}
+              alt={member.name}
+              fill
+              sizes="160px"
+              className="object-cover transition-transform duration-500 group-hover:scale-110"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-muted-foreground/50">
               <Users2 className="h-16 w-16" />
