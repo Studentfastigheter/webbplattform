@@ -6,7 +6,11 @@ import { Home, MapPin, Pencil } from "lucide-react";
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
-import { listingService } from "@/features/listings/services/listing-service";
+import {
+  useListing,
+  useListingTags,
+  useUpdateListing,
+} from "@/features/listings/hooks/useListings";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText } from "@/i18n/text";
@@ -555,65 +559,52 @@ function EditableListingPreview({
 
 export default function Annons({ id }: AnnonsPageProps) {
   const { locale } = useI18n();
+  // The editor keeps an in-page mirror of the listing (`listing`) plus a
+  // working `draft`. The server data comes from useListing/useListingTags
+  // hooks; we hydrate `listing`+`draft` from `useListing.data` once and only
+  // overwrite when the id changes (so opening a new listing in the same view
+  // resets the editor).
   const [listing, setListing] = useState<EditableListingDraft | null>(null);
   const [draft, setDraft] = useState<EditableListingDraft | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>(emptySaveState);
   const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
-  const [listingTags, setListingTags] = useState<ListingTagDTO[]>([]);
-  const [listingTagsLoading, setListingTagsLoading] = useState(true);
-  const [listingTagsError, setListingTagsError] = useState<string | null>(null);
+  const updateListing = useUpdateListing();
 
+  const {
+    data: serverListing,
+    isLoading: listingLoading,
+    isError: isListingError,
+    error: listingErr,
+  } = useListing(id);
+  const {
+    data: listingTags = [],
+    isLoading: listingTagsLoading,
+    isError: isListingTagsError,
+  } = useListingTags();
+
+  const loading = listingLoading;
+  const error =
+    isListingError && listingErr
+      ? listingErr instanceof Error
+        ? listingErr.message
+        : "Kunde inte ladda annonsen."
+      : null;
+  const listingTagsError = isListingTagsError ? "Kunde inte ladda taggar." : null;
+
+  // Hydrate the in-page editor state from the cached server listing. Re-runs
+  // when the id (a different listing) or the server payload changes — this
+  // keeps the draft in sync after a successful save invalidates the cache.
   useEffect(() => {
-    let active = true;
-
-    setLoading(true);
-    setError(null);
-    setListing(null);
-    setDraft(null);
+    if (!serverListing) {
+      setListing(null);
+      setDraft(null);
+      return;
+    }
+    const normalized = cloneEditableListing(serverListing);
+    setListing(normalized);
+    setDraft({ ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] });
     setSaveState(emptySaveState);
-    setListingTags([]);
-    setListingTagsLoading(true);
-    setListingTagsError(null);
-
-    listingService
-      .get(id)
-      .then((res) => {
-        if (!active) return;
-
-        const normalized = cloneEditableListing(res);
-        setListing(normalized);
-        setDraft({ ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] });
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        console.error("Kunde inte hämta annonsen:", err);
-        setError(err instanceof Error ? err.message : "");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    listingService
-      .getListingTags()
-      .then((tags) => {
-        if (!active) return;
-        setListingTags(tags);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        console.error("Kunde inte hämta annonstaggar:", err);
-        setListingTagsError(err instanceof Error ? err.message : genericTagsLoadError);
-      })
-      .finally(() => {
-        if (active) setListingTagsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [id]);
+  }, [serverListing, id]);
 
   const galleryImages = useMemo(
     () => draft?.imageUrls?.filter(Boolean) ?? [],
@@ -677,13 +668,9 @@ export default function Annons({ id }: AnnonsPageProps) {
     setSaveState({ status: "saving", message: null });
 
     try {
-      await listingService.update(id, payload);
-      const normalized = await listingService
-        .get(id)
-        .then(cloneEditableListing)
-        .catch(() => draft);
-      setListing(normalized);
-      setDraft({ ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] });
+      // Mutation hook owns invalidation (listings.all + queues.all). The
+      // useListing query re-fetches and the hydration effect re-seeds draft.
+      await updateListing.mutateAsync({ id, payload });
       setSaveState({
         status: "success",
         message: null,

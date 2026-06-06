@@ -16,7 +16,8 @@ import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
-import { companyService, type TimelineEntry } from "@/features/companies/services/company-service";
+import { useCompanyApplicationsTimeline } from "@/features/companies/hooks/useCompanies";
+import type { TimelineEntry } from "@/features/companies/services/company-service";
 
 type Interval = {
   value: string;
@@ -172,55 +173,25 @@ export default function AnalyticsApplicationsTrend({
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [trend, setTrend] = React.useState<ApplicationTrendPoint[]>([]);
+  const trendQuery = useCompanyApplicationsTimeline(companyId);
+  const trend = trendQuery.data ?? [];
   const [selectedInterval, setSelectedInterval] = React.useState("1m");
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setTrend([]);
-      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag för analysen.", "Could not find an active company for the analytics."));
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-
-    companyService
-      .applicationsTimeline(companyId)
-      .then((timeline) => {
-        if (!cancelled) {
-          setTrend(timeline);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setTrend([]);
-          setError(
-            err instanceof Error
-              ? err.message
-              : localizedText(locale, "Kunde inte hämta ansökningstrenden.", "Could not load the application trend.")
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId, locale]);
-
+  const error =
+    !authLoading && !companyId
+      ? localizedText(
+          locale,
+          "Kunde inte hitta ett aktivt företag för analysen.",
+          "Could not find an active company for the analytics."
+        )
+      : trendQuery.isError
+        ? trendQuery.error instanceof Error
+          ? trendQuery.error.message
+          : localizedText(
+              locale,
+              "Kunde inte hämta ansökningstrenden.",
+              "Could not load the application trend."
+            )
+        : null;
   const selectedIntervalConfig =
     intervals.find((interval) => interval.value === selectedInterval) ??
     intervals[2]!;
@@ -253,7 +224,7 @@ export default function AnalyticsApplicationsTrend({
   const hasComparison = chartData.some(
     (entry) => entry.comparisonApplications !== undefined
   );
-  const loading = authLoading || isLoading;
+  const loading = authLoading || trendQuery.isLoading;
   const Root = embedded ? "div" : "section";
 
   return (

@@ -1,10 +1,11 @@
 "use client";
 
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/features/queues/components/QueueRow";
 import { useAuth } from "@/context/AuthContext";
+import { useMyQueues } from "@/features/queues/hooks/useQueues";
 import { queueService } from "@/features/queues/services/queue-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
@@ -27,69 +28,44 @@ export default function Page() {
   ];
 
   const { user } = useAuth();
-  const [queueRows, setQueueRows] = useState<QueueRowProps[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // hydrated=true so we get queue + company info for the row rendering.
+  const {
+    data: userApplications,
+    isLoading: loading,
+    isError,
+  } = useMyQueues({ hydrated: true });
+  const error = isError ? "Kunde inte ladda dina köer." : null;
 
-  useEffect(() => {
-    if (!user) {
-      setQueueRows([]);
-      setLoading(false);
-      return;
-    }
+  const queueRows = useMemo<QueueRowProps[]>(() => {
+    if (!user || !userApplications) return [];
 
-    let active = true;
-    setLoading(true);
-    setError(null);
+    return userApplications
+      .filter((app) => app.queueId != null)
+      .map((app) => {
+        const queueId = String(app.queueId);
+        const queue = app.queue;
+        const company = queue?.company;
+        const companyId = company?.id;
+        const city = queue?.city ?? company?.city ?? null;
 
-    queueService
-      .getMyQueues()
-      .then((userApplications) => {
-        if (!active) return;
-
-        const rows = userApplications
-          .filter((app) => app.queueId != null)
-          .map((app) => {
-            const queueId = String(app.queueId);
-            const queue = app.queue;
-            const company = queue?.company;
-            const companyId = company?.id;
-            const city = queue?.city ?? company?.city ?? null;
-
-            return {
-              id: queueId,
-              name: app.queueName ?? queue?.name ?? localizedText(locale, "Okänd kö", "Unknown queue"),
-              logoUrl:
-                queue?.logoUrl ??
-                company?.logoUrl ??
-                "/logos/campuslyan-logo.svg",
-              cities: city ? [city] : [],
-              status: statusToRowStatus(app.status ?? queue?.status ?? undefined),
-              days: app.queueDays ?? 0,
-              onManage: () => {
-                window.location.href = companyId != null
-                  ? localizedHref(`/all-queues/${companyId}`)
-                  : localizedHref("/all-queues");
-              },
-            };
-          });
-
-        setQueueRows(rows);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        console.error(err);
-        setError(localizedText(locale, "Kunde inte ladda dina köer.", "Could not load your queues."));
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
+        return {
+          id: queueId,
+          name: app.queueName ?? queue?.name ?? localizedText(locale, "Okänd kö", "Unknown queue"),
+          logoUrl:
+            queue?.logoUrl ??
+            company?.logoUrl ??
+            "/logos/campuslyan-logo.svg",
+          cities: city ? [city] : [],
+          status: statusToRowStatus(app.status ?? queue?.status ?? undefined),
+          days: app.queueDays ?? 0,
+          onManage: () => {
+            window.location.href = companyId != null
+              ? localizedHref(`/all-queues/${companyId}`)
+              : localizedHref("/all-queues");
+          },
+        };
       });
-
-    return () => {
-      active = false;
-    };
-  }, [locale, localizedHref, user]);
+  }, [user, userApplications, locale, localizedHref]);
 
   const rows = useMemo(() => queueRows.map(buildQueueRow), [queueRows]);
 

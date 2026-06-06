@@ -7,7 +7,7 @@ import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import Tag from "@/components/ui/Tag";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { listingService } from "@/features/listings/services/listing-service";
+import { useToggleFavorite } from "@/features/listings/hooks/useListings";
 import { ListingDetailDTO } from "@/types/listing";
 import { Check, Heart, Home, MapPin, Share2 } from "lucide-react";
 import React, { useState } from "react";
@@ -54,8 +54,13 @@ function BostadAboutContent({
 }) {
   const { user } = useAuth();
   const { locale } = useI18n();
+  // Standalone (no parent-controlled prop) fallback for local optimism. The
+  // parent normally drives `isFavorite` from `useFavorites().data`, but this
+  // component is also embedded in standalone surfaces (preview pages) where
+  // no parent state exists — those rely on the local `isFav` mirror.
   const [isFav, setIsFav] = useState(isFavorite ?? false);
-  const [isLoadingFav, setIsLoadingFav] = useState(false);
+  const toggleFavorite = useToggleFavorite();
+  const isLoadingFav = toggleFavorite.isPending;
 
   React.useEffect(() => {
     if (isFavorite !== undefined) setIsFav(isFavorite);
@@ -68,19 +73,20 @@ function BostadAboutContent({
 
     const prev = isFav;
     setIsFav(!prev);
-    setIsLoadingFav(true);
     try {
       if (onFavoriteToggle) {
         await onFavoriteToggle(listing.id, !prev);
-      } else if (!prev) {
-        await listingService.addFavorite(listing.id);
       } else {
-        await listingService.removeFavorite(listing.id);
+        // Hook owns optimistic patch + rollback on the shared favorites
+        // cache; we still mirror the toggle locally because parents that
+        // don't use the cache rely on this component's own `isFav` state.
+        await toggleFavorite.mutateAsync({
+          listingId: listing.id,
+          nextIsFavorite: !prev,
+        });
       }
     } catch {
       setIsFav(prev);
-    } finally {
-      setIsLoadingFav(false);
     }
   };
 

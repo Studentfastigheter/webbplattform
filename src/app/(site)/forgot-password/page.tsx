@@ -13,17 +13,18 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { authService } from "@/features/auth/services/auth-service";
+import { useStartPasswordReset } from "@/features/auth/hooks/useAuthMutations";
 import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
 export default function ForgotPasswordPage() {
   const { locale } = useI18n();
+  const startReset = useStartPasswordReset();
+  const submitting = startReset.isPending;
   const [email, setEmail] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   function validateForm() {
     const trimmedEmail = email.trim();
@@ -51,17 +52,11 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    setSubmitting(true);
-
     try {
-      await authService.startPasswordReset({
-        userEmail: email.trim(),
-      });
+      await startReset.mutateAsync({ userEmail: email.trim() });
       setHasSubmitted(true);
     } catch (err: unknown) {
       setError(getAuthErrorMessage(err, "forgot-password", locale));
-    } finally {
-      setSubmitting(false);
     }
   }
 

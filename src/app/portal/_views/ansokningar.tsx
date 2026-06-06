@@ -23,7 +23,8 @@ import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
-import { companyService, type NewApplication } from "@/features/companies/services/company-service";
+import { useCompanyApplications } from "@/features/companies/hooks/useCompanies";
+import type { NewApplication } from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../_statics/variables";
 
 type AnsokningarProps = {
@@ -582,58 +583,24 @@ export default function Ansokningar({
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [applications, setApplications] = useState<PortalApplication[]>([]);
   const [selectedListingKey, setSelectedListingKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setApplications([]);
-      setSelectedListingKey(null);
-      return;
-    }
-
-    let active = true;
-    setLoading(true);
-    setError(null);
-
-    companyService
-      .applications(companyId)
-      .then((result) => {
-        if (!active) return;
-
-        setApplications(
-          result
-            .map((application) => toPortalApplication(application, locale))
-            .sort((a, b) => b.submittedAtTime - a.submittedAtTime)
-        );
-      })
-      .catch((requestError) => {
-        if (!active) return;
-
-        setApplications([]);
-        setSelectedListingKey(null);
-        setError(
-            requestError instanceof Error
-              ? requestError.message
-            : localizedText(locale, "Kunde inte hämta ansökningar.", "Could not load applications.")
-        );
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, companyId, locale]);
-
+  const applicationsQuery = useCompanyApplications(companyId, {
+    enabled: !authLoading,
+  });
+  const applications = useMemo(
+    () =>
+      (applicationsQuery.data ?? [])
+        .map((application) => toPortalApplication(application, locale))
+        .sort((a, b) => b.submittedAtTime - a.submittedAtTime),
+    [applicationsQuery.data, locale]
+  );
+  const loading = applicationsQuery.isLoading;
+  const error = applicationsQuery.isError
+    ? applicationsQuery.error instanceof Error
+      ? applicationsQuery.error.message
+      : localizedText(locale, "Kunde inte h\u00e4mta ans\u00f6kningar.", "Could not load applications.")
+    : null;
   const visibleApplications = useMemo(() => {
     if (!listingId) {
       return applications;

@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { queueService } from "@/features/queues/services/queue-service";
-import type { HousingQueueDTO } from "@/types/queue";
+import { useQueuesByCompany } from "@/features/queues/hooks/useQueues";
 import {
   CompanyDemographyBlock,
 } from "../_components/analytics/DemographicsEndpointBlocks";
@@ -17,42 +15,23 @@ export default function Bostadsko() {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
-  const [loadingQueues, setLoadingQueues] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (authLoading || !companyId) return;
+  // Company queues. Hook is enabled only when companyId is present, so the
+  // auth-loading window doesn't fire requests we'll discard.
+  const {
+    data: queues = [],
+    isLoading: queuesLoading,
+    isError: isQueuesError,
+    error: queuesErr,
+  } = useQueuesByCompany(companyId);
 
-    let active = true;
-    setLoadingQueues(true);
-    setError(null);
+  const error = isQueuesError && queuesErr
+    ? queuesErr instanceof Error
+      ? queuesErr.message
+      : "Kunde inte hämta bostadsköer."
+    : null;
 
-    queueService
-      .getByCompany(companyId)
-      .then((queueRows) => {
-        if (!active) return;
-        setQueues(queueRows);
-      })
-      .catch((requestError) => {
-        if (!active) return;
-        setQueues([]);
-        setError(
-            requestError instanceof Error
-              ? requestError.message
-            : localizedText(locale, "Kunde inte hämta bostadsköer.", "Could not load housing queues.")
-        );
-      })
-      .finally(() => {
-        if (active) setLoadingQueues(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, companyId, locale]);
-
-  if (authLoading || loadingQueues) {
+  if (authLoading || queuesLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-[520px] rounded-xl" />

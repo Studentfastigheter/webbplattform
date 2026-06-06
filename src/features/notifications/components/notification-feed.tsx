@@ -3,9 +3,12 @@
 import * as React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { NotificationItem } from "@/types";
-import { notificationService } from "@/features/notifications/services/notification-service";
 import { QueueUpdateNotificationCard } from "./cards/queue-update-card";
 import { ListingStatusNotificationCard } from "./cards/listing-status-card";
+import {
+  useMarkNotificationRead,
+  useNotifications,
+} from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
@@ -15,42 +18,21 @@ type Props = {
 };
 
 export function NotificationsFeed({ items: initialItems }: Props) {
-  const { token } = useAuth();
   const { locale } = useI18n();
-  const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
-  const [loading, setLoading] = React.useState(!initialItems);
+  // The optional `initialItems` path is rare (caller-supplied data, e.g. from
+  // a mock). When present, skip the network entirely (enabled: false) and
+  // render those items. Otherwise, use the cached notifications query — the
+  // hook handles auth gating internally (no token → no fetch).
+  const { data: fetched, isLoading: fetching } = useNotifications({
+    enabled: !initialItems,
+  });
+  const notifications = initialItems ?? fetched ?? [];
+  const loading = initialItems ? false : fetching;
+  const markAsRead = useMarkNotificationRead();
 
-  // Hämta riktiga notiser från backend
-  const fetchNotifications = React.useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = await notificationService.getAll();
-      setNotifications(data);
-    } catch (error) {
-      console.error("Misslyckades att hämta notiser", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  React.useEffect(() => {
-    if (initialItems) {
-      setNotifications(initialItems);
-    } else {
-      fetchNotifications();
-    }
-  }, [initialItems, fetchNotifications]);
-
-  // Funktion för att hantera klick och markera som läst
-  const handleMarkAsRead = async (id: number) => {
-    try {
-      await notificationService.markAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, opened: true } : n))
-      );
-    } catch (error) {
-      console.error("Kunde inte markera som läst", error);
-    }
+  const handleMarkAsRead = (id: number) => {
+    // Optimistic cache update + rollback live inside useMarkNotificationRead.
+    markAsRead.mutate(id);
   };
 
   const ordered = React.useMemo(

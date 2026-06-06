@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 import ListingCardSmall from "@/features/listings/components/ListingCard_Small";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useMyListings } from "@/features/listings/hooks/useListings";
 import { listingService } from "@/features/listings/services/listing-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
@@ -24,40 +25,24 @@ export default function Page() {
   const router = useRouter();
   const { locale, localizedHref } = useI18n();
   const { user, token } = useAuth();
-  const [listings, setListings] = useState<ListingCardDTO[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const canManageListings =
     user?.accountType === "company" || user?.accountType === "private_landlord";
 
-  useEffect(() => {
-    if (!token || !canManageListings) {
-      setListings([]);
-      return;
-    }
-
-    let active = true;
-    setLoading(true);
-    setError(null);
-
-    listingService
-      .getMyListings(0, 200)
-      .then((items) => {
-        if (active) setListings(items);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : localizedText(locale, "Kunde inte ladda dina annonser.", "Could not load your listings."));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [locale, token, canManageListings]);
+  // useMyListings already gates on auth, but we also disable when the user
+  // can't manage listings — no point fetching for student accounts.
+  const {
+    data: listingsPage,
+    isLoading: loading,
+    error: queryError,
+  } = useMyListings(0, 200);
+  const enabled = Boolean(token) && canManageListings;
+  const listings = enabled ? listingsPage?.content ?? [] : [];
+  const error = enabled && queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : localizedText(locale, "Kunde inte ladda dina annonser.", "Could not load your listings.")
+    : null;
 
   const gridListings = useMemo(() => listings ?? [], [listings]);
 

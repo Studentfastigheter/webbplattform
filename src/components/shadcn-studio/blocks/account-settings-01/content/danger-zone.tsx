@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { useAuth } from '@/context/AuthContext'
-import { authService } from '@/features/auth/services/auth-service'
+import { useDeleteMe } from '@/features/auth/hooks/useAuthMutations'
 import { useI18n } from '@/i18n/I18nProvider'
 import { localizedText } from '@/i18n/text'
 
@@ -24,18 +24,18 @@ const DangerZone = () => {
   const router = useRouter()
   const { locale, localizedHref } = useI18n()
   const { logout } = useAuth()
+  const deleteMe = useDeleteMe()
+  const deleting = deleteMe.isPending
   const [open, setOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleDeleteAccount = async () => {
     if (deleting) return
 
-    setDeleting(true)
     setError(null)
 
     try {
-      const result = await authService.deleteMe()
+      const result = await deleteMe.mutateAsync()
 
       if (
         result &&
@@ -56,8 +56,6 @@ const DangerZone = () => {
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : localizedText(locale, 'Kontot kunde inte raderas.', 'The account could not be deleted.'))
-    } finally {
-      setDeleting(false)
     }
   }
 

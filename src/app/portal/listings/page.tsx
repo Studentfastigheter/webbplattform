@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useQueries } from "@tanstack/react-query";
 import {
   Eye,
   MousePointerClick,
@@ -24,7 +25,12 @@ import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { companyService, type ListingViewCounts } from "@/features/companies/services/company-service";
-import { queueService } from "@/features/queues/services/queue-service";
+import {
+  useApplicationCountsPerObject,
+  useRefreshCompanyListings,
+} from "@/features/companies/hooks/useCompanies";
+import { useAllCompanyListings } from "@/features/queues/hooks/useQueues";
+import { qk } from "@/lib/query/keys";
 import { type ListingCardDTO } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
@@ -282,124 +288,103 @@ export default function PortalAdsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [dateSort, setDateSort] = useState<DateSort>("newest");
   const [cityFilter, setCityFilter] = useState("all");
-  const [loading, setLoading] = useState(false);
-  const [refreshingListings, setRefreshingListings] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [ads, setAds] = useState<PortalListing[]>([]);
   const hasActiveFilters = statusFilter !== "all" || cityFilter !== "all";
 
   const companyId = getActiveCompanyId(user);
+  const refreshListingsMutation = useRefreshCompanyListings();
+  const refreshingListings = refreshListingsMutation.isPending;
 
+  // Core reads — both shared with the analytics dashboard via the same
+  // query keys, so navigating between portal pages reuses cached data.
+  const {
+    data: companyListings = [],
+    isLoading: listingsLoading,
+    isError: listingsError,
+    error: listingsErr,
+  } = useAllCompanyListings(companyId, 0, 200);
+  const { data: applicationsByObject = [] } =
+    useApplicationCountsPerObject(companyId, 200);
+
+  // Per-listing view counts — N parallel queries, each cached under the
+  // same key the analytics page uses. After the listings array settles
+  // these fire in parallel and merge into a Map. Listings that fail or
+  // are still loading simply have no entry → `resolveListingViewCounts`
+  // falls back to the embedded count fields on the listing DTO.
+  const viewCountQueries = useQueries({
+    queries: companyListings.map((listing) => ({
+      queryKey: qk.companies.viewCounts(companyId ?? -1, String(listing.id)),
+      queryFn: ({ signal }) =>
+        companyService.listingViewCounts(companyId!, listing.id, { signal }),
+      enabled: companyId != null && companyId > 0,
+      staleTime: 30_000,
+    })),
+  });
+  const viewCountsByListingId = useMemo(() => {
+    const map = new Map<string, ListingViewCounts>();
+    companyListings.forEach((listing, idx) => {
+      const query = viewCountQueries[idx];
+      if (query?.isSuccess && query.data) {
+        map.set(String(listing.id), query.data);
+      }
+    });
+    return map;
+  }, [companyListings, viewCountQueries]);
+
+  const loading = authLoading || listingsLoading;
+  const error =
+    listingsError && listingsErr
+      ? listingsErr instanceof Error
+        ? listingsErr.message
+        : localizedText(locale, "Kunde inte hämta annonser för företaget.", "Could not load company listings.")
+      : null;
+
+  // Refresh mutation owns its invalidation (listings list, application
+  // counts, per-listing view counts). The hook reports `isPending` which
+  // we surface as `refreshingListings` for the button-disabled state.
   const handleRefreshListings = useCallback(async () => {
     if (!companyId || refreshingListings) {
       return;
     }
 
-    setRefreshingListings(true);
-
     try {
-      await companyService.refreshCompanyListings(companyId);
+      await refreshListingsMutation.mutateAsync(companyId);
       toast.success(localizedText(locale, "Annonssynken har startats.", "Listing sync has started."));
-      setReloadKey((current) => current + 1);
     } catch (refreshError) {
       toast.error(
         refreshError instanceof Error
           ? refreshError.message
           : localizedText(locale, "Kunde inte starta annonssynken.", "Could not start listing sync.")
       );
-    } finally {
-      setRefreshingListings(false);
     }
-  }, [companyId, locale, refreshingListings]);
+  }, [companyId, locale, refreshingListings, refreshListingsMutation]);
 
-  useEffect(() => {
-    if (authLoading || !companyId) {
-      return;
-    }
-
-    let active = true;
-    setLoading(true);
-    setError(null);
-
-    const loadListings = async () => {
-      const [companyListings, applicationsByObject] = await Promise.all([
-        queueService.getAllCompanyListings(companyId, 0, 200),
-        companyService.applicationCountsPerObject(companyId, 200).catch(() => []),
-      ]);
-
-      const viewCountsEntries = await Promise.all(
-        companyListings.map(async (listing) => {
-          const counts = await companyService
-            .listingViewCounts(companyId, listing.id)
-            .catch(() => null);
-
-          return [String(listing.id), counts] as const;
-        })
+  const ads = useMemo<PortalListing[]>(() => {
+    if (!companyListings || companyListings.length === 0) return [];
+    const applicationsLookup = createApplicationLookup(applicationsByObject);
+    return companyListings.map((dto) => {
+      const raw = dto as RawListing;
+      const { quickViews, detailedViews } = resolveListingViewCounts(
+        raw,
+        viewCountsByListingId,
       );
-
+      const applications = resolveApplicationCount(raw, applicationsLookup) ?? 0;
+      const publishedAtRaw = pickString(raw, ["published"]);
+      const { label, tone } = mapStatus(
+        pickString(raw, ["status", "listingStatus", "state"]),
+        locale
+      );
       return {
-        companyListings,
-        applicationsByObject,
-        viewCountsByListingId: new Map(
-          viewCountsEntries.filter(
-            (entry): entry is readonly [string, ListingViewCounts] =>
-              entry[1] !== null
-          )
-        ),
+        listing: dto,
+        quickViews,
+        detailedViews,
+        applications,
+        publishedAt: formatDate(publishedAtRaw, locale),
+        publishedAtTime: parseDateTime(publishedAtRaw),
+        statusLabel: label,
+        statusTone: tone,
       };
-    };
-
-    loadListings()
-      .then(({ companyListings, applicationsByObject, viewCountsByListingId }) => {
-        if (!active) return;
-
-        const applicationsLookup = createApplicationLookup(applicationsByObject);
-        const normalized = companyListings.map((dto) => {
-          const raw = dto as RawListing;
-          const { quickViews, detailedViews } = resolveListingViewCounts(
-            raw,
-            viewCountsByListingId
-          );
-
-          const applications = resolveApplicationCount(raw, applicationsLookup) ?? 0;
-          const publishedAtRaw = pickString(raw, ["published"]);
-          const { label, tone } = mapStatus(
-            pickString(raw, ["status", "listingStatus", "state"]),
-            locale
-          );
-
-          return {
-            listing: dto,
-            quickViews,
-            detailedViews,
-            applications,
-            publishedAt: formatDate(publishedAtRaw, locale),
-            publishedAtTime: parseDateTime(publishedAtRaw),
-            statusLabel: label,
-            statusTone: tone,
-          };
-        });
-
-        setAds(normalized);
-      })
-      .catch((requestError) => {
-        if (!active) return;
-        setError(
-            requestError instanceof Error
-              ? requestError.message
-            : localizedText(locale, "Kunde inte hämta annonser för företaget.", "Could not load company listings.")
-        );
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, companyId, locale, reloadKey]);
+    });
+  }, [applicationsByObject, companyListings, locale, viewCountsByListingId]);
 
   const availableCities = useMemo(() => {
     const cities = new Set<string>();

@@ -21,6 +21,44 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { adminService } from "@/features/admin/services/admin-service";
+import {
+  useAdminActivities,
+  useAdminCityDetail,
+  useAdminCityNames,
+  useAdminCitySummaries,
+  useAdminCompanies,
+  useAdminCompanyDetail,
+  useAdminCompanyRoles,
+  useAdminCompanyUsers,
+  useAdminCreateActivity,
+  useAdminCreateCity,
+  useAdminCreateCompany,
+  useAdminCreateExternalCompany,
+  useAdminCreateSchool,
+  useAdminCreateTag,
+  useAdminDeleteActivity,
+  useAdminDeleteCity,
+  useAdminDeleteCompany,
+  useAdminDeleteExternalCompany,
+  useAdminExternalCompanies,
+  useAdminLocationCategories,
+  useAdminManageCompanyAccount,
+  useAdminModifyActivity,
+  useAdminModifyCity,
+  useAdminModifyCompany,
+  useAdminModifyLocationCategory,
+  useAdminAddLocationCategory,
+  useAdminModifySchool,
+  useAdminModifyTag,
+  useAdminRefreshCompanyListings,
+  useAdminSchools,
+  useAdminTags,
+  useAdminUpdateCompanyCredentials,
+  useAdminUpdateExternalCompany,
+  useAdminUserStatistics,
+  useAdminVerifyCompanyAccount,
+  useAdminWaitlistStats,
+} from "@/features/admin/hooks/useAdmin";
 import { normalizeCityCode } from "@/features/cities/services/city-service";
 import type { ExternalCompanyDTO } from "@/features/companies/services/company-service";
 import type {
@@ -138,33 +176,48 @@ function normalizeDateTimeInput(value: string) {
   return value ? new Date(value).toISOString() : undefined;
 }
 
-function useResourceList<TItem>(onFetch: () => Promise<TItem[]>) {
-  const [items, setItems] = useState<TItem[]>([]);
-  const [state, setState] = useState<AdminActionState>({
-    status: "loading",
-    message: "Hämtar data...",
-  });
-
-  async function refresh() {
-    setState({ status: "loading", message: "Hämtar data..." });
-    try {
-      const result = await onFetch();
-      setItems(result);
-      setState({ status: "idle" });
-      return result;
-    } catch (error) {
-      setItems([]);
-      setState({
+/**
+ * Adapter that converts a TanStack `useQuery` result into the
+ * `{ items, state, refresh }` shape that every section in this file expects.
+ *
+ * Before Phase 3, this helper had its own state machine and a private
+ * `useEffect`-based fetch. Now it just maps the query's lifecycle into
+ * `AdminActionState` and exposes `refetch` as `refresh` for backwards
+ * compatibility with the call sites.
+ *
+ * Use it like:
+ *   const tagsQuery = useAdminTags();
+ *   const { items, state, refresh } = useResourceList(tagsQuery);
+ */
+function useResourceList<TItem>(query: {
+  data?: TItem[];
+  isLoading: boolean;
+  isFetching: boolean;
+  isError: boolean;
+  error: unknown;
+  refetch: () => Promise<unknown>;
+}) {
+  const items = query.data ?? [];
+  const state: AdminActionState = query.isError
+    ? {
         status: "error",
-        message: error instanceof Error ? error.message : "Kunde inte hämta data.",
-      });
-      return [];
-    }
-  }
+        message:
+          query.error instanceof Error
+            ? query.error.message
+            : "Kunde inte hämta data.",
+      }
+    : query.isLoading
+    ? { status: "loading", message: "Hämtar data..." }
+    : { status: "idle" };
 
-  useEffect(() => {
-    void refresh();
-  }, []);
+  // `refresh` keeps the same call signature as the old API (returns the
+  // fresh list). Sections invoke it after raw service mutations during the
+  // transition; once they migrate to mutation hooks the call becomes a
+  // no-op because the hook's `onSettled` already invalidates the query.
+  const refresh = async () => {
+    const result = await query.refetch();
+    return (result as { data?: TItem[] }).data ?? [];
+  };
 
   return { items, state, refresh };
 }
@@ -408,7 +461,9 @@ function TagsFormFields({
 }
 
 function TagsForm() {
-  const { items, state: listState, refresh } = useResourceList(adminService.getTags);
+  const { items, state: listState, refresh } = useResourceList(useAdminTags());
+  const modifyTag = useAdminModifyTag();
+  const createTagMutation = useAdminCreateTag();
   const [selectedTag, setSelectedTag] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
@@ -440,12 +495,15 @@ function TagsForm() {
   async function updateTag() {
     setUpdateState({ status: "loading", message: "Uppdaterar tagg..." });
     try {
-      await adminService.modifyTag({
+      await modifyTag.mutateAsync({
         tag: updateForm.tag.trim(),
         displayName: updateForm.displayName.trim(),
         icon: updateForm.icon.trim(),
         tagValues: parseListInput(updateForm.tagValues),
       });
+      // The mutation already invalidates qk.admin.tags + qk.listings.tags;
+      // the explicit refresh stays for now so the section's own listState
+      // transitions show the loading flash users are used to.
       setUpdateState({ status: "success", message: "Taggen uppdaterades." });
       await refresh();
     } catch (error) {
@@ -459,7 +517,7 @@ function TagsForm() {
   async function createTag() {
     setCreateState({ status: "loading", message: "Skapar tagg..." });
     try {
-      await adminService.createTag({
+      await createTagMutation.mutateAsync({
         tag: createForm.tag.trim(),
         displayName: createForm.displayName.trim(),
         icon: createForm.icon.trim(),
@@ -592,8 +650,10 @@ function SchoolFields({
 }
 
 function SchoolsForm() {
-  const { items, state: listState, refresh } = useResourceList<School>(adminService.getSchools);
-  const { items: cities, state: cityState } = useResourceList<string>(adminService.getCities);
+  const { items, state: listState, refresh } = useResourceList(useAdminSchools());
+  const { items: cities, state: cityState } = useResourceList(useAdminCityNames());
+  const modifySchool = useAdminModifySchool();
+  const createSchoolMutation = useAdminCreateSchool();
   const [selectedId, setSelectedId] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
@@ -619,7 +679,7 @@ function SchoolsForm() {
   async function updateSchool() {
     setUpdateState({ status: "loading", message: "Uppdaterar skola..." });
     try {
-      await adminService.modifySchool(buildSchoolPayload(updateForm, true));
+      await modifySchool.mutateAsync(buildSchoolPayload(updateForm, true));
       setUpdateState({ status: "success", message: "Skolan uppdaterades." });
       await refresh();
     } catch (error) {
@@ -633,7 +693,7 @@ function SchoolsForm() {
   async function createSchool() {
     setCreateState({ status: "loading", message: "Skapar skola..." });
     try {
-      await adminService.createSchool(buildSchoolPayload(createForm, false));
+      await createSchoolMutation.mutateAsync(buildSchoolPayload(createForm, false));
       setCreateForm(emptySchoolForm);
       setCreateState({ status: "success", message: "Skolan skapades." });
       await refresh();
@@ -700,7 +760,9 @@ function SchoolsForm() {
 }
 
 function LocationCategoriesForm() {
-  const { items, state: listState, refresh } = useResourceList(adminService.getLocationCategories);
+  const { items, state: listState, refresh } = useResourceList(useAdminLocationCategories());
+  const addLocationCategory = useAdminAddLocationCategory();
+  const modifyLocationCategory = useAdminModifyLocationCategory();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
@@ -731,10 +793,10 @@ function LocationCategoriesForm() {
         googleType: source.googleType.trim(),
       };
       if (action === "create") {
-        await adminService.addLocationCategory(payload);
+        await addLocationCategory.mutateAsync(payload);
         setCreateForm({ category: "", googleType: "" });
       } else {
-        await adminService.modifyLocationCategory(payload);
+        await modifyLocationCategory.mutateAsync(payload);
       }
       setState({
         status: "success",
@@ -890,8 +952,11 @@ function ActivityFields({
 }
 
 function ActivitiesForm() {
-  const { items, state: listState, refresh } = useResourceList<AdminPointOfInterestDTO>(adminService.getActivities);
-  const { items: categories, state: categoryState } = useResourceList<AdminLocationCategoryDTO>(adminService.getLocationCategories);
+  const { items, state: listState, refresh } = useResourceList(useAdminActivities());
+  const { items: categories, state: categoryState } = useResourceList(useAdminLocationCategories());
+  const createActivityMutation = useAdminCreateActivity();
+  const modifyActivity = useAdminModifyActivity();
+  const deleteActivityMutation = useAdminDeleteActivity();
   const [selectedId, setSelectedId] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [updateState, setUpdateState] = useState<AdminActionState>({ status: "idle" });
@@ -926,10 +991,12 @@ function ActivitiesForm() {
 
     try {
       if (action === "create") {
-        await adminService.createActivity(buildActivityPayload(source, false) as AdminCreatePOIRequest);
+        await createActivityMutation.mutateAsync(
+          buildActivityPayload(source, false) as AdminCreatePOIRequest,
+        );
         setCreateForm(emptyActivityForm);
       } else {
-        await adminService.modifyActivity(buildActivityPayload(source, true));
+        await modifyActivity.mutateAsync(buildActivityPayload(source, true));
       }
       setState({
         status: "success",
@@ -953,7 +1020,7 @@ function ActivitiesForm() {
 
     setDeleteState({ status: "loading", message: "Tar bort aktivitet..." });
     try {
-      await adminService.deleteActivity(id);
+      await deleteActivityMutation.mutateAsync(id);
       setDeleteId("");
       setDeleteState({ status: "success", message: "Aktiviteten togs bort." });
       await refresh();
@@ -1328,10 +1395,13 @@ function CompanyFields({
 }
 
 function CompaniesForm() {
-  const { items, state: listState, refresh } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
-  const { items: cities, state: citiesState } = useResourceList<CityDTO>(
-    adminService.getCitySummaries
-  );
+  const { items, state: listState, refresh } = useResourceList(useAdminCompanies());
+  const { items: cities, state: citiesState } = useResourceList(useAdminCitySummaries());
+  const createCompanyMutation = useAdminCreateCompany();
+  const modifyCompany = useAdminModifyCompany();
+  const deleteCompanyMutation = useAdminDeleteCompany();
+  const refreshCompanyListingsMutation = useAdminRefreshCompanyListings();
+  const updateCompanyCredentials = useAdminUpdateCompanyCredentials();
   const [selectedId, setSelectedId] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [refreshId, setRefreshId] = useState("");
@@ -1389,10 +1459,12 @@ function CompaniesForm() {
 
     try {
       if (action === "create") {
-        await adminService.createCompany(buildCompanyPayload(source, false));
+        await createCompanyMutation.mutateAsync(
+          buildCompanyPayload(source, false),
+        );
         setCreateForm(emptyCompanyForm);
       } else {
-        await adminService.modifyCompany(buildCompanyPayload(source, true));
+        await modifyCompany.mutateAsync(buildCompanyPayload(source, true));
       }
       setState({
         status: "success",
@@ -1416,7 +1488,7 @@ function CompaniesForm() {
 
     setDeleteState({ status: "loading", message: "Tar bort företag..." });
     try {
-      await adminService.deleteCompany(id);
+      await deleteCompanyMutation.mutateAsync(id);
       setDeleteId("");
       setDeleteState({ status: "success", message: "Företaget togs bort." });
       await refresh();
@@ -1437,7 +1509,7 @@ function CompaniesForm() {
 
     setRefreshState({ status: "loading", message: "Startar annonssynk..." });
     try {
-      await adminService.refreshCompanyListings(id);
+      await refreshCompanyListingsMutation.mutateAsync(id);
       setRefreshState({ status: "success", message: "Annonssynken startades." });
     } catch (error) {
       setRefreshState({
@@ -1456,7 +1528,7 @@ function CompaniesForm() {
 
     setSelectedRefreshState({ status: "loading", message: "Startar annonssynk..." });
     try {
-      await adminService.refreshCompanyListings(id);
+      await refreshCompanyListingsMutation.mutateAsync(id);
       setSelectedRefreshState({ status: "success", message: "Annonssynken startades." });
     } catch (error) {
       setSelectedRefreshState({
@@ -1470,7 +1542,10 @@ function CompaniesForm() {
     setCredentialState({ status: "loading", message: "Sparar systemuppgifter..." });
     try {
       const payload = buildCompanyCredentialPayload(credentialForm);
-      await adminService.updateCompanyCredentials(payload.companyId, payload.credentials);
+      await updateCompanyCredentials.mutateAsync({
+        companyId: payload.companyId,
+        credentials: payload.credentials,
+      });
       setCredentialForm(emptyCompanyCredentialForm);
       setCredentialState({ status: "success", message: "Systemuppgifterna sparades och synk startades." });
     } catch (error) {
@@ -1730,17 +1805,16 @@ function externalCompanyOptionLabel(company: ExternalCompanyDTO) {
 }
 
 function ExternalCompaniesForm() {
-  const { items: cities, state: citiesState } = useResourceList<CityDTO>(
-    adminService.getCitySummaries
-  );
-  const { items: schools, state: schoolsState } = useResourceList<School>(
-    adminService.getSchools
-  );
+  const { items: cities, state: citiesState } = useResourceList(useAdminCitySummaries());
+  const { items: schools, state: schoolsState } = useResourceList(useAdminSchools());
   const {
     items: externalCompanies,
     state: externalCompaniesState,
     refresh: refreshExternalCompanies,
-  } = useResourceList<ExternalCompanyDTO>(adminService.getExternalCompanies);
+  } = useResourceList(useAdminExternalCompanies());
+  const createExternalCompanyMutation = useAdminCreateExternalCompany();
+  const updateExternalCompanyMutation = useAdminUpdateExternalCompany();
+  const deleteExternalCompanyMutation = useAdminDeleteExternalCompany();
   const [form, setForm] = useState<ExternalCompanyFormState>(
     emptyExternalCompanyForm
   );
@@ -1826,7 +1900,9 @@ function ExternalCompaniesForm() {
     setState({ status: "loading", message: "Skapar externt företag..." });
 
     try {
-      await adminService.createExternalCompany(buildExternalCompanyPayload(form));
+      await createExternalCompanyMutation.mutateAsync(
+        buildExternalCompanyPayload(form),
+      );
       setForm(emptyExternalCompanyForm);
       setState({ status: "success", message: "Det externa företaget skapades." });
       await refreshExternalCompanies();
@@ -1845,8 +1921,8 @@ function ExternalCompaniesForm() {
     setUpdateState({ status: "loading", message: "Uppdaterar externt företag..." });
 
     try {
-      await adminService.updateExternalCompany(
-        buildExternalCompanyUpdatePayload(updateForm)
+      await updateExternalCompanyMutation.mutateAsync(
+        buildExternalCompanyUpdatePayload(updateForm),
       );
       setUpdateForm(emptyExternalCompanyUpdateForm);
       setUpdateState({ status: "success", message: "Det externa företaget uppdaterades." });
@@ -1871,7 +1947,7 @@ function ExternalCompaniesForm() {
 
     setDeleteState({ status: "loading", message: "Tar bort externt företag..." });
     try {
-      await adminService.deleteExternalCompany(id);
+      await deleteExternalCompanyMutation.mutateAsync(id);
       setDeleteId("");
       if (updateForm.id.trim() === String(id)) {
         setUpdateForm(emptyExternalCompanyUpdateForm);
@@ -2329,8 +2405,10 @@ function CompanyAccountVerificationBadge({ verified }: { verified?: boolean }) {
 }
 
 function CompanyAccountForm() {
-  const { items: companies, state: companiesState } = useResourceList<AdminCompanyPublicDTO>(adminService.getCompanies);
-  const { items: roles, state: rolesState } = useResourceList<AdminCompanyRole>(adminService.getCompanyRoles);
+  const { items: companies, state: companiesState } = useResourceList(useAdminCompanies());
+  const { items: roles, state: rolesState } = useResourceList(useAdminCompanyRoles());
+  const manageCompanyAccount = useAdminManageCompanyAccount();
+  const verifyCompanyAccount = useAdminVerifyCompanyAccount();
   const [saveState, setSaveState] = useState<AdminActionState>({ status: "idle" });
   const [accountsState, setAccountsState] = useState<AdminActionState>({ status: "idle" });
   const [verifyState, setVerifyState] = useState<AdminActionState>({ status: "idle" });
@@ -2472,7 +2550,7 @@ function CompanyAccountForm() {
         logoUrl: form.logoUrl.trim(),
       };
 
-      await adminService.manageCompanyAccount(payload);
+      await manageCompanyAccount.mutateAsync({ companyId, payload });
       setSaveState({ status: "success", message: "Företagskontot sparades." });
       try {
         const refreshedAccounts = await adminService.getCompanyUsers(companyId);
@@ -2510,7 +2588,7 @@ function CompanyAccountForm() {
     setVerifyState({ status: "loading", message: "Verifierar företagskonto..." });
 
     try {
-      await adminService.verifyCompanyAccount(companyId, accountId);
+      await verifyCompanyAccount.mutateAsync({ companyId, accountId });
       setAccounts((current) =>
         current.map((entry) =>
           entry.id === accountId ? { ...entry, verified: true } : entry
@@ -2807,7 +2885,10 @@ function CityFields({
 }
 
 function CitiesForm() {
-  const { items, state: listState, refresh } = useResourceList<CityDTO>(adminService.getCitySummaries);
+  const { items, state: listState, refresh } = useResourceList(useAdminCitySummaries());
+  const createCityMutation = useAdminCreateCity();
+  const modifyCity = useAdminModifyCity();
+  const deleteCityMutation = useAdminDeleteCity();
   const [selectedCode, setSelectedCode] = useState("");
   const [deleteCodes, setDeleteCodes] = useState<string[]>([]);
   const [cityDetail, setCityDetail] = useState<CityDetailedDTO | null>(null);
@@ -2867,7 +2948,7 @@ function CitiesForm() {
     setCreateState({ status: "loading", message: "Skapar stad..." });
     try {
       const payload = buildCreateCityPayload(createForm);
-      await adminService.createCity(payload);
+      await createCityMutation.mutateAsync(payload);
       setCreateForm(emptyCityForm);
       setSelectedCode(payload.code);
       setUpdateForm({
@@ -2895,7 +2976,10 @@ function CitiesForm() {
 
     setUpdateState({ status: "loading", message: "Uppdaterar stad..." });
     try {
-      await adminService.modifyCity(code, buildModifyCityPayload(updateForm));
+      await modifyCity.mutateAsync({
+        code,
+        payload: buildModifyCityPayload(updateForm),
+      });
       setUpdateState({ status: "success", message: "Staden uppdaterades." });
       await refresh();
     } catch (error) {
@@ -2927,7 +3011,7 @@ function CitiesForm() {
 
     for (const code of codes) {
       try {
-        await adminService.deleteCity(code);
+        await deleteCityMutation.mutateAsync(code);
       } catch (error) {
         failures.push({
           code,
@@ -3282,34 +3366,23 @@ function WaitlistEntriesList({ entries }: { entries: AdminWaitlistEntryDTO[] }) 
 }
 
 function WaitlistDashboard() {
-  const [stats, setStats] = useState<AdminWaitlistStatsDTO | null>(null);
-  const [state, setState] = useState<AdminActionState>({
-    status: "loading",
-    message: "Hämtar waitlist...",
-  });
-
-  async function refresh() {
-    setState({ status: "loading", message: "Hämtar waitlist..." });
-
-    try {
-      const result = await adminService.getWaitlistStats();
-      setStats(result);
-      setState({ status: "idle" });
-    } catch (error) {
-      setStats(null);
-      setState({
+  // Page-mount read via TanStack — the refetch button below calls the
+  // query's `refetch` directly so the "Uppdatera" UX stays one click.
+  const waitlistQuery = useAdminWaitlistStats();
+  const stats = waitlistQuery.data ?? null;
+  const state: AdminActionState = waitlistQuery.isError
+    ? {
         status: "error",
         message:
-          error instanceof Error
-            ? error.message
+          waitlistQuery.error instanceof Error
+            ? waitlistQuery.error.message
             : "Kunde inte hämta waitlist-statistik.",
-      });
-    }
-  }
+      }
+    : waitlistQuery.isLoading || waitlistQuery.isFetching
+    ? { status: "loading", message: "Hämtar waitlist..." }
+    : { status: "idle" };
 
-  useEffect(() => {
-    void refresh();
-  }, []);
+  const refresh = () => waitlistQuery.refetch();
 
   const chartData = toWaitlistChartData(stats);
   const lastSevenDays = (stats?.daily ?? [])
@@ -3388,6 +3461,10 @@ function WaitlistDashboard() {
 }
 
 function UserStatisticsAction() {
+  // Note: this section just fires the request and reports success/error —
+  // the response payload is never rendered. Wrapping in a `useQuery` would
+  // add cache/loading plumbing for no gain. Direct service call is the
+  // correct shape here.
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [state, setState] = useState<AdminActionState>({ status: "idle" });

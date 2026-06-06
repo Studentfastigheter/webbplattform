@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { authService } from "@/features/auth/services/auth-service";
+import { useResetPassword } from "@/features/auth/hooks/useAuthMutations";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
@@ -64,11 +64,12 @@ export default function ResetPasswordPage() {
     }
   }, [params?.id]);
 
+  const resetPassword = useResetPassword();
+  const submitting = resetPassword.isPending;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
@@ -99,10 +100,8 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    setSubmitting(true);
-
     try {
-      await authService.resetPassword({
+      await resetPassword.mutateAsync({
         resetId,
         newPassword: password,
       });
@@ -113,8 +112,6 @@ export default function ResetPasswordPage() {
       setError(
         err instanceof Error ? err.message : localizedText(locale, "Kunde inte uppdatera lösenordet.", "Could not update the password.")
       );
-    } finally {
-      setSubmitting(false);
     }
   }
 

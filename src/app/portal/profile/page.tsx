@@ -13,7 +13,15 @@ import {
   type CompanyPublicDTO,
   type SocialPlatform,
 } from "@/features/companies/services/company-service";
-import { queueService } from "@/features/queues/services/queue-service";
+import {
+  useCompanyPrivate,
+  useCompanyPublic,
+  usePlatforms,
+  useUpdateCompanyData,
+  useUploadCompanyBanner,
+  useUploadCompanyLogo,
+} from "@/features/companies/hooks/useCompanies";
+import { useQueuesByCompany } from "@/features/queues/hooks/useQueues";
 import { type HousingQueueDTO } from "@/types/queue";
 import { formatCityName } from "@/features/cities/city-utils";
 import {
@@ -738,18 +746,24 @@ export default function ProfilePage() {
     bannerUrl: null,
   });
 
+  // The editor keeps an in-page mirror of `company`+`companyQueue`+`draft`
+  // so the user can type freely without hitting React Query's cache. Server
+  // data flows in via the hooks; we hydrate the editor on first load (and on
+  // companyId change). Saves invalidate the cache, which triggers re-hydration.
   const [company, setCompany] = useState<CompanyPrivateDTO | null>(null);
   const [companyQueue, setCompanyQueue] = useState<HousingQueueDTO | null>(null);
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
-  const [socialPlatformOptions, setSocialPlatformOptions] = useState<string[]>([]);
+  const [hydratedCompanyId, setHydratedCompanyId] = useState<number | null>(null);
   const [bannerFileToCrop, setBannerFileToCrop] = useState<File | null>(null);
 
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const companyId = getActiveCompanyId(user);
+  const updateCompanyData = useUpdateCompanyData();
+  const uploadLogo = useUploadCompanyLogo();
+  const uploadBanner = useUploadCompanyBanner();
 
   useEffect(() => {
     return () => {
@@ -763,62 +777,78 @@ export default function ProfilePage() {
     };
   }, []);
 
+  const isInvalidCompanyId =
+    !authLoading && user != null && (companyId == null || Number.isNaN(companyId));
+
+  // Four parallel reads. Each cached under its own key — opening another
+  // company portal page reuses these without a network call.
+  const {
+    data: companyData,
+    isLoading: companyLoading,
+    isError: isCompanyError,
+    error: companyErr,
+  } = useCompanyPrivate(companyId);
+  const { data: companyQueues } = useQueuesByCompany(companyId);
+  const { data: publicCompanyData } = useCompanyPublic(companyId);
+  const { data: socialPlatforms = [] } = usePlatforms();
+
+  const companyDataWithPublicFields = useMemo(
+    () =>
+      companyData
+        ? withPublicProfileFields(companyData, publicCompanyData ?? null)
+        : null,
+    [companyData, publicCompanyData],
+  );
+  const socialPlatformOptions = useMemo(
+    () => normalizeSocialPlatformOptions(socialPlatforms),
+    [socialPlatforms],
+  );
+
+  // Hydrate the editor state from cached server data. Reruns when companyId
+  // changes (new portal context) or after a save invalidates and refetches.
   useEffect(() => {
-    if (authLoading || !user) {
-      return;
-    }
+    if (companyId == null || !companyDataWithPublicFields) return;
+    if (hydratedCompanyId === companyId && company && draft) return;
 
-    if (companyId == null || Number.isNaN(companyId)) {
+    const firstQueue =
+      Array.isArray(companyQueues) && companyQueues.length > 0
+        ? companyQueues[0]
+        : null;
+
+    setCompany(companyDataWithPublicFields);
+    setCompanyQueue(firstQueue);
+    setDraft(
+      buildInitialDraft(
+        companyId,
+        companyDataWithPublicFields,
+        firstQueue ?? undefined,
+      ),
+    );
+    setHydratedCompanyId(companyId);
+  }, [
+    companyId,
+    companyDataWithPublicFields,
+    companyQueues,
+    company,
+    draft,
+    hydratedCompanyId,
+  ]);
+
+  useEffect(() => {
+    if (isInvalidCompanyId) {
       setError(localizedText(locale, "Ogiltigt företags-ID.", "Invalid company ID."));
-      return;
+    } else if (isCompanyError) {
+      setError(
+        companyErr instanceof Error
+          ? companyErr.message
+          : localizedText(locale, "Kunde inte ladda företagsprofilen.", "Could not load the company profile.")
+      );
+    } else {
+      setError(null);
     }
+  }, [isInvalidCompanyId, isCompanyError, companyErr, locale]);
 
-    let active = true;
-    setLoading(true);
-    setError(null);
-    setSocialPlatformOptions([]);
-
-    Promise.all([
-      companyService.privateProfile(companyId),
-      queueService.getByCompany(companyId),
-      companyService.publicProfile(companyId).catch(() => null),
-      companyService.getAllPlatforms().catch(() => []),
-    ])
-      .then(([companyData, companyQueues, publicCompanyData, socialPlatforms]) => {
-        if (!active) return;
-
-        const normalizedQueues = Array.isArray(companyQueues) ? companyQueues : [];
-        const firstQueue = normalizedQueues[0];
-        const companyDataWithPublicFields = withPublicProfileFields(
-          companyData,
-          publicCompanyData
-        );
-
-        setCompany(companyDataWithPublicFields);
-        setCompanyQueue(firstQueue ?? null);
-        setSocialPlatformOptions(normalizeSocialPlatformOptions(socialPlatforms));
-        setDraft(
-          buildInitialDraft(companyId, companyDataWithPublicFields, firstQueue)
-        );
-      })
-      .catch((fetchError) => {
-        if (!active) return;
-
-        setError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : localizedText(locale, "Kunde inte ladda företagsprofilen.", "Could not load the company profile.")
-        );
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, companyId, locale, user]);
+  const loading = (authLoading || companyLoading) && !company;
 
   const savedSnapshot = useMemo(() => {
     if (!company || !draft) return "";
@@ -889,13 +919,23 @@ export default function ProfilePage() {
       const savedDraft = company
         ? buildInitialDraft(draft.companyId, company, companyQueue ?? undefined)
         : null;
+      // Each mutation invalidates the related caches on settle. We still
+      // run them in parallel because they target different endpoints.
       const [uploadedLogoUrl, uploadedBannerUrl] = await Promise.all([
         selectedImages.logoUrl
-          ? companyService.uploadLogo(draft.companyId, selectedImages.logoUrl)
-          : Promise.resolve(null),
+          ? uploadLogo.mutateAsync({
+              id: draft.companyId,
+              target: "logo",
+              file: selectedImages.logoUrl,
+            })
+          : Promise.resolve<string | null>(null),
         selectedImages.bannerUrl
-          ? companyService.uploadBanner(draft.companyId, selectedImages.bannerUrl)
-          : Promise.resolve(null),
+          ? uploadBanner.mutateAsync({
+              id: draft.companyId,
+              target: "banner",
+              file: selectedImages.bannerUrl,
+            })
+          : Promise.resolve<string | null>(null),
       ]);
       const uploadResolvedDraft: ProfileDraft = {
         ...draft,
@@ -911,10 +951,10 @@ export default function ProfilePage() {
         getCompanyDataSnapshot(savedDraft);
 
       if (hasCompanyDataChanges) {
-        await companyService.updateCompanyData(
-          uploadResolvedDraft.companyId,
-          buildCompanyChangePayload(uploadResolvedDraft)
-        );
+        await updateCompanyData.mutateAsync({
+          id: uploadResolvedDraft.companyId,
+          payload: buildCompanyChangePayload(uploadResolvedDraft),
+        });
       }
 
       const previewImageUrls = previewImageUrlsRef.current;
@@ -957,6 +997,10 @@ export default function ProfilePage() {
         )
       );
       setSaveMessage(localizedText(locale, "Företagsprofilen har sparats.", "The company profile has been saved."));
+      // Note: invalidation is already handled by the mutation hooks above
+      // (uploadLogo / uploadBanner / updateCompanyData each drop the
+      // private + public + queue caches on settle). No manual invalidate
+      // needed here.
     } catch (saveError) {
       setError(
         saveError instanceof Error

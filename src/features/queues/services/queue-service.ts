@@ -3,6 +3,7 @@ import {
   arrayFromApiResponse,
   buildQuery,
   pathSegment,
+  type ServiceOptions,
 } from "@/lib/api/client";
 import { normalizeListingCards } from "@/features/listings/services/listing-service";
 import { HousingQueueDTO } from "@/types/queue";
@@ -317,21 +318,31 @@ export const queueService = {
     return arrayFromApiResponse<HousingQueueDTO>(queues);
   },
 
-  getAll: async (): Promise<HousingQueueDTO[]> => {
-    const queues = await apiClient<unknown>("/queues/all", { auth: false });
+  getAll: async (options?: ServiceOptions): Promise<HousingQueueDTO[]> => {
+    const queues = await apiClient<unknown>("/queues/all", {
+      auth: false,
+      signal: options?.signal,
+    });
     return arrayFromApiResponse<HousingQueueDTO>(queues);
   },
 
-  get: async (id: string): Promise<HousingQueueDTO> => {
+  get: async (
+    id: string,
+    options?: ServiceOptions
+  ): Promise<HousingQueueDTO> => {
     return await apiClient<HousingQueueDTO>(`/queues/${pathSegment(id)}`, {
       auth: false,
+      signal: options?.signal,
     });
   },
 
-  getByCompany: async (companyId: number): Promise<HousingQueueDTO[]> => {
+  getByCompany: async (
+    companyId: number,
+    options?: ServiceOptions
+  ): Promise<HousingQueueDTO[]> => {
     const queues = await apiClient<unknown>(
       `/companies/${pathSegment(companyId)}/queues`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
     return arrayFromApiResponse<HousingQueueDTO>(queues);
   },
@@ -344,9 +355,11 @@ export const queueService = {
   },
 
   getMyQueues: async (
-    options: { hydrateQueues?: boolean } = {}
+    options: { hydrateQueues?: boolean; signal?: AbortSignal } = {}
   ): Promise<QueueApplicationDTO[]> => {
-    const res = await apiClient<MyQueuesResponse>("/queues/my");
+    const res = await apiClient<MyQueuesResponse>("/queues/my", {
+      signal: options.signal,
+    });
     const rows = getMyQueuesRows(res);
     if (options.hydrateQueues === false) {
       return rows.map((row) => {
@@ -395,9 +408,13 @@ export const queueService = {
     });
   },
 
-  getCompany: async (companyId: number): Promise<CompanyDTO> => {
+  getCompany: async (
+    companyId: number,
+    options?: ServiceOptions
+  ): Promise<CompanyDTO> => {
     const company = await apiClient<unknown>(`/companies/${pathSegment(companyId)}`, {
       auth: false,
+      signal: options?.signal,
     });
     return normalizeCompanyDto(company);
   },
@@ -406,18 +423,29 @@ export const queueService = {
     companyId: number,
     page = 0,
     size = 12,
+    options?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<unknown>(
       `/companies/${pathSegment(companyId)}/listings${query}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
 
     return normalizeListingPageResponse(res, page, size);
   },
 
-  getCompanyListings: async (companyId: number, page = 0, size = 12): Promise<ListingCardDTO[]> => {
-    const res = await queueService.getCompanyListingsPage(companyId, page, size);
+  getCompanyListings: async (
+    companyId: number,
+    page = 0,
+    size = 12,
+    options?: ServiceOptions
+  ): Promise<ListingCardDTO[]> => {
+    const res = await queueService.getCompanyListingsPage(
+      companyId,
+      page,
+      size,
+      options
+    );
     return res.content ?? [];
   },
 
@@ -425,10 +453,12 @@ export const queueService = {
     companyId: number,
     page = 0,
     size = 12,
+    options?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<unknown>(
-      `/companies/${pathSegment(companyId)}/all-listings${query}`
+      `/companies/${pathSegment(companyId)}/all-listings${query}`,
+      { signal: options?.signal }
     );
 
     return normalizeListingPageResponse(res, page, size);
@@ -437,14 +467,25 @@ export const queueService = {
   getAllCompanyListings: async (
     companyId: number,
     page = 0,
-    size = 12
+    size = 12,
+    options?: ServiceOptions
   ): Promise<ListingCardDTO[]> => {
-    const res = await queueService.getAllCompanyListingsPage(companyId, page, size);
+    const res = await queueService.getAllCompanyListingsPage(
+      companyId,
+      page,
+      size,
+      options
+    );
     return res.content ?? [];
   },
 
-  getCompanyQueueApplications: async (companyId: number): Promise<QueueApplicationDTO[]> => {
-    const queues = await queueService.getByCompany(companyId).catch(() => []);
+  getCompanyQueueApplications: async (
+    companyId: number,
+    options?: ServiceOptions
+  ): Promise<QueueApplicationDTO[]> => {
+    const queues = await queueService
+      .getByCompany(companyId, options)
+      .catch(() => []);
     const queueApplications = await Promise.all(
       queues.map(async (queue) => {
         const embeddedApplications = readEmbeddedQueueApplications(queue);

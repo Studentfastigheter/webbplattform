@@ -26,6 +26,11 @@ import {
   type DocumentPropagationResult,
   type UploadedDocument,
 } from "@/features/documents/services/document-service";
+import {
+  useDeleteDocument,
+  useMyDocuments,
+  useUploadDocument,
+} from "@/features/documents/hooks/useDocuments";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf";
@@ -273,6 +278,11 @@ function createDocumentFromUploaded(document: UploadedDocument): StudentDocument
 
 export default function ProfileDocumentsSection() {
   const { locale } = useI18n();
+  const uploadDocument = useUploadDocument();
+  const deleteDocument = useDeleteDocument();
+  // `documents` is local state because uploads add transient items (with
+  // progress) before they exist server-side. We seed and merge from the
+  // useMyDocuments cache via the effect below.
   const [documents, setDocuments] = useState<StudentDocument[]>([]);
   const [message, setMessage] = useState<StatusMessage | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -280,7 +290,6 @@ export default function ProfileDocumentsSection() {
   const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(
     null
   );
-  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(
     null
   );
@@ -304,51 +313,40 @@ export default function ProfileDocumentsSection() {
     };
   }, []);
 
+  // Documents server cache. Mutations (upload/delete) will invalidate this
+  // key in Phase 2; for now we read it and merge into local `documents`
+  // state below.
+  const {
+    data: uploadedDocuments,
+    isLoading: isLoadingDocuments,
+    isError: isDocumentsError,
+    error: documentsErr,
+  } = useMyDocuments();
+
   useEffect(() => {
-    let isActive = true;
-
-    const loadDocuments = async () => {
-      try {
-        const uploadedDocuments = await documentService.list();
-
-        if (!isActive) return;
-
-        const loadedDocuments = uploadedDocuments.map(createDocumentFromUploaded);
-
-        setDocuments((current) => {
-          if (current.length === 0) return loadedDocuments;
-
-          const currentNames = new Set(current.map((document) => document.name));
-          return [
-            ...current,
-            ...loadedDocuments.filter(
-              (document) => !currentNames.has(document.name)
-            ),
-          ];
-        });
-      } catch (error) {
-        if (!isActive) return;
-
-        setMessage({
-          tone: "error",
-          text:
-            error instanceof Error
-              ? error.message
-              : localizedText(locale, "Kunde inte hämta uppladdade dokument.", "Could not load uploaded documents."),
-        });
-      } finally {
-        if (isActive) {
-          setIsLoadingDocuments(false);
-        }
-      }
-    };
-
-    void loadDocuments();
-
-    return () => {
-      isActive = false;
-    };
-  }, [locale]);
+    if (isDocumentsError) {
+      setMessage({
+        tone: "error",
+        text:
+          documentsErr instanceof Error
+            ? documentsErr.message
+            : localizedText(locale, "Kunde inte hämta uppladdade dokument.", "Could not load uploaded documents."),
+      });
+      return;
+    }
+    if (!uploadedDocuments) return;
+    const loadedDocuments = uploadedDocuments.map(createDocumentFromUploaded);
+    setDocuments((current) => {
+      if (current.length === 0) return loadedDocuments;
+      const currentNames = new Set(current.map((document) => document.name));
+      return [
+        ...current,
+        ...loadedDocuments.filter(
+          (document) => !currentNames.has(document.name)
+        ),
+      ];
+    });
+  }, [uploadedDocuments, isDocumentsError, documentsErr, locale]);
 
   const previewDocument =
     documents.find((document) => document.id === previewDocumentId) ?? null;
@@ -441,7 +439,8 @@ export default function ProfileDocumentsSection() {
     uploadCleanupsRef.current.set(documentId, cleanupUpload);
 
     try {
-      const result = await documentService.upload(file, {
+      const result = await uploadDocument.mutateAsync({
+        file,
         signal: controller.signal,
       });
 
@@ -544,7 +543,7 @@ export default function ProfileDocumentsSection() {
       setDeletingDocumentId(documentId);
 
       try {
-        await documentService.delete(document.name);
+        await deleteDocument.mutateAsync(document.name);
       } catch (error) {
         setDeletingDocumentId(null);
         setMessage({

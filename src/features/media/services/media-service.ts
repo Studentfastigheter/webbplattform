@@ -1,10 +1,18 @@
-import { API_BASE, apiClient, pathSegment } from "@/lib/api/client";
+import {
+  API_BASE,
+  apiClient,
+  pathSegment,
+  type ServiceOptions,
+} from "@/lib/api/client";
 
 export const mediaService = {
-  listCompanyPublic: async (companyId: number | string): Promise<string[]> => {
+  listCompanyPublic: async (
+    companyId: number | string,
+    options?: ServiceOptions
+  ): Promise<string[]> => {
     const files = await apiClient<unknown>(
       `/media/company/${pathSegment(companyId)}/public`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
 
     return Array.isArray(files)

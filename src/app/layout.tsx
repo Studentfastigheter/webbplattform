@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserEnvironmentProvider } from "@/context/UserEnvironmentContext";
+import { QueryProvider } from "@/lib/query/QueryProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { Theme } from "@radix-ui/themes";
@@ -94,7 +95,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       >
         <SpeedInsights />
         <Analytics />
-        <I18nProvider initialLocale={locale}>
+        {/*
+          QueryProvider sits OUTSIDE AuthProvider so that AuthContext can later
+          be migrated into a query (useAuthSession) without re-shuffling the
+          provider tree. No consumer of QueryClient at this layer depends on
+          auth state.
+        */}
+        <QueryProvider>
+          <I18nProvider initialLocale={locale}>
           <AuthProvider>
             <UserEnvironmentProvider>
               <Theme>
@@ -115,7 +123,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </Theme>
             </UserEnvironmentProvider>
           </AuthProvider>
-        </I18nProvider>
+          </I18nProvider>
+        </QueryProvider>
       </body>
     </html>
   );

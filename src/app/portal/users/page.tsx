@@ -23,10 +23,16 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
-  companyService,
   type CompanyRole,
   type CompanyUserDTO,
 } from "@/features/companies/services/company-service";
+import {
+  useCompanyRoles,
+  useCompanyUsers,
+  useCreateCompanyUser,
+  useUpdateCompanyUser,
+  useVerifyCompanyUser,
+} from "@/features/companies/hooks/useCompanies";
 import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
@@ -194,14 +200,11 @@ function VerificationBadge({ verified, locale }: { verified: boolean; locale: Lo
 export default function UsersPage() {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
-  const [users, setUsers] = useState<CompanyPortalUser[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [usersError, setUsersError] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all");
   const [verifyingUserId, setVerifyingUserId] = useState<number | null>(null);
-  const [roles, setRoles] = useState<CompanyRole[]>([]);
-  const [rolesLoading, setRolesLoading] = useState(false);
-  const [rolesError, setRolesError] = useState<string | null>(null);
+  const createUserMutation = useCreateCompanyUser();
+  const updateUserMutation = useUpdateCompanyUser();
+  const verifyUserMutation = useVerifyCompanyUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingUser, setEditingUser] = useState<CompanyPortalUser | null>(null);
@@ -212,75 +215,45 @@ export default function UsersPage() {
 
   const hasActiveFilters = roleFilter !== "all";
   const companyId = getActiveCompanyId(user);
+
+  // Reference data — roles list. Long staleTime; shared between this page
+  // and any other admin/portal surface that lists role names.
+  const {
+    data: roles = [],
+    isLoading: rolesLoading,
+    isError: isRolesError,
+    error: rolesErr,
+  } = useCompanyRoles();
+  const rolesError = isRolesError && rolesErr
+    ? rolesErr instanceof Error
+      ? rolesErr.message
+      : localizedText(locale, "Kunde inte hämta roller från backend.", "Could not load roles from the backend.")
+    : null;
+
+  // Company users list. Returns raw DTOs; we adapt to CompanyPortalUser via
+  // a memo so re-mounts share both the network result and the adapted shape.
+  const {
+    data: backendUsersDTOs = [],
+    isLoading: loadingUsers,
+    isError: isUsersError,
+    error: usersErr,
+  } = useCompanyUsers(companyId);
+  const usersError = isUsersError && usersErr
+    ? usersErr instanceof Error
+      ? usersErr.message
+      : localizedText(locale, "Kunde inte hämta användare från backend.", "Could not load users from the backend.")
+    : null;
+  const users = useMemo<CompanyPortalUser[]>(
+    () =>
+      dedupeUsers(
+        backendUsersDTOs
+          .map(mapBackendUser)
+          .filter((entry): entry is CompanyPortalUser => Boolean(entry)),
+      ),
+    [backendUsersDTOs],
+  );
+
   const defaultCreateRoleName = useMemo(() => getPreferredCreateRoleName(roles), [roles]);
-
-  const loadUsers = useCallback(async () => {
-    if (!companyId) {
-      setUsers([]);
-      setLoadingUsers(false);
-      setUsersError(null);
-      return;
-    }
-
-    setLoadingUsers(true);
-    setUsersError(null);
-
-    try {
-      const result = await companyService.users(companyId);
-      const backendUsers = result
-        .map(mapBackendUser)
-        .filter((entry): entry is CompanyPortalUser => Boolean(entry));
-      setUsers(dedupeUsers(backendUsers));
-    } catch (error) {
-      setUsers([]);
-      setUsersError(
-        error instanceof Error
-          ? error.message
-          : localizedText(locale, "Kunde inte hämta användare från backend.", "Could not load users from the backend.")
-      );
-    } finally {
-      setLoadingUsers(false);
-    }
-  }, [companyId, locale]);
-
-  useEffect(() => {
-    let active = true;
-    setRolesLoading(true);
-    setRolesError(null);
-
-    companyService
-      .roles()
-      .then((result) => {
-        if (!active) return;
-        setRoles(result);
-        setRolesLoading(false);
-      })
-      .catch((error) => {
-        if (!active) return;
-        setRoles([]);
-        setRolesError(
-          error instanceof Error
-            ? error.message
-            : localizedText(locale, "Kunde inte hämta roller från backend.", "Could not load roles from the backend.")
-        );
-        setRolesLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [locale]);
-
-  useEffect(() => {
-    if (!companyId) {
-      setUsers([]);
-      setLoadingUsers(false);
-      setUsersError(null);
-      return;
-    }
-
-    void loadUsers();
-  }, [companyId, loadUsers]);
 
   useEffect(() => {
     if (dialogOpen && !accountForm.roleName && defaultCreateRoleName) {
@@ -396,28 +369,34 @@ export default function UsersPage() {
 
     try {
       if (formMode === "create") {
-        await companyService.createUser({
-          email,
-          password,
-          firstName: accountForm.firstName.trim(),
-          surname: accountForm.surname.trim(),
-          phone: accountForm.phone.trim(),
-          roleName,
+        await createUserMutation.mutateAsync({
+          companyId,
+          payload: {
+            email,
+            password,
+            firstName: accountForm.firstName.trim(),
+            surname: accountForm.surname.trim(),
+            phone: accountForm.phone.trim(),
+            roleName,
+          },
         });
         toast.success(localizedText(locale, "Företagskontot skapades.", "The company account was created."));
       } else if (editingUser) {
-        await companyService.updateUser(companyId, editingUser.backendId, {
-          firstName: accountForm.firstName.trim(),
-          surname: accountForm.surname.trim(),
-          phone: accountForm.phone.trim(),
-          roleName,
+        await updateUserMutation.mutateAsync({
+          companyId,
+          userId: editingUser.backendId,
+          payload: {
+            firstName: accountForm.firstName.trim(),
+            surname: accountForm.surname.trim(),
+            phone: accountForm.phone.trim(),
+            roleName,
+          },
         });
         toast.success(localizedText(locale, "Företagskontot uppdaterades.", "The company account was updated."));
       }
 
       setDialogOpen(false);
       setEditingUser(null);
-      await loadUsers();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : localizedText(locale, "Kunde inte spara företagskontot.", "Could not save the company account.")
@@ -429,10 +408,11 @@ export default function UsersPage() {
     accountForm,
     canManageUsers,
     companyId,
+    createUserMutation,
     editingUser,
     formMode,
     locale,
-    loadUsers,
+    updateUserMutation,
   ]);
 
   const handleVerifyUser = useCallback(
@@ -444,14 +424,12 @@ export default function UsersPage() {
       setVerifyingUserId(entry.backendId);
 
       try {
-        await companyService.verifyUser(companyId, entry.backendId);
-        setUsers((current) =>
-          current.map((userEntry) =>
-            userEntry.backendId === entry.backendId
-              ? { ...userEntry, verified: true }
-              : userEntry
-          )
-        );
+        // The mutation owns the optimistic patch (verified badge flips
+        // immediately) and the rollback if the request fails.
+        await verifyUserMutation.mutateAsync({
+          companyId,
+          userId: entry.backendId,
+        });
         toast.success(localizedText(locale, `${entry.name} är verifierad.`, `${entry.name} is verified.`));
       } catch (error) {
         toast.error(
@@ -463,7 +441,7 @@ export default function UsersPage() {
         setVerifyingUserId(null);
       }
     },
-    [canVerifyUsers, companyId, locale]
+    [canVerifyUsers, companyId, locale, verifyUserMutation]
   );
 
   if (authLoading) {

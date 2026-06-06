@@ -8,15 +8,25 @@ import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
 import CompanyMap from "@/features/ads/components/CompanyMap";
 import {
   buildJoinedQueueIdSet,
-  queueService,
   type CompanyDTO,
 } from "@/features/queues/services/queue-service";
-import { listingService } from "@/features/listings/services/listing-service";
+import {
+  useCompanyListingsPage,
+  useJoinQueue,
+  useMyQueues,
+  useQueueCompany,
+  useQueuesByCompany,
+} from "@/features/queues/hooks/useQueues";
+import {
+  useFavorites,
+  useToggleFavorite,
+} from "@/features/listings/hooks/useListings";
 import {
   demographicsService,
   getClientDeviceType,
 } from "@/features/analytics/services/demographics-service";
 import { mediaService } from "@/features/media/services/media-service";
+import { useCompanyPublicMedia } from "@/features/media/hooks/useMedia";
 import { formatCityName } from "@/features/cities/city-utils";
 import { useAuth } from "@/context/AuthContext";
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
@@ -76,29 +86,8 @@ export default function QueueDetailPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { locale, localizedHref, t } = useI18n();
 
-  const [company, setCompany] = useState<CompanyDTO | null>(null);
-  const [queues, setQueues] = useState<HousingQueueDTO[]>([]);
-  const [listings, setListings] = useState<ListingCardDTO[]>([]);
   const [listingsPage, setListingsPage] = useState(1);
-  const [listingsTotalPages, setListingsTotalPages] = useState(1);
-  const [listingsTotalElements, setListingsTotalElements] = useState(0);
-  const [listingsLoading, setListingsLoading] = useState(false);
-  const [listingsError, setListingsError] = useState<string | null>(null);
-  const [queuesError, setQueuesError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  // Why true initially: avoids a flash of "Okänt företag" before the
-  // effect has had a chance to start fetching on the very first render.
-  const [loading, setLoading] = useState(true);
-  // Why a separate flag: `loading` flips back to false on each refetch,
-  // but we only want the "Laddar..." placeholder during the very first
-  // load — once we've attempted at least once we know whether to show
-  // the real name or the unknown-company fallback.
-  const [hasFetched, setHasFetched] = useState(false);
   const [joiningQueueId, setJoiningQueueId] = useState<string | null>(null);
-  const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
-  const [joinedQueuesLoading, setJoinedQueuesLoading] = useState(false);
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const companyViewDemographicsRecordedIds = useRef<Set<number>>(new Set());
   const listingQuickDemographicsRecordedIds = useRef<Set<string>>(new Set());
   const queueVerificationError = useMemo(
@@ -114,60 +103,38 @@ export default function QueueDetailPage() {
     return Number.isNaN(parsed) ? null : parsed;
   }, [companyIdRaw]);
 
-  useEffect(() => {
-    if (!companyIdRaw) return;
-    if (companyIdNumber === null) {
-      setError(localizedText(locale, "Ogiltigt företags-ID.", "Invalid company ID."));
-      setLoading(false);
-      setHasFetched(true);
-      return;
-    }
+  const invalidCompanyId = Boolean(companyIdRaw) && companyIdNumber === null;
 
-    let active = true;
-    setLoading(true);
-    setHasFetched(false);
-    setError(null);
-    setCompany(null);
-    setQueues([]);
-    setQueuesError(null);
+  // Three independent queries that share companyId — TanStack runs them in
+  // parallel (same as the old Promise.allSettled), but each caches on its
+  // own and reuses cached values on navigation back to a previously-visited
+  // company.
+  const {
+    data: company,
+    isLoading: companyLoading,
+    isFetched: companyFetched,
+    isError: companyIsError,
+  } = useQueueCompany(companyIdNumber);
 
-    Promise.allSettled([
-      queueService.getCompany(companyIdNumber),
-      queueService.getByCompany(companyIdNumber),
-    ])
-      .then(([companyResult, queuesResult]) => {
-        if (!active) return;
+  const { data: queuesData, isError: queuesIsError } =
+    useQueuesByCompany(companyIdNumber);
+  const queues = useMemo(
+    () => (Array.isArray(queuesData) ? queuesData : []),
+    [queuesData]
+  );
+  const queuesError = queuesIsError
+    ? localizedText(locale, "Kunde inte ladda företagets köinformation.", "Could not load the company's queue information.")
+    : null;
 
-        if (companyResult.status === "fulfilled") {
-          setCompany(companyResult.value);
-        } else {
-          console.error("Kunde inte hämta företaget:", companyResult.reason);
-          setError(localizedText(locale, "Kunde inte ladda företagsinformation.", "Could not load company information."));
-        }
-
-        if (queuesResult.status === "fulfilled") {
-          setQueues(Array.isArray(queuesResult.value) ? queuesResult.value : []);
-          setQueuesError(null);
-        } else {
-          console.error("Kunde inte hämta företagets köer:", queuesResult.reason);
-          setQueues([]);
-          setQueuesError(localizedText(locale, "Kunde inte ladda företagets köinformation.", "Could not load the company's queue information."));
-        }
-      })
-      .finally(() => {
-        // Why no `active` guard here: we want loading/hasFetched to settle
-        // even if the effect was cancelled by a remount in the meantime.
-        // React 18+ no-ops sets on unmounted components, and the fresh
-        // effect run will flip loading back to true synchronously, so
-        // there's no spurious "not loading" flash.
-        setLoading(false);
-        setHasFetched(true);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [companyIdRaw, companyIdNumber]);
+  // hasFetched mirrors the previous "we've made at least one attempt"
+  // semantic — flips true on either success or error.
+  const hasFetched = invalidCompanyId || companyFetched;
+  const loading = !invalidCompanyId && companyLoading;
+  const error = invalidCompanyId
+    ? localizedText(locale, "Ogiltigt företags-ID.", "Invalid company ID.")
+    : companyIsError
+    ? localizedText(locale, "Kunde inte ladda företagsinformation.", "Could not load company information.")
+    : null;
 
   useEffect(() => {
     if (
@@ -190,112 +157,52 @@ export default function QueueDetailPage() {
       );
   }, [authLoading, companyIdNumber, user]);
 
+  // Listings query — keyed on (companyId, page, size), so paging back to a
+  // previously-viewed page is instant from cache.
+  const {
+    data: listingsPageData,
+    isLoading: listingsLoading,
+    isError: listingsIsError,
+  } = useCompanyListingsPage(
+    companyIdNumber,
+    listingsPage - 1,
+    COMPANY_LISTINGS_PAGE_SIZE
+  );
+  const listings = useMemo<ListingCardDTO[]>(
+    () => uniqueListingsById(listingsPageData?.content ?? []),
+    [listingsPageData]
+  );
+  const listingsTotalPages = Math.max(1, listingsPageData?.totalPages ?? 1);
+  const listingsTotalElements =
+    listingsPageData?.totalElements ?? listings.length;
+  const listingsError = listingsIsError
+    ? localizedText(locale, "Kunde inte ladda företagets bostäder.", "Could not load the company's homes.")
+    : null;
+
+  // Reset paging when the company changes. Cached listings stay in the
+  // query layer — no manual reset needed.
   useEffect(() => {
     setListingsPage(1);
-    setListings([]);
-    setListingsTotalPages(1);
-    setListingsTotalElements(0);
-    setListingsError(null);
   }, [companyIdNumber]);
 
-  useEffect(() => {
-    if (companyIdNumber === null) {
-      setListingsLoading(false);
-      return;
-    }
+  // My queues for membership lookup. Non-hydrated, shared cache with
+  // /alla-koer.
+  const { data: myQueues, isLoading: joinedQueuesLoading } = useMyQueues({
+    hydrated: false,
+  });
+  const joinedQueueIds = useMemo<Set<string>>(
+    () => (user && myQueues ? buildJoinedQueueIdSet(myQueues) : new Set()),
+    [user, myQueues]
+  );
 
-    let active = true;
-    setListingsLoading(true);
-    setListingsError(null);
-
-    queueService
-      .getCompanyListingsPage(
-        companyIdNumber,
-        listingsPage - 1,
-        COMPANY_LISTINGS_PAGE_SIZE,
-      )
-      .then((page) => {
-        if (!active) return;
-        const uniqueListings = uniqueListingsById(page.content ?? []);
-        setListings(uniqueListings);
-        setListingsTotalPages(Math.max(1, page.totalPages ?? 1));
-        setListingsTotalElements(page.totalElements ?? uniqueListings.length);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error("Kunde inte hämta företagets annonser:", err);
-        setListings([]);
-        setListingsTotalPages(1);
-        setListingsTotalElements(0);
-        setListingsError(localizedText(locale, "Kunde inte ladda företagets bostäder.", "Could not load the company's homes."));
-      })
-      .finally(() => {
-        if (active) setListingsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [companyIdNumber, listingsPage]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      setJoinedQueueIds(new Set());
-      setJoinedQueuesLoading(false);
-      return;
-    }
-
-    let active = true;
-    setJoinedQueuesLoading(true);
-
-    queueService
-      .getMyQueues({ hydrateQueues: false })
-      .then((applications) => {
-        if (!active) return;
-        setJoinedQueueIds(buildJoinedQueueIdSet(applications));
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error("Kunde inte hämta användarens köer:", err);
-        setJoinedQueueIds(new Set());
-      })
-      .finally(() => {
-        if (active) setJoinedQueuesLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, user]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      setFavoriteIds(new Set());
-      return;
-    }
-
-    let active = true;
-
-    listingService
-      .getFavorites()
-      .then((favorites) => {
-        if (!active) return;
-        setFavoriteIds(new Set(favorites.map((favorite) => favorite.id)));
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error("Kunde inte hämta favoritannonser:", err);
-        setFavoriteIds(new Set());
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, user]);
+  // Favorites — same shared cache as every other page.
+  const { data: favoritesData } = useFavorites();
+  const favoriteIds = useMemo<Set<string>>(
+    () => new Set((favoritesData ?? []).map((favorite) => favorite.id)),
+    [favoritesData]
+  );
+  const toggleFavorite = useToggleFavorite();
+  const joinQueueMutation = useJoinQueue();
 
   useEffect(() => {
     if (listingsPage > listingsTotalPages) {
@@ -408,37 +315,17 @@ export default function QueueDetailPage() {
         activeListings: 0,
       };
 
-  useEffect(() => {
-    if (companyIdNumber === null) {
-      setGalleryImages([]);
-      return;
-    }
-
-    let active = true;
-
-    mediaService
-      .listCompanyPublic(companyIdNumber)
-      .then((filenames) => {
-        if (!active) return;
-        setGalleryImages(
-          filenames
-            .filter((filename) => imageFilenamePattern.test(filename))
-            .map((filename) =>
-              mediaService.companyPublicUrl(companyIdNumber, filename)
-            )
-        );
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error("Kunde inte hämta företagsmedia:", err);
-        setGalleryImages([]);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [companyIdNumber]);
-
+  // Gallery — derived from the cached media list. Mapping filenames →
+  // public URLs is cheap, no need for state.
+  const { data: galleryFilenames } = useCompanyPublicMedia(companyIdNumber);
+  const galleryImages = useMemo<string[]>(() => {
+    if (companyIdNumber === null || !galleryFilenames) return [];
+    return galleryFilenames
+      .filter((filename) => imageFilenamePattern.test(filename))
+      .map((filename) =>
+        mediaService.companyPublicUrl(companyIdNumber, filename)
+      );
+  }, [companyIdNumber, galleryFilenames]);
 
   const mapListings = useMemo(
     () =>
@@ -467,8 +354,9 @@ export default function QueueDetailPage() {
 
     setJoiningQueueId(queueId);
     try {
-      await queueService.join(queueId);
-      setJoinedQueueIds((current) => new Set(current).add(queueId));
+      await joinQueueMutation.mutateAsync(queueId);
+      // The hook's onSettled invalidates the my-queues cache, which is what
+      // drives joinedQueueIds above. We don't need to patch local state.
       alert(localizedText(locale, "Du står nu i kön!", "You are now in the queue!"));
     } catch (err: any) {
       alert(
@@ -490,42 +378,22 @@ export default function QueueDetailPage() {
       return;
     }
 
-    setFavoriteIds((current) => {
-      const next = new Set(current);
-      if (isFav) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    // Optimistic patch + rollback are handled inside useToggleFavorite via
+    // the shared favorites cache. Demographics view recording is a separate
+    // fire-and-forget side effect that we keep here.
+    toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFav });
 
-    const action = isFav
-      ? listingService.addFavorite(id).then(() =>
-          demographicsService
-            .recordListingView(id, {
-              deviceType: getClientDeviceType(),
-              viewType: "QUICK",
-              resultedInLike: true,
-            })
-            .catch((err) =>
-              console.error("Kunde inte registrera favoritdemografi:", err)
-            )
-        )
-      : listingService.removeFavorite(id);
-
-    action.catch((err) => {
-      console.error("Kunde inte uppdatera favoritannons:", err);
-      setFavoriteIds((current) => {
-        const next = new Set(current);
-        if (isFav) {
-          next.delete(id);
-        } else {
-          next.add(id);
-        }
-        return next;
-      });
-    });
+    if (isFav) {
+      demographicsService
+        .recordListingView(id, {
+          deviceType: getClientDeviceType(),
+          viewType: "QUICK",
+          resultedInLike: true,
+        })
+        .catch((err) =>
+          console.error("Kunde inte registrera favoritdemografi:", err),
+        );
+    }
   };
 
   const handleListingPageChange = (nextPage: number) => {

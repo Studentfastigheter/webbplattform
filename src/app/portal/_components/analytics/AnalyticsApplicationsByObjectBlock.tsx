@@ -10,7 +10,8 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { companyService, type NewApplication } from "@/features/companies/services/company-service";
+import { useCompanyApplications } from "@/features/companies/hooks/useCompanies";
+import type { NewApplication } from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../../_statics/variables";
 
 type Limit = 5 | 10;
@@ -37,7 +38,7 @@ function formatListingFacts(item: ObjectApplicationRow, locale: Locale) {
     item.sizeM2 ? `${item.sizeM2} m²` : null,
   ]
     .filter(Boolean)
-    .join(" • ");
+    .join(" â€¢ ");
 }
 
 function formatRent(rent: number | undefined, locale: Locale) {
@@ -83,7 +84,10 @@ function buildApplicationRows(
 
       return {
         listingId: first.listingId,
-        title: first.listingTitle || first.address || localizedText(locale, "Okänd annons", "Unknown listing"),
+        title:
+          first.listingTitle ||
+          first.address ||
+          localizedText(locale, "Okänd annons", "Unknown listing"),
         imageUrl: first.listingImage,
         address: first.address || location || undefined,
         location,
@@ -235,7 +239,11 @@ function ApplicationsByObjectList({
   if (items.length === 0) {
     return (
       <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-theme-sm text-gray-500">
-        {localizedText(locale, "Det finns inga ansökningar per annons att visa ännu.", "There are no applications per listing to show yet.")}
+        {localizedText(
+          locale,
+          "Det finns inga ans?kningar per annons att visa ?nnu.",
+          "There are no applications per listing to show yet."
+        )}
       </div>
     );
   }
@@ -289,54 +297,29 @@ export default function AnalyticsApplicationsByObjectBlock() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [limit, setLimit] = React.useState<Limit>(5);
-  const [items, setItems] = React.useState<ObjectApplicationRow[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setItems([]);
-      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag för statistiken.", "Could not find an active company for the statistics."));
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-
-    companyService
-      .applications(companyId)
-      .then((result) => {
-        if (!cancelled) {
-          setItems(buildApplicationRows(result, limit, locale));
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setItems([]);
-          setError(
-            err instanceof Error
-              ? err.message
-              : localizedText(locale, "Kunde inte hämta ansökningar per annons.", "Could not load applications per listing.")
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId, limit, locale]);
-
+  const applicationsQuery = useCompanyApplications(companyId, {
+    enabled: !authLoading,
+  });
+  const items = React.useMemo(
+    () => buildApplicationRows(applicationsQuery.data ?? [], limit, locale),
+    [applicationsQuery.data, limit, locale]
+  );
+  const error =
+    !authLoading && !companyId
+      ? localizedText(
+          locale,
+          "Kunde inte hitta ett aktivt företag för statistiken.",
+          "Could not find an active company for the statistics."
+        )
+      : applicationsQuery.isError
+        ? applicationsQuery.error instanceof Error
+          ? applicationsQuery.error.message
+          : localizedText(
+              locale,
+              "Kunde inte hämta ansökningar per annons.",
+              "Could not load applications per listing."
+            )
+        : null;
   return (
     <AnalyticsBlock
       action={<LimitToggle onChange={setLimit} value={limit} />}
@@ -344,7 +327,7 @@ export default function AnalyticsApplicationsByObjectBlock() {
       size="2x2"
       title={localizedText(locale, "Ansökningar per annons", "Applications per listing")}
     >
-      {authLoading || isLoading ? (
+      {authLoading || applicationsQuery.isLoading ? (
         <LoadingList />
       ) : error ? (
         <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">

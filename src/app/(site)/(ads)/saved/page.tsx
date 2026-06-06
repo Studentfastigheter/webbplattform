@@ -1,12 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heart, Loader2 } from "lucide-react";
 
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import { Button } from "@/components/ui/button";
+import {
+  useFavorites,
+  useToggleFavorite,
+} from "@/features/listings/hooks/useListings";
 import { listingService } from "@/features/listings/services/listing-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
@@ -21,58 +25,28 @@ const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"),
 
 export default function Page() {
   const router = useRouter();
-  const { locale, localizedHref } = useI18n();
-  const [favorites, setFavorites] = useState<ListingCardDTO[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: favorites = [], isLoading: loading } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
   const [hoveredListingId, setHoveredListingId] = useState<string | undefined>();
-
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      try {
-        const data = await listingService.getFavorites();
-        setFavorites(data);
-      } catch (error) {
-        console.error("Could not load favorites:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFavorites();
-  }, []);
-
+  const { locale, localizedHref } = useI18n();
   const favoriteIds = useMemo(
     () => new Set(favorites.map((listing) => listing.id)),
     [favorites],
   );
 
+  /**
+   * Sparade only ever removes — but we keep the symmetric API
+   * (id, isFavorite) so the ListingCardFromDTO contract is unchanged.
+   * Optimistic patch + rollback is handled inside useToggleFavorite via the
+   * favorites cache, so the list updates instantly without local state.
+   */
   const handleFavoriteToggle = useCallback(
     (id: string, isFavorite: boolean) => {
       if (isFavorite) return;
-
-      const removedListing = favorites.find((listing) => listing.id === id);
-      const removedIndex = favorites.findIndex((listing) => listing.id === id);
-
-      setFavorites((current) =>
-        current.filter((listing) => listing.id !== id),
-      );
       setHoveredListingId((current) => (current === id ? undefined : current));
-
-      listingService.removeFavorite(id).catch((error) => {
-        console.error("Could not remove favorite:", error);
-
-        if (!removedListing) return;
-
-        setFavorites((current) => {
-          if (current.some((listing) => listing.id === id)) return current;
-
-          const next = [...current];
-          next.splice(Math.max(removedIndex, 0), 0, removedListing);
-          return next;
-        });
-      });
+      toggleFavorite.mutate({ listingId: id, nextIsFavorite: false });
     },
-    [favorites],
+    [toggleFavorite],
   );
 
   const openListing = useCallback(

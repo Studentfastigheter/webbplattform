@@ -1,8 +1,9 @@
 "use client";
 
 import clsx from "clsx";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueries } from "@tanstack/react-query";
 
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import {
@@ -14,8 +15,15 @@ import {
   type StudentApplicationRowProps,
 } from "@/features/applications/components/StudentApplicationRow";
 import { useAuth } from "@/context/AuthContext";
+import {
+  useAcceptOffer,
+  useMyApplications,
+  useRejectOffer,
+  useWithdrawApplication,
+} from "@/features/listings/hooks/useListings";
+import { useMyQueues } from "@/features/queues/hooks/useQueues";
 import { listingService } from "@/features/listings/services/listing-service";
-import { queueService } from "@/features/queues/services/queue-service";
+import { qk } from "@/lib/query/keys";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedDate, localizedText } from "@/i18n/text";
@@ -163,15 +171,10 @@ function buildApplicationRow(
 
 export default function MyApplicationsPage() {
   const router = useRouter();
-  const { locale, localizedHref } = useI18n();
-  
+  const { locale, localizedHref, t } = useI18n();
   // FIX 1: Vi hämtar inte 'token' härifrån, vi kollar bara om 'user' finns.
   const { user } = useAuth();
 
-  const [studentApplications, setStudentApplications] = useState<ListingApplicationRowProps[]>([]);
-  const [landlordApplications, setLandlordApplications] = useState<StudentApplicationRowProps[]>([]);
-  const [myQueues, setMyQueues] = useState<{ queueId: string; queueName: string; queueDays: number; status: string }[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [processingOfferId, setProcessingOfferId] = useState<number | null>(null);
 
@@ -180,18 +183,73 @@ export default function MyApplicationsPage() {
   const isStudent = userAccountType === "student";
   const isPrivateLandlord = userAccountType === "private_landlord";
 
-  const [reloadKey, setReloadKey] = useState(0);
+  // My queues: hydrated so the row builder has queue/company info.
+  // Not actually used by the row mapping below, but the previous code
+  // loaded it eagerly here — keep the same shape until we know it's safe
+  // to drop. Shared cache with /koer and the alla-koer pages.
+  const { data: hydratedQueues } = useMyQueues({ hydrated: true });
+  void hydratedQueues; // referenced by parity with old behavior
 
-  const handleWithdraw = useCallback(async (applicationId: number, listingTitle: string) => {
-    if (!confirm(localizedText(locale, `Vill du dra tillbaka din ansökan till "${listingTitle}"?`, `Do you want to withdraw your application for "${listingTitle}"?`))) return;
+  // My applications — shared cache. Re-fetches automatically when any
+  // mutation in this page (withdraw / accept / reject) invalidates it.
+  const {
+    data: applications,
+    isLoading: applicationsLoading,
+    isError: applicationsIsError,
+  } = useMyApplications();
 
-    try {
-      await listingService.withdrawApplication(applicationId);
-      setReloadKey((k) => k + 1);
-    } catch (err: any) {
-      setError(err?.message ?? localizedText(locale, "Kunde inte dra tillbaka ansökan.", "Could not withdraw the application."));
-    }
-  }, [locale]);
+  // N+1 FIX:
+  // The old code did `Promise.allSettled(apps.map(app => listingService.get(...)))`
+  // on every load, which means every render re-fetches every listing detail.
+  // useQueries caches each listing detail under qk.listings.detail(id), so:
+  //  - Each unique listingId fetches exactly once until staleTime expires.
+  //  - Navigating to /bostader/[id] reuses the same cache entry — no extra fetch.
+  //  - Withdrawing an application doesn't re-fetch any listing detail.
+  const applicationsForQueries = applications ?? [];
+  const detailQueries = useQueries({
+    queries: applicationsForQueries.map((app: any) => {
+      const listingId = String(app.listingId ?? "");
+      return {
+        queryKey: qk.listings.detail(listingId),
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          listingService.get(listingId, { signal }),
+        enabled: Boolean(listingId) && isStudent,
+        staleTime: 60_000,
+      };
+    }),
+  });
+
+  const detailsByListingId = useMemo(() => {
+    const map = new Map<string, ListingDetailDTO | null>();
+    applicationsForQueries.forEach((app: any, index) => {
+      const listingId = String(app.listingId ?? "");
+      if (!listingId) return;
+      const query = detailQueries[index];
+      // Treat any non-success as "no detail yet"; we still render with the
+      // shallow data carried on the application row itself, just like the
+      // old Promise.allSettled fallback path did.
+      map.set(listingId, query?.isSuccess ? query.data ?? null : null);
+    });
+    return map;
+  }, [applicationsForQueries, detailQueries]);
+
+  // Mutations. onSettled inside each hook invalidates the my-applications
+  // cache, which re-fetches and updates this page automatically.
+  const withdrawApplication = useWithdrawApplication();
+  const acceptOffer = useAcceptOffer();
+  const rejectOffer = useRejectOffer();
+
+  const handleWithdraw = useCallback(
+    async (applicationId: number, listingTitle: string) => {
+      if (!confirm(localizedText(locale, `Vill du dra tillbaka din ansökan till "${listingTitle}"?`, `Do you want to withdraw your application for "${listingTitle}"?`))) return;
+      try {
+        await withdrawApplication.mutateAsync(applicationId);
+      } catch (err: any) {
+        setError(err?.message ?? localizedText(locale, "Kunde inte dra tillbaka ansökan.", "Could not withdraw the application."));
+      }
+    },
+    [withdrawApplication, locale]
+  );
 
   const handleOfferAction = useCallback(
     async (
@@ -207,22 +265,14 @@ export default function MyApplicationsPage() {
       }
 
       setProcessingOfferId(applicationId);
-      setStudentApplications((current) =>
-        current.map((entry) =>
-          Number(entry.applicationId) === applicationId
-            ? { ...entry, isProcessingOffer: true }
-            : entry
-        )
-      );
       setError(null);
 
       try {
         if (action === "accept") {
-          await listingService.acceptOffer(applicationId);
+          await acceptOffer.mutateAsync(applicationId);
         } else {
-          await listingService.rejectOffer(applicationId);
+          await rejectOffer.mutateAsync(applicationId);
         }
-        setReloadKey((k) => k + 1);
       } catch (err: any) {
         setError(
           err?.message ??
@@ -232,187 +282,117 @@ export default function MyApplicationsPage() {
         );
       } finally {
         setProcessingOfferId(null);
-        setStudentApplications((current) =>
-          current.map((entry) =>
-            Number(entry.applicationId) === applicationId
-              ? { ...entry, isProcessingOffer: false }
-              : entry
-          )
-        );
       }
     },
-    [locale]
+    [acceptOffer, rejectOffer, locale]
   );
 
-  useEffect(() => {
-    setError(null);
+  // Build the row models from applications + per-listing details. Memoized
+  // so the row identity is stable while details are still loading.
+  const studentApplications = useMemo<ListingApplicationRowProps[]>(() => {
+    if (!isStudent || !applications) return [];
 
-    if (!user) {
-      setStudentApplications([]);
-      setLandlordApplications([]);
-      return;
-    }
+    return applications.map((app: any): ListingApplicationRowProps => {
+      const listingId = String(app.listingId ?? "");
+      const detail = listingId ? detailsByListingId.get(listingId) ?? null : null;
+      const applicationId = Number(app.applicationId ?? app.id);
+      const hasOffer =
+        Number.isFinite(applicationId) && hasOfferStatus(app.status);
 
-    let active = true;
+      return {
+        applicationId,
+        listingId: String(app.listingId ?? detail?.id ?? ""),
+        title: detail?.title ?? app.listingTitle ?? "Annons",
+        rent: detail?.rent ?? app.rent,
+        area: detail?.area ?? null,
+        city: detail?.city ?? app.city ?? null,
+        dwellingType: detail?.dwellingType ?? null,
+        rooms: detail?.rooms ?? null,
+        sizeM2: detail?.sizeM2 ?? null,
+        landlordType: detail?.ownerName ?? app.hostType,
+        imageUrl: detail?.imageUrls?.[0] ?? app.listingImage ?? "",
+        tags: listingTagLabels(detail?.tags),
 
-    const loadStudentApplications = () => {
-      setLandlordApplications([]);
-      setLoading(true);
+        images: (detail?.imageUrls?.[0] ?? app.listingImage)
+          ? [
+              {
+                imageId: 1,
+                listingId: String(app.listingId ?? detail?.id ?? ""),
+                imageUrl: detail?.imageUrls?.[0] ?? app.listingImage,
+              } as any,
+            ]
+          : [],
 
-      queueService
-        .getMyQueues()
-        .then((queues) => {
-          if (!active) return;
-          setMyQueues(
-            queues
-              .filter((queue) => queue.queueId != null)
-              .map((queue) => ({
-                queueId: String(queue.queueId),
-                queueName: queue.queueName ?? "",
-                queueDays: queue.queueDays ?? 0,
-                status: queue.status ?? "active",
-              }))
-          );
-        })
-        .catch((err: any) => {
-          if (!active) return;
-          console.error("Could not load queues:", err);
-        });
+        advertiser: {
+          type: app.hostType === "Företag" ? "company" : "private_landlord",
+          id: (detail?.ownerId ?? 0) as CompanyId,
+          displayName: detail?.ownerName ?? app.hostType ?? localizedText(locale, "Hyresvärd", "Landlord"),
+          logoUrl: detail?.ownerLogoUrl ?? null,
+          bannerUrl: null,
+          phone: null,
+          contactEmail: null,
+          contactPhone: null,
+          contactNote: detail?.provider
+            ? localizedText(locale, `Förmedlas via ${detail.provider}`, `Managed through ${detail.provider}`)
+            : null,
+          rating: null,
+          subtitle: null,
+          description: null,
+          website: null,
+          city: detail?.city ?? app.city,
+        },
 
-      listingService
-        .getMyApplications()
-        .then(async (apps) => {
-          if (!active) return;
+        status: toStudentStatus(app.status),
+        hasOffer,
+        isProcessingOffer: processingOfferId === applicationId,
 
-          const listingDetails = await Promise.allSettled(
-            apps.map((app: any) => {
-              const listingId = String(app.listingId ?? "");
-              return listingId ? listingService.get(listingId) : Promise.resolve(null);
-            })
-          );
+        applicationDate: formatApplicationDate(app.appliedAt, locale),
 
-          if (!active) return;
-
-          const mapped: ListingApplicationRowProps[] = apps.map(
-            (app: any, index): ListingApplicationRowProps => {
-              const detailResult = listingDetails[index];
-              const detail =
-                detailResult?.status === "fulfilled" ? detailResult.value : null;
-              const applicationId = Number(app.applicationId ?? app.id);
-              const hasOffer =
-                Number.isFinite(applicationId) && hasOfferStatus(app.status);
-
-              return {
-              applicationId,
-              listingId: String(app.listingId ?? detail?.id ?? ""),
-              title: detail?.title ?? app.listingTitle ?? localizedText(locale, "Annons", "Listing"),
-              rent: detail?.rent ?? app.rent,
-              area: detail?.area ?? null,
-              city: detail?.city ?? app.city ?? null,
-              dwellingType: detail?.dwellingType ?? null,
-              rooms: detail?.rooms ?? null,
-              sizeM2: detail?.sizeM2 ?? null,
-              landlordType: detail?.ownerName ?? app.hostType,
-              imageUrl: detail?.imageUrls?.[0] ?? app.listingImage ?? "",
-              tags: listingTagLabels(detail?.tags),
-
-              images: (detail?.imageUrls?.[0] ?? app.listingImage)
-                ? [
-                    {
-                      imageId: 1,
-                      listingId: String(app.listingId ?? detail?.id ?? ""),
-                      imageUrl: detail?.imageUrls?.[0] ?? app.listingImage
-                    } as any
-                  ]
-                : [],
-
-              advertiser: {
-                  type: app.hostType === "Företag" ? "company" : "private_landlord",
-                  id: (detail?.ownerId ?? 0) as CompanyId,
-                  displayName: detail?.ownerName ?? app.hostType ?? localizedText(locale, "Hyresvärd", "Landlord"),
-                  logoUrl: detail?.ownerLogoUrl ?? null,
-                  bannerUrl: null,
-                  phone: null,
-                  contactEmail: null,
-                  contactPhone: null,
-                  contactNote: detail?.provider ? localizedText(locale, `Förmedlas via ${detail.provider}`, `Managed through ${detail.provider}`) : null,
-                  rating: null,
-                  subtitle: null,
-                  description: null,
-                  website: null,
-                  city: detail?.city ?? app.city,
-              },
-
-              status: toStudentStatus(app.status),
-              hasOffer,
-              isProcessingOffer: processingOfferId === applicationId,
-
-              applicationDate: formatApplicationDate(app.appliedAt, locale),
-
-              onOpen: () => router.push(localizedHref(`/housing/${app.listingId ?? detail?.id}`)),
-              onWithdraw: () =>
-                handleWithdraw(applicationId, detail?.title ?? app.listingTitle),
-              onAcceptOffer: hasOffer
-                ? () =>
-                    handleOfferAction(
-                      applicationId,
-                      detail?.title ?? app.listingTitle,
-                      "accept"
-                    )
-                : undefined,
-              onRejectOffer: hasOffer
-                ? () =>
-                    handleOfferAction(
-                      applicationId,
-                      detail?.title ?? app.listingTitle,
-                      "reject"
-                    )
-                : undefined,
-            };
-            }
-          );
-          setStudentApplications(mapped);
-        })
-        .catch((err: any) => {
-          if (!active) return;
-          console.error(err);
-          setError(localizedText(locale, "Kunde inte ladda ansökningar.", "Could not load applications."));
-        })
-        .finally(() => {
-          if (!active) return;
-          setLoading(false);
-        });
-    };
-
-    const loadLandlordApplications = () => {
-      setStudentApplications([]);
-      setLoading(false);
-      setLandlordApplications([]);
-    };
-
-    if (isStudent) {
-      loadStudentApplications();
-    } else if (isPrivateLandlord) {
-      loadLandlordApplications();
-    } else {
-      setStudentApplications([]);
-      setLandlordApplications([]);
-    }
-
-    return () => {
-      active = false;
-    };
+        onOpen: () => router.push(localizedHref(`/housing/${app.listingId ?? detail?.id}`)),
+        onWithdraw: () =>
+          handleWithdraw(applicationId, detail?.title ?? app.listingTitle),
+        onAcceptOffer: hasOffer
+          ? () =>
+              handleOfferAction(
+                applicationId,
+                detail?.title ?? app.listingTitle,
+                "accept"
+              )
+          : undefined,
+        onRejectOffer: hasOffer
+          ? () =>
+              handleOfferAction(
+                applicationId,
+                detail?.title ?? app.listingTitle,
+                "reject"
+              )
+          : undefined,
+      };
+    });
   }, [
-    user,
-    isStudent,
-    isPrivateLandlord,
+    applications,
+    detailsByListingId,
     locale,
     localizedHref,
     router,
-    reloadKey,
-    handleWithdraw,
     handleOfferAction,
+    handleWithdraw,
+    isStudent,
+    processingOfferId,
+    router,
   ]);
+
+  // Private-landlord view isn't wired to a real endpoint in the original;
+  // keep the same empty-state behavior.
+  const landlordApplications: StudentApplicationRowProps[] = [];
+  const loading = isStudent ? applicationsLoading : false;
+
+  // Surface a single error banner. Action-based errors (withdraw / accept /
+  // reject) set `error` via setError above. Read-fetch errors come from the
+  // query — show a generic message when applicable.
+  const displayError =
+    error ??
+    (isStudent && applicationsIsError ? "Kunde inte ladda ansökningar." : null);
 
   const studentRows = useMemo(
     () => studentApplications.map(buildListingApplicationRow),
@@ -446,9 +426,9 @@ export default function MyApplicationsPage() {
             {localizedText(locale, "Logga in för att se dina ansökningar.", "Log in to view your applications.")}
           </div>
         )}
-        {error && (
+        {displayError && (
           <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            {error}
+            {displayError}
           </div>
         )}
         <ListFrame

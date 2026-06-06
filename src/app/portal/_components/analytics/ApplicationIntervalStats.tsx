@@ -10,7 +10,8 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { companyService, type ApplicationStatisticEntry } from "@/features/companies/services/company-service";
+import { useCompanyTimedApplications } from "@/features/companies/hooks/useCompanies";
+import type { ApplicationStatisticEntry } from "@/features/companies/services/company-service";
 
 export type ApplicationIntervalValue = "1d" | "1w" | "1m" | "3m" | "6m" | "1y";
 
@@ -172,56 +173,34 @@ export default function ApplicationIntervalStats() {
   const companyId = getActiveCompanyId(user);
   const [interval, setInterval] =
     React.useState<ApplicationIntervalValue>("1m");
-  const [count, setCount] = React.useState(0);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setCount(0);
-      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag för statistiken.", "Could not find an active company for the statistics."));
-      setIsLoading(false);
-      return;
-    }
-
-    const { from, to } = getApplicationIntervalRange(interval);
-    let cancelled = false;
-
-    setIsLoading(true);
-    setError(null);
-
-    companyService
-      .timedApplications(companyId, from, to)
-      .then((entries) => {
-        if (!cancelled) {
-          setCount(sumApplicationStatistics(entries));
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setCount(0);
-          setError(
-            err instanceof Error
-              ? err.message
-              : localizedText(locale, "Kunde inte hämta ansökningar för perioden.", "Could not load applications for the period.")
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, companyId, interval, locale]);
-
+  const intervalRange = React.useMemo(
+    () => getApplicationIntervalRange(interval),
+    [interval]
+  );
+  const from = intervalRange.from.toISOString();
+  const to = intervalRange.to.toISOString();
+  const timedApplicationsQuery = useCompanyTimedApplications(
+    companyId,
+    from,
+    to,
+    !authLoading
+  );
+  const count = React.useMemo(
+    () => sumApplicationStatistics(timedApplicationsQuery.data ?? []),
+    [timedApplicationsQuery.data]
+  );
+  const error =
+    !authLoading && !companyId
+      ? localizedText(
+          locale,
+          "Kunde inte hitta ett aktivt företag för statistiken.",
+          "Could not find an active company for the statistics."
+        )
+      : timedApplicationsQuery.isError
+        ? timedApplicationsQuery.error instanceof Error
+          ? timedApplicationsQuery.error.message
+          : localizedText(locale, "Kunde inte hämta ansökningar för perioden.", "Could not load applications for this period.")
+        : null;
   const selectedInterval = getLocalizedApplicationInterval(locale, interval);
 
   return (
@@ -230,7 +209,7 @@ export default function ApplicationIntervalStats() {
       size="2x2"
       title={localizedText(locale, "Ansökningar totalt", "Total applications")}
     >
-      {authLoading || isLoading ? (
+      {authLoading || timedApplicationsQuery.isLoading ? (
         <div className="flex h-full items-center gap-4">
           <Skeleton className="h-10 w-10 rounded-lg" />
           <div className="space-y-2">

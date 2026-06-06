@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { listingService } from "@/features/listings/services/listing-service";
+import { useCompanyRequirementsProfiles } from "@/features/listings/hooks/useListings";
 import type { RequirementsProfileDTO } from "@/types/listing";
 
 function getProfileKey(profile: RequirementsProfileDTO, index: number) {
@@ -17,59 +17,40 @@ export default function RequirementsProfilesPage() {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [profiles, setProfiles] = useState<RequirementsProfileDTO[]>([]);
   const [selectedProfileKey, setSelectedProfileKey] = useState<string | null>(
     null
   );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const profilesQuery = useCompanyRequirementsProfiles(companyId, {
+    enabled: !authLoading,
+  });
+  const profiles = profilesQuery.data ?? [];
+  const loading = profilesQuery.isLoading;
+  const error =
+    !authLoading && !companyId
+      ? "Kunde inte hitta ett aktivt företag för kontot."
+      : profilesQuery.isError
+        ? profilesQuery.error instanceof Error
+          ? profilesQuery.error.message
+          : "Kunde inte hämta kravprofilerna."
+        : null;
 
   useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    if (!companyId) {
-      setProfiles([]);
+    if (profiles.length === 0) {
       setSelectedProfileKey(null);
-      setLoading(false);
-      setError(localizedText(locale, "Kunde inte hitta ett aktivt företag för kontot.", "Could not find an active company for the account."));
       return;
     }
 
-    let active = true;
-    setLoading(true);
-    setError(null);
+    setSelectedProfileKey((current) => {
+      if (
+        current &&
+        profiles.some((profile, index) => getProfileKey(profile, index) === current)
+      ) {
+        return current;
+      }
 
-    listingService
-      .getRequirementsProfilesByCompany(companyId)
-      .then((result) => {
-        if (!active) return;
-        setProfiles(result);
-        setSelectedProfileKey(
-          result.length > 0 ? getProfileKey(result[0], 0) : null
-        );
-      })
-      .catch((requestError) => {
-        if (!active) return;
-        setProfiles([]);
-        setSelectedProfileKey(null);
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : localizedText(locale, "Kunde inte hämta kravprofilerna.", "Could not load requirement profiles.")
-        );
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, companyId, locale]);
-
+      return getProfileKey(profiles[0], 0);
+    });
+  }, [profiles]);
   const selectedProfile = useMemo(() => {
     if (!selectedProfileKey) return profiles[0] ?? null;
 

@@ -1,4 +1,9 @@
-import { apiClient, arrayFromApiResponse, pathSegment } from "@/lib/api/client";
+import {
+  apiClient,
+  arrayFromApiResponse,
+  pathSegment,
+  type ServiceOptions,
+} from "@/lib/api/client";
 import { NotificationDTO, NotificationItem } from "@/types";
 
 type NotificationResponseDTO = Partial<NotificationDTO> & {
@@ -28,8 +33,10 @@ function normalizeNotification(value: unknown): NotificationItem | null {
 
 export const notificationService = {
   // GET /api/notifications
-  getAll: async (): Promise<NotificationItem[]> => {
-    const notifications = await apiClient<unknown>("/notifications");
+  getAll: async (options?: ServiceOptions): Promise<NotificationItem[]> => {
+    const notifications = await apiClient<unknown>("/notifications", {
+      signal: options?.signal,
+    });
     return arrayFromApiResponse<unknown>(notifications)
       .map(normalizeNotification)
       .filter((notification): notification is NotificationItem => notification !== null);

@@ -1,0 +1,53 @@
+{
+  "d3b07384-d113-49cd-a5d6-84dec414fa9e": {
+    "listingId": "d3b07384-d113-49cd-a5d6-84dec414fa9e",
+    "category": "GOT_LISTING",
+    "totalApplications": 24,
+    "from": "2026-04-30T12:39:00.000Z",
+    "to": "2026-05-30T12:39:00.000Z",
+    "buckets": [
+      {
+        "key": "true",
+        "totalApplications": 8
+      },
+      {
+        "key": "false",
+        "totalApplications": 16
+      }
+    ]
+  },
+  "e4c07384-e113-49cd-a5d6-84dec414fa9f": {
+    "listingId": "e4c07384-e113-49cd-a5d6-84dec414fa9f",
+    "category": "GOT_LISTING",
+    "totalApplications": 42,
+    "from": "2026-04-30T12:39:00.000Z",
+    "to": "2026-05-30T12:39:00.000Z",
+    "buckets": [
+      {
+        "key": "true",
+        "totalApplications": 12
+      },
+      {
+        "key": "false",
+        "totalApplications": 30
+      }
+    ]
+  },
+  "f5d07384-f113-49cd-a5d6-84dec414fa90": {
+    "listingId": "f5d07384-f113-49cd-a5d6-84dec414fa90",
+    "category": "GOT_LISTING",
+    "totalApplications": 15,
+    "from": "2026-04-30T12:39:00.000Z",
+    "to": "2026-05-30T12:39:00.000Z",
+    "buckets": [
+      {
+        "key": "true",
+        "totalApplications": 3
+      },
+      {
+        "key": "false",
+        "totalApplications": 12
+      }
+    ]
+  }
+}

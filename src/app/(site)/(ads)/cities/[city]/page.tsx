@@ -13,15 +13,18 @@ import {
   getCityImageUrl,
 } from "@/features/cities/city-utils";
 import SimpleCompanyCard from "@/features/cities/components/SimpleCompanyCard";
-import { cityService, normalizeCityCode } from "@/features/cities/services/city-service";
+import { useCityDetail } from "@/features/cities/hooks/useCities";
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
 import Que_ListingCard from "@/features/listings/components/Que_ListingCard";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
-import { listingService } from "@/features/listings/services/listing-service";
+import {
+  useFavorites,
+  useListingsSearch,
+  useToggleFavorite,
+} from "@/features/listings/hooks/useListings";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
-import type { CityCompanyDTO, CityDetailedDTO } from "@/types/city";
-import type { ListingCardDTO } from "@/types/listing";
+import type { CityCompanyDTO } from "@/types/city";
 
 const CityPointsMap = dynamic(() => import("@/components/shared/map/BaseMap"), {
   ssr: false,
@@ -114,147 +117,83 @@ export default function CityDetailPage() {
   const { user } = useAuth();
   const routeCity = decodeRouteParam(params?.city);
   const fallbackCityName = formatCityName(routeCity) || localizedText(locale, "Stad", "City");
-  const [cityDetail, setCityDetail] = useState<CityDetailedDTO | null>(null);
+
+  // City detail — companies, external companies, schools, activities, banner.
+  // All keyed on the normalized city code so two spellings collapse to one
+  // cache entry. The page renders progressively from `cityDetail` once it
+  // resolves.
+  const {
+    data: cityDetail,
+    isLoading: cityDetailLoading,
+    isError: isCityDetailError,
+  } = useCityDetail(routeCity || fallbackCityName);
+
   const cityName = formatCityName(cityDetail?.city ?? fallbackCityName) || fallbackCityName;
   const cityDescription = cityDetail?.description?.trim() || "";
   const cityBannerUrl = cityDetail?.bannerUrl?.trim() || getCityImageUrl(cityName);
-  const [listings, setListings] = useState<ListingCardDTO[]>([]);
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [companies, setCompanies] = useState<CompanyPublicDTO[]>([]);
-  const [externalCompanies, setExternalCompanies] = useState<CompanyPublicDTO[]>([]);
-  const [listingsLoading, setListingsLoading] = useState(true);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
-  const [listingsError, setListingsError] = useState<string | null>(null);
-  const [companiesError, setCompaniesError] = useState<string | null>(null);
+
+  // Listings in this city — page 0, 6 items (preview strip on the page).
+  // Cached per cityName so navigating away and back is instant.
+  const {
+    data: listingsPage,
+    isLoading: listingsLoading,
+    isError: isListingsError,
+  } = useListingsSearch({ city: cityName, page: 0, size: 6 });
+  const listings = listingsPage?.content ?? [];
+  const listingsError = isListingsError
+    ? localizedText(
+        locale,
+        "Kunde inte ladda bostäder i staden.",
+        "Could not load homes in the city.",
+      )
+    : null;
+
+  // Favorites: one shared cache entry across the whole app. Toggling here
+  // updates every page that reads from the same key (saved/, housing/, etc.)
+  // — `useToggleFavorite` owns optimistic patch + rollback.
+  const { data: favoritesData } = useFavorites();
+  const favoriteIds = useMemo(
+    () => new Set((favoritesData ?? []).map((listing) => listing.id)),
+    [favoritesData],
+  );
+  const toggleFavorite = useToggleFavorite();
+
+  // Derived: companies / external companies. `cityDetail` is the single
+  // source of truth — re-derive on the fly instead of mirroring into state
+  // (which is what the old code did and which is what caused the stale-data
+  // window on page rehydration).
+  const companies = useMemo<CompanyPublicDTO[]>(
+    () =>
+      (cityDetail?.companies ?? [])
+        .map((company) => cityCompanyToPublicCompany(company, cityName))
+        .filter((company): company is CompanyPublicDTO => company !== null),
+    [cityDetail, cityName],
+  );
+  const externalCompanies = useMemo<CompanyPublicDTO[]>(
+    () =>
+      (cityDetail?.externalCompanies ?? [])
+        .map((company) => cityCompanyToPublicCompany(company, cityName))
+        .filter((company): company is CompanyPublicDTO => company !== null),
+    [cityDetail, cityName],
+  );
+  const companiesLoading = cityDetailLoading;
+  const companiesError = isCityDetailError
+    ? localizedText(locale, "Kunde inte ladda företag.", "Could not load companies.")
+    : null;
+
   const [mapLayer, setMapLayer] = useState<CityMapLayer>("homes");
   const [selectedActivityCategories, setSelectedActivityCategories] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
-
-  useEffect(() => {
-    let active = true;
-    setListingsLoading(true);
-    setListingsError(null);
-
-    listingService
-      .getAll({
-        city: cityName,
-        page: 0,
-        size: 6,
-      })
-      .then((res) => {
-        if (active) setListings(res.content ?? []);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error(err);
-        setListings([]);
-        setListingsError(localizedText(locale, "Kunde inte ladda bostäder i staden.", "Could not load homes in the city."));
-      })
-      .finally(() => {
-        if (active) setListingsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [cityName, locale]);
-
-  useEffect(() => {
-    let active = true;
-    setCompaniesLoading(true);
-    setCompaniesError(null);
-
-    cityService
-      .get(normalizeCityCode(routeCity || fallbackCityName))
-      .then((detail) => {
-        if (!active) return;
-
-        const nextCityName = formatCityName(detail.city ?? fallbackCityName) || fallbackCityName;
-        setCityDetail(detail);
-        setCompanies(
-          (detail.companies ?? [])
-            .map((company) => cityCompanyToPublicCompany(company, nextCityName))
-            .filter((company): company is CompanyPublicDTO => company !== null)
-        );
-        setExternalCompanies(
-          (detail.externalCompanies ?? [])
-            .map((company) => cityCompanyToPublicCompany(company, nextCityName))
-            .filter((company): company is CompanyPublicDTO => company !== null)
-        );
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error(err);
-        setCityDetail(null);
-        setCompanies([]);
-        setExternalCompanies([]);
-        setCompaniesError(localizedText(locale, "Kunde inte ladda företag.", "Could not load companies."));
-      })
-      .finally(() => {
-        if (active) setCompaniesLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [fallbackCityName, locale, routeCity]);
-
-  useEffect(() => {
-    if (!user) {
-      setFavoriteIds(new Set());
-      return;
-    }
-
-    let active = true;
-
-    listingService
-      .getFavorites()
-      .then((favorites) => {
-        if (active) setFavoriteIds(new Set(favorites.map((listing) => listing.id)));
-      })
-      .catch((err) => {
-        console.error("Could not load saved homes:", err);
-        if (active) setFavoriteIds(new Set());
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [user]);
 
   const handleFavoriteToggle = (id: string, isFavorite: boolean) => {
     if (!user) {
       router.push(localizedHref("/login"));
       return;
     }
-
-    setFavoriteIds((current) => {
-      const next = new Set(current);
-      if (isFavorite) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
-
-    const action = isFavorite
-      ? listingService.addFavorite(id)
-      : listingService.removeFavorite(id);
-
-    action.catch((err) => {
-      console.error("Could not update saved home:", err);
-      setFavoriteIds((current) => {
-        const next = new Set(current);
-        if (isFavorite) {
-          next.delete(id);
-        } else {
-          next.add(id);
-        }
-        return next;
-      });
-    });
+    // Optimistic patch + rollback live inside the hook. Errors are surfaced
+    // there via toast/log paths — we don't need a per-page rollback.
+    toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFavorite });
   };
 
   const schools = cityDetail?.schools ?? [];

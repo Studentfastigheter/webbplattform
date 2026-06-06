@@ -3,6 +3,7 @@ import {
   arrayFromApiResponse,
   buildQuery,
   pathSegment,
+  type ServiceOptions,
 } from "@/lib/api/client";
 import { cityService } from "@/features/cities/services/city-service";
 import {
@@ -178,34 +179,116 @@ function assertListingSearchEnums(params: ListingSearchParams) {
   }
 }
 
+const finiteNumber = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isFinite(value) ? value : undefined;
+
+const normalizedString = (value: string | null | undefined): string | undefined => {
+  const trimmed = value?.normalize("NFC").trim();
+  return trimmed ? trimmed : undefined;
+};
+
+const normalizedStringArray = (values: string[] | undefined) => {
+  if (!values) return undefined;
+  const normalized = Array.from(
+    new Set(
+      values
+        .map((value) => value.normalize("NFC").trim())
+        .filter((value) => value.length > 0)
+    )
+  ).sort((left, right) => left.localeCompare(right, "sv-SE"));
+
+  return normalized.length > 0 ? normalized : undefined;
+};
+
+export function normalizeListingSearchParams(
+  params: ListingSearchParams = {},
+  { includePageable = true }: { includePageable?: boolean } = {}
+): ListingSearchParams {
+  const normalized: ListingSearchParams = {};
+  const schoolTargetLat = finiteNumber(params.schoolTargetLat ?? params.school_lat);
+  const schoolTargetLng = finiteNumber(params.schoolTargetLng ?? params.school_lng);
+  const dwellingType =
+    normalizeDwellingTypeParam(params.dwellingType) ??
+    normalizedString(params.dwellingType);
+  const hostType =
+    normalizeHostTypeParam(params.hostType) ?? normalizedString(params.hostType);
+  const amenities = normalizedStringArray(params.amenities);
+
+  if (includePageable) {
+    normalized.page =
+      Number.isInteger(params.page) && (params.page ?? 0) >= 0 ? params.page : 0;
+    normalized.size =
+      Number.isInteger(params.size) && (params.size ?? 0) > 0
+        ? params.size
+        : LISTINGS_DEFAULT_PAGE_SIZE;
+    if (params.sort) {
+      normalized.sort = params.sort;
+    }
+  }
+
+  const city = normalizedString(params.city);
+  if (city) normalized.city = city;
+  if (dwellingType) normalized.dwellingType = dwellingType;
+  const minRent = finiteNumber(params.minRent);
+  if (minRent !== undefined) normalized.minRent = minRent;
+  const maxRent = finiteNumber(params.maxRent);
+  if (maxRent !== undefined) normalized.maxRent = maxRent;
+  const minLivingArea = finiteNumber(params.minLivingArea);
+  if (minLivingArea !== undefined) normalized.minLivingArea = minLivingArea;
+  const maxLivingArea = finiteNumber(params.maxLivingArea);
+  if (maxLivingArea !== undefined) normalized.maxLivingArea = maxLivingArea;
+  const exactRooms = finiteNumber(params.exactRooms);
+  if (exactRooms !== undefined) normalized.exactRooms = exactRooms;
+  const minRooms = finiteNumber(params.minRooms);
+  if (minRooms !== undefined) normalized.minRooms = minRooms;
+  const maxRooms = finiteNumber(params.maxRooms);
+  if (maxRooms !== undefined) normalized.maxRooms = maxRooms;
+  if (hostType) normalized.hostType = hostType;
+  if (schoolTargetLat !== undefined) normalized.schoolTargetLat = schoolTargetLat;
+  if (schoolTargetLng !== undefined) normalized.schoolTargetLng = schoolTargetLng;
+  const maxDistanceToSchool = finiteNumber(params.maxDistanceToSchool);
+  if (maxDistanceToSchool !== undefined) {
+    normalized.maxDistanceToSchool = maxDistanceToSchool;
+  }
+  const companyId = finiteNumber(params.companyId);
+  if (companyId !== undefined) normalized.companyId = companyId;
+  if (amenities) normalized.amenities = amenities;
+  const seed = normalizedString(params.seed);
+  if (seed) normalized.seed = seed;
+
+  return normalized;
+}
+
 function buildListingSearchQuery(
   params: ListingSearchParams,
   includePageable = true
 ) {
+  const normalized = normalizeListingSearchParams(params, { includePageable });
+
   return buildQuery({
     ...(includePageable
       ? {
-          page: params.page ?? 0,
-          size: params.size ?? LISTINGS_DEFAULT_PAGE_SIZE,
-          sort: params.sort,
+          page: normalized.page ?? 0,
+          size: normalized.size ?? LISTINGS_DEFAULT_PAGE_SIZE,
+          sort: normalized.sort,
         }
       : {}),
-    city: params.city?.trim(),
-    dwellingType: normalizeDwellingTypeParam(params.dwellingType),
-    minRent: params.minRent,
-    maxRent: params.maxRent,
-    minLivingArea: params.minLivingArea,
-    maxLivingArea: params.maxLivingArea,
-    exactRooms: params.exactRooms,
-    minRooms: params.minRooms,
-    maxRooms: params.maxRooms,
-    hostType: normalizeHostTypeParam(params.hostType),
-    schoolTargetLat: params.schoolTargetLat ?? params.school_lat,
-    schoolTargetLng: params.schoolTargetLng ?? params.school_lng,
-    maxDistanceToSchool: params.maxDistanceToSchool,
-    companyId: params.companyId,
-    amenities: params.amenities,
-    seed: params.seed?.trim(),
+    city: normalized.city,
+    dwellingType: normalized.dwellingType,
+    minRent: normalized.minRent,
+    maxRent: normalized.maxRent,
+    minLivingArea: normalized.minLivingArea,
+    maxLivingArea: normalized.maxLivingArea,
+    exactRooms: normalized.exactRooms,
+    minRooms: normalized.minRooms,
+    maxRooms: normalized.maxRooms,
+    hostType: normalized.hostType,
+    schoolTargetLat: normalized.schoolTargetLat,
+    schoolTargetLng: normalized.schoolTargetLng,
+    maxDistanceToSchool: normalized.maxDistanceToSchool,
+    companyId: normalized.companyId,
+    amenities: normalized.amenities,
+    seed: normalized.seed,
   });
 }
 
@@ -563,14 +646,22 @@ export const listingService = {
    */
   getAll: async (
     pageOrParams: number | ListingSearchParams = 0,
-    size = LISTINGS_DEFAULT_PAGE_SIZE,
+    sizeOrOptions: number | ServiceOptions = LISTINGS_DEFAULT_PAGE_SIZE,
     city?: string | null,
     dwellingType?: string | null,
     minRent?: number | null,
     maxRent?: number | null,
-    hostType?: string | null
+    hostType?: string | null,
+    positionalOptions?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     // Bygg query-objektet med alla filter som skickas från ListingsPage
+    const options =
+      typeof pageOrParams === "object" && typeof sizeOrOptions === "object"
+        ? sizeOrOptions
+        : positionalOptions;
+    const size =
+      typeof sizeOrOptions === "number" ? sizeOrOptions : LISTINGS_DEFAULT_PAGE_SIZE;
+
     const params: ListingSearchParams =
       typeof pageOrParams === "object"
         ? { page: 0, size: LISTINGS_DEFAULT_PAGE_SIZE, ...pageOrParams }
@@ -589,7 +680,7 @@ export const listingService = {
     const query = buildListingSearchQuery(params);
     const res = await apiClient<unknown>(
       `/listings${query}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
     const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
     return normalizePageResponse(
@@ -601,17 +692,18 @@ export const listingService = {
   },
 
   getFacets: async (
-    params: ListingSearchParams = {}
+    params: ListingSearchParams = {},
+    options?: ServiceOptions
   ): Promise<ListingSearchFacetsDTO> => {
     assertListingSearchEnums(params);
     return apiClient<ListingSearchFacetsDTO>(
       `/listings/facets${buildListingSearchQuery(params, false)}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
   },
 
-  getCities: async (): Promise<string[]> => {
-    return cityService.listNames();
+  getCities: async (options?: ServiceOptions): Promise<string[]> => {
+    return cityService.listNames(options);
   },
 
   create: async (payload: PublishListingRequest): Promise<void> => {
@@ -625,9 +717,13 @@ export const listingService = {
 
   // 2. HÄMTA EN ANNONS (Detaljvy)
   // Anropar: GET /api/listings/{id}
-  get: async (id: string): Promise<ListingDetailDTO> => {
+  get: async (
+    id: string,
+    options?: ServiceOptions
+  ): Promise<ListingDetailDTO> => {
     const detail = await apiClient<ListingDetailDTO>(`/listings/${pathSegment(id)}`, {
       auth: false,
+      signal: options?.signal,
     });
     return detail ? normalizeListingDetail(detail) : detail;
   },
@@ -662,28 +758,36 @@ export const listingService = {
 
   getMyListingsPage: async (
     page = 0,
-    size = 200
+    size = 200,
+    options?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<unknown>(`/listings/my${query}`);
+    const res = await apiClient<unknown>(`/listings/my${query}`, {
+      signal: options?.signal,
+    });
     const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
     return normalizePageResponse(res, content, page, size);
   },
 
-  getMyListings: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
-    const res = await listingService.getMyListingsPage(page, size);
+  getMyListings: async (
+    page = 0,
+    size = 200,
+    options?: ServiceOptions
+  ): Promise<ListingCardDTO[]> => {
+    const res = await listingService.getMyListingsPage(page, size, options);
     return res.content ?? [];
   },
 
   getByQueuePage: async (
     queueId: string,
     page = 0,
-    size = 50
+    size = 12,
+    options?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
     const res = await apiClient<unknown>(
       `/listings/queue/${pathSegment(queueId)}${query}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
     const content = normalizeListingCards(arrayFromApiResponse<unknown>(res));
     return normalizePageResponse(res, content, page, size);
@@ -702,10 +806,13 @@ export const listingService = {
   // Anropar: GET /api/applications/my
   getMyApplicationsPage: async (
     page = 0,
-    size = 50
+    size = 50,
+    options?: ServiceOptions
   ): Promise<PageResponse<StudentApplicationDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<unknown>(`/applications/my${query}`);
+    const res = await apiClient<unknown>(`/applications/my${query}`, {
+      signal: options?.signal,
+    });
     // Hantera både paginerat svar (PageResponse) och ren array
     const content = Array.isArray(res)
       ? (res as StudentApplicationDTO[])
@@ -713,8 +820,12 @@ export const listingService = {
     return normalizePageResponse(res, content, page, size);
   },
 
-  getMyApplications: async (page = 0, size = 50): Promise<StudentApplicationDTO[]> => {
-    const res = await listingService.getMyApplicationsPage(page, size);
+  getMyApplications: async (
+    page = 0,
+    size = 50,
+    options?: ServiceOptions
+  ): Promise<StudentApplicationDTO[]> => {
+    const res = await listingService.getMyApplicationsPage(page, size, options);
     return res.content ?? [];
   },
 
@@ -742,18 +853,25 @@ export const listingService = {
 
   getFavoritesPage: async (
     page = 0,
-    size = 200
+    size = 200,
+    options?: ServiceOptions
   ): Promise<PageResponse<ListingCardDTO>> => {
     const query = buildQuery({ page, size });
-    const res = await apiClient<unknown>(`/listings/favorites${query}`);
+    const res = await apiClient<unknown>(`/listings/favorites${query}`, {
+      signal: options?.signal,
+    });
     const content = normalizeListingCards(
       Array.isArray(res) ? res : arrayFromApiResponse<unknown>(res)
     );
     return normalizePageResponse(res, content, page, size);
   },
 
-  getFavorites: async (page = 0, size = 200): Promise<ListingCardDTO[]> => {
-    const res = await listingService.getFavoritesPage(page, size);
+  getFavorites: async (
+    page = 0,
+    size = 200,
+    options?: ServiceOptions
+  ): Promise<ListingCardDTO[]> => {
+    const res = await listingService.getFavoritesPage(page, size, options);
     return res.content ?? [];
   },
 
@@ -815,8 +933,13 @@ export const listingService = {
 
   // Hämta tillgängliga annonstaggar.
   // Anropar: GET /api/listingtags
-  getListingTags: async (): Promise<ListingTagDTO[]> => {
-    const res = await apiClient<unknown>("/listingtags", { auth: false });
+  getListingTags: async (
+    options?: ServiceOptions
+  ): Promise<ListingTagDTO[]> => {
+    const res = await apiClient<unknown>("/listingtags", {
+      auth: false,
+      signal: options?.signal,
+    });
 
     return arrayFromApiResponse<unknown>(res)
       .map(normalizeListingTagDTO)
@@ -840,11 +963,12 @@ export const listingService = {
   },
 
   getRequirementsProfile: async (
-    requirementsProfileId: string
+    requirementsProfileId: string,
+    options?: ServiceOptions
   ): Promise<RequirementsProfileDTO> => {
     const profile = await apiClient<unknown>(
       `/requirements-profiles/${pathSegment(requirementsProfileId)}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
     return normalizeRequirementsProfile(profile) ?? {};
   },
@@ -859,11 +983,12 @@ export const listingService = {
   },
 
   getRequirementsProfilesByCompany: async (
-    companyId: number
+    companyId: number,
+    options?: ServiceOptions
   ): Promise<RequirementsProfileDTO[]> => {
     const profiles = await apiClient<unknown>(
       `/requirements-profiles/company/${pathSegment(companyId)}`,
-      { auth: false }
+      { auth: false, signal: options?.signal }
     );
     return arrayFromApiResponse<unknown>(profiles)
       .map(normalizeRequirementsProfile)

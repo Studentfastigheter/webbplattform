@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
 import { cn } from "@/lib/utils";
@@ -14,13 +15,21 @@ import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
 import QueueListings from "@/features/ads/components/QueueListings";
 
 import { listingService } from "@/features/listings/services/listing-service";
-import { queueService } from "@/features/queues/services/queue-service";
+import {
+  useApplyToListing,
+  useFavorites,
+  useListing,
+  useMyApplications,
+  useRequirementsProfile,
+  useToggleFavorite,
+} from "@/features/listings/hooks/useListings";
+import { useQueueCompany } from "@/features/queues/hooks/useQueues";
 import {
   demographicsService,
   getClientDeviceType,
 } from "@/features/analytics/services/demographics-service";
+import { qk } from "@/lib/query/keys";
 import {
-  ListingDetailDTO,
   ListingCardDTO,
   RequirementsProfileDTO,
 } from "@/types/listing";
@@ -308,240 +317,123 @@ export default function ListingDetailPage() {
   const { user } = useAuth();
   const { locale } = useI18n();
 
-  const [listing, setListing] = useState<ListingDetailDTO | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [requirementsProfile, setRequirementsProfile] =
-    useState<RequirementsProfileDTO | null>(null);
-  const [requirementsLoading, setRequirementsLoading] = useState(false);
+  // Per-id increment + demographics guards. These are fire-and-forget,
+  // not server state, so they stay as direct service calls inside an
+  // effect with a Set-ref guard (same pattern as before).
   const detailedViewIncrementedIds = useRef<Set<string>>(new Set());
   const detailedViewDemographicsRecordedIds = useRef<Set<string>>(new Set());
 
-  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
-  const [applying, setApplying] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
+  // Local UI state — apply form, lightbox.
   const [applyError, setApplyError] = useState<string | null>(null);
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
-
-  // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [nearbyListings, setNearbyListings] = useState<ListingCardDTO[]>([]);
-  const [nearbyListingsPage, setNearbyListingsPage] = useState(1);
-  const [nearbyLoading, setNearbyLoading] = useState(false);
-  const [nearbyError, setNearbyError] = useState<string | null>(null);
+
   const applicationVerificationError = useMemo(
     () => getApplicationVerificationError(user, "listing", locale),
     [locale, user]
   );
 
-  // Ladda favoriter och kolla om redan ansökt
-  useEffect(() => {
-    if (user) {
-      listingService.getFavorites().then(favs => {
-        setFavoriteIds(new Set(favs.map(f => f.id)));
-      }).catch(console.error);
+  // The listing detail — shared cache. If the user came from the search
+  // page card, that page seeded list data but not detail; detail caches
+  // its own slot keyed by id.
+  const {
+    data: listing,
+    isLoading: loading,
+    isError,
+  } = useListing(listingId);
+  const error = isError ? "Kunde inte ladda annonsen." : null;
 
-      if (listingId) {
-        listingService.getMyApplications().then(apps => {
-          setHasApplied(apps.some(a => a.listingId === listingId));
-        }).catch(console.error);
-      }
-    } else {
-      setFavoriteIds(new Set());
-      setHasApplied(false);
-    }
-  }, [user, listingId]);
+  // Favorites + my-applications: both shared with other pages, so coming
+  // from search or sparade hits the cache instead of re-fetching.
+  const { data: favoritesData } = useFavorites();
+  const favoriteIds = useMemo<Set<string>>(
+    () => new Set((favoritesData ?? []).map((f) => f.id)),
+    [favoritesData]
+  );
+  const toggleFavorite = useToggleFavorite();
 
-  const handleFavoriteToggle = useCallback(async (id: string, isFav: boolean) => {
-    if (!user) {
-      alert(localizedText(locale, "Du måste vara inloggad för att spara bostäder", "You must be signed in to save homes"));
-      return;
-    }
-    
-    setFavoriteIds(prev => {
-      const next = new Set(prev);
-      if (isFav) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+  const { data: myApplications } = useMyApplications();
+  const hasApplied = useMemo(
+    () =>
+      Boolean(
+        listingId &&
+          (myApplications ?? []).some((a: any) => a.listingId === listingId)
+      ),
+    [myApplications, listingId]
+  );
 
-    const action = isFav
-      ? listingService.addFavorite(id).then(() =>
-          demographicsService
-            .recordListingView(id, {
-              deviceType: getClientDeviceType(),
-              viewType: "DETAILED",
-              resultedInLike: true,
-            })
-            .catch((err) =>
-              console.error("Failed to record favorite demographics:", err)
-            )
-        )
-      : listingService.removeFavorite(id);
+  // Requirements profile — only when listing has one.
+  const { data: requirementsProfile, isLoading: requirementsLoading } =
+    useRequirementsProfile(listing?.requirementsProfileId);
 
-    return action.catch(err => {
-      console.error("Failed to toggle favorite:", err);
-      setFavoriteIds(prev => {
-        const next = new Set(prev);
-        if (isFav) next.delete(id);
-        else next.add(id);
-        return next;
-      });
-    });
-  }, [locale, user]);
+  // Company logo for company-owned listings.
+  const companyId =
+    listing && listing.ownerType.toLowerCase() === "company"
+      ? listing.ownerId
+      : null;
+  const { data: company } = useQueueCompany(companyId);
+  const companyLogoUrl = company?.logoUrl ?? null;
 
-  const openLightbox = useCallback((index: number) => {
-    setLightboxIndex(index);
-    setLightboxOpen(true);
-  }, []);
+  // Nearby listings — preserves the same two-step fetch fallback the old
+  // code had (try city-filtered, then fall back to unfiltered if too few).
+  // Wrapped in a single useQuery so the whole "nearby" view caches under
+  // one key. Disabled until we have a listing.
+  const nearbyQuery = useQuery<ListingCardDTO[]>({
+    queryKey: qk.listings.nearby(
+      listing?.city || listing?.area || null,
+      NEARBY_LISTINGS_FETCH_SIZE
+    ),
+    enabled: Boolean(listing),
+    staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      if (!listing) return [];
 
-  const closeLightbox = useCallback(() => {
-    setLightboxOpen(false);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    if (!listingId) return;
-
-    setLoading(true);
-    setError(null);
-
-    listingService
-      .get(listingId)
-      .then((res) => { if (active) setListing(res); })
-      .catch((err: any) => {
-        if (!active) return;
-        console.error("Fetch error:", err);
-        setError(localizedText(locale, "Kunde inte ladda annonsen.", "Could not load the listing."));
-        setListing(null);
-      })
-      .finally(() => { if (active) setLoading(false); });
-
-    return () => { active = false; };
-  }, [listingId, locale]);
-
-  useEffect(() => {
-    if (!listing?.id) {
-      return;
-    }
-
-    if (!detailedViewIncrementedIds.current.has(listing.id)) {
-      detailedViewIncrementedIds.current.add(listing.id);
-      listingService
-        .incrementViews(listing.id, "DETAILED")
-        .catch((err) => console.error("Failed to increment detailed view:", err));
-    }
-
-    if (user && !detailedViewDemographicsRecordedIds.current.has(listing.id)) {
-      detailedViewDemographicsRecordedIds.current.add(listing.id);
-      demographicsService
-        .recordListingView(listing.id, {
-          deviceType: getClientDeviceType(),
-          viewType: "DETAILED",
-          resultedInLike: favoriteIds.has(listing.id),
-        })
-        .catch((err) =>
-          console.error("Failed to record detailed-view demographics:", err)
-        );
-    }
-  }, [favoriteIds, listing?.id, user]);
-
-  useEffect(() => {
-    if (!listing?.requirementsProfileId) {
-      setRequirementsProfile(null);
-      setRequirementsLoading(false);
-      return;
-    }
-
-    let active = true;
-    setRequirementsLoading(true);
-
-    listingService
-      .getRequirementsProfile(listing.requirementsProfileId)
-      .then((profile) => {
-        if (active) setRequirementsProfile(profile);
-      })
-      .catch(() => {
-        if (active) setRequirementsProfile(null);
-      })
-      .finally(() => {
-        if (active) setRequirementsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [listing?.requirementsProfileId]);
-
-  useEffect(() => {
-    if (!listing) {
-      setNearbyListings([]);
-      setNearbyError(null);
-      setNearbyLoading(false);
-      return;
-    }
-
-    let active = true;
-
-    const loadNearbyListings = async () => {
-      setNearbyLoading(true);
-      setNearbyError(null);
-      setNearbyListings([]);
-      setNearbyListingsPage(1);
-
-      try {
-        const location = listing.city || listing.area || null;
-        const nearbyResponse = await listingService.getAll({
+      const location = listing.city || listing.area || null;
+      const nearbyResponse = await listingService.getAll(
+        {
           page: 0,
           size: NEARBY_LISTINGS_FETCH_SIZE,
           city: location,
           seed: listing.id,
+        },
+        { signal }
+      );
+
+      const byId = new Map<string, ListingCardDTO>();
+      const addCandidates = (items: ListingCardDTO[] = []) => {
+        items.forEach((item) => {
+          if (item.id !== listing.id && !byId.has(item.id)) {
+            byId.set(item.id, item);
+          }
         });
+      };
 
-        const byId = new Map<string, ListingCardDTO>();
-        const addCandidates = (items: ListingCardDTO[] = []) => {
-          items.forEach((item) => {
-            if (item.id !== listing.id && !byId.has(item.id)) {
-              byId.set(item.id, item);
-            }
-          });
-        };
+      addCandidates(nearbyResponse.content);
 
-        addCandidates(nearbyResponse.content);
-
-        if (byId.size < NEARBY_LISTINGS_PAGE_SIZE) {
-          const fallbackResponse = await listingService.getAll({
+      if (byId.size < NEARBY_LISTINGS_PAGE_SIZE) {
+        const fallbackResponse = await listingService.getAll(
+          {
             page: 0,
             size: NEARBY_LISTINGS_FETCH_SIZE,
             seed: listing.id,
-          });
-          addCandidates(fallbackResponse.content);
-        }
-
-        if (active) {
-          setNearbyListings(Array.from(byId.values()));
-        }
-      } catch (err) {
-        console.error("Failed to load nearby listings:", err);
-        if (active) {
-          setNearbyError(localizedText(locale, "Kunde inte ladda fler bostäder.", "Could not load more homes."));
-          setNearbyListings([]);
-        }
-      } finally {
-        if (active) {
-          setNearbyLoading(false);
-        }
+          },
+          { signal }
+        );
+        addCandidates(fallbackResponse.content);
       }
-    };
 
-    loadNearbyListings();
+      return Array.from(byId.values());
+    },
+  });
+  const nearbyListings = nearbyQuery.data ?? [];
+  const nearbyLoading = nearbyQuery.isLoading;
+  const nearbyError = nearbyQuery.isError ? localizedText(locale, "Kunde inte ladda fler bostäder.", "Could not load more homes.") : null;
 
-    return () => { active = false; };
-  }, [listing, locale]);
-
+  // Client-side pagination over the full nearby set (pulled in one query).
+  // Reset to page 1 whenever the underlying listing or its location changes.
+  const [nearbyListingsPage, setNearbyListingsPage] = useState(1);
   const nearbyTotalPages = useMemo(
     () =>
       Math.max(
@@ -560,6 +452,10 @@ export default function ListingDetailPage() {
   }, [nearbyCurrentPage, nearbyListings]);
 
   useEffect(() => {
+    setNearbyListingsPage(1);
+  }, [listing?.id]);
+
+  useEffect(() => {
     if (nearbyListingsPage > nearbyTotalPages) {
       setNearbyListingsPage(nearbyTotalPages);
     }
@@ -567,29 +463,54 @@ export default function ListingDetailPage() {
 
   const handleNearbyPageChange = useCallback((nextPage: number) => {
     setNearbyListingsPage(nextPage);
-    document
-      .getElementById("nearby-listings")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (typeof document !== "undefined") {
+      document
+        .getElementById("nearby-listings")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }, []);
 
-  // Hämta företagets logga om det är en företagsannons
-  useEffect(() => {
-    if (!listing) return;
-    if (listing.ownerType.toLowerCase() !== "company") return;
-    if (!listing.ownerId) return;
+  // Apply mutation: invalidates myApplications on settle so hasApplied
+  // flips true automatically when the cache re-syncs.
+  const applyMutation = useApplyToListing();
 
-    let active = true;
-    queueService.getCompany(listing.ownerId)
-      .then((company) => {
-        if (active && company.logoUrl) {
-          setCompanyLogoUrl(company.logoUrl);
-        }
-      })
-      .catch(() => { /* ignorera */ });
+  const handleFavoriteToggle = useCallback(
+    async (id: string, isFav: boolean) => {
+      if (!user) {
+        alert(localizedText(locale, "Du måste vara inloggad för att spara bostäder", "You must be signed in to save homes"));
+        return;
+      }
 
-    return () => { active = false; };
-  }, [listing]);
+      // Optimistic patch + rollback live inside useToggleFavorite. We keep
+      // the demographics side effect here — it's fire-and-forget.
+      toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFav });
 
+      if (isFav) {
+        demographicsService
+          .recordListingView(id, {
+            deviceType: getClientDeviceType(),
+            viewType: "DETAILED",
+            resultedInLike: true,
+          })
+          .catch((err) =>
+            console.error("Failed to record favorite demographics:", err)
+          );
+      }
+    },
+    [user, toggleFavorite, locale]
+  );
+
+  const openLightbox = useCallback((index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    setLightboxOpen(false);
+  }, []);
+
+  // Fire-and-forget: increment view count + record demographics, once per
+  // listing per session. Same Set-ref guard as before.
   const handleApply = useCallback(() => {
     if (!listingId || !listing) return;
     if (!user) {
@@ -602,29 +523,27 @@ export default function ListingDetailPage() {
       return;
     }
 
-    setApplying(true);
     setApplyError(null);
     setApplySuccess(null);
 
-    const message = localizedText(locale, "Hej! Jag är intresserad.", "Hi! I am interested.");
-    const action =
-      listing.ownerType.toLowerCase() === "company"
-        ? listingService.applyToListing(listingId, message)
-        : listingService.applyToPrivateListing(listingId, message);
-
-    action
-      .then(() => {
-        setApplySuccess(localizedText(locale, "Ansökan skickad!", "Application sent!"));
-        setHasApplied(true);
-      })
-      .catch((err: any) =>
-        setApplyError(
-          err?.message ??
-            localizedText(locale, "Kunde inte skicka ansökan.", "Could not send application."),
-        ),
-      )
-      .finally(() => setApplying(false));
-  }, [applicationVerificationError, listingId, listing, locale, user]);
+    const isCompany = listing.ownerType.toLowerCase() === "company";
+    applyMutation.mutate(
+      { listingId, message: localizedText(locale, "Hej! Jag är intresserad.", "Hi! I am interested."), isPrivate: !isCompany },
+      {
+        onSuccess: () => setApplySuccess(localizedText(locale, "Ansökan skickad!", "Application sent!")),
+        onError: (err: any) =>
+          setApplyError(err?.message ?? localizedText(locale, "Kunde inte skicka ansökan.", "Could not send application.")),
+      }
+    );
+  }, [
+    applicationVerificationError,
+    applyMutation,
+    listingId,
+    listing,
+    user,
+    locale
+  ]);
+  const applying = applyMutation.isPending;
 
   const galleryImages = useMemo(() => listing?.imageUrls || [], [listing]);
 
@@ -738,7 +657,7 @@ export default function ListingDetailPage() {
           />
 
           <RequirementsProfileSection
-            profile={requirementsProfile}
+            profile={requirementsProfile ?? null}
             loading={requirementsLoading}
           />
 

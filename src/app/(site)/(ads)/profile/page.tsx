@@ -16,6 +16,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import { authService } from "@/features/auth/services/auth-service";
+import {
+  useVerifyEmail,
+  useVerifyIdentity,
+} from "@/features/auth/hooks/useAuthMutations";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
@@ -605,10 +609,10 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  const [startingIdentityVerification, setStartingIdentityVerification] =
-    useState(false);
-  const [startingEmailVerification, setStartingEmailVerification] =
-    useState(false);
+  const verifyIdentity = useVerifyIdentity();
+  const verifyEmailMutation = useVerifyEmail();
+  const startingIdentityVerification = verifyIdentity.isPending;
+  const startingEmailVerification = verifyEmailMutation.isPending;
 
   useEffect(() => {
     if (authLoading || !token) {
@@ -728,11 +732,10 @@ export default function Page() {
   const startIdentityVerification = async () => {
     if (startingIdentityVerification) return;
 
-    setStartingIdentityVerification(true);
     setSaveError(null);
 
     try {
-      const response = await authService.verifyIdentity();
+      const response = await verifyIdentity.mutateAsync();
       router.push(
         localizedHref(`/register/freja-id?flow=identity&authRef=${encodeURIComponent(
           response.authRef
@@ -744,8 +747,6 @@ export default function Page() {
           ? err.message
           : localizedText(locale, "Kunde inte starta Freja-verifieringen.", "Could not start Freja verification.")
       );
-    } finally {
-      setStartingIdentityVerification(false);
     }
   };
 
@@ -758,12 +759,11 @@ export default function Page() {
       return;
     }
 
-    setStartingEmailVerification(true);
     setSaveError(null);
     setSaveSuccess(null);
 
     try {
-      await authService.verifyEmail({ email });
+      await verifyEmailMutation.mutateAsync({ email });
       setSaveSuccess(localizedText(locale, "Verifieringsmail är skickat.", "The verification email has been sent."));
     } catch (err) {
       setSaveError(
@@ -771,8 +771,6 @@ export default function Page() {
           ? err.message
           : localizedText(locale, "Kunde inte skicka verifieringsmail.", "Could not send the verification email.")
       );
-    } finally {
-      setStartingEmailVerification(false);
     }
   };
 

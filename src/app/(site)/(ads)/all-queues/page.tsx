@@ -11,11 +11,10 @@ import QueueFilterButton, {
 } from "@/features/listings/components/Search/QueueFilterButton";
 import { FieldSet } from "@/components/ui/field";
 
-import { companyService, type CompanyPublicDTO } from "@/features/companies/services/company-service";
-import {
-  buildJoinedQueueIdSet,
-  queueService,
-} from "@/features/queues/services/queue-service";
+import { type CompanyPublicDTO } from "@/features/companies/services/company-service";
+import { useCompanies } from "@/features/companies/hooks/useCompanies";
+import { buildJoinedQueueIdSet } from "@/features/queues/services/queue-service";
+import { useMyQueues, useJoinQueue } from "@/features/queues/hooks/useQueues";
 import { useAuth } from "@/context/AuthContext";
 import { type CompanyId } from "@/types";
 
@@ -137,15 +136,9 @@ export default function Page() {
     ...defaultQueueFilterState,
     cities: cityFromUrl ? [cityFromUrl] : [],
   }));
-  const [queues, setQueues] = useState<CompanyQueueCard[]>([]);
-  const [cityFacetQueues, setCityFacetQueues] = useState<CompanyQueueCard[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedQueues, setSelectedQueues] = useState<Set<string>>(new Set());
-  const [joinedQueueIds, setJoinedQueueIds] = useState<Set<string>>(new Set());
-  const [myQueuesLoading, setMyQueuesLoading] = useState(false);
   const [joiningSelectedQueues, setJoiningSelectedQueues] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -154,96 +147,34 @@ export default function Page() {
     [locale, user]
   );
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
+  // Companies list — cached and shared with /stader, /stader/[stad].
+  const {
+    data: companiesData,
+    isLoading: loading,
+    isError: isCompaniesError,
+  } = useCompanies();
+  const error = isCompaniesError ? "Kunde inte ladda företag." : null;
 
-    companyService
-      .listCompanies({ city: cityFromUrl || undefined })
-      .then((companies) => {
-        if (!active) return;
-        const cards = companies.map(mapCompanyToCard);
-        setQueues(cards);
-        if (!cityFromUrl) {
-          setCityFacetQueues(cards);
-        }
-        setVisibleCount(PAGE_SIZE);
-      })
-      .catch((err: any) => {
-        if (!active) return;
-        console.error(err);
-        setError(t("allQueues.loadCompaniesError"));
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
+  // Map raw companies → card shape. Memoized so identity is stable across
+  // re-renders driven by filter/search changes.
+  const queues = useMemo<CompanyQueueCard[]>(
+    () => (companiesData ?? []).map(mapCompanyToCard),
+    [companiesData]
+  );
 
-    return () => {
-      active = false;
-    };
-  }, [cityFromUrl, t]);
+  // My queues — used here only for membership lookup (no hydration needed).
+  // Shared with the /alla-koer/[id] page so navigating between them is free.
+  const { data: myQueues, isLoading: myQueuesLoading } = useMyQueues({
+    hydrated: false,
+  });
+  const joinedQueueIds = useMemo<Set<string>>(
+    () => (user && myQueues ? buildJoinedQueueIdSet(myQueues) : new Set()),
+    [user, myQueues]
+  );
 
-  useEffect(() => {
-    if (!cityFromUrl || cityFacetQueues.length > 0) return;
-
-    let active = true;
-
-    companyService
-      .listCompanies()
-      .then((companies) => {
-        if (!active) return;
-        setCityFacetQueues(companies.map(mapCompanyToCard));
-      })
-      .catch((err: any) => {
-        if (!active) return;
-        console.error(t("allQueues.cityFilterLoadError"), err);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [cityFromUrl, cityFacetQueues.length, t]);
-
-  useEffect(() => {
-    setFilters((current) => ({
-      ...current,
-      cities: cityFromUrl ? [cityFromUrl] : [],
-    }));
-  }, [cityFromUrl]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      setJoinedQueueIds(new Set());
-      setMyQueuesLoading(false);
-      return;
-    }
-
-    let active = true;
-    setMyQueuesLoading(true);
-
-    queueService
-      .getMyQueues({ hydrateQueues: false })
-      .then((applications) => {
-        if (!active) return;
-        setJoinedQueueIds(buildJoinedQueueIdSet(applications));
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error(t("allQueues.userQueuesLoadError"), err);
-        setJoinedQueueIds(new Set());
-      })
-      .finally(() => {
-        if (active) setMyQueuesLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [authLoading, user, t]);
+  // Mutation: join queue. Each call invalidates the my-queues cache on
+  // settle (success or fail), which is what re-syncs joinedQueueIds above.
+  const joinQueue = useJoinQueue();
 
   const isCompanyQueueJoined = (queue: CompanyQueueCard) => {
     const joinQueueId = getJoinQueueId(queue);
@@ -265,7 +196,7 @@ export default function Page() {
     });
   }, [joinedQueueIds]);
 
-  const cityFilterQueues = cityFacetQueues.length > 0 ? cityFacetQueues : queues;
+  const cityFilterQueues = queues;
 
   const cityFilterOptions = useMemo(
     () =>
@@ -382,8 +313,12 @@ export default function Page() {
     setJoinError(null);
 
     try {
+      // Each mutateAsync triggers a my-queues invalidation via the hook's
+      // onSettled. Promise.allSettled coalesces results so a single failure
+      // doesn't block reporting the rest. The joinedQueueIds derivation
+      // upstream picks up the new state once my-queues refetches.
       const results = await Promise.allSettled(
-        queueIdsToJoin.map((queueId) => queueService.join(queueId))
+        queueIdsToJoin.map((queueId) => joinQueue.mutateAsync(queueId))
       );
       const joinedIds = queueIdsToJoin.filter(
         (_queueId, index) => results[index]?.status === "fulfilled"
@@ -391,11 +326,8 @@ export default function Page() {
       const failedCount = results.length - joinedIds.length;
 
       if (joinedIds.length > 0) {
-        setJoinedQueueIds((current) => {
-          const next = new Set(current);
-          joinedIds.forEach((queueId) => next.add(queueId));
-          return next;
-        });
+        // Deselect the queues we just joined. joinedQueueIds itself will
+        // update reactively when the my-queues cache invalidation lands.
         setSelectedQueues((current) => {
           const next = new Set(current);
           joinedIds.forEach((queueId) => next.delete(queueId));

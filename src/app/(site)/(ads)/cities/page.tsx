@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { FieldSet } from "@/components/ui/field";
 import { getCityImageUrl, normalizeCityName } from "@/features/cities/city-utils";
-import { cityService } from "@/features/cities/services/city-service";
+import { useCitiesList } from "@/features/cities/hooks/useCities";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedNumber, localizedCount, localizedText } from "@/i18n/text";
 import { toSearchString } from "@/lib/utils";
@@ -79,41 +79,20 @@ export default function CitiesPage() {
   const { locale } = useI18n();
   const [searchInput, setSearchInput] = useState("");
   const [searchValue, setSearchValue] = useState("");
-  const [cities, setCities] = useState<CityCardData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
-
-    cityService
-      .list()
-      .then((cityResult) => {
-        if (!active) return;
-        setCities(
-          uniqueCityCards(
-            cityResult
-              .map(normalizeCityCard)
-              .filter((city): city is CityCardData => city !== null)
-          )
-        );
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error(err);
-        setError(localizedText(locale, "Kunde inte ladda städer.", "Could not load cities."));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [locale]);
-
+  const citiesQuery = useCitiesList();
+  const cities = useMemo(
+    () =>
+      uniqueCityCards(
+        (citiesQuery.data ?? [])
+          .map(normalizeCityCard)
+          .filter((city): city is CityCardData => city !== null)
+      ),
+    [citiesQuery.data]
+  );
+  const loading = citiesQuery.isLoading;
+  const error = citiesQuery.isError
+    ? localizedText(locale, "Kunde inte ladda städer.", "Could not load cities.")
+    : null;
   const filteredCities = useMemo<CityCardData[]>(() => {
     const query = toSearchString(searchValue);
 

@@ -3,6 +3,7 @@ import {
   arrayFromApiResponse,
   buildQuery,
   pathSegment,
+  type ServiceOptions,
 } from "@/lib/api/client";
 import { listingService } from "@/features/listings/services/listing-service";
 import { School } from "@/types";
@@ -44,9 +45,10 @@ const mapSchoolDto = (dto: ApiSchoolDto): School => ({
 });
 
 export const schoolService = {
-  list: async (q?: string): Promise<School[]> => {
+  list: async (q?: string, options?: ServiceOptions): Promise<School[]> => {
     const res = await apiClient<unknown>(`/schools${buildQuery({ q })}`, {
       auth: false,
+      signal: options?.signal,
     });
     return arrayFromApiResponse<ApiSchoolDto>(res)
       .map(mapSchoolDto)

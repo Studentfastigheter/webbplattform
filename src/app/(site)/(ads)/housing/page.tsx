@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useQuery } from "@tanstack/react-query";
 import {
   Building2,
   Car,
@@ -27,14 +28,23 @@ import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
 import {
   listingService,
+  normalizeListingSearchParams,
   type ListingSearchFacetsDTO,
   type ListingSearchParams,
 } from "@/features/listings/services/listing-service";
 import {
+  useFavorites,
+  useListingFacets,
+  useListingTags,
+  useListingsSearch,
+  useToggleFavorite,
+} from "@/features/listings/hooks/useListings";
+import { useSchools } from "@/features/schools/hooks/useSchools";
+import {
   demographicsService,
   getClientDeviceType,
 } from "@/features/analytics/services/demographics-service";
-import { schoolService } from "@/features/schools/services/school-service";
+import { qk } from "@/lib/query/keys";
 import { ListingCardDTO } from "@/types/listing";
 import type { School } from "@/types/school";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -292,31 +302,29 @@ export default function ListingsPage() {
     city: cityFromUrl,
   }));
 
-  const [schools, setSchools] = useState<School[]>([]);
-  const [availableAmenities, setAvailableAmenities] =
-    useState<AmenityOption[]>(defaultAmenityOptions);
-  const [listings, setListings] = useState<ListingCardDTO[]>([]);
-  const [mapListings, setMapListings] = useState<ListingCardDTO[]>([]);
-  const [appliedFacets, setAppliedFacets] =
-    useState<ListingSearchFacetsDTO | null>(null);
-  const [previewFacets, setPreviewFacets] =
-    useState<ListingSearchFacetsDTO | null>(null);
-  const [previewPriceFacets, setPreviewPriceFacets] =
-    useState<ListingSearchFacetsDTO | null>(null);
-  const [previewFacetsLoading, setPreviewFacetsLoading] = useState(false);
-  const [previewFacetsError, setPreviewFacetsError] = useState<string | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(pageFromUrl);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const [error, setError] = useState<string | null>(null);
 
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(pageFromUrl);
+
   const [hoveredListingId, setHoveredListingId] = useState<string | undefined>();
   const quickViewIncrementedIds = useRef<Set<string>>(new Set());
   const quickViewDemographicsRecordedIds = useRef<Set<string>>(new Set());
+
+  // Reference data — schools + amenity tags. Cached long (10m / 5m).
+  const { data: schoolsData } = useSchools();
+  const schools = schoolsData ?? [];
+  const { data: tagsData } = useListingTags();
+  const availableAmenities = useMemo<AmenityOption[]>(
+    () => (tagsData ? toAmenityOptions(tagsData, locale) : defaultAmenityOptions),
+    [tagsData, locale, defaultAmenityOptions]
+  );
+
+  // Favorites — shared cache.
+  const { data: favoritesData } = useFavorites();
+  const favoriteIds = useMemo<Set<string>>(
+    () => new Set((favoritesData ?? []).map((f) => f.id)),
+    [favoritesData]
+  );
+  const toggleFavorite = useToggleFavorite();
 
   const updatePageInUrl = useCallback(
     (nextPage: number, mode: "push" | "replace" = "push") => {
@@ -343,53 +351,6 @@ export default function ListingsPage() {
     setPage(pageFromUrl);
   }, [pageFromUrl, searchParams, updatePageInUrl]);
 
-  useEffect(() => {
-    let active = true;
-
-    schoolService
-      .list()
-      .then((items) => {
-        if (active) setSchools(items);
-      })
-      .catch((err) => {
-        console.error("Failed to load schools:", err);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    listingService
-      .getListingTags()
-      .then((tags) => {
-        if (active) setAvailableAmenities(toAmenityOptions(tags, locale));
-      })
-      .catch((err) => {
-        console.error("Failed to load listing tags:", err);
-        if (active) setAvailableAmenities(defaultAmenityOptions);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [defaultAmenityOptions, locale]);
-
-  useEffect(() => {
-    if (user) {
-      listingService
-        .getFavorites()
-        .then((favs) => {
-          setFavoriteIds(new Set(favs.map((f) => f.id)));
-        })
-        .catch(console.error);
-    } else {
-      setFavoriteIds(new Set());
-    }
-  }, [user]);
 
   const handleFavoriteToggle = useCallback(
     (id: string, isFav: boolean) => {
@@ -398,36 +359,23 @@ export default function ListingsPage() {
         return;
       }
 
-      setFavoriteIds((prev) => {
-        const next = new Set(prev);
-        if (isFav) next.add(id);
-        else next.delete(id);
-        return next;
-      });
+      // Optimistic patch + rollback handled by useToggleFavorite. Demographics
+      // recording stays as a fire-and-forget side effect.
+      toggleFavorite.mutate({ listingId: id, nextIsFavorite: isFav });
 
-      const action = isFav
-        ? listingService.addFavorite(id).then(() =>
-            demographicsService.recordListingView(id, {
-              deviceType: getClientDeviceType(),
-              viewType: "QUICK",
-              resultedInLike: true,
-            }).catch((err) =>
-              console.error("Failed to record favorite demographics:", err)
-            )
-          )
-        : listingService.removeFavorite(id);
-
-      action.catch((err) => {
-        console.error("Failed to toggle favorite:", err);
-        setFavoriteIds((prev) => {
-          const next = new Set(prev);
-          if (isFav) next.delete(id);
-          else next.add(id);
-          return next;
-        });
-      });
+      if (isFav) {
+        demographicsService
+          .recordListingView(id, {
+            deviceType: getClientDeviceType(),
+            viewType: "QUICK",
+            resultedInLike: true,
+          })
+          .catch((err) =>
+            console.error("Failed to record favorite demographics:", err)
+          );
+      }
     },
-    [locale, user]
+    [user, toggleFavorite, locale]
   );
 
   const currentFilters = useMemo(
@@ -460,72 +408,56 @@ export default function ListingsPage() {
     setFilterPreview(filters);
   }, [filters]);
 
-  useEffect(() => {
-    let active = true;
-
-    listingService
-      .getFacets(currentFilters)
-      .then((facets) => {
-        if (active) setAppliedFacets(facets);
-      })
-      .catch((err) => {
-        console.error("Failed to load listing facets:", err);
-        if (active) setAppliedFacets(null);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [currentFilters]);
+  // Debounced versions of the filter-preview params. We feed these into the
+  // facet hooks as queryKey inputs so the debounce gates the actual request
+  // exactly the way the old setTimeout did \u2014 but cached and shared across
+  // identical param tuples.
+  const [debouncedPreviewSearchFilters, setDebouncedPreviewSearchFilters] =
+    useState<ListingSearchParams>(previewSearchFilters);
+  const [debouncedPreviewPriceSearchFilters, setDebouncedPreviewPriceSearchFilters] =
+    useState<ListingSearchParams>(previewPriceSearchFilters);
 
   useEffect(() => {
-    let active = true;
-    setPreviewFacetsLoading(true);
-    setPreviewFacetsError(null);
-
-    const timeoutId = window.setTimeout(() => {
-      listingService
-        .getFacets(previewSearchFilters)
-        .then((facets) => {
-          if (active) setPreviewFacets(facets);
-        })
-        .catch((err) => {
-          console.error("Failed to load listing filter facets:", err);
-          if (!active) return;
-          setPreviewFacets(null);
-          setPreviewFacetsError(localizedText(locale, "Kunde inte hämta antal träffar.", "Could not load the number of matches."));
-        })
-        .finally(() => {
-          if (active) setPreviewFacetsLoading(false);
-        });
-    }, 250);
-
-    return () => {
-      active = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [locale, previewSearchFilters]);
+    const id = window.setTimeout(
+      () => setDebouncedPreviewSearchFilters(previewSearchFilters),
+      250
+    );
+    return () => window.clearTimeout(id);
+  }, [previewSearchFilters]);
 
   useEffect(() => {
-    let active = true;
-
-    const timeoutId = window.setTimeout(() => {
-      listingService
-        .getFacets(previewPriceSearchFilters)
-        .then((facets) => {
-          if (active) setPreviewPriceFacets(facets);
-        })
-        .catch((err) => {
-          console.error("Failed to load listing price facets:", err);
-          if (active) setPreviewPriceFacets(null);
-        });
-    }, 250);
-
-    return () => {
-      active = false;
-      window.clearTimeout(timeoutId);
-    };
+    const id = window.setTimeout(
+      () => setDebouncedPreviewPriceSearchFilters(previewPriceSearchFilters),
+      250
+    );
+    return () => window.clearTimeout(id);
   }, [previewPriceSearchFilters]);
+
+  // Applied facets (no debounce \u2014 only changes when the user actually
+  // commits a filter). One cache entry per currentFilters tuple.
+  const { data: appliedFacetsData } = useListingFacets(currentFilters);
+  const appliedFacets = appliedFacetsData ?? null;
+
+  // Preview facets \u2014 debounced. Note that previewSearchFilters and
+  // debouncedPreviewSearchFilters can produce the SAME tuple in which case
+  // both share one cache entry; that's the source of the existing extra
+  // call that often duplicated. We don't try to dedupe further here; it's
+  // safe.
+  const {
+    data: previewFacetsData,
+    isError: previewFacetsIsError,
+    isFetching: previewFacetsFetching,
+  } = useListingFacets(debouncedPreviewSearchFilters);
+  const previewFacets = previewFacetsData ?? null;
+  const previewFacetsLoading = previewFacetsFetching;
+  const previewFacetsError = previewFacetsIsError
+    ? "Kunde inte h\u00e4mta antal tr\u00e4ffar."
+    : null;
+
+  const { data: previewPriceFacetsData } = useListingFacets(
+    debouncedPreviewPriceSearchFilters
+  );
+  const previewPriceFacets = previewPriceFacetsData ?? null;
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -549,118 +481,111 @@ export default function ListingsPage() {
 
   const isMapView = view === "karta";
 
-  const loadListings = useCallback(
-    async (pageToLoad: number) => {
-      setError(null);
-      setLoading(true);
-      setListings([]);
-
-      try {
-        console.log(`Filtering listings on ${JSON.stringify(currentFilters)}`);
-        const res = await listingService.getAll({
-          ...currentFilters,
-          page: pageToLoad - 1,
-          size: PAGE_SIZE,
-        });
-
-        const newItems = res.content || [];
-
-        const nextTotalPages =
-          (res as any).totalPages ?? (res as any).page?.totalPages ?? 0;
-        const nextTotalElements =
-          (res as any).totalElements ?? (res as any).page?.totalElements ?? 0;
-
-        setTotalPages(nextTotalPages);
-        setTotalElements(nextTotalElements);
-        setListings(newItems);
-        newItems.forEach((listing) => {
-          if (!quickViewIncrementedIds.current.has(listing.id)) {
-            quickViewIncrementedIds.current.add(listing.id);
-            listingService
-              .incrementViews(listing.id, "QUICK")
-              .catch((err) => console.error("Failed to increment quick view:", err));
-          }
-
-          if (user && !quickViewDemographicsRecordedIds.current.has(listing.id)) {
-            quickViewDemographicsRecordedIds.current.add(listing.id);
-            demographicsService
-              .recordListingView(listing.id, {
-                deviceType: getClientDeviceType(),
-                viewType: "QUICK",
-                resultedInLike: false,
-              })
-              .catch((err) =>
-                console.error("Failed to record quick-view demographics:", err)
-              );
-          }
-        });
-      } catch (err: any) {
-        console.error("Error loading listings:", err);
-        setError(localizedText(locale, "Kunde inte ladda bostäder.", "Could not load homes."));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [currentFilters, locale, user]
+  // Listings list — paged. Cached per (filters, page, size). Going back to
+  // page N or to a previous filter tuple returns instantly from cache.
+  // placeholderData keeps the previous page on screen while the next one
+  // loads, so the user never sees an empty grid mid-pagination.
+  const listingsSearchParams = useMemo<ListingSearchParams>(
+    () => ({ ...currentFilters, page: page - 1, size: PAGE_SIZE }),
+    [currentFilters, page]
   );
+  const {
+    data: listingsPageData,
+    isLoading: listingsLoading,
+    isError: listingsIsError,
+  } = useListingsSearch(listingsSearchParams);
 
-  const loadMapListings = useCallback(async () => {
-    const firstPage = await listingService.getAll({
-      ...currentFilters,
-      page: 0,
-      size: MAP_PAGE_SIZE,
-    });
+  const listings = listingsPageData?.content ?? [];
+  const totalPages =
+    (listingsPageData as any)?.totalPages ??
+    (listingsPageData as any)?.page?.totalPages ??
+    0;
+  const totalElements =
+    (listingsPageData as any)?.totalElements ??
+    (listingsPageData as any)?.page?.totalElements ??
+    0;
+  const loading = listingsLoading;
+  const error = listingsIsError ? "Kunde inte ladda bostäder." : null;
 
-    const pageCount = Math.max(1, getTotalPagesFromResponse(firstPage));
-    const pages = [firstPage.content || []];
+  // Fire-and-forget side effects: view-count increment + demographics,
+  // once per id per session. Same Set-ref guard as before — runs whenever
+  // the visible listings change.
+  useEffect(() => {
+    listings.forEach((listing) => {
+      if (!quickViewIncrementedIds.current.has(listing.id)) {
+        quickViewIncrementedIds.current.add(listing.id);
+        listingService
+          .incrementViews(listing.id, "QUICK")
+          .catch((err) =>
+            console.error("Failed to increment quick view:", err)
+          );
+      }
 
-    if (pageCount > 1) {
-      const remainingPages = await Promise.all(
-        Array.from({ length: pageCount - 1 }, (_, index) =>
-          listingService.getAll({
-            ...currentFilters,
-            page: index + 1,
-            size: MAP_PAGE_SIZE,
+      if (user && !quickViewDemographicsRecordedIds.current.has(listing.id)) {
+        quickViewDemographicsRecordedIds.current.add(listing.id);
+        demographicsService
+          .recordListingView(listing.id, {
+            deviceType: getClientDeviceType(),
+            viewType: "QUICK",
+            resultedInLike: false,
           })
-        )
+          .catch((err) =>
+            console.error("Failed to record quick-view demographics:", err)
+          );
+      }
+    });
+    // listings identity is stable across re-renders unless data actually
+    // changes (TanStack Query gives us structural sharing).
+  }, [listings, user]);
+
+  // Map view — a separate cache slot. The same filters produce TWO entries
+  // (lista PAGE_SIZE vs karta MAP_PAGE_SIZE * pages); that's intentional.
+  // Only fetches while in map view, via enabled.
+  const normalizedMapFilters = useMemo(
+    () =>
+      normalizeListingSearchParams(currentFilters, {
+        includePageable: false,
+      }),
+    [currentFilters]
+  );
+  const mapQuery = useQuery<ListingCardDTO[]>({
+    queryKey: qk.listings.map(normalizedMapFilters),
+    enabled: isMapView,
+    staleTime: 30_000,
+    queryFn: async ({ signal }) => {
+      const firstPage = await listingService.getAll(
+        {
+          ...normalizedMapFilters,
+          page: 0,
+          size: MAP_PAGE_SIZE,
+        },
+        { signal }
       );
 
-      pages.push(...remainingPages.map((res) => res.content || []));
-    }
+      const pageCount = Math.max(1, getTotalPagesFromResponse(firstPage));
+      const pages = [firstPage.content || []];
 
-    return uniqueListingsById(pages.flat());
-  }, [currentFilters]);
+      if (pageCount > 1) {
+        const remainingPages = await Promise.all(
+          Array.from({ length: pageCount - 1 }, (_, index) =>
+            listingService.getAll(
+              {
+                ...normalizedMapFilters,
+                page: index + 1,
+                size: MAP_PAGE_SIZE,
+              },
+              { signal }
+            )
+          )
+        );
 
-  useEffect(() => {
-    loadListings(page);
-  }, [page, currentFilters, loadListings]);
+        pages.push(...remainingPages.map((res) => res.content || []));
+      }
 
-  useEffect(() => {
-    let active = true;
-
-    if (!isMapView) {
-      setMapListings([]);
-      return () => {
-        active = false;
-      };
-    }
-
-    setMapListings([]);
-
-    loadMapListings()
-      .then((items) => {
-        if (active) setMapListings(items);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error("Error loading map listings:", err);
-        setMapListings([]);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [isMapView, loadMapListings]);
+      return uniqueListingsById(pages.flat());
+    },
+  });
+  const mapListings = isMapView ? mapQuery.data ?? [] : [];
 
   useEffect(() => {
     if (totalPages > 0 && page > totalPages) {

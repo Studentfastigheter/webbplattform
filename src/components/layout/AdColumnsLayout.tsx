@@ -1,7 +1,7 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
-import { listingService } from "@/features/listings/services/listing-service";
+import { type ReactNode, useMemo } from "react";
+import { useCurrentAds } from "@/features/ads/hooks/useAds";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -88,32 +88,26 @@ const AdSlot = ({
 
 export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
   const { t } = useI18n();
-  const [ads, setAds] = useState<NormalizedAd[]>([]);
+  const { data: rawAds = [] } = useCurrentAds();
 
-  useEffect(() => {
-    async function loadAds() {
-      try {
-        const rawAds = await listingService.getCurrentAds();
-        const normalized = rawAds
-          .map((ad, idx) => {
-            const src = extractImageFromData(ad.data);
-            if (!src) return null;
-
-            return {
-              id: String(ad.id ?? idx),
-              src,
-              alt: ad.company ? t("ads.adFrom", { company: ad.company }) : t("ads.ad"),
-            } as NormalizedAd;
-          })
-          .filter((ad): ad is NormalizedAd => ad !== null);
-
-        setAds(normalized);
-      } catch (error) {
-        console.error("Failed to load ads:", error);
-      }
-    }
-    loadAds();
-  }, [t]);
+  // Normalize and translate alt text on read. Locale changes (t) re-derive
+  // alt without re-fetching — keeping the network call cached across SSR/CSR
+  // re-renders and across components that mount AdColumnsLayout in parallel.
+  const ads = useMemo<NormalizedAd[]>(
+    () =>
+      rawAds
+        .map((ad, idx) => {
+          const src = extractImageFromData(ad.data);
+          if (!src) return null;
+          return {
+            id: String(ad.id ?? idx),
+            src,
+            alt: ad.company ? t("ads.adFrom", { company: ad.company }) : t("ads.ad"),
+          } as NormalizedAd;
+        })
+        .filter((ad): ad is NormalizedAd => ad !== null),
+    [rawAds, t],
+  );
 
   const [firstAd, secondAd] = ads;
 

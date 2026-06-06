@@ -48,6 +48,26 @@ type ApiClientOptions = RequestInit & {
   responseType?: "json" | "text" | "blob";
 };
 
+/**
+ * Standard shape every feature service should accept on its READ functions
+ * once it's migrated to be called via a TanStack Query hook. TanStack Query
+ * passes an `AbortSignal` to every `queryFn` via its context — services that
+ * forward it into `apiClient({ signal })` get free cancellation when a query
+ * is invalidated, the component unmounts, or a stale request is superseded.
+ *
+ * Usage pattern (added per-service in Phase 3, not in this commit):
+ *   get: async (id: string, options?: ServiceOptions) =>
+ *     apiClient<T>(`/listings/${id}`, { auth: false, signal: options?.signal })
+ *
+ * NOTE: the existing read-dedupe cache in this file deliberately skips
+ * requests that carry a signal (see `shouldDedupeRead` below), so queries
+ * that pass `signal` bypass the homegrown 1s cache and rely on TanStack
+ * Query's cache instead. That's correct and intentional.
+ */
+export type ServiceOptions = {
+  signal?: AbortSignal;
+};
+
 const READ_DEDUPE_CACHE_MS = 1000;
 const inFlightReadRequests = new Map<string, Promise<unknown>>();
 const completedReadRequests = new Map<
