@@ -64,7 +64,7 @@ export const integrationPartners: PartnerItem[] = [
   {
     name: "Hogia",
     description: "",
-    logoSrc: "/partners/Hogia.svg",
+    logoSrc: "/partners/hogia.svg",
     href: "https://www.hogia.se/",
   },
 ];
