@@ -23,10 +23,16 @@ import type { CityDTO, CityDetailedDTO } from "@/types/city";
 
 const STALE_5_MINUTES = 5 * 60_000;
 
-export function useCitiesList() {
+export function useCitiesList(
+  options?: Omit<UseQueryOptions<CityDTO[]>, "queryKey" | "queryFn">
+) {
+  const { enabled = true, ...restOptions } = options ?? {};
+
   return useQuery<CityDTO[]>({
+    ...restOptions,
     queryKey: qk.cities.list(),
     queryFn: () => cityService.list(),
+    enabled,
     staleTime: STALE_5_MINUTES,
   });
 }

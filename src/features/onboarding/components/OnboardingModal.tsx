@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,13 @@ import {
   FieldGroup,
 } from "@/components/ui/field";
 import { useRegisterStudent } from "@/features/auth/hooks/useAuthMutations";
+import { normalizeCityName } from "@/features/cities/city-utils";
+import { useCitiesList } from "@/features/cities/hooks/useCities";
+import { normalizeCityCode } from "@/features/cities/services/city-service";
 import { useSchools } from "@/features/schools/hooks/useSchools";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
+import type { CityDTO } from "@/types/city";
 import type { User } from "@/types/user";
 
 type AuthMeUser = User & Record<string, unknown>;
@@ -61,6 +65,14 @@ function getCityFromAuthMe(user: AuthMeUser) {
   return "";
 }
 
+function cityOptionValue(city: CityDTO) {
+  return normalizeCityCode(city.code ?? city.city ?? "");
+}
+
+function cityOptionLabel(city: CityDTO) {
+  return normalizeCityName(city.city ?? city.code?.replace(/_/g, " ") ?? "");
+}
+
 export default function OnboardingModal() {
   const { locale } = useI18n();
   const { user, token, isLoading, completeAuth } = useAuth();
@@ -76,6 +88,11 @@ export default function OnboardingModal() {
     undefined,
     { enabled: isOpen },
   );
+  const {
+    data: cities = [],
+    isLoading: citiesLoading,
+    isError: isCitiesError,
+  } = useCitiesList({ enabled: isOpen });
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -88,6 +105,23 @@ export default function OnboardingModal() {
   const updateFormData = (patch: Partial<typeof formData>) => {
     setFormData((current) => ({ ...current, ...patch }));
   };
+
+  const cityOptions = useMemo(() => {
+    const byValue = new Map<string, { value: string; label: string }>();
+
+    cities.forEach((city) => {
+      const value = cityOptionValue(city);
+      const label = cityOptionLabel(city);
+
+      if (value && label && !byValue.has(value)) {
+        byValue.set(value, { value, label });
+      }
+    });
+
+    return Array.from(byValue.values()).sort((left, right) =>
+      left.label.localeCompare(right.label, "sv-SE")
+    );
+  }, [cities]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -105,7 +139,7 @@ export default function OnboardingModal() {
       setFormData({
         firstName: stringFromAuthMe(authMeUser.firstName),
         surname: stringFromAuthMe(authMeUser.surname),
-        city: getCityFromAuthMe(authMeUser),
+        city: normalizeCityCode(getCityFromAuthMe(authMeUser)),
         schoolId: stringFromAuthMe(
           authMeUser.schoolId,
           authMeUser.school_id,
@@ -135,17 +169,19 @@ export default function OnboardingModal() {
         !formData.surname.trim() ||
         !formData.schoolId ||
         !formData.ssn.trim() ||
-        !formData.city.trim()
+        !cityOptions.some((city) => city.value === formData.city)
       ) {
         throw new Error(localizedText(locale, "Fyll i namn, stad, skola och personnummer.", "Enter name, city, school and personal identity number."));
       }
+
+      const selectedCity = cityOptions.find((city) => city.value === formData.city);
 
       const payload = {
         firstName: formData.firstName.trim(),
         surname: formData.surname.trim(),
         email,
         schoolId: Number(formData.schoolId),
-        city: formData.city.trim(),
+        city: selectedCity?.value ?? "",
         ssn: formData.ssn.trim(),
       };
 
@@ -243,18 +279,42 @@ export default function OnboardingModal() {
 
             <Field>
               <FieldLabel htmlFor="onboarding-city">{localizedText(locale, "Stad", "City")}</FieldLabel>
-              <Input 
+              <select
                 id="onboarding-city"
                 required
                 value={formData.city}
                 onChange={(e) => updateFormData({ city: e.target.value })}
-                placeholder={localizedText(locale, "T.ex. Stockholm", "E.g. Stockholm")}
-              />
+                disabled={citiesLoading || cityOptions.length === 0}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">
+                  {citiesLoading
+                    ? localizedText(locale, "Laddar städer...", "Loading cities...")
+                    : cityOptions.length === 0
+                      ? localizedText(locale, "Inga städer tillgängliga", "No cities available")
+                      : localizedText(locale, "Välj stad", "Choose city")}
+                </option>
+                {cityOptions.map((city) => (
+                  <option key={city.value} value={city.value}>
+                    {city.label}
+                  </option>
+                ))}
+              </select>
+              {isCitiesError && (
+                <FieldError>
+                  {localizedText(locale, "Kunde inte hämta städer.", "Could not load cities.")}
+                </FieldError>
+              )}
             </Field>
 
             {error && <FieldError>{error}</FieldError>}
 
-            <Button type="submit" fullWidth disabled={loading} className="mt-4">
+            <Button
+              type="submit"
+              fullWidth
+              disabled={loading || citiesLoading || cityOptions.length === 0}
+              className="mt-4"
+            >
               {loading
                 ? localizedText(locale, "Skickar...", "Sending...")
                 : localizedText(locale, "Skicka", "Submit")}

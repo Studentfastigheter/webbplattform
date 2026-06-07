@@ -19,7 +19,6 @@ import {
   Home,
   ImageIcon,
   MapPin,
-  Minus,
   MousePointerClick,
   Percent,
   Trash2,
@@ -66,6 +65,7 @@ import {
   useListingViewCounts,
   useTimedApplicationsForListing,
 } from "@/features/companies/hooks/useCompanies";
+import { useListingDemography } from "@/features/analytics/hooks/useDemographics";
 import { useAllCompanyListings } from "@/features/queues/hooks/useQueues";
 import {
   useDeleteListing,
@@ -96,10 +96,6 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { cn } from "@/lib/utils";
-import {
-  dummyListingDemography,
-  isDummyListingId,
-} from "@/features/analytics/data/listing-analytics-dummy";
 
 type AnnonsOverviewProps = {
   id: string;
@@ -678,12 +674,7 @@ function TrendBadge({
   const formatted = formatChangeText(change, locale);
 
   if (!formatted) {
-    return (
-      <span className="inline-flex h-6 items-center gap-1 rounded-full border border-gray-200 bg-white px-2 text-[11px] font-semibold leading-none text-gray-500 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-        <Minus className="h-3 w-3" />
-        {localizedText(locale, "Oför.", "Unch.")}
-      </span>
-    );
+    return null;
   }
 
   const positive = (change ?? 0) >= 0;
@@ -1000,7 +991,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     [listing]
   );
 
-  // ---- Analytics tab: range + trend data, plus dummy seeding ----
+  // ---- Analytics tab: range + trend data ----
   const analyticsRange = useMemo(
     () => getApplicationIntervalRange(applicationInterval),
     [applicationInterval]
@@ -1042,15 +1033,17 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         )
     : null;
 
-  // Metric tiles for the analytics tab. The favorites count isn't surfaced by
-  // any of the lightweight company endpoints, so for the dummy listing it
-  // reads from the seeded RESULTED_IN_LIKE bucket; for real listings it falls
-  // back to 0 until a future endpoint exposes it directly.
-  const analyticsFavorites = isDummyListingId(id)
-    ? dummyListingDemography.RESULTED_IN_LIKE?.buckets?.find(
-        (bucket) => String(bucket.key) === "true"
-      )?.totalViews ?? 0
-    : 0;
+  const favoritesDemographyQuery = useListingDemography(
+    id || null,
+    analyticsFromIso,
+    analyticsToIso,
+    "RESULTED_IN_LIKE",
+    Boolean(id)
+  );
+  const analyticsFavorites =
+    favoritesDemographyQuery.data?.buckets?.find(
+      (bucket) => String(bucket.key) === "true"
+    )?.totalViews ?? 0;
   const analyticsMetrics: AnalyticsMetricItem[] = useMemo(() => {
     const computedTotalViews = meta.quickViews + meta.detailedViews;
     const detailRatio =
@@ -1068,7 +1061,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         label: localizedText(locale, "Ansökningar", "Applications"),
         value: meta.applications,
         helper: localizedText(locale, "Totalt mottagna", "Total received"),
-        change: 12.4,
+        change: null,
         icon: FileUser,
         tone: "green",
       },
@@ -1077,7 +1070,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         label: localizedText(locale, "Detaljvisningar", "Detailed views"),
         value: meta.detailedViews,
         helper: localizedText(locale, "Öppningar av annonsen", "Listing opens"),
-        change: 8.1,
+        change: null,
         icon: Eye,
         tone: "sky",
       },
@@ -1086,7 +1079,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         label: localizedText(locale, "Snabbvisningar", "Quick views"),
         value: meta.quickViews,
         helper: localizedText(locale, "Visningar i listor", "Impressions in lists"),
-        change: -3.6,
+        change: null,
         icon: MousePointerClick,
         tone: "teal",
       },
@@ -1123,7 +1116,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           "Visningar som sparades",
           "Views saved as favorite"
         ),
-        change: 4.2,
+        change: null,
         icon: Heart,
         tone: "rose",
       },

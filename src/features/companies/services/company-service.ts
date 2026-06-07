@@ -7,12 +7,6 @@ import {
   type ServiceOptions,
 } from "@/lib/api/client";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
-import {
-  dummyListingViewCounts,
-  dummyObjectApplicationCount,
-  dummyTimedApplications,
-  isDummyListingId,
-} from "@/features/analytics/data/listing-analytics-dummy";
 
 export type GraphEntry = {
 	category: string,
@@ -1268,11 +1262,6 @@ export const companyService = {
     listingId: string | number,
     options?: ServiceOptions
   ): Promise<ApplicationStatisticEntry[]> => {
-    // Demo fixture intercept — see `listing-analytics-dummy.ts`.
-    if (isDummyListingId(String(listingId))) {
-      return dummyTimedApplications;
-    }
-
     const fromValue = from instanceof Date ? from.toISOString() : from;
     const toValue = to instanceof Date ? to.toISOString() : to;
     const result = await apiClient<unknown>(
@@ -1300,15 +1289,6 @@ export const companyService = {
       .map(normalizeObjectApplicationCount)
       .filter((entry): entry is ObjectApplicationCount => entry !== null);
 
-    // Demo fixture intercept — splice in the dummy listing's count if the
-    // real response didn't include it. Lets the per-listing analytics tab
-    // resolve a meaningful application total for this fixture.
-    const alreadyPresent = normalized.some((entry) =>
-      isDummyListingId(String(entry.listingId))
-    );
-    if (!alreadyPresent) {
-      return [dummyObjectApplicationCount, ...normalized];
-    }
     return normalized;
   },
 
@@ -1317,11 +1297,6 @@ export const companyService = {
     listingId: string | number,
     options?: ServiceOptions
   ): Promise<ListingViewCounts> => {
-    // Demo fixture intercept — see `listing-analytics-dummy.ts`.
-    if (isDummyListingId(String(listingId))) {
-      return dummyListingViewCounts;
-    }
-
     const result = await apiClient<unknown>(
       `/analytics/${pathSegment(id)}/listing/${pathSegment(listingId)}/`,
       { signal: options?.signal }
