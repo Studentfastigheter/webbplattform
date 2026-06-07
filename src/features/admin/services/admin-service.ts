@@ -43,12 +43,17 @@ function jsonBody(value: unknown) {
 }
 
 function normalizeSchoolCityPayload(school: AdminAddSchoolRequest): AdminAddSchoolRequest {
-  const cityCode = normalizeCityCode(school.cityCode ?? school.city);
+  const cityCode = normalizeCityCode(school.cityCode);
+  const city = school.city.trim();
+
+  if (!cityCode) {
+    throw new Error("VÃ¤lj en stad innan du sparar skolan.");
+  }
 
   return {
     ...school,
-    city: cityCode || school.city,
-    ...(cityCode ? { cityCode } : {}),
+    city: city || cityCode,
+    cityCode,
   };
 }
 

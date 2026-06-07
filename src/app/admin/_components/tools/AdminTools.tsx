@@ -156,28 +156,17 @@ function cityOptionMatchesValue(option: CityOption, value: string) {
   );
 }
 
-function getCityCodeOptions(cities: CityDTO[], selectedValue = ""): CityOption[] {
-  const options = cities
+function getCityCodeOptions(cities: CityDTO[]): CityOption[] {
+  return cities
     .map((city) => ({ city, code: cityCode(city) }))
     .filter((item): item is CityOption => Boolean(item.code));
-
-  const selected = selectedValue.trim();
-  if (!selected || options.some((option) => cityOptionMatchesValue(option, selected))) {
-    return options;
-  }
-
-  const code = normalizeCityCode(selected);
-  return code ? [{ city: { city: selected, code }, code }, ...options] : options;
 }
 
 function resolveCityCodeValue(value: string | null | undefined, options: CityOption[]) {
   const selected = value?.trim() ?? "";
   if (!selected) return "";
 
-  return (
-    options.find((option) => cityOptionMatchesValue(option, selected))?.code ??
-    normalizeCityCode(selected)
-  );
+  return options.find((option) => cityOptionMatchesValue(option, selected))?.code ?? "";
 }
 
 function parseSocialLinksInput(value: string) {
@@ -846,7 +835,10 @@ function getCsvSchoolRowError(row: CsvSchoolImportRow) {
   return errors.join(", ");
 }
 
-function buildCsvSchoolPayload(row: CsvSchoolImportRow): AdminAddSchoolRequest {
+function buildCsvSchoolPayload(
+  row: CsvSchoolImportRow,
+  cityOptions: CityOption[]
+): AdminAddSchoolRequest {
   return buildSchoolPayload(
     {
       schoolName: row.schoolName,
@@ -854,24 +846,35 @@ function buildCsvSchoolPayload(row: CsvSchoolImportRow): AdminAddSchoolRequest {
       lat: row.lat,
       lng: row.lng,
     },
-    false
+    false,
+    cityOptions
   );
 }
 
-function buildSchoolPayload(form: SchoolFormState, requireId: boolean): AdminAddSchoolRequest {
+function buildSchoolPayload(
+  form: SchoolFormState,
+  requireId: boolean,
+  cityOptions: CityOption[] = []
+): AdminAddSchoolRequest {
   const schoolId = parseOptionalNumber(form.schoolId ?? "");
   if (requireId && !schoolId) {
     throw new Error("Välj en skola eller ange schoolId innan du uppdaterar.");
   }
-  const cityCodeValue = normalizeCityCode(form.city);
+  const cityCodeValue = resolveCityCodeValue(form.city, cityOptions);
   if (!cityCodeValue) {
     throw new Error("Välj en stad.");
   }
 
+  const selectedCity = cityOptions.find((option) => option.code === cityCodeValue);
+  if (!selectedCity) {
+    throw new Error("Den valda staden finns inte i stadslistan.");
+  }
+  const cityName = selectedCity.city.city?.trim() || selectedCity.code;
+
   return {
     ...(schoolId ? { schoolId } : {}),
     schoolName: form.schoolName.trim(),
-    city: cityCodeValue,
+    city: cityName,
     cityCode: cityCodeValue,
     lat: parseRequiredNumber(form.lat, "Latitud"),
     lng: parseRequiredNumber(form.lng, "Longitud"),
@@ -934,9 +937,9 @@ function SchoolsForm() {
   const [csvFileName, setCsvFileName] = useState("");
   const [bulkCity, setBulkCity] = useState("");
   const citiesLoading = cityState.status === "loading";
-  const updateCityOptions = getCityCodeOptions(cities, updateForm.city);
-  const createCityOptions = getCityCodeOptions(cities, createForm.city);
-  const importCityOptions = getCityCodeOptions(cities, bulkCity);
+  const updateCityOptions = getCityCodeOptions(cities);
+  const createCityOptions = getCityCodeOptions(cities);
+  const importCityOptions = getCityCodeOptions(cities);
   const importInvalidCount = importRows.filter(getCsvSchoolRowError).length;
   const importReadyCount = importRows.length - importInvalidCount;
 
@@ -948,8 +951,8 @@ function SchoolsForm() {
       schoolId: String(selected.id),
       schoolName: selected.name ?? "",
       city: resolveCityCodeValue(
-        selected.cityCode ?? selected.city,
-        getCityCodeOptions(cities, selected.cityCode ?? selected.city ?? "")
+        selected.cityCode,
+        getCityCodeOptions(cities)
       ),
       lat: toInputValue(selected.lat),
       lng: toInputValue(selected.lng),
@@ -959,7 +962,7 @@ function SchoolsForm() {
   async function updateSchool() {
     setUpdateState({ status: "loading", message: "Uppdaterar skola..." });
     try {
-      await modifySchool.mutateAsync(buildSchoolPayload(updateForm, true));
+      await modifySchool.mutateAsync(buildSchoolPayload(updateForm, true, updateCityOptions));
       setUpdateState({ status: "success", message: "Skolan uppdaterades." });
       await refresh();
     } catch (error) {
@@ -973,7 +976,7 @@ function SchoolsForm() {
   async function createSchool() {
     setCreateState({ status: "loading", message: "Skapar skola..." });
     try {
-      await createSchoolMutation.mutateAsync(buildSchoolPayload(createForm, false));
+      await createSchoolMutation.mutateAsync(buildSchoolPayload(createForm, false, createCityOptions));
       setCreateForm(emptySchoolForm);
       setCreateState({ status: "success", message: "Skolan skapades." });
       await refresh();
@@ -1055,7 +1058,11 @@ function SchoolsForm() {
     setImportState({ status: "loading", message: `Skapar ${count} skolor...` });
 
     try {
-      await createSchoolsMutation.mutateAsync(importRows.map(buildCsvSchoolPayload));
+      await createSchoolsMutation.mutateAsync(
+        importRows.map((row) =>
+          buildCsvSchoolPayload(row, getCityCodeOptions(cities))
+        )
+      );
       setImportRows([]);
       setCsvFileName("");
       setBulkCity("");

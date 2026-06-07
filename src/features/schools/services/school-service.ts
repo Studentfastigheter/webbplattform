@@ -60,13 +60,17 @@ export const schoolService = {
   },
 
   add: async (school: Omit<School, "id">): Promise<void> => {
-    const cityCode = normalizeCityCode(school.cityCode ?? school.city);
+    const cityCode = normalizeCityCode(school.cityCode);
+    if (!cityCode) {
+      throw new Error("VÃ¤lj en stad innan du sparar skolan.");
+    }
+
     await apiClient<void>("/schools/add", {
       method: "POST",
       body: JSON.stringify({
         schoolName: school.name,
-        city: cityCode || school.cityCode || school.city,
-        ...(cityCode ? { cityCode } : {}),
+        city: school.city || cityCode,
+        cityCode,
         lat: school.lat,
         lng: school.lng,
       }),
