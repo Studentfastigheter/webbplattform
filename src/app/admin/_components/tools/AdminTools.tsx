@@ -33,6 +33,7 @@ import {
   useAdminCreateActivity,
   useAdminCreateCity,
   useAdminCreateCompany,
+  useAdminCreateCompanyAdmin,
   useAdminCreateExternalCompany,
   useAdminCreateSchool,
   useAdminCreateTag,
@@ -68,6 +69,7 @@ import type {
   AdminCompanyRole,
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
+  AdminCreateCompanyUserRequest,
   AdminCreatePOIRequest,
   AdminListingTagDetailDTO,
   AdminLocationCategoryDTO,
@@ -2323,7 +2325,9 @@ function createEmptyCompanyAccountForm(companyId = "") {
     firstName: "",
     surname: "",
     email: "",
+    password: "",
     phone: "",
+    city: "",
     bannerUrl: "",
     logoUrl: "",
   };
@@ -2344,7 +2348,9 @@ function companyAccountToForm(
     firstName: account.firstName ?? "",
     surname: account.surname ?? "",
     email: account.email ?? "",
+    password: "",
     phone: account.phone ?? "",
+    city: "",
     bannerUrl: account.bannerUrl ?? "",
     logoUrl: account.logoUrl ?? "",
   };
@@ -2385,6 +2391,55 @@ function companyRoleOptionLabel(role: AdminCompanyRole) {
     : companyRoleDisplayName(roleName);
 }
 
+function getPreferredCompanyAdminRoleName(roles: AdminCompanyRole[]) {
+  return (
+    roles.find((role) => role.name?.trim().toUpperCase() === "ADMIN")?.name ??
+    roles[0]?.name ??
+    ""
+  );
+}
+
+function buildCreateCompanyAdminPayload(
+  form: CompanyAccountFormState,
+  companyId: number
+): AdminCreateCompanyUserRequest {
+  const firstName = form.firstName.trim();
+  const lastName = form.surname.trim();
+  const email = form.email.trim();
+  const password = form.password.trim();
+  const roleName = form.roleName.trim();
+  const city = normalizeCityCode(form.city);
+
+  if (!firstName) {
+    throw new Error("Ange förnamn.");
+  }
+  if (!lastName) {
+    throw new Error("Ange efternamn.");
+  }
+  if (!email) {
+    throw new Error("Ange e-post.");
+  }
+  if (!roleName) {
+    throw new Error("Välj roll.");
+  }
+  if (!password) {
+    throw new Error("Ange ett lösenord.");
+  }
+  if (password.length < 6) {
+    throw new Error("Lösenordet måste vara minst 6 tecken.");
+  }
+
+  return {
+    companyId,
+    firstName,
+    lastName,
+    plainTextPassword: password,
+    email,
+    roleName,
+    ...(city ? { city } : {}),
+  };
+}
+
 function CompanyAccountVerificationBadge({ verified }: { verified?: boolean }) {
   const isVerified = verified === true;
   const Icon = isVerified ? CheckCircle2Icon : XCircleIcon;
@@ -2407,14 +2462,22 @@ function CompanyAccountVerificationBadge({ verified }: { verified?: boolean }) {
 function CompanyAccountForm() {
   const { items: companies, state: companiesState } = useResourceList(useAdminCompanies());
   const { items: roles, state: rolesState } = useResourceList(useAdminCompanyRoles());
+  const { items: cities, state: citiesState } = useResourceList(useAdminCitySummaries());
+  const createCompanyAdmin = useAdminCreateCompanyAdmin();
   const manageCompanyAccount = useAdminManageCompanyAccount();
   const verifyCompanyAccount = useAdminVerifyCompanyAccount();
+  const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [saveState, setSaveState] = useState<AdminActionState>({ status: "idle" });
   const [accountsState, setAccountsState] = useState<AdminActionState>({ status: "idle" });
   const [verifyState, setVerifyState] = useState<AdminActionState>({ status: "idle" });
   const [accounts, setAccounts] = useState<AdminCompanyUserDTO[]>([]);
   const [verifyingAccountId, setVerifyingAccountId] = useState<number | null>(null);
+  const [createForm, setCreateForm] = useState<CompanyAccountFormState>(() => createEmptyCompanyAccountForm());
   const [form, setForm] = useState<CompanyAccountFormState>(() => createEmptyCompanyAccountForm());
+
+  function patchCreateForm(patch: Partial<CompanyAccountFormState>) {
+    setCreateForm((current) => ({ ...current, ...patch }));
+  }
 
   function patchForm(patch: Partial<CompanyAccountFormState>) {
     setForm((current) => ({ ...current, ...patch }));
@@ -2438,6 +2501,41 @@ function CompanyAccountForm() {
   );
   const roleOptions = roles.filter((role) => Boolean(role.name?.trim()));
   const rolesLoading = rolesState.status === "loading";
+  const citiesLoading = citiesState.status === "loading";
+  const defaultCreateRoleName = getPreferredCompanyAdminRoleName(roleOptions);
+  const cityOptions = cities
+    .map((city) => ({ city, code: cityCode(city) }))
+    .filter((item): item is { city: CityDTO; code: string } => Boolean(item.code));
+  const createCityOptions = createForm.city.trim() && !cityOptions.some((item) => item.code === createForm.city.trim())
+    ? [{ city: { city: createForm.city.trim(), code: createForm.city.trim() }, code: createForm.city.trim() }, ...cityOptions]
+    : cityOptions;
+
+  function getDefaultCompanyCity(companyId: string) {
+    const selectedCompany = companyOptions.find(
+      (company) => String(company.id) === companyId
+    );
+    return normalizeCityCode(selectedCompany?.cities?.[0] ?? "G\u00d6TEBORG");
+  }
+
+  function createNewCompanyAdminForm(companyId = createForm.companyId) {
+    return {
+      ...createEmptyCompanyAccountForm(companyId),
+      roleName: defaultCreateRoleName,
+      city: getDefaultCompanyCity(companyId),
+    };
+  }
+
+  useEffect(() => {
+    if (createForm.roleName.trim() || !defaultCreateRoleName) {
+      return;
+    }
+
+    setCreateForm((current) =>
+      current.roleName.trim()
+        ? current
+        : { ...current, roleName: defaultCreateRoleName }
+    );
+  }, [createForm.roleName, defaultCreateRoleName]);
 
   useEffect(() => {
     const companyIdValue = form.companyId.trim();
@@ -2490,6 +2588,11 @@ function CompanyAccountForm() {
     setForm(createEmptyCompanyAccountForm(companyId));
   }
 
+  function selectCreateCompany(companyId: string) {
+    setCreateState({ status: "idle" });
+    setCreateForm(createNewCompanyAdminForm(companyId));
+  }
+
   function selectAccount(account: AdminCompanyUserDTO) {
     setSaveState({ status: "idle" });
     setVerifyState({ status: "idle" });
@@ -2500,6 +2603,16 @@ function CompanyAccountForm() {
     setSaveState({ status: "idle" });
     setVerifyState({ status: "idle" });
     setForm(createEmptyCompanyAccountForm(form.companyId));
+  }
+
+  function selectCreateRole(roleName: string) {
+    const normalizedRoleName = roleName.trim();
+    const selectedRole = roleOptions.find((role) => role.name?.trim() === normalizedRoleName);
+    patchCreateForm({
+      roleName: normalizedRoleName,
+      roleDescription: selectedRole?.description ?? "",
+      roleAccessLevel: toInputValue(selectedRole?.accessLevel),
+    });
   }
 
   function selectRole(roleName: string) {
@@ -2530,12 +2643,49 @@ function CompanyAccountForm() {
     }
   }
 
+  async function createAccount() {
+    setCreateState({ status: "loading", message: "Skapar företagskonto..." });
+    try {
+      const companyId = parseRequiredNumber(createForm.companyId, "CompanyId");
+      const payload = buildCreateCompanyAdminPayload(createForm, companyId);
+
+      await createCompanyAdmin.mutateAsync({ companyId, payload });
+      setCreateForm(createNewCompanyAdminForm(createForm.companyId));
+      setCreateState({ status: "success", message: "Företagskontot skapades." });
+
+      if (form.companyId.trim() === String(companyId)) {
+        try {
+          const refreshedAccounts = await adminService.getCompanyUsers(companyId);
+          setLoadedAccounts(refreshedAccounts);
+        } catch (refreshError) {
+          setAccountsState({
+            status: "error",
+            message:
+              refreshError instanceof Error
+                ? refreshError.message
+                : "Kontot skapades, men listan kunde inte hämtas om.",
+          });
+        }
+      }
+    } catch (error) {
+      setCreateState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Kunde inte skapa kontot.",
+      });
+    }
+  }
+
   async function run() {
     setSaveState({ status: "loading", message: "Sparar företagskonto..." });
     try {
       const companyId = parseRequiredNumber(form.companyId, "CompanyId");
+      const accountId = parseOptionalNumber(form.id);
+      if (!accountId) {
+        throw new Error("Välj ett konto i listan innan du uppdaterar.");
+      }
+
       const payload: AdminCompanyUserDTO = {
-        id: parseOptionalNumber(form.id),
+        id: accountId,
         companyId,
         role: {
           name: form.roleName.trim(),
@@ -2552,6 +2702,7 @@ function CompanyAccountForm() {
 
       await manageCompanyAccount.mutateAsync({ companyId, payload });
       setSaveState({ status: "success", message: "Företagskontot sparades." });
+
       try {
         const refreshedAccounts = await adminService.getCompanyUsers(companyId);
         setLoadedAccounts(refreshedAccounts);
@@ -2612,9 +2763,81 @@ function CompanyAccountForm() {
   }
 
   return (
+    <div className="grid gap-4">
+      <ActionShell
+        title="Skapa företagskonto"
+        description="POST skapar ett nytt konto för valt företag. Konto-id sätts av backend."
+        method="POST"
+        endpoint="/api/admin/company/{id}/create-admin"
+      >
+        <ResultBlock state={companiesState} />
+        <ResultBlock state={rolesState} />
+        <ResultBlock state={citiesState} />
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <FormSelect
+            label="Företag"
+            value={createForm.companyId}
+            onChange={selectCreateCompany}
+            disabled={companiesLoading || companyOptions.length === 0}
+          >
+            <option value="">
+              {companiesLoading ? "Hämtar företag..." : "Välj företag"}
+            </option>
+            {companyOptions.map((company) => (
+              <option key={company.id} value={String(company.id)}>
+                {[company.name, company.id].filter(Boolean).join(" - ")}
+              </option>
+            ))}
+          </FormSelect>
+          <FormSelect
+            label="Roll"
+            value={createForm.roleName}
+            onChange={selectCreateRole}
+            disabled={rolesLoading || roleOptions.length === 0}
+          >
+            <option value="">
+              {rolesLoading ? "Hämtar roller..." : "Välj roll"}
+            </option>
+            {roleOptions.map((role) => {
+              const roleName = role.name?.trim();
+              if (!roleName) return null;
+
+              return (
+                <option key={roleName} value={roleName}>
+                  {companyRoleOptionLabel(role)}
+                </option>
+              );
+            })}
+          </FormSelect>
+          <FormInput label="Förnamn" value={createForm.firstName} onChange={(firstName) => patchCreateForm({ firstName })} />
+          <FormInput label="Efternamn" value={createForm.surname} onChange={(surname) => patchCreateForm({ surname })} />
+          <FormInput label="E-post" value={createForm.email} onChange={(email) => patchCreateForm({ email })} type="email" />
+          <FormInput label="Lösenord" value={createForm.password} onChange={(password) => patchCreateForm({ password })} type="password" />
+          <FormSelect
+            label="Stad"
+            value={createForm.city}
+            onChange={(city) => patchCreateForm({ city })}
+            disabled={citiesLoading || createCityOptions.length === 0}
+          >
+            <option value="">
+              {citiesLoading ? "Hämtar städer..." : "Välj stad"}
+            </option>
+            {createCityOptions.map(({ city, code }) => (
+              <option key={code} value={code}>
+                {cityOptionLabel(city)}
+              </option>
+            ))}
+          </FormSelect>
+        </div>
+        <SubmitButton isLoading={createState.status === "loading"} onPress={() => void createAccount()} disabled={!createForm.companyId.trim()}>
+          Skapa konto
+        </SubmitButton>
+        <ResultBlock state={createState} />
+      </ActionShell>
+
     <ActionShell
-      title="Företagskonto"
-      description="Välj företag för att hämta kopplade konton, uppdatera befintliga konton och verifiera anställda."
+      title="Hämta och uppdatera företagskonto"
+      description="GET hämtar kopplade konton för valt företag. PUT uppdaterar bara kontot du väljer i listan."
       method="GET/PUT"
       endpoint="/api/companies/roles, /api/companies/{id}/users, /api/companies/{id}/users/{userId}"
     >
@@ -2775,11 +2998,12 @@ function CompanyAccountForm() {
           )}
         </div>
       </div>
-      <SubmitButton isLoading={saveState.status === "loading"} onPress={run} disabled={!form.companyId.trim()}>
+      <SubmitButton isLoading={saveState.status === "loading"} onPress={run} disabled={!form.companyId.trim() || !form.id.trim()}>
         Spara konto
       </SubmitButton>
       <ResultBlock state={saveState} />
     </ActionShell>
+    </div>
   );
 }
 

@@ -12,6 +12,7 @@ import type {
   AdminCompanyRole,
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
+  AdminCreateCompanyUserRequest,
   AdminCreatePOIRequest,
   AdminListingTagDetailDTO,
   AdminLocationCategoryDTO,
@@ -205,6 +206,22 @@ export const adminService = {
       `/companies/${pathSegment(companyId)}/verify/${pathSegment(userId)}`,
       {
         method: "PUT",
+      }
+    );
+  },
+
+  createCompanyAdmin: async (
+    companyId: number,
+    account: AdminCreateCompanyUserRequest
+  ): Promise<void> => {
+    await apiClient<void>(
+      `/admin/company/${pathSegment(companyId)}/create-admin`,
+      {
+        method: "POST",
+        body: jsonBody({
+          ...account,
+          companyId,
+        }),
       }
     );
   },

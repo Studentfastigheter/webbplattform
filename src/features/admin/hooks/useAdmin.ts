@@ -37,6 +37,7 @@ import type {
   AdminCompanyRole,
   AdminCompanyUserDTO,
   AdminCreateCompanyRequest,
+  AdminCreateCompanyUserRequest,
   AdminCreatePOIRequest,
   AdminListingTagDetailDTO,
   AdminLocationCategoryDTO,
@@ -415,6 +416,22 @@ export function useAdminManageCompanyAccount() {
     mutationFn: ({ payload }) => adminService.manageCompanyAccount(payload),
     onSettled: (_data, _err, { companyId }) => {
       qc.invalidateQueries({ queryKey: qk.admin.companyUsers(companyId) });
+    },
+  });
+}
+
+export function useAdminCreateCompanyAdmin() {
+  const qc = useQueryClient();
+  return useMutation<
+    void,
+    Error,
+    { companyId: number; payload: AdminCreateCompanyUserRequest }
+  >({
+    mutationFn: ({ companyId, payload }) =>
+      adminService.createCompanyAdmin(companyId, payload),
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({ queryKey: qk.admin.companyUsers(companyId) });
+      qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
     },
   });
 }

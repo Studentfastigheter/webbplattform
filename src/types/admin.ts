@@ -59,6 +59,16 @@ export type AdminCreateCompanyRequest = {
   credentials?: AdminCompanyCredentialDTO;
 };
 
+export type AdminCreateCompanyUserRequest = {
+  companyId?: number;
+  firstName: string;
+  lastName: string;
+  plainTextPassword: string;
+  email: string;
+  roleName: string;
+  city?: string;
+};
+
 export type AdminCompanyUserDTO = {
   id?: number;
   companyId?: number;
