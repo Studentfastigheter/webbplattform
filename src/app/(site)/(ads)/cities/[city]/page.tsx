@@ -8,10 +8,7 @@ import { GraduationCapIcon, HomeIcon, MapPinIcon } from "lucide-react";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import type { BaseMarker } from "@/components/shared/map/BaseMap";
 import { useAuth } from "@/context/AuthContext";
-import {
-  formatCityName,
-  getCityImageUrl,
-} from "@/features/cities/city-utils";
+import { formatCityName } from "@/features/cities/city-utils";
 import SimpleCompanyCard from "@/features/cities/components/SimpleCompanyCard";
 import { useCityDetail } from "@/features/cities/hooks/useCities";
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
@@ -130,7 +127,7 @@ export default function CityDetailPage() {
 
   const cityName = formatCityName(cityDetail?.city ?? fallbackCityName) || fallbackCityName;
   const cityDescription = cityDetail?.description?.trim() || "";
-  const cityBannerUrl = cityDetail?.bannerUrl?.trim() || getCityImageUrl(cityName);
+  const cityBannerUrl = cityDetail?.bannerUrl?.trim() || null;
 
   // Listings in this city — page 0, 6 items (preview strip on the page).
   // Cached per cityName so navigating away and back is instant.
@@ -311,13 +308,15 @@ export default function CityDetailPage() {
             className="relative w-full overflow-hidden rounded-2xl bg-gray-100"
             style={{ aspectRatio: "1440 / 425" }}
           >
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage: `url("${cityBannerUrl}")`,
-              }}
-              aria-hidden
-            />
+            {cityBannerUrl ? (
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                  backgroundImage: `url("${cityBannerUrl}")`,
+                }}
+                aria-hidden
+              />
+            ) : null}
           </div>
 
           <div className="mx-auto max-w-4xl px-4 pt-8 sm:px-6 sm:pt-10">

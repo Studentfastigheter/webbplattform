@@ -4,21 +4,9 @@ import { type CSSProperties, useEffect, useMemo, useState } from "react";
 
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
-import { getCityImageUrl, normalizeCityName } from "@/features/cities/city-utils";
+import { normalizeCityName } from "@/features/cities/city-utils";
 import { cityService } from "@/features/cities/services/city-service";
-import { isPlatformLaunched } from "@/lib/platform-launch";
 import type { CityDTO } from "@/types/city";
-
-const FALLBACK_CITIES = [
-  "Göteborg",
-  "Stockholm",
-  "Lund",
-  "Uppsala",
-  "Linköping",
-  "Malmö",
-  "Örebro",
-  "Umeå",
-];
 
 const MIN_CAROUSEL_DURATION_SECONDS = 80;
 const CAROUSEL_DURATION_SECONDS_PER_CITY = 5;
@@ -26,24 +14,18 @@ const CAROUSEL_DURATION_SECONDS_PER_CITY = 5;
 type CityCarouselItem = {
   name: string;
   code: string;
-  imageUrl: string;
+  imageUrl?: string | null;
 };
 
-function CityCarouselCard({
-  city,
-  platformLaunched,
-}: {
-  city: CityCarouselItem;
-  platformLaunched: boolean;
-}) {
+function CityCarouselCard({ city }: { city: CityCarouselItem }) {
   const { t } = useI18n();
   const cardClassName =
-    "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-white ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
+    "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-[#004225] ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
   const style = {
-    backgroundImage: `url("${city.imageUrl}")`,
+    ...(city.imageUrl ? { backgroundImage: `url("${city.imageUrl}")` } : {}),
     backgroundPosition: "center",
     backgroundSize: "cover",
-  };
+  } satisfies CSSProperties;
   const content = (
     <>
       <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/72 transition-opacity group-hover:opacity-95" />
@@ -52,14 +34,6 @@ function CityCarouselCard({
       </span>
     </>
   );
-
-  if (!platformLaunched) {
-    return (
-      <div className={cardClassName} style={style} aria-label={city.name}>
-        {content}
-      </div>
-    );
-  }
 
   return (
     <Link
@@ -80,17 +54,7 @@ function normalizeCarouselCity(city: CityDTO): CityCarouselItem | null {
   return {
     name,
     code: city.code?.trim() || name,
-    imageUrl: city.bannerUrl?.trim() || getCityImageUrl(name, "720x980"),
-  };
-}
-
-function fallbackCarouselCity(name: string): CityCarouselItem {
-  const normalizedName = normalizeCityName(name);
-
-  return {
-    name: normalizedName,
-    code: normalizedName,
-    imageUrl: getCityImageUrl(normalizedName, "720x980"),
+    imageUrl: city.bannerUrl?.trim() || null,
   };
 }
 
@@ -111,15 +75,9 @@ function uniqueCarouselCities(cities: CityCarouselItem[]) {
 
 export function CityCarousel() {
   const { t } = useI18n();
-  const platformLaunched = isPlatformLaunched();
   const [cities, setCities] = useState<CityCarouselItem[]>([]);
 
   useEffect(() => {
-    if (!platformLaunched) {
-      setCities([]);
-      return;
-    }
-
     let active = true;
 
     cityService
@@ -133,9 +91,7 @@ export function CityCarousel() {
             .filter((city): city is CityCarouselItem => city !== null)
         );
 
-        if (nextCities.length > 0) {
-          setCities(nextCities);
-        }
+        setCities(nextCities);
       })
       .catch((err) => {
         console.error(t("home.cities.loadError"), err);
@@ -144,14 +100,9 @@ export function CityCarousel() {
     return () => {
       active = false;
     };
-  }, [platformLaunched, t]);
+  }, [t]);
 
-  const displayCities =
-    cities.length > 0
-      ? cities
-      : platformLaunched
-        ? []
-        : FALLBACK_CITIES.map(fallbackCarouselCity);
+  const displayCities = cities;
   const carouselCities = useMemo(
     () => [...displayCities, ...displayCities],
     [displayCities],
@@ -178,7 +129,6 @@ export function CityCarousel() {
             <CityCarouselCard
               key={`${city.code}-${index}`}
               city={city}
-              platformLaunched={platformLaunched}
             />
           ))}
         </div>

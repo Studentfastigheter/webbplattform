@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { FieldSet } from "@/components/ui/field";
-import { getCityImageUrl, normalizeCityName } from "@/features/cities/city-utils";
+import { normalizeCityName } from "@/features/cities/city-utils";
 import { useCitiesList } from "@/features/cities/hooks/useCities";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedNumber, localizedCount, localizedText } from "@/i18n/text";
@@ -15,24 +15,25 @@ import type { CityDTO } from "@/types/city";
 type CityCardData = {
   name: string;
   code: string;
-  imageUrl: string;
+  imageUrl?: string | null;
   description?: string | null;
 };
 
 function CityCard({ city }: { city: CityCardData }) {
   const { locale } = useI18n();
   const cityHref = `/cities/${encodeURIComponent(city.code)}`;
+  const backgroundStyle = {
+    ...(city.imageUrl ? { backgroundImage: `url("${city.imageUrl}")` } : {}),
+    backgroundPosition: "center",
+    backgroundSize: "cover",
+  } satisfies CSSProperties;
 
   return (
     <LocalizedLink
       href={cityHref}
       aria-label={localizedText(locale, `Öppna ${city.name}`, `Open ${city.name}`)}
-      className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-gray-200 shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[245px]"
-      style={{
-        backgroundImage: `url("${city.imageUrl}")`,
-        backgroundPosition: "center",
-        backgroundSize: "cover",
-      }}
+      className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-[#004225] shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[245px]"
+      style={backgroundStyle}
     >
       <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/70 transition-opacity group-hover:opacity-95" />
       <span className="absolute bottom-5 left-5 right-5 block max-w-[calc(100%-2.5rem)] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:right-6">
@@ -49,7 +50,7 @@ function normalizeCityCard(city: CityDTO): CityCardData | null {
   if (!name) return null;
 
   const code = city.code?.trim() || name;
-  const imageUrl = city.bannerUrl?.trim() || getCityImageUrl(name, "900x620");
+  const imageUrl = city.bannerUrl?.trim() || null;
   const description = city.description?.trim() || null;
 
   return {
