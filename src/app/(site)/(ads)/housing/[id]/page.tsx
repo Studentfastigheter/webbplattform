@@ -389,7 +389,7 @@ export default function ListingDetailPage() {
     ),
     enabled: Boolean(listing),
     staleTime: 60_000,
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!listing) return [];
 
       const location = listing.city || listing.area || null;
@@ -399,8 +399,7 @@ export default function ListingDetailPage() {
           size: NEARBY_LISTINGS_FETCH_SIZE,
           city: location,
           seed: listing.id,
-        },
-        { signal }
+        }
       );
 
       const byId = new Map<string, ListingCardDTO>();
@@ -420,8 +419,7 @@ export default function ListingDetailPage() {
             page: 0,
             size: NEARBY_LISTINGS_FETCH_SIZE,
             seed: listing.id,
-          },
-          { signal }
+          }
         );
         addCandidates(fallbackResponse.content);
       }

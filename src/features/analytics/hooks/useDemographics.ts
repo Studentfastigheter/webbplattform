@@ -40,8 +40,8 @@ export function useListingDemography(
 ) {
   return useQuery<ListingDemography>({
     queryKey: qk.demographics.listing(listingId ?? "", from, to, category),
-    queryFn: ({ signal }) =>
-      demographicsService.getListing(listingId!, from, to, category, { signal }),
+    queryFn: () =>
+      demographicsService.getListing(listingId!, from, to, category),
     enabled: enabled && Boolean(listingId) && !!from && !!to,
     staleTime: STALE_30_SECONDS,
   });
@@ -55,10 +55,8 @@ export function useListingByAllCategoriesDemography(
 ) {
   return useQuery<Record<DemographyCategory, ListingDemography | null>>({
     queryKey: qk.demographics.listingByAllCategories(listingId ?? "", from, to),
-    queryFn: ({ signal }) =>
-      demographicsService.getListingByAllCategories(listingId!, from, to, {
-        signal,
-      }),
+    queryFn: () =>
+      demographicsService.getListingByAllCategories(listingId!, from, to),
     enabled: enabled && Boolean(listingId) && !!from && !!to,
     staleTime: STALE_30_SECONDS,
   });
@@ -73,8 +71,8 @@ export function useCompanyDemography(
 ) {
   return useQuery<CompanyDemography>({
     queryKey: qk.demographics.company(companyId ?? -1, from, to, category),
-    queryFn: ({ signal }) =>
-      demographicsService.getCompany(companyId!, from, to, category, { signal }),
+    queryFn: () =>
+      demographicsService.getCompany(companyId!, from, to, category),
     enabled:
       enabled && companyId != null && companyId > 0 && !!from && !!to,
     staleTime: STALE_30_SECONDS,
@@ -93,12 +91,11 @@ export function useCompaniesBatchByAllCategoriesDemography(
       from,
       to
     ),
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       demographicsService.getCompaniesBatchByAllCategories(
         companyIds,
         from,
-        to,
-        { signal }
+        to
       ),
     enabled: enabled && companyIds.length > 0 && !!from && !!to,
     staleTime: STALE_30_SECONDS,
@@ -117,12 +114,11 @@ export function useFullCompanyListingsByAllCategoriesDemography(
       from,
       to
     ),
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       demographicsService.getFullCompanyListingsByAllCategories(
         companyId!,
         from,
-        to,
-        { signal }
+        to
       ),
     enabled:
       enabled && companyId != null && companyId > 0 && !!from && !!to,
@@ -148,15 +144,14 @@ export function useApplicationsBatchDemography(
       category,
       gotListing
     ),
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       demographicsService.getApplicationsBatch(
         companyId!,
         listingIds,
         from,
         to,
         category,
-        gotListing,
-        { signal }
+        gotListing
       ),
     enabled:
       enabled &&
@@ -185,14 +180,13 @@ export function useApplicationDemography(
       category,
       gotListing
     ),
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       demographicsService.getApplication(
         listingId!,
         from,
         to,
         category,
-        gotListing,
-        { signal }
+        gotListing
       ),
     enabled: enabled && Boolean(listingId) && !!from && !!to,
     staleTime: STALE_30_SECONDS,

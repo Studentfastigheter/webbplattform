@@ -4,7 +4,7 @@
  * Queues — TanStack Query hooks.
  *
  * Three key wins here:
- *  1. useMyQueues is used on 4 separate pages. One cache entry now.
+ *  1. useMyQueues is shared by all pages that need the user's queue state.
  *  2. useAllCompanyListings is called from 5 sites — including 3 different
  *     blocks on the analytics screen. With caching they share one fetch.
  *  3. useJoinQueue mutation invalidates both my-queues and the queue's
@@ -61,13 +61,12 @@ export function useMyQueues(
   return useQuery<QueueApplicationDTO[]>({
     ...restOptions,
     queryKey: [...qk.queues.my(), { hydrated }] as const,
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       queueService.getMyQueues({
         // Forward the exact same option name the service expects. When
         // hydrated=true we pass no hydrateQueues key so the service's
         // default-true branch runs.
         ...(hydrated ? {} : { hydrateQueues: false as const }),
-        signal,
       }),
     enabled: enabled && Boolean(user),
     staleTime: STALE_30_SECONDS,
@@ -77,8 +76,7 @@ export function useMyQueues(
 export function useQueuesByCompany(companyId: number | null | undefined) {
   return useQuery<HousingQueueDTO[]>({
     queryKey: qk.queues.byCompany(companyId ?? -1),
-    queryFn: ({ signal }) =>
-      queueService.getByCompany(companyId!, { signal }),
+    queryFn: () => queueService.getByCompany(companyId!),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -87,7 +85,7 @@ export function useQueuesByCompany(companyId: number | null | undefined) {
 export function useQueue(queueId: string | null | undefined) {
   return useQuery<HousingQueueDTO>({
     queryKey: qk.queues.detail(queueId ?? ""),
-    queryFn: ({ signal }) => queueService.get(queueId!, { signal }),
+    queryFn: () => queueService.get(queueId!),
     enabled: Boolean(queueId),
     staleTime: STALE_30_SECONDS,
   });
@@ -101,8 +99,7 @@ export function useQueue(queueId: string | null | undefined) {
 export function useQueueCompany(companyId: number | null | undefined) {
   return useQuery<CompanyDTO>({
     queryKey: qk.queues.company(companyId ?? -1),
-    queryFn: ({ signal }) =>
-      queueService.getCompany(companyId!, { signal }),
+    queryFn: () => queueService.getCompany(companyId!),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_5_MINUTES, // company profile is reference-ish data
   });
@@ -115,8 +112,7 @@ export function useCompanyListingsPage(
 ) {
   return useQuery<PageResponse<ListingCardDTO>>({
     queryKey: qk.queues.companyListingsPage(companyId ?? -1, page, size),
-    queryFn: ({ signal }) =>
-      queueService.getCompanyListingsPage(companyId!, page, size, { signal }),
+    queryFn: () => queueService.getCompanyListingsPage(companyId!, page, size),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData,
@@ -134,8 +130,7 @@ export function useAllCompanyListings(
 ) {
   return useQuery<ListingCardDTO[]>({
     queryKey: qk.queues.allCompanyListings(companyId ?? -1, page, size),
-    queryFn: ({ signal }) =>
-      queueService.getAllCompanyListings(companyId!, page, size, { signal }),
+    queryFn: () => queueService.getAllCompanyListings(companyId!, page, size),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -146,8 +141,7 @@ export function useCompanyQueueApplications(
 ) {
   return useQuery<QueueApplicationDTO[]>({
     queryKey: qk.queues.companyApplications(companyId ?? -1),
-    queryFn: ({ signal }) =>
-      queueService.getCompanyQueueApplications(companyId!, { signal }),
+    queryFn: () => queueService.getCompanyQueueApplications(companyId!),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });

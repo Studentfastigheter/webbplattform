@@ -21,7 +21,6 @@ import {
   useRejectOffer,
   useWithdrawApplication,
 } from "@/features/listings/hooks/useListings";
-import { useMyQueues } from "@/features/queues/hooks/useQueues";
 import { listingService } from "@/features/listings/services/listing-service";
 import { qk } from "@/lib/query/keys";
 import type { Locale } from "@/i18n/config";
@@ -182,13 +181,6 @@ export default function MyApplicationsPage() {
   const userAccountType = (user as any)?.accountType || (user as any)?.type;
   const isStudent = userAccountType === "student";
   const isPrivateLandlord = userAccountType === "private_landlord";
-
-  // My queues: hydrated so the row builder has queue/company info.
-  // Not actually used by the row mapping below, but the previous code
-  // loaded it eagerly here — keep the same shape until we know it's safe
-  // to drop. Shared cache with /koer and the alla-koer pages.
-  const { data: hydratedQueues } = useMyQueues({ hydrated: true });
-  void hydratedQueues; // referenced by parity with old behavior
 
   // My applications — shared cache. Re-fetches automatically when any
   // mutation in this page (withdraw / accept / reject) invalidates it.

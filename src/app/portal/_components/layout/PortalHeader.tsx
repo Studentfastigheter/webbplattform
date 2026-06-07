@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Settings, UserCircle, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
@@ -17,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
-import { queueService } from "@/features/queues/services/queue-service";
+import { useCompanyPublic } from "@/features/companies/hooks/useCompanies";
 import { dashboardRelPath } from "../../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
@@ -25,9 +24,17 @@ export default function PortalHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = usePortalSidebar();
   const { user, isLoading, logout } = useAuth();
   const { locale } = useI18n();
-  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const activeCompany = getActiveCompanySummary(user);
   const companyId = getActiveCompanyId(user);
+  const shouldLoadCompanyLogo =
+    Boolean(activeCompany) &&
+    !isLoading &&
+    companyId != null &&
+    !activeCompany?.logoUrl &&
+    !user?.logoUrl;
+  const { data: companyLogoSource } = useCompanyPublic(companyId, {
+    enabled: shouldLoadCompanyLogo,
+  });
   const displayName =
     activeCompany?.name ||
     user?.companyName ||
@@ -40,7 +47,7 @@ export default function PortalHeader() {
     : localizedText(locale, "Hyresvärd", "Landlord");
   const avatarSrc =
     activeCompany
-      ? companyLogoUrl || activeCompany.logoUrl || user?.logoUrl || ""
+      ? companyLogoSource?.logoUrl || activeCompany.logoUrl || user?.logoUrl || ""
       : user?.logoUrl || "";
   const initials = displayName
     .split(" ")
@@ -48,31 +55,6 @@ export default function PortalHeader() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  useEffect(() => {
-    setCompanyLogoUrl(null);
-
-    if (isLoading || companyId == null || activeCompany?.logoUrl || user?.logoUrl) {
-      return;
-    }
-
-    let active = true;
-
-    queueService
-      .getCompany(companyId)
-      .then((company) => {
-        if (!active) return;
-        setCompanyLogoUrl(company.logoUrl || null);
-      })
-      .catch(() => {
-        if (!active) return;
-        setCompanyLogoUrl(null);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [activeCompany?.logoUrl, companyId, isLoading, user?.logoUrl]);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {

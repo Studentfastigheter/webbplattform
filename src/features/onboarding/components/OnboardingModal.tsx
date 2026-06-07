@@ -73,7 +73,8 @@ export default function OnboardingModal() {
   // until then so quick-register users who never need this modal don't pay
   // for the reference-data fetch.
   const { data: schools = [], isFetching: schoolsLoading } = useSchools(
-    isOpen ? undefined : undefined,
+    undefined,
+    { enabled: isOpen },
   );
 
   const [formData, setFormData] = useState({

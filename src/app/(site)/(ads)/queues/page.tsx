@@ -6,7 +6,6 @@ import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/features/queues/components/QueueRow";
 import { useAuth } from "@/context/AuthContext";
 import { useMyQueues } from "@/features/queues/hooks/useQueues";
-import { queueService } from "@/features/queues/services/queue-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 

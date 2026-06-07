@@ -14,7 +14,12 @@
  * staying as-is.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseQueryOptions,
+} from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -43,19 +48,22 @@ const STALE_5_MINUTES = 5 * 60_000;
 export function useCompanies() {
   return useQuery<CompanyPublicDTO[]>({
     queryKey: qk.companies.list(),
-    // The service splits params (city filter) from ServiceOptions (signal).
-    // listCompanies(params, options) — pass an empty filter and forward signal
-    // via the second argument so cancellation works on unmount.
-    queryFn: ({ signal }) => companyService.listCompanies({}, { signal }),
+    queryFn: () => companyService.listCompanies({}),
     staleTime: STALE_5_MINUTES, // landlord list is reference-ish
   });
 }
 
-export function useCompanyPublic(id: number | null | undefined) {
+export function useCompanyPublic(
+  id: number | null | undefined,
+  options?: Omit<UseQueryOptions<CompanyPublicDTO>, "queryKey" | "queryFn">
+) {
+  const { enabled = true, ...restOptions } = options ?? {};
+
   return useQuery<CompanyPublicDTO>({
+    ...restOptions,
     queryKey: qk.companies.publicProfile(id ?? -1),
-    queryFn: ({ signal }) => companyService.publicProfile(id!, { signal }),
-    enabled: id != null && id > 0,
+    queryFn: () => companyService.publicProfile(id!),
+    enabled: enabled && id != null && id > 0,
     staleTime: STALE_5_MINUTES,
   });
 }
@@ -64,7 +72,7 @@ export function useCompanyPrivate(id: number | null | undefined) {
   const { user } = useAuth();
   return useQuery<CompanyPrivateDTO>({
     queryKey: qk.companies.privateProfile(id ?? -1),
-    queryFn: ({ signal }) => companyService.privateProfile(id!, { signal }),
+    queryFn: () => companyService.privateProfile(id!),
     enabled: Boolean(user) && id != null && id > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -76,8 +84,7 @@ export function useApplicationCountsPerObject(
 ) {
   return useQuery<ObjectApplicationCount[]>({
     queryKey: qk.companies.applicationCounts(companyId ?? -1, limit),
-    queryFn: ({ signal }) =>
-      companyService.applicationCountsPerObject(companyId!, limit, { signal }),
+    queryFn: () => companyService.applicationCountsPerObject(companyId!, limit),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -89,8 +96,7 @@ export function useListingViewCounts(
 ) {
   return useQuery<ListingViewCounts>({
     queryKey: qk.companies.viewCounts(companyId ?? -1, listingId ?? ""),
-    queryFn: ({ signal }) =>
-      companyService.listingViewCounts(companyId!, listingId!, { signal }),
+    queryFn: () => companyService.listingViewCounts(companyId!, listingId!),
     enabled: companyId != null && companyId > 0 && Boolean(listingId),
     staleTime: STALE_30_SECONDS,
   });
@@ -109,13 +115,12 @@ export function useTimedApplicationsForListing(
       to,
       listingId ?? ""
     ),
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       companyService.timedApplicationsForListing(
         companyId!,
         from,
         to,
-        listingId!,
-        { signal }
+        listingId!
       ),
     enabled:
       companyId != null && companyId > 0 && Boolean(listingId) && !!from && !!to,
@@ -135,8 +140,8 @@ export function useCompanyApplications(
 
   return useQuery<NewApplication[]>({
     queryKey: qk.companies.applications(companyId ?? -1, pageSize, maxPages),
-    queryFn: ({ signal }) =>
-      companyService.applications(companyId!, { pageSize, maxPages, signal }),
+    queryFn: () =>
+      companyService.applications(companyId!, { pageSize, maxPages }),
     enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -149,8 +154,7 @@ export function useCompanyApplicationsTimeline(
 
   return useQuery<Timeline>({
     queryKey: qk.companies.applicationsTimeline(companyId ?? -1),
-    queryFn: ({ signal }) =>
-      companyService.applicationsTimeline(companyId!, { signal }),
+    queryFn: () => companyService.applicationsTimeline(companyId!),
     enabled: Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -166,8 +170,7 @@ export function useCompanyTimedApplications(
 
   return useQuery<ApplicationStatisticEntry[]>({
     queryKey: qk.companies.timedApplicationsTotal(companyId ?? -1, from, to),
-    queryFn: ({ signal }) =>
-      companyService.timedApplications(companyId!, from, to, { signal }),
+    queryFn: () => companyService.timedApplications(companyId!, from, to),
     enabled:
       enabled && Boolean(user) && companyId != null && companyId > 0 && !!from && !!to,
     staleTime: STALE_30_SECONDS,
@@ -181,7 +184,7 @@ export function useCompanyGeneralAnalytics(
 
   return useQuery<AnalyticalQuantities>({
     queryKey: qk.companies.generalAnalytics(companyId ?? -1),
-    queryFn: ({ signal }) => companyService.generalAnalytics(companyId!, { signal }),
+    queryFn: () => companyService.generalAnalytics(companyId!),
     enabled: Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -194,8 +197,7 @@ export function useCompanyResidentAnalytics(
 
   return useQuery<ResidentAnalyticsData>({
     queryKey: qk.companies.residentAnalytics(companyId ?? -1),
-    queryFn: ({ signal }) =>
-      companyService.residentAnalyticsData(companyId!, { signal }),
+    queryFn: () => companyService.residentAnalyticsData(companyId!),
     enabled: Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -209,7 +211,7 @@ export function useCompanyResidentAnalytics(
 export function usePlatforms() {
   return useQuery<SocialPlatform[]>({
     queryKey: qk.companies.platforms(),
-    queryFn: ({ signal }) => companyService.getAllPlatforms({ signal }),
+    queryFn: () => companyService.getAllPlatforms(),
     staleTime: STALE_5_MINUTES,
   });
 }
@@ -225,7 +227,7 @@ export function useCompanyUsers(companyId: number | null | undefined) {
   const { user } = useAuth();
   return useQuery<CompanyUserDTO[]>({
     queryKey: qk.companies.users(companyId ?? -1),
-    queryFn: ({ signal }) => companyService.users(companyId!, { signal }),
+    queryFn: () => companyService.users(companyId!),
     enabled: Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -238,7 +240,7 @@ export function useCompanyUsers(companyId: number | null | undefined) {
 export function useCompanyRoles() {
   return useQuery<CompanyRole[]>({
     queryKey: qk.companies.roles(),
-    queryFn: ({ signal }) => companyService.roles({ signal }),
+    queryFn: () => companyService.roles(),
     staleTime: STALE_5_MINUTES,
   });
 }

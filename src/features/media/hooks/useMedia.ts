@@ -11,8 +11,7 @@ export function useCompanyPublicMedia(
 ) {
   return useQuery<string[]>({
     queryKey: qk.media.companyPublic(companyId ?? -1),
-    queryFn: ({ signal }) =>
-      mediaService.listCompanyPublic(companyId!, { signal }),
+    queryFn: () => mediaService.listCompanyPublic(companyId!),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_5_MINUTES,
   });

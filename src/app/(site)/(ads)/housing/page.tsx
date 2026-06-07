@@ -553,14 +553,13 @@ export default function ListingsPage() {
     queryKey: qk.listings.map(normalizedMapFilters),
     enabled: isMapView,
     staleTime: 30_000,
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       const firstPage = await listingService.getAll(
         {
           ...normalizedMapFilters,
           page: 0,
           size: MAP_PAGE_SIZE,
-        },
-        { signal }
+        }
       );
 
       const pageCount = Math.max(1, getTotalPagesFromResponse(firstPage));
@@ -574,8 +573,7 @@ export default function ListingsPage() {
                 ...normalizedMapFilters,
                 page: index + 1,
                 size: MAP_PAGE_SIZE,
-              },
-              { signal }
+              }
             )
           )
         );

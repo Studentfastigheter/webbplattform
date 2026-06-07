@@ -15,7 +15,6 @@ import ProfileDocumentsSection from "@/features/students/components/ProfileDocum
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
-import { authService } from "@/features/auth/services/auth-service";
 import {
   useVerifyEmail,
   useVerifyIdentity,
@@ -600,11 +599,10 @@ function EditableStudentProfile({
 export default function Page() {
   const router = useRouter();
   const { locale, localizedHref } = useI18n();
-  const { token, isLoading: authLoading, updateUser } = useAuth();
+  const { user, isLoading: authLoading, updateUser } = useAuth();
   const [student, setStudent] = useState<User | null>(null);
   const [draft, setDraft] = useState<StudentProfileDraft | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -615,48 +613,23 @@ export default function Page() {
   const startingEmailVerification = verifyEmailMutation.isPending;
 
   useEffect(() => {
-    if (authLoading || !token) {
-      if (!token) {
-        setStudent(null);
-        setDraft(null);
-        setError(null);
-      }
+    if (authLoading) {
       return;
     }
 
-    let cancelled = false;
-
-    const loadStudentProfile = async () => {
-      setLoadingProfile(true);
+    if (!user) {
+      setStudent(null);
+      setDraft(null);
       setError(null);
+      return;
+    }
 
-      try {
-        const currentUser = await authService.me();
-        if (!cancelled) {
-          setStudent(currentUser);
-          setDraft(buildDraftFromUser(currentUser));
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setStudent(null);
-          setDraft(null);
-          setError(
-            err instanceof Error
-              ? err.message
-              : localizedText(locale, "Kunde inte hämta profilen från backend.", "Could not load the profile from the backend.")
-          );
-        }
-      } finally {
-        if (!cancelled) setLoadingProfile(false);
-      }
-    };
-
-    loadStudentProfile();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, locale, token]);
+    setStudent(user);
+    setDraft((currentDraft) =>
+      currentDraft && editMode ? currentDraft : buildDraftFromUser(user)
+    );
+    setError(null);
+  }, [authLoading, editMode, user]);
 
   const savedSnapshot = useMemo(
     () => (student ? getDraftSnapshot(buildDraftFromUser(student)) : ""),
@@ -774,15 +747,15 @@ export default function Page() {
     }
   };
 
-  if (authLoading || (token && loadingProfile && !student)) {
+  if (authLoading) {
     return (
       <div className="p-10 text-center text-muted-foreground">
-        {localizedText(locale, "Hämtar profil från backend...", "Loading profile from the backend...")}
+        {localizedText(locale, "Hämtar profil...", "Loading profile...")}
       </div>
     );
   }
 
-  if (!token) {
+  if (!user) {
     return (
       <div className="p-10 text-center text-muted-foreground">
         {localizedText(locale, "Logga in för att se din profil.", "Log in to view your profile.")}

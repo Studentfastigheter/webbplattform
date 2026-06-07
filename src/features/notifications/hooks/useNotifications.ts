@@ -21,7 +21,7 @@ export function useNotifications({ enabled = true }: { enabled?: boolean } = {})
   const { token } = useAuth();
   return useQuery<NotificationItem[]>({
     queryKey: qk.notifications.list(),
-    queryFn: ({ signal }) => notificationService.getAll({ signal }),
+    queryFn: () => notificationService.getAll(),
     enabled: enabled && Boolean(token),
     staleTime: STALE_30_SECONDS,
     // Notifications benefit from focus-refetch — re-enable here only.

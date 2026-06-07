@@ -26,7 +26,7 @@ const STALE_5_MINUTES = 5 * 60_000;
 export function useCitiesList() {
   return useQuery<CityDTO[]>({
     queryKey: qk.cities.list(),
-    queryFn: ({ signal }) => cityService.list({ signal }),
+    queryFn: () => cityService.list(),
     staleTime: STALE_5_MINUTES,
   });
 }
@@ -46,7 +46,7 @@ export function useCityDetail(
   return useQuery<CityDetailedDTO>({
     ...restOptions,
     queryKey: qk.cities.detail(normalized),
-    queryFn: ({ signal }) => cityService.get(normalized, { signal }),
+    queryFn: () => cityService.get(normalized),
     enabled: enabled && Boolean(normalized),
     staleTime: STALE_5_MINUTES,
   });

@@ -69,7 +69,7 @@ export function useListing(
   return useQuery<ListingDetailDTO>({
     ...restOptions,
     queryKey: qk.listings.detail(listingId ?? ""),
-    queryFn: ({ signal }) => listingService.get(listingId!, { signal }),
+    queryFn: () => listingService.get(listingId!),
     enabled: enabled && Boolean(listingId),
     staleTime: STALE_2_MINUTES,
   });
@@ -84,7 +84,7 @@ export function useListingsSearch(params: ListingSearchParams) {
 
   return useQuery<PageResponse<ListingCardDTO>>({
     queryKey: qk.listings.list(normalizedParams),
-    queryFn: ({ signal }) => listingService.getAll(normalizedParams, { signal }),
+    queryFn: () => listingService.getAll(normalizedParams),
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData, // keep last page during pagination
   });
@@ -97,8 +97,7 @@ export function useListingFacets(params: ListingSearchParams, enabled = true) {
 
   return useQuery<ListingSearchFacetsDTO>({
     queryKey: qk.listings.facets(normalizedParams),
-    queryFn: ({ signal }) =>
-      listingService.getFacets(normalizedParams, { signal }),
+    queryFn: () => listingService.getFacets(normalizedParams),
     enabled,
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData,
@@ -108,7 +107,7 @@ export function useListingFacets(params: ListingSearchParams, enabled = true) {
 export function useListingTags() {
   return useQuery<ListingTagDTO[]>({
     queryKey: qk.listings.tags(),
-    queryFn: ({ signal }) => listingService.getListingTags({ signal }),
+    queryFn: () => listingService.getListingTags(),
     // Tags are reference data — change rarely.
     staleTime: STALE_5_MINUTES,
   });
@@ -117,7 +116,7 @@ export function useListingTags() {
 export function useListingCities() {
   return useQuery<string[]>({
     queryKey: qk.listings.cities(),
-    queryFn: ({ signal }) => listingService.getCities({ signal }),
+    queryFn: () => listingService.getCities(),
     // Cities are reference data — change rarely.
     staleTime: STALE_5_MINUTES,
   });
@@ -128,8 +127,8 @@ export function useRequirementsProfile(
 ) {
   return useQuery<RequirementsProfileDTO>({
     queryKey: qk.listings.requirementsProfile(requirementsProfileId ?? ""),
-    queryFn: ({ signal }) =>
-      listingService.getRequirementsProfile(requirementsProfileId!, { signal }),
+    queryFn: () =>
+      listingService.getRequirementsProfile(requirementsProfileId!),
     enabled: Boolean(requirementsProfileId),
     staleTime: STALE_5_MINUTES,
   });
@@ -144,8 +143,7 @@ export function useCompanyRequirementsProfiles(
   return useQuery<RequirementsProfileDTO[]>({
     ...restOptions,
     queryKey: qk.listings.requirementsProfilesByCompany(companyId ?? -1),
-    queryFn: ({ signal }) =>
-      listingService.getRequirementsProfilesByCompany(companyId!, { signal }),
+    queryFn: () => listingService.getRequirementsProfilesByCompany(companyId!),
     enabled: enabled && companyId != null && companyId > 0,
     staleTime: STALE_5_MINUTES,
   });
@@ -159,7 +157,7 @@ export function useFavorites() {
   const { user } = useAuth();
   return useQuery<ListingCardDTO[]>({
     queryKey: qk.listings.favorites(),
-    queryFn: ({ signal }) => listingService.getFavorites(0, 200, { signal }),
+    queryFn: () => listingService.getFavorites(0, 200),
     enabled: Boolean(user),
     staleTime: STALE_30_SECONDS,
   });
@@ -169,8 +167,7 @@ export function useMyApplications() {
   const { user } = useAuth();
   return useQuery<StudentApplicationDTO[]>({
     queryKey: qk.listings.myApplications(),
-    queryFn: ({ signal }) =>
-      listingService.getMyApplications(0, 50, { signal }),
+    queryFn: () => listingService.getMyApplications(0, 50),
     enabled: Boolean(user),
     staleTime: STALE_30_SECONDS,
   });
@@ -180,8 +177,7 @@ export function useMyListings(page = 0, size = 200) {
   const { user } = useAuth();
   return useQuery<PageResponse<ListingCardDTO>>({
     queryKey: qk.listings.myListings(page, size),
-    queryFn: ({ signal }) =>
-      listingService.getMyListingsPage(page, size, { signal }),
+    queryFn: () => listingService.getMyListingsPage(page, size),
     enabled: Boolean(user),
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData,
@@ -195,8 +191,7 @@ export function useQueueListings(
 ) {
   return useQuery<PageResponse<ListingCardDTO>>({
     queryKey: qk.listings.queueListings(queueId ?? "", page, size),
-    queryFn: ({ signal }) =>
-      listingService.getByQueuePage(queueId!, page, size, { signal }),
+    queryFn: () => listingService.getByQueuePage(queueId!, page, size),
     enabled: Boolean(queueId),
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData,

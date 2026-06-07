@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
-import { authService } from "@/features/auth/services/auth-service";
 import { type User } from "@/types";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
@@ -66,15 +65,14 @@ function AccountAvatar({
 }
 
 export default function SiteHeader() {
-  const { user, token, logout, isLoading } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const { localizedHref, t } = useI18n();
   const platformLaunched = isPlatformLaunched();
-  const [authMeUser, setAuthMeUser] = useState<User | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const currentUser = platformLaunched ? authMeUser ?? user : null;
+  const currentUser = platformLaunched ? user : null;
   const userType = currentUser?.accountType;
   const roleLabel =
     userType === "student"
@@ -200,40 +198,8 @@ export default function SiteHeader() {
 
   const handleLogout = () => {
     logout();
-    setAuthMeUser(null);
     closeMenus();
   };
-
-  useEffect(() => {
-    if (!platformLaunched) {
-      setAuthMeUser(null);
-      return;
-    }
-
-    if (isLoading) return;
-
-    if (!token) {
-      setAuthMeUser(null);
-      return;
-    }
-
-    let active = true;
-
-    authService
-      .me(token)
-      .then((meUser) => {
-        if (!active) return;
-        setAuthMeUser(meUser);
-      })
-      .catch(() => {
-        if (!active) return;
-        setAuthMeUser(null);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [isLoading, platformLaunched, token, user]);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
