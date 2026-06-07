@@ -27,7 +27,10 @@ import type {
   School,
 } from "@/types";
 import { schoolService } from "@/features/schools/services/school-service";
-import { cityService } from "@/features/cities/services/city-service";
+import {
+  cityService,
+  normalizeCityCode,
+} from "@/features/cities/services/city-service";
 import {
   companyService,
   type CreateExternalCompanyRequest,
@@ -37,6 +40,16 @@ import {
 
 function jsonBody(value: unknown) {
   return JSON.stringify(value);
+}
+
+function normalizeSchoolCityPayload(school: AdminAddSchoolRequest): AdminAddSchoolRequest {
+  const cityCode = normalizeCityCode(school.cityCode ?? school.city);
+
+  return {
+    ...school,
+    city: cityCode || school.city,
+    ...(cityCode ? { cityCode } : {}),
+  };
 }
 
 export const adminService = {
@@ -78,7 +91,7 @@ export const adminService = {
   createSchool: async (school: AdminAddSchoolRequest): Promise<void> => {
     await apiClient<void>("/admin/school", {
       method: "POST",
-      body: jsonBody(school),
+      body: jsonBody(normalizeSchoolCityPayload(school)),
     });
   },
 
@@ -86,7 +99,7 @@ export const adminService = {
     for (const school of schools) {
       await apiClient<void>("/admin/school", {
         method: "POST",
-        body: jsonBody(school),
+        body: jsonBody(normalizeSchoolCityPayload(school)),
       });
     }
   },
@@ -94,7 +107,7 @@ export const adminService = {
   modifySchool: async (school: AdminAddSchoolRequest): Promise<void> => {
     await apiClient<void>("/admin/school", {
       method: "PUT",
-      body: jsonBody(school),
+      body: jsonBody(normalizeSchoolCityPayload(school)),
     });
   },
 

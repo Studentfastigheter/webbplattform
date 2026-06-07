@@ -60,12 +60,12 @@ export const schoolService = {
   },
 
   add: async (school: Omit<School, "id">): Promise<void> => {
-    const cityCode = normalizeCityCode(school.city);
+    const cityCode = normalizeCityCode(school.cityCode ?? school.city);
     await apiClient<void>("/schools/add", {
       method: "POST",
       body: JSON.stringify({
         schoolName: school.name,
-        city: cityCode || school.city,
+        city: cityCode || school.cityCode || school.city,
         ...(cityCode ? { cityCode } : {}),
         lat: school.lat,
         lng: school.lng,
