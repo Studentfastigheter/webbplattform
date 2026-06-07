@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, useEffect, useMemo, useState } from "react";
+import { Dispatch, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, GripVertical, ImagePlus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,7 +22,8 @@ type Props = {
   open: boolean;
   setOpen: Dispatch<React.SetStateAction<boolean>>;
   imageUrls?: string[];
-  onSave?: (imageUrls: string[]) => void;
+  onUploadImages?: (files: File[]) => Promise<string[]>;
+  onSave?: (imageUrls: string[]) => void | Promise<void>;
   locale: Locale;
 };
 
@@ -34,15 +35,16 @@ const FALLBACK_IMAGES = [
   "/appartment.jpg",
 ];
 
-function filesToUrls(files: FileList | null) {
+function filesToArray(files: FileList | null): File[] {
   if (!files) return [];
-  return Array.from(files).map((file) => URL.createObjectURL(file));
+  return Array.from(files);
 }
 
 export default function ImageUploadGallery({
   open,
   setOpen,
   imageUrls,
+  onUploadImages,
   onSave,
   locale,
 }: Props) {
@@ -52,30 +54,108 @@ export default function ImageUploadGallery({
   );
 
   const [draftImages, setDraftImages] = useState<string[]>(initialImages);
+  const draftImagesRef = useRef<string[]>(initialImages);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [pendingAction, setPendingAction] = useState(false);
 
   useEffect(() => {
-    if (open) setDraftImages(initialImages);
+    if (!open) return;
+
+    draftImagesRef.current = initialImages;
+    setDraftImages(initialImages);
   }, [initialImages, open]);
 
-  const addImages = (files: FileList | null) => {
-    const nextImages = filesToUrls(files);
-    if (nextImages.length === 0) return;
-    setDraftImages((current) => [...current, ...nextImages]);
+  const persistImages = async (nextImages: string[]) => {
+    const previousImages = draftImagesRef.current;
+    draftImagesRef.current = nextImages;
+    setDraftImages(nextImages);
+
+    try {
+      await onSave?.(nextImages);
+    } catch (error) {
+      draftImagesRef.current = previousImages;
+      setDraftImages(previousImages);
+      throw error;
+    }
   };
 
-  const replaceImage = (index: number, files: FileList | null) => {
-    const [nextImage] = filesToUrls(files);
-    if (!nextImage) return;
+  const uploadFiles = async (files: File[]) => {
+    if (files.length === 0) return [];
 
-    setDraftImages((current) =>
-      current.map((image, imageIndex) => imageIndex === index ? nextImage : image),
-    );
+    if (onUploadImages) {
+      return onUploadImages(files);
+    }
+
+    return files.map((file) => URL.createObjectURL(file));
+  };
+
+  const addImages = async (files: FileList | null) => {
+    const selectedFiles = filesToArray(files);
+    if (selectedFiles.length === 0) return;
+
+    setPendingAction(true);
+    try {
+      const uploadedUrls = await uploadFiles(selectedFiles);
+      if (uploadedUrls.length === 0) return;
+
+      await persistImages([...draftImagesRef.current, ...uploadedUrls]);
+      toast.success(
+        localizedText(
+          locale,
+          "Bilden har laddats upp och sparats pa annonsen.",
+          "The image has been uploaded and saved to the listing."
+        )
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : localizedText(locale, "Kunde inte ladda upp bilden.", "Could not upload the image.")
+      );
+    } finally {
+      setPendingAction(false);
+    }
+  };
+
+  const replaceImage = async (index: number, files: FileList | null) => {
+    const [selectedFile] = filesToArray(files);
+    if (!selectedFile) return;
+
+    setPendingAction(true);
+    try {
+      const [uploadedUrl] = await uploadFiles([selectedFile]);
+      if (!uploadedUrl) return;
+
+      await persistImages(
+        draftImagesRef.current.map((image, imageIndex) =>
+          imageIndex === index ? uploadedUrl : image
+        )
+      );
+      toast.success(
+        localizedText(
+          locale,
+          "Bilden har bytts och sparats pa annonsen.",
+          "The image has been replaced and saved to the listing."
+        )
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : localizedText(locale, "Kunde inte byta bilden.", "Could not replace the image.")
+      );
+    } finally {
+      setPendingAction(false);
+    }
   };
 
   const removeImage = (index: number) => {
-    setDraftImages((current) => current.filter((_, imageIndex) => imageIndex !== index));
+    setDraftImages((current) => {
+      const nextImages = current.filter((_, imageIndex) => imageIndex !== index);
+      draftImagesRef.current = nextImages;
+      return nextImages;
+    });
   };
 
   const moveImage = (index: number, direction: -1 | 1) => {
@@ -87,6 +167,7 @@ export default function ImageUploadGallery({
       const currentImage = next[index];
       next[index] = next[targetIndex];
       next[targetIndex] = currentImage;
+      draftImagesRef.current = next;
       return next;
     });
   };
@@ -107,6 +188,7 @@ export default function ImageUploadGallery({
       const next = [...current];
       const [movedImage] = next.splice(fromIndex, 1);
       next.splice(toIndex, 0, movedImage);
+      draftImagesRef.current = next;
       return next;
     });
   };
@@ -116,16 +198,27 @@ export default function ImageUploadGallery({
     setDragOverIndex(null);
   };
 
-  const handleSave = () => {
-    onSave?.(draftImages);
-    toast.success(
+  const handleSave = async () => {
+    setPendingAction(true);
+    try {
+      await persistImages(draftImagesRef.current);
+      toast.success(
       localizedText(
         locale,
         "Dina bildändringar har sparats.",
         "Your image changes have been saved."
       )
     );
-    setOpen(false);
+      setOpen(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : localizedText(locale, "Kunde inte spara bilderna.", "Could not save the images.")
+      );
+    } finally {
+      setPendingAction(false);
+    }
   };
 
   return (
@@ -161,6 +254,7 @@ export default function ImageUploadGallery({
               type="file"
               accept="image/*"
               multiple
+              disabled={pendingAction}
               className="sr-only"
               onChange={(event) => {
                 addImages(event.target.files);
@@ -195,9 +289,9 @@ export default function ImageUploadGallery({
               </div>
             ) : (
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {draftImages.map((src, index) => (
+                {draftImages.map((image, index) => (
                   <div
-                    key={`${src}-${index}`}
+                    key={`${image}-${index}`}
                     draggable
                     onDragStart={(event) => {
                       setDraggedIndex(index);
@@ -235,7 +329,7 @@ export default function ImageUploadGallery({
                   >
                     <div className="relative aspect-[4/3] bg-gray-100">
                       <img
-                        src={src}
+                        src={image}
                         alt={localizedText(locale, `Bild ${index + 1}`, `Image ${index + 1}`)}
                         className="h-full w-full object-cover"
                       />
@@ -281,6 +375,7 @@ export default function ImageUploadGallery({
                           <input
                             type="file"
                             accept="image/*"
+                            disabled={pendingAction}
                             className="sr-only"
                             onChange={(event) => {
                               replaceImage(index, event.target.files);
@@ -293,6 +388,7 @@ export default function ImageUploadGallery({
                           variant="outline"
                           size="sm"
                           onClick={() => removeImage(index)}
+                          isDisabled={pendingAction}
                         >
                           <Trash2 className="h-4 w-4" />
                           {localizedText(locale, "Ta bort", "Remove")}
@@ -310,7 +406,7 @@ export default function ImageUploadGallery({
           <DialogClose asChild>
             <Button variant="outline">{localizedText(locale, "Avbryt", "Cancel")}</Button>
           </DialogClose>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} isLoading={pendingAction} isDisabled={pendingAction}>
             {localizedText(locale, "Spara ändringar", "Save changes")}
           </Button>
         </DialogFooter>

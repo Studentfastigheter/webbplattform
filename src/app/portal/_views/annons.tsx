@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Home, MapPin, Pencil } from "lucide-react";
 
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 import {
   useListing,
   useListingTags,
   useUpdateListing,
 } from "@/features/listings/hooks/useListings";
+import { useUploadCompanyPublicMedia } from "@/features/media/hooks/useMedia";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText } from "@/i18n/text";
+import { getActiveCompanyId } from "@/lib/company-access";
 import {
   ListingDetailDTO,
   ListingTagDTO,
@@ -140,6 +143,19 @@ function areStringArraysEqual(left: string[] | undefined, right: string[] | unde
   }
 
   return normalizedLeft.every((value, index) => value === normalizedRight[index]);
+}
+
+function getUploadCompanyId(
+  draft: EditableListingDraft,
+  activeCompanyId: number | null
+) {
+  if (activeCompanyId != null && activeCompanyId > 0) {
+    return activeCompanyId;
+  }
+
+  return Number.isFinite(draft.ownerId) && draft.ownerId > 0
+    ? draft.ownerId
+    : null;
 }
 
 function getEndpointTagsFromSelection(
@@ -559,6 +575,8 @@ function EditableListingPreview({
 
 export default function Annons({ id }: AnnonsPageProps) {
   const { locale } = useI18n();
+  const { user } = useAuth();
+  const activeCompanyId = getActiveCompanyId(user);
   // The editor keeps an in-page mirror of the listing (`listing`) plus a
   // working `draft`. The server data comes from useListing/useListingTags
   // hooks; we hydrate `listing`+`draft` from `useListing.data` once and only
@@ -566,9 +584,11 @@ export default function Annons({ id }: AnnonsPageProps) {
   // resets the editor).
   const [listing, setListing] = useState<EditableListingDraft | null>(null);
   const [draft, setDraft] = useState<EditableListingDraft | null>(null);
+  const preserveDraftOnNextImageHydrationRef = useRef(false);
   const [saveState, setSaveState] = useState<SaveState>(emptySaveState);
   const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
   const updateListing = useUpdateListing();
+  const uploadCompanyPublicMedia = useUploadCompanyPublicMedia();
 
   const {
     data: serverListing,
@@ -601,6 +621,22 @@ export default function Annons({ id }: AnnonsPageProps) {
       return;
     }
     const normalized = cloneEditableListing(serverListing);
+
+    if (preserveDraftOnNextImageHydrationRef.current) {
+      preserveDraftOnNextImageHydrationRef.current = false;
+      setListing((current) =>
+        current
+          ? { ...current, imageUrls: [...(normalized.imageUrls ?? [])] }
+          : normalized
+      );
+      setDraft((current) =>
+        current
+          ? { ...current, imageUrls: [...(normalized.imageUrls ?? [])] }
+          : { ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] }
+      );
+      return;
+    }
+
     setListing(normalized);
     setDraft({ ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] });
     setSaveState(emptySaveState);
@@ -630,6 +666,75 @@ export default function Annons({ id }: AnnonsPageProps) {
     updateDraft({
       [key]: normalizeNumberValue(parsed),
     } as Partial<EditableListingDraft>);
+  };
+
+  const uploadGalleryImages = async (files: File[]) => {
+    if (!draft) {
+      throw new Error(
+        localizedText(locale, "Annonsen kunde inte hittas.", "The listing could not be found.")
+      );
+    }
+
+    const companyId = getUploadCompanyId(draft, activeCompanyId);
+    if (companyId == null) {
+      throw new Error(
+        localizedText(
+          locale,
+          "Kunde inte ladda upp bilder eftersom foretaget saknas.",
+          "Could not upload images because the company is missing."
+        )
+      );
+    }
+
+    return Promise.all(
+      files.map((file) =>
+        uploadCompanyPublicMedia.mutateAsync({
+          companyId,
+          file,
+        })
+      )
+    );
+  };
+
+  const persistGalleryImages = async (imageUrls: string[]) => {
+    const nextImageUrls = imageUrls.filter(Boolean);
+    const previousDraftImageUrls = draft?.imageUrls ?? [];
+    const previousListingImageUrls = listing?.imageUrls ?? [];
+
+    preserveDraftOnNextImageHydrationRef.current = true;
+    setSaveState({ status: "saving", message: null });
+    setDraft((current) =>
+      current ? { ...current, imageUrls: [...nextImageUrls] } : current
+    );
+    setListing((current) =>
+      current ? { ...current, imageUrls: [...nextImageUrls] } : current
+    );
+
+    try {
+      await updateListing.mutateAsync({
+        id,
+        payload: { images: nextImageUrls },
+      });
+      setSaveState({
+        status: "success",
+        message: null,
+        messageKey: "saved",
+      });
+    } catch (error) {
+      preserveDraftOnNextImageHydrationRef.current = false;
+      setDraft((current) =>
+        current ? { ...current, imageUrls: previousDraftImageUrls } : current
+      );
+      setListing((current) =>
+        current ? { ...current, imageUrls: previousListingImageUrls } : current
+      );
+      setSaveState({
+        status: "error",
+        message: error instanceof Error ? error.message : null,
+        messageKey: error instanceof Error ? undefined : "saveFailed",
+      });
+      throw error;
+    }
   };
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
@@ -668,6 +773,7 @@ export default function Annons({ id }: AnnonsPageProps) {
     setSaveState({ status: "saving", message: null });
 
     try {
+      preserveDraftOnNextImageHydrationRef.current = false;
       // Mutation hook owns invalidation (listings.all + queues.all). The
       // useListing query re-fetches and the hydration effect re-seeds draft.
       await updateListing.mutateAsync({ id, payload });
@@ -786,7 +892,8 @@ export default function Annons({ id }: AnnonsPageProps) {
         open={uploadGalleryVisible}
         setOpen={setUploadGalleryVisible}
         imageUrls={draft.imageUrls}
-        onSave={(imageUrls) => updateDraft({ imageUrls })}
+        onUploadImages={uploadGalleryImages}
+        onSave={persistGalleryImages}
         locale={locale}
       />
     </>
