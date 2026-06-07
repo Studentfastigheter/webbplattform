@@ -100,7 +100,7 @@ export default function QueueHero({
 }: QueueHeroProps) {
   const { t } = useI18n();
   const bannerImage = queue.bannerUrl || "/appartment.jpg";
-  const logoImage = queue.logoUrl || null;
+  const logoImage = queue.companyLogoUrl || queue.logoUrl || null;
   const description = queue.description?.trim() ?? "";
   const websiteHref = queue.website ? getExternalUrl(queue.website) : "";
   const websiteLabel = websiteHref ? getDisplayUrl(websiteHref) : "";

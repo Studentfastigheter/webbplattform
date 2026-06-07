@@ -24,10 +24,8 @@ export default function BostadLandlord({ advertiser }: Props) {
     advertiser.requirements && advertiser.requirements.length > 0
       ? advertiser.requirements
       : [
-          localizedText(locale, "Aktiv studentstatus kan krävas", "Active student status may be required"),
-          localizedText(locale, "Inga betalningsanmärkningar", "No payment remarks"),
-          localizedText(locale, "Studieintyg kan behöva bifogas", "A study certificate may need to be attached"),
-          localizedText(locale, "Personnummer eller samordningsnummer kan krävas", "A personal identity or coordination number may be required"),
+          localizedText(locale, "Verifierad identitet", "Verified identity"),
+          localizedText(locale, "Verifierad e-postadress", "Verified email address"),
         ];
 
   const highlights = advertiser.highlights ?? [];

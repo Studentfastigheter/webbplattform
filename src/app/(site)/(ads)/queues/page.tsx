@@ -45,16 +45,17 @@ export default function Page() {
         const queueId = String(app.queueId);
         const queue = app.queue;
         const company = queue?.company;
-        const companyId = company?.id;
+        const companyId = company?.id ?? queue?.companyId;
         const city = queue?.city ?? company?.city ?? null;
 
         return {
           id: queueId,
           name: app.queueName ?? queue?.name ?? localizedText(locale, "Okänd kö", "Unknown queue"),
           logoUrl:
+            queue?.companyLogoUrl ??
             queue?.logoUrl ??
             company?.logoUrl ??
-            "/logos/campuslyan-logo.svg",
+            null,
           cities: city ? [city] : [],
           status: statusToRowStatus(app.status ?? queue?.status ?? undefined),
           days: app.queueDays ?? 0,

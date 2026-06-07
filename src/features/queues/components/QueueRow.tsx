@@ -1,6 +1,6 @@
 import React from "react";
 import clsx from "clsx";
-import { ChevronRight, MapPin } from "lucide-react";
+import { Building2, ChevronRight, MapPin } from "lucide-react";
 import type { ListFrameRow } from "@/components/layout/ListFrame";
 import Tag from "@/components/ui/Tag";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { localizedText } from "@/i18n/text";
 export type QueueRowProps = {
   id: string | number;
   name: string;
-  logoUrl: string;
+  logoUrl?: string | null;
   cities: string[];
   status: Status;
   days: number;
@@ -24,7 +24,11 @@ const NameCell: React.FC<Pick<QueueRowProps, "name" | "logoUrl">> = ({
 }) => (
   <div className="flex min-w-0 items-center gap-3">
     <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
-      <img src={logoUrl} alt={name} className="h-full w-full object-contain" />
+      {logoUrl ? (
+        <img src={logoUrl} alt={name} className="h-full w-full object-contain" />
+      ) : (
+        <Building2 className="h-7 w-7 text-gray-400" strokeWidth={1.6} />
+      )}
     </div>
     <div className="min-w-0 truncate text-[15px] font-semibold leading-5 text-gray-950">
       {name}

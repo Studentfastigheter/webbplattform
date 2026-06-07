@@ -520,7 +520,7 @@ export default function CityDetailPage() {
                       name={company.name}
                       area=""
                       city={cities.join(", ")}
-                      logoUrl={company.logoUrl || "/logos/campuslyan-logo.svg"}
+                      logoUrl={company.logoUrl ?? null}
                       logoAlt={localizedText(locale, `${company.name} logotyp`, `${company.name} logo`)}
                       description={company.description ?? company.subtitle}
                       termsUrl={company.termsUrl}

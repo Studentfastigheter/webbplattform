@@ -348,7 +348,7 @@ export default function Page() {
   };
 
   const renderQueueCard = (queue: CompanyQueueCard) => {
-    const logoUrl = queue.logoUrl || "/logos/campuslyan-logo.svg";
+    const logoUrl = queue.logoUrl ?? null;
     const joinQueueId = getJoinQueueId(queue);
     const isAlreadyJoined = isCompanyQueueJoined(queue);
     const isJoinStatusLoading = authLoading || myQueuesLoading;

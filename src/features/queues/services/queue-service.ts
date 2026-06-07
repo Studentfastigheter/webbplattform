@@ -244,6 +244,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function normalizeHousingQueue(value: unknown): HousingQueueDTO {
+  const source = value as HousingQueueDTO & Record<string, unknown>;
+  const company = isRecord(source.company) ? source.company : null;
+  const companyLogoUrl = firstString(
+    source.companyLogoUrl,
+    company?.logoUrl,
+    source.logoUrl
+  );
+
+  return {
+    ...source,
+    companyLogoUrl: companyLogoUrl ?? source.companyLogoUrl ?? null,
+    logoUrl: firstString(source.logoUrl, companyLogoUrl) ?? null,
+  };
+}
+
 function normalizeStringRecord(value: unknown): Record<string, string> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -315,7 +331,7 @@ export const queueService = {
     }
     const request = `/queues${buildQuery(query)}`;
     const queues = await apiClient<unknown>(request, { auth: false });
-    return arrayFromApiResponse<HousingQueueDTO>(queues);
+    return arrayFromApiResponse<unknown>(queues).map(normalizeHousingQueue);
   },
 
   getAll: async (options?: ServiceOptions): Promise<HousingQueueDTO[]> => {
@@ -323,17 +339,18 @@ export const queueService = {
       auth: false,
       signal: options?.signal,
     });
-    return arrayFromApiResponse<HousingQueueDTO>(queues);
+    return arrayFromApiResponse<unknown>(queues).map(normalizeHousingQueue);
   },
 
   get: async (
     id: string,
     options?: ServiceOptions
   ): Promise<HousingQueueDTO> => {
-    return await apiClient<HousingQueueDTO>(`/queues/${pathSegment(id)}`, {
+    const queue = await apiClient<unknown>(`/queues/${pathSegment(id)}`, {
       auth: false,
       signal: options?.signal,
     });
+    return normalizeHousingQueue(queue);
   },
 
   getByCompany: async (
@@ -344,7 +361,7 @@ export const queueService = {
       `/companies/${pathSegment(companyId)}/queues`,
       { auth: false, signal: options?.signal }
     );
-    return arrayFromApiResponse<HousingQueueDTO>(queues);
+    return arrayFromApiResponse<unknown>(queues).map(normalizeHousingQueue);
   },
 
   join: async (queueId: string): Promise<string> => {
@@ -396,13 +413,33 @@ export const queueService = {
       const queueId = row.queueId ?? row.queue?.id;
       const normalizedQueueId = queueId != null ? String(queueId) : queueId;
       const queue = normalizedQueueId ? queuesById.get(normalizedQueueId) : undefined;
+      const embeddedQueue = row.queue;
       const queueName = row.queueName ?? row.queue?.name ?? queue?.name;
+      const mergedQueue =
+        queue || embeddedQueue
+          ? normalizeHousingQueue({
+              ...(queue ?? {}),
+              ...(embeddedQueue ?? {}),
+              companyLogoUrl:
+                embeddedQueue?.companyLogoUrl ??
+                queue?.companyLogoUrl ??
+                embeddedQueue?.company?.logoUrl ??
+                embeddedQueue?.logoUrl ??
+                queue?.logoUrl,
+              logoUrl:
+                embeddedQueue?.logoUrl ??
+                embeddedQueue?.companyLogoUrl ??
+                queue?.logoUrl ??
+                queue?.companyLogoUrl ??
+                embeddedQueue?.company?.logoUrl,
+            })
+          : undefined;
 
       return {
         ...row,
         queueId: normalizedQueueId,
         queueName,
-        queue: row.queue ?? queue,
+        queue: mergedQueue,
         queueDays: getQueueDays(row),
       };
     });

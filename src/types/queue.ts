@@ -5,6 +5,7 @@ import { TimestampString } from "./common";
 // ==========================================================
 export interface HousingQueueDTO {
   id: string;
+  companyLogoUrl?: string | null;
   companyId: number;
   name: string;
   city: string;
@@ -13,8 +14,8 @@ export interface HousingQueueDTO {
   totalUnits?: number;
   waitDays?: number;
   activeListings?: number;
-  /** Frontend-enriched fields from company/profile endpoints, not part of HousingQueueDTO in Swagger. */
-  logoUrl?: string;
+  /** Frontend-enriched alias/fields from company/profile endpoints. */
+  logoUrl?: string | null;
   bannerUrl?: string;
   contactPhone?: string;
   contactEmail?: string;

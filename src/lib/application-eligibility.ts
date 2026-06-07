@@ -43,12 +43,6 @@ export function getApplicationVerificationError(
     missingRequirements.push(localizedText(locale, "verifierad identitet", "verified identity"));
   }
 
-  if (user.accountType !== "student") {
-    missingRequirements.push(localizedText(locale, "studentkonto", "a student account"));
-  } else if (user.verifiedStudent !== true) {
-    missingRequirements.push(localizedText(locale, "verifierad studentstatus", "verified student status"));
-  }
-
   if (missingRequirements.length === 0) {
     return null;
   }

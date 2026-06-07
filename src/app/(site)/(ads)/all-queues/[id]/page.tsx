@@ -287,6 +287,7 @@ export default function QueueDetailPage() {
         companyId: resolvedCompanyId,
         name: companyName,
         city: companyCitiesLabel,
+        companyLogoUrl,
         logoUrl: companyLogoUrl,
         bannerUrl: companyBannerUrl,
         description: company.description ?? undefined,
