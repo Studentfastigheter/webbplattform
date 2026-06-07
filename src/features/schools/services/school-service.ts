@@ -5,6 +5,7 @@ import {
   pathSegment,
   type ServiceOptions,
 } from "@/lib/api/client";
+import { normalizeCityCode } from "@/features/cities/services/city-service";
 import { listingService } from "@/features/listings/services/listing-service";
 import { School } from "@/types";
 import { ListingCardDTO } from "@/types/listing";
@@ -14,6 +15,8 @@ type ApiSchoolDto = {
   id?: number;
   name: string;
   city?: string | null;
+  cityCode?: string | null;
+  city_code?: string | null;
   lat?: number | null;
   lng?: number | null;
 };
@@ -40,6 +43,7 @@ const mapSchoolDto = (dto: ApiSchoolDto): School => ({
   id: dto.schoolId ?? dto.id ?? 0,
   name: dto.name,
   city: dto.city ?? null,
+  cityCode: dto.cityCode ?? dto.city_code ?? null,
   lat: dto.lat ?? null,
   lng: dto.lng ?? null,
 });
@@ -56,11 +60,13 @@ export const schoolService = {
   },
 
   add: async (school: Omit<School, "id">): Promise<void> => {
+    const cityCode = normalizeCityCode(school.city);
     await apiClient<void>("/schools/add", {
       method: "POST",
       body: JSON.stringify({
         schoolName: school.name,
-        city: school.city,
+        city: cityCode || school.city,
+        ...(cityCode ? { cityCode } : {}),
         lat: school.lat,
         lng: school.lng,
       }),

@@ -64,7 +64,7 @@ export const adminService = {
   },
 
   getCities: async (): Promise<string[]> => {
-    return cityService.listNames();
+    return cityService.listCodes();
   },
 
   getCitySummaries: async (): Promise<CityDTO[]> => {

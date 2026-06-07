@@ -6,6 +6,7 @@ export interface SchoolDTO {
   schoolId: SchoolId;
   name: string;
   city?: City | null;
+  cityCode?: City | null;
   lat?: number | null;
   lng?: number | null;
 }
@@ -14,6 +15,7 @@ export interface AddSchoolRequest {
   schoolId?: SchoolId;
   schoolName: string;
   city: string;
+  cityCode?: string;
   lat: number;
   lng: number;
 }

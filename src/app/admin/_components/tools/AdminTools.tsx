@@ -26,7 +26,6 @@ import { adminService } from "@/features/admin/services/admin-service";
 import {
   useAdminActivities,
   useAdminCityDetail,
-  useAdminCityNames,
   useAdminCitySummaries,
   useAdminCompanies,
   useAdminCompanyDetail,
@@ -137,18 +136,48 @@ function parseListInput(value: string) {
     .filter(Boolean);
 }
 
-function getStringOptions(values: Array<string | null | undefined>, selectedValue = "") {
-  const options = new Set(
-    values
-      .map((value) => value?.trim())
-      .filter((value): value is string => Boolean(value))
+type CityOption = { city: CityDTO; code: string };
+
+function normalizeCityLookupValue(value: string | null | undefined) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleUpperCase("sv-SE")
+    .replace(/[\s-]+/g, "_");
+}
+
+function cityOptionMatchesValue(option: CityOption, value: string) {
+  const lookupValue = normalizeCityLookupValue(value);
+  if (!lookupValue) return false;
+
+  return [option.code, option.city.code, option.city.city].some(
+    (candidate) => normalizeCityLookupValue(candidate) === lookupValue
   );
+}
+
+function getCityCodeOptions(cities: CityDTO[], selectedValue = ""): CityOption[] {
+  const options = cities
+    .map((city) => ({ city, code: cityCode(city) }))
+    .filter((item): item is CityOption => Boolean(item.code));
+
   const selected = selectedValue.trim();
-  if (selected) {
-    options.add(selected);
+  if (!selected || options.some((option) => cityOptionMatchesValue(option, selected))) {
+    return options;
   }
 
-  return Array.from(options).sort((left, right) => left.localeCompare(right, "sv"));
+  const code = normalizeCityCode(selected);
+  return code ? [{ city: { city: selected, code }, code }, ...options] : options;
+}
+
+function resolveCityCodeValue(value: string | null | undefined, options: CityOption[]) {
+  const selected = value?.trim() ?? "";
+  if (!selected) return "";
+
+  return (
+    options.find((option) => cityOptionMatchesValue(option, selected))?.code ??
+    normalizeCityCode(selected)
+  );
 }
 
 function parseSocialLinksInput(value: string) {
@@ -834,15 +863,16 @@ function buildSchoolPayload(form: SchoolFormState, requireId: boolean): AdminAdd
   if (requireId && !schoolId) {
     throw new Error("Välj en skola eller ange schoolId innan du uppdaterar.");
   }
-  const city = form.city.trim();
-  if (!city) {
+  const cityCodeValue = normalizeCityCode(form.city);
+  if (!cityCodeValue) {
     throw new Error("Välj en stad.");
   }
 
   return {
     ...(schoolId ? { schoolId } : {}),
     schoolName: form.schoolName.trim(),
-    city,
+    city: cityCodeValue,
+    cityCode: cityCodeValue,
     lat: parseRequiredNumber(form.lat, "Latitud"),
     lng: parseRequiredNumber(form.lng, "Longitud"),
   };
@@ -858,7 +888,7 @@ function SchoolFields({
   form: SchoolFormState;
   onChange: (patch: Partial<SchoolFormState>) => void;
   includeId: boolean;
-  cityOptions: string[];
+  cityOptions: CityOption[];
   citiesLoading: boolean;
 }) {
   return (
@@ -876,9 +906,9 @@ function SchoolFields({
         <option value="">
           {citiesLoading ? "Hämtar städer..." : "Välj stad"}
         </option>
-        {cityOptions.map((city) => (
-          <option key={city} value={city}>
-            {city}
+        {cityOptions.map(({ city, code }) => (
+          <option key={code} value={code}>
+            {cityOptionLabel(city)}
           </option>
         ))}
       </FormSelect>
@@ -890,7 +920,7 @@ function SchoolFields({
 
 function SchoolsForm() {
   const { items, state: listState, refresh } = useResourceList(useAdminSchools());
-  const { items: cities, state: cityState } = useResourceList(useAdminCityNames());
+  const { items: cities, state: cityState } = useResourceList(useAdminCitySummaries());
   const modifySchool = useAdminModifySchool();
   const createSchoolMutation = useAdminCreateSchool();
   const createSchoolsMutation = useAdminCreateSchools();
@@ -904,9 +934,9 @@ function SchoolsForm() {
   const [csvFileName, setCsvFileName] = useState("");
   const [bulkCity, setBulkCity] = useState("");
   const citiesLoading = cityState.status === "loading";
-  const updateCityOptions = getStringOptions(cities, updateForm.city);
-  const createCityOptions = getStringOptions(cities, createForm.city);
-  const importCityOptions = getStringOptions(cities, bulkCity);
+  const updateCityOptions = getCityCodeOptions(cities, updateForm.city);
+  const createCityOptions = getCityCodeOptions(cities, createForm.city);
+  const importCityOptions = getCityCodeOptions(cities, bulkCity);
   const importInvalidCount = importRows.filter(getCsvSchoolRowError).length;
   const importReadyCount = importRows.length - importInvalidCount;
 
@@ -917,7 +947,10 @@ function SchoolsForm() {
     setUpdateForm({
       schoolId: String(selected.id),
       schoolName: selected.name ?? "",
-      city: toInputValue(selected.city),
+      city: resolveCityCodeValue(
+        selected.cityCode ?? selected.city,
+        getCityCodeOptions(cities, selected.cityCode ?? selected.city ?? "")
+      ),
       lat: toInputValue(selected.lat),
       lng: toInputValue(selected.lng),
     });
@@ -991,7 +1024,7 @@ function SchoolsForm() {
   }
 
   function applyBulkCity() {
-    const city = bulkCity.trim();
+    const city = resolveCityCodeValue(bulkCity, importCityOptions);
     if (!city) return;
     setImportRows((current) => current.map((row) => ({ ...row, city })));
   }
@@ -1116,9 +1149,9 @@ function SchoolsForm() {
             <option value="">
               {citiesLoading ? "Hämtar städer..." : "Välj stad"}
             </option>
-            {importCityOptions.map((city) => (
-              <option key={city} value={city}>
-                {city}
+            {importCityOptions.map(({ city, code }) => (
+              <option key={code} value={code}>
+                {cityOptionLabel(city)}
               </option>
             ))}
           </FormSelect>
@@ -1206,9 +1239,9 @@ function SchoolsForm() {
                             <option value="">
                               {citiesLoading ? "Hämtar..." : "Välj stad"}
                             </option>
-                            {importCityOptions.map((city) => (
-                              <option key={city} value={city}>
-                                {city}
+                            {importCityOptions.map(({ city, code }) => (
+                              <option key={code} value={code}>
+                                {cityOptionLabel(city)}
                               </option>
                             ))}
                           </select>

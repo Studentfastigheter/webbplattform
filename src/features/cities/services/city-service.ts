@@ -61,7 +61,7 @@ const normalizeCity = (value: unknown): CityDTO | null => {
 
   return {
     city: city ?? code ?? "",
-    code: code ?? normalizeCityCode(city),
+    code: normalizeCityCode(code ?? city),
     bannerUrl: firstString(value.bannerUrl, value.bannerURL) ?? null,
     description: firstString(value.description) ?? null,
   };
@@ -178,6 +178,13 @@ export const cityService = {
     return cities
       .map((city) => firstString(city.city, city.code))
       .filter((city): city is string => Boolean(city));
+  },
+
+  listCodes: async (options?: ServiceOptions): Promise<string[]> => {
+    const cities = await cityService.list(options);
+    return cities
+      .map((city) => normalizeCityCode(firstString(city.code, city.city)))
+      .filter(Boolean);
   },
 
   get: async (code: string, options?: ServiceOptions): Promise<CityDetailedDTO> => {
