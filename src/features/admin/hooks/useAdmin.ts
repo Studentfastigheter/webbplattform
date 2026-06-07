@@ -236,6 +236,17 @@ export function useAdminCreateSchool() {
   });
 }
 
+export function useAdminCreateSchools() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, AdminAddSchoolRequest[]>({
+    mutationFn: (schools) => adminService.createSchools(schools),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: qk.admin.schools() });
+      qc.invalidateQueries({ queryKey: qk.schools.all });
+    },
+  });
+}
+
 export function useAdminModifySchool() {
   const qc = useQueryClient();
   return useMutation<void, Error, AdminAddSchoolRequest>({

@@ -82,6 +82,15 @@ export const adminService = {
     });
   },
 
+  createSchools: async (schools: AdminAddSchoolRequest[]): Promise<void> => {
+    for (const school of schools) {
+      await apiClient<void>("/admin/school", {
+        method: "POST",
+        body: jsonBody(school),
+      });
+    }
+  },
+
   modifySchool: async (school: AdminAddSchoolRequest): Promise<void> => {
     await apiClient<void>("/admin/school", {
       method: "PUT",
