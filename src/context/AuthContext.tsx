@@ -15,10 +15,17 @@ import {
   LoginRequest,
   RegisterRequest,
   GoogleAuthRequest,
+  GoogleRegisterResponse,
+  QuickRegisterResponse,
   UpdateUserRequest,
 } from "@/types";
 
 type AuthPayload = Partial<AuthResponse> & Record<string, unknown>;
+type AuthInput =
+  | AuthResponse
+  | GoogleRegisterResponse
+  | QuickRegisterResponse
+  | AuthPayload;
 type JwtPayload = {
   sub?: string;
   uid?: number | string;
@@ -86,7 +93,7 @@ type AuthCtx = {
   adminLogin: (data: LoginRequest) => Promise<User>;
   googleLogin: (data: GoogleAuthRequest) => Promise<User>;
   googleRegister: (data: GoogleAuthRequest) => Promise<User>;
-  completeAuth: (response: AuthResponse) => User;
+  completeAuth: (response: AuthInput) => User;
   register: (data: RegisterRequest) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>; 
@@ -138,8 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  const applyAuthResponse = useCallback((res: AuthPayload) => {
-    const normalizedResponse = normalizeAuthResponse(res);
+  const applyAuthResponse = useCallback((res: AuthInput) => {
+    const normalizedResponse = normalizeAuthResponse(res as AuthPayload);
     const accessToken = getAuthResponseToken(normalizedResponse);
     const userData = withSessionEmail(
       getAuthResponseUser(normalizedResponse),
@@ -151,22 +158,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return userData;
   }, []);
 
-  const applyAuthResponseFromSession = useCallback(async (res: AuthPayload) => {
-    const normalizedResponse = normalizeAuthResponse(res);
+  const applyAuthResponseFromSession = useCallback(async (res: AuthInput) => {
+    const normalizedResponse = normalizeAuthResponse(res as AuthPayload);
     const accessToken = getAuthResponseToken(normalizedResponse);
+    const responseUser = withSessionEmail(
+      getAuthResponseUser(normalizedResponse),
+      accessToken
+    );
 
     localStorage.setItem("token", accessToken);
     setToken(accessToken);
-    setUser(null);
+    setUser(responseUser);
 
-    const session = await authService.session(accessToken);
-    const sessionToken = getOptionalAuthResponseToken(session) ?? accessToken;
-    const userData = withSessionEmail(getAuthResponseUser(session), sessionToken);
+    try {
+      const session = await authService.session(accessToken);
+      const sessionToken = getOptionalAuthResponseToken(session) ?? accessToken;
+      const userData = withSessionEmail(getAuthResponseUser(session), sessionToken);
 
-    localStorage.setItem("token", sessionToken);
-    setToken(sessionToken);
-    setUser(userData);
-    return userData;
+      localStorage.setItem("token", sessionToken);
+      setToken(sessionToken);
+      setUser(userData);
+      return userData;
+    } catch (error) {
+      console.warn("Could not refresh session after auth response", error);
+      localStorage.setItem("token", accessToken);
+      setToken(accessToken);
+      setUser(responseUser);
+      return responseUser;
+    }
   }, []);
 
   // 2. Login
@@ -187,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const googleRegister = async (data: GoogleAuthRequest) => {
     const res = await authService.googleRegister(data);
-    return applyAuthResponseFromSession(res as unknown as AuthPayload);
+    return applyAuthResponse(res as unknown as AuthPayload);
   };
 
   // 3. Register
@@ -197,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Studentregistrering behöver verifieras med Freja först.");
     }
 
-    return applyAuthResponseFromSession(res as unknown as AuthPayload);
+    return applyAuthResponse(res as unknown as AuthPayload);
   };
 
   // 4. Logout

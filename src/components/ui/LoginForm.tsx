@@ -47,12 +47,12 @@ const loginCopy: Record<
   student: {
     title: "Logga in",
     titleEn: "Log in",
-    subtitle: "Endast för studentkonton på CampusLyan.",
-    subtitleEn: "For CampusLyan student accounts only.",
+    subtitle: "För CampusLyan-konton.",
+    subtitleEn: "For CampusLyan accounts.",
     invalidAccountMessage:
-      "Det här kontot är inte ett studentkonto. Använd rätt inloggningssida.",
+      "Det här kontot kan inte logga in här.",
     invalidAccountMessageEn:
-      "This account is not a student account. Use the correct sign-in page.",
+      "This account cannot sign in here.",
     successPath: "/",
     showGoogle: true,
     showRegisterLink: true,
@@ -91,7 +91,7 @@ function isAdminAccount(accountType: User["accountType"]) {
 
 function isAllowedAccount(user: User, mode: LoginMode) {
   if (mode === "student") {
-    return user.accountType === "student";
+    return user.accountType === "student" || user.accountType === "quick_register";
   }
 
   if (mode === "company") {

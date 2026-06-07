@@ -105,6 +105,11 @@ export interface StudentRegistrationResponse {
 }
 
 export interface QuickRegisterResponse {
+  accessToken?: string;
+  token?: string;
+  access_token?: string;
+  jwt?: string;
+  bearerToken?: string;
   email: string;
 }
 

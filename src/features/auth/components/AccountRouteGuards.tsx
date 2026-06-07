@@ -15,7 +15,7 @@ type RouteGuardProps = {
   children: ReactNode;
 };
 
-const SITE_ACCOUNT_TYPES = new Set(["student"]);
+const SITE_ACCOUNT_TYPES = new Set(["student", "quick_register"]);
 
 function isAdminAccount(accountType: string | undefined) {
   return accountType === "admin";

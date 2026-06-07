@@ -16,6 +16,7 @@ import {
   VerifyEmailRequest,
   GoogleRegisterResponse,
   QuickRegisterRequest,
+  QuickRegisterResponse,
   RegisterStudentRequest,
   FrejaAuthRef,
   UserDeleteFailureDTO,
@@ -461,14 +462,16 @@ export const authService = {
     });
   },
 
-  quickRegister: async (payload: QuickRegisterRequest): Promise<AuthResponse> => {
+  quickRegister: async (
+    payload: QuickRegisterRequest
+  ): Promise<AuthResponse | QuickRegisterResponse> => {
     const email = payload.email.trim();
     const password = payload.password.trim();
     if (!email || !password) {
       throw new Error("E-postadress och lösenord krävs.");
     }
 
-    return apiClient<AuthResponse>("/auth/quick-register", {
+    return apiClient<AuthResponse | QuickRegisterResponse>("/auth/quick-register", {
       method: "POST",
       body: JSON.stringify({ email, password }),
       auth: false,
