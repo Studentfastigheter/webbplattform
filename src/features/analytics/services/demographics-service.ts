@@ -5,6 +5,11 @@ import {
   type ServiceOptions,
 } from "@/lib/api/client";
 import type { DeviceType, ViewType } from "@/types/common";
+import {
+  dummyApplicationDemography,
+  dummyListingDemography,
+  isDummyListingId,
+} from "@/features/analytics/data/listing-analytics-dummy";
 
 export type DemographyCategory =
   | "GENDER"
@@ -146,6 +151,31 @@ export function ignoreDemographicsRecordError() {
   // Demographics writes are best-effort telemetry and must not interrupt browsing.
 }
 
+/**
+ * For accepted/rejected filters we approximate the slice — the fixture only
+ * ships the "BOTH" totals, so this keeps the proportions visible without
+ * inventing buckets that don't exist for the real backend shape.
+ */
+function scaleApplicationDemographyForFilter(
+  source: ApplicationDemography,
+  filter: GotListingFilter | undefined
+): ApplicationDemography {
+  if (!filter || filter === "BOTH") return source;
+  const factor = filter === "ACCEPTED_ONLY" ? 0.14 : 0.86;
+  const scaledBuckets = (source.buckets ?? []).map((bucket) => ({
+    ...bucket,
+    totalApplications: Math.max(1, Math.round(bucket.totalApplications * factor)),
+  }));
+  return {
+    ...source,
+    totalApplications: scaledBuckets.reduce(
+      (sum, bucket) => sum + bucket.totalApplications,
+      0
+    ),
+    buckets: scaledBuckets,
+  };
+}
+
 export const demographicsService = {
   getListing: async (
     listingId: string,
@@ -154,6 +184,12 @@ export const demographicsService = {
     category: DemographyCategory,
     options?: ServiceOptions
   ): Promise<ListingDemography> => {
+    // Demo fixture intercept — see `listing-analytics-dummy.ts`.
+    if (isDummyListingId(listingId)) {
+      const fixture = dummyListingDemography[category];
+      if (fixture) return fixture;
+    }
+
     return apiClient<ListingDemography>(
       `/demographics/listing/${pathSegment(listingId)}${demographyQuery(
         from,
@@ -170,6 +206,11 @@ export const demographicsService = {
     to: string | Date,
     options?: ServiceOptions
   ): Promise<Record<DemographyCategory, ListingDemography | null>> => {
+    // Demo fixture intercept — short-circuit the parallel fan-out below.
+    if (isDummyListingId(listingId)) {
+      return dummyListingDemography;
+    }
+
     const entries = await Promise.all(
       LISTING_DEMOGRAPHY_CATEGORIES.map(async (category) => {
         const value = await demographicsService.getListing(
@@ -398,6 +439,14 @@ export const demographicsService = {
     gotListing?: GotListingFilter,
     options?: ServiceOptions
   ): Promise<ApplicationDemography> => {
+    // Demo fixture intercept — see `listing-analytics-dummy.ts`.
+    if (isDummyListingId(listingId)) {
+      const fixture = dummyApplicationDemography[category];
+      if (fixture) {
+        return scaleApplicationDemographyForFilter(fixture, gotListing);
+      }
+    }
+
     return apiClient<ApplicationDemography>(
       `/demographics/applications/listing/${pathSegment(
         listingId

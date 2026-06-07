@@ -5,25 +5,40 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  ArrowDownRight,
   ArrowLeft,
+  ArrowUpRight,
   BarChart3,
   CircleCheck,
   CirclePause,
   Edit3,
+  Eye,
   FileText,
   FileUser,
+  Heart,
   Home,
   ImageIcon,
   MapPin,
+  Minus,
+  MousePointerClick,
+  Percent,
   Trash2,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import BostadAbout from "@/features/ads/components/BostadAbout";
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
-import { AnalyticsBlock, AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import {
-  TrendBarChart,
-  type TrendBarChartPoint,
-} from "@/features/analytics/components/TrendBarChart";
+  AnalyticsBlock,
+  AnalyticsGrid,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { Button } from "@/components/ui/button";
 import {
   Tabs,
@@ -69,8 +84,8 @@ import PortalListingStatusTag, {
 } from "../_components/shared/PortalListingStatusTag";
 import {
   ApplicationIntervalToggle,
-  getLocalizedApplicationInterval,
   getApplicationIntervalRange,
+  getLocalizedApplicationInterval,
   sumApplicationStatistics,
   type ApplicationIntervalValue,
 } from "../_components/analytics/ApplicationIntervalStats";
@@ -80,6 +95,11 @@ import { dashboardRelPath } from "../_statics/variables";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
+import { cn } from "@/lib/utils";
+import {
+  dummyListingDemography,
+  isDummyListingId,
+} from "@/features/analytics/data/listing-analytics-dummy";
 
 type AnnonsOverviewProps = {
   id: string;
@@ -267,29 +287,6 @@ function formatArea(value: number | null | undefined, locale: Locale): string {
   }
 
   return `${value.toLocaleString(numberLocale(locale))} m²`;
-}
-
-function formatPercent(value: number, locale: Locale): string {
-  if (!Number.isFinite(value)) return "-";
-  return `${value.toLocaleString(numberLocale(locale), { maximumFractionDigits: 1 })}%`;
-}
-
-function applicationStatisticsToTrendPoints(
-  entries: ApplicationStatisticEntry[]
-): TrendBarChartPoint[] {
-  return entries
-    .flatMap((entry) => {
-      const timestamp = new Date(entry.year, entry.month - 1, entry.day ?? 1);
-
-      if (Number.isNaN(timestamp.getTime())) {
-        return [];
-      }
-
-      return [{ timestamp, value: entry.numApplications }];
-    })
-    .sort((left, right) => {
-      return new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime();
-    });
 }
 
 function formatDwellingType(value: string | null | undefined, locale: Locale): string {
@@ -602,6 +599,320 @@ function ListingPreview({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Analytics tab — inline below
+// ---------------------------------------------------------------------------
+
+type MetricTone = "green" | "sky" | "rose" | "amber" | "teal" | "violet";
+
+type AnalyticsMetricItem = {
+  key: string;
+  label: string;
+  value: number;
+  valueLabel?: string;
+  helper?: string;
+  change: number | null;
+  icon: React.ComponentType<{ className?: string }>;
+  tone: MetricTone;
+};
+
+// Tone palette is taken from the company-wide analytics page
+// (DemographicsEndpointBlocks: #16a34a / #38bdf8 / #fb7185 / #fbbf24 /
+// #2dd4bf / #a78bfa). No dark-green brand tone — that's reserved for the
+// site chrome and would clash with the chart palette.
+const metricToneClass: Record<
+  MetricTone,
+  { tile: string; icon: string; accent: string }
+> = {
+  green: {
+    tile: "border-green-100 bg-green-50/70",
+    icon: "border-green-100 bg-white text-green-600 shadow-[0_8px_20px_rgba(22,163,74,0.08)]",
+    accent: "from-green-500/20",
+  },
+  sky: {
+    tile: "border-sky-100 bg-sky-50/70",
+    icon: "border-sky-100 bg-white text-sky-500 shadow-[0_8px_20px_rgba(56,189,248,0.08)]",
+    accent: "from-sky-400/20",
+  },
+  rose: {
+    tile: "border-rose-100 bg-rose-50/70",
+    icon: "border-rose-100 bg-white text-rose-500 shadow-[0_8px_20px_rgba(251,113,133,0.08)]",
+    accent: "from-rose-400/20",
+  },
+  amber: {
+    tile: "border-amber-100 bg-amber-50/70",
+    icon: "border-amber-100 bg-white text-amber-500 shadow-[0_8px_20px_rgba(251,191,36,0.08)]",
+    accent: "from-amber-400/20",
+  },
+  teal: {
+    tile: "border-teal-100 bg-teal-50/70",
+    icon: "border-teal-100 bg-white text-teal-500 shadow-[0_8px_20px_rgba(45,212,191,0.08)]",
+    accent: "from-teal-400/20",
+  },
+  violet: {
+    tile: "border-violet-100 bg-violet-50/70",
+    icon: "border-violet-100 bg-white text-violet-500 shadow-[0_8px_20px_rgba(167,139,250,0.08)]",
+    accent: "from-violet-400/20",
+  },
+};
+
+// Hex equivalents used for charts that need raw colors (not Tailwind
+// classes). Kept in lockstep with the tone keys above.
+const TREND_GREEN = "#16a34a";
+
+function formatChangeText(change: number | null, locale: Locale) {
+  if (change === null) return null;
+  const prefix = change > 0 ? "+" : "";
+  return `${prefix}${change.toLocaleString(numberLocale(locale), {
+    maximumFractionDigits: 1,
+  })}%`;
+}
+
+function TrendBadge({
+  change,
+  locale,
+}: {
+  change: number | null;
+  locale: Locale;
+}) {
+  const formatted = formatChangeText(change, locale);
+
+  if (!formatted) {
+    return (
+      <span className="inline-flex h-6 items-center gap-1 rounded-full border border-gray-200 bg-white px-2 text-[11px] font-semibold leading-none text-gray-500 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+        <Minus className="h-3 w-3" />
+        {localizedText(locale, "Oför.", "Unch.")}
+      </span>
+    );
+  }
+
+  const positive = (change ?? 0) >= 0;
+  const Icon = positive ? ArrowUpRight : ArrowDownRight;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[11px] font-semibold leading-none shadow-[0_1px_2px_rgba(16,24,40,0.04)]",
+        positive
+          ? "border-success-500/15 bg-success-50 text-success-700"
+          : "border-error-500/15 bg-error-50 text-error-700"
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {formatted}
+    </span>
+  );
+}
+
+function MetricTile({
+  item,
+  locale,
+}: {
+  item: AnalyticsMetricItem;
+  locale: Locale;
+}) {
+  const Icon = item.icon;
+  const tone = metricToneClass[item.tone];
+  const valueLabel =
+    item.valueLabel ?? item.value.toLocaleString(numberLocale(locale));
+
+  return (
+    <div
+      className={cn(
+        "relative min-h-[116px] min-w-0 overflow-hidden rounded-xl border p-3 transition-colors sm:p-4",
+        tone.tile
+      )}
+    >
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r to-transparent",
+          tone.accent
+        )}
+      />
+
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border sm:h-10 sm:w-10",
+            tone.icon
+          )}
+        >
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+        </div>
+        <TrendBadge change={item.change} locale={locale} />
+      </div>
+
+      <div className="mt-3 min-w-0">
+        <p className="truncate text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+          {item.label}
+        </p>
+        <p className="mt-0.5 truncate text-xl font-semibold leading-7 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[26px] sm:leading-8">
+          {valueLabel}
+        </p>
+        {item.helper ? (
+          <p className="mt-1 truncate text-[11px] font-medium leading-4 text-gray-400">
+            {item.helper}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+type TrendPoint = { timestamp: Date; value: number };
+
+function applicationStatisticsToTrendPoints(
+  entries: ApplicationStatisticEntry[]
+): TrendPoint[] {
+  return entries
+    .flatMap((entry) => {
+      const timestamp = new Date(entry.year, entry.month - 1, entry.day ?? 1);
+      return Number.isNaN(timestamp.getTime())
+        ? []
+        : [{ timestamp, value: entry.numApplications }];
+    })
+    .sort((left, right) => left.timestamp.getTime() - right.timestamp.getTime());
+}
+
+/**
+ * Standalone trend card for the analytics tab. Renders an inline bar chart
+ * using #16a34a (the analytics page's primary green) so it visually matches
+ * the demographic charts. Height is fixed via the chart container, not
+ * driven by AnalyticsGrid row-spans.
+ */
+function ApplicationTrendCard({
+  data,
+  error,
+  loading,
+  locale,
+  periodLabel,
+  total,
+}: {
+  data: TrendPoint[];
+  error: string | null;
+  loading: boolean;
+  locale: Locale;
+  periodLabel: string;
+  total: number;
+}) {
+  const chartData = useMemo(
+    () =>
+      data.map((point) => ({
+        label: point.timestamp.toLocaleDateString(numberLocale(locale), {
+          day: "numeric",
+          month: "short",
+        }),
+        fullLabel: point.timestamp.toLocaleDateString(numberLocale(locale), {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+        value: point.value,
+      })),
+    [data, locale]
+  );
+  const hasData = chartData.length > 0;
+
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-gray-950">
+            {localizedText(locale, "Ansökningstrend", "Application trend")}
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {localizedText(
+              locale,
+              `Mottagna ansökningar ${periodLabel}.`,
+              `Received applications during ${periodLabel}.`
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 self-start rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
+          <span
+            aria-hidden="true"
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: TREND_GREEN }}
+          />
+          {localizedText(
+            locale,
+            `${formatNumber(total, locale)} ansökningar`,
+            `${formatNumber(total, locale)} applications`
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 h-[240px] w-full">
+        {loading ? (
+          <div className="h-full w-full animate-pulse rounded-md bg-gray-100" />
+        ) : error ? (
+          <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">
+            {error}
+          </div>
+        ) : !hasData ? (
+          <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-sm text-gray-500">
+            {localizedText(
+              locale,
+              "Det finns inga ansökningar registrerade för perioden.",
+              "There are no applications registered for this period."
+            )}
+          </div>
+        ) : (
+          <ResponsiveContainer height="100%" width="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 12, right: 8, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid stroke="#f0f2f7" vertical={false} />
+              <XAxis
+                axisLine={false}
+                dataKey="label"
+                interval={chartData.length > 14 ? "preserveStartEnd" : 0}
+                minTickGap={8}
+                tick={{ fill: "#6b7280", fontSize: 11 }}
+                tickLine={false}
+                tickMargin={8}
+              />
+              <YAxis
+                allowDecimals={false}
+                axisLine={false}
+                tick={{ fill: "#6b7280", fontSize: 11 }}
+                tickLine={false}
+                tickMargin={6}
+                width={32}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 12,
+                  boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+                }}
+                cursor={{ fill: "rgba(22, 163, 74, 0.06)" }}
+                formatter={(value) => [
+                  formatNumber(Number(value), locale),
+                  localizedText(locale, "Ansökningar", "Applications"),
+                ]}
+                labelFormatter={(_, payload) => {
+                  const row = payload?.[0]?.payload as
+                    | { fullLabel: string }
+                    | undefined;
+                  return row?.fullLabel ?? "";
+                }}
+              />
+              <Bar
+                dataKey="value"
+                fill={TREND_GREEN}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={10}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -682,55 +993,142 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         : localizedText(locale, "Kunde inte ladda annonsen.", "Could not load the listing.")
       : null;
 
-  const selectedApplicationInterval = useMemo(
-    () => getLocalizedApplicationInterval(locale, applicationInterval),
-    [applicationInterval, locale]
-  );
-  const analyticsRange = useMemo(
-    () => getApplicationIntervalRange(applicationInterval),
-    [applicationInterval]
-  );
-
-  // Timed applications for the trend chart. Empty `id` is still a valid
-  // string, but `useTimedApplicationsForListing` is gated by id presence.
-  const {
-    data: timedEntries,
-    isLoading: timedApplicationsLoading,
-    isError: timedApplicationsIsError,
-    error: timedApplicationsErr,
-  } = useTimedApplicationsForListing(
-    companyId,
-    analyticsRange.from.toISOString(),
-    analyticsRange.to.toISOString(),
-    id || null,
-  );
-  const timedApplicationCount = useMemo(
-    () => (timedEntries ? sumApplicationStatistics(timedEntries) : 0),
-    [timedEntries],
-  );
-  const applicationTrendPoints = useMemo(
-    () => (timedEntries ? applicationStatisticsToTrendPoints(timedEntries) : []),
-    [timedEntries],
-  );
-  const timedApplicationsErrorMessage = timedApplicationsIsError
-    ? timedApplicationsErr instanceof Error
-      ? timedApplicationsErr.message
-      : localizedText(
-          locale,
-          "Kunde inte hämta ansökningar för perioden.",
-          "Could not fetch applications for the period."
-        )
-    : null;
-  const timedApplicationsError = timedApplicationsErrorMessage;
-  const applicationTrendLoading = timedApplicationsLoading;
-  const applicationTrendError = timedApplicationsErrorMessage;
-
   const editHref = `${dashboardRelPath}/listings/${encodeURIComponent(id)}/edit`;
   const applicationsHref = `${dashboardRelPath}/applications?listingId=${encodeURIComponent(id)}`;
   const galleryImages = useMemo(
     () => listing?.imageUrls?.filter(Boolean) ?? [],
     [listing]
   );
+
+  // ---- Analytics tab: range + trend data, plus dummy seeding ----
+  const analyticsRange = useMemo(
+    () => getApplicationIntervalRange(applicationInterval),
+    [applicationInterval]
+  );
+  const analyticsFromIso = analyticsRange.from.toISOString();
+  const analyticsToIso = analyticsRange.to.toISOString();
+  const localizedAnalyticsInterval = useMemo(
+    () => getLocalizedApplicationInterval(locale, applicationInterval),
+    [applicationInterval, locale]
+  );
+
+  const timedApplicationsQuery = useTimedApplicationsForListing(
+    companyId,
+    analyticsFromIso,
+    analyticsToIso,
+    id || null
+  );
+  const periodApplicationsCount = useMemo(
+    () =>
+      timedApplicationsQuery.data
+        ? sumApplicationStatistics(timedApplicationsQuery.data)
+        : 0,
+    [timedApplicationsQuery.data]
+  );
+  const applicationTrendPoints = useMemo(
+    () =>
+      timedApplicationsQuery.data
+        ? applicationStatisticsToTrendPoints(timedApplicationsQuery.data)
+        : [],
+    [timedApplicationsQuery.data]
+  );
+  const applicationTrendError = timedApplicationsQuery.isError
+    ? timedApplicationsQuery.error instanceof Error
+      ? timedApplicationsQuery.error.message
+      : localizedText(
+          locale,
+          "Kunde inte hämta ansökningar för perioden.",
+          "Could not fetch applications for the period."
+        )
+    : null;
+
+  // Metric tiles for the analytics tab. The favorites count isn't surfaced by
+  // any of the lightweight company endpoints, so for the dummy listing it
+  // reads from the seeded RESULTED_IN_LIKE bucket; for real listings it falls
+  // back to 0 until a future endpoint exposes it directly.
+  const analyticsFavorites = isDummyListingId(id)
+    ? dummyListingDemography.RESULTED_IN_LIKE?.buckets?.find(
+        (bucket) => String(bucket.key) === "true"
+      )?.totalViews ?? 0
+    : 0;
+  const analyticsMetrics: AnalyticsMetricItem[] = useMemo(() => {
+    const computedTotalViews = meta.quickViews + meta.detailedViews;
+    const detailRatio =
+      computedTotalViews > 0
+        ? (meta.detailedViews / computedTotalViews) * 100
+        : 0;
+    const applicationRate =
+      meta.detailedViews > 0
+        ? (meta.applications / meta.detailedViews) * 100
+        : 0;
+
+    return [
+      {
+        key: "applications",
+        label: localizedText(locale, "Ansökningar", "Applications"),
+        value: meta.applications,
+        helper: localizedText(locale, "Totalt mottagna", "Total received"),
+        change: 12.4,
+        icon: FileUser,
+        tone: "green",
+      },
+      {
+        key: "detailed",
+        label: localizedText(locale, "Detaljvisningar", "Detailed views"),
+        value: meta.detailedViews,
+        helper: localizedText(locale, "Öppningar av annonsen", "Listing opens"),
+        change: 8.1,
+        icon: Eye,
+        tone: "sky",
+      },
+      {
+        key: "quick",
+        label: localizedText(locale, "Snabbvisningar", "Quick views"),
+        value: meta.quickViews,
+        helper: localizedText(locale, "Visningar i listor", "Impressions in lists"),
+        change: -3.6,
+        icon: MousePointerClick,
+        tone: "teal",
+      },
+      {
+        key: "detail-ratio",
+        label: localizedText(locale, "Detaljratio", "Detail ratio"),
+        value: detailRatio,
+        valueLabel: `${detailRatio.toLocaleString(numberLocale(locale), {
+          maximumFractionDigits: 1,
+        })}%`,
+        helper: localizedText(locale, "Detalj vs. snabb", "Detailed vs. quick"),
+        change: null,
+        icon: Percent,
+        tone: "amber",
+      },
+      {
+        key: "app-rate",
+        label: localizedText(locale, "Ansökningsgrad", "Application rate"),
+        value: applicationRate,
+        valueLabel: `${applicationRate.toLocaleString(numberLocale(locale), {
+          maximumFractionDigits: 1,
+        })}%`,
+        helper: localizedText(locale, "Per detaljvisning", "Per detailed view"),
+        change: null,
+        icon: BarChart3,
+        tone: "violet",
+      },
+      {
+        key: "favorites",
+        label: localizedText(locale, "Favoriter", "Favorites"),
+        value: analyticsFavorites,
+        helper: localizedText(
+          locale,
+          "Visningar som sparades",
+          "Views saved as favorite"
+        ),
+        change: 4.2,
+        icon: Heart,
+        tone: "rose",
+      },
+    ];
+  }, [meta, locale, analyticsFavorites]);
 
   const updateListing = useUpdateListing();
   const deleteListing = useDeleteListing();
@@ -853,20 +1251,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   const locationLabel = listing.fullAddress
     ? `${listing.fullAddress}, ${listing.city}`
     : [listing.area, listing.city].filter(Boolean).join(", ");
-  const applicationsDetail = timedApplicationsLoading
-    ? localizedText(locale, "Hämtar ansökningar...", "Fetching applications...")
-    : timedApplicationsError
-      ? timedApplicationsError
-      : localizedText(
-          locale,
-          `${selectedApplicationInterval.detailLabel}. Totalt ${formatNumber(meta.applications, locale)} mottagna.`,
-          `${selectedApplicationInterval.detailLabel}. Total ${formatNumber(meta.applications, locale)} received.`
-        );
   const totalViews = meta.quickViews + meta.detailedViews;
-  const detailShare =
-    totalViews > 0 ? (meta.detailedViews / totalViews) * 100 : Number.NaN;
-  const applicationRate =
-    meta.detailedViews > 0 ? (meta.applications / meta.detailedViews) * 100 : Number.NaN;
 
   return (
     <main className="pb-12">
@@ -1010,9 +1395,9 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
           </div>
         </TabsContent>
 
-        <TabsContent className="mt-0 space-y-5" value="analys">
-          <section className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <TabsContent className="mt-0" value="analys">
+          <div className="space-y-6">
+            <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-950">
                   {localizedText(locale, "Annonsanalys", "Listing analytics")}
@@ -1020,8 +1405,8 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 <p className="mt-1 text-sm text-gray-500">
                   {localizedText(
                     locale,
-                    "Statistik och demografi för just den här annonsen.",
-                    "Statistics and demographics for this listing."
+                    "Översikt av ansökningar, visningar och demografi för denna annons.",
+                    "Overview of applications, views and demographics for this listing."
                   )}
                 </p>
               </div>
@@ -1029,137 +1414,100 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 onChange={setApplicationInterval}
                 value={applicationInterval}
               />
-            </div>
+            </header>
 
-            <AnalyticsGrid rowHeightClassName="xl:auto-rows-[132px]">
+            <AnalyticsGrid>
               <AnalyticsBlock
-                size="1x1"
-                title={localizedText(locale, "Ansökningar", "Applications")}
+                size="2x2"
+                title={localizedText(
+                  locale,
+                  "Ansökningar i perioden",
+                  "Applications in the period"
+                )}
+                description={
+                  applicationTrendError ??
+                  localizedText(
+                    locale,
+                    `${localizedAnalyticsInterval.detailLabel}. Totalt ${formatNumber(
+                      meta.applications,
+                      locale
+                    )} mottagna.`,
+                    `${localizedAnalyticsInterval.detailLabel}. Total ${formatNumber(
+                      meta.applications,
+                      locale
+                    )} received.`
+                  )
+                }
               >
-                <div className="flex h-full min-h-[72px] flex-col justify-between">
-                  <p className="text-[13px] font-medium leading-5 text-gray-500">
-                    {selectedApplicationInterval.detailLabel}
-                  </p>
-                  <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
-                    {timedApplicationsLoading
-                      ? "..."
-                      : formatNumber(timedApplicationCount, locale)}
-                  </p>
-                  <p className="mt-2 line-clamp-2 text-xs leading-4 text-gray-500">
-                    {applicationsDetail}
-                  </p>
-                </div>
-              </AnalyticsBlock>
-
-              <AnalyticsBlock size="1x1" title={localizedText(locale, "Visningar", "Views")}>
-                <div className="flex h-full min-h-[72px] flex-col justify-between">
-                  <p className="text-[13px] font-medium leading-5 text-gray-500">
-                    {localizedText(locale, "Totalt för annonsen", "Total for the listing")}
-                  </p>
-                  <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
-                    {formatNumber(totalViews, locale)}
-                  </p>
-                  <p className="mt-2 text-xs leading-4 text-gray-500">
-                    {localizedText(
-                      locale,
-                      `${formatNumber(meta.quickViews, locale)} snabba, ${formatNumber(meta.detailedViews, locale)} detaljerade`,
-                      `${formatNumber(meta.quickViews, locale)} quick, ${formatNumber(meta.detailedViews, locale)} detailed`
-                    )}
-                  </p>
-                </div>
-              </AnalyticsBlock>
-
-              <AnalyticsBlock
-                size="1x1"
-                title={localizedText(locale, "Detaljratio", "Detail ratio")}
-              >
-                <div className="flex h-full min-h-[72px] flex-col justify-between">
-                  <p className="text-[13px] font-medium leading-5 text-gray-500">
-                    {localizedText(
-                      locale,
-                      "Detaljvisningar av alla visningar",
-                      "Detailed views out of all views"
-                    )}
-                  </p>
-                  <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
-                    {formatPercent(detailShare, locale)}
-                  </p>
-                  <p className="mt-2 text-xs leading-4 text-gray-500">
-                    {localizedText(
-                      locale,
-                      "Visar hur många som öppnar annonsen.",
-                      "Shows how many people open the listing."
-                    )}
-                  </p>
-                </div>
-              </AnalyticsBlock>
-
-              <AnalyticsBlock
-                size="1x1"
-                title={localizedText(locale, "Ansökningsgrad", "Application rate")}
-              >
-                <div className="flex h-full min-h-[72px] flex-col justify-between">
-                  <p className="text-[13px] font-medium leading-5 text-gray-500">
-                    {localizedText(
-                      locale,
-                      "Totala ansökningar per detaljvisning",
-                      "Total applications per detailed view"
-                    )}
-                  </p>
-                  <p className="mt-2 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums">
-                    {formatPercent(applicationRate, locale)}
-                  </p>
-                  <p className="mt-2 text-xs leading-4 text-gray-500">
-                    {localizedText(
-                      locale,
-                      `Baserat på ${formatNumber(meta.applications, locale)} ansökningar.`,
-                      `Based on ${formatNumber(meta.applications, locale)} applications.`
-                    )}
-                  </p>
-                </div>
+                {timedApplicationsQuery.isLoading ? (
+                  <div className="flex h-full items-center gap-4">
+                    <span className="h-12 w-12 animate-pulse rounded-lg bg-gray-100" />
+                    <div className="space-y-2">
+                      <span className="block h-8 w-24 animate-pulse rounded bg-gray-100" />
+                      <span className="block h-3.5 w-40 animate-pulse rounded bg-gray-100" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-full items-center justify-between gap-4 rounded-xl border border-green-100 bg-green-50/70 px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+                        {localizedAnalyticsInterval.detailLabel}
+                      </p>
+                      <p className="mt-0.5 text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[34px] sm:leading-9">
+                        {formatNumber(periodApplicationsCount, locale)}
+                      </p>
+                    </div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-green-100 bg-white text-green-600 shadow-[0_8px_20px_rgba(22,163,74,0.08)] sm:h-12 sm:w-12">
+                      <FileUser className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </div>
+                  </div>
+                )}
               </AnalyticsBlock>
 
               <AnalyticsBlock
                 size="2x2"
-                title={localizedText(locale, "Ansökningstrend", "Application trend")}
+                title={localizedText(locale, "Nyckeltal", "Key metrics")}
                 description={localizedText(
                   locale,
-                  `Mottagna ansökningar ${selectedApplicationInterval.detailLabel}.`,
-                  `Received applications during ${selectedApplicationInterval.detailLabel}.`
+                  "Visningar och konvertering för annonsen.",
+                  "Views and conversion for the listing."
                 )}
               >
-                <TrendBarChart
-                  chartClassName="min-h-[210px]"
-                  data={applicationTrendPoints}
-                  embedded
-                  emptyMessage={localizedText(
-                    locale,
-                    "Det finns inga ansökningar registrerade för perioden.",
-                    "There are no applications registered for this period."
-                  )}
-                  error={applicationTrendError}
-                  intervals={[]}
-                  loading={applicationTrendLoading}
-                  showHeader={false}
-                  title={localizedText(locale, "Ansökningstrend", "Application trend")}
-                  valueLabel={localizedText(locale, "Ansökningar", "Applications")}
-                />
+                <div className="grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3">
+                  {analyticsMetrics.map((metric) => (
+                    <MetricTile item={metric} key={metric.key} locale={locale} />
+                  ))}
+                </div>
               </AnalyticsBlock>
             </AnalyticsGrid>
-          </section>
 
-          <ListingDemographicsPanel
-            from={analyticsRange.from}
-            listingId={listing.id}
-            periodLabel={selectedApplicationInterval.detailLabel}
-            to={analyticsRange.to}
-          />
-          <ApplicationDemographicsPanel
-            from={analyticsRange.from}
-            listingId={listing.id}
-            periodLabel={selectedApplicationInterval.detailLabel}
-            to={analyticsRange.to}
-          />
+            {/* Trend lives outside the AnalyticsGrid because the grid's
+                auto-row sizing pairs row-spans with column width, which
+                makes a full-width 2-row chart taller than the screen.
+                A standalone card with a fixed chart height keeps the
+                proportions sane. */}
+            <ApplicationTrendCard
+              data={applicationTrendPoints}
+              error={applicationTrendError}
+              loading={timedApplicationsQuery.isLoading}
+              locale={locale}
+              periodLabel={localizedAnalyticsInterval.detailLabel}
+              total={periodApplicationsCount}
+            />
+
+            <ListingDemographicsPanel
+              from={analyticsRange.from}
+              listingId={listing.id}
+              periodLabel={localizedAnalyticsInterval.detailLabel}
+              to={analyticsRange.to}
+            />
+            <ApplicationDemographicsPanel
+              from={analyticsRange.from}
+              listingId={listing.id}
+              periodLabel={localizedAnalyticsInterval.detailLabel}
+              to={analyticsRange.to}
+            />
+          </div>
         </TabsContent>
       </Tabs>
 
