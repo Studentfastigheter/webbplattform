@@ -31,7 +31,19 @@ type ChartDatum = {
   fill: string;
 };
 
-const colors = ["#004225", "#2563eb", "#e11d48", "#d97706", "#0891b2", "#64748b"];
+// Palette mirrors the one used in the portfolio analytics blocks
+// (DemographicsEndpointBlocks) so the per-listing analytics share the same
+// visual rhythm as the company-wide page.
+const colors = [
+  "#16a34a",
+  "#38bdf8",
+  "#fb7185",
+  "#fbbf24",
+  "#2dd4bf",
+  "#a78bfa",
+  "#4ade80",
+  "#94a3b8",
+];
 
 const labels: Record<string, { sv: string; en: string }> = {
   QUICK: { sv: "Snabb", en: "Quick" },
@@ -137,6 +149,47 @@ function EmptyState({ locale }: { locale: Locale }) {
   );
 }
 
+/**
+ * Compact swatch legend rendered below every chart so each color maps to a
+ * named bucket and its share. The `limit` mirrors what the chart itself
+ * truncates (pies show all, bars cap at top-5) so the legend can't lie.
+ */
+function ChartLegend({
+  data,
+  locale,
+  limit,
+}: {
+  data: ChartDatum[];
+  locale: Locale;
+  limit?: number;
+}) {
+  const items = typeof limit === "number" ? data.slice(0, limit) : data;
+  if (items.length === 0) return null;
+
+  return (
+    <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5">
+      {items.map((item) => (
+        <li
+          className="flex min-w-0 items-center gap-1.5 text-[11px] leading-4 text-gray-600"
+          key={item.label}
+        >
+          <span
+            aria-hidden="true"
+            className="h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: item.fill }}
+          />
+          <span className="min-w-0 truncate font-medium text-gray-700">
+            {item.label}
+          </span>
+          <span className="shrink-0 tabular-nums text-gray-400">
+            {formatNumber(item.value, locale)} ({formatPercent(item.share, locale)})
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function MiniPie({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
   if (data.length === 0) return <EmptyState locale={locale} />;
 
@@ -202,7 +255,7 @@ function MiniBars({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
             }}
             formatter={(value) => [formatNumber(Number(value), locale), localizedText(locale, "Visningar", "Views")]}
           />
-          <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+          <Bar dataKey="value" maxBarSize={18} radius={[4, 4, 0, 0]}>
             {data.map((entry) => (
               <Cell fill={entry.fill} key={entry.label} />
             ))}
@@ -343,38 +396,58 @@ export default function ListingDemographicsPanel({
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Enheter", "Devices")}</h3>
-          <MiniPie data={toData(data.DEVICE_TYPE, locale)} locale={locale} />
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">
-            {localizedText(locale, "Visningstyp", "View type")}
-          </h3>
-          <MiniPie data={toData(data.VIEW_TYPE, locale)} locale={locale} />
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">
-            {localizedText(locale, "Städer", "Cities")}
-          </h3>
-          <MiniBars data={toData(data.CITY, locale)} locale={locale} />
-        </div>
+        <ChartCard
+          chart={<MiniPie data={toData(data.DEVICE_TYPE, locale)} locale={locale} />}
+          legend={<ChartLegend data={toData(data.DEVICE_TYPE, locale)} locale={locale} />}
+          title={localizedText(locale, "Enheter", "Devices")}
+        />
+        <ChartCard
+          chart={<MiniPie data={toData(data.VIEW_TYPE, locale)} locale={locale} />}
+          legend={<ChartLegend data={toData(data.VIEW_TYPE, locale)} locale={locale} />}
+          title={localizedText(locale, "Visningstyp", "View type")}
+        />
+        <ChartCard
+          chart={<MiniBars data={toData(data.CITY, locale)} locale={locale} />}
+          legend={<ChartLegend data={toData(data.CITY, locale)} limit={5} locale={locale} />}
+          title={localizedText(locale, "Städer", "Cities")}
+        />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Skolor", "Schools")}</h3>
-          <MiniBars data={toData(data.SCHOOL, locale)} locale={locale} />
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Ålder", "Age")}</h3>
-          <MiniBars data={toData(data.AGE, locale)} locale={locale} />
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Kön", "Gender")}</h3>
-          <MiniPie data={toData(data.GENDER, locale)} locale={locale} />
-        </div>
+        <ChartCard
+          chart={<MiniBars data={toData(data.SCHOOL, locale)} locale={locale} />}
+          legend={<ChartLegend data={toData(data.SCHOOL, locale)} limit={5} locale={locale} />}
+          title={localizedText(locale, "Skolor", "Schools")}
+        />
+        <ChartCard
+          chart={<MiniBars data={toData(data.AGE, locale)} locale={locale} />}
+          legend={<ChartLegend data={toData(data.AGE, locale)} limit={5} locale={locale} />}
+          title={localizedText(locale, "Ålder", "Age")}
+        />
+        <ChartCard
+          chart={<MiniPie data={toData(data.GENDER, locale)} locale={locale} />}
+          legend={<ChartLegend data={toData(data.GENDER, locale)} locale={locale} />}
+          title={localizedText(locale, "Kön", "Gender")}
+        />
       </div>
     </section>
+  );
+}
+
+function ChartCard({
+  title,
+  chart,
+  legend,
+}: {
+  title: string;
+  chart: React.ReactNode;
+  legend: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+      <h3 className="mb-2 text-sm font-semibold text-gray-900">{title}</h3>
+      {chart}
+      {legend}
+    </div>
   );
 }
