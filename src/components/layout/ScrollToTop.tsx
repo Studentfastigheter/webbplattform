@@ -1,14 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { isAdminSubdomain, isPortalSubdomain } from "@/lib/subdomain-routing";
+
+function isAppPath(pathname: string) {
+  return (
+    pathname === "/portal" ||
+    pathname.startsWith("/portal/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
+  );
+}
 
 export default function ScrollToTop() {
+  const pathname = usePathname();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const shouldHide =
+    isPortalSubdomain() || isAdminSubdomain() || isAppPath(pathname);
 
   useEffect(() => {
+    if (shouldHide) {
+      setShowScrollTop(false);
+      return;
+    }
+
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 400);
     };
@@ -16,11 +35,15 @@ export default function ScrollToTop() {
     handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [shouldHide]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <AnimatePresence>

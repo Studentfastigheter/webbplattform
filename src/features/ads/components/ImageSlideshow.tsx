@@ -52,6 +52,7 @@ export default function ImageSlideshow({ images, title }: ImageSlideshowProps) {
         {images.length > 1 && (
           <>
             <button
+              type="button"
               onClick={() =>
                 scrollTo((currentIndex - 1 + images.length) % images.length)
               }
@@ -61,6 +62,7 @@ export default function ImageSlideshow({ images, title }: ImageSlideshowProps) {
               <ChevronLeft className="h-5 w-5 text-gray-700" />
             </button>
             <button
+              type="button"
               onClick={() => scrollTo((currentIndex + 1) % images.length)}
               className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 shadow transition hover:bg-white"
               aria-label={localizedText(locale, "Nästa", "Next")}
@@ -80,6 +82,7 @@ export default function ImageSlideshow({ images, title }: ImageSlideshowProps) {
           {images.map((src, i) => (
             <button
               key={`${src}-${i}`}
+              type="button"
               onClick={() => scrollTo(i)}
               className={`h-20 w-28 shrink-0 overflow-hidden rounded-xl border-2 transition ${
                 i === currentIndex

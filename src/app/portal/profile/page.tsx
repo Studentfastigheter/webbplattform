@@ -1,7 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
@@ -24,15 +36,16 @@ import {
 import { useQueuesByCompany } from "@/features/queues/hooks/useQueues";
 import { type HousingQueueDTO } from "@/types/queue";
 import { formatCityName } from "@/features/cities/city-utils";
+import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
+import CompanyVideoSection, {
+  type CompanyVideo,
+} from "@/features/ads/components/CompanyVideoSection";
 import {
   Globe,
   ImageIcon,
-  Link2,
   Loader2,
-  Mail,
   MapPin,
   Pencil,
-  Phone,
   Plus,
   Save,
   Share2,
@@ -49,7 +62,12 @@ import {
 import { UploadButton } from "../_components/shared/UploadButton";
 import BannerImageCropDialog from "@/components/shared/BannerImageCropDialog";
 import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";
-import { isYouTubeVideoUrl } from "@/lib/youtube-url";
+import {
+  getYouTubeEmbedUrl,
+  getYouTubeThumbnailUrl,
+  getYouTubeVideoId,
+  isYouTubeVideoUrl,
+} from "@/lib/youtube-url";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { useUploadCompanyPublicMedia } from "@/features/media/hooks/useMedia";
 
@@ -139,6 +157,17 @@ function normalizeUrlList(values: string[] | undefined) {
 
 function getInvalidYouTubeVideoUrls(values: string[] | undefined) {
   return normalizeUrlList(values).filter((url) => !isYouTubeVideoUrl(url));
+}
+
+function toCompanyVideo(url: string): CompanyVideo | null {
+  const youtubeId = getYouTubeVideoId(url);
+  if (!youtubeId) return null;
+
+  return {
+    originalUrl: url,
+    embedUrl: getYouTubeEmbedUrl(youtubeId),
+    thumbnailUrl: getYouTubeThumbnailUrl(youtubeId),
+  };
 }
 
 function uniqueCityLabels(values: Array<string | null | undefined>) {
@@ -328,15 +357,15 @@ function InlineLabel({ children }: { children: string }) {
   );
 }
 
-function EditableContactRow({
-  icon,
+function ContactFormField({
+  id,
   label,
   value,
   placeholder,
   type = "text",
   onChange,
 }: {
-  icon: React.ReactNode;
+  id: string;
   label: string;
   value: string;
   placeholder: string;
@@ -344,109 +373,247 @@ function EditableContactRow({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2">
-      {icon}
-      <span className="sr-only">{label}</span>
-      <input
-        aria-label={label}
+    <Field className="gap-2">
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Input
+        id={id}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={iconInputClass}
+        className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
         placeholder={placeholder}
       />
-    </label>
+    </Field>
   );
 }
 
-function UrlListEditor({
-  icon,
-  label,
-  values,
-  placeholder,
-  addLabel,
-  emptyLabel,
-  getIsInvalidValue,
-  invalidText,
+function ContactFormSection({
+  draft,
+  onDraftChange,
+}: {
+  draft: ProfileDraft;
+  onDraftChange: <K extends keyof ProfileDraft>(
+    key: K,
+    value: ProfileDraft[K]
+  ) => void;
+}) {
+  const { locale } = useI18n();
+
+  return (
+    <section className="mx-auto w-full max-w-6xl">
+      <div className="w-full rounded-[24px] bg-white px-5 py-6 shadow-[0_18px_55px_rgba(15,23,42,0.12)] sm:px-6">
+        <div className="mb-6 flex flex-col items-start gap-2 text-left">
+          <h2 className="text-2xl font-bold text-[#1f1f1f]">
+            {localizedText(locale, "Kontakt", "Contact")}
+          </h2>
+        </div>
+
+        <FieldGroup className="grid gap-x-5 gap-y-6 md:grid-cols-2 [&>[data-slot=field]]:min-w-0">
+          <ContactFormField
+            id="company-contact-phone"
+            label={localizedText(locale, "Telefonnummer", "Phone number")}
+            value={draft.contactPhone}
+            onChange={(value) => onDraftChange("contactPhone", value)}
+            placeholder="070-000 00 00"
+          />
+          <ContactFormField
+            id="company-contact-email"
+            label={localizedText(locale, "E-postadress", "Email address")}
+            type="email"
+            value={draft.contactEmail}
+            onChange={(value) => onDraftChange("contactEmail", value)}
+            placeholder="kontakt@foretag.se"
+          />
+          <ContactFormField
+            id="company-website"
+            label={localizedText(locale, "Hemsida", "Website")}
+            type="url"
+            value={draft.websiteUrl}
+            onChange={(value) => onDraftChange("websiteUrl", value)}
+            placeholder="https://www.foretag.se"
+          />
+          <div className="grid gap-x-5 gap-y-6 md:col-span-2 md:grid-cols-2">
+            <ContactFormField
+              id="company-privacy-policy"
+              label={localizedText(locale, "Integritetspolicy", "Privacy policy")}
+              type="url"
+              value={draft.privacyPolicyUrl}
+              onChange={(value) => onDraftChange("privacyPolicyUrl", value)}
+              placeholder="https://www.foretag.se/integritet"
+            />
+            <ContactFormField
+              id="company-terms"
+              label={localizedText(locale, "Villkorspolicy", "Terms policy")}
+              type="url"
+              value={draft.termsUrl}
+              onChange={(value) => onDraftChange("termsUrl", value)}
+              placeholder="https://www.foretag.se/villkor"
+            />
+          </div>
+        </FieldGroup>
+      </div>
+    </section>
+  );
+}
+
+function EditableImageGallerySection({
+  imageUrls,
+  companyName,
+  onOpen,
+}: {
+  imageUrls?: string[];
+  companyName: string;
+  onOpen: () => void;
+}) {
+  const { locale } = useI18n();
+  const visibleImages = normalizeUrlList(imageUrls);
+
+  return (
+    <section
+      className="mx-auto w-full max-w-4xl"
+      aria-label={localizedText(locale, "Bildgalleri", "Image gallery")}
+    >
+      {visibleImages.length === 0 ? (
+        <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-gray-500">
+          <ImageIcon className="h-7 w-7 text-gray-400" />
+          <span>
+            {localizedText(
+              locale,
+              "Inga bilder i galleriet \u00e4n.",
+              "No images in the gallery yet.",
+            )}
+          </span>
+        </div>
+      ) : (
+        <ImageSlideshow images={visibleImages} title={companyName} />
+      )}
+
+      <div className="mt-4 flex justify-end">
+        <Button type="button" variant="outline" size="sm" onClick={onOpen}>
+          <ImageIcon className="h-4 w-4" />
+          {localizedText(locale, "Redigera bilder", "Edit images")}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function EditableVideoSection({
+  videoUrls,
+  companyName,
   onChange,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  values?: string[];
-  placeholder: string;
-  addLabel: string;
-  emptyLabel: string;
-  getIsInvalidValue?: (value: string) => boolean;
-  invalidText?: string;
+  videoUrls?: string[];
+  companyName: string;
   onChange: (values: string[]) => void;
 }) {
-  const listValues = values ?? [];
+  const { locale } = useI18n();
+  const listValues = videoUrls ?? [];
+  const videos = useMemo<CompanyVideo[]>(() => {
+    return normalizeUrlList(listValues)
+      .map(toCompanyVideo)
+      .filter((video): video is CompanyVideo => video !== null);
+  }, [listValues]);
 
   const updateValue = (index: number, value: string) => {
-    onChange(listValues.map((entry, entryIndex) => (entryIndex === index ? value : entry)));
+    onChange(
+      listValues.map((entry, entryIndex) =>
+        entryIndex === index ? value : entry
+      )
+    );
+  };
+
+  const addValue = () => {
+    onChange([...listValues, ""]);
   };
 
   const removeValue = (index: number) => {
     onChange(listValues.filter((_, entryIndex) => entryIndex !== index));
   };
 
-  return (
-    <div className="grid gap-3 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-gray-700">
-          {icon}
-          {label}
-        </span>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onChange([...listValues, ""])}
-        >
-          <Plus className="h-4 w-4" />
-          {addLabel}
-        </Button>
-      </div>
+  const addButton = (
+    <Button type="button" variant="outline" size="sm" onClick={addValue}>
+      <Plus className="h-4 w-4" />
+      {localizedText(locale, "L\u00e4gg till video", "Add video")}
+    </Button>
+  );
 
-      {listValues.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-200 bg-white px-3 py-4 text-sm text-gray-500">
-          {emptyLabel}
-        </div>
+  return (
+    <section className="mx-auto w-full max-w-4xl">
+      {videos.length > 0 ? (
+        <CompanyVideoSection
+          videos={videos}
+          companyName={companyName}
+        />
       ) : (
-        <div className="grid gap-2">
+        <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-gray-500">
+          <Video className="h-7 w-7 text-gray-400" />
+          <span>
+            {localizedText(
+              locale,
+              "Inga YouTube-videor tillagda.",
+              "No YouTube videos added.",
+            )}
+          </span>
+        </div>
+      )}
+
+      {listValues.length > 0 && (
+        <div className="mt-4 grid gap-2">
           {listValues.map((value, index) => {
             const isInvalid = Boolean(
-              value.trim() && getIsInvalidValue?.(value)
+              value.trim() && !isYouTubeVideoUrl(value)
             );
 
             return (
-              <div key={index} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <div
+                key={index}
+                className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]"
+              >
                 <div className="grid gap-1">
                   <input
                     aria-invalid={isInvalid || undefined}
-                    aria-label={`${label} ${index + 1}`}
+                    aria-label={localizedText(
+                      locale,
+                      `Video ${index + 1}`,
+                      `Video ${index + 1}`,
+                    )}
                     type="url"
                     value={value}
-                    onChange={(event) => updateValue(index, event.target.value)}
+                    onChange={(event) =>
+                      updateValue(index, event.target.value)
+                    }
                     className={`${iconInputClass} ${
                       isInvalid
                         ? "border-red-300 text-red-700 focus:border-red-500 focus:ring-red-100"
                         : ""
                     }`}
-                    placeholder={placeholder}
+                    placeholder="https://www.youtube.com/watch?v=..."
                   />
-                  {isInvalid && invalidText ? (
+                  {isInvalid && (
                     <p className="text-xs font-medium text-red-600">
-                      {invalidText}
+                      {localizedText(
+                        locale,
+                        "Endast YouTube-l\u00e4nkar accepteras.",
+                        "Only YouTube links are accepted.",
+                      )}
                     </p>
-                  ) : null}
+                  )}
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  aria-label="Ta bort URL"
-                  title="Ta bort URL"
+                  aria-label={localizedText(
+                    locale,
+                    "Ta bort video",
+                    "Remove video",
+                  )}
+                  title={localizedText(
+                    locale,
+                    "Ta bort video",
+                    "Remove video",
+                  )}
                   onClick={() => removeValue(index)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -456,56 +623,9 @@ function UrlListEditor({
           })}
         </div>
       )}
-    </div>
-  );
-}
 
-function ImageGalleryField({
-  imageUrls,
-  onOpen,
-}: {
-  imageUrls?: string[];
-  onOpen: () => void;
-}) {
-  const { locale } = useI18n();
-  const visibleImages = normalizeUrlList(imageUrls);
-
-  return (
-    <div className="grid gap-3 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-gray-700">
-          <ImageIcon className="h-4 w-4 text-gray-400" />
-          {localizedText(locale, "Bildgalleri", "Image gallery")}
-        </span>
-        <Button type="button" variant="outline" size="sm" onClick={onOpen}>
-          <ImageIcon className="h-4 w-4" />
-          {localizedText(locale, "Redigera bilder", "Edit images")}
-        </Button>
-      </div>
-
-      {visibleImages.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-200 bg-white px-3 py-4 text-sm text-gray-500">
-          {localizedText(locale, "Inga bilder uppladdade.", "No images uploaded.")}
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {visibleImages.slice(0, 8).map((imageUrl, index) => (
-            <div key={`${imageUrl}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
-              <img
-                src={imageUrl}
-                alt={localizedText(locale, `Bild ${index + 1}`, `Image ${index + 1}`)}
-                className="h-full w-full object-cover"
-              />
-              {index === 0 && (
-                <span className="absolute bottom-1 left-1 rounded-full bg-[#004225] px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
-                  {localizedText(locale, "Huvudbild", "Main")}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+      <div className="mt-4 flex justify-end">{addButton}</div>
+    </section>
   );
 }
 
@@ -797,76 +917,25 @@ function EditableCompanyPreview({
           />
         </div>
 
-        <div className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">{localizedText(locale, "Kontakt", "Contact")}</h2>
-          <div className="grid gap-3 lg:grid-cols-2">
-            <EditableContactRow
-              icon={<Phone className="h-4 w-4 shrink-0 text-gray-400" />}
-              label={localizedText(locale, "Kontakt telefon", "Contact phone")}
-              value={draft.contactPhone}
-              onChange={(value) => onDraftChange("contactPhone", value)}
-              placeholder="070-000 00 00"
-            />
-            <EditableContactRow
-              icon={<Mail className="h-4 w-4 shrink-0 text-gray-400" />}
-              label={localizedText(locale, "Kontakt e-post", "Contact email")}
-              type="email"
-              value={draft.contactEmail}
-              onChange={(value) => onDraftChange("contactEmail", value)}
-              placeholder="kontakt@foretag.se"
-            />
-            <EditableContactRow
-              icon={<Globe className="h-4 w-4 shrink-0 text-gray-400" />}
-              label={localizedText(locale, "Hemsida", "Website")}
-              type="url"
-              value={draft.websiteUrl}
-              onChange={(value) => onDraftChange("websiteUrl", value)}
-              placeholder="https://"
-            />
-            <EditableContactRow
-              icon={<Link2 className="h-4 w-4 shrink-0 text-gray-400" />}
-              label={localizedText(locale, "Integritetspolicy", "Privacy policy")}
-              type="url"
-              value={draft.privacyPolicyUrl}
-              onChange={(value) => onDraftChange("privacyPolicyUrl", value)}
-              placeholder="https://"
-            />
-            <EditableContactRow
-              icon={<Link2 className="h-4 w-4 shrink-0 text-gray-400" />}
-              label={localizedText(locale, "Villkor", "Terms")}
-              type="url"
-              value={draft.termsUrl}
-              onChange={(value) => onDraftChange("termsUrl", value)}
-              placeholder="https://"
-            />
-          </div>
-        </div>
-
-        <div className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">{localizedText(locale, "Media", "Media")}</h2>
-          <div className="grid gap-3 lg:grid-cols-2">
-            <ImageGalleryField
-              imageUrls={draft.pictureUrlList}
-              onOpen={onOpenImageGallery}
-            />
-            <UrlListEditor
-              icon={<Video className="h-4 w-4 text-gray-400" />}
-              label={localizedText(locale, "Video-URL:er", "Video URLs")}
-              values={draft.videoUrlList}
-              placeholder="https://www.youtube.com/watch?v=..."
-              addLabel={localizedText(locale, "Lägg till", "Add")}
-              emptyLabel={localizedText(locale, "Inga YouTube-videor tillagda.", "No YouTube videos added.")}
-              getIsInvalidValue={(value) => !isYouTubeVideoUrl(value)}
-              invalidText={localizedText(
-                locale,
-                "Endast YouTube-länkar accepteras.",
-                "Only YouTube links are accepted."
-              )}
-              onChange={(videoUrlList) => onDraftChange("videoUrlList", videoUrlList)}
-            />
-          </div>
-        </div>
       </section>
+
+      <ContactFormSection draft={draft} onDraftChange={onDraftChange} />
+
+      <EditableImageGallerySection
+        imageUrls={draft.pictureUrlList}
+        companyName={
+          draft.name || localizedText(locale, "F\u00f6retagsprofil", "Company profile")
+        }
+        onOpen={onOpenImageGallery}
+      />
+
+      <EditableVideoSection
+        videoUrls={draft.videoUrlList}
+        companyName={
+          draft.name || localizedText(locale, "F\u00f6retagsprofil", "Company profile")
+        }
+        onChange={(videoUrlList) => onDraftChange("videoUrlList", videoUrlList)}
+      />
     </section>
   );
 }

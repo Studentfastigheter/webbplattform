@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ExternalLink, Globe, Mail, MapPin, Phone, Share2 } from "lucide-react";
+import { Globe, Mail, MapPin, Phone, Share2 } from "lucide-react";
 import {
   FaFacebook,
   FaInstagram,
@@ -19,6 +19,7 @@ import EntityHero, {
 import { type HousingQueueDTO } from "@/types/queue";
 import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";
 import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 
 type QueueHeroProps = {
   queue: HousingQueueDTO;
@@ -29,7 +30,9 @@ type QueueHeroProps = {
 type QueueContactRow = {
   icon: ReactNode;
   href: string;
+  title: string;
   label: string;
+  external?: boolean;
 };
 
 function socialPlatformIconKey(platform: string) {
@@ -68,10 +71,6 @@ function getExternalUrl(url: string) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-function getDisplayUrl(url: string) {
-  return url.replace(/^https?:\/\//i, "").replace(/\/$/, "");
-}
-
 function getSocialItems(
   socialLinks: Record<string, string> | undefined
 ): EntityHeroActionLink[] {
@@ -98,53 +97,67 @@ export default function QueueHero({
   showShareButton = true,
   disableShareButton = false,
 }: QueueHeroProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const bannerImage = queue.bannerUrl || "/appartment.jpg";
   const logoImage = queue.companyLogoUrl || queue.logoUrl || null;
   const description = queue.description?.trim() ?? "";
   const websiteHref = queue.website ? getExternalUrl(queue.website) : "";
-  const websiteLabel = websiteHref ? getDisplayUrl(websiteHref) : "";
 
   const contactRows = [
     queue.contactPhone && {
       icon: (
-        <Phone className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-gray-600" />
+        <Phone className="h-3.5 w-3.5" />
       ),
-      href: `tel:${queue.contactPhone}`,
+      href: `tel:${queue.contactPhone.replace(/\s+/g, "")}`,
+      title: localizedText(locale, "Telefon", "Phone"),
       label: queue.contactPhone,
     },
     queue.contactEmail && {
       icon: (
-        <Mail className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-gray-600" />
+        <Mail className="h-3.5 w-3.5" />
       ),
       href: `mailto:${queue.contactEmail}`,
+      title: localizedText(locale, "E-post", "Email"),
       label: queue.contactEmail,
+    },
+    websiteHref && {
+      icon: (
+        <Globe className="h-3.5 w-3.5" />
+      ),
+      href: websiteHref,
+      title: localizedText(locale, "Hemsida", "Website"),
+      label: websiteHref,
+      external: true,
     },
   ].filter(Boolean) as QueueContactRow[];
 
-  const websiteAction: EntityHeroActionLink[] = websiteHref
-    ? [
-        {
-          icon: (
-            <>
-              <Globe className="h-4 w-4 shrink-0" />
-              <span className="max-w-[112px] truncate sm:max-w-[120px]">
-                {t("queueHero.visitWebsite")}
-              </span>
-              <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
-            </>
-          ),
-          href: websiteHref,
-          label: websiteLabel
-            ? `${t("queueHero.visitWebsite")} ${websiteLabel}`
-            : t("queueHero.visitWebsite"),
-          external: true,
-          className:
-            "w-auto gap-2 border border-[#004225]/15 bg-[#004225]/5 px-3 text-[#004225] hover:border-[#004225]/25 hover:bg-[#004225]/10 hover:text-[#004225]",
-        },
-      ]
-    : [];
-  const socialItems = [...websiteAction, ...getSocialItems(queue.socialLinks)];
+  const socialItems = getSocialItems(queue.socialLinks);
+  const heroMeta =
+    queue.city || contactRows.length > 0 ? (
+      <>
+        {queue.city ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5 text-gray-500">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            <span className="min-w-0 break-words">{queue.city}</span>
+          </span>
+        ) : null}
+        {contactRows.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            target={item.external ? "_blank" : undefined}
+            rel={item.external ? "noopener noreferrer" : undefined}
+            aria-label={`${item.title}: ${item.label}`}
+            className="group inline-flex max-w-full min-w-0 items-center gap-2 font-medium text-gray-600 transition-colors hover:text-gray-900 focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]"
+          >
+            <span className="shrink-0 text-[#004225]">
+              {item.icon}
+            </span>
+            <span className="min-w-0 break-all">{item.label}</span>
+          </a>
+        ))}
+      </>
+    ) : null;
 
   const sections = [
     description && {
@@ -161,27 +174,6 @@ export default function QueueHero({
         />
       ),
     },
-    contactRows.length > 0 && {
-      id: "contact",
-      title: t("queueHero.contact"),
-      content: (
-        <div className="flex flex-col items-start gap-3">
-          <ul className="flex flex-wrap gap-x-5 gap-y-2">
-            {contactRows.map((item) => (
-              <li key={item.href}>
-                <a
-                  href={item.href}
-                  className="group inline-flex items-center gap-2 text-[13px] leading-5 text-gray-600 transition-colors hover:text-gray-900 sm:text-sm"
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ),
-    },
   ].filter(Boolean) as EntityHeroSection[];
 
   return (
@@ -195,17 +187,10 @@ export default function QueueHero({
       contentClassName="max-w-none px-0 sm:px-0"
       avatarWrapperClassName="pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-8"
       titleClassName="text-[24px] leading-[30px] font-semibold tracking-normal sm:text-[30px] sm:leading-[36px] lg:text-[34px] lg:leading-[40px]"
-      metaClassName="mt-1.5 text-[13px] leading-5 text-gray-500 sm:text-sm"
+      metaClassName="mt-4 gap-x-5 gap-y-2 text-[13px] leading-5 sm:text-sm"
       actionLinksClassName="mt-1 md:mt-0"
       sectionTitleClassName="mb-2.5 text-[15px] font-semibold leading-6 text-gray-900 sm:text-base"
-      meta={
-        queue.city ? (
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 text-gray-400" />
-            <span>{queue.city}</span>
-          </span>
-        ) : null
-      }
+      meta={heroMeta}
       actionLinks={socialItems}
       headerActions={
         showShareButton ? (

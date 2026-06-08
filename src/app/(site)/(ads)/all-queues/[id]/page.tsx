@@ -6,6 +6,9 @@ import QueueHero from "@/features/ads/components/QueueHero";
 import QueueListings from "@/features/ads/components/QueueListings";
 import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
 import CompanyMap from "@/features/ads/components/CompanyMap";
+import CompanyVideoSection, {
+  type CompanyVideo,
+} from "@/features/ads/components/CompanyVideoSection";
 import {
   buildJoinedQueueIdSet,
   type CompanyDTO,
@@ -27,8 +30,6 @@ import {
   getClientDeviceType,
   ignoreDemographicsRecordError,
 } from "@/features/analytics/services/demographics-service";
-import { mediaService } from "@/features/media/services/media-service";
-import { useCompanyPublicMedia } from "@/features/media/hooks/useMedia";
 import { formatCityName } from "@/features/cities/city-utils";
 import { useAuth } from "@/context/AuthContext";
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
@@ -39,25 +40,12 @@ import {
 } from "@/lib/youtube-url";
 import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
-import {
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  PlayCircle,
-} from "lucide-react";
+import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
 const COMPANY_LISTINGS_PAGE_SIZE = 6;
-const imageFilenamePattern = /\.(avif|gif|jpe?g|png|webp)$/i;
-
-type CompanyVideo = {
-  originalUrl: string;
-  embedUrl: string;
-  thumbnailUrl?: string;
-};
 
 const uniqueListingsById = (items: ListingCardDTO[]) => {
   const byId = new Map<string, ListingCardDTO>();
@@ -114,122 +102,6 @@ const toCompanyVideo = (url: string): CompanyVideo | null => {
   };
 };
 
-function CompanyVideoSection({
-  videos,
-  companyName,
-}: {
-  videos: CompanyVideo[];
-  companyName: string;
-}) {
-  const { locale } = useI18n();
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    setCurrent(0);
-  }, [videos]);
-
-  if (videos.length === 0) return null;
-
-  const currentIndex = Math.min(current, videos.length - 1);
-  const currentVideo = videos[currentIndex];
-  const hasMultipleVideos = videos.length > 1;
-
-  const goToVideo = (index: number) => {
-    setCurrent((index + videos.length) % videos.length);
-  };
-
-  return (
-    <section className="w-full" aria-label={localizedText(locale, "Videor", "Videos")}>
-      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">
-            {localizedText(locale, "Videor", "Videos")}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {localizedText(
-              locale,
-              `Reklam och presentationer från ${companyName}`,
-              `Promotions and presentations from ${companyName}`
-            )}
-          </p>
-        </div>
-        {hasMultipleVideos && (
-          <span className="text-sm font-medium text-gray-500">
-            {currentIndex + 1} / {videos.length}
-          </span>
-        )}
-      </div>
-
-      <div className="relative overflow-hidden rounded-3xl bg-gray-950 shadow-sm">
-        <div className="aspect-video w-full">
-          <iframe
-            src={currentVideo.embedUrl}
-            title={localizedText(locale, `${companyName} video ${currentIndex + 1}`, `${companyName} video ${currentIndex + 1}`)}
-            className="h-full w-full border-0"
-            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
-        </div>
-
-        {hasMultipleVideos && (
-          <>
-            <button
-              type="button"
-              onClick={() => goToVideo(currentIndex - 1)}
-              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 shadow transition hover:bg-white"
-              aria-label={localizedText(locale, "Föregående video", "Previous video")}
-            >
-              <ChevronLeft className="h-5 w-5 text-gray-800" />
-            </button>
-            <button
-              type="button"
-              onClick={() => goToVideo(currentIndex + 1)}
-              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 shadow transition hover:bg-white"
-              aria-label={localizedText(locale, "Nästa video", "Next video")}
-            >
-              <ChevronRight className="h-5 w-5 text-gray-800" />
-            </button>
-          </>
-        )}
-      </div>
-
-      {hasMultipleVideos && (
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-          {videos.map((video, index) => (
-            <button
-              key={`${video.originalUrl}-${index}`}
-              type="button"
-              onClick={() => goToVideo(index)}
-              className={`relative h-20 w-32 shrink-0 overflow-hidden rounded-xl border-2 bg-gray-100 text-left transition ${
-                index === currentIndex
-                  ? "border-gray-900 opacity-100"
-                  : "border-transparent opacity-70 hover:opacity-95"
-              }`}
-              aria-label={localizedText(locale, `Visa video ${index + 1}`, `Show video ${index + 1}`)}
-            >
-              {video.thumbnailUrl ? (
-                <img
-                  src={video.thumbnailUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gray-900 text-white">
-                  <PlayCircle className="h-7 w-7" />
-                </div>
-              )}
-              <span className="absolute bottom-1 left-1 rounded-full bg-black/65 px-2 py-0.5 text-xs font-semibold text-white">
-                {index + 1}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
 
 const uniqueCityLabels = (values: Array<string | null | undefined>) => {
   const labels = new Map<string, string>();
@@ -427,6 +299,12 @@ export default function QueueDetailPage() {
   const companyWebsite =
     firstNonEmptyString(companyRecord?.websiteUrl, companyRecord?.website) ??
     undefined;
+  const companyContactPhone =
+    firstNonEmptyString(companyRecord?.contactPhone, companyRecord?.phone) ??
+    undefined;
+  const companyContactEmail =
+    firstNonEmptyString(companyRecord?.contactEmail, companyRecord?.email) ??
+    undefined;
   const companyCities = uniqueCityLabels(company?.cities ?? []);
   const companyCitiesLabel = companyCities.join(", ");
   const companyTermsUrl = getExternalLink(
@@ -454,6 +332,8 @@ export default function QueueDetailPage() {
         bannerUrl: companyBannerUrl,
         description: company.description ?? undefined,
         website: companyWebsite,
+        contactPhone: companyContactPhone,
+        contactEmail: companyContactEmail,
         socialLinks: company.socialLinks,
         activeListings: listingsTotalElements || listings.length,
         totalUnits: queues.reduce((sum, q) => sum + (q.totalUnits ?? 0), 0),
@@ -480,17 +360,10 @@ export default function QueueDetailPage() {
         activeListings: 0,
       };
 
-  // Gallery — derived from the cached media list. Mapping filenames →
-  // public URLs is cheap, no need for state.
-  const { data: galleryFilenames } = useCompanyPublicMedia(companyIdNumber);
+  // Gallery uses the saved company profile list so portal edits control what is shown publicly.
   const galleryImages = useMemo<string[]>(() => {
-    if (companyIdNumber === null || !galleryFilenames) return [];
-    return galleryFilenames
-      .filter((filename) => imageFilenamePattern.test(filename))
-      .map((filename) =>
-        mediaService.companyPublicUrl(companyIdNumber, filename)
-      );
-  }, [companyIdNumber, galleryFilenames]);
+    return normalizeUrlList(company?.pictureUrlList);
+  }, [company?.pictureUrlList]);
   const companyVideos = useMemo<CompanyVideo[]>(() => {
     const videoUrls = normalizeUrlList(company?.videoUrlList);
 
