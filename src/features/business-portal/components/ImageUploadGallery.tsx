@@ -25,6 +25,9 @@ type Props = {
   onUploadImages?: (files: File[]) => Promise<string[]>;
   onSave?: (imageUrls: string[]) => void | Promise<void>;
   locale: Locale;
+  uploadSuccessMessage?: string;
+  replaceSuccessMessage?: string;
+  saveSuccessMessage?: string;
 };
 
 const FALLBACK_IMAGES = [
@@ -47,6 +50,9 @@ export default function ImageUploadGallery({
   onUploadImages,
   onSave,
   locale,
+  uploadSuccessMessage,
+  replaceSuccessMessage,
+  saveSuccessMessage,
 }: Props) {
   const initialImages = useMemo(
     () => imageUrls ?? FALLBACK_IMAGES,
@@ -101,11 +107,12 @@ export default function ImageUploadGallery({
 
       await persistImages([...draftImagesRef.current, ...uploadedUrls]);
       toast.success(
-        localizedText(
-          locale,
-          "Bilden har laddats upp och sparats pa annonsen.",
-          "The image has been uploaded and saved to the listing."
-        )
+        uploadSuccessMessage ??
+          localizedText(
+            locale,
+            "Bilden har laddats upp och sparats pa annonsen.",
+            "The image has been uploaded and saved to the listing."
+          )
       );
     } catch (error) {
       toast.error(
@@ -133,11 +140,12 @@ export default function ImageUploadGallery({
         )
       );
       toast.success(
-        localizedText(
-          locale,
-          "Bilden har bytts och sparats pa annonsen.",
-          "The image has been replaced and saved to the listing."
-        )
+        replaceSuccessMessage ??
+          localizedText(
+            locale,
+            "Bilden har bytts och sparats pa annonsen.",
+            "The image has been replaced and saved to the listing."
+          )
       );
     } catch (error) {
       toast.error(
@@ -203,12 +211,13 @@ export default function ImageUploadGallery({
     try {
       await persistImages(draftImagesRef.current);
       toast.success(
-      localizedText(
-        locale,
-        "Dina bildändringar har sparats.",
-        "Your image changes have been saved."
-      )
-    );
+        saveSuccessMessage ??
+          localizedText(
+            locale,
+            "Dina bildändringar har sparats.",
+            "Your image changes have been saved."
+          )
+      );
       setOpen(false);
     } catch (error) {
       toast.error(

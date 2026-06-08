@@ -49,6 +49,9 @@ import {
 import { UploadButton } from "../_components/shared/UploadButton";
 import BannerImageCropDialog from "@/components/shared/BannerImageCropDialog";
 import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";
+import { isYouTubeVideoUrl } from "@/lib/youtube-url";
+import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
+import { useUploadCompanyPublicMedia } from "@/features/media/hooks/useMedia";
 
 type ProfileDraft = {
   companyId: number;
@@ -64,8 +67,8 @@ type ProfileDraft = {
   logoUrl: string;
   bannerUrl: string;
   additionalSocialLinks: SocialLinkDraft[];
-  pictureUrlListText: string;
-  videoUrlListText: string;
+  pictureUrlList: string[];
+  videoUrlList: string[];
   orgNumber: string;
   internalContactNote: string;
 };
@@ -128,15 +131,14 @@ function getSocialPlatformOptionsForLink(
     .filter((platform) => !usedKeys.has(platformKey(platform)));
 }
 
-function joinUrlList(values: string[] | undefined) {
-  return (values ?? []).join("\n");
-}
-
-function parseUrlListText(value: string) {
-  return value
-    .split(/\r?\n/)
+function normalizeUrlList(values: string[] | undefined) {
+  return (values ?? [])
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+function getInvalidYouTubeVideoUrls(values: string[] | undefined) {
+  return normalizeUrlList(values).filter((url) => !isYouTubeVideoUrl(url));
 }
 
 function uniqueCityLabels(values: Array<string | null | undefined>) {
@@ -232,8 +234,8 @@ function buildInitialDraft(
     additionalSocialLinks: buildAdditionalSocialLinks(
       companyData.socialLinks ?? firstQueue?.socialLinks
     ),
-    pictureUrlListText: joinUrlList(companyData.pictureUrlList),
-    videoUrlListText: joinUrlList(companyData.videoUrlList),
+    pictureUrlList: normalizeUrlList(companyData.pictureUrlList),
+    videoUrlList: normalizeUrlList(companyData.videoUrlList),
     orgNumber:
       companyData.orgNumber ??
       companyData.organisationNumber ??
@@ -280,8 +282,8 @@ function buildCompanyChangePayload(draft: ProfileDraft): CompanyChangeableDataDT
     privacyPolicyUrl: toNullableString(draft.privacyPolicyUrl),
     termsUrl: toNullableString(draft.termsUrl),
     websiteUrl: toNullableString(draft.websiteUrl),
-    pictureUrlList: parseUrlListText(draft.pictureUrlListText),
-    videoUrlList: parseUrlListText(draft.videoUrlListText),
+    pictureUrlList: normalizeUrlList(draft.pictureUrlList),
+    videoUrlList: normalizeUrlList(draft.videoUrlList),
     socialLinks: socialLinksToRecord(draft),
   };
 }
@@ -313,8 +315,8 @@ function mergeSavedCompany(
       ? company?.bannerUrl ?? ""
       : draft.bannerUrl,
     socialLinks: socialLinksToRecord(draft),
-    pictureUrlList: parseUrlListText(draft.pictureUrlListText),
-    videoUrlList: parseUrlListText(draft.videoUrlListText),
+    pictureUrlList: normalizeUrlList(draft.pictureUrlList),
+    videoUrlList: normalizeUrlList(draft.videoUrlList),
   };
 }
 
@@ -357,6 +359,156 @@ function EditableContactRow({
   );
 }
 
+function UrlListEditor({
+  icon,
+  label,
+  values,
+  placeholder,
+  addLabel,
+  emptyLabel,
+  getIsInvalidValue,
+  invalidText,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  values?: string[];
+  placeholder: string;
+  addLabel: string;
+  emptyLabel: string;
+  getIsInvalidValue?: (value: string) => boolean;
+  invalidText?: string;
+  onChange: (values: string[]) => void;
+}) {
+  const listValues = values ?? [];
+
+  const updateValue = (index: number, value: string) => {
+    onChange(listValues.map((entry, entryIndex) => (entryIndex === index ? value : entry)));
+  };
+
+  const removeValue = (index: number) => {
+    onChange(listValues.filter((_, entryIndex) => entryIndex !== index));
+  };
+
+  return (
+    <div className="grid gap-3 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-gray-700">
+          {icon}
+          {label}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onChange([...listValues, ""])}
+        >
+          <Plus className="h-4 w-4" />
+          {addLabel}
+        </Button>
+      </div>
+
+      {listValues.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-gray-200 bg-white px-3 py-4 text-sm text-gray-500">
+          {emptyLabel}
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {listValues.map((value, index) => {
+            const isInvalid = Boolean(
+              value.trim() && getIsInvalidValue?.(value)
+            );
+
+            return (
+              <div key={index} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="grid gap-1">
+                  <input
+                    aria-invalid={isInvalid || undefined}
+                    aria-label={`${label} ${index + 1}`}
+                    type="url"
+                    value={value}
+                    onChange={(event) => updateValue(index, event.target.value)}
+                    className={`${iconInputClass} ${
+                      isInvalid
+                        ? "border-red-300 text-red-700 focus:border-red-500 focus:ring-red-100"
+                        : ""
+                    }`}
+                    placeholder={placeholder}
+                  />
+                  {isInvalid && invalidText ? (
+                    <p className="text-xs font-medium text-red-600">
+                      {invalidText}
+                    </p>
+                  ) : null}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Ta bort URL"
+                  title="Ta bort URL"
+                  onClick={() => removeValue(index)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ImageGalleryField({
+  imageUrls,
+  onOpen,
+}: {
+  imageUrls?: string[];
+  onOpen: () => void;
+}) {
+  const { locale } = useI18n();
+  const visibleImages = normalizeUrlList(imageUrls);
+
+  return (
+    <div className="grid gap-3 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-gray-700">
+          <ImageIcon className="h-4 w-4 text-gray-400" />
+          {localizedText(locale, "Bildgalleri", "Image gallery")}
+        </span>
+        <Button type="button" variant="outline" size="sm" onClick={onOpen}>
+          <ImageIcon className="h-4 w-4" />
+          {localizedText(locale, "Redigera bilder", "Edit images")}
+        </Button>
+      </div>
+
+      {visibleImages.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-gray-200 bg-white px-3 py-4 text-sm text-gray-500">
+          {localizedText(locale, "Inga bilder uppladdade.", "No images uploaded.")}
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {visibleImages.slice(0, 8).map((imageUrl, index) => (
+            <div key={`${imageUrl}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
+              <img
+                src={imageUrl}
+                alt={localizedText(locale, `Bild ${index + 1}`, `Image ${index + 1}`)}
+                className="h-full w-full object-cover"
+              />
+              {index === 0 && (
+                <span className="absolute bottom-1 left-1 rounded-full bg-[#004225] px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                  {localizedText(locale, "Huvudbild", "Main")}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SocialPlatformIcon({ platform }: { platform: string }) {
   const key = platformIconKey(platform);
 
@@ -389,6 +541,7 @@ function EditableCompanyPreview({
   socialPlatformOptions,
   onDraftChange,
   onImageSelect,
+  onOpenImageGallery,
 }: {
   draft: ProfileDraft;
   companyQueue: HousingQueueDTO | null;
@@ -398,6 +551,7 @@ function EditableCompanyPreview({
     value: ProfileDraft[K]
   ) => void;
   onImageSelect: (field: "logoUrl" | "bannerUrl", file: File) => void;
+  onOpenImageGallery: () => void;
 }) {
   const { locale } = useI18n();
   const updateAdditionalSocialLink = (
@@ -691,36 +845,25 @@ function EditableCompanyPreview({
         <div className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-gray-900">{localizedText(locale, "Media", "Media")}</h2>
           <div className="grid gap-3 lg:grid-cols-2">
-            <label className="grid gap-2 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
-              <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <ImageIcon className="h-4 w-4 text-gray-400" />
-                {localizedText(locale, "Bild-URL:er", "Image URLs")}
-              </span>
-              <textarea
-                aria-label={localizedText(locale, "Bild-URL:er", "Image URLs")}
-                value={draft.pictureUrlListText}
-                onChange={(event) =>
-                  onDraftChange("pictureUrlListText", event.target.value)
-                }
-                className={`${iconInputClass} min-h-28 resize-y`}
-                placeholder={localizedText(locale, "En bild-URL per rad", "One image URL per row")}
-              />
-            </label>
-            <label className="grid gap-2 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
-              <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Video className="h-4 w-4 text-gray-400" />
-                {localizedText(locale, "Video-URL:er", "Video URLs")}
-              </span>
-              <textarea
-                aria-label={localizedText(locale, "Video-URL:er", "Video URLs")}
-                value={draft.videoUrlListText}
-                onChange={(event) =>
-                  onDraftChange("videoUrlListText", event.target.value)
-                }
-                className={`${iconInputClass} min-h-28 resize-y`}
-                placeholder={localizedText(locale, "En video-URL per rad", "One video URL per row")}
-              />
-            </label>
+            <ImageGalleryField
+              imageUrls={draft.pictureUrlList}
+              onOpen={onOpenImageGallery}
+            />
+            <UrlListEditor
+              icon={<Video className="h-4 w-4 text-gray-400" />}
+              label={localizedText(locale, "Video-URL:er", "Video URLs")}
+              values={draft.videoUrlList}
+              placeholder="https://www.youtube.com/watch?v=..."
+              addLabel={localizedText(locale, "Lägg till", "Add")}
+              emptyLabel={localizedText(locale, "Inga YouTube-videor tillagda.", "No YouTube videos added.")}
+              getIsInvalidValue={(value) => !isYouTubeVideoUrl(value)}
+              invalidText={localizedText(
+                locale,
+                "Endast YouTube-länkar accepteras.",
+                "Only YouTube links are accepted."
+              )}
+              onChange={(videoUrlList) => onDraftChange("videoUrlList", videoUrlList)}
+            />
           </div>
         </div>
       </section>
@@ -755,6 +898,7 @@ export default function ProfilePage() {
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
   const [hydratedCompanyId, setHydratedCompanyId] = useState<number | null>(null);
   const [bannerFileToCrop, setBannerFileToCrop] = useState<File | null>(null);
+  const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -764,6 +908,7 @@ export default function ProfilePage() {
   const updateCompanyData = useUpdateCompanyData();
   const uploadLogo = useUploadCompanyLogo();
   const uploadBanner = useUploadCompanyBanner();
+  const uploadCompanyPublicMedia = useUploadCompanyPublicMedia();
 
   useEffect(() => {
     return () => {
@@ -903,9 +1048,56 @@ export default function ProfilePage() {
     applySelectedImageFile("bannerUrl", file);
   };
 
+  const uploadGalleryImages = async (files: File[]) => {
+    if (!draft) {
+      throw new Error(localizedText(locale, "Kunde inte hitta fÃ¶retagsprofilen.", "Could not find the company profile."));
+    }
+
+    return Promise.all(
+      files.map((file) =>
+        uploadCompanyPublicMedia.mutateAsync({
+          companyId: draft.companyId,
+          file,
+        })
+      )
+    );
+  };
+
+  const persistGalleryImages = async (imageUrls: string[]) => {
+    if (!draft) return;
+
+    const pictureUrlList = normalizeUrlList(imageUrls);
+
+    await updateCompanyData.mutateAsync({
+      id: draft.companyId,
+      payload: { pictureUrlList },
+    });
+
+    setDraft((current) =>
+      current ? { ...current, pictureUrlList } : current
+    );
+    setCompany((current) =>
+      current ? { ...current, pictureUrlList } : current
+    );
+    setSaveMessage(localizedText(locale, "Bildgalleriet har sparats.", "The image gallery has been saved."));
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!draft || saving) return;
+
+    const invalidVideoUrls = getInvalidYouTubeVideoUrls(draft.videoUrlList);
+    if (invalidVideoUrls.length > 0) {
+      setSaveMessage(null);
+      setError(
+        localizedText(
+          locale,
+          "Video-URL:er måste vara YouTube-länkar.",
+          "Video URLs must be YouTube links."
+        )
+      );
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -1088,6 +1280,7 @@ export default function ProfilePage() {
           socialPlatformOptions={socialPlatformOptions}
           onDraftChange={updateDraftField}
           onImageSelect={handleImageSelect}
+          onOpenImageGallery={() => setUploadGalleryVisible(true)}
         />
 
         <div className="sticky bottom-4 z-10 mx-auto flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
@@ -1139,6 +1332,30 @@ export default function ProfilePage() {
         }}
         onCancel={handleBannerCropCancel}
         onCropComplete={handleBannerCropComplete}
+      />
+
+      <ImageUploadGallery
+        open={uploadGalleryVisible}
+        setOpen={setUploadGalleryVisible}
+        imageUrls={normalizeUrlList(draft.pictureUrlList)}
+        onUploadImages={uploadGalleryImages}
+        onSave={persistGalleryImages}
+        locale={locale}
+        uploadSuccessMessage={localizedText(
+          locale,
+          "Bilden har laddats upp och sparats i bildgalleriet.",
+          "The image has been uploaded and saved to the image gallery."
+        )}
+        replaceSuccessMessage={localizedText(
+          locale,
+          "Bilden har bytts och sparats i bildgalleriet.",
+          "The image has been replaced and saved to the image gallery."
+        )}
+        saveSuccessMessage={localizedText(
+          locale,
+          "Bildgalleriet har sparats.",
+          "The image gallery has been saved."
+        )}
       />
     </main>
   );
