@@ -705,7 +705,7 @@ export default function UsersPage() {
                         <p className="truncate font-medium text-gray-900">{entry.name}</p>
                         {isCurrentUser ? (
                           <p className="mt-1 text-xs font-medium text-[#004225]">
-                            {localizedText(locale, "Inloggat konto", "Signed-in account")}
+                            {localizedText(locale, "Du", "You")}
                           </p>
                         ) : null}
                       </div>
