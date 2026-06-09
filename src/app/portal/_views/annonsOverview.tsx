@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -114,6 +120,24 @@ type ListingMeta = {
   statusTone: PortalListingStatusTone;
   statusValue: ListingStatus | null;
 };
+
+function HeaderStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-gray-500">
+      <Icon className="h-4 w-4 shrink-0 text-gray-400" />
+      <span className="font-semibold tabular-nums text-gray-900">{value}</span>
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
 
 const emptyMeta: ListingMeta = {
   applications: 0,
@@ -545,7 +569,7 @@ function ListingDetailsCard({
         <PortalListingStatusTag
           label={meta.statusLabel}
           tone={meta.statusTone}
-          className="w-fit shrink-0"
+          className="w-fit shrink-0 border-gray-200 bg-gray-50 text-gray-700 shadow-none ring-0"
         />
       </div>
       <dl className="mt-4">
@@ -1249,120 +1273,121 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   return (
     <main className="pb-12">
       <Tabs defaultValue="info" className="space-y-6">
-        <header className="space-y-5 border-b border-gray-200 pb-5">
-          <Link
-            href={`${dashboardRelPath}/listings`}
-            className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {localizedText(locale, "Tillbaka till annonser", "Back to listings")}
-          </Link>
+        <header className="border-b border-gray-200 pb-6">
+          <div className="space-y-5">
+            <Link
+              href={`${dashboardRelPath}/listings`}
+              className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {localizedText(locale, "Tillbaka till annonser", "Back to listings")}
+            </Link>
 
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
-            <div className="min-w-0 space-y-3">
-              <div className="min-w-0 space-y-2">
-                <h1 className="text-2xl font-semibold leading-tight text-gray-900">
-                  {listing.title}
-                </h1>
-                <p className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
-                  <MapPin className="h-4 w-4 shrink-0" />
-                  {locationLabel || localizedText(locale, "Plats saknas", "Location missing")}
-                </p>
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)] xl:items-start">
+              <div className="min-w-0 space-y-3">
+                <div className="min-w-0 space-y-2">
+                  <h1 className="text-2xl font-semibold leading-tight text-gray-950">
+                    {listing.title}
+                  </h1>
+                  <p className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    {locationLabel ||
+                      localizedText(locale, "Plats saknas", "Location missing")}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                  <HeaderStat
+                    icon={FileUser}
+                    label={localizedText(locale, "ansökningar", "applications")}
+                    value={formatNumber(meta.applications, locale)}
+                  />
+                  <HeaderStat
+                    icon={Eye}
+                    label={localizedText(locale, "visningar", "views")}
+                    value={formatNumber(totalViews, locale)}
+                  />
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <PortalListingStatusTag
-                  label={meta.statusLabel}
-                  tone={meta.statusTone}
-                  className="w-fit shrink-0"
-                />
-                <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
-                  {formatNumber(meta.applications, locale)}{" "}
-                  {localizedText(locale, "ansökningar", "applications")}
-                </span>
-                <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
-                  {formatNumber(totalViews, locale)}{" "}
-                  {localizedText(locale, "visningar", "views")}
-                </span>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Button
+                  as="a"
+                  className="w-full"
+                  href={editHref}
+                  variant="default"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  {localizedText(locale, "Redigera", "Edit")}
+                </Button>
+                <Button
+                  as="a"
+                  className="w-full"
+                  href={applicationsHref}
+                  variant="outline"
+                >
+                  <FileUser className="h-4 w-4" />
+                  {localizedText(locale, "Ansökningar", "Applications")}
+                </Button>
+                <Button
+                  className="w-full"
+                  isDisabled={actionState !== "idle"}
+                  onPress={() => setDeleteDialogOpen(true)}
+                  variant="destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {localizedText(locale, "Radera", "Delete")}
+                </Button>
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-col gap-3 xl:items-end">
-              <TabsList className="h-10 w-full justify-start rounded-xl border border-gray-200 bg-white p-1 shadow-theme-xs sm:w-fit">
+            <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 xl:flex-row xl:items-center xl:justify-between">
+              <TabsList className="h-10 w-full justify-start rounded-lg border border-gray-200 bg-white p-1 sm:w-fit">
                 <TabsTrigger
-                  className="h-8 flex-1 rounded-lg px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
+                  className="h-8 flex-1 rounded-md px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
                   value="info"
                 >
                   <FileText className="h-4 w-4" />
                   {localizedText(locale, "Info", "Info")}
                 </TabsTrigger>
                 <TabsTrigger
-                  className="h-8 flex-1 rounded-lg px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
+                  className="h-8 flex-1 rounded-md px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
                   value="analys"
                 >
                   <BarChart3 className="h-4 w-4" />
                   {localizedText(locale, "Analys", "Analytics")}
                 </TabsTrigger>
               </TabsList>
-              <div className="flex w-full flex-col gap-2 lg:w-auto">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
-                  <Button
-                    as="a"
-                    className="w-full lg:w-auto"
-                    href={editHref}
-                    variant="default"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    {localizedText(locale, "Redigera", "Edit")}
-                  </Button>
-                  <Button
-                    as="a"
-                    className="w-full lg:w-auto"
-                    href={applicationsHref}
-                    variant="outline"
-                  >
-                    <FileUser className="h-4 w-4" />
-                    {localizedText(locale, "Ansökningar", "Applications")}
-                  </Button>
-                  <Button
-                    className="w-full lg:w-auto"
-                    isDisabled={actionState !== "idle"}
-                    onPress={() => setDeleteDialogOpen(true)}
-                    variant="destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {localizedText(locale, "Radera", "Delete")}
-                  </Button>
-                </div>
 
-                <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-2 sm:flex-row sm:items-center">
-                  <span className="px-1 text-xs font-semibold uppercase tracking-wide text-gray-400 sm:px-2">
-                    {localizedText(locale, "Status", "Status")}
-                  </span>
-                  <div className="grid flex-1 grid-cols-3 gap-1.5">
-                    {listingStatusOptions.map((option) => {
-                      const Icon = option.icon;
-                      const isCurrent = meta.statusValue === option.value;
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 sm:px-1">
+                  {localizedText(locale, "Status", "Status")}
+                </span>
+                <div className="grid w-full grid-cols-3 rounded-full border border-gray-200 bg-gray-100 p-1 sm:w-[420px]">
+                  {listingStatusOptions.map((option) => {
+                    const Icon = option.icon;
+                    const isCurrent = meta.statusValue === option.value;
 
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={[
-                            "inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
-                            isCurrent
-                              ? "border-[#004225] bg-[#004225] text-white"
-                              : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#004225]/30 hover:bg-[#004225]/5 hover:text-[#004225]",
-                          ].join(" ")}
-                          disabled={actionState !== "idle" || isCurrent}
-                          onClick={() => handleStatusChange(option.value)}
-                        >
-                          <Icon className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{statusOptionLabel(option, locale)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={cn(
+                          "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
+                          isCurrent
+                            ? "bg-white text-[#004225]"
+                            : "text-gray-500 hover:text-gray-900"
+                        )}
+                        disabled={actionState !== "idle" || isCurrent}
+                        onClick={() => handleStatusChange(option.value)}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">
+                          {statusOptionLabel(option, locale)}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Settings, X } from "lucide-react";
+import { ChevronDown, HelpCircle, LogOut, Menu, Settings, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +18,10 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 import { useCompanyPublic } from "@/features/companies/hooks/useCompanies";
+import {
+  getDefaultCompanyPortalPath,
+  isCompanyPortalPathAllowed,
+} from "../../_config/company-portal-access";
 import { dashboardRelPath } from "../../_statics/variables";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
@@ -47,6 +51,12 @@ export default function PortalHeader() {
   const permissionLabel = permission.isLoading
     ? localizedText(locale, "Hämtar...", "Loading...")
     : permission.label || localizedText(locale, "Okänd behörighet", "Unknown permission");
+  const portalHomeHref =
+    getDefaultCompanyPortalPath(permission.roleName) ?? dashboardRelPath;
+  const canAccessAccountSettings = isCompanyPortalPathAllowed(
+    `${dashboardRelPath}/settings`,
+    permission.roleName
+  );
   const avatarSrc =
     activeCompany
       ? companyLogoSource?.logoUrl || activeCompany.logoUrl || user?.logoUrl || ""
@@ -82,22 +92,13 @@ export default function PortalHeader() {
 
           <CampusLyanBrandLink
             className="lg:hidden"
-            href={dashboardRelPath}
+            href={portalHomeHref}
             logoSize={28}
             textClassName="text-sm"
           />
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-3">
-          <button
-            aria-label={localizedText(locale, "Notiser", "Notifications")}
-            className="relative flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-50"
-            type="button"
-          >
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-error-500" />
-            <Bell className="h-5 w-5" />
-          </button>
-
           <LanguageSwitcher className="h-11 w-11 rounded-lg text-gray-600 transition hover:bg-gray-50 hover:opacity-100" />
 
           <DropdownMenu>
@@ -140,15 +141,17 @@ export default function PortalHeader() {
                 </span>
               </DropdownMenuLabel>
               <div className="flex flex-col gap-1 border-b border-gray-200 pb-3 pt-4">
-                <DropdownMenuItem asChild className="rounded-lg p-0">
-                  <Link
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"
-                    href={`${dashboardRelPath}/settings`}
-                  >
-                    <Settings className="h-6 w-6 text-gray-500" />
-                    {localizedText(locale, "Kontoinställningar", "Account settings")}
-                  </Link>
-                </DropdownMenuItem>
+                {canAccessAccountSettings && (
+                  <DropdownMenuItem asChild className="rounded-lg p-0">
+                    <Link
+                      className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"
+                      href={`${dashboardRelPath}/settings`}
+                    >
+                      <Settings className="h-6 w-6 text-gray-500" />
+                      {localizedText(locale, "Kontoinställningar", "Account settings")}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild className="rounded-lg p-0">
                   <Link
                     className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"
