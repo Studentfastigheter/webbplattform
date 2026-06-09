@@ -1,9 +1,14 @@
 import type { CompanyId, User } from "@/types/user";
+import type { CompanyRoleLike } from "@/lib/company-permissions";
 
 export type CompanySummary = {
   id: CompanyId;
   name?: string;
   logoUrl?: string;
+  role?: CompanyRoleLike;
+  roleName?: string;
+  roleDescription?: string;
+  accessLevel?: number;
 };
 
 const ACTIVE_COMPANY_STORAGE_KEY = "campuslyan.portal.activeCompanyId.v1";
@@ -55,6 +60,50 @@ function firstString(...values: unknown[]) {
   )?.trim();
 }
 
+function readRoleSource(...records: Array<Record<string, unknown> | undefined>) {
+  for (const record of records) {
+    if (!record) continue;
+
+    const role = record.role ?? record.companyRole ?? record.permission;
+    if (typeof role === "string" || isRecord(role)) {
+      return role as CompanyRoleLike;
+    }
+
+    const roleName = firstString(record.roleName, record.permissionName);
+    if (roleName) {
+      return roleName;
+    }
+  }
+
+  return undefined;
+}
+
+function readRoleFields(...records: Array<Record<string, unknown> | undefined>) {
+  const role = readRoleSource(...records);
+  const roleName = firstString(
+    ...records.flatMap((record) =>
+      record ? [record.roleName, record.permissionName] : []
+    )
+  );
+  const roleDescription = firstString(
+    ...records.flatMap((record) =>
+      record ? [record.roleDescription, record.permissionDescription] : []
+    )
+  );
+  const accessLevel =
+    records.reduce<number | null>((current, record) => {
+      if (current != null || !record) return current;
+      return toFiniteNumber(record.accessLevel);
+    }, null) ?? undefined;
+
+  return {
+    role,
+    roleName,
+    roleDescription,
+    accessLevel,
+  };
+}
+
 function readCompanyFromValue(value: unknown): CompanySummary | null {
   const directId = toFiniteNumber(value);
   if (directId != null) {
@@ -73,6 +122,7 @@ function readCompanyFromValue(value: unknown): CompanySummary | null {
         id: nestedId,
         name: firstString(nestedCompany.name, nestedCompany.companyName),
         logoUrl: firstString(nestedCompany.logoUrl),
+        ...readRoleFields(value, nestedCompany),
       };
     }
   }
@@ -93,6 +143,7 @@ function readCompanyFromValue(value: unknown): CompanySummary | null {
     id,
     name: firstString(value.name, value.companyName),
     logoUrl: firstString(value.logoUrl),
+    ...readRoleFields(value),
   };
 }
 
@@ -106,6 +157,10 @@ function dedupeCompanies(companies: CompanySummary[]) {
       ...company,
       name: company.name ?? existing?.name,
       logoUrl: company.logoUrl ?? existing?.logoUrl,
+      role: company.role ?? existing?.role,
+      roleName: company.roleName ?? existing?.roleName,
+      roleDescription: company.roleDescription ?? existing?.roleDescription,
+      accessLevel: company.accessLevel ?? existing?.accessLevel,
     });
   });
 
@@ -127,6 +182,7 @@ export function getUserCompanies(user: User | null | undefined): CompanySummary[
         id,
         name: firstString(source.companyName, source.displayName),
         logoUrl: firstString(source.logoUrl),
+        ...readRoleFields(source),
       });
     }
   });
@@ -181,6 +237,7 @@ export function getActiveCompanySummary(user: User | null | undefined) {
       id: activeCompanyId,
       name: user?.companyName ?? user?.displayName,
       logoUrl: user?.logoUrl,
+      ...readRoleFields(user as (User & Record<string, unknown>) | undefined),
     }
   );
 }

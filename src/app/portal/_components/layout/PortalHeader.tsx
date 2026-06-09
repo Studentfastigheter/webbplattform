@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Settings, UserCircle, X } from "lucide-react";
+import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Settings, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import { useCurrentCompanyPermission } from "@/features/companies/hooks/useCurrentCompanyPermission";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
@@ -24,6 +25,7 @@ export default function PortalHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = usePortalSidebar();
   const { user, isLoading, logout } = useAuth();
   const { locale } = useI18n();
+  const permission = useCurrentCompanyPermission();
   const activeCompany = getActiveCompanySummary(user);
   const companyId = getActiveCompanyId(user);
   const shouldLoadCompanyLogo =
@@ -42,9 +44,9 @@ export default function PortalHeader() {
     user?.email ||
     "Account";
   const email = user?.email || "";
-  const role = activeCompany
-    ? localizedText(locale, "Företagskonto", "Company account")
-    : localizedText(locale, "Hyresvärd", "Landlord");
+  const permissionLabel = permission.isLoading
+    ? localizedText(locale, "Hämtar...", "Loading...")
+    : permission.label || localizedText(locale, "Okänd behörighet", "Unknown permission");
   const avatarSrc =
     activeCompany
       ? companyLogoSource?.logoUrl || activeCompany.logoUrl || user?.logoUrl || ""
@@ -133,20 +135,11 @@ export default function PortalHeader() {
                 <span className="mt-0.5 block truncate text-theme-xs text-gray-500">
                   {email}
                 </span>
-                <span className="mt-1 block text-theme-xs text-gray-400">
-                  {role}
+                <span className="mt-1 block truncate text-theme-xs text-gray-400">
+                  {localizedText(locale, "Behörighet", "Permission")}: {permissionLabel}
                 </span>
               </DropdownMenuLabel>
               <div className="flex flex-col gap-1 border-b border-gray-200 pb-3 pt-4">
-                <DropdownMenuItem asChild className="rounded-lg p-0">
-                  <Link
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"
-                    href={`${dashboardRelPath}/profile`}
-                  >
-                    <UserCircle className="h-6 w-6 text-gray-500" />
-                    {localizedText(locale, "Redigera profil", "Edit profile")}
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg p-0">
                   <Link
                     className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"

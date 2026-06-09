@@ -6,6 +6,7 @@ import { CheckIcon, Loader2Icon, SaveIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
+import AccountPermission from '@/components/shadcn-studio/blocks/account-settings-01/content/account-permission'
 import DangerZone from '@/components/shadcn-studio/blocks/account-settings-01/content/danger-zone'
 import PasswordSection from '@/components/shadcn-studio/blocks/account-settings-01/content/email-password'
 import IdentityVerification from '@/components/shadcn-studio/blocks/account-settings-01/content/identity-verification'
@@ -20,6 +21,7 @@ export type UserGeneralOptions = {
   personalInfo?: PersonalInfoOptions
   showDangerZone?: boolean
   showVerification?: boolean
+  showAccountPermission?: boolean
 }
 
 const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
@@ -62,6 +64,8 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
             showEmailVerification: showVerification,
           }}
         />
+
+        {options.showAccountPermission ? <AccountPermission /> : null}
 
         {error ? <p className='text-sm text-destructive'>{error}</p> : null}
         {success ? (

@@ -656,17 +656,6 @@ export default function UsersPage() {
 
       <Card className="border-gray-200 bg-white shadow-sm">
         <CardContent className="px-0">
-          {!loadingUsers && users.length > 0 && !canVerifyUsers ? (
-            <div className="border-b border-gray-100 bg-gray-50 px-6 py-3 text-sm text-gray-600">
-              {localizedText(locale, "Endast verifierade ADMIN och MANAGER kan verifiera användare.", "Only verified ADMIN and MANAGER users can verify users.")}
-            </div>
-          ) : null}
-          {!loadingUsers && users.length > 0 && !canManageUsers ? (
-            <div className="border-b border-gray-100 bg-gray-50 px-6 py-3 text-sm text-gray-600">
-              {localizedText(locale, "Endast verifierad ADMIN kan skapa och uppdatera användare.", "Only a verified ADMIN can create and update users.")}
-            </div>
-          ) : null}
-
           {loadingUsers ? (
             <div className="flex items-center gap-2 px-6 py-10 text-sm text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin" />

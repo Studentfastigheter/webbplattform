@@ -24,12 +24,27 @@ export type UserCompanyLink = {
   name?: string;
   companyName?: string;
   logoUrl?: UrlString;
-  role?: string;
+  role?: string | {
+    name?: string | null;
+    description?: string | null;
+    accessLevel?: number | string | null;
+  };
+  roleName?: string;
+  roleDescription?: string;
+  accessLevel?: number | string;
   company?: {
     id?: CompanyId | string;
     name?: string;
     companyName?: string;
     logoUrl?: UrlString;
+    role?: string | {
+      name?: string | null;
+      description?: string | null;
+      accessLevel?: number | string | null;
+    };
+    roleName?: string;
+    roleDescription?: string;
+    accessLevel?: number | string;
   } | null;
 };
 

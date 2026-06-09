@@ -9,6 +9,7 @@ export default function SettingsPage() {
           showCity: false,
           showAbout: false,
         },
+        showAccountPermission: true,
         showDangerZone: false,
       }}
     />

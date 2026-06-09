@@ -30,6 +30,8 @@ type LoginFormProps = React.ComponentProps<"div"> & {
   mode?: LoginMode;
 };
 
+const publicSiteOrigin = "https://www.campuslyan.se";
+
 const loginCopy: Record<
   LoginMode,
   {
@@ -121,6 +123,9 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const policyOrigin = mode === "student" ? "" : publicSiteOrigin;
+  const termsHref = `${policyOrigin}${localizedHref("/terms-of-service")}`;
+  const privacyPolicyHref = `${policyOrigin}${localizedHref("/privacy-policy")}`;
 
   function validateForm() {
     const trimmedEmail = email.trim();
@@ -304,11 +309,11 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
 
       <FieldDescription className="text-center text-xs text-muted-foreground">
         {localizedText(locale, "Genom att logga in godkänner du våra", "By signing in, you accept our")}{" "}
-        <Link href="/terms-of-service" className="text-[#004225] underline underline-offset-4">
+        <Link href={termsHref} className="text-[#004225] underline underline-offset-4">
           {localizedText(locale, "användarvillkor", "terms of use")}
         </Link>{" "}
         {localizedText(locale, "och", "and")}{" "}
-        <Link href="/privacy-policy" className="text-[#004225] underline underline-offset-4">
+        <Link href={privacyPolicyHref} className="text-[#004225] underline underline-offset-4">
           {localizedText(locale, "integritetspolicy", "privacy policy")}
         </Link>
         .
