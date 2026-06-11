@@ -9,7 +9,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { Theme } from "@radix-ui/themes";
 import { Toaster } from "@/components/ui/sonner";
 import ScrollToTop from "@/components/layout/ScrollToTop";
-import OnboardingModal from "@/features/onboarding/components/OnboardingModal";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { getDictionary, getRequestLocale } from "@/i18n/server";
 
@@ -108,7 +107,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Theme>
                 <ScrollToTop />
                 {children}
-                <OnboardingModal />
                 <Toaster
                   position="bottom-right"
                   richColors

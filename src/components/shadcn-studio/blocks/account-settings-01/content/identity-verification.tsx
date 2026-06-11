@@ -13,8 +13,8 @@ import { QRCodeSVG } from 'qrcode.react'
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
-import { authService, isAuthResponse } from '@/features/auth/services/auth-service'
-import { useVerifyIdentity } from '@/features/auth/hooks/useAuthMutations'
+import { authService } from '@/features/auth/services/auth-service'
+import { useRegisterStudent } from '@/features/auth/hooks/useAuthMutations'
 import type { Locale } from '@/i18n/config'
 import { useI18n } from '@/i18n/I18nProvider'
 import { localizedText } from '@/i18n/text'
@@ -51,18 +51,18 @@ const statusCopies: Record<FrejaAuthStatus, StatusCopy> = {
   },
   MATCHES: {
     label: { sv: 'Lyckades', en: 'Successful' },
-    title: { sv: 'Verifieringen lyckades', en: 'Verification successful' },
+    title: { sv: 'Kontot är verifierat', en: 'Account verified' },
     description: {
-      sv: 'Din identitet är verifierad och kontot är uppdaterat.',
-      en: 'Your identity is verified and the account has been updated.',
+      sv: 'Ditt quick-register-konto har verifierats och uppdateras till ett riktigt konto.',
+      en: 'Your quick-register account has been verified and is being upgraded to a full account.',
     },
   },
   CLASHING: {
     label: { sv: 'Krock', en: 'Clash' },
-    title: { sv: 'Uppgifterna matchar inte', en: 'The details do not match' },
+    title: { sv: 'Freja matchar inte kontot', en: 'Freja does not match the account' },
     description: {
-      sv: 'Clashing betyder att identiteten från Freja inte stämmer med kontot som verifieras. Ingen verifiering sparades.',
-      en: 'Clashing means the Freja identity does not match the account being verified. No verification was saved.',
+      sv: 'Freja-identiteten matchade inte kontot som verifieras, eller så finns kontot redan.',
+      en: 'The Freja identity did not match the account being verified, or the account already exists.',
     },
   },
   DISAPPROVED: {
@@ -115,10 +115,6 @@ function buildFrejaAuthUrl(authRef: string) {
   url.searchParams.set('transactionReference', authRef)
 
   return url.toString()
-}
-
-function isVerified(value: unknown) {
-  return value === true || value === 'true'
 }
 
 function getStatusTone(status: FrejaAuthStatus) {
@@ -179,22 +175,22 @@ export default function IdentityVerification({
   enabled: boolean
 }) {
   const { locale } = useI18n()
-  const { user, completeAuth, refreshUser, isLoading: authLoading } = useAuth()
-  const verifyIdentity = useVerifyIdentity()
+  const { user, refreshUser, isLoading: authLoading } = useAuth()
+  const registerStudent = useRegisterStudent()
   const verificationRunRef = useRef(0)
   const [loading, setLoading] = useState(false)
   const [authRef, setAuthRef] = useState('')
   const [status, setStatus] = useState<FrejaAuthStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const identityVerified = isVerified(user?.verifiedIdentity)
+  const isQuickRegister = user?.accountType === 'quick_register'
+  const accountVerified = Boolean(user) && !isQuickRegister
   const isStarting = loading && !authRef
-  const isActiveVerification = Boolean(authRef) && status === 'PENDING' && !identityVerified
+  const isActiveVerification = Boolean(authRef) && status === 'PENDING' && isQuickRegister
   const hasTerminalStatus = status !== null && status !== 'PENDING'
   const canStartVerification =
-    !!user &&
+    isQuickRegister &&
     !authLoading &&
-    !identityVerified &&
     !loading &&
     !isActiveVerification
   const frejaAuthUrl = useMemo(
@@ -206,11 +202,11 @@ export default function IdentityVerification({
   const StatusIcon = status ? getStatusIcon(status) : null
 
   useEffect(() => {
-    if (identityVerified) {
+    if (accountVerified) {
       setAuthRef('')
       setLoading(false)
     }
-  }, [identityVerified])
+  }, [accountVerified])
 
   useEffect(() => {
     if (!authRef) return
@@ -222,14 +218,6 @@ export default function IdentityVerification({
       try {
         const result = await authService.pollAuthStatus(authRef)
         if (!active) return
-
-        if (isAuthResponse(result)) {
-          completeAuth(result)
-          setStatus('MATCHES')
-          setLoading(false)
-          await refreshUser()
-          return
-        }
 
         if (!isFrejaAuthStatus(result)) {
           setError(localizedText(locale, 'Backend skickade en okänd Freja-status.', 'The backend returned an unknown Freja status.'))
@@ -263,9 +251,9 @@ export default function IdentityVerification({
       active = false
       if (timeout) clearTimeout(timeout)
     }
-  }, [authRef, completeAuth, locale, refreshUser])
+  }, [authRef, locale, refreshUser])
 
-  const startIdentityVerification = async () => {
+  const startAccountVerification = async () => {
     if (loading || !canStartVerification) return
 
     const runId = verificationRunRef.current + 1
@@ -276,7 +264,7 @@ export default function IdentityVerification({
     setError(null)
 
     try {
-      const response = await verifyIdentity.mutateAsync()
+      const response = await registerStudent.mutateAsync()
       if (verificationRunRef.current !== runId) return
 
       setAuthRef(response.authRef)
@@ -291,11 +279,11 @@ export default function IdentityVerification({
     }
   }
 
-  const cancelIdentityVerification = () => {
+  const cancelAccountVerification = () => {
     if (!loading && !authRef) return
 
     verificationRunRef.current += 1
-    verifyIdentity.reset()
+    registerStudent.reset()
     setAuthRef('')
     setLoading(false)
     setStatus('CANCELED')
@@ -305,9 +293,14 @@ export default function IdentityVerification({
   if (!enabled) return null
 
   return (
-    <div className='grid grid-cols-1 gap-10 lg:grid-cols-3'>
+    <div id='verify-account' className='grid scroll-mt-28 grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
-        <h3 className='font-semibold'>{localizedText(locale, 'Konto', 'Account')}</h3>
+        <h3 className='font-semibold'>{localizedText(locale, 'Verifiera konto', 'Verify account')}</h3>
+        <p className='text-sm text-muted-foreground'>
+          {isQuickRegister
+            ? localizedText(locale, 'Verifiera med Freja när du vill för att få ett riktigt studentkonto.', 'Verify with Freja whenever you want to get a full student account.')
+            : localizedText(locale, 'Ditt konto är redan ett riktigt konto.', 'Your account is already a full account.')}
+        </p>
       </div>
 
       <div className='lg:col-span-2'>
@@ -321,31 +314,31 @@ export default function IdentityVerification({
                 height={72}
                 style={{ width: 64, height: 'auto' }}
               />
-              {identityVerified ? (
+              {accountVerified ? (
                 <span className='inline-flex h-6 items-center gap-1.5 rounded-full border border-green-200 bg-white px-2 text-xs font-medium text-green-700'>
                   <CheckCircle2Icon className='size-3.5 text-green-700' />
                   {localizedText(locale, 'Verifierad', 'Verified')}
                 </span>
               ) : (
                 <span className='inline-flex h-6 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2 text-xs font-medium text-muted-foreground'>
-                  {localizedText(locale, 'Ej verifierad', 'Not verified')}
+                  {localizedText(locale, 'Quick-register', 'Quick-register')}
                 </span>
               )}
-              {!identityVerified && statusCopy && statusStyles ? (
+              {!accountVerified && statusCopy && statusStyles ? (
                 <span className={`inline-flex h-6 items-center rounded-full border px-2 text-xs font-medium ${statusStyles.pill}`}>
                   {statusCopy.label}
                 </span>
               ) : null}
             </div>
 
-            {!identityVerified ? (
+            {!accountVerified ? (
               <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end'>
                 {isStarting || isActiveVerification ? (
                   <Button
                     type='button'
                     variant='ghost'
                     className='rounded-md text-red-700 hover:bg-red-50 sm:w-auto'
-                    onClick={cancelIdentityVerification}
+                    onClick={cancelAccountVerification}
                   >
                     {localizedText(locale, 'Avbryt', 'Cancel')}
                   </Button>
@@ -358,20 +351,20 @@ export default function IdentityVerification({
                     className='rounded-md border-gray-200 text-gray-900 sm:w-auto'
                     isLoading={isStarting || authLoading}
                     isDisabled={!canStartVerification}
-                    onClick={startIdentityVerification}
+                    onClick={startAccountVerification}
                   >
                     {authLoading
                       ? localizedText(locale, 'Kontrollerar', 'Checking')
                       : hasTerminalStatus
                         ? localizedText(locale, 'Starta igen', 'Start again')
-                        : localizedText(locale, 'Verifiera', 'Verify')}
+                        : localizedText(locale, 'Verifiera nu', 'Verify now')}
                   </Button>
                 ) : null}
               </div>
             ) : null}
           </div>
 
-          {!identityVerified && isActiveVerification && frejaAuthUrl ? (
+          {!accountVerified && isActiveVerification && frejaAuthUrl ? (
             <div className='mt-4 flex items-center gap-4 border-t border-gray-100 pt-4'>
               <div className='rounded-[8px] border border-gray-200 bg-white p-2'>
                 <QRCodeSVG
@@ -390,7 +383,7 @@ export default function IdentityVerification({
             </div>
           ) : null}
 
-          {statusCopy && statusStyles && StatusIcon ? (
+          {!accountVerified && statusCopy && statusStyles && StatusIcon ? (
             <div
               className={`mt-4 flex gap-3 rounded-[8px] border px-3 py-3 text-sm ${statusStyles.panel}`}
               role={status === 'PENDING' ? 'status' : 'alert'}

@@ -188,15 +188,6 @@ export interface QuickRegisterRequest {
   password: string;
 }
 
-export interface RegisterStudentRequest {
-  firstName: string;
-  surname: string;
-  email: string;
-  schoolId: number;
-  city: string;
-  ssn: string;
-}
-
 export interface UpdateUserRequest {
   email?: string;
   displayName?: string;

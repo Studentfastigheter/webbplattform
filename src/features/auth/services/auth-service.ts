@@ -17,7 +17,6 @@ import {
   GoogleRegisterResponse,
   QuickRegisterRequest,
   QuickRegisterResponse,
-  RegisterStudentRequest,
   FrejaAuthRef,
   UserDeleteFailureDTO,
 } from "@/types";
@@ -154,15 +153,6 @@ function normalizeCityEnum(value: string | undefined | null): string | undefined
   const asciiKey = enumKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   return SWEDISH_CITY_ENUMS[enumKey] ?? SWEDISH_CITY_ENUMS[asciiKey] ?? enumKey;
-}
-
-function requireCityEnum(value: string | undefined | null): string {
-  const city = normalizeCityEnum(value);
-  if (!city) {
-    throw new Error("Välj stad.");
-  }
-
-  return city;
 }
 
 function normalizeAccountTypeValue(value: string | undefined): User["accountType"] | undefined {
@@ -478,30 +468,9 @@ export const authService = {
     });
   },
 
-  registerStudent: async (
-    payload: RegisterStudentRequest
-  ): Promise<AuthResponse> => {
-    const email = payload.email.trim();
-    const firstName = payload.firstName.trim();
-    const surname = payload.surname.trim();
-    const ssn = payload.ssn.trim();
-    const city = requireCityEnum(payload.city);
-
-    if (!email || !firstName || !surname || !ssn || !payload.schoolId) {
-      throw new Error("Fyll i namn, e-post, skola, stad och personnummer.");
-    }
-
-    return apiClient<AuthResponse>("/auth/register-student", {
+  registerStudent: async (): Promise<FrejaAuthRef> => {
+    return apiClient<FrejaAuthRef>("/auth/register-student", {
       method: "POST",
-      body: JSON.stringify({
-        firstName,
-        surname,
-        email,
-        schoolId: payload.schoolId,
-        city,
-        ssn,
-      }),
-      auth: false,
     });
   },
 
@@ -538,29 +507,9 @@ export const authService = {
       return authService.registerWorker(payload);
     }
 
-    const quickRegisterResponse = await authService.quickRegister({
+    return authService.quickRegister({
       email: payload.email,
       password: payload.password,
-    });
-
-    const hasStudentDetails =
-      Boolean(payload.firstName?.trim()) &&
-      Boolean(payload.surname?.trim()) &&
-      Boolean(payload.ssn?.trim()) &&
-      Boolean(payload.schoolId) &&
-      Boolean(payload.city?.trim());
-
-    if (!hasStudentDetails) {
-      return quickRegisterResponse;
-    }
-
-    return authService.registerStudent({
-      firstName: payload.firstName!,
-      surname: payload.surname!,
-      email: payload.email,
-      schoolId: payload.schoolId!,
-      city: payload.city!,
-      ssn: payload.ssn!,
     });
   },
 
@@ -588,9 +537,7 @@ export const authService = {
   },
 
   verifyIdentity: async (): Promise<FrejaAuthRef> => {
-    return apiClient<FrejaAuthRef>("/auth/verify-identity", {
-      method: "POST",
-    });
+    return authService.registerStudent();
   },
 
   pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {

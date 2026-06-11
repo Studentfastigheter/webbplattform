@@ -50,7 +50,8 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
 
   if (
     user &&
-    (!SITE_ACCOUNT_TYPES.has(user.accountType) || getActiveCompanyId(user) != null)
+    (!SITE_ACCOUNT_TYPES.has(user.accountType) ||
+      getActiveCompanyId(user) != null)
   ) {
     return <RouteFallback message={localizedText(locale, "Skickar dig vidare...", "Redirecting you...")} />;
   }

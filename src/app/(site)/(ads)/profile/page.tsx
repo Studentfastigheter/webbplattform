@@ -7,7 +7,6 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
 import ProfileHero, {
   type StudentProfileExtended,
 } from "@/features/students/components/ProfileHero";
@@ -17,7 +16,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import {
   useVerifyEmail,
-  useVerifyIdentity,
 } from "@/features/auth/hooks/useAuthMutations";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -597,8 +595,7 @@ function EditableStudentProfile({
 }
 
 export default function Page() {
-  const router = useRouter();
-  const { locale, localizedHref } = useI18n();
+  const { locale } = useI18n();
   const { user, isLoading: authLoading, updateUser } = useAuth();
   const [student, setStudent] = useState<User | null>(null);
   const [draft, setDraft] = useState<StudentProfileDraft | null>(null);
@@ -607,9 +604,7 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  const verifyIdentity = useVerifyIdentity();
   const verifyEmailMutation = useVerifyEmail();
-  const startingIdentityVerification = verifyIdentity.isPending;
   const startingEmailVerification = verifyEmailMutation.isPending;
 
   useEffect(() => {
@@ -702,27 +697,6 @@ export default function Page() {
     }
   };
 
-  const startIdentityVerification = async () => {
-    if (startingIdentityVerification) return;
-
-    setSaveError(null);
-
-    try {
-      const response = await verifyIdentity.mutateAsync();
-      router.push(
-        localizedHref(`/register/freja-id?flow=identity&authRef=${encodeURIComponent(
-          response.authRef
-        )}`)
-      );
-    } catch (err) {
-      setSaveError(
-        err instanceof Error
-          ? err.message
-          : localizedText(locale, "Kunde inte starta Freja-verifieringen.", "Could not start Freja verification.")
-      );
-    }
-  };
-
   const startEmailVerification = async () => {
     if (startingEmailVerification) return;
 
@@ -784,8 +758,6 @@ export default function Page() {
   }
 
   const profile = buildProfileFromUser(student, locale);
-  const needsIdentityVerification =
-    !student.verifiedIdentity && !student.verifiedStudent;
   const needsEmailVerification = !student.verifiedEmail;
 
   return (
@@ -812,22 +784,6 @@ export default function Page() {
           {saveError && (
             <div className="mx-auto mb-4 max-w-4xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {saveError}
-            </div>
-          )}
-          {needsIdentityVerification && (
-            <div className="mx-auto mb-4 flex max-w-4xl flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
-              <span>{localizedText(locale, "Verifiera din identitet med Freja för att markera studentprofilen som verifierad.", "Verify your identity with Freja to mark the student profile as verified.")}</span>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                isLoading={startingIdentityVerification}
-                isDisabled={startingIdentityVerification}
-                onPress={startIdentityVerification}
-              >
-                <ShieldCheck className="h-4 w-4" />
-                {localizedText(locale, "Verifiera med Freja", "Verify with Freja")}
-              </Button>
             </div>
           )}
           {needsEmailVerification && (

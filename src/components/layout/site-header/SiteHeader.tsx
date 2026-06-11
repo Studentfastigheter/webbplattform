@@ -10,6 +10,7 @@ import { type User } from "@/types";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText } from "@/i18n/text";
 import { isPlatformLaunched } from "@/lib/platform-launch";
 import {
   MobileNav,
@@ -66,7 +67,7 @@ function AccountAvatar({
 
 export default function SiteHeader() {
   const { user, logout, isLoading } = useAuth();
-  const { localizedHref, t } = useI18n();
+  const { locale, localizedHref, t } = useI18n();
   const platformLaunched = isPlatformLaunched();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
@@ -74,10 +75,13 @@ export default function SiteHeader() {
 
   const currentUser = platformLaunched ? user : null;
   const userType = currentUser?.accountType;
+  const isQuickRegister = userType === "quick_register";
   const roleLabel =
     userType === "student"
       ? t("siteHeader.roles.student")
-      : userType === "private_landlord"
+      : isQuickRegister
+        ? localizedText(locale, "Quick-register konto", "Quick-register account")
+        : userType === "private_landlord"
         ? t("siteHeader.roles.privateLandlord")
         : userType === "company"
           ? t("siteHeader.roles.company")
@@ -149,7 +153,7 @@ export default function SiteHeader() {
 
   let navItems = publicNavItems;
 
-  if (userType === "student") {
+  if (userType === "student" || isQuickRegister) {
     navItems = studentNavItems;
   } else if (userType === "private_landlord" || userType === "company") {
     navItems = landlordNavItems;
@@ -165,6 +169,11 @@ export default function SiteHeader() {
   if (userType === "student") {
     accountMenuItems = [
       { name: t("siteHeader.account.myAccount"), link: localizedHref("/profile") },
+      { name: t("siteHeader.account.settings"), link: localizedHref("/settings") },
+      { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
+    ];
+  } else if (isQuickRegister) {
+    accountMenuItems = [
       { name: t("siteHeader.account.settings"), link: localizedHref("/settings") },
       { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
@@ -290,75 +299,85 @@ export default function SiteHeader() {
               </Link>
             </>
           ) : platformLaunched && currentUser ? (
-            <div ref={accountMenuRef} className="relative">
-              <button
-                type="button"
-                onClick={handleAccountToggle}
-                className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
-              >
-                <AccountAvatar
-                  src={avatarSrc}
-                  alt={displayName}
-                  className="h-8 w-8 rounded-full object-cover"
-                  fallbackClassName="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600"
-                  initial={accountInitial}
-                />
-                <div className="hidden max-w-32 sm:block">
-                  <p className="truncate text-left text-sm font-medium text-neutral-900">
-                    {displayName}
-                  </p>
-                </div>
-                <IconChevronDown
-                  className={cn(
-                    "h-4 w-4 text-neutral-400 transition-transform",
-                    isAccountMenuOpen && "rotate-180",
-                  )}
-                />
-              </button>
+            <>
+              {isQuickRegister ? (
+                <Link
+                  href="/register/freja-id?flow=quick-register"
+                  className="inline-flex rounded-full bg-[#3E3A93] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#302d78] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E3A93]"
+                >
+                  {localizedText(locale, "Verify now", "Verify now")}
+                </Link>
+              ) : null}
+              <div ref={accountMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={handleAccountToggle}
+                  className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
+                >
+                  <AccountAvatar
+                    src={avatarSrc}
+                    alt={displayName}
+                    className="h-8 w-8 rounded-full object-cover"
+                    fallbackClassName="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600"
+                    initial={accountInitial}
+                  />
+                  <div className="hidden max-w-32 sm:block">
+                    <p className="truncate text-left text-sm font-medium text-neutral-900">
+                      {displayName}
+                    </p>
+                  </div>
+                  <IconChevronDown
+                    className={cn(
+                      "h-4 w-4 text-neutral-400 transition-transform",
+                      isAccountMenuOpen && "rotate-180",
+                    )}
+                  />
+                </button>
 
-              {isAccountMenuOpen && (
-                <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] animate-dropdown">
-                  <div className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-3">
-                    <AccountAvatar
-                      src={avatarSrc}
-                      alt={displayName}
-                      className="h-9 w-9 rounded-full object-cover"
-                      fallbackClassName="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-600"
-                      initial={accountInitial}
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-neutral-950">
-                        {displayName}
-                      </p>
-                      <p className="truncate text-xs text-neutral-500">
-                        {roleLabel ?? currentUser.email}
-                      </p>
+                {isAccountMenuOpen && (
+                  <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] animate-dropdown">
+                    <div className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-3">
+                      <AccountAvatar
+                        src={avatarSrc}
+                        alt={displayName}
+                        className="h-9 w-9 rounded-full object-cover"
+                        fallbackClassName="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-600"
+                        initial={accountInitial}
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-neutral-950">
+                          {displayName}
+                        </p>
+                        <p className="truncate text-xs text-neutral-500">
+                          {roleLabel ?? currentUser.email}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mt-2 grid gap-1">
-                    {accountMenuItems.map((item) => (
-                      <Link
-                        key={item.link}
-                        href={item.link}
-                        onClick={() => setIsAccountMenuOpen(false)}
-                        className="rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 hover:text-neutral-950"
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </div>
+                    <div className="mt-2 grid gap-1">
+                      {accountMenuItems.map((item) => (
+                        <Link
+                          key={item.link}
+                          href={item.link}
+                          onClick={() => setIsAccountMenuOpen(false)}
+                          className="rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 hover:text-neutral-950"
+                        >
+                          {item.name}
+                        </Link>
+                      ))}
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="mt-2 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
-                  >
-                    {t("siteHeader.auth.logout")}
-                  </button>
-                </div>
-              )}
-            </div>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="mt-2 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                    >
+                      {t("siteHeader.auth.logout")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           ) : null}
         </div>
       </NavBody>
@@ -431,6 +450,15 @@ export default function SiteHeader() {
               </>
             ) : platformLaunched && currentUser ? (
               <div className="mt-2 w-full border-t border-neutral-200 pt-4">
+                {isQuickRegister ? (
+                  <Link
+                    href="/register/freja-id?flow=quick-register"
+                    onClick={closeMenus}
+                    className="mb-3 inline-flex w-full items-center justify-center rounded-full bg-[#3E3A93] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#302d78]"
+                  >
+                    {localizedText(locale, "Verify now", "Verify now")}
+                  </Link>
+                ) : null}
                 <div className="mb-3 flex items-center gap-3 px-1">
                   <AccountAvatar
                     src={avatarSrc}

@@ -28,11 +28,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { authService } from "@/features/auth/services/auth-service";
 import type {
-  AuthResponse,
   FrejaAuthRef,
   FrejaRegisterResponse,
   PasswordResetFinalRequest,
-  RegisterStudentRequest,
   StartPasswordResetRequest,
   UserDeleteFailureDTO,
   VerifyEmailRequest,
@@ -76,9 +74,8 @@ export function useFinalizeEmailVerification() {
 }
 
 /**
- * Start a Freja identity-verification flow. Returns an `authRef` the page
- * uses to poll for completion (poll is read-side and stays in a separate
- * effect since it's a request-loop, not a mutation).
+ * Legacy alias for starting the quick-register Freja flow. The backend now
+ * uses POST /auth/register-student for this flow.
  */
 export function useVerifyIdentity() {
   return useMutation<FrejaAuthRef, Error, void>({
@@ -87,10 +84,8 @@ export function useVerifyIdentity() {
 }
 
 /**
- * Start a Freja **registration** flow (different endpoint from
- * verifyIdentity — this one creates a new account, while verifyIdentity
- * attaches Freja-confirmed identity data to an existing one). Returns an
- * `authRef` the page polls.
+ * Start a Freja-only registration flow. Returns an `authRef` the page polls.
+ * After approval, the backend creates the account and emails the password.
  */
 export function useFrejaRegister() {
   return useMutation<FrejaRegisterResponse, Error, void>({
@@ -99,15 +94,13 @@ export function useFrejaRegister() {
 }
 
 /**
- * Submit student-registration details. Returns the AuthResponse the caller
- * passes to AuthContext.completeAuth to lift the session into context.
- *
- * The onboarding modal calls this via mutateAsync(); on success it forwards
- * the response to AuthContext.completeAuth and closes the modal.
+ * Start Freja verification for the current quick-register profile. The
+ * response is an authRef that the Freja page polls until the backend creates
+ * the permanent student account.
  */
 export function useRegisterStudent() {
-  return useMutation<AuthResponse, Error, RegisterStudentRequest>({
-    mutationFn: (payload) => authService.registerStudent(payload),
+  return useMutation<FrejaAuthRef, Error, void>({
+    mutationFn: () => authService.registerStudent(),
   });
 }
 

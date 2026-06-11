@@ -15,12 +15,13 @@ import { AuthCard } from "@/components/ui/AuthCard";
 import { FieldDescription, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { authService, isAuthResponse } from "@/features/auth/services/auth-service";
+import { authService } from "@/features/auth/services/auth-service";
 import type { FrejaAuthStatus } from "@/types";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
 const pollIntervalMs = 2000;
+const redirectDelayMs = 900;
 const frejaLogoPath =
   "/FrejaBrandingPackNew/FrejaBrandingPack/Freja Logo/Freja/SVG/FrejaIndigo.svg";
 const frejaIconPath =
@@ -56,6 +57,8 @@ const statusPillLabels: Record<FrejaAuthStatus, { sv: string; en: string }> = {
   CANCELED: { sv: "Avbruten", en: "Canceled" },
 };
 
+type FrejaFlow = "quick-register" | "freja-only";
+
 function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
   return (
     typeof value === "string" &&
@@ -63,15 +66,27 @@ function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
   );
 }
 
-function getStatusAction(status: FrejaAuthStatus, flow: "registration" | "identity", locale: "sv" | "en") {
-  if (flow === "identity") {
-    return status === "MATCHES"
-      ? { href: "/profile", label: localizedText(locale, "Tillbaka till profilen", "Back to profile") }
-      : { href: "/profile", label: localizedText(locale, "Tillbaka till profilen", "Back to profile") };
+function getStatusAction(status: FrejaAuthStatus, flow: FrejaFlow, locale: "sv" | "en") {
+  if (flow === "quick-register") {
+    if (status === "MATCHES") {
+      return { href: "/", label: localizedText(locale, "Fortsätt", "Continue") };
+    }
+
+    if (status === "EXPIRED" || status === "CANCELED") {
+      return {
+        href: "/register/freja-id?flow=quick-register",
+        label: localizedText(locale, "Starta Freja igen", "Start Freja again"),
+      };
+    }
+
+    return {
+      href: "/register",
+      label: localizedText(locale, "Tillbaka till registrering", "Back to registration"),
+    };
   }
 
   if (status === "MATCHES") {
-    return { href: "/", label: localizedText(locale, "Fortsätt", "Continue") };
+    return { href: "/login", label: localizedText(locale, "Gå till inloggning", "Go to login") };
   }
 
   if (status === "EXPIRED" || status === "CANCELED") {
@@ -81,7 +96,10 @@ function getStatusAction(status: FrejaAuthStatus, flow: "registration" | "identi
     };
   }
 
-  return { href: "/register", label: localizedText(locale, "Tillbaka till registrering", "Back to registration") };
+  return {
+    href: "/register",
+    label: localizedText(locale, "Tillbaka till registrering", "Back to registration"),
+  };
 }
 
 function buildFrejaAuthUrl(authRef: string) {
@@ -133,13 +151,16 @@ function StatusPill({ status }: { status: FrejaAuthStatus }) {
 function FrejaIdRegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { completeAuth, refreshUser } = useAuth();
+  const { user, isLoading: authLoading, refreshUser } = useAuth();
   const { locale, localizedHref } = useI18n();
   const initialAuthRef = searchParams.get("authRef")?.trim() ?? "";
   const shouldStartFrejaOnly = searchParams.get("start") === "freja";
-  const flow = searchParams.get("flow") === "identity" ? "identity" : "registration";
-  const isFrejaOnlyFlow =
-    shouldStartFrejaOnly || searchParams.get("flow") === "freja";
+  const requestedFlow = searchParams.get("flow");
+  const flow: FrejaFlow =
+    shouldStartFrejaOnly || requestedFlow === "freja"
+      ? "freja-only"
+      : "quick-register";
+  const isFrejaOnlyFlow = flow === "freja-only";
   const [authRef, setAuthRef] = useState(initialAuthRef);
   const [status, setStatus] = useState<FrejaAuthStatus>("PENDING");
   const [pollError, setPollError] = useState<string | null>(null);
@@ -152,7 +173,8 @@ function FrejaIdRegisterContent() {
   );
 
   useEffect(() => {
-    if (authRef || (!shouldStartFrejaOnly && flow !== "identity")) return;
+    if (authRef) return;
+    if (flow === "quick-register" && authLoading) return;
 
     let active = true;
 
@@ -160,9 +182,19 @@ function FrejaIdRegisterContent() {
       setIsStarting(true);
       setStartError(null);
       try {
+        if (flow === "quick-register" && user?.accountType !== "quick_register") {
+          throw new Error(
+            localizedText(
+              locale,
+              "Logga in med ditt nya konto för att verifiera med Freja.",
+              "Sign in with your new account to verify with Freja."
+            )
+          );
+        }
+
         const response =
-          flow === "identity"
-            ? await authService.verifyIdentity()
+          flow === "quick-register"
+            ? await authService.registerStudent()
             : await authService.frejaRegister();
         if (!active) return;
         setAuthRef(response.authRef);
@@ -171,7 +203,7 @@ function FrejaIdRegisterContent() {
         setStartError(
           err instanceof Error
             ? err.message
-            : flow === "identity"
+            : flow === "quick-register"
               ? localizedText(locale, "Kunde inte starta Freja-verifieringen.", "Could not start Freja verification.")
               : localizedText(locale, "Kunde inte starta Freja-registreringen.", "Could not start Freja registration.")
         );
@@ -187,7 +219,7 @@ function FrejaIdRegisterContent() {
     return () => {
       active = false;
     };
-  }, [authRef, flow, shouldStartFrejaOnly]);
+  }, [authLoading, authRef, flow, locale, user?.accountType]);
 
   useEffect(() => {
     if (!authRef) return;
@@ -200,12 +232,6 @@ function FrejaIdRegisterContent() {
         const result = await authService.pollAuthStatus(authRef);
         if (!active) return;
 
-        if (isAuthResponse(result)) {
-          completeAuth(result);
-          router.replace(localizedHref("/"));
-          return;
-        }
-
         if (!isFrejaAuthStatus(result)) {
           setPollError(localizedText(locale, "Backend skickade en okänd Freja-status.", "The backend returned an unknown Freja status."));
           return;
@@ -217,11 +243,11 @@ function FrejaIdRegisterContent() {
 
         if (nextStatus === "PENDING") {
           timeout = setTimeout(poll, pollIntervalMs);
-        } else if (nextStatus === "MATCHES" && flow === "identity") {
+        } else if (nextStatus === "MATCHES" && flow === "quick-register") {
           await refreshUser();
-          timeout = setTimeout(() => router.replace(localizedHref("/profile")), 900);
+          timeout = setTimeout(() => router.replace(localizedHref("/")), redirectDelayMs);
         } else if (nextStatus === "MATCHES") {
-          timeout = setTimeout(() => router.replace(localizedHref("/")), 900);
+          timeout = setTimeout(() => router.replace(localizedHref("/login")), redirectDelayMs);
         }
       } catch {
         if (!active) return;
@@ -236,22 +262,16 @@ function FrejaIdRegisterContent() {
       active = false;
       if (timeout) clearTimeout(timeout);
     };
-  }, [authRef, completeAuth, flow, refreshUser, router]);
+  }, [authRef, flow, locale, localizedHref, refreshUser, router]);
 
   const successText = isFrejaOnlyFlow
-    ? localizedText(locale, "Kontot är verifierat. Du skickas vidare till startsidan.", "The account is verified. You will be redirected to the homepage.")
-    : flow === "identity"
-      ? localizedText(locale, "Identiteten är verifierad.", "Identity verified.")
+    ? localizedText(locale, "Kontot är verifierat. Du skickas vidare till inloggning.", "The account is verified. You will be redirected to sign in.")
     : localizedText(locale, statusMessages.MATCHES.sv, statusMessages.MATCHES.en);
   const statusAction = getStatusAction(status, flow, locale);
-  const pageTitle =
-    flow === "identity"
-      ? localizedText(locale, "Verifiera identitet", "Verify identity")
-      : localizedText(locale, "Verifiera med Freja", "Verify with Freja");
-  const pageSubtitle =
-    flow === "identity"
-      ? localizedText(locale, "Skanna QR-koden i Freja-appen.", "Scan the QR code in the Freja app.")
-      : localizedText(locale, "Skanna QR-koden med Freja.", "Scan the QR code with Freja.");
+  const pageTitle = localizedText(locale, "Verifiera med Freja", "Verify with Freja");
+  const pageSubtitle = isFrejaOnlyFlow
+    ? localizedText(locale, "Skanna QR-koden med Freja för att skapa kontot.", "Scan the QR code with Freja to create the account.")
+    : localizedText(locale, "Skanna QR-koden med Freja för att verifiera ditt konto.", "Scan the QR code with Freja to verify your account.");
 
   return (
     <AuthCard
