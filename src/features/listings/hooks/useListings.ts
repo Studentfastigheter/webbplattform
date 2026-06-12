@@ -50,6 +50,12 @@ import type {
 const STALE_30_SECONDS = 30_000;
 const STALE_2_MINUTES = 2 * 60_000;
 const STALE_5_MINUTES = 5 * 60_000;
+const FAVORITES_STUDENT_ONLY_MESSAGE =
+  "Du behöver vara inloggad som student för att spara bostäder.";
+
+export function canUseFavorites(user: { accountType?: string } | null | undefined) {
+  return user?.accountType === "student";
+}
 
 // ---------------------------------------------------------------------------
 // READS
@@ -155,10 +161,12 @@ export function useCompanyRequirementsProfiles(
  */
 export function useFavorites() {
   const { user } = useAuth();
+  const favoritesEnabled = canUseFavorites(user);
+
   return useQuery<ListingCardDTO[]>({
-    queryKey: qk.listings.favorites(),
+    queryKey: qk.listings.favorites(favoritesEnabled ? user?.id : null),
     queryFn: () => listingService.getFavorites(0, 200),
-    enabled: Boolean(user),
+    enabled: favoritesEnabled,
     staleTime: STALE_30_SECONDS,
   });
 }
@@ -216,22 +224,34 @@ export function useQueueListings(
  */
 export function useToggleFavorite() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const favoritesEnabled = canUseFavorites(user);
+  const favoritesKey = qk.listings.favorites(favoritesEnabled ? user?.id : null);
 
   type Vars = { listingId: string; nextIsFavorite: boolean };
   type Ctx = { previous: ListingCardDTO[] | undefined };
 
   return useMutation<void, Error, Vars, Ctx>({
-    mutationFn: ({ listingId, nextIsFavorite }) =>
-      nextIsFavorite
+    mutationFn: ({ listingId, nextIsFavorite }) => {
+      if (!favoritesEnabled) {
+        throw new Error(FAVORITES_STUDENT_ONLY_MESSAGE);
+      }
+
+      return nextIsFavorite
         ? listingService.addFavorite(listingId)
-        : listingService.removeFavorite(listingId),
+        : listingService.removeFavorite(listingId);
+    },
 
     onMutate: async ({ listingId, nextIsFavorite }) => {
-      await qc.cancelQueries({ queryKey: qk.listings.favorites() });
-      const previous = qc.getQueryData<ListingCardDTO[]>(qk.listings.favorites());
+      if (!favoritesEnabled) {
+        return { previous: undefined };
+      }
+
+      await qc.cancelQueries({ queryKey: favoritesKey });
+      const previous = qc.getQueryData<ListingCardDTO[]>(favoritesKey);
 
       qc.setQueryData<ListingCardDTO[]>(
-        qk.listings.favorites(),
+        favoritesKey,
         (old = []) => {
           if (nextIsFavorite) {
             if (old.some((entry) => entry.id === listingId)) return old;
@@ -248,14 +268,18 @@ export function useToggleFavorite() {
 
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous !== undefined) {
-        qc.setQueryData(qk.listings.favorites(), ctx.previous);
+        qc.setQueryData(favoritesKey, ctx.previous);
       }
     },
 
     onSettled: () => {
+      if (!favoritesEnabled) {
+        return;
+      }
+
       // Re-sync with authoritative server list. Settled (not Success) so we
       // still re-sync after a failed POST/DELETE — never trust optimistic.
-      qc.invalidateQueries({ queryKey: qk.listings.favorites() });
+      qc.invalidateQueries({ queryKey: favoritesKey });
     },
   });
 }

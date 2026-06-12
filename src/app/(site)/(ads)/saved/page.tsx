@@ -1,17 +1,19 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heart, Loader2 } from "lucide-react";
 
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import { Button } from "@/components/ui/button";
 import {
+  canUseFavorites,
   useFavorites,
   useToggleFavorite,
 } from "@/features/listings/hooks/useListings";
 import { listingService } from "@/features/listings/services/listing-service";
+import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import type { ListingCardDTO } from "@/types/listing";
@@ -25,14 +27,21 @@ const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"),
 
 export default function Page() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+  const { locale, localizedHref } = useI18n();
+  const canViewFavorites = canUseFavorites(user);
   const { data: favorites = [], isLoading: loading } = useFavorites();
   const toggleFavorite = useToggleFavorite();
   const [hoveredListingId, setHoveredListingId] = useState<string | undefined>();
-  const { locale, localizedHref } = useI18n();
   const favoriteIds = useMemo(
     () => new Set(favorites.map((listing) => listing.id)),
     [favorites],
   );
+
+  useEffect(() => {
+    if (authLoading || canViewFavorites) return;
+    router.replace(localizedHref(user ? "/housing" : "/login"));
+  }, [authLoading, canViewFavorites, localizedHref, router, user]);
 
   /**
    * Sparade only ever removes — but we keep the symmetric API
@@ -56,7 +65,7 @@ export default function Page() {
     [localizedHref, router],
   );
 
-  if (loading) {
+  if (authLoading || !canViewFavorites || loading) {
     return (
       <main className="flex h-[50vh] w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />

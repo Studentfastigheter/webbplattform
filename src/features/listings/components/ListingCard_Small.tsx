@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Tag from "@/components/ui/Tag";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { canUseFavorites } from "@/features/listings/hooks/useListings";
 import type { ListingTagDTO } from "@/types/listing";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedCurrency, localizedText } from "@/i18n/text";
@@ -164,6 +165,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const logoAlt = hostName || landlordType
     ? `${hostName ?? landlordType} ${localizedText(locale, "logotyp", "logo")}`
     : localizedText(locale, "Hyresvärdens logotyp", "Landlord logo");
+  const showStudentFavoriteButton = showFavoriteButton && canUseFavorites(user);
 
   return (
     <div
@@ -198,7 +200,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           </div>
         )}
 
-        {showFavoriteButton && (
+        {showStudentFavoriteButton && (
           <button
             type="button"
             onClick={handleFavoriteClick}

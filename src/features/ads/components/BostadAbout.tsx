@@ -7,7 +7,7 @@ import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import Tag from "@/components/ui/Tag";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { useToggleFavorite } from "@/features/listings/hooks/useListings";
+import { canUseFavorites, useToggleFavorite } from "@/features/listings/hooks/useListings";
 import { ListingDetailDTO } from "@/types/listing";
 import { Check, Heart, Home, MapPin, Share2 } from "lucide-react";
 import React, { useState } from "react";
@@ -61,6 +61,7 @@ function BostadAboutContent({
   const [isFav, setIsFav] = useState(isFavorite ?? false);
   const toggleFavorite = useToggleFavorite();
   const isLoadingFav = toggleFavorite.isPending;
+  const canFavorite = canUseFavorites(user);
 
   React.useEffect(() => {
     if (isFavorite !== undefined) setIsFav(isFavorite);
@@ -69,7 +70,7 @@ function BostadAboutContent({
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isLoadingFav) return;
+    if (!canFavorite || isLoadingFav) return;
 
     const prev = isFav;
     setIsFav(!prev);
@@ -158,7 +159,7 @@ function BostadAboutContent({
         <div className="flex shrink-0 flex-col items-end gap-3">
           {!hideStudentActions && (
             <div className="flex items-center gap-1.5">
-              {user && (
+              {canFavorite && (
                 <button
                   type="button"
                   onClick={handleToggleFavorite}
@@ -178,7 +179,7 @@ function BostadAboutContent({
                   <Heart className={cn("h-[18px] w-[18px]", isFav && "fill-current")} />
                 </button>
               )}
-              {user && <div className="h-5 w-px bg-gray-200" />}
+              {canFavorite && <div className="h-5 w-px bg-gray-200" />}
               <ShareDialog>
                 <button
                   type="button"

@@ -57,7 +57,8 @@ export const qk = {
     cities: () => ["listings", "cities"] as const,
     tags: () => ["listings", "tags"] as const,
 
-    favorites: () => ["listings", "favorites"] as const,
+    favorites: (studentId?: string | number | null) =>
+      ["listings", "favorites", studentId ?? "anonymous"] as const,
     myListings: (page: number, size: number) =>
       ["listings", "my", page, size] as const,
     myApplications: () => ["listings", "my-applications"] as const,

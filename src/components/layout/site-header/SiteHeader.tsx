@@ -116,7 +116,9 @@ export default function SiteHeader() {
         dropdown: [
           { name: t("siteHeader.nav.searchHousing"), link: localizedHref("/housing") },
           { name: t("siteHeader.nav.applications"), link: localizedHref("/applications") },
-          { name: t("siteHeader.nav.saved"), link: localizedHref("/saved") },
+          ...(!isQuickRegister
+            ? [{ name: t("siteHeader.nav.saved"), link: localizedHref("/saved") }]
+            : []),
         ],
       },
       {
@@ -130,7 +132,7 @@ export default function SiteHeader() {
       { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },
       { name: t("siteHeader.nav.notifications"), link: localizedHref("/notifications") },
     ],
-    [localizedHref, t],
+    [isQuickRegister, localizedHref, t],
   );
 
   const landlordNavItems = useMemo<NavItem[]>(
