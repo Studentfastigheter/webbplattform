@@ -38,6 +38,28 @@ API-klienten ansvarar for:
 - konsekvent felhantering via `ApiError`
 - querystring- och pathsegment helpers
 
+## Google AdSense
+
+Publisher-ID:t ligger i root-layoutens metadata och AdSense-scriptet laddas globalt.
+De befintliga annonsrutorna kan fyllas med manuella AdSense-enheter via publika env-vars:
+
+```bash
+NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT=
+NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT=
+```
+
+Om olika enheter behovs per placering kan dessa anvandas i stallet:
+
+```bash
+NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT=
+NEXT_PUBLIC_GOOGLE_ADSENSE_LEFT_SLOT=
+NEXT_PUBLIC_GOOGLE_ADSENSE_BOTTOM_SLOT=
+NEXT_PUBLIC_GOOGLE_ADSENSE_RIGHT_SLOT=
+```
+
+Egna annonser fran `/api/ads` visas fore Google AdSense. Nar ingen egen annons finns
+fylls rutan av den Google-slot som ar konfigurerad.
+
 ## Typer
 
 Anvand denna uppdelning nar ny kod laggs till:

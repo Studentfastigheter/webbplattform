@@ -4,6 +4,7 @@ import { type ReactNode, useMemo } from "react";
 import { useCurrentAds } from "@/features/ads/hooks/useAds";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/I18nProvider";
+import { GoogleAdSenseUnit } from "@/components/layout/GoogleAdSenseUnit";
 
 type NormalizedAd = {
   id: string;
@@ -13,6 +14,30 @@ type NormalizedAd = {
 
 type AdColumnsLayoutProps = {
   children: ReactNode;
+};
+
+const normalizeAdSenseSlot = (value?: string): string | undefined => {
+  const trimmed = value?.trim();
+  return trimmed || undefined;
+};
+
+const googleAdSenseSlots = {
+  top: normalizeAdSenseSlot(
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT ??
+      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT,
+  ),
+  left: normalizeAdSenseSlot(
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_LEFT_SLOT ??
+      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT,
+  ),
+  bottom: normalizeAdSenseSlot(
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_BOTTOM_SLOT ??
+      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT,
+  ),
+  right: normalizeAdSenseSlot(
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_RIGHT_SLOT ??
+      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT,
+  ),
 };
 
 const normalizeImageSource = (value: string): string | null => {
@@ -56,11 +81,13 @@ const AdSlot = ({
   ariaLabel,
   className,
   emptyLabel,
+  googleAdSenseSlot,
 }: {
   ad?: NormalizedAd;
   ariaLabel: string;
   className?: string;
   emptyLabel: string;
+  googleAdSenseSlot?: string;
 }) => (
   <div
     className={cn(
@@ -75,6 +102,8 @@ const AdSlot = ({
         className="h-full w-full object-cover"
         loading="lazy"
       />
+    ) : googleAdSenseSlot ? (
+      <GoogleAdSenseUnit slot={googleAdSenseSlot} label={ariaLabel} />
     ) : (
       <div
         className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-400"
@@ -118,6 +147,7 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
           ad={firstAd}
           ariaLabel={t("ads.topAd")}
           emptyLabel={t("ads.adSpace")}
+          googleAdSenseSlot={googleAdSenseSlots.top}
           className="aspect-[4/1] min-h-[100px]"
         />
       </div>
@@ -127,6 +157,7 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
           ad={firstAd}
           ariaLabel={t("ads.leftAd")}
           emptyLabel={t("ads.adSpace")}
+          googleAdSenseSlot={googleAdSenseSlots.left}
           className="aspect-[2/5] min-h-[480px] max-h-[760px]"
         />
       </div>
@@ -139,6 +170,7 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
             ad={secondAd}
             ariaLabel={t("ads.bottomAd")}
             emptyLabel={t("ads.adSpace")}
+            googleAdSenseSlot={googleAdSenseSlots.bottom}
             className="aspect-[4/1] min-h-[100px]"
           />
         </div>
@@ -149,6 +181,7 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
           ad={secondAd}
           ariaLabel={t("ads.rightAd")}
           emptyLabel={t("ads.adSpace")}
+          googleAdSenseSlot={googleAdSenseSlots.right}
           className="aspect-[2/5] min-h-[480px] max-h-[760px]"
         />
       </div>
