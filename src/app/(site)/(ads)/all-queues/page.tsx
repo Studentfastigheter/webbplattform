@@ -374,7 +374,7 @@ export default function Page() {
           unitsLabel={queueCardProps.unitsLabel}
           logoUrl={queueCardProps.logoUrl}
           logoAlt={queueCardProps.logoAlt}
-          description={queue.description ?? queue.subtitle}
+          description={queue.subtitle ?? queue.description}
           termsUrl={queue.termsUrl}
           privacyUrl={queue.privacyUrl}
           tags={queueCardProps.tags}

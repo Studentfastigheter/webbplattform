@@ -467,31 +467,7 @@ export default function QueueDetailPage() {
       )}
 
       {queueToJoin && (
-        <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {companyPolicyLinks.length > 0 ? (
-            <nav
-              aria-label={t("queueCard.policyAria", { name: companyName })}
-              className="flex min-h-[17px] flex-wrap items-center gap-x-4 gap-y-1 overflow-hidden text-[13px] font-medium leading-[17px] text-[#004225]"
-            >
-              {companyPolicyLinks.map((link, index) => (
-                <span key={link.label} className="inline-flex items-center gap-x-4">
-                  {index > 0 && (
-                    <span className="hidden h-5 w-px bg-[#004225]/70 sm:block" />
-                  )}
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-sm underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]"
-                  >
-                    {link.label}
-                  </a>
-                </span>
-              ))}
-            </nav>
-          ) : (
-            <span className="hidden sm:block" />
-          )}
+        <div className="mt-8 flex w-full flex-col items-start gap-3">
           <Button
             onClick={() => handleJoinQueue(queueToJoin.id)}
             isDisabled={
@@ -530,6 +506,28 @@ export default function QueueDetailPage() {
               </>
             )}
           </Button>
+          {companyPolicyLinks.length > 0 ? (
+            <nav
+              aria-label={t("queueCard.policyAria", { name: companyName })}
+              className="flex min-h-[17px] flex-wrap items-center gap-x-4 gap-y-1 overflow-hidden text-[13px] font-medium leading-[17px] text-[#004225]"
+            >
+              {companyPolicyLinks.map((link, index) => (
+                <span key={link.label} className="inline-flex items-center gap-x-4">
+                  {index > 0 && (
+                    <span className="hidden h-5 w-px bg-[#004225]/70 sm:block" />
+                  )}
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-sm underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]"
+                  >
+                    {link.label}
+                  </a>
+                </span>
+              ))}
+            </nav>
+          ) : null}
         </div>
       )}
 
