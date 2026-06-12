@@ -41,14 +41,17 @@ API-klienten ansvarar for:
 ## Google AdSense
 
 Publisher-ID:t ligger i root-layoutens metadata och AdSense-scriptet laddas globalt.
-De befintliga annonsrutorna kan fyllas med manuella AdSense-enheter via publika env-vars:
+De befintliga annonsrutorna anvander Google AdSense-slot `9241310200` om inget annat
+ar konfigurerat.
+
+Om olika AdSense-enheter behovs kan slot-ID:n bytas via publika env-vars:
 
 ```bash
 NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT=
 NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT=
 ```
 
-Om olika enheter behovs per placering kan dessa anvandas i stallet:
+Eller per placering:
 
 ```bash
 NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT=

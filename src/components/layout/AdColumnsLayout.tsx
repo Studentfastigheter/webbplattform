@@ -16,27 +16,38 @@ type AdColumnsLayoutProps = {
   children: ReactNode;
 };
 
+const GOOGLE_ADSENSE_DEFAULT_SLOT = "9241310200";
+
 const normalizeAdSenseSlot = (value?: string): string | undefined => {
   const trimmed = value?.trim();
   return trimmed || undefined;
 };
 
+const getAdSenseSlot = (...values: Array<string | undefined>): string => {
+  for (const value of values) {
+    const normalized = normalizeAdSenseSlot(value);
+    if (normalized) return normalized;
+  }
+
+  return GOOGLE_ADSENSE_DEFAULT_SLOT;
+};
+
 const googleAdSenseSlots = {
-  top: normalizeAdSenseSlot(
-    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT ??
-      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT,
+  top: getAdSenseSlot(
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT,
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT,
   ),
-  left: normalizeAdSenseSlot(
-    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_LEFT_SLOT ??
-      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT,
+  left: getAdSenseSlot(
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_LEFT_SLOT,
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT,
   ),
-  bottom: normalizeAdSenseSlot(
-    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_BOTTOM_SLOT ??
-      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT,
+  bottom: getAdSenseSlot(
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_BOTTOM_SLOT,
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT,
   ),
-  right: normalizeAdSenseSlot(
-    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_RIGHT_SLOT ??
-      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT,
+  right: getAdSenseSlot(
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_RIGHT_SLOT,
+    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT,
   ),
 };
 
