@@ -631,28 +631,29 @@ function EditableVideoSection({
 
 function SocialPlatformIcon({ platform }: { platform: string }) {
   const key = platformIconKey(platform);
+  const iconClassName = "h-[18px] w-[18px] text-gray-600";
 
   if (key === "facebook") {
-    return <FaFacebook className="h-[18px] w-[18px] text-[#1877f2]" />;
+    return <FaFacebook className={iconClassName} />;
   }
 
   if (key === "instagram") {
-    return <FaInstagram className="h-[18px] w-[18px] text-[#e4405f]" />;
+    return <FaInstagram className={iconClassName} />;
   }
 
   if (key === "youtube") {
-    return <FaYoutube className="h-[18px] w-[18px] text-[#ff0000]" />;
+    return <FaYoutube className={iconClassName} />;
   }
 
   if (key === "tiktok") {
-    return <FaTiktok className="h-[18px] w-[18px] text-gray-950" />;
+    return <FaTiktok className={iconClassName} />;
   }
 
   if (key === "linkedin") {
-    return <FaLinkedin className="h-[18px] w-[18px] text-[#0a66c2]" />;
+    return <FaLinkedin className={iconClassName} />;
   }
 
-  return <Globe className="h-[18px] w-[18px]" />;
+  return <Globe className={iconClassName} />;
 }
 
 function EditableCompanyPreview({
@@ -795,7 +796,7 @@ function EditableCompanyPreview({
               <span
                 key={`${draftString(link.platform)}-${index}`}
                 title={draftString(link.platform)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-600"
               >
                 <SocialPlatformIcon platform={draftString(link.platform)} />
               </span>
@@ -808,7 +809,7 @@ function EditableCompanyPreview({
               disabled
               aria-label={localizedText(locale, "Dela", "Share")}
               title={localizedText(locale, "Dela", "Share")}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-300"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-600"
             >
               <Share2 className="h-[18px] w-[18px]" />
             </button>

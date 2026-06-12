@@ -107,7 +107,7 @@ export default function EntityHero({
             unoptimized
           />
         ) : (
-          <div className="h-full w-full bg-[linear-gradient(135deg,#f8fafc_0%,#eef2f7_100%)]" />
+          <div className="h-full w-full bg-gray-100" />
         )}
       </div>
 
