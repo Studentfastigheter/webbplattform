@@ -113,6 +113,22 @@ export const qk = {
       ["companies", "applications-timeline", companyId] as const,
     timedApplicationsTotal: (companyId: number, from: string, to: string) =>
       ["companies", "timed-applications-total", companyId, from, to] as const,
+    queueApplicationCount: (companyId: number) =>
+      ["companies", "queue-application-count", companyId] as const,
+    queueApplicationsTrend: (
+      companyId: number,
+      from: string,
+      to: string,
+      granularity: string,
+    ) =>
+      [
+        "companies",
+        "queue-applications-trend",
+        companyId,
+        from,
+        to,
+        granularity,
+      ] as const,
     generalAnalytics: (companyId: number) =>
       ["companies", "general-analytics", companyId] as const,
     residentAnalytics: (companyId: number) =>

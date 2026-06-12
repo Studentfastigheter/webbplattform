@@ -287,6 +287,15 @@ export type ApplicationStatisticEntry = {
   numApplications: number,
 };
 
+export type QueueApplicationTrendGranularity = "day" | "week" | "month";
+
+export type QueueApplicationTrendEntry = {
+  periodStart: string;
+  periodEnd: string;
+  granularity: QueueApplicationTrendGranularity;
+  numApplications: number;
+};
+
 const defaultGeneralAnalyticsPeriods = ["P7D", "P1M", "P3M", "P1Y"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -509,6 +518,31 @@ function normalizeApplicationTrendEntry(value: unknown): ApplicationStatisticEnt
     year,
     month,
     numApplications: toNumber(value.numApplications),
+  };
+}
+
+function normalizeQueueApplicationTrendEntry(value: unknown): QueueApplicationTrendEntry | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const periodStart = firstString(value.periodStart);
+  const periodEnd = firstString(value.periodEnd);
+  const rawGranularity = firstString(value.granularity)?.toLowerCase();
+  const granularity: QueueApplicationTrendGranularity =
+    rawGranularity === "week" || rawGranularity === "month"
+      ? rawGranularity
+      : "day";
+
+  if (!periodStart || !periodEnd) {
+    return null;
+  }
+
+  return {
+    periodStart,
+    periodEnd,
+    granularity,
+    numApplications: toNumber(value.numApplications ?? value.count),
   };
 }
 
@@ -1209,6 +1243,42 @@ export const companyService = {
     }
 
     return toNumber(result);
+  },
+
+  queueApplicationCount: async (
+    id: number,
+    options?: ServiceOptions
+  ): Promise<number> => {
+    const result = await apiClient<unknown>(
+      `/companies/${pathSegment(id)}/queues/applications/count`,
+      { signal: options?.signal }
+    );
+
+    return toNumber(result);
+  },
+
+  queueApplicationsTrend: async (
+    id: number,
+    options: {
+      from?: string | Date;
+      to?: string | Date;
+      granularity?: QueueApplicationTrendGranularity;
+      signal?: AbortSignal;
+    } = {}
+  ): Promise<QueueApplicationTrendEntry[]> => {
+    const query = buildQuery({
+      from: options.from instanceof Date ? options.from.toISOString() : options.from,
+      to: options.to instanceof Date ? options.to.toISOString() : options.to,
+      granularity: options.granularity ?? "day",
+    });
+    const result = await apiClient<unknown>(
+      `/companies/${pathSegment(id)}/queues/applications/trend${query}`,
+      { signal: options.signal }
+    );
+
+    return toArray<unknown>(result, true)
+      .map(normalizeQueueApplicationTrendEntry)
+      .filter((entry): entry is QueueApplicationTrendEntry => entry !== null);
   },
   
   applicationsTimeline: async (

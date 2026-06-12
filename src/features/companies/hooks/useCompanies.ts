@@ -37,6 +37,8 @@ import {
   type ListingViewCounts,
   type NewApplication,
   type ObjectApplicationCount,
+  type QueueApplicationTrendEntry,
+  type QueueApplicationTrendGranularity,
   type ResidentAnalyticsData,
   type SocialPlatform,
   type Timeline,
@@ -173,6 +175,55 @@ export function useCompanyTimedApplications(
     queryFn: () => companyService.timedApplications(companyId!, from, to),
     enabled:
       enabled && Boolean(user) && companyId != null && companyId > 0 && !!from && !!to,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyQueueApplicationCount(
+  companyId: number | null | undefined
+) {
+  const { user } = useAuth();
+
+  return useQuery<number>({
+    queryKey: qk.companies.queueApplicationCount(companyId ?? -1),
+    queryFn: () => companyService.queueApplicationCount(companyId!),
+    enabled: Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyQueueApplicationsTrend(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    granularity = "day",
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    granularity?: QueueApplicationTrendGranularity;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<QueueApplicationTrendEntry[]>({
+    queryKey: qk.companies.queueApplicationsTrend(
+      companyId ?? -1,
+      fromKey,
+      toKey,
+      granularity
+    ),
+    queryFn: () =>
+      companyService.queueApplicationsTrend(companyId!, {
+        from,
+        to,
+        granularity,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
 }
