@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { authService } from "@/features/auth/services/auth-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
+import { isSiteAuthAccount } from "@/features/auth/lib/account-access";
 
 type RegisterForm = {
   email: string;
@@ -69,7 +70,7 @@ function getPasswordStrengthText(score: number, locale: "sv" | "en") {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { completeAuth, googleRegister } = useAuth();
+  const { completeAuth, googleRegister, logout } = useAuth();
   const { locale, localizedHref } = useI18n();
   const passwordRequirements = getPasswordRequirements(locale);
   const [form, setForm] = useState<RegisterForm>(initialForm);
@@ -145,7 +146,12 @@ export default function RegisterPage() {
         email: form.email.trim(),
         password: form.password.trim(),
       });
-      completeAuth(response);
+      const user = completeAuth(response);
+      if (!isSiteAuthAccount(user)) {
+        logout();
+        setError(localizedText(locale, "Det här kontot kan inte registreras här.", "This account cannot be registered here."));
+        return;
+      }
       setForm(initialForm);
       router.replace(localizedHref("/"));
     } catch (err: unknown) {
@@ -162,9 +168,14 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await googleRegister({
+      const user = await googleRegister({
         googleIdToken,
       });
+      if (!isSiteAuthAccount(user)) {
+        logout();
+        setError(localizedText(locale, "Det här kontot kan inte registreras här.", "This account cannot be registered here."));
+        return;
+      }
       router.replace(localizedHref("/"));
     } catch (err: unknown) {
       setError(getAuthErrorMessage(err, "google-register", locale));

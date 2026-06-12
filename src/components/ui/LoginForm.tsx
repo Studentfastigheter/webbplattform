@@ -19,10 +19,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { getAuthErrorMessage, isValidEmail } from "@/lib/auth-error-messages";
-import { getActiveCompanyId } from "@/lib/company-access";
 import type { User } from "@/types";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
+import {
+  isAdminAuthAccount,
+  isPortalAuthAccount,
+  isSiteAuthAccount,
+} from "@/features/auth/lib/account-access";
 
 type LoginMode = "student" | "company" | "admin";
 
@@ -65,9 +69,9 @@ const loginCopy: Record<
     subtitle: "Endast för företagskonton.",
     subtitleEn: "For company accounts only.",
     invalidAccountMessage:
-      "Det här kontot är inte kopplat till ett företag. Logga in via rätt sida.",
+      "Det här kontot är inte ett företagskonto. Logga in via rätt sida.",
     invalidAccountMessageEn:
-      "This account is not linked to a company. Sign in through the correct page.",
+      "This account is not a company account. Sign in through the correct page.",
     successPath: "/",
     showGoogle: false,
     showRegisterLink: false,
@@ -87,20 +91,16 @@ const loginCopy: Record<
   },
 };
 
-function isAdminAccount(accountType: User["accountType"]) {
-  return accountType === "admin";
-}
-
 function isAllowedAccount(user: User, mode: LoginMode) {
   if (mode === "student") {
-    return user.accountType === "student" || user.accountType === "quick_register";
+    return isSiteAuthAccount(user);
   }
 
   if (mode === "company") {
-    return getActiveCompanyId(user) != null && !isAdminAccount(user.accountType);
+    return isPortalAuthAccount(user);
   }
 
-  return isAdminAccount(user.accountType);
+  return isAdminAuthAccount(user);
 }
 
 export function LoginForm({ mode = "student", className, ...props }: LoginFormProps) {

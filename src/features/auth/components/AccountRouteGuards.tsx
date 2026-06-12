@@ -6,20 +6,17 @@ import { useRouter } from "next/navigation";
 
 import { LoadingScreen } from "@/components/ui/loader";
 import { useAuth } from "@/context/AuthContext";
-import { getActiveCompanyId } from "@/lib/company-access";
-import { buildPortalUrl } from "@/lib/subdomain-routing";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
+import {
+  isAdminAuthAccount,
+  isPortalAuthAccount,
+  isSiteAuthAccount,
+} from "@/features/auth/lib/account-access";
 
 type RouteGuardProps = {
   children: ReactNode;
 };
-
-const SITE_ACCOUNT_TYPES = new Set(["student", "quick_register"]);
-
-function isAdminAccount(accountType: string | undefined) {
-  return accountType === "admin";
-}
 
 function RouteFallback({ message }: { message: string }) {
   return <LoadingScreen label={message} />;
@@ -28,31 +25,22 @@ function RouteFallback({ message }: { message: string }) {
 export function SiteAccountGuard({ children }: RouteGuardProps) {
   const router = useRouter();
   const { locale, localizedHref } = useI18n();
-  const { user, token, isLoading, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
 
   useEffect(() => {
     if (isLoading || !user) return;
 
-    if (getActiveCompanyId(user) != null) {
-      window.location.replace(buildPortalUrl("/", token));
-      return;
-    }
-
-    if (!SITE_ACCOUNT_TYPES.has(user.accountType)) {
+    if (!isSiteAuthAccount(user)) {
       logout();
       router.replace(localizedHref("/login"));
     }
-  }, [isLoading, localizedHref, logout, router, token, user]);
+  }, [isLoading, localizedHref, logout, router, user]);
 
   if (isLoading) {
     return <RouteFallback message={localizedText(locale, "Laddar...", "Loading...")} />;
   }
 
-  if (
-    user &&
-    (!SITE_ACCOUNT_TYPES.has(user.accountType) ||
-      getActiveCompanyId(user) != null)
-  ) {
+  if (user && !isSiteAuthAccount(user)) {
     return <RouteFallback message={localizedText(locale, "Skickar dig vidare...", "Redirecting you...")} />;
   }
 
@@ -71,18 +59,7 @@ export function PortalAccountGuard({ children }: RouteGuardProps) {
       return;
     }
 
-    const companyId = getActiveCompanyId(user);
-
-    if (
-      (user.accountType === "student" || user.accountType === "quick_register") &&
-      companyId == null
-    ) {
-      logout();
-      router.replace("/login");
-      return;
-    }
-
-    if (companyId == null) {
+    if (!isPortalAuthAccount(user)) {
       logout();
       router.replace("/login");
     }
@@ -92,7 +69,7 @@ export function PortalAccountGuard({ children }: RouteGuardProps) {
     return <RouteFallback message="Laddar portal..." />;
   }
 
-  if (!user || getActiveCompanyId(user) == null) {
+  if (!user || !isPortalAuthAccount(user)) {
     return <RouteFallback message="Kontrollerar behörighet..." />;
   }
 
@@ -111,7 +88,7 @@ export function AdminAccountGuard({ children }: RouteGuardProps) {
       return;
     }
 
-    if (!isAdminAccount(user.accountType)) {
+    if (!isAdminAuthAccount(user)) {
       logout();
       router.replace("/login");
     }
@@ -121,7 +98,7 @@ export function AdminAccountGuard({ children }: RouteGuardProps) {
     return <RouteFallback message="Laddar admin..." />;
   }
 
-  if (!user || !isAdminAccount(user.accountType)) {
+  if (!user || !isAdminAuthAccount(user)) {
     return <RouteFallback message="Kontrollerar behörighet..." />;
   }
 
