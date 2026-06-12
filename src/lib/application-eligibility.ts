@@ -32,6 +32,14 @@ export function getApplicationVerificationError(
 ) {
   if (!user) return null;
 
+  if (user.accountType !== "student") {
+    return localizedText(
+      locale,
+      `Du behöver verifiera ditt konto som student för att kunna ${targetText[target].sv}.`,
+      `You need to verify your account as a student to ${targetText[target].en}.`,
+    );
+  }
+
   const missingRequirements: string[] = [];
   const verifiedIdentity = user.verifiedIdentity ?? user.verified;
 

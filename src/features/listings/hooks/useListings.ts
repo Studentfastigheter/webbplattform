@@ -38,6 +38,7 @@ import {
   type ListingSearchFacetsDTO,
   type ListingSearchParams,
 } from "@/features/listings/services/listing-service";
+import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access";
 import type {
   ListingCardDTO,
   ListingDetailDTO,
@@ -176,7 +177,7 @@ export function useMyApplications() {
   return useQuery<StudentApplicationDTO[]>({
     queryKey: qk.listings.myApplications(),
     queryFn: () => listingService.getMyApplications(0, 50),
-    enabled: Boolean(user),
+    enabled: isVerifiedStudentAuthAccount(user),
     staleTime: STALE_30_SECONDS,
   });
 }

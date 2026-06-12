@@ -24,6 +24,7 @@ import {
   type CompanyDTO,
   type QueueApplicationDTO,
 } from "@/features/queues/services/queue-service";
+import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access";
 import type { HousingQueueDTO } from "@/types/queue";
 import type { ListingCardDTO, PageResponse } from "@/types/listing";
 
@@ -68,7 +69,7 @@ export function useMyQueues(
         // default-true branch runs.
         ...(hydrated ? {} : { hydrateQueues: false as const }),
       }),
-    enabled: enabled && Boolean(user),
+    enabled: enabled && isVerifiedStudentAuthAccount(user),
     staleTime: STALE_30_SECONDS,
   });
 }

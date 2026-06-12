@@ -1,13 +1,16 @@
 "use client";
 
 import clsx from "clsx";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/features/queues/components/QueueRow";
 import { useAuth } from "@/context/AuthContext";
 import { useMyQueues } from "@/features/queues/hooks/useQueues";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
+import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access";
 
 const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
   const normalized = status?.toLowerCase();
@@ -17,6 +20,7 @@ const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
 };
 
 export default function Page() {
+  const router = useRouter();
   const { locale, localizedHref } = useI18n();
   const columns: ListFrameColumn[] = [
     { id: "name", label: localizedText(locale, "Kö", "Queue"), width: "2.4fr" },
@@ -26,7 +30,14 @@ export default function Page() {
     { id: "hantera", label: " ", align: "center", width: "1.1fr" },
   ];
 
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const canViewQueues = isVerifiedStudentAuthAccount(user);
+
+  useEffect(() => {
+    if (authLoading || canViewQueues) return;
+    router.replace(localizedHref(user ? "/profile" : "/login"));
+  }, [authLoading, canViewQueues, localizedHref, router, user]);
+
   // hydrated=true so we get queue + company info for the row rendering.
   const {
     data: userApplications,
@@ -68,6 +79,14 @@ export default function Page() {
   }, [user, userApplications, locale, localizedHref]);
 
   const rows = useMemo(() => queueRows.map(buildQueueRow), [queueRows]);
+
+  if (authLoading || !canViewQueues) {
+    return (
+      <main className="flex h-[50vh] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </main>
+    );
+  }
 
   return (
     <main className="w-full py-6">

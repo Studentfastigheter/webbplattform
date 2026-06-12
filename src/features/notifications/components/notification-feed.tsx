@@ -22,7 +22,7 @@ export function NotificationsFeed({ items: initialItems }: Props) {
   // The optional `initialItems` path is rare (caller-supplied data, e.g. from
   // a mock). When present, skip the network entirely (enabled: false) and
   // render those items. Otherwise, use the cached notifications query — the
-  // hook handles auth gating internally (no token → no fetch).
+  // hook handles student-account gating internally.
   const { data: fetched, isLoading: fetching } = useNotifications({
     enabled: !initialItems,
   });

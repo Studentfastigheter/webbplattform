@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import { useAuth } from "@/context/AuthContext";
+import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access";
 import { notificationService } from "@/features/notifications/services/notification-service";
 import type { NotificationItem } from "@/types";
 
@@ -18,11 +19,11 @@ const STALE_30_SECONDS = 30_000;
  * true so the common case is just `useNotifications()`.
  */
 export function useNotifications({ enabled = true }: { enabled?: boolean } = {}) {
-  const { token } = useAuth();
+  const { user } = useAuth();
   return useQuery<NotificationItem[]>({
     queryKey: qk.notifications.list(),
     queryFn: () => notificationService.getAll(),
-    enabled: enabled && Boolean(token),
+    enabled: enabled && isVerifiedStudentAuthAccount(user),
     staleTime: STALE_30_SECONDS,
     // Notifications benefit from focus-refetch — re-enable here only.
     refetchOnWindowFocus: true,

@@ -116,9 +116,7 @@ export default function SiteHeader() {
         dropdown: [
           { name: t("siteHeader.nav.searchHousing"), link: localizedHref("/housing") },
           { name: t("siteHeader.nav.applications"), link: localizedHref("/applications") },
-          ...(!isQuickRegister
-            ? [{ name: t("siteHeader.nav.saved"), link: localizedHref("/saved") }]
-            : []),
+          { name: t("siteHeader.nav.saved"), link: localizedHref("/saved") },
         ],
       },
       {
@@ -132,7 +130,7 @@ export default function SiteHeader() {
       { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },
       { name: t("siteHeader.nav.notifications"), link: localizedHref("/notifications") },
     ],
-    [isQuickRegister, localizedHref, t],
+    [localizedHref, t],
   );
 
   const landlordNavItems = useMemo<NavItem[]>(
@@ -155,11 +153,11 @@ export default function SiteHeader() {
 
   let navItems = publicNavItems;
 
-  if (userType === "student" || isQuickRegister) {
+  if (userType === "student") {
     navItems = studentNavItems;
   } else if (userType === "private_landlord" || userType === "company") {
     navItems = landlordNavItems;
-  } else if (currentUser) {
+  } else if (currentUser && !isQuickRegister) {
     navItems = [
       { name: t("siteHeader.nav.housingSearch"), link: localizedHref("/housing") },
       { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },

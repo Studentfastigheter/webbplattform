@@ -1,7 +1,8 @@
 "use client";
 
 import clsx from "clsx";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQueries } from "@tanstack/react-query";
 
@@ -28,6 +29,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedDate, localizedText } from "@/i18n/text";
 import { type CompanyId } from "@/types";
 import type { ListingDetailDTO, ListingTagDTO, StudentApplicationDTO } from "@/types/listing";
+import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access";
 
 const getStudentColumns = (locale: Locale): ListFrameColumn[] => [
   { id: "annons", label: localizedText(locale, "Annons", "Listing"), width: "2.6fr" },
@@ -172,15 +174,20 @@ export default function MyApplicationsPage() {
   const router = useRouter();
   const { locale, localizedHref, t } = useI18n();
   // FIX 1: Vi hämtar inte 'token' härifrån, vi kollar bara om 'user' finns.
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   const [error, setError] = useState<string | null>(null);
   const [processingOfferId, setProcessingOfferId] = useState<number | null>(null);
 
   // FIX 2: Använd 'as any' för att komma åt properties som TS inte känner till än (accountType/type)
   const userAccountType = (user as any)?.accountType || (user as any)?.type;
-  const isStudent = userAccountType === "student";
+  const isStudent = isVerifiedStudentAuthAccount(user);
   const isPrivateLandlord = userAccountType === "private_landlord";
+
+  useEffect(() => {
+    if (authLoading || isStudent) return;
+    router.replace(localizedHref(user ? "/profile" : "/login"));
+  }, [authLoading, isStudent, localizedHref, router, user]);
 
   // My applications — shared cache. Re-fetches automatically when any
   // mutation in this page (withdraw / accept / reject) invalidates it.
@@ -409,6 +416,14 @@ export default function MyApplicationsPage() {
     if (isStudent) return localizedText(locale, "Du har inte sökt några bostäder än.", "You have not applied for any homes yet.");
     return localizedText(locale, "Denna vy stöder inte kontotypen än.", "This view does not support this account type yet.");
   })();
+
+  if (authLoading || !isStudent) {
+    return (
+      <main className="flex h-[50vh] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </main>
+    );
+  }
 
   return (
     <main className="w-full py-6">
