@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CheckCircle2Icon,
@@ -15,6 +16,11 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
 import { authService } from '@/features/auth/services/auth-service'
 import { useRegisterStudent } from '@/features/auth/hooks/useAuthMutations'
+import {
+  clearQuickRegisterAuthRef,
+  startOrResumeQuickRegisterVerification,
+  writeQuickRegisterAuthRef,
+} from '@/features/auth/lib/freja-verification-storage'
 import type { Locale } from '@/i18n/config'
 import { useI18n } from '@/i18n/I18nProvider'
 import { localizedText } from '@/i18n/text'
@@ -174,7 +180,8 @@ export default function IdentityVerification({
 }: {
   enabled: boolean
 }) {
-  const { locale } = useI18n()
+  const router = useRouter()
+  const { locale, localizedHref } = useI18n()
   const { user, refreshUser, isLoading: authLoading } = useAuth()
   const registerStudent = useRegisterStudent()
   const verificationRunRef = useRef(0)
@@ -236,8 +243,14 @@ export default function IdentityVerification({
         setLoading(false)
 
         if (result === 'MATCHES') {
+          clearQuickRegisterAuthRef(user)
+          setAuthRef('')
           await refreshUser()
+          router.replace(localizedHref('/housing'))
+          return
         }
+
+        clearQuickRegisterAuthRef(user)
       } catch {
         if (!active) return
         setError(localizedText(locale, 'Kunde inte kontrollera Freja-status. Försöker igen.', 'Could not check Freja status. Trying again.'))
@@ -251,7 +264,7 @@ export default function IdentityVerification({
       active = false
       if (timeout) clearTimeout(timeout)
     }
-  }, [authRef, locale, refreshUser])
+  }, [authRef, locale, localizedHref, refreshUser, router, user])
 
   const startAccountVerification = async () => {
     if (loading || !canStartVerification) return
@@ -264,9 +277,12 @@ export default function IdentityVerification({
     setError(null)
 
     try {
-      const response = await registerStudent.mutateAsync()
+      const response = await startOrResumeQuickRegisterVerification(user, () =>
+        registerStudent.mutateAsync()
+      )
       if (verificationRunRef.current !== runId) return
 
+      writeQuickRegisterAuthRef(user, response.authRef)
       setAuthRef(response.authRef)
       setStatus('PENDING')
     } catch (err) {
