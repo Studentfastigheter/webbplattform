@@ -36,6 +36,7 @@ import PortalListingStatusTag, {
   type PortalListingStatusTone,
 } from "../_components/shared/PortalListingStatusTag";
 import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 import { dashboardRelPath } from "../_statics/variables";
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
@@ -438,7 +439,7 @@ export default function PortalAdsPage() {
 
   if (authLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-theme-xs">
         {localizedText(locale, "Laddar annonser...", "Loading listings...")}
       </div>
     );
@@ -446,7 +447,7 @@ export default function PortalAdsPage() {
 
   if (!user) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
         {localizedText(locale, "Logga in för att se företagets annonser.", "Log in to view the company's listings.")}
       </div>
     );
@@ -454,7 +455,7 @@ export default function PortalAdsPage() {
 
   if (!companyId) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
         {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
       </div>
     );
@@ -463,13 +464,16 @@ export default function PortalAdsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              {localizedText(locale, "Mina annonser", "My listings")}
-            </h1>
+        <PortalPageHeader
+          title={localizedText(locale, "Mina annonser", "My listings")}
+          description={localizedText(
+            locale,
+            "S\u00f6k, filtrera och f\u00f6lj utfallet f\u00f6r f\u00f6retagets annonser.",
+            "Search, filter and track performance for the company's listings."
+          )}
+          action={
             <Button
-              className="w-full sm:w-auto"
+              className="w-full rounded-lg shadow-theme-xs sm:w-auto"
               isDisabled={loading || refreshingListings}
               isLoading={refreshingListings}
               onPress={() => void handleRefreshListings()}
@@ -478,10 +482,10 @@ export default function PortalAdsPage() {
               <RefreshCw className="h-4 w-4" />
               {localizedText(locale, "Synka annonser", "Sync listings")}
             </Button>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="flex flex-col gap-6 border-b border-gray-200 pb-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] lg:grid-rows-[auto_auto] lg:items-start">
+        <div className="flex flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs sm:p-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] lg:grid-rows-[auto_auto] lg:items-start">
           <div className="order-2 w-full lg:col-start-1 lg:row-start-2">
             <div className="w-full sm:max-w-md">
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -543,7 +547,7 @@ export default function PortalAdsPage() {
 
           <div className="order-1 w-full lg:col-start-2 lg:row-start-1">
             <form
-              className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:h-14 xl:pl-6 xl:pr-2"
+              className="flex h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white py-1.5 pl-4 pr-1.5 shadow-theme-xs sm:h-12 sm:gap-3 sm:pl-5 xl:h-12 xl:pl-5 xl:pr-1.5"
               onSubmit={(event) => {
                 event.preventDefault();
                 setSearch(searchInput);
@@ -565,14 +569,14 @@ export default function PortalAdsPage() {
                     setSearchInput("");
                     setSearch("");
                   }}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#004225] transition-colors hover:bg-[#004225]/5 sm:h-8 sm:w-8"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#004225] transition-colors hover:bg-[#004225]/5"
                 >
                   <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               )}
               <button
                 type="submit"
-                className="h-8 shrink-0 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
+                className="h-9 shrink-0 rounded-lg bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:px-5"
               >
                 {localizedText(locale, "Sök", "Search")}
               </button>
@@ -659,17 +663,17 @@ export default function PortalAdsPage() {
       </div>
 
       {error && (
-        <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
           {localizedText(locale, "Hämtar företagets annonser...", "Loading company listings...")}
         </div>
       ) : filteredAds.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+        <div className="mt-6 rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500 shadow-theme-xs">
           {localizedText(locale, "Inga annonser matchade ditt filter.", "No listings matched your filters.")}
         </div>
       ) : (

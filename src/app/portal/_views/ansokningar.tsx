@@ -43,6 +43,7 @@ import {
   type NewApplication,
 } from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../_statics/variables";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 type AnsokningarProps = {
   listingId?: string | null;
@@ -405,16 +406,16 @@ function StatTile({
   tone: "brand" | "blue" | "rose" | "amber";
 }) {
   const toneClass = {
-    brand: "border-brand-100 bg-brand-25/70 text-brand-600",
-    blue: "border-sky-100 bg-sky-50/70 text-sky-600",
-    rose: "border-rose-100 bg-rose-50/70 text-rose-600",
-    amber: "border-amber-100 bg-amber-50/70 text-amber-600",
+    brand: "border-gray-200 bg-white text-brand-600",
+    blue: "border-gray-200 bg-white text-sky-600",
+    rose: "border-gray-200 bg-white text-rose-600",
+    amber: "border-gray-200 bg-white text-amber-600",
   }[tone];
 
   return (
-    <div className={cn("min-w-0 rounded-xl border p-4", toneClass)}>
+    <div className={cn("min-w-0 rounded-2xl border p-5 shadow-theme-xs", toneClass)}>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/70 bg-white shadow-[0_8px_20px_rgba(16,24,40,0.06)]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-gray-50">
           <Icon className="h-5 w-5" />
         </div>
         {detail ? (
@@ -423,10 +424,10 @@ function StatTile({
           </span>
         ) : null}
       </div>
-      <p className="mt-4 truncate text-[13px] font-medium leading-5 text-gray-500">
+      <p className="mt-4 truncate text-theme-sm font-medium text-gray-500">
         {label}
       </p>
-      <p className="mt-1 truncate text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums">
+      <p className="mt-1 truncate text-2xl font-bold leading-8 tracking-normal text-gray-800 tabular-nums">
         {value}
       </p>
     </div>
@@ -491,13 +492,13 @@ function LoadingApplicationsLayout({ locale }: { locale: Locale }) {
   return (
     <div className="space-y-4">
       <AnalyticsGrid>
-        <AnalyticsBlock size="1x4">
+        <div className="sm:col-span-2 xl:col-span-4">
           <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton className="h-full min-h-[120px] rounded-xl" key={index} />
+              <Skeleton className="h-full min-h-[120px] rounded-2xl" key={index} />
             ))}
           </div>
-        </AnalyticsBlock>
+        </div>
         <AnalyticsBlock size="2x2" title={localizedText(locale, "Ansökningstrend", "Application trend")}>
           <Skeleton className="h-full min-h-[220px] rounded-md" />
         </AnalyticsBlock>
@@ -605,10 +606,10 @@ function TrendingListings({ groups, locale }: { groups: ListingApplicationGroup[
     <div className="space-y-3 overflow-y-auto pr-1">
       {topGroups.map((group, index) => (
         <div
-          className="flex min-w-0 items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+          className="flex min-w-0 items-center gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-xs"
           key={group.key}
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-50 text-sm font-semibold text-gray-700">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700">
             {index + 1}
           </span>
           <div className="min-w-0 flex-1">
@@ -658,7 +659,9 @@ function ListingListItem({
         <span className="absolute bottom-2 left-1.5 top-2 w-1 rounded-full bg-[#004225]" />
       ) : null}
 
-      <span className="block truncate text-sm font-semibold">{group.title}</span>
+      <span className="block truncate text-sm font-semibold">
+        {group.title}
+      </span>
       <span className="mt-1 block truncate text-xs text-gray-500">
         {group.city || localizedText(locale, "Stad saknas", "City missing")}
       </span>
@@ -741,7 +744,7 @@ function SelectedListingDetails({
           </div>
         </div>
 
-        <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5">
+        <div className="mt-6">
           <h3 className="text-sm font-semibold text-gray-950">{localizedText(locale, "Ansökningar", "Applications")}</h3>
           <div className="mt-3 grid gap-2">
             {group.applications.map((application) => (
@@ -944,11 +947,14 @@ export default function Ansokningar({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {localizedText(locale, "Ansökningar", "Applications")}
-        </h1>
-      </div>
+      <PortalPageHeader
+        title={localizedText(locale, "Ans\u00f6kningar", "Applications")}
+        description={localizedText(
+          locale,
+          "F\u00f6lj inkommande ans\u00f6kningar, trender och status per annons.",
+          "Track incoming applications, trends and status per listing."
+        )}
+      />
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -962,13 +968,13 @@ export default function Ansokningar({
         <>
           {showOverviewAnalytics ? (
             <AnalyticsGrid>
-              <AnalyticsBlock size="1x4">
+              <div className="sm:col-span-2 xl:col-span-4">
                 <ApplicationStatsGrid
                   applications={visibleApplications}
                   groups={listingGroups}
                   locale={locale}
                 />
-              </AnalyticsBlock>
+              </div>
 
               <AnalyticsBlock size="2x2" title={localizedText(locale, "Ansökningstrend", "Application trend")}>
                 <TrendBarChart

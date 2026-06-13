@@ -149,7 +149,7 @@ function formatAxisValue(value: string | number, locale: Locale) {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="rounded-md border border-error-500/20 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
+    <div className="rounded-xl border border-error-500/20 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
       {message}
     </div>
   );
@@ -157,7 +157,7 @@ function ErrorState({ message }: { message: string }) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex min-h-[180px] flex-1 items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-theme-sm text-gray-500">
+    <div className="flex min-h-[180px] flex-1 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 text-center text-theme-sm text-gray-500">
       {message}
     </div>
   );
@@ -232,7 +232,7 @@ export default function AnalyticsApplicationsTrend({
       className={cn(
         embedded
           ? "flex h-full min-h-0 min-w-0 flex-col"
-          : "flex min-w-0 flex-col rounded-lg border border-gray-100 bg-white px-5 py-5 shadow-[0_18px_50px_rgba(15,23,42,0.04)] sm:px-6",
+          : "flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white px-5 py-5 shadow-theme-xs sm:px-6",
         className
       )}
     >
@@ -248,7 +248,7 @@ export default function AnalyticsApplicationsTrend({
           </div>
 
           <ToggleGroup
-            className="w-full max-w-full shrink-0 justify-start overflow-x-auto rounded-md bg-transparent sm:w-auto"
+            className="w-full max-w-full shrink-0 justify-start overflow-x-auto rounded-lg bg-gray-100 p-0.5 sm:w-auto"
             onValueChange={(value) => {
               if (value) {
                 setSelectedInterval(value);
@@ -261,7 +261,7 @@ export default function AnalyticsApplicationsTrend({
             {intervals.map((interval) => (
               <ToggleGroupItem
                 aria-label={localizedText(locale, interval.label, interval.labelEn)}
-                className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-700 data-[state=on]:bg-gray-50 data-[state=on]:text-gray-900"
+                className="h-8 shrink-0 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
                 key={interval.value}
                 value={interval.value}
               >
@@ -274,7 +274,7 @@ export default function AnalyticsApplicationsTrend({
 
       {loading ? (
         <div className={cn("min-h-0 flex-1", showHeader ? "mt-6" : "h-full")}>
-          <Skeleton className="h-full min-h-[180px] w-full rounded-md" />
+          <Skeleton className="h-full min-h-[180px] w-full rounded-xl" />
         </div>
       ) : error ? (
         <div className={showHeader ? "mt-6" : "mt-0"}>

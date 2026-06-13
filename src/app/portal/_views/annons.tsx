@@ -23,6 +23,7 @@ import {
   ListingTagDTO,
   UpdateListingRequest,
 } from "@/types/listing";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 type AnnonsPageProps = {
   id: string;
@@ -831,11 +832,15 @@ export default function Annons({ id }: AnnonsPageProps) {
   return (
     <>
       <main className="pb-12">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {localizedText(locale, "Redigera annons", "Edit listing")}
-          </h1>
-        </div>
+        <PortalPageHeader
+          className="mb-6"
+          title={localizedText(locale, "Redigera annons", "Edit listing")}
+          description={localizedText(
+            locale,
+            "Finjustera annonsens information, bilder, fakta och taggar.",
+            "Refine the listing's information, images, facts and tags."
+          )}
+        />
 
         <form onSubmit={handleSave} className="grid gap-6">
           <EditableListingPreview

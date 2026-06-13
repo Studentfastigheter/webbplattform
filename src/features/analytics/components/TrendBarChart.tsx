@@ -1,16 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import { PortalVerticalBarChart } from "./PortalBarCharts";
 
 export type TrendBarChartPoint = {
   timestamp: Date | string | number;
@@ -69,17 +63,6 @@ const monthYearFormatter = new Intl.DateTimeFormat("sv-SE", {
   month: "long",
   year: "numeric",
 });
-
-const chartConfig = {
-  value: {
-    label: "Värde",
-    color: "var(--color-brand-500)",
-  },
-  comparisonValue: {
-    label: "Jämförelse",
-    color: "var(--color-brand-100)",
-  },
-} satisfies ChartConfig;
 
 function parseTimestamp(timestamp: TrendBarChartPoint["timestamp"]) {
   const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
@@ -149,16 +132,6 @@ function filterByInterval(data: ChartDatum[], interval?: TrendBarChartInterval) 
   return data.filter((entry) => entry.timestamp >= firstIncluded);
 }
 
-function formatAxisValue(value: string | number) {
-  const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue) || numericValue < 1000) {
-    return String(value);
-  }
-
-  return `${numericValue / 1000}K`;
-}
-
 export function TrendBarChart({
   data,
   title,
@@ -208,7 +181,7 @@ export function TrendBarChart({
   );
 
   const xAxisInterval = chartData.length > 14 ? "preserveStartEnd" : 0;
-  const maxBarSize = embedded ? 12 : 16;
+  const maxBarSize = embedded ? 16 : 28;
   const Root = embedded ? "div" : "section";
 
   return (
@@ -216,19 +189,34 @@ export function TrendBarChart({
       className={cn(
         embedded
           ? "flex h-full min-h-0 min-w-0 flex-col"
-          : "flex min-w-0 flex-col rounded-lg border border-gray-100 bg-white px-5 py-5 shadow-[0_18px_50px_rgba(15,23,42,0.04)] sm:px-6",
+          : "flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white shadow-theme-xs",
         className
       )}
     >
       {showHeader ? (
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div
+          className={cn(
+            "flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4",
+            !embedded && "px-6 py-5"
+          )}
+        >
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold text-gray-800">
+            <h2
+              className={cn(
+                "truncate text-gray-800",
+                embedded ? "text-sm font-semibold" : "text-base font-medium"
+              )}
+            >
               {title}
             </h2>
 
             {description ? (
-              <p className="mt-1 max-w-[36rem] text-theme-xs text-gray-400">
+              <p
+                className={cn(
+                  "mt-1 max-w-[36rem]",
+                  embedded ? "text-theme-xs text-gray-400" : "text-sm text-gray-500"
+                )}
+              >
                 {description}
               </p>
             ) : null}
@@ -236,7 +224,7 @@ export function TrendBarChart({
 
           {intervals.length > 1 ? (
             <ToggleGroup
-              className="w-full max-w-full shrink-0 justify-start overflow-x-auto rounded-md bg-transparent sm:w-auto"
+              className="w-full max-w-full shrink-0 justify-start overflow-x-auto rounded-lg bg-gray-100 p-0.5 sm:w-auto"
               onValueChange={(value) => {
                 if (value) {
                   setSelectedInterval(value);
@@ -249,7 +237,7 @@ export function TrendBarChart({
               {intervals.map((interval) => (
                 <ToggleGroupItem
                   aria-label={interval.label}
-                  className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-700 data-[state=on]:bg-gray-50 data-[state=on]:text-gray-900"
+                  className="h-8 shrink-0 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
                   key={interval.value}
                   value={interval.value}
                 >
@@ -265,16 +253,26 @@ export function TrendBarChart({
         <div
           className={cn(
             "min-h-0 flex-1",
-            showHeader ? "mt-6" : "h-full"
+            embedded
+              ? showHeader
+                ? "mt-6"
+                : "h-full"
+              : showHeader
+                ? "border-t border-gray-100 p-5 sm:p-6"
+                : "p-5 sm:p-6"
           )}
         >
-          <Skeleton className="h-full min-h-[180px] w-full rounded-md" />
+          <Skeleton className="h-full min-h-[180px] w-full rounded-xl" />
         </div>
       ) : error ? (
         <div
           className={cn(
-            "rounded-md border border-error-500/20 bg-error-50 px-4 py-3 text-theme-sm text-error-700",
-            showHeader ? "mt-6" : "mt-0"
+            "rounded-xl border border-error-500/20 bg-error-50 px-4 py-3 text-theme-sm text-error-700",
+            embedded
+              ? showHeader
+                ? "mt-6"
+                : "mt-0"
+              : "m-5 sm:m-6"
           )}
         >
           {error}
@@ -282,8 +280,12 @@ export function TrendBarChart({
       ) : chartData.length === 0 ? (
         <div
           className={cn(
-            "flex min-h-[180px] flex-1 items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-theme-sm text-gray-500",
-            showHeader ? "mt-6" : "mt-0"
+            "flex min-h-[180px] flex-1 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 text-center text-theme-sm text-gray-500",
+            embedded
+              ? showHeader
+                ? "mt-6"
+                : "mt-0"
+              : "m-5 sm:m-6"
           )}
         >
           {emptyMessage}
@@ -292,87 +294,43 @@ export function TrendBarChart({
         <div
           className={cn(
             "flex min-h-0 min-w-0 flex-1 flex-col",
-            showHeader ? "mt-6" : "mt-0"
+            embedded
+              ? showHeader
+                ? "mt-6"
+                : "mt-0"
+              : showHeader
+                ? "border-t border-gray-100 p-5 sm:p-6"
+                : "p-5 sm:p-6"
           )}
         >
           <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-            <ChartContainer
-              className={cn(
-                "aspect-auto w-full min-w-0",
+            <PortalVerticalBarChart
+              chartClassName={cn("min-w-0", chartClassName)}
+              comparisonLabel={comparisonLabel}
+              data={chartData}
+              heightClassName={
                 embedded
                   ? "h-full min-h-[180px]"
-                  : "h-[clamp(220px,32vw,310px)]",
-                chartClassName
-              )}
-              config={chartConfig}
-            >
-              <BarChart
-                barCategoryGap={chartData.length > 12 ? "24%" : "34%"}
-                barGap={4}
-                data={chartData}
-                margin={{
-                  bottom: 0,
-                  left: 0,
-                  right: embedded ? 2 : 8,
-                  top: 16,
-                }}
-              >
-                <CartesianGrid stroke="#f0f2f7" vertical={false} />
-
-                <XAxis
-                  axisLine={false}
-                  dataKey="label"
-                  interval={xAxisInterval}
-                  minTickGap={8}
-                  tick={{ fill: "#9ca3af", fontSize: 11 }}
-                  tickLine={false}
-                  tickMargin={12}
-                />
-
-                <YAxis
-                  allowDecimals={false}
-                  axisLine={false}
-                  tick={{ fill: "#9ca3af", fontSize: 11 }}
-                  tickFormatter={formatAxisValue}
-                  tickLine={false}
-                  tickMargin={8}
-                  width={embedded ? 34 : 44}
-                />
-
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      labelFormatter={(_, payload) => {
-                        const row = payload?.[0]?.payload as
-                          | ChartDatum
-                          | undefined;
-
-                        return row?.fullLabel ?? "";
-                      }}
-                    />
-                  }
-                  cursor={false}
-                />
-
-                {hasComparison ? (
-                  <Bar
-                    dataKey="comparisonValue"
-                    fill="var(--color-comparisonValue)"
-                    maxBarSize={maxBarSize}
-                    name={comparisonLabel}
-                    radius={[4, 4, 0, 0]}
-                  />
-                ) : null}
-
-                <Bar
-                  dataKey="value"
-                  fill="var(--color-value)"
-                  maxBarSize={maxBarSize}
-                  name={valueLabel}
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ChartContainer>
+                  : "h-[clamp(220px,32vw,310px)]"
+              }
+              labelFormatter={(entry) => entry.fullLabel}
+              margin={{
+                bottom: 0,
+                left: 0,
+                right: embedded ? 2 : 8,
+                top: 16,
+              }}
+              maxBarSize={maxBarSize}
+              minWidthClassName={
+                chartData.length > 14 && !embedded
+                  ? "min-w-[720px]"
+                  : "min-w-full"
+              }
+              showComparison={hasComparison}
+              valueLabel={valueLabel}
+              xAxisInterval={xAxisInterval}
+              yAxisWidth={embedded ? 34 : 44}
+            />
           </div>
 
           {showSummary ? (

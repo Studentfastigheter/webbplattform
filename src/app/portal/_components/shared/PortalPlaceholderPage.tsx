@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { dashboardRelPath } from "../../_statics/variables";
+import PortalPageHeader from "./PortalPageHeader";
 
 type PortalPlaceholderPageProps = {
   title: string;
@@ -25,15 +26,11 @@ export default function PortalPlaceholderPage({
 
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {localizedText(locale, title, titleEn)}
-        </h1>
-      </header>
+      <PortalPageHeader title={localizedText(locale, title, titleEn)} />
 
-      <Card className="border-gray-200 bg-white shadow-sm">
+      <Card className="rounded-2xl border-gray-200 bg-white py-0 shadow-theme-xs">
         <CardContent className="flex flex-col items-start gap-4 px-6 py-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-100 text-gray-700">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700">
             <Clock3 className="h-5 w-5" />
           </div>
 

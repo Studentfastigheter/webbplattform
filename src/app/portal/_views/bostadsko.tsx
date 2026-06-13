@@ -26,6 +26,7 @@ import type {
 import {
   CompanyDemographyBlock,
 } from "../_components/analytics/DemographicsEndpointBlocks";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 const trendGranularities: Array<{
   value: QueueApplicationTrendGranularity;
@@ -112,20 +113,20 @@ function QueueApplicationCountBlock({
           {error}
         </div>
       ) : (
-        <div className="flex w-full items-center justify-between gap-4 rounded-xl border border-brand-100 bg-brand-25/70 px-4 py-3">
+        <div className="flex w-full items-end justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+            <p className="text-theme-sm font-medium text-gray-500">
               {localizedText(
                 locale,
                 queueCount === 1 ? "1 aktiv bostadskö" : `${queueCount} aktiva bostadsköer`,
                 queueCount === 1 ? "1 active housing queue" : `${queueCount} active housing queues`
               )}
             </p>
-            <p className="mt-1 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums sm:text-[38px] sm:leading-10">
+            <p className="mt-2 text-3xl font-bold leading-10 tracking-normal text-gray-800 tabular-nums">
               {count.toLocaleString(numberLocale(locale))}
             </p>
           </div>
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-100 bg-white text-brand-500 shadow-[0_8px_20px_rgba(0,66,37,0.08)] sm:h-12 sm:w-12">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-brand-500">
             <UsersRound className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
         </div>
@@ -145,7 +146,7 @@ function QueueTrendGranularityToggle({
 }) {
   return (
     <ToggleGroup
-      className="w-full max-w-full justify-start overflow-x-auto rounded-md bg-gray-50 p-0.5 sm:w-auto"
+      className="w-full max-w-full justify-start overflow-x-auto rounded-lg bg-gray-100 p-0.5 sm:w-auto"
       onValueChange={(nextValue) => {
         if (trendGranularities.some((item) => item.value === nextValue)) {
           onChange(nextValue as QueueApplicationTrendGranularity);
@@ -158,7 +159,7 @@ function QueueTrendGranularityToggle({
       {trendGranularities.map((item) => (
         <ToggleGroupItem
           aria-label={localizedText(locale, item.labelSv, item.labelEn)}
-          className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
+          className="h-8 shrink-0 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
           key={item.value}
           value={item.value}
         >
@@ -239,6 +240,15 @@ export default function Bostadsko() {
 
   return (
     <div className="space-y-6">
+      <PortalPageHeader
+        title={localizedText(locale, "Bostadsk\u00f6", "Housing queue")}
+        description={localizedText(
+          locale,
+          "F\u00f6lj k\u00f6ans\u00f6kningar, studentvolym och bes\u00f6kardemografi.",
+          "Track queue applications, student volume and visitor demographics."
+        )}
+      />
+
       {error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}

@@ -181,7 +181,7 @@ function IntervalToggle({
 
   return (
     <ToggleGroup
-      className="max-w-full justify-start overflow-x-auto rounded-md bg-gray-50 p-0.5"
+      className="max-w-full justify-start overflow-x-auto rounded-lg bg-gray-100 p-0.5"
       onValueChange={(nextValue) => {
         if (nextValue) {
           onChange(nextValue);
@@ -194,7 +194,7 @@ function IntervalToggle({
       {intervals.map((interval) => (
         <ToggleGroupItem
           aria-label={localizedText(locale, interval.label, interval.labelEn)}
-          className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
+          className="h-8 shrink-0 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
           key={interval.value}
           value={interval.value}
         >

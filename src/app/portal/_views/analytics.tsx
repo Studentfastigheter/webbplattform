@@ -17,28 +17,25 @@ import {
   ApplicationDemographyPortfolioBlock,
   ListingDemographyBatchBlock,
 } from "../_components/analytics/DemographicsEndpointBlocks";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 export default function Analytics() {
   const { locale } = useI18n();
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {localizedText(locale, "Analys", "Analytics")}
-        </h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {localizedText(locale, "Överblick av ansökningar, visningar och demografi.", "Overview of applications, views and demographics.")}
-        </p>
-      </div>
+      <PortalPageHeader
+        title={localizedText(locale, "Analys", "Analytics")}
+        description={localizedText(locale, "\u00d6verblick av ans\u00f6kningar, visningar och demografi.", "Overview of applications, views and demographics.")}
+      />
 
       <AnalyticsGrid>
         {/* Application count + key metrics side-by-side */}
         <ApplicationIntervalStats />
-        <AnalyticsBlock size="2x2">
+        <div className="sm:col-span-2 xl:col-span-2">
           <AnalyticsGeneralStats variant="analytics" />
-        </AnalyticsBlock>
-        <AnalyticsBlock size="2x2" title={localizedText(locale, "Ansökningstrend", "Application trend")}>
+        </div>
+        <AnalyticsBlock size="2x2" title={localizedText(locale, "Ans\u00f6kningstrend", "Application trend")}>
           <AnalyticsApplicationsTrend
             embedded
             showHeader={false}

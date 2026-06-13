@@ -68,6 +68,7 @@ import {
 } from "@/lib/youtube-url";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { useUploadCompanyPublicMedia } from "@/features/media/hooks/useMedia";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 type ProfileDraft = {
   companyId: number;
@@ -1276,11 +1277,15 @@ export default function ProfilePage() {
 
   return (
     <main className="pb-12">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {localizedText(locale, "Redigera profil", "Edit profile")}
-        </h1>
-      </div>
+      <PortalPageHeader
+        className="mb-6"
+        title={localizedText(locale, "Redigera profil", "Edit profile")}
+        description={localizedText(
+          locale,
+          "Uppdatera f\u00f6retagets publika profil, media och kontaktuppgifter.",
+          "Update the company's public profile, media and contact details."
+        )}
+      />
 
       {error && (
         <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

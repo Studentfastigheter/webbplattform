@@ -8,6 +8,7 @@ import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { useCompanyRequirementsProfiles } from "@/features/listings/hooks/useListings";
 import type { RequirementsProfileDTO } from "@/types/listing";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 function getProfileKey(profile: RequirementsProfileDTO, index: number) {
   return profile.id ?? `${profile.title ?? "profile"}-${index}`;
@@ -65,11 +66,14 @@ export default function RequirementsProfilesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {localizedText(locale, "Kravprofiler", "Requirement profiles")}
-        </h1>
-      </div>
+      <PortalPageHeader
+        title={localizedText(locale, "Kravprofiler", "Requirement profiles")}
+        description={localizedText(
+          locale,
+          "Granska krav, dokument och urvalsprofiler kopplade till f\u00f6retagets annonser.",
+          "Review requirements, documents and selection profiles connected to company listings."
+        )}
+      />
 
       {authLoading || loading ? (
         <div className="grid min-h-[520px] gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -91,7 +95,7 @@ export default function RequirementsProfilesPage() {
           </div>
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-xs">
           <h2 className="text-lg font-semibold text-gray-900">
             {localizedText(locale, "Kravprofiler", "Requirement profiles")}
           </h2>

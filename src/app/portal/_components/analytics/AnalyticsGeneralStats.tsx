@@ -90,23 +90,23 @@ const metricToneClass: Record<
   }
 > = {
   brand: {
-    tile: "border-brand-100 bg-brand-25/70",
-    icon: "border-brand-100 bg-white text-brand-500 shadow-[0_8px_20px_rgba(0,66,37,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-brand-100 bg-brand-50 text-brand-500",
     accent: "from-brand-500/20",
   },
   blue: {
-    tile: "border-sky-100 bg-sky-50/70",
-    icon: "border-sky-100 bg-white text-sky-600 shadow-[0_8px_20px_rgba(2,132,199,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-sky-100 bg-sky-50 text-sky-600",
     accent: "from-sky-500/20",
   },
   rose: {
-    tile: "border-rose-100 bg-rose-50/70",
-    icon: "border-rose-100 bg-white text-rose-600 shadow-[0_8px_20px_rgba(225,29,72,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-rose-100 bg-rose-50 text-rose-600",
     accent: "from-rose-500/20",
   },
   amber: {
-    tile: "border-amber-100 bg-amber-50/70",
-    icon: "border-amber-100 bg-white text-amber-600 shadow-[0_8px_20px_rgba(217,119,6,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-amber-100 bg-white text-amber-600",
     accent: "from-amber-500/20",
   },
 };
@@ -372,7 +372,7 @@ export default function AnalyticsGeneralStats({
       <div className={gridClassName}>
         {Array.from({ length: skeletonCount }).map((_, index) => (
           <div
-            className="relative min-h-[116px] min-w-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50/70 p-4"
+            className="relative min-h-[116px] min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs"
             key={index}
           >
             <div className="flex items-start justify-between gap-3">
@@ -406,7 +406,7 @@ export default function AnalyticsGeneralStats({
         return (
           <div
             className={cn(
-              "relative min-h-[100px] min-w-0 overflow-hidden rounded-xl border p-3 transition-colors sm:p-4",
+              "relative min-h-[120px] min-w-0 overflow-hidden rounded-2xl border p-5 shadow-theme-xs transition-colors hover:border-gray-300",
               tone.tile
             )}
             key={item.label}
@@ -421,21 +421,21 @@ export default function AnalyticsGeneralStats({
             <div className="flex min-w-0 items-start justify-between gap-2">
               <div
                 className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border sm:h-10 sm:w-10",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
                   tone.icon
                 )}
               >
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Icon className="h-5 w-5" />
               </div>
 
               <TrendBadge change={item.change} locale={locale} />
             </div>
 
             <div className="mt-3 min-w-0">
-              <p className="truncate text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+              <p className="truncate text-theme-sm font-medium text-gray-500">
                 {item.label}
               </p>
-              <p className="mt-0.5 truncate text-xl font-semibold leading-7 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[28px] sm:leading-8">
+              <p className="mt-1 truncate text-2xl font-bold leading-8 tracking-normal text-gray-800 tabular-nums">
                 {formatMetricValue(item, locale)}
               </p>
             </div>

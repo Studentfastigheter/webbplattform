@@ -44,6 +44,7 @@ import {
   useVerifyCompanyUser,
 } from "@/features/companies/hooks/useCompanies";
 import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
@@ -512,7 +513,7 @@ export default function UsersPage() {
 
   if (authLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-theme-xs">
         {localizedText(locale, "Laddar användare...", "Loading users...")}
       </div>
     );
@@ -520,7 +521,7 @@ export default function UsersPage() {
 
   if (!user) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
         {localizedText(locale, "Logga in för att visa användare i företagsportalen.", "Log in to view users in the company portal.")}
       </div>
     );
@@ -528,7 +529,7 @@ export default function UsersPage() {
 
   if (!companyId) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
         {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
       </div>
     );
@@ -537,21 +538,27 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              {localizedText(locale, "Användare", "Users")}
-            </h1>
-          </div>
-          {canManageUsers ? (
-            <Button type="button" size="sm" onPress={openCreateDialog}>
+        <PortalPageHeader
+          title={localizedText(locale, "Anv\u00e4ndare", "Users")}
+          description={localizedText(
+            locale,
+            "Hantera beh\u00f6righeter, verifiering och konton i f\u00f6retagsportalen.",
+            "Manage permissions, verification and accounts in the company portal."
+          )}
+          action={canManageUsers ? (
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-lg shadow-theme-xs"
+              onPress={openCreateDialog}
+            >
               <Plus className="h-4 w-4" />
               {localizedText(locale, "Nytt konto", "New account")}
             </Button>
           ) : null}
-        </div>
+        />
 
-        <div className="flex flex-col gap-3 border-b border-gray-200 pb-3">
+        <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs sm:p-5">
           <div className="w-full sm:max-w-xs">
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <div className="min-w-0 flex-1">
@@ -759,7 +766,7 @@ export default function UsersPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card className="border-gray-200 bg-white shadow-sm">
+      <Card className="rounded-2xl border-gray-200 bg-white py-0 shadow-theme-xs">
         <CardContent className="px-0">
           {loadingUsers ? (
             <div className="flex items-center gap-2 px-6 py-10 text-sm text-gray-500">

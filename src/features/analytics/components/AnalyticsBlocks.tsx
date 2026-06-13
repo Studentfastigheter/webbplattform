@@ -125,7 +125,7 @@ export function AnalyticsGrid({
     <div
       ref={gridRef}
       className={cn(
-        "grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:[grid-auto-flow:dense]",
+        "grid min-w-0 grid-cols-1 gap-4 md:gap-6 sm:grid-cols-2 xl:grid-cols-4 xl:[grid-auto-flow:dense]",
         rowHeightClassName,
         className
       )}
@@ -157,7 +157,7 @@ export function AnalyticsBlock({
     <AnalyticsBlockContext.Provider value={{ rows, columns, size: resolvedSize }}>
       <section
         className={cn(
-          "flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-[#1f2937] shadow-theme-xs",
+          "flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white text-gray-800 shadow-theme-xs",
           colSpanClass[columns],
           rowSpanClass[rows],
           className
@@ -168,15 +168,15 @@ export function AnalyticsBlock({
         {...props}
       >
         {hasHeader ? (
-          <div className="flex min-h-[64px] min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-gray-100 px-4 py-4 sm:items-center sm:px-5">
+          <div className="flex min-h-[72px] min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-3 px-5 pt-5 sm:items-start sm:px-6 sm:pt-6">
             <div className="min-w-0 flex-1 basis-[180px]">
               {title ? (
-                <h2 className="text-base font-semibold leading-6 text-[#111827]">
+                <h2 className="text-lg font-semibold leading-6 text-gray-800">
                   {title}
                 </h2>
               ) : null}
               {description ? (
-                <p className="mt-1 line-clamp-2 text-sm leading-5 text-[#6b7280]">
+                <p className="mt-1 line-clamp-2 text-theme-sm leading-5 text-gray-500">
                   {description}
                 </p>
               ) : null}
@@ -188,7 +188,7 @@ export function AnalyticsBlock({
         <div
           className={cn(
             "min-h-0 min-w-0 flex-1 bg-white",
-            hasHeader ? "px-4 pb-4 pt-1 sm:px-5 sm:pb-5" : "p-4 sm:p-5",
+            hasHeader ? "px-5 pb-5 pt-2 sm:px-6 sm:pb-6" : "p-5 sm:p-6",
             contentClassName
           )}
         >

@@ -111,7 +111,7 @@ function LimitToggle({
 }) {
   return (
     <ToggleGroup
-      className="rounded-md bg-gray-50 p-0.5"
+      className="rounded-lg bg-gray-100 p-0.5"
       onValueChange={(nextValue) => {
         if (nextValue === "5" || nextValue === "10") {
           onChange(Number(nextValue) as Limit);
@@ -127,7 +127,7 @@ function LimitToggle({
       ].map(([optionValue, label]) => (
         <ToggleGroupItem
           aria-label={label}
-          className="h-7 border-0 px-2.5 text-[11px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
+          className="h-8 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
           key={optionValue}
           value={optionValue}
         >

@@ -29,21 +29,19 @@ import {
   Percent,
   Trash2,
 } from "@/components/icons";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import BostadAbout from "@/features/ads/components/BostadAbout";
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import {
   AnalyticsBlock,
   AnalyticsGrid,
 } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  PORTAL_BAR_COLOR,
+  PortalBarChartCard,
+  PortalBarChartSkeleton,
+  PortalBarChartState,
+  PortalVerticalBarChart,
+} from "@/features/analytics/components/PortalBarCharts";
 import { Button } from "@/components/ui/button";
 import {
   Tabs,
@@ -467,10 +465,10 @@ function RequirementProfileCard({
   profileId?: string | null;
 }) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5">
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700">
             <FileText className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -503,7 +501,7 @@ function RequirementProfileCard({
         </p>
       ) : (
         <div className="mt-4 space-y-4">
-          <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+          <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
               {localizedText(locale, "Ålderskrav", "Age requirements")}
             </p>
@@ -524,7 +522,7 @@ function RequirementProfileCard({
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {profile.requiredDocuments.map((document, index) => (
                   <div
-                    className="rounded-lg border border-gray-200 bg-white px-4 py-3"
+                    className="rounded-xl border border-gray-200 bg-white px-4 py-3"
                     key={`${document.caption ?? "document"}-${index}`}
                   >
                     <p className="text-sm font-medium text-gray-900">
@@ -559,7 +557,7 @@ function ListingDetailsCard({
   meta: ListingMeta;
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="mt-1 text-base font-semibold text-gray-950">
@@ -606,7 +604,7 @@ function ListingPreview({
       {images.length ? (
         <BostadImagePreviewGrid images={images} readOnly />
       ) : (
-        <div className="flex h-[320px] items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+        <div className="flex h-[320px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
           <div className="flex flex-col items-center gap-2">
             <ImageIcon className="h-8 w-8 text-gray-300" />
             {localizedText(locale, "Ingen bild uppladdad", "No image uploaded")}
@@ -645,40 +643,36 @@ const metricToneClass: Record<
   { tile: string; icon: string; accent: string }
 > = {
   green: {
-    tile: "border-green-100 bg-green-50/70",
-    icon: "border-green-100 bg-white text-green-600 shadow-[0_8px_20px_rgba(22,163,74,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-green-100 bg-green-50 text-green-600",
     accent: "from-green-500/20",
   },
   sky: {
-    tile: "border-sky-100 bg-sky-50/70",
-    icon: "border-sky-100 bg-white text-sky-500 shadow-[0_8px_20px_rgba(56,189,248,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-sky-100 bg-sky-50 text-sky-500",
     accent: "from-sky-400/20",
   },
   rose: {
-    tile: "border-rose-100 bg-rose-50/70",
-    icon: "border-rose-100 bg-white text-rose-500 shadow-[0_8px_20px_rgba(251,113,133,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-rose-100 bg-rose-50 text-rose-500",
     accent: "from-rose-400/20",
   },
   amber: {
-    tile: "border-amber-100 bg-amber-50/70",
-    icon: "border-amber-100 bg-white text-amber-500 shadow-[0_8px_20px_rgba(251,191,36,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-amber-100 bg-amber-50 text-amber-500",
     accent: "from-amber-400/20",
   },
   teal: {
-    tile: "border-teal-100 bg-teal-50/70",
-    icon: "border-teal-100 bg-white text-teal-500 shadow-[0_8px_20px_rgba(45,212,191,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-teal-100 bg-teal-50 text-teal-500",
     accent: "from-teal-400/20",
   },
   violet: {
-    tile: "border-violet-100 bg-violet-50/70",
-    icon: "border-violet-100 bg-white text-violet-500 shadow-[0_8px_20px_rgba(167,139,250,0.08)]",
+    tile: "border-gray-200 bg-white",
+    icon: "border-violet-100 bg-violet-50 text-violet-500",
     accent: "from-violet-400/20",
   },
 };
-
-// Hex equivalents used for charts that need raw colors (not Tailwind
-// classes). Kept in lockstep with the tone keys above.
-const TREND_GREEN = "#16a34a";
 
 function formatChangeText(change: number | null, locale: Locale) {
   if (change === null) return null;
@@ -734,7 +728,7 @@ function MetricTile({
   return (
     <div
       className={cn(
-        "relative min-h-[116px] min-w-0 overflow-hidden rounded-xl border p-3 transition-colors sm:p-4",
+        "relative min-h-[116px] min-w-0 overflow-hidden rounded-2xl border p-4 shadow-theme-xs transition-colors hover:border-gray-300",
         tone.tile
       )}
     >
@@ -748,20 +742,20 @@ function MetricTile({
       <div className="flex min-w-0 items-start justify-between gap-2">
         <div
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border sm:h-10 sm:w-10",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
             tone.icon
           )}
         >
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+          <Icon className="h-5 w-5" />
         </div>
         <TrendBadge change={item.change} locale={locale} />
       </div>
 
       <div className="mt-3 min-w-0">
-        <p className="truncate text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+        <p className="truncate text-theme-sm font-medium text-gray-500">
           {item.label}
         </p>
-        <p className="mt-0.5 truncate text-xl font-semibold leading-7 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[26px] sm:leading-8">
+        <p className="mt-1 truncate text-2xl font-bold leading-8 tracking-normal text-gray-800 tabular-nums">
           {valueLabel}
         </p>
         {item.helper ? (
@@ -829,25 +823,13 @@ function ApplicationTrendCard({
   const hasData = chartData.length > 0;
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-gray-950">
-            {localizedText(locale, "Ansökningstrend", "Application trend")}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {localizedText(
-              locale,
-              `Mottagna ansökningar ${periodLabel}.`,
-              `Received applications during ${periodLabel}.`
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
+    <PortalBarChartCard
+      action={
+        <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
           <span
             aria-hidden="true"
             className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: TREND_GREEN }}
+            style={{ backgroundColor: PORTAL_BAR_COLOR }}
           />
           {localizedText(
             locale,
@@ -855,76 +837,45 @@ function ApplicationTrendCard({
             `${formatNumber(total, locale)} applications`
           )}
         </div>
-      </div>
-
-      <div className="mt-4 h-[240px] w-full">
-        {loading ? (
-          <div className="h-full w-full animate-pulse rounded-md bg-gray-100" />
-        ) : error ? (
-          <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">
-            {error}
-          </div>
-        ) : !hasData ? (
-          <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-sm text-gray-500">
-            {localizedText(
-              locale,
-              "Det finns inga ansökningar registrerade för perioden.",
-              "There are no applications registered for this period."
-            )}
-          </div>
-        ) : (
-          <ResponsiveContainer height="100%" width="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 12, right: 8, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid stroke="#f0f2f7" vertical={false} />
-              <XAxis
-                axisLine={false}
-                dataKey="label"
-                interval={chartData.length > 14 ? "preserveStartEnd" : 0}
-                minTickGap={8}
-                tick={{ fill: "#6b7280", fontSize: 11 }}
-                tickLine={false}
-                tickMargin={8}
-              />
-              <YAxis
-                allowDecimals={false}
-                axisLine={false}
-                tick={{ fill: "#6b7280", fontSize: 11 }}
-                tickLine={false}
-                tickMargin={6}
-                width={32}
-              />
-              <RechartsTooltip
-                contentStyle={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-                }}
-                cursor={{ fill: "rgba(22, 163, 74, 0.06)" }}
-                formatter={(value) => [
-                  formatNumber(Number(value), locale),
-                  localizedText(locale, "Ansökningar", "Applications"),
-                ]}
-                labelFormatter={(_, payload) => {
-                  const row = payload?.[0]?.payload as
-                    | { fullLabel: string }
-                    | undefined;
-                  return row?.fullLabel ?? "";
-                }}
-              />
-              <Bar
-                dataKey="value"
-                fill={TREND_GREEN}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={10}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-    </section>
+      }
+      description={localizedText(
+        locale,
+        `Mottagna ansökningar ${periodLabel}.`,
+        `Received applications during ${periodLabel}.`
+      )}
+      title={localizedText(locale, "Ansökningstrend", "Application trend")}
+    >
+      {loading ? (
+        <PortalBarChartSkeleton className="h-[240px]" />
+      ) : error ? (
+        <PortalBarChartState className="h-[240px]" tone="error">
+          {error}
+        </PortalBarChartState>
+      ) : !hasData ? (
+        <PortalBarChartState className="h-[240px]">
+          {localizedText(
+            locale,
+            "Det finns inga ansökningar registrerade för perioden.",
+            "There are no applications registered for this period."
+          )}
+        </PortalBarChartState>
+      ) : (
+        <PortalVerticalBarChart
+          data={chartData}
+          heightClassName="h-[240px]"
+          labelFormatter={(entry) => entry.fullLabel}
+          margin={{ top: 12, right: 8, left: 0, bottom: 0 }}
+          maxBarSize={30}
+          minWidthClassName={
+            chartData.length > 14 ? "min-w-[720px]" : "min-w-full"
+          }
+          valueFormatter={(value) => formatNumber(value, locale)}
+          valueLabel={localizedText(locale, "Ansökningar", "Applications")}
+          xAxisInterval={chartData.length > 14 ? "preserveStartEnd" : 0}
+          yAxisWidth={34}
+        />
+      )}
+    </PortalBarChartCard>
   );
 }
 
@@ -1210,7 +1161,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (authLoading || loading) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
           {localizedText(locale, "Laddar annons...", "Loading listing...")}
         </div>
       </main>
@@ -1220,7 +1171,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!user) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
           {localizedText(locale, "Logga in för att se annonsen.", "Sign in to view the listing.")}
         </div>
       </main>
@@ -1230,7 +1181,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!companyId) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
           {localizedText(
             locale,
             "Denna sida är bara tillgänglig för företagskonton.",
@@ -1244,7 +1195,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (error || !listing) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-800">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-800">
           {error ?? localizedText(locale, "Annonsen kunde inte hittas.", "The listing could not be found.")}
         </div>
       </main>
@@ -1254,7 +1205,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!isOwnListing) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
           {localizedText(
             locale,
             "Annonsen hittades inte bland företagets annonser.",
@@ -1363,7 +1314,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 sm:px-1">
                   {localizedText(locale, "Status", "Status")}
                 </span>
-                <div className="grid w-full grid-cols-3 rounded-full border border-gray-200 bg-gray-100 p-1 sm:w-[420px]">
+                <div className="grid w-full grid-cols-3 rounded-lg border border-gray-200 bg-gray-100 p-1 sm:w-[420px]">
                   {listingStatusOptions.map((option) => {
                     const Icon = option.icon;
                     const isCurrent = meta.statusValue === option.value;
@@ -1373,7 +1324,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                         key={option.value}
                         type="button"
                         className={cn(
-                          "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
+                          "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
                           isCurrent
                             ? "bg-white text-[#004225]"
                             : "text-gray-500 hover:text-gray-900"
@@ -1466,16 +1417,16 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex h-full items-center justify-between gap-4 rounded-xl border border-green-100 bg-green-50/70 px-4 py-3">
+                  <div className="flex h-full items-end justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+                      <p className="text-theme-sm font-medium text-gray-500">
                         {localizedAnalyticsInterval.detailLabel}
                       </p>
-                      <p className="mt-0.5 text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[34px] sm:leading-9">
+                      <p className="mt-2 text-3xl font-bold leading-10 tracking-normal text-gray-800 tabular-nums">
                         {formatNumber(periodApplicationsCount, locale)}
                       </p>
                     </div>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-green-100 bg-white text-green-600 shadow-[0_8px_20px_rgba(22,163,74,0.08)] sm:h-12 sm:w-12">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-green-100 bg-green-50 text-green-600">
                       <FileUser className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                   </div>

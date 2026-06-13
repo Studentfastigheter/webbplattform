@@ -2,19 +2,15 @@
 
 import * as React from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
   Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
 import { Heart, MousePointerClick, Smartphone } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
 import { useListingByAllCategoriesDemography } from "@/features/analytics/hooks/useDemographics";
 import {
   type DemographyCategory,
@@ -233,35 +229,17 @@ function MiniBars({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
 
   return (
     <div className="h-[210px] min-w-0">
-      <ResponsiveContainer>
-        <BarChart data={data.slice(0, 5)} margin={{ left: 4, right: 10 }}>
-          <CartesianGrid stroke="#edf0f4" vertical={false} />
-          <XAxis
-            dataKey="label"
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickLine={false}
-          />
-          <YAxis
-            allowDecimals={false}
-            axisLine={false}
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickLine={false}
-          />
-          <Tooltip
-            contentStyle={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-            }}
-            formatter={(value) => [formatNumber(Number(value), locale), localizedText(locale, "Visningar", "Views")]}
-          />
-          <Bar dataKey="value" maxBarSize={18} radius={[4, 4, 0, 0]}>
-            {data.map((entry) => (
-              <Cell fill={entry.fill} key={entry.label} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <PortalVerticalBarChart
+        data={data.slice(0, 5)}
+        heightClassName="h-[210px]"
+        labelFormatter={(entry) => entry.label}
+        margin={{ left: 4, right: 10, top: 12, bottom: 0 }}
+        maxBarSize={22}
+        useDatumFill
+        valueFormatter={(value) => formatNumber(value, locale)}
+        valueLabel={localizedText(locale, "Visningar", "Views")}
+        yAxisWidth={36}
+      />
     </div>
   );
 }
@@ -281,7 +259,7 @@ function StatCard({
   const top = toData(data, locale)[0];
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-500">{label}</p>
@@ -289,7 +267,7 @@ function StatCard({
             {formatNumber(total, locale)}
           </p>
         </div>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#004225] shadow-sm">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-[#004225]">
           {icon}
         </span>
       </div>
@@ -343,7 +321,7 @@ export default function ListingDemographicsPanel({
 
   if (demographyQuery.isLoading) {
     return (
-      <section className="rounded-xl border border-gray-200 bg-white p-5">
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
         <Skeleton className="h-6 w-44" />
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-[240px] rounded-xl" />
@@ -355,14 +333,14 @@ export default function ListingDemographicsPanel({
 
   if (error) {
     return (
-      <section className="rounded-xl border border-error-500/20 bg-error-50 p-5 text-sm text-error-700">
+      <section className="rounded-2xl border border-error-500/20 bg-error-50 p-5 text-sm text-error-700">
         {error}
       </section>
     );
   }
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-gray-950">
@@ -444,7 +422,7 @@ function ChartCard({
   legend: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
       <h3 className="mb-2 text-sm font-semibold text-gray-900">{title}</h3>
       {chart}
       {legend}
