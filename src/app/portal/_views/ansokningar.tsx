@@ -5,17 +5,27 @@ import Link from "next/link";
 import {
   BarChart3,
   CalendarDays,
+  Check,
   ExternalLink,
   FileUser,
   Home,
   MapPin,
   TrendingUp,
 } from "lucide-react";
+import { toast } from "sonner";
 import { AnalyticsBlock, AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import {
   TrendBarChart,
   type TrendBarChartPoint,
 } from "@/features/analytics/components/TrendBarChart";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -23,8 +33,15 @@ import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
-import { useCompanyApplications } from "@/features/companies/hooks/useCompanies";
-import type { NewApplication } from "@/features/companies/services/company-service";
+import {
+  useCompanyApplications,
+  useHandleCompanyApplication,
+} from "@/features/companies/hooks/useCompanies";
+import {
+  APPLICATION_STATUS_VALUES,
+  type ApplicationStatus,
+  type NewApplication,
+} from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../_statics/variables";
 
 type AnsokningarProps = {
@@ -50,6 +67,11 @@ type ListingApplicationGroup = {
   lastSubmittedAt: number;
   trend: TrendBarChartPoint[];
 };
+
+type HandleApplicationStatusChange = (
+  application: PortalApplication,
+  status: ApplicationStatus
+) => void;
 
 function formatTimestamp(value: number, locale: Locale) {
   if (!Number.isFinite(value) || value <= 0) return "-";
@@ -216,6 +238,159 @@ function formatPercentChange(current: number, previous: number, locale: Locale) 
   })}%`;
 }
 
+function getApplicationStatusLabel(status: ApplicationStatus, locale: Locale) {
+  switch (status) {
+    case "SUBMITTED":
+      return localizedText(locale, "Inskickad", "Submitted");
+    case "UNDER_REVIEW":
+      return localizedText(locale, "Under granskning", "Under review");
+    case "ACCEPTED":
+      return localizedText(locale, "Antagen", "Accepted");
+    case "OFFERED":
+      return localizedText(locale, "Erbjudande", "Offer");
+    case "REJECTED":
+      return localizedText(locale, "Nekad", "Rejected");
+  }
+}
+
+const applicationStatusBadgeClassName: Record<ApplicationStatus, string> = {
+  SUBMITTED: "border-gray-200 bg-gray-50 text-gray-700",
+  UNDER_REVIEW: "border-amber-200 bg-amber-50 text-amber-800",
+  ACCEPTED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  OFFERED: "border-sky-200 bg-sky-50 text-sky-700",
+  REJECTED: "border-red-200 bg-red-50 text-red-700",
+};
+
+function ApplicationStatusBadge({
+  status,
+  locale,
+}: {
+  status?: ApplicationStatus;
+  locale: Locale;
+}) {
+  if (!status) {
+    return (
+      <span className="inline-flex h-7 items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-500">
+        {localizedText(locale, "Ok\u00e4nd", "Unknown")}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "inline-flex h-7 items-center rounded-full border px-2.5 text-xs font-semibold",
+        applicationStatusBadgeClassName[status]
+      )}
+    >
+      {getApplicationStatusLabel(status, locale)}
+    </span>
+  );
+}
+
+function getApplicantDisplayName(application: PortalApplication, locale: Locale) {
+  const name = [application.firstName, application.surname]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  if (name) return name;
+  if (application.studentEmail) return application.studentEmail;
+  if (application.studentId > 0) {
+    return localizedText(
+      locale,
+      `Student #${application.studentId}`,
+      `Student #${application.studentId}`
+    );
+  }
+
+  return localizedText(locale, "S\u00f6kande", "Applicant");
+}
+
+function getApplicationDetail(application: PortalApplication, locale: Locale) {
+  if (application.message) return application.message;
+  if (application.studentSchool) return application.studentSchool;
+  if (application.applicationId != null) {
+    return localizedText(
+      locale,
+      `Ans\u00f6kan #${application.applicationId}`,
+      `Application #${application.applicationId}`
+    );
+  }
+
+  return localizedText(locale, "Ingen kommentar", "No comment");
+}
+
+function ApplicationStatusControl({
+  application,
+  locale,
+  onStatusChange,
+  pendingApplicationId,
+}: {
+  application: PortalApplication;
+  locale: Locale;
+  onStatusChange: HandleApplicationStatusChange;
+  pendingApplicationId: number | null;
+}) {
+  const currentStatus = application.status;
+  const [selectedStatus, setSelectedStatus] = useState<ApplicationStatus>(
+    currentStatus ?? "SUBMITTED"
+  );
+  const applicationId = application.applicationId;
+  const canHandle =
+    typeof applicationId === "number" &&
+    Number.isFinite(applicationId) &&
+    applicationId > 0 &&
+    Number.isFinite(application.studentId) &&
+    application.studentId > 0;
+  const isSaving = pendingApplicationId === applicationId;
+  const hasChanged = currentStatus !== selectedStatus;
+
+  useEffect(() => {
+    setSelectedStatus(currentStatus ?? "SUBMITTED");
+  }, [applicationId, currentStatus]);
+
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
+      <ApplicationStatusBadge locale={locale} status={currentStatus} />
+      <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+        <Select
+          disabled={isSaving || !canHandle}
+          onValueChange={(value) => setSelectedStatus(value as ApplicationStatus)}
+          value={selectedStatus}
+        >
+          <SelectTrigger
+            aria-label={localizedText(locale, "V\u00e4lj status", "Choose status")}
+            className="h-8 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs sm:w-[170px]"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="border-gray-200 bg-white">
+            {APPLICATION_STATUS_VALUES.map((status) => (
+              <SelectItem key={status} value={status}>
+                {getApplicationStatusLabel(status, locale)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          aria-label={localizedText(locale, "Spara status", "Save status")}
+          className="h-8 min-w-0 rounded-lg"
+          isDisabled={!canHandle || !hasChanged || isSaving}
+          isLoading={isSaving}
+          onPress={() => onStatusChange(application, selectedStatus)}
+          size="icon-sm"
+          title={localizedText(locale, "Spara status", "Save status")}
+          variant="secondary"
+        >
+          <Check className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function StatTile({
   label,
   value,
@@ -363,11 +538,15 @@ function ListingApplicationsLayout({
   selectedGroup,
   onSelect,
   locale,
+  onStatusChange,
+  pendingApplicationId,
 }: {
   groups: ListingApplicationGroup[];
   selectedGroup: ListingApplicationGroup | null;
   onSelect: (key: string) => void;
   locale: Locale;
+  onStatusChange: HandleApplicationStatusChange;
+  pendingApplicationId: number | null;
 }) {
   return (
     <div className="grid min-h-[520px] gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-[340px_minmax(0,1fr)]">
@@ -395,7 +574,12 @@ function ListingApplicationsLayout({
 
       <section className="min-h-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
         {selectedGroup ? (
-          <SelectedListingDetails group={selectedGroup} locale={locale} />
+          <SelectedListingDetails
+            group={selectedGroup}
+            locale={locale}
+            onStatusChange={onStatusChange}
+            pendingApplicationId={pendingApplicationId}
+          />
         ) : (
           <div className="flex h-full min-h-[360px] items-center justify-center px-6 py-10 text-center text-theme-sm text-gray-500">
             {localizedText(locale, "Välj en annons i listan för att visa ansökningarna.", "Choose a listing in the list to view applications.")}
@@ -482,7 +666,17 @@ function ListingListItem({
   );
 }
 
-function SelectedListingDetails({ group, locale }: { group: ListingApplicationGroup; locale: Locale }) {
+function SelectedListingDetails({
+  group,
+  locale,
+  onStatusChange,
+  pendingApplicationId,
+}: {
+  group: ListingApplicationGroup;
+  locale: Locale;
+  onStatusChange: HandleApplicationStatusChange;
+  pendingApplicationId: number | null;
+}) {
   const href =
     group.listingId != null
       ? `${dashboardRelPath}/listings/${encodeURIComponent(String(group.listingId))}`
@@ -548,26 +742,32 @@ function SelectedListingDetails({ group, locale }: { group: ListingApplicationGr
         </div>
 
         <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-gray-950">{localizedText(locale, "Senaste ansökningar", "Latest applications")}</h3>
+          <h3 className="text-sm font-semibold text-gray-950">{localizedText(locale, "Ansökningar", "Applications")}</h3>
           <div className="mt-3 grid gap-2">
-            {group.applications.slice(0, 12).map((application) => (
+            {group.applications.map((application) => (
               <div
-                className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50/70 px-4 py-3"
+                className="grid gap-3 rounded-lg border border-gray-100 bg-gray-50/70 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                 key={`${application.applicationId ?? application.id}-${application.submittedAtTime}`}
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-gray-900">
-                    {[application.firstName, application.surname].filter(Boolean).join(" ") ||
-                      application.studentEmail ||
-                      localizedText(locale, "Sökande", "Applicant")}
+                    {getApplicantDisplayName(application, locale)}
                   </p>
                   <p className="mt-0.5 truncate text-xs text-gray-500">
-                    {application.message || application.studentSchool || localizedText(locale, "Ingen kommentar", "No comment")}
+                    {getApplicationDetail(application, locale)}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs font-medium text-gray-500">
-                  {formatTimestamp(application.submittedAtTime, locale)}
-                </span>
+                <div className="flex min-w-0 flex-col gap-2 sm:items-end">
+                  <ApplicationStatusControl
+                    application={application}
+                    locale={locale}
+                    onStatusChange={onStatusChange}
+                    pendingApplicationId={pendingApplicationId}
+                  />
+                  <span className="shrink-0 text-xs font-medium text-gray-500">
+                    {formatTimestamp(application.submittedAtTime, locale)}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -584,6 +784,7 @@ export default function Ansokningar({
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [selectedListingKey, setSelectedListingKey] = useState<string | null>(null);
+  const handleApplicationMutation = useHandleCompanyApplication();
 
   const applicationsQuery = useCompanyApplications(companyId, {
     enabled: !authLoading,
@@ -644,6 +845,78 @@ export default function Ansokningar({
       null
     );
   }, [listingGroups, selectedListingKey]);
+  const pendingApplicationId = handleApplicationMutation.isPending
+    ? handleApplicationMutation.variables?.payload.applicationId ?? null
+    : null;
+
+  const handleStatusChange: HandleApplicationStatusChange = (
+    application,
+    newStatus
+  ) => {
+    if (!companyId) {
+      toast.error(
+        localizedText(
+          locale,
+          "F\u00f6retagskonto saknas.",
+          "Company account is missing."
+        )
+      );
+      return;
+    }
+
+    const applicationId = application.applicationId;
+    const studentId = application.studentId;
+
+    if (
+      typeof applicationId !== "number" ||
+      !Number.isFinite(applicationId) ||
+      applicationId <= 0 ||
+      !Number.isFinite(studentId) ||
+      studentId <= 0
+    ) {
+      toast.error(
+        localizedText(
+          locale,
+          "Ans\u00f6kan saknar n\u00f6dv\u00e4ndiga id:n.",
+          "The application is missing required ids."
+        )
+      );
+      return;
+    }
+
+    handleApplicationMutation.mutate(
+      {
+        companyId,
+        payload: {
+          applicationId,
+          studentId,
+          newStatus,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            localizedText(
+              locale,
+              "Ans\u00f6kningsstatus uppdaterades.",
+              "Application status was updated."
+            )
+          );
+        },
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : localizedText(
+                  locale,
+                  "Kunde inte uppdatera ans\u00f6kningsstatus.",
+                  "Could not update application status."
+                )
+          );
+        },
+      }
+    );
+  };
 
   if (authLoading) {
     return (
@@ -726,6 +999,8 @@ export default function Ansokningar({
             selectedGroup={selectedGroup}
             locale={locale}
             onSelect={setSelectedListingKey}
+            onStatusChange={handleStatusChange}
+            pendingApplicationId={pendingApplicationId}
           />
         </>
       )}

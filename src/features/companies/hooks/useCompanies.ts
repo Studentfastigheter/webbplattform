@@ -26,6 +26,7 @@ import {
   companyService,
   type AnalyticalQuantities,
   type ApplicationStatisticEntry,
+  type HandleCompanyApplicationRequest,
   type CompanyChangeableDataDTO,
   type CompanyImageTarget,
   type CompanyPrivateDTO,
@@ -142,10 +143,28 @@ export function useCompanyApplications(
 
   return useQuery<NewApplication[]>({
     queryKey: qk.companies.applications(companyId ?? -1, pageSize, maxPages),
-    queryFn: () =>
-      companyService.applications(companyId!, { pageSize, maxPages }),
+    queryFn: ({ signal }) =>
+      companyService.applications(companyId!, { pageSize, maxPages, signal }),
     enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useHandleCompanyApplication() {
+  const qc = useQueryClient();
+
+  return useMutation<
+    void,
+    Error,
+    { companyId: number; payload: HandleCompanyApplicationRequest }
+  >({
+    mutationFn: ({ companyId, payload }) =>
+      companyService.handleApplication(companyId, payload),
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({
+        queryKey: qk.companies.applicationsByCompany(companyId),
+      });
+    },
   });
 }
 

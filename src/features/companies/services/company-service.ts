@@ -232,7 +232,7 @@ export type NewApplication = {
   listingDwellingType?: string;
   listingRooms?: number;
   listingSizeM2?: number;
-  status?: string;
+  status?: ApplicationStatus;
   message?: string;
   submittedAt?: string;
   createdAt?: string;
@@ -296,6 +296,22 @@ export type QueueApplicationTrendEntry = {
   numApplications: number;
 };
 
+export const APPLICATION_STATUS_VALUES = [
+  "SUBMITTED",
+  "UNDER_REVIEW",
+  "ACCEPTED",
+  "OFFERED",
+  "REJECTED",
+] as const;
+
+export type ApplicationStatus = (typeof APPLICATION_STATUS_VALUES)[number];
+
+export type HandleCompanyApplicationRequest = {
+  applicationId: number;
+  studentId: number;
+  newStatus: ApplicationStatus;
+};
+
 const defaultGeneralAnalyticsPeriods = ["P7D", "P1M", "P3M", "P1Y"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -326,6 +342,27 @@ function firstNumber(...values: unknown[]): number | undefined {
   }
 
   return undefined;
+}
+
+function normalizeApplicationStatus(value: unknown): ApplicationStatus | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().replace(/[-\s]+/g, "_").toUpperCase();
+  if (!normalized) {
+    return undefined;
+  }
+
+  const aliasMap: Record<string, ApplicationStatus> = {
+    SUBMITTED: "SUBMITTED",
+    UNDER_REVIEW: "UNDER_REVIEW",
+    ACCEPTED: "ACCEPTED",
+    OFFERED: "OFFERED",
+    REJECTED: "REJECTED",
+  };
+
+  return aliasMap[normalized];
 }
 
 function readPath(source: Record<string, unknown> | null, path: string): unknown {
@@ -953,7 +990,9 @@ function normalizeNewApplication(value: unknown): NewApplication | null {
       listing?.sizeM2,
       listingSummary?.sizeM2
     ),
-    status: firstString(value.status, value.applicationStatus),
+    status: normalizeApplicationStatus(
+      firstString(value.status, value.applicationStatus)
+    ),
     message: firstString(value.message, value.applicationMessage),
     submittedAt: firstString(value.submittedAt, value.appliedAt, value.createdAt),
     createdAt: firstString(value.createdAt),
@@ -1201,6 +1240,16 @@ export const companyService = {
       .map(normalizeNewApplication)
       .filter((application): application is NewApplication => application !== null);
   }, 
+
+  handleApplication: async (
+    id: number,
+    payload: HandleCompanyApplicationRequest
+  ): Promise<void> => {
+    await apiClient<void>(`/companies/${pathSegment(id)}/handle-application`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
 
   applications: async (
     id: number,
