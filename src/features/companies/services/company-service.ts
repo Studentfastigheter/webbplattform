@@ -30,26 +30,17 @@ export type CompanyPrivateDTO = {
   name: string;
   subtitle?: string | null;
   description?: string | null;
-  companyDescription?: string | null;
   website?: string | null;
-  companyUrl?: string | null;
-  websiteUrl?: string | null;
-  privacyUrl?: string | null;
   privacyPolicyUrl?: string | null;
   termsUrl?: string | null;
   rating?: number | null;
   verified?: boolean | null;
   bannerUrl?: string | null;
   logoUrl?: string | null;
-  email?: string | null;
-  phone?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
   contactNote?: string | null;
   orgNumber?: string | null;
-  organisationNumber?: string | null;
-  organizationNumber?: string | null;
-  internalContactNote?: string | null;
   cities?: string[];
   pictureUrlList?: string[];
   videoUrlList?: string[];
@@ -810,27 +801,21 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
   const rawCities = value.cities ?? value.companyCities;
 
   return {
-    ...(value as Partial<CompanyPrivateDTO>),
     id,
     name,
+    orgNumber: firstString(value.orgNumber),
+    subtitle: firstString(value.subtitle),
     description: firstString(value.description, value.companyDescription),
-    companyDescription: firstString(value.companyDescription, value.description),
-    companyUrl: firstString(value.companyUrl),
     website: firstString(value.website, value.websiteUrl),
-    websiteUrl: firstString(value.websiteUrl, value.website),
-    privacyUrl: firstString(value.privacyUrl, value.privacyPolicyUrl, value.policyUrl),
     privacyPolicyUrl: firstString(value.privacyPolicyUrl, value.privacyUrl, value.policyUrl),
     termsUrl: firstString(value.termsUrl),
+    rating: firstNumber(value.rating),
+    verified:
+      typeof value.verified === "boolean" ? value.verified : undefined,
+    bannerUrl: firstString(value.bannerUrl),
+    logoUrl: firstString(value.logoUrl),
     contactEmail: firstString(value.contactEmail, value.email),
     contactPhone: firstString(value.contactPhone, value.phone),
-    email: firstString(value.email, value.contactEmail),
-    phone: firstString(value.phone, value.contactPhone),
-    orgNumber: firstString(
-      value.orgNumber,
-      value.organisationNumber,
-      value.organizationNumber
-    ),
-    internalContactNote: firstString(value.internalContactNote, value.contactNote),
     contactNote: firstString(value.contactNote, value.internalContactNote),
     ...(rawCities !== undefined ? { cities: toArray<string>(rawCities) } : {}),
     pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),

@@ -17,7 +17,7 @@ import { useCurrentCompanyPermission } from "@/features/companies/hooks/useCurre
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
-import { useCompanyPublic } from "@/features/companies/hooks/useCompanies";
+import { useCompanyPrivate } from "@/features/companies/hooks/useCompanies";
 import {
   getDefaultCompanyPortalPath,
   isCompanyPortalPathAllowed,
@@ -38,7 +38,7 @@ export default function PortalHeader() {
     companyId != null &&
     !activeCompany?.logoUrl &&
     !user?.logoUrl;
-  const { data: companyLogoSource } = useCompanyPublic(companyId, {
+  const { data: companyLogoSource } = useCompanyPrivate(companyId, {
     enabled: shouldLoadCompanyLogo,
   });
   const displayName =

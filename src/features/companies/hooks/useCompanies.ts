@@ -71,12 +71,18 @@ export function useCompanyPublic(
   });
 }
 
-export function useCompanyPrivate(id: number | null | undefined) {
+export function useCompanyPrivate(
+  id: number | null | undefined,
+  options?: Omit<UseQueryOptions<CompanyPrivateDTO>, "queryKey" | "queryFn">
+) {
   const { user } = useAuth();
+  const { enabled = true, ...restOptions } = options ?? {};
+
   return useQuery<CompanyPrivateDTO>({
+    ...restOptions,
     queryKey: qk.companies.privateProfile(id ?? -1),
     queryFn: () => companyService.privateProfile(id!),
-    enabled: Boolean(user) && id != null && id > 0,
+    enabled: enabled && Boolean(user) && id != null && id > 0,
     staleTime: STALE_30_SECONDS,
   });
 }
