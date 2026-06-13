@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2Icon, ShieldCheckIcon } from "lucide-react";
+import { Loader2Icon, ShieldCheckIcon } from "@/components/icons";
 
 import { useCurrentCompanyPermission } from "@/features/companies/hooks/useCurrentCompanyPermission";
 import { useI18n } from "@/i18n/I18nProvider";

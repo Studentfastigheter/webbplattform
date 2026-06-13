@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, ShieldCheck, Trash2, UserCheck } from "lucide-react";
+import { Loader2, Pencil, Plus, ShieldCheck, Trash2, UserCheck } from "@/components/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

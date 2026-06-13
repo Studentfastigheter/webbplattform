@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { UsersRound } from "lucide-react";
+import { UsersRound } from "@/components/icons";
 import { AnalyticsBlock, AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import {
   TrendBarChart,

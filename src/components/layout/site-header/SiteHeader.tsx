@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { IconChevronDown } from "@tabler/icons-react";
+import { IconChevronDown } from "@/components/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";

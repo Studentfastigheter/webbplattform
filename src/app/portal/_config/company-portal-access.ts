@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "@/components/icons";
 import {
   BarChart3,
   BookOpen,
@@ -10,7 +10,7 @@ import {
   Settings,
   UserCircle,
   Users,
-} from "lucide-react";
+} from "@/components/icons";
 import { normalizeRoute } from "@/lib/utils";
 import { dashboardRelPath } from "../_statics/variables";
 

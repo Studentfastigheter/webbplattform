@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { isAdminSubdomain, isPortalSubdomain } from "@/lib/subdomain-routing";

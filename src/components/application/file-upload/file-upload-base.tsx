@@ -4,7 +4,7 @@ import type { ComponentProps, ComponentPropsWithRef } from "react";
 import { useId, useRef, useState } from "react";
 import type { FileIcon } from "@untitledui/file-icons";
 import { FileIcon as FileTypeIcon } from "@untitledui/file-icons";
-import { CheckCircle, Trash01, UploadCloud02, XCircle } from "@untitledui/icons";
+import { CheckCircle, Trash01, UploadCloud02, XCircle } from "@/components/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";

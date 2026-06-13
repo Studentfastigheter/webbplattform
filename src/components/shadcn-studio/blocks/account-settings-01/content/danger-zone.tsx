@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2Icon, Trash2Icon } from 'lucide-react'
+import { Loader2Icon, Trash2Icon } from "@/components/icons"
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'

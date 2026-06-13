@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { cn } from "@/lib/utils";
-import { Pencil } from "lucide-react";
+import { Pencil } from "@/components/icons";
 import { useState } from "react";
 
 type Props = React.HTMLAttributes<HTMLDivElement> & {

@@ -1,4 +1,4 @@
-import { ListChecks } from "lucide-react";
+import { ListChecks } from "@/components/icons";
 import { NotificationCard } from "../notification-card";
 import type { QueueUpdateNotification } from "@/types"; // Uppdaterad import
 import { useI18n } from "@/i18n/I18nProvider";

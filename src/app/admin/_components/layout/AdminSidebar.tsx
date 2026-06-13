@@ -13,7 +13,7 @@ import {
   SchoolIcon,
   TagsIcon,
   UsersIcon,
-} from "lucide-react";
+} from "@/components/icons";
 
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { cn, normalizeRoute } from "@/lib/utils";

@@ -11,7 +11,7 @@ import {
   Home,
   MapPin,
   TrendingUp,
-} from "lucide-react";
+} from "@/components/icons";
 import { toast } from "sonner";
 import { AnalyticsBlock, AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import {

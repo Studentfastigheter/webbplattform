@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleQuestionMark, Upload } from "lucide-react";
+import { CircleQuestionMark, Upload } from "@/components/icons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

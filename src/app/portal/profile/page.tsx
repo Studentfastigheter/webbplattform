@@ -49,14 +49,14 @@ import {
   Share2,
   Trash2,
   Video,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   FaFacebook,
   FaInstagram,
   FaLinkedin,
   FaTiktok,
   FaYoutube,
-} from "react-icons/fa6";
+} from "@/components/icons";
 import { UploadButton } from "../_components/shared/UploadButton";
 import BannerImageCropDialog from "@/components/shared/BannerImageCropDialog";
 import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";

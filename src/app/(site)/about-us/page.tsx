@@ -3,7 +3,7 @@ import {
   Users2,
   Linkedin,
   Mail,
-} from "lucide-react";
+} from "@/components/icons";
 import type { Locale } from "@/i18n/config";
 import { getRequestLocale } from "@/i18n/server";
 import { localizedText } from "@/i18n/text";

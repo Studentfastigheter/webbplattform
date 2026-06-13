@@ -17,7 +17,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@/components/icons";
 
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";

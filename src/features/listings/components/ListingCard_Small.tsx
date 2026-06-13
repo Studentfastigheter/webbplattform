@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Tag from "@/components/ui/Tag";
-import { Heart } from "lucide-react";
+import { Heart } from "@/components/icons";
+import { getAppIconElement } from "@/components/icons/catalog";
 import { useAuth } from "@/context/AuthContext";
 import { canUseFavorites } from "@/features/listings/hooks/useListings";
 import type { ListingTagDTO } from "@/types/listing";
@@ -54,6 +55,9 @@ const formatRent = (rent: number | null | undefined, locale: "sv" | "en") =>
 
 const getTagLabel = (tag: string | ListingTagDTO) =>
   typeof tag === "string" ? tag : tag.displayName || tag.tagKey || "";
+
+const getTagIconName = (tag: string | ListingTagDTO) =>
+  typeof tag === "string" ? tag : tag.icon || tag.tagKey || tag.displayName;
 
 const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const {
@@ -147,7 +151,12 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     fontSize: (isCompact ? 9.25 : 10) * scale,
     lineHeight: (isCompact ? 11.5 : 12) * scale,
   };
-  const safeTags = (tags ?? []).map(getTagLabel).filter(Boolean);
+  const safeTags = (tags ?? [])
+    .map((tag) => {
+      const label = getTagLabel(tag);
+      return label ? { label, iconName: getTagIconName(tag) } : null;
+    })
+    .filter((tag): tag is { label: string; iconName: string } => tag !== null);
   const locationText =
     [area, city].filter(Boolean).join(", ") ||
     localizedText(locale, "Ej angivet", "Not specified");
@@ -361,13 +370,14 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           >
             {safeTags.slice(0, 3).map((tag) => (
               <Tag
-                key={tag}
-                text={tag}
+                key={tag.label}
+                text={tag.label}
                 height={tagSize.height}
                 horizontalPadding={tagSize.horizontalPadding}
                 fontSize={tagSize.fontSize}
                 lineHeight={tagSize.lineHeight}
                 fontWeight={700}
+                icon={getAppIconElement(tag.iconName, "h-[1em] w-[1em]")}
                 bgColor="#f7f7f7"
                 textColor="#6f6f6f"
                 borderColor="#d7d7d7"

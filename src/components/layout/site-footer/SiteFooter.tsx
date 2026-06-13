@@ -3,8 +3,8 @@
 import Image from "next/image";
 import type { ComponentType } from "react";
 import { Typography, type TypographyProps } from "@material-tailwind/react";
-import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa6";
-import { SiThreads } from "react-icons/si";
+import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "@/components/icons";
+import { SiThreads } from "@/components/icons";
 
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";

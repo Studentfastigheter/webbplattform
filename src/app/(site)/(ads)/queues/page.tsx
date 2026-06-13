@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/icons";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
 import { buildQueueRow, type QueueRowProps } from "@/features/queues/components/QueueRow";
 import { useAuth } from "@/context/AuthContext";

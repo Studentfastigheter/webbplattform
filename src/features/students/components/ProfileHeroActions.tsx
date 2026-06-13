@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
-import { PencilLine } from "lucide-react";
+import { PencilLine } from "@/components/icons";
 
 type Props = {
   editHref?: string;

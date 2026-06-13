@@ -1,7 +1,7 @@
 'use client'
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { CheckCircle2Icon, Loader2Icon } from 'lucide-react'
+import { CheckCircle2Icon, Loader2Icon } from "@/components/icons"
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

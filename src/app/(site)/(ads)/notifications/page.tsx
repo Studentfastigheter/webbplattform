@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/icons";
 import { useRouter } from "next/navigation";
 
 import { NotificationsFeed } from "@/features/notifications/components/notification-feed";

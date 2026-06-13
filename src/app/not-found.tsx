@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search } from "@/components/icons";
 
 import SiteFooter from "@/components/layout/site-footer/SiteFooter";
 import SiteHeader from "@/components/layout/site-header/SiteHeader";

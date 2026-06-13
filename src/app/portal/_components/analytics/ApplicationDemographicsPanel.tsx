@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { BadgeCheck, GraduationCap, WalletCards } from "lucide-react";
+import { BadgeCheck, GraduationCap, WalletCards } from "@/components/icons";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

@@ -9,7 +9,7 @@ import {
   Server,
   ShieldCheck,
   Users,
-} from "lucide-react";
+} from "@/components/icons";
 import { BookingSection } from "@/features/marketing/components/business/BookingSection";
 import { Hero } from "@/features/marketing/components/business/Hero";
 import { Testimonials } from "@/features/marketing/components/business/Testimonial";

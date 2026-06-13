@@ -1,7 +1,7 @@
 "use client";
 
 import React, { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/icons";
 
 import { Button } from "@/components/ui/button";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";

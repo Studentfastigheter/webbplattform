@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Heart, MousePointerClick, Smartphone } from "lucide-react";
+import { Heart, MousePointerClick, Smartphone } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListingByAllCategoriesDemography } from "@/features/analytics/hooks/useDemographics";
 import {

@@ -1,6 +1,6 @@
 import React from "react";
 import clsx from "clsx";
-import { Building2, ChevronRight, MapPin } from "lucide-react";
+import { Building2, ChevronRight, MapPin } from "@/components/icons";
 import type { ListFrameRow } from "@/components/layout/ListFrame";
 import Tag from "@/components/ui/Tag";
 import { Button } from "@/components/ui/button";

@@ -4,7 +4,7 @@ import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon } from "@/components/icons";
 
 import { GoogleAuthButton } from "@/features/auth/components/GoogleAuthButton";
 import { AuthCard } from "@/components/ui/AuthCard";

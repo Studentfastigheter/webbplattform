@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { useQueries } from "@tanstack/react-query";
 

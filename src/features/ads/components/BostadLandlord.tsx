@@ -4,7 +4,7 @@ import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import Tag from "@/components/ui/Tag";
 import type { AdvertiserSummary } from "@/types";
-import { ArrowRight, Check, Star } from "lucide-react";
+import { ArrowRight, Check, Star } from "@/components/icons";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 

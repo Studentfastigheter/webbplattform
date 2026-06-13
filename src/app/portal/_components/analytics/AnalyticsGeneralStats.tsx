@@ -12,7 +12,7 @@ import {
   Minus,
   MousePointerClick,
   Percent,
-} from "lucide-react";
+} from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";

@@ -9,7 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { canUseFavorites, useToggleFavorite } from "@/features/listings/hooks/useListings";
 import { ListingDetailDTO } from "@/types/listing";
-import { Check, Heart, Home, MapPin, Share2 } from "lucide-react";
+import { Check, Heart, Home, MapPin, Share2 } from "@/components/icons";
+import { getAppIconElement } from "@/components/icons/catalog";
 import React, { useState } from "react";
 import BostadForm from "./BostadForm";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -32,6 +33,9 @@ function formatDwellingType(value: string, locale: Locale) {
 
 const getListingTagLabel = (tag: ListingDetailDTO["tags"][number]) =>
   typeof tag === "string" ? tag : tag.displayName || tag.tagKey || "";
+
+const getListingTagIconName = (tag: ListingDetailDTO["tags"][number]) =>
+  typeof tag === "string" ? tag : tag.icon || tag.tagKey || tag.displayName;
 
 function BostadAboutContent({
   listing,
@@ -253,6 +257,7 @@ function BostadAboutContent({
                 height={28}
                 horizontalPadding={14}
                 fontSize={13}
+                icon={getAppIconElement(getListingTagIconName(tag), "h-3.5 w-3.5")}
               />
             ) : null;
           })}

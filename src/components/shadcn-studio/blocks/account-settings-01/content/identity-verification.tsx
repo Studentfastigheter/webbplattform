@@ -9,7 +9,7 @@ import {
   Loader2Icon,
   TriangleAlertIcon,
   XCircleIcon,
-} from 'lucide-react'
+} from "@/components/icons"
 import { QRCodeSVG } from 'qrcode.react'
 
 import { Button } from '@/components/ui/button'

@@ -14,13 +14,13 @@ import {
   Phone,
   ShieldCheck,
   AlertTriangle,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   type School,
   type SchoolId,
   type User,
 } from "@/types";
-import { FaLinkedin, FaInstagram, FaFacebook } from "react-icons/fa6";
+import { FaLinkedin, FaInstagram, FaFacebook } from "@/components/icons";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 

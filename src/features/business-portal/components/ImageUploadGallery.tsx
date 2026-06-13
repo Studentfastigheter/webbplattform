@@ -1,7 +1,7 @@
 "use client";
 
 import { Dispatch, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, GripVertical, ImagePlus, Trash2, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, ImagePlus, Trash2, Upload } from "@/components/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,4 @@
-import { ChevronRight, Mail, MapPin, GraduationCap, Share2, Building2 } from "lucide-react";
+import { ChevronRight, Mail, MapPin, GraduationCap, Share2, Building2 } from "@/components/icons";
 
 import type { ListFrameRow } from "@/components/layout/ListFrame";
 import { Button } from "@/components/ui/button";
