@@ -42,6 +42,7 @@ import {
   useAdminDeleteActivity,
   useAdminDeleteCity,
   useAdminDeleteCompany,
+  useAdminDeleteCompanyAccount,
   useAdminDeleteExternalCompany,
   useAdminExternalCompanies,
   useAdminLocationCategories,
@@ -3035,13 +3036,16 @@ function CompanyAccountForm() {
   const { items: cities, state: citiesState } = useResourceList(useAdminCitySummaries());
   const createCompanyAdmin = useAdminCreateCompanyAdmin();
   const manageCompanyAccount = useAdminManageCompanyAccount();
+  const deleteCompanyAccount = useAdminDeleteCompanyAccount();
   const verifyCompanyAccount = useAdminVerifyCompanyAccount();
   const [createState, setCreateState] = useState<AdminActionState>({ status: "idle" });
   const [saveState, setSaveState] = useState<AdminActionState>({ status: "idle" });
   const [accountsState, setAccountsState] = useState<AdminActionState>({ status: "idle" });
   const [verifyState, setVerifyState] = useState<AdminActionState>({ status: "idle" });
+  const [deleteAccountState, setDeleteAccountState] = useState<AdminActionState>({ status: "idle" });
   const [accounts, setAccounts] = useState<AdminCompanyUserDTO[]>([]);
   const [verifyingAccountId, setVerifyingAccountId] = useState<number | null>(null);
+  const [deletingAccountId, setDeletingAccountId] = useState<number | null>(null);
   const [createForm, setCreateForm] = useState<CompanyAccountFormState>(() => createEmptyCompanyAccountForm());
   const [form, setForm] = useState<CompanyAccountFormState>(() => createEmptyCompanyAccountForm());
 
@@ -3155,6 +3159,7 @@ function CompanyAccountForm() {
   function selectCompany(companyId: string) {
     setSaveState({ status: "idle" });
     setVerifyState({ status: "idle" });
+    setDeleteAccountState({ status: "idle" });
     setForm(createEmptyCompanyAccountForm(companyId));
   }
 
@@ -3166,12 +3171,14 @@ function CompanyAccountForm() {
   function selectAccount(account: AdminCompanyUserDTO) {
     setSaveState({ status: "idle" });
     setVerifyState({ status: "idle" });
+    setDeleteAccountState({ status: "idle" });
     setForm(companyAccountToForm(account, form.companyId));
   }
 
   function startNewAccount() {
     setSaveState({ status: "idle" });
     setVerifyState({ status: "idle" });
+    setDeleteAccountState({ status: "idle" });
     setForm(createEmptyCompanyAccountForm(form.companyId));
   }
 
@@ -3332,6 +3339,49 @@ function CompanyAccountForm() {
     }
   }
 
+  async function deleteAccount(account: AdminCompanyUserDTO) {
+    const companyId = parseRequiredNumber(form.companyId, "CompanyId");
+    const accountId = account.id;
+
+    if (typeof accountId !== "number") {
+      setDeleteAccountState({
+        status: "error",
+        message: "Kontot saknar id och kan inte tas bort.",
+      });
+      return;
+    }
+
+    const accountName = companyAccountName(account);
+    if (!window.confirm(`Ta bort företagskontot ${accountName}? Detta går inte att ångra.`)) {
+      return;
+    }
+
+    setDeletingAccountId(accountId);
+    setDeleteAccountState({ status: "loading", message: "Tar bort företagskonto..." });
+
+    try {
+      await deleteCompanyAccount.mutateAsync({ companyId, accountId });
+      setAccounts((current) => current.filter((entry) => entry.id !== accountId));
+      if (form.id.trim() === String(accountId)) {
+        setForm(createEmptyCompanyAccountForm(form.companyId));
+      }
+      setDeleteAccountState({
+        status: "success",
+        message: `${accountName} togs bort.`,
+      });
+    } catch (error) {
+      setDeleteAccountState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Kunde inte ta bort företagskontot.",
+      });
+    } finally {
+      setDeletingAccountId(null);
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <ActionShell
@@ -3407,8 +3457,8 @@ function CompanyAccountForm() {
 
     <ActionShell
       title="Hämta och uppdatera företagskonto"
-      description="GET hämtar kopplade konton för valt företag. PUT uppdaterar bara kontot du väljer i listan."
-      method="GET/PUT"
+      description="GET hämtar kopplade konton för valt företag. PUT uppdaterar och DELETE tar bort kontot du väljer i listan."
+      method="GET/PUT/DELETE"
       endpoint="/api/companies/roles, /api/companies/{id}/users, /api/companies/{id}/users/{userId}"
     >
       <ResultBlock state={companiesState} />
@@ -3495,6 +3545,7 @@ function CompanyAccountForm() {
         <div className="border-t border-[#dfe7e3] p-4">
           <ResultBlock state={accountsState} />
           <ResultBlock state={verifyState} />
+          <ResultBlock state={deleteAccountState} />
           {!form.companyId.trim() ? (
             <p className="text-sm text-[#66716f]">
               Välj ett företag för att hämta kopplade konton.
@@ -3514,6 +3565,8 @@ function CompanyAccountForm() {
                   typeof account.id === "number" ? account.id : undefined;
                 const isVerifying =
                   numericAccountId != null && verifyingAccountId === numericAccountId;
+                const isDeleting =
+                  numericAccountId != null && deletingAccountId === numericAccountId;
 
                 return (
                   <article
@@ -3543,24 +3596,41 @@ function CompanyAccountForm() {
                           .join(" · ") || "Saknar kontaktuppgifter"}
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => void verifyAccount(account)}
-                      disabled={
-                        account.verified === true ||
-                        numericAccountId == null ||
-                        verifyingAccountId !== null
-                      }
-                      className="inline-flex h-8 items-center justify-center gap-2 rounded-[8px] border border-[#004225] bg-white px-3 text-xs font-semibold text-[#004225] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:border-[#dfe7e3] disabled:text-[#9aa7a4] disabled:opacity-70"
-                    >
-                      <CheckCircle2Icon
-                        className={[
-                          "h-4 w-4",
-                          isVerifying ? "animate-spin" : "",
-                        ].join(" ")}
-                      />
-                      {account.verified === true ? "Verifierad" : "Verifiera"}
-                    </button>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void verifyAccount(account)}
+                        disabled={
+                          account.verified === true ||
+                          numericAccountId == null ||
+                          verifyingAccountId !== null ||
+                          deletingAccountId !== null
+                        }
+                        className="inline-flex h-8 items-center justify-center gap-2 rounded-[8px] border border-[#004225] bg-white px-3 text-xs font-semibold text-[#004225] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:border-[#dfe7e3] disabled:text-[#9aa7a4] disabled:opacity-70"
+                      >
+                        <CheckCircle2Icon
+                          className={[
+                            "h-4 w-4",
+                            isVerifying ? "animate-spin" : "",
+                          ].join(" ")}
+                        />
+                        {account.verified === true ? "Verifierad" : "Verifiera"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void deleteAccount(account)}
+                        disabled={numericAccountId == null || deletingAccountId !== null}
+                        className="inline-flex h-8 items-center justify-center gap-2 rounded-[8px] border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:border-[#dfe7e3] disabled:text-[#9aa7a4] disabled:opacity-70"
+                      >
+                        <Trash2Icon
+                          className={[
+                            "h-4 w-4",
+                            isDeleting ? "animate-spin" : "",
+                          ].join(" ")}
+                        />
+                        Ta bort
+                      </button>
+                    </div>
                   </article>
                 );
               })}

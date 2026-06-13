@@ -401,6 +401,17 @@ export function useUpdateCompanyUser() {
   });
 }
 
+export function useDeleteCompanyUser() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, { companyId: number; userId: number }>({
+    mutationFn: ({ companyId, userId }) =>
+      companyService.deleteUser(companyId, userId),
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
+    },
+  });
+}
+
 /**
  * Verify a company user. Uses optimistic patch on the cached list (the
  * verified badge needs to flip immediately for UX), and rolls back on error.

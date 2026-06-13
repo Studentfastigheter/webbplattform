@@ -1169,6 +1169,15 @@ export const companyService = {
     );
   },
 
+  deleteUser: async (id: number, userId: number): Promise<void> => {
+    await apiClient<void>(
+      `/companies/${pathSegment(id)}/users/${pathSegment(userId)}`,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
   verifyUser: async (id: number, userId: number): Promise<void> => {
     await apiClient<void>(
       `/companies/${pathSegment(id)}/verify/${pathSegment(userId)}`,
