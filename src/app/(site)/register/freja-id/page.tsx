@@ -16,12 +16,16 @@ import { FieldDescription, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { authService } from "@/features/auth/services/auth-service";
+import {
+  clearQuickRegisterAuthRef,
+  startOrResumeQuickRegisterVerification,
+  writeQuickRegisterAuthRef,
+} from "@/features/auth/lib/freja-verification-storage";
 import type { FrejaAuthStatus } from "@/types";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
 const pollIntervalMs = 2000;
-const redirectDelayMs = 900;
 const frejaLogoPath =
   "/FrejaBrandingPackNew/FrejaBrandingPack/Freja Logo/Freja/SVG/FrejaIndigo.svg";
 const frejaIconPath =
@@ -69,7 +73,7 @@ function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
 function getStatusAction(status: FrejaAuthStatus, flow: FrejaFlow, locale: "sv" | "en") {
   if (flow === "quick-register") {
     if (status === "MATCHES") {
-      return { href: "/", label: localizedText(locale, "Fortsätt", "Continue") };
+      return { href: "/housing", label: localizedText(locale, "Fortsätt", "Continue") };
     }
 
     if (status === "EXPIRED" || status === "CANCELED") {
@@ -192,11 +196,15 @@ function FrejaIdRegisterContent() {
           );
         }
 
-        const response =
+        const request =
           flow === "quick-register"
-            ? await authService.registerStudent()
-            : await authService.frejaRegister();
+            ? startOrResumeQuickRegisterVerification(user, () =>
+                authService.registerStudent()
+              )
+            : authService.frejaRegister();
+        const response = await request;
         if (!active) return;
+        setStatus("PENDING");
         setAuthRef(response.authRef);
       } catch (err) {
         if (!active) return;
@@ -219,7 +227,13 @@ function FrejaIdRegisterContent() {
     return () => {
       active = false;
     };
-  }, [authLoading, authRef, flow, locale, user?.accountType]);
+  }, [authLoading, authRef, flow, locale, user]);
+
+  useEffect(() => {
+    if (flow === "quick-register" && authRef && user?.accountType === "quick_register") {
+      writeQuickRegisterAuthRef(user, authRef);
+    }
+  }, [authRef, flow, user]);
 
   useEffect(() => {
     if (!authRef) return;
@@ -244,10 +258,15 @@ function FrejaIdRegisterContent() {
         if (nextStatus === "PENDING") {
           timeout = setTimeout(poll, pollIntervalMs);
         } else if (nextStatus === "MATCHES" && flow === "quick-register") {
+          clearQuickRegisterAuthRef(user);
+          setAuthRef("");
           await refreshUser();
-          timeout = setTimeout(() => router.replace(localizedHref("/")), redirectDelayMs);
+          router.replace(localizedHref("/housing"));
         } else if (nextStatus === "MATCHES") {
-          timeout = setTimeout(() => router.replace(localizedHref("/login")), redirectDelayMs);
+          setAuthRef("");
+          router.replace(localizedHref("/login"));
+        } else if (flow === "quick-register") {
+          clearQuickRegisterAuthRef(user);
         }
       } catch {
         if (!active) return;
@@ -262,7 +281,7 @@ function FrejaIdRegisterContent() {
       active = false;
       if (timeout) clearTimeout(timeout);
     };
-  }, [authRef, flow, locale, localizedHref, refreshUser, router]);
+  }, [authRef, flow, locale, localizedHref, refreshUser, router, user]);
 
   const successText = isFrejaOnlyFlow
     ? localizedText(locale, "Kontot är verifierat. Du skickas vidare till inloggning.", "The account is verified. You will be redirected to sign in.")
