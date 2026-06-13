@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { CheckIcon, Loader2Icon, SaveIcon } from 'lucide-react'
+import { CheckIcon, Loader2Icon, SaveIcon } from "@/components/icons"
 
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'

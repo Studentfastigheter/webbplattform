@@ -1,4 +1,4 @@
-import { Home } from "lucide-react";
+import { Home } from "@/components/icons";
 import { NotificationCard } from "../notification-card";
 import type { ListingStatusNotification } from "@/types"; // Uppdaterad import
 import { useI18n } from "@/i18n/I18nProvider";

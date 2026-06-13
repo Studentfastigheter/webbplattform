@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Download01, Edit03, Eye, File05, XClose } from "@untitledui/icons";
+import { Download01, Edit03, Eye, File05, XClose } from "@/components/icons";
 
 import {
   FileUpload,

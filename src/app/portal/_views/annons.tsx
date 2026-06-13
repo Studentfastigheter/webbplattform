@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Home, MapPin, Pencil } from "lucide-react";
+import { Home, MapPin, Pencil } from "@/components/icons";
+import { getAppIconElement } from "@/components/icons/catalog";
 
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
@@ -541,7 +542,10 @@ function EditableListingPreview({
                           : "border-gray-200 bg-white text-gray-700 hover:border-[#004225]/35 hover:bg-[#004225]/[0.035]"
                       }`}
                     >
+                      <span className="inline-flex items-center gap-1.5">
+                        {getAppIconElement(tag.icon || tag.tagKey || tag.displayName, "h-4 w-4")}
                       {tag.displayName}
+                      </span>
                     </button>
                   );
                 })}

@@ -437,6 +437,22 @@ export function useAdminManageCompanyAccount() {
   });
 }
 
+export function useAdminDeleteCompanyAccount() {
+  const qc = useQueryClient();
+  return useMutation<
+    void,
+    Error,
+    { companyId: number; accountId: number }
+  >({
+    mutationFn: ({ companyId, accountId }) =>
+      adminService.deleteCompanyAccount(companyId, accountId),
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({ queryKey: qk.admin.companyUsers(companyId) });
+      qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
+    },
+  });
+}
+
 export function useAdminCreateCompanyAdmin() {
   const qc = useQueryClient();
   return useMutation<

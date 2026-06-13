@@ -26,6 +26,7 @@ import {
   companyService,
   type AnalyticalQuantities,
   type ApplicationStatisticEntry,
+  type HandleCompanyApplicationRequest,
   type CompanyChangeableDataDTO,
   type CompanyImageTarget,
   type CompanyPrivateDTO,
@@ -70,12 +71,18 @@ export function useCompanyPublic(
   });
 }
 
-export function useCompanyPrivate(id: number | null | undefined) {
+export function useCompanyPrivate(
+  id: number | null | undefined,
+  options?: Omit<UseQueryOptions<CompanyPrivateDTO>, "queryKey" | "queryFn">
+) {
   const { user } = useAuth();
+  const { enabled = true, ...restOptions } = options ?? {};
+
   return useQuery<CompanyPrivateDTO>({
+    ...restOptions,
     queryKey: qk.companies.privateProfile(id ?? -1),
     queryFn: () => companyService.privateProfile(id!),
-    enabled: Boolean(user) && id != null && id > 0,
+    enabled: enabled && Boolean(user) && id != null && id > 0,
     staleTime: STALE_30_SECONDS,
   });
 }
@@ -142,10 +149,28 @@ export function useCompanyApplications(
 
   return useQuery<NewApplication[]>({
     queryKey: qk.companies.applications(companyId ?? -1, pageSize, maxPages),
-    queryFn: () =>
-      companyService.applications(companyId!, { pageSize, maxPages }),
+    queryFn: ({ signal }) =>
+      companyService.applications(companyId!, { pageSize, maxPages, signal }),
     enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useHandleCompanyApplication() {
+  const qc = useQueryClient();
+
+  return useMutation<
+    void,
+    Error,
+    { companyId: number; payload: HandleCompanyApplicationRequest }
+  >({
+    mutationFn: ({ companyId, payload }) =>
+      companyService.handleApplication(companyId, payload),
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({
+        queryKey: qk.companies.applicationsByCompany(companyId),
+      });
+    },
   });
 }
 
@@ -395,6 +420,17 @@ export function useUpdateCompanyUser() {
   >({
     mutationFn: ({ companyId, userId, payload }) =>
       companyService.updateUser(companyId, userId, payload),
+    onSettled: (_data, _err, { companyId }) => {
+      qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
+    },
+  });
+}
+
+export function useDeleteCompanyUser() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, { companyId: number; userId: number }>({
+    mutationFn: ({ companyId, userId }) =>
+      companyService.deleteUser(companyId, userId),
     onSettled: (_data, _err, { companyId }) => {
       qc.invalidateQueries({ queryKey: qk.companies.users(companyId) });
     },

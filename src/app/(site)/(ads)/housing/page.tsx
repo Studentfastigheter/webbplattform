@@ -15,7 +15,8 @@ import {
   Wifi,
   WashingMachine,
   X,
-} from "lucide-react";
+} from "@/components/icons";
+import { getAppIconElement } from "@/components/icons/catalog";
 import { useAuth } from "@/context/AuthContext";
 
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
@@ -148,6 +149,9 @@ function toAmenityOptions(
         id: tag.tagKey?.trim() || label,
         label,
         icon:
+          getAppIconElement(tag.icon, "h-6 w-6") ??
+          getAppIconElement(normalizedTagKey, "h-6 w-6") ??
+          getAppIconElement(normalizedKey, "h-6 w-6") ??
           amenityIconByKey[normalizedTagKey] ??
           amenityIconByKey[normalizedKey] ??
           amenityIconByKey[tag.icon?.toLowerCase() ?? ""],

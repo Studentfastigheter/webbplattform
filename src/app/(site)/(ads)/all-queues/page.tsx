@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, Search, X } from "lucide-react";
+import { Check, Search, X } from "@/components/icons";
 
 import { Button } from "@/components/ui/button";
 import Que_ListingCard from "@/features/listings/components/Que_ListingCard";

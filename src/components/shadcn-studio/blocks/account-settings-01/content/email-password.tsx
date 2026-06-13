@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2Icon } from 'lucide-react'
+import { CheckCircle2Icon } from "@/components/icons"
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

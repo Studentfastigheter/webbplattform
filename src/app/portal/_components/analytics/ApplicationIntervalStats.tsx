@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileUser } from "lucide-react";
+import { FileUser } from "@/components/icons";
 import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";

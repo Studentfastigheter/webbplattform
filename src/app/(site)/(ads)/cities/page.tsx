@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X } from "@/components/icons";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { FieldSet } from "@/components/ui/field";

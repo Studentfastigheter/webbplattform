@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { GraduationCap, MapPin } from "lucide-react";
+import { GraduationCap, MapPin } from "@/components/icons";
 import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
 import {
   ChartContainer,

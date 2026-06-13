@@ -1,4 +1,4 @@
-import { KeyRound, Search, UserPlus } from "lucide-react";
+import { KeyRound, Search, UserPlus } from "@/components/icons";
 
 import type { Dictionary } from "@/i18n/dictionaries";
 

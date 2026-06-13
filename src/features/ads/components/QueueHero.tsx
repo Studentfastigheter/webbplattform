@@ -1,14 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Globe, Mail, MapPin, Phone, Share2 } from "lucide-react";
+import { Globe, Mail, MapPin, Phone, Share2 } from "@/components/icons";
 import {
   FaFacebook,
   FaInstagram,
   FaLinkedin,
   FaTiktok,
   FaYoutube,
-} from "react-icons/fa6";
+} from "@/components/icons";
 
 import ReadMoreComponent from "@/components/ui/ReadMoreComponent";
 import { ShareDialog } from "@/components/ui/ShareDialog";

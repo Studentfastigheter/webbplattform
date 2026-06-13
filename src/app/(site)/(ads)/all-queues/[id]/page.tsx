@@ -40,7 +40,7 @@ import {
 } from "@/lib/youtube-url";
 import { type ListingCardDTO } from "@/types/listing";
 import { type HousingQueueDTO } from "@/types/queue";
-import { Bell, Loader2 } from "lucide-react";
+import { Bell, Loader2 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";

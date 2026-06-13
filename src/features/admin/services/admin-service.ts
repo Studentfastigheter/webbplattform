@@ -225,6 +225,22 @@ export const adminService = {
     );
   },
 
+  deleteCompanyAccount: async (
+    companyId: number,
+    userId: number
+  ): Promise<void> => {
+    if (typeof companyId !== "number" || typeof userId !== "number") {
+      throw new Error("CompanyId och konto-id krävs för att ta bort ett företagskonto.");
+    }
+
+    await apiClient<void>(
+      `/companies/${pathSegment(companyId)}/users/${pathSegment(userId)}`,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
   verifyCompanyAccount: async (
     companyId: number,
     userId: number

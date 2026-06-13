@@ -3,7 +3,7 @@
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon } from "@/components/icons";
 
 import { AuthCard } from "@/components/ui/AuthCard";
 import { Button } from "@/components/ui/button";

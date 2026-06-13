@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, LogOut, Menu, ShieldCheckIcon, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, ShieldCheckIcon, X } from "@/components/icons";
 
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Quote } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Quote } from "@/components/icons";
 import { getBusinessTestimonials } from '@/data/businessTestimonials';
 import { useI18n } from '@/i18n/I18nProvider';
 import { localizedText } from '@/i18n/text';

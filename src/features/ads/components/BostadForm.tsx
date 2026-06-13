@@ -9,7 +9,8 @@ import { ListingDetailDTO } from "@/types/listing";
 
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Plus, X } from "lucide-react"
+import { Check, ChevronsUpDown, Plus, X } from "@/components/icons"
+import { getAppIconElement } from "@/components/icons/catalog";
 
 import { cn } from "@/lib/utils"
 import {
@@ -276,6 +277,7 @@ export default function BostadForm({
                                                     );
                                                 }}
                                                 >
+                                                    {getAppIconElement(o.value, "mr-2 h-4 w-4")}
                                                     {o.label}
                                                     {selected.includes(o.value) && <Check />}
                                                 </CommandItem>
@@ -299,6 +301,7 @@ export default function BostadForm({
                                                 )
                                             }
                                         >
+                                            {getAppIconElement(tagObj.value, "h-3.5 w-3.5")}
                                             {tagObj.label}
                                             <X height={14} />
                                         </Button>

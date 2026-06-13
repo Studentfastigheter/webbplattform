@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
-import { GraduationCapIcon, HomeIcon, MapPinIcon } from "lucide-react";
+import { GraduationCapIcon, HomeIcon, MapPinIcon } from "@/components/icons";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import type { BaseMarker } from "@/components/shared/map/BaseMap";

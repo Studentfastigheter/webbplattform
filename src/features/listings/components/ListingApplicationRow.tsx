@@ -1,11 +1,13 @@
 import React from "react";
 import clsx from "clsx";
-import { ChevronRight, Home, MapPin, Ruler, Trash2 } from "lucide-react";
+import { ChevronRight, Home, MapPin, Ruler, Trash2 } from "@/components/icons";
+import { getAppIconElement } from "@/components/icons/catalog";
 import Tag from "@/components/ui/Tag";
 import type { ListFrameRow } from "@/components/layout/ListFrame";
 import { Button } from "@/components/ui/button";
 import StatusTag, { type Status } from "@/components/ui/statusTag";
 import type { AdvertiserSummary, DateString } from "@/types";
+import type { ListingTagDTO } from "@/types/listing";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedNumber, localizedText } from "@/i18n/text";
 
@@ -18,7 +20,7 @@ type ListingSummary = {
   rooms?: number | null;
   sizeM2?: number | null;
   rent?: number | null;
-  tags?: string[] | null;
+  tags?: Array<string | ListingTagDTO> | null;
   images?: Array<{ imageUrl?: string | null }> | null;
   advertiser?: AdvertiserSummary | null;
   imageUrl?: string;
@@ -139,22 +141,30 @@ const TagsCell: React.FC<{ tags?: ListingApplicationRowProps["tags"] }> = ({
   tags,
 }) => {
   const safeTags = (tags ?? []).slice(0, 2);
+  const getTagLabel = (tag: string | ListingTagDTO) =>
+    typeof tag === "string" ? tag : tag.displayName || tag.tagKey || "";
+  const getTagIconName = (tag: string | ListingTagDTO) =>
+    typeof tag === "string" ? tag : tag.icon || tag.tagKey || tag.displayName;
 
   return (
     <div className="flex min-h-16 items-center">
       {safeTags.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {safeTags.map((tag) => (
-            <Tag
-              key={tag}
-              text={tag}
-              height={24}
-              horizontalPadding={10}
-              fontSize={12}
-              fontWeight={500}
-              className="border-gray-200 bg-gray-50 text-gray-700"
-            />
-          ))}
+          {safeTags.map((tag) => {
+            const label = getTagLabel(tag);
+            return label ? (
+              <Tag
+                key={label}
+                text={label}
+                height={24}
+                horizontalPadding={10}
+                fontSize={12}
+                fontWeight={500}
+                icon={getAppIconElement(getTagIconName(tag), "h-3.5 w-3.5")}
+                className="border-gray-200 bg-gray-50 text-gray-700"
+              />
+            ) : null;
+          })}
         </div>
       ) : (
         <span className="text-sm text-gray-400">-</span>

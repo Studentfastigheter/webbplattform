@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileText, Info } from "lucide-react";
+import { FileText, Info } from "@/components/icons";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText, numberLocale } from "@/i18n/text";

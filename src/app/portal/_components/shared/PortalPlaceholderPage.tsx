@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Clock3 } from "lucide-react";
+import { Clock3 } from "@/components/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";

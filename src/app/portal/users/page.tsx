@@ -2,11 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, ShieldCheck, UserCheck } from "lucide-react";
+import { Loader2, Pencil, Plus, ShieldCheck, Trash2, UserCheck } from "@/components/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +39,7 @@ import {
   useCompanyRoles,
   useCompanyUsers,
   useCreateCompanyUser,
+  useDeleteCompanyUser,
   useUpdateCompanyUser,
   useVerifyCompanyUser,
 } from "@/features/companies/hooks/useCompanies";
@@ -204,14 +214,17 @@ export default function UsersPage() {
   const [verifyingUserId, setVerifyingUserId] = useState<number | null>(null);
   const createUserMutation = useCreateCompanyUser();
   const updateUserMutation = useUpdateCompanyUser();
+  const deleteUserMutation = useDeleteCompanyUser();
   const verifyUserMutation = useVerifyCompanyUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingUser, setEditingUser] = useState<CompanyPortalUser | null>(null);
+  const [userPendingDeletion, setUserPendingDeletion] = useState<CompanyPortalUser | null>(null);
   const [accountForm, setAccountForm] = useState<UserAccountFormState>(() =>
     createEmptyUserAccountForm()
   );
   const [savingAccount, setSavingAccount] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
 
   const hasActiveFilters = roleFilter !== "all";
   const companyId = getActiveCompanyId(user);
@@ -444,6 +457,59 @@ export default function UsersPage() {
     [canVerifyUsers, companyId, locale, verifyUserMutation]
   );
 
+  const openDeleteDialog = useCallback(
+    (entry: CompanyPortalUser) => {
+      if (!canManageUsers) {
+        toast.error(localizedText(locale, "Endast verifierad ADMIN kan ta bort företagskonton.", "Only a verified ADMIN can delete company accounts."));
+        return;
+      }
+
+      if (currentCompanyUser?.backendId === entry.backendId) {
+        toast.error(localizedText(locale, "Du kan inte ta bort ditt aktiva konto här.", "You cannot delete your active account here."));
+        return;
+      }
+
+      setUserPendingDeletion(entry);
+    },
+    [canManageUsers, currentCompanyUser?.backendId, locale]
+  );
+
+  const handleDeleteUser = useCallback(async () => {
+    if (!companyId || !canManageUsers || !userPendingDeletion) {
+      return;
+    }
+
+    setDeletingUserId(userPendingDeletion.backendId);
+
+    try {
+      await deleteUserMutation.mutateAsync({
+        companyId,
+        userId: userPendingDeletion.backendId,
+      });
+      toast.success(localizedText(locale, "Företagskontot togs bort.", "The company account was deleted."));
+      setUserPendingDeletion(null);
+      if (editingUser?.backendId === userPendingDeletion.backendId) {
+        setDialogOpen(false);
+        setEditingUser(null);
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : localizedText(locale, "Kunde inte ta bort företagskontot.", "Could not delete the company account.")
+      );
+    } finally {
+      setDeletingUserId(null);
+    }
+  }, [
+    canManageUsers,
+    companyId,
+    deleteUserMutation,
+    editingUser?.backendId,
+    locale,
+    userPendingDeletion,
+  ]);
+
   if (authLoading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
@@ -654,6 +720,45 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog
+        open={userPendingDeletion !== null}
+        onOpenChange={(open) => {
+          if (!open && deletingUserId === null) {
+            setUserPendingDeletion(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {localizedText(locale, "Ta bort företagskonto", "Delete company account")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {localizedText(
+                locale,
+                `Kontot ${userPendingDeletion?.name ?? ""} tas bort permanent. Detta går inte att ångra.`,
+                `The account ${userPendingDeletion?.name ?? ""} will be permanently deleted. This cannot be undone.`
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingUserId !== null}>
+              {localizedText(locale, "Avbryt", "Cancel")}
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              isLoading={deletingUserId !== null}
+              isDisabled={deletingUserId !== null}
+              onPress={handleDeleteUser}
+            >
+              <Trash2 className="h-4 w-4" />
+              {localizedText(locale, "Ta bort", "Delete")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card className="border-gray-200 bg-white shadow-sm">
         <CardContent className="px-0">
           {loadingUsers ? (
@@ -683,7 +788,7 @@ export default function UsersPage() {
                   {usersError}
                 </div>
               ) : null}
-              <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_220px] gap-4 border-b border-gray-100 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
+              <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_280px] gap-4 border-b border-gray-100 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
                 <span>{localizedText(locale, "Namn", "Name")}</span>
                 <span>{localizedText(locale, "Kontaktuppgifter", "Contact details")}</span>
                 <span>{localizedText(locale, "Roll", "Role")}</span>
@@ -695,11 +800,12 @@ export default function UsersPage() {
                 {filteredUsers.map((entry) => {
                   const isCurrentUser = currentCompanyUser?.backendId === entry.backendId;
                   const isVerifying = verifyingUserId === entry.backendId;
+                  const isDeleting = deletingUserId === entry.backendId;
 
                   return (
                     <article
                       key={entry.id}
-                      className="grid gap-4 px-6 py-4 transition-colors hover:bg-gray-50/80 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_220px] md:items-center"
+                      className="grid gap-4 px-6 py-4 transition-colors hover:bg-gray-50/80 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_280px] md:items-center"
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium text-gray-900">{entry.name}</p>
@@ -736,7 +842,7 @@ export default function UsersPage() {
                             size="sm"
                             variant="outline"
                             className="min-w-[90px]"
-                            isDisabled={savingAccount}
+                            isDisabled={savingAccount || deletingUserId !== null}
                             onPress={() => openEditDialog(entry)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -750,7 +856,7 @@ export default function UsersPage() {
                             variant="outline"
                             className="min-w-[126px]"
                             isLoading={isVerifying}
-                            isDisabled={verifyingUserId !== null}
+                            isDisabled={verifyingUserId !== null || deletingUserId !== null}
                             onPress={() => handleVerifyUser(entry)}
                           >
                             <UserCheck className="h-4 w-4" />
@@ -758,6 +864,20 @@ export default function UsersPage() {
                           </Button>
                         ) : !canManageUsers ? (
                           <span className="text-sm text-gray-400">-</span>
+                        ) : null}
+                        {canManageUsers && !isCurrentUser ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            className="min-w-[104px]"
+                            isLoading={isDeleting}
+                            isDisabled={savingAccount || deletingUserId !== null}
+                            onPress={() => openDeleteDialog(entry)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            {localizedText(locale, "Ta bort", "Delete")}
+                          </Button>
                         ) : null}
                       </div>
                     </article>

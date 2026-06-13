@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, Loader2 } from "lucide-react";
+import { Heart, Loader2 } from "@/components/icons";
 
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import { Button } from "@/components/ui/button";

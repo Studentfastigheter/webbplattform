@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Building2, Plus } from "lucide-react";
+import { Building2, Plus } from "@/components/icons";
 
 import { Button } from "@/components/ui/button";
 import VerifiedTag from "@/components/ui/VerifiedTag";

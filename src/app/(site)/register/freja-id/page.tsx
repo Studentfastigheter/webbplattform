@@ -8,7 +8,7 @@ import {
   CheckCircle2Icon,
   Clock3Icon,
   RefreshCwIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { QRCodeSVG } from "qrcode.react";
 
 import { AuthCard } from "@/components/ui/AuthCard";

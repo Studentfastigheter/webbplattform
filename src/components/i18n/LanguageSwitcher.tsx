@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check } from "@/components/icons";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {

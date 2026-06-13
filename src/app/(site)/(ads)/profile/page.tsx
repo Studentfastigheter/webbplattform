@@ -34,7 +34,7 @@ import {
   Save,
   ShieldCheck,
   X,
-} from "lucide-react";
+} from "@/components/icons";
 
 type StudentProfileDraft = {
   firstName: string;

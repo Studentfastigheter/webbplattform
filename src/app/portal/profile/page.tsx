@@ -22,12 +22,10 @@ import {
   companyService,
   type CompanyChangeableDataDTO,
   type CompanyPrivateDTO,
-  type CompanyPublicDTO,
   type SocialPlatform,
 } from "@/features/companies/services/company-service";
 import {
   useCompanyPrivate,
-  useCompanyPublic,
   usePlatforms,
   useUpdateCompanyData,
   useUploadCompanyBanner,
@@ -51,14 +49,14 @@ import {
   Share2,
   Trash2,
   Video,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   FaFacebook,
   FaInstagram,
   FaLinkedin,
   FaTiktok,
   FaYoutube,
-} from "react-icons/fa6";
+} from "@/components/icons";
 import { UploadButton } from "../_components/shared/UploadButton";
 import BannerImageCropDialog from "@/components/shared/BannerImageCropDialog";
 import { COMPANY_BANNER_ASPECT_RATIO } from "@/lib/banner-image";
@@ -209,38 +207,6 @@ function socialLinksToRecord(draft: ProfileDraft) {
   return socialLinks;
 }
 
-function withPublicProfileFields(
-  companyData: CompanyPrivateDTO,
-  publicCompanyData: CompanyPublicDTO | null
-): CompanyPrivateDTO {
-  if (!publicCompanyData) {
-    return companyData;
-  }
-
-  return {
-    ...companyData,
-    logoUrl: companyData.logoUrl ?? publicCompanyData.logoUrl,
-    bannerUrl: companyData.bannerUrl ?? publicCompanyData.bannerUrl,
-    description: companyData.description ?? publicCompanyData.description,
-    website: companyData.website ?? publicCompanyData.website,
-    websiteUrl: companyData.websiteUrl ?? publicCompanyData.websiteUrl,
-    privacyUrl: companyData.privacyUrl ?? publicCompanyData.privacyUrl,
-    privacyPolicyUrl:
-      companyData.privacyPolicyUrl ?? publicCompanyData.privacyPolicyUrl,
-    termsUrl: companyData.termsUrl ?? publicCompanyData.termsUrl,
-    pictureUrlList:
-      companyData.pictureUrlList?.length
-        ? companyData.pictureUrlList
-        : publicCompanyData.pictureUrlList,
-    videoUrlList:
-      companyData.videoUrlList?.length
-        ? companyData.videoUrlList
-        : publicCompanyData.videoUrlList,
-    socialLinks: publicCompanyData.socialLinks ?? companyData.socialLinks,
-    cities: publicCompanyData.cities ?? companyData.cities,
-  };
-}
-
 function buildInitialDraft(
   companyId: number,
   companyData: CompanyPrivateDTO,
@@ -251,12 +217,11 @@ function buildInitialDraft(
     name: companyData.name ?? "",
     subtitle: companyData.subtitle ?? "",
     description: companyData.description ?? "",
-    websiteUrl: companyData.websiteUrl ?? companyData.website ?? "",
-    privacyPolicyUrl:
-      companyData.privacyPolicyUrl ?? companyData.privacyUrl ?? "",
+    websiteUrl: companyData.website ?? "",
+    privacyPolicyUrl: companyData.privacyPolicyUrl ?? "",
     termsUrl: companyData.termsUrl ?? "",
-    contactEmail: companyData.contactEmail ?? companyData.email ?? "",
-    contactPhone: companyData.contactPhone ?? companyData.phone ?? "",
+    contactEmail: companyData.contactEmail ?? "",
+    contactPhone: companyData.contactPhone ?? "",
     cities: companyData.cities ?? [],
     logoUrl: companyData.logoUrl ?? "",
     bannerUrl: companyData.bannerUrl ?? "",
@@ -265,13 +230,8 @@ function buildInitialDraft(
     ),
     pictureUrlList: normalizeUrlList(companyData.pictureUrlList),
     videoUrlList: normalizeUrlList(companyData.videoUrlList),
-    orgNumber:
-      companyData.orgNumber ??
-      companyData.organisationNumber ??
-      companyData.organizationNumber ??
-      "",
-    internalContactNote:
-      companyData.internalContactNote ?? companyData.contactNote ?? "",
+    orgNumber: companyData.orgNumber ?? "",
+    internalContactNote: companyData.contactNote ?? "",
   };
 }
 
@@ -328,14 +288,13 @@ function mergeSavedCompany(
     }),
     subtitle: draft.subtitle,
     description: draft.description,
-    companyDescription: draft.description,
     website: draft.websiteUrl,
-    websiteUrl: draft.websiteUrl,
     privacyPolicyUrl: draft.privacyPolicyUrl,
     termsUrl: draft.termsUrl,
     contactEmail: draft.contactEmail,
     contactPhone: draft.contactPhone,
-    phone: draft.contactPhone,
+    contactNote: company?.contactNote ?? "",
+    orgNumber: company?.orgNumber ?? draft.orgNumber,
     cities: company?.cities ?? draft.cities,
     logoUrl: isLocalObjectUrl(draft.logoUrl)
       ? company?.logoUrl ?? ""
@@ -995,7 +954,7 @@ export default function ProfilePage() {
   const isInvalidCompanyId =
     !authLoading && user != null && (companyId == null || Number.isNaN(companyId));
 
-  // Four parallel reads. Each cached under its own key — opening another
+  // Three parallel reads. Each cached under its own key — opening another
   // company portal page reuses these without a network call.
   const {
     data: companyData,
@@ -1004,16 +963,8 @@ export default function ProfilePage() {
     error: companyErr,
   } = useCompanyPrivate(companyId);
   const { data: companyQueues } = useQueuesByCompany(companyId);
-  const { data: publicCompanyData } = useCompanyPublic(companyId);
   const { data: socialPlatforms = [] } = usePlatforms();
 
-  const companyDataWithPublicFields = useMemo(
-    () =>
-      companyData
-        ? withPublicProfileFields(companyData, publicCompanyData ?? null)
-        : null,
-    [companyData, publicCompanyData],
-  );
   const socialPlatformOptions = useMemo(
     () => normalizeSocialPlatformOptions(socialPlatforms),
     [socialPlatforms],
@@ -1022,7 +973,7 @@ export default function ProfilePage() {
   // Hydrate the editor state from cached server data. Reruns when companyId
   // changes (new portal context) or after a save invalidates and refetches.
   useEffect(() => {
-    if (companyId == null || !companyDataWithPublicFields) return;
+    if (companyId == null || !companyData) return;
     if (hydratedCompanyId === companyId && company && draft) return;
 
     const firstQueue =
@@ -1030,19 +981,19 @@ export default function ProfilePage() {
         ? companyQueues[0]
         : null;
 
-    setCompany(companyDataWithPublicFields);
+    setCompany(companyData);
     setCompanyQueue(firstQueue);
     setDraft(
       buildInitialDraft(
         companyId,
-        companyDataWithPublicFields,
+        companyData,
         firstQueue ?? undefined,
       ),
     );
     setHydratedCompanyId(companyId);
   }, [
     companyId,
-    companyDataWithPublicFields,
+    companyData,
     companyQueues,
     company,
     draft,

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   MoreHorizontal,
-} from "lucide-react";
+} from "@/components/icons";
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
 import { useCurrentCompanyPermission } from "@/features/companies/hooks/useCurrentCompanyPermission";
 import { useI18n } from "@/i18n/I18nProvider";
