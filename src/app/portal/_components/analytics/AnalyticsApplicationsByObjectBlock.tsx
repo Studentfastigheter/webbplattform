@@ -10,8 +10,8 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { useCompanyApplications } from "@/features/companies/hooks/useCompanies";
-import type { NewApplication } from "@/features/companies/services/company-service";
+import { useCompanyListingPerformance } from "@/features/companies/hooks/useCompanies";
+import type { ListingAnalyticsPerformance } from "@/features/companies/services/company-service";
 import { dashboardRelPath } from "../../_statics/variables";
 
 type Limit = 5 | 10;
@@ -27,6 +27,7 @@ type ObjectApplicationRow = {
   rooms?: number | null;
   sizeM2?: number | null;
   numApplications: number;
+  numResolvedApplications: number;
 };
 
 function formatListingFacts(item: ObjectApplicationRow, locale: Locale) {
@@ -51,53 +52,34 @@ function formatRent(rent: number | undefined, locale: Locale) {
     : null;
 }
 
-function getApplicationListingKey(application: NewApplication) {
-  if (application.listingId != null) {
-    return String(application.listingId);
-  }
-
-  return [
-    application.listingTitle,
-    application.address,
-    application.listingCity,
-  ]
-    .filter(Boolean)
-    .join("|") || "unknown";
-}
-
 function buildApplicationRows(
-  applications: NewApplication[],
+  listings: ListingAnalyticsPerformance[],
   limit: Limit,
   locale: Locale
 ) {
-  const grouped = new Map<string, NewApplication[]>();
-
-  applications.forEach((application) => {
-    const key = getApplicationListingKey(application);
-    grouped.set(key, [...(grouped.get(key) ?? []), application]);
-  });
-
-  return Array.from(grouped.values())
-    .map((rows) => {
-      const first = rows[0];
-      const location = first.listingCity;
+  return listings
+    .map((listing) => {
+      const resolvedApplications =
+        listing.periodAcceptedApplications + listing.periodRejectedApplications;
+      const totalApplications = listing.periodApplications + resolvedApplications;
 
       return {
-        listingId: first.listingId,
+        listingId: listing.listingId,
         title:
-          first.listingTitle ||
-          first.address ||
+          listing.title ||
+          listing.address ||
           localizedText(locale, "Okänd annons", "Unknown listing"),
-        imageUrl: first.listingImage,
-        address: first.address || location || undefined,
-        location,
-        rent: first.listingRent,
-        dwellingType: first.listingDwellingType,
-        rooms: first.listingRooms,
-        sizeM2: first.listingSizeM2,
-        numApplications: rows.length,
+        address: listing.address || listing.city || undefined,
+        location: listing.city || listing.area || listing.address,
+        rent: listing.rent,
+        dwellingType: listing.dwellingType,
+        rooms: listing.rooms,
+        sizeM2: listing.sizeM2,
+        numApplications: totalApplications,
+        numResolvedApplications: resolvedApplications,
       } satisfies ObjectApplicationRow;
     })
+    .filter((row) => row.numApplications > 0)
     .sort((a, b) => b.numApplications - a.numApplications)
     .slice(0, limit);
 }
@@ -213,7 +195,7 @@ function ListingApplicationPreviewRow({
 
   if (!href) {
     return (
-      <div className="min-h-[118px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <div className="portal-inner-surface min-h-[118px] overflow-hidden bg-white">
         {content}
       </div>
     );
@@ -221,7 +203,7 @@ function ListingApplicationPreviewRow({
 
   return (
     <Link
-      className="group block min-h-[118px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:border-brand-100 hover:bg-brand-25/40 hover:shadow-[0_6px_18px_rgba(16,24,40,0.08)]"
+      className="portal-inner-surface group block min-h-[118px] overflow-hidden bg-white transition hover:border-brand-100 hover:bg-brand-25/40"
       href={href}
     >
       {content}
@@ -269,7 +251,7 @@ function LoadingList() {
     <div className="space-y-3">
       {Array.from({ length: 5 }).map((_, index) => (
         <div
-          className="min-h-[118px] overflow-hidden rounded-2xl border border-gray-100 bg-white"
+          className="portal-inner-surface min-h-[118px] overflow-hidden bg-white"
           key={index}
         >
           <div className="grid min-h-[118px] grid-cols-[96px_minmax(0,1fr)] sm:grid-cols-[132px_minmax(0,1fr)]">
@@ -297,12 +279,14 @@ export default function AnalyticsApplicationsByObjectBlock() {
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
   const [limit, setLimit] = React.useState<Limit>(5);
-  const applicationsQuery = useCompanyApplications(companyId, {
+  const performanceQuery = useCompanyListingPerformance(companyId, {
     enabled: !authLoading,
+    limit: 200,
+    sortBy: "periodApplications",
   });
   const items = React.useMemo(
-    () => buildApplicationRows(applicationsQuery.data ?? [], limit, locale),
-    [applicationsQuery.data, limit, locale]
+    () => buildApplicationRows(performanceQuery.data ?? [], limit, locale),
+    [performanceQuery.data, limit, locale]
   );
   const error =
     !authLoading && !companyId
@@ -311,9 +295,9 @@ export default function AnalyticsApplicationsByObjectBlock() {
           "Kunde inte hitta ett aktivt företag för statistiken.",
           "Could not find an active company for the statistics."
         )
-      : applicationsQuery.isError
-        ? applicationsQuery.error instanceof Error
-          ? applicationsQuery.error.message
+      : performanceQuery.isError
+        ? performanceQuery.error instanceof Error
+          ? performanceQuery.error.message
           : localizedText(
               locale,
               "Kunde inte hämta ansökningar per annons.",
@@ -327,7 +311,7 @@ export default function AnalyticsApplicationsByObjectBlock() {
       size="2x2"
       title={localizedText(locale, "Ansökningar per annons", "Applications per listing")}
     >
-      {authLoading || applicationsQuery.isLoading ? (
+      {authLoading || performanceQuery.isLoading ? (
         <LoadingList />
       ) : error ? (
         <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">

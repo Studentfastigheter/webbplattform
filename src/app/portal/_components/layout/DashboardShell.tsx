@@ -31,7 +31,7 @@ function DashboardFrame({
       : "lg:ml-[90px]";
 
   return (
-    <div className="portal-admin min-h-screen overflow-x-clip bg-gray-50 xl:flex">
+    <div className="portal-admin min-h-screen overflow-x-clip bg-[#f6f7f9] xl:flex">
       <PortalSidebar />
       <PortalBackdrop />
       <div

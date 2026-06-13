@@ -189,7 +189,7 @@ export function TrendBarChart({
       className={cn(
         embedded
           ? "flex h-full min-h-0 min-w-0 flex-col"
-          : "flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white shadow-theme-xs",
+          : "portal-surface flex min-w-0 flex-col overflow-hidden",
         className
       )}
     >

@@ -11,6 +11,7 @@ import {
 import { BadgeCheck, GraduationCap, WalletCards } from "@/components/icons";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/context/AuthContext";
 import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
 import {
   Select,
@@ -29,6 +30,7 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
+import { getActiveCompanyId } from "@/lib/company-access";
 
 type ChartDatum = {
   label: string;
@@ -281,7 +283,7 @@ function SummaryCard({
   helper?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <div className="portal-inner-surface p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-500">{label}</p>
@@ -311,6 +313,8 @@ export default function ApplicationDemographicsPanel({
   periodLabel?: string;
 }) {
   const { locale } = useI18n();
+  const { user, isLoading: authLoading } = useAuth();
+  const companyId = getActiveCompanyId(user);
   const [fromValue, setFromValue] = React.useState(() => toDateTimeLocalValue(from));
   const [toValue, setToValue] = React.useState(() => toDateTimeLocalValue(to));
   const [category, setCategory] =
@@ -330,12 +334,13 @@ export default function ApplicationDemographicsPanel({
     return null;
   }, [fromIso, locale, toIso]);
   const applicationQuery = useApplicationDemography(
+    companyId,
     listingId,
     fromIso ?? "",
     toIso ?? "",
     category,
     gotListing,
-    !dateError
+    !authLoading && !dateError
   );
   const data = applicationQuery.data ?? null;
   const error =
@@ -344,6 +349,8 @@ export default function ApplicationDemographicsPanel({
       ? applicationQuery.error instanceof Error
         ? applicationQuery.error.message
         : "Kunde inte hämta ansökningsdemografi."
+      : !authLoading && !companyId
+      ? localizedText(locale, "Kunde inte hitta aktivt företag.", "Could not find active company.")
       : null);
 
   React.useEffect(() => {
@@ -355,9 +362,9 @@ export default function ApplicationDemographicsPanel({
   const total = totalApplications(data);
   const top = chartData[0];
 
-  if (applicationQuery.isLoading) {
+  if (authLoading || applicationQuery.isLoading) {
     return (
-      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+      <section className="portal-surface p-5">
         <Skeleton className="h-6 w-52" />
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           <Skeleton className="h-[240px] rounded-xl" />
@@ -377,14 +384,14 @@ export default function ApplicationDemographicsPanel({
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <section className="portal-surface p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-gray-950">
             {localizedText(locale, "Ansökningsdemografi", "Application demographics")}
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            {localizedText(locale, "Data från GET /demographics/applications/listing för vald annons.", "Data from GET /demographics/applications/listing for the selected listing.")}
+            {localizedText(locale, "Ansökningar för vald annons uppdelade efter kategori och utfall.", "Applications for the selected listing split by category and outcome.")}
           </p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:justify-end">
@@ -443,7 +450,7 @@ export default function ApplicationDemographicsPanel({
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
+        <div className="portal-inner-surface p-4">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">
             {labelFor(locale, category)}
           </h3>
@@ -458,7 +465,7 @@ export default function ApplicationDemographicsPanel({
             locale={locale}
           />
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 shadow-theme-xs">
+        <div className="portal-inner-surface p-4">
           <h3 className="text-sm font-semibold text-gray-900">{localizedText(locale, "Sammanfattning", "Summary")}</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">

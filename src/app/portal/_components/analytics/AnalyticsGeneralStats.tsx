@@ -86,28 +86,23 @@ const metricToneClass: Record<
   {
     tile: string;
     icon: string;
-    accent: string;
   }
 > = {
   brand: {
-    tile: "border-gray-200 bg-white",
-    icon: "border-brand-100 bg-brand-50 text-brand-500",
-    accent: "from-brand-500/20",
+    tile: "text-brand-600",
+    icon: "border-gray-100 bg-gray-50",
   },
   blue: {
-    tile: "border-gray-200 bg-white",
-    icon: "border-sky-100 bg-sky-50 text-sky-600",
-    accent: "from-sky-500/20",
+    tile: "text-sky-600",
+    icon: "border-gray-100 bg-gray-50",
   },
   rose: {
-    tile: "border-gray-200 bg-white",
-    icon: "border-rose-100 bg-rose-50 text-rose-600",
-    accent: "from-rose-500/20",
+    tile: "text-rose-600",
+    icon: "border-gray-100 bg-gray-50",
   },
   amber: {
-    tile: "border-gray-200 bg-white",
-    icon: "border-amber-100 bg-white text-amber-600",
-    accent: "from-amber-500/20",
+    tile: "text-amber-600",
+    icon: "border-gray-100 bg-gray-50",
   },
 };
 
@@ -307,7 +302,7 @@ function TrendBadge({ change, locale }: { change: number | null; locale: Locale 
 
   if (!formattedChange) {
     return (
-      <span className="inline-flex h-6 items-center gap-1 rounded-full border border-gray-200 bg-white px-2 text-[11px] font-semibold leading-none text-gray-500 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <span className="inline-flex max-w-[120px] items-center gap-1 truncate rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-semibold text-gray-500">
         <Minus className="h-3 w-3" />
         {localizedText(locale, "Oför.", "Unch.")}
       </span>
@@ -320,7 +315,7 @@ function TrendBadge({ change, locale }: { change: number | null; locale: Locale 
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[11px] font-semibold leading-none shadow-[0_1px_2px_rgba(16,24,40,0.04)]",
+        "inline-flex max-w-[120px] items-center gap-1 truncate rounded-full border px-2 py-1 text-[11px] font-semibold",
         isPositive
           ? "border-success-500/15 bg-success-50 text-success-700"
           : "border-error-500/15 bg-error-50 text-error-700"
@@ -372,7 +367,7 @@ export default function AnalyticsGeneralStats({
       <div className={gridClassName}>
         {Array.from({ length: skeletonCount }).map((_, index) => (
           <div
-            className="relative min-h-[116px] min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs"
+            className="portal-surface relative min-h-[116px] min-w-0 overflow-hidden p-5"
             key={index}
           >
             <div className="flex items-start justify-between gap-3">
@@ -406,19 +401,12 @@ export default function AnalyticsGeneralStats({
         return (
           <div
             className={cn(
-              "relative min-h-[120px] min-w-0 overflow-hidden rounded-2xl border p-5 shadow-theme-xs transition-colors hover:border-gray-300",
+              "portal-surface portal-surface-hover min-h-[120px] min-w-0 p-5",
               tone.tile
             )}
             key={item.label}
           >
-            <div
-              className={cn(
-                "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r to-transparent",
-                tone.accent
-              )}
-            />
-
-            <div className="flex min-w-0 items-start justify-between gap-2">
+            <div className="flex min-w-0 items-start justify-between gap-3">
               <div
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
@@ -431,14 +419,12 @@ export default function AnalyticsGeneralStats({
               <TrendBadge change={item.change} locale={locale} />
             </div>
 
-            <div className="mt-3 min-w-0">
-              <p className="truncate text-theme-sm font-medium text-gray-500">
-                {item.label}
-              </p>
-              <p className="mt-1 truncate text-2xl font-bold leading-8 tracking-normal text-gray-800 tabular-nums">
-                {formatMetricValue(item, locale)}
-              </p>
-            </div>
+            <p className="mt-4 truncate text-theme-sm font-medium text-gray-500">
+              {item.label}
+            </p>
+            <p className="mt-1 truncate text-2xl font-bold leading-8 tracking-normal text-gray-800 tabular-nums">
+              {formatMetricValue(item, locale)}
+            </p>
           </div>
         );
       })}

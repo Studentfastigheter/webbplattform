@@ -20,12 +20,12 @@ export default function PortalPageHeader({
   return (
     <header
       className={cn(
-        "flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+        "flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between",
         className
       )}
     >
       <div className="min-w-0">
-        <h1 className="break-words text-2xl font-semibold leading-8 text-gray-900">
+        <h1 className="break-words text-2xl font-semibold leading-8 text-gray-950">
           {title}
         </h1>
         {description ? (

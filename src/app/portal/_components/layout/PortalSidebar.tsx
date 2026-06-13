@@ -127,7 +127,7 @@ export default function PortalSidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-gray-200 bg-white px-5 text-gray-900 transition-all duration-300 ease-in-out lg:translate-x-0",
+        "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-gray-200/80 bg-white px-5 text-gray-900 transition-all duration-300 ease-in-out lg:translate-x-0",
         isExpanded || isMobileOpen
           ? "w-[290px]"
           : isHovered

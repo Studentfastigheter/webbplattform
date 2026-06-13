@@ -37,7 +37,7 @@ export default function Container(
     
 ) {
     return (
-        <div {...props} onClick={onClick} className={twMerge(`relative rounded-2xl border border-gray-200 bg-white ${onClick ? "select-none cursor-pointer" : ""} ${borderStyle == "solid" ? "shadow-theme-xs" : ""} ${PaddingOptions[padding]} ${BorderStyles[borderStyle]}`, className)}>
+        <div {...props} onClick={onClick} className={twMerge(`portal-surface relative ${onClick ? "select-none cursor-pointer portal-surface-hover" : ""} ${PaddingOptions[padding]} ${BorderStyles[borderStyle]}`, className)}>
             {children}
         </div>
     )

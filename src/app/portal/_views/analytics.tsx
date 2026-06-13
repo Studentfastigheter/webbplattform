@@ -6,11 +6,12 @@ import {
 } from "@/features/analytics/components/AnalyticsBlocks";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
-import ApplicationIntervalStats from "../_components/analytics/ApplicationIntervalStats";
 import AnalyticsApplicationsByObjectBlock from "../_components/analytics/AnalyticsApplicationsByObjectBlock";
 import AnalyticsApplicationsTrend from "../_components/analytics/AnalyticsApplicationsTrend";
+import AnalyticsFunnelBlock from "../_components/analytics/AnalyticsFunnelBlock";
 import AnalyticsGeneralStats from "../_components/analytics/AnalyticsGeneralStats";
 import AnalyticsResidentsOverview from "../_components/analytics/AnalyticsResidentsOverview";
+import AnalyticsStatusBreakdownBlock from "../_components/analytics/AnalyticsStatusBreakdownBlock";
 import {
   CompanyDemographyBatchBlock,
   CompanyDemographyBlock,
@@ -30,11 +31,11 @@ export default function Analytics() {
       />
 
       <AnalyticsGrid>
-        {/* Application count + key metrics side-by-side */}
-        <ApplicationIntervalStats />
         <div className="sm:col-span-2 xl:col-span-2">
           <AnalyticsGeneralStats variant="analytics" />
         </div>
+        <AnalyticsFunnelBlock size="2x4" />
+        <AnalyticsStatusBreakdownBlock size="2x4" />
         <AnalyticsBlock size="2x2" title={localizedText(locale, "Ans\u00f6kningstrend", "Application trend")}>
           <AnalyticsApplicationsTrend
             embedded
@@ -42,21 +43,12 @@ export default function Analytics() {
             showSummary={false}
           />
         </AnalyticsBlock>
-
-        {/* Residents trend + distribution */}
-        <AnalyticsResidentsOverview />
-
-        {/* Demographics: company profile + category breakdown */}
-        <CompanyDemographyBlock />
-        <CompanyDemographyBatchBlock />
-
-        {/* Portfolio: listing-level breakdown */}
-        <ListingDemographyBatchBlock />
-
-        {/* Top listings by application count */}
         <AnalyticsApplicationsByObjectBlock />
 
-        {/* Application demographics (per-listing) */}
+        <AnalyticsResidentsOverview />
+        <CompanyDemographyBlock />
+        <CompanyDemographyBatchBlock />
+        <ListingDemographyBatchBlock />
         <ApplicationDemographyPortfolioBlock />
       </AnalyticsGrid>
     </div>

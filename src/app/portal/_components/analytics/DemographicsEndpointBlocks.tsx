@@ -631,15 +631,15 @@ function ApplicationPortfolioSummary({
         <SummaryMetric label={localizedText(locale, "Nekade", "Rejected")} value={rejected} locale={locale} />
       </div>
       <div className="grid min-h-0 gap-4 xl:grid-cols-3">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
+        <div className="portal-inner-surface p-4">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Skolor", "Schools")}</h3>
           <HorizontalBars data={schoolData} locale={locale} />
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
+        <div className="portal-inner-surface p-4">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Dagar i kö", "Days in queue")}</h3>
           <HorizontalBars data={queueData} locale={locale} />
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
+        <div className="portal-inner-surface p-4">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Maxhyra", "Max rent")}</h3>
           <HorizontalBars data={rentData} locale={locale} />
         </div>
@@ -686,7 +686,7 @@ function SummaryMetric({
   locale: Locale;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white px-3 py-2.5 shadow-theme-xs">
+    <div className="portal-inner-surface px-3 py-2.5">
       <p className="truncate text-[11px] font-medium leading-4 text-gray-500 sm:text-xs">
         {label}
       </p>
@@ -731,7 +731,7 @@ function ListingPortfolioSummary({
 
       {/* Charts: 3-col grid for toppannonser, enheter, städer */}
       <div className="grid h-full gap-4 grid-cols-1 lg:grid-cols-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs col-span-1 lg:col-span-2">
+        <div className="portal-inner-surface p-4 col-span-1 lg:col-span-2">
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h3 className="text-sm font-semibold text-gray-900">
               {localizedText(locale, "Toppannonser", "Top listings")}
@@ -741,11 +741,11 @@ function ListingPortfolioSummary({
           <ListingPortfolioChart rows={summary.rows} locale={locale} />
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs col-span-1 lg:col-span-1">
+        <div className="portal-inner-surface p-4 col-span-1 lg:col-span-1">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Enheter", "Devices")}</h3>
           <PieDistribution compact data={summary.deviceData} locale={locale} />
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs col-span-1 lg:col-span-1">
+        <div className="portal-inner-surface p-4 col-span-1 lg:col-span-1">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Städer", "Cities")}</h3>
           <HorizontalBars compact data={summary.cityData} locale={locale} />
         </div>
@@ -1160,13 +1160,13 @@ export function ApplicationDemographyPortfolioBlock() {
             />
           </div>
           <div className="grid min-h-0 gap-4 xl:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
+            <div className="portal-inner-surface p-4">
               <h3 className="mb-2 text-sm font-semibold text-gray-900">
                 {labelFor(locale, category)}
               </h3>
               <HorizontalBars data={bucketData} valueLabel={localizedText(locale, "Ansökningar", "Applications")} locale={locale} />
             </div>
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
+            <div className="portal-inner-surface p-4">
               <h3 className="mb-2 text-sm font-semibold text-gray-900">
                 {localizedText(locale, "Ansökningar per annons", "Applications per listing")}
               </h3>
@@ -1211,6 +1211,7 @@ export function ListingDemographyDrilldownBlock() {
   }, [range]);
 
   const listingDemographyQuery = useListingDemography(
+    companyId,
     listingId || null,
     fromIso,
     toIso,

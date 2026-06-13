@@ -1,24 +1,39 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import * as React from "react";
 import Link from "next/link";
 import {
-  BarChart3,
   CalendarDays,
   Check,
+  CheckCircle,
+  Clock3,
   ExternalLink,
   FileUser,
+  GraduationCap,
   Home,
+  Mail,
   MapPin,
-  TrendingUp,
+  Percent,
+  Search,
+  SlidersHorizontal,
+  UserCircle,
 } from "@/components/icons";
-import { toast } from "sonner";
-import { AnalyticsBlock, AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import {
-  TrendBarChart,
-  type TrendBarChartPoint,
-} from "@/features/analytics/components/TrendBarChart";
+  CartesianGrid,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { toast } from "sonner";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -27,23 +42,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/context/AuthContext";
-import { useI18n } from "@/i18n/I18nProvider";
-import type { Locale } from "@/i18n/config";
-import { localizedText, numberLocale } from "@/i18n/text";
-import { getActiveCompanyId } from "@/lib/company-access";
-import { cn } from "@/lib/utils";
 import {
+  AnalyticsBlock,
+  AnalyticsGrid,
+} from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  useCompanyApplicationOutcomeCounts,
+  useCompanyApplicationStatusCounts,
   useCompanyApplications,
   useHandleCompanyApplication,
 } from "@/features/companies/hooks/useCompanies";
 import {
   APPLICATION_STATUS_VALUES,
+  type AnalyticsCountBucket,
   type ApplicationStatus,
   type NewApplication,
 } from "@/features/companies/services/company-service";
-import { dashboardRelPath } from "../_statics/variables";
+import { useAuth } from "@/context/AuthContext";
+import type { Locale } from "@/i18n/config";
+import { useI18n } from "@/i18n/I18nProvider";
+import { localizedText, numberLocale } from "@/i18n/text";
+import { getActiveCompanyId } from "@/lib/company-access";
+import { cn } from "@/lib/utils";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
+import { dashboardRelPath } from "../_statics/variables";
 
 type AnsokningarProps = {
   listingId?: string | null;
@@ -54,34 +76,64 @@ type PortalApplication = NewApplication & {
   submittedAtTime: number;
 };
 
-type ListingApplicationGroup = {
-  key: string;
-  listingId?: string | number;
-  title: string;
-  address: string;
-  city?: string;
-  rent?: number;
-  imageUrl?: string;
-  applications: PortalApplication[];
-  total: number;
-  firstSubmittedAt: number;
-  lastSubmittedAt: number;
-  trend: TrendBarChartPoint[];
-};
-
 type HandleApplicationStatusChange = (
   application: PortalApplication,
   status: ApplicationStatus
 ) => void;
 
-function formatTimestamp(value: number, locale: Locale) {
-  if (!Number.isFinite(value) || value <= 0) return "-";
-  return new Intl.DateTimeFormat(numberLocale(locale), {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
+type ApplicationStatusFilter = "all" | ApplicationStatus;
+type ApplicationSort = "newest" | "oldest";
+type TrendGranularity = "day" | "week" | "month";
+
+type IntervalOption = {
+  value: string;
+  label: string;
+  labelEn: string;
+  days?: number;
+  months?: number;
+};
+
+type ApplicationTrendPoint = {
+  timestamp: Date;
+  label: string;
+  fullLabel: string;
+  applications: number;
+};
+
+const intervalOptions: IntervalOption[] = [
+  { value: "7d", label: "7 dagar", labelEn: "7 days", days: 7 },
+  { value: "30d", label: "30 dagar", labelEn: "30 days", days: 30 },
+  { value: "90d", label: "90 dagar", labelEn: "90 days", days: 90 },
+  { value: "1y", label: "1 år", labelEn: "1 year", months: 12 },
+];
+
+const granularityOptions: Array<{
+  value: TrendGranularity;
+  label: string;
+  labelEn: string;
+}> = [
+  { value: "day", label: "Dag", labelEn: "Day" },
+  { value: "week", label: "Vecka", labelEn: "Week" },
+  { value: "month", label: "Månad", labelEn: "Month" },
+];
+
+const applicationStatusBadgeClassName: Record<ApplicationStatus, string> = {
+  SUBMITTED: "border-gray-200 bg-gray-50 text-gray-700",
+  UNDER_REVIEW: "border-amber-200 bg-amber-50 text-amber-800",
+  ACCEPTED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  OFFERED: "border-sky-200 bg-sky-50 text-sky-700",
+  REJECTED: "border-red-200 bg-red-50 text-red-700",
+};
+
+const applicationStatusBarClassName: Record<ApplicationStatus, string> = {
+  SUBMITTED: "bg-gray-500",
+  UNDER_REVIEW: "bg-amber-500",
+  ACCEPTED: "bg-emerald-500",
+  OFFERED: "bg-sky-500",
+  REJECTED: "bg-red-500",
+};
+
+const openApplicationStatusKeys = ["SUBMITTED", "UNDER_REVIEW", "OFFERED"];
 
 function parseDate(value?: string) {
   if (!value) return 0;
@@ -90,153 +142,62 @@ function parseDate(value?: string) {
   return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
 }
 
-function parseApplicationDate(application: NewApplication) {
-  const timestamp = parseDate(application.submittedAt ?? application.createdAt);
-  return timestamp > 0 ? new Date(timestamp) : null;
-}
-
-function toPortalApplication(application: NewApplication, locale: Locale): PortalApplication {
+function toPortalApplication(
+  application: NewApplication,
+  locale: Locale
+): PortalApplication {
   const submittedAt = application.submittedAt ?? application.createdAt;
 
   return {
     ...application,
-    listingName: application.listingTitle || application.address || localizedText(locale, "Okänd annons", "Unknown listing"),
+    listingName:
+      application.listingTitle ||
+      application.address ||
+      localizedText(locale, "Okänd bostad", "Unknown listing"),
     submittedAtTime: parseDate(submittedAt),
   };
 }
 
-function getMonthStart(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+function formatTimestamp(value: number, locale: Locale) {
+  if (!Number.isFinite(value) || value <= 0) return "-";
+
+  return new Intl.DateTimeFormat(numberLocale(locale), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
-function getMonthKey(date: Date) {
-  return `${date.getFullYear()}-${date.getMonth()}`;
+function formatFullDate(date: Date, locale: Locale) {
+  return new Intl.DateTimeFormat(numberLocale(locale), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
 }
 
-function buildMonthlyTrend(
-  applications: PortalApplication[],
-  minimumMonths: number
-): TrendBarChartPoint[] {
-  const countsByMonth = new Map<string, number>();
-  const dates = applications
-    .map(parseApplicationDate)
-    .filter((date): date is Date => date !== null)
-    .sort((a, b) => a.getTime() - b.getTime());
-
-  if (dates.length === 0) {
-    return [];
-  }
-
-  dates.forEach((date) => {
-    const key = getMonthKey(date);
-    countsByMonth.set(key, (countsByMonth.get(key) ?? 0) + 1);
+function formatAxisDate(date: Date, granularity: TrendGranularity, locale: Locale) {
+  const formatter = new Intl.DateTimeFormat(numberLocale(locale), {
+    day: granularity === "month" ? undefined : "numeric",
+    month: "short",
+    year: granularity === "month" ? "2-digit" : undefined,
   });
 
-  const earliestMonth = getMonthStart(dates[0]);
-  const latestMonth = getMonthStart(new Date());
-  const defaultStart = new Date(
-    latestMonth.getFullYear(),
-    latestMonth.getMonth() - minimumMonths + 1,
-    1
-  );
-  const startMonth =
-    earliestMonth.getTime() < defaultStart.getTime() ? earliestMonth : defaultStart;
-  const points: TrendBarChartPoint[] = [];
+  return formatter.format(date).replace(".", "");
+}
 
-  for (
-    let cursor = new Date(startMonth);
-    cursor.getTime() <= latestMonth.getTime();
-    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
-  ) {
-    points.push({
-      timestamp: new Date(cursor),
-      value: countsByMonth.get(getMonthKey(cursor)) ?? 0,
-    });
+function formatAxisValue(value: string | number, locale: Locale) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue < 1000) {
+    return String(value);
   }
 
-  return points;
-}
-
-function getListingGroupKey(application: PortalApplication) {
-  if (application.listingId != null) {
-    return String(application.listingId);
-  }
-
-  return (
-    [application.listingTitle, application.address, application.listingCity]
-      .filter(Boolean)
-      .join("|") || application.listingName
-  );
-}
-
-function buildListingGroups(
-  applications: PortalApplication[],
-  locale: Locale
-): ListingApplicationGroup[] {
-  const grouped = new Map<string, PortalApplication[]>();
-
-  applications.forEach((application) => {
-    const key = getListingGroupKey(application);
-    grouped.set(key, [...(grouped.get(key) ?? []), application]);
-  });
-
-  return Array.from(grouped.entries())
-    .map(([key, rows]) => {
-      const sortedRows = [...rows].sort(
-        (a, b) => b.submittedAtTime - a.submittedAtTime
-      );
-      const first = sortedRows[sortedRows.length - 1];
-      const latest = sortedRows[0];
-
-      return {
-        key,
-        listingId: latest.listingId,
-        title: latest.listingTitle || latest.address || localizedText(locale, "Okänd annons", "Unknown listing"),
-        address: latest.address || latest.listingCity || localizedText(locale, "Ingen adress", "No address"),
-        city: latest.listingCity,
-        rent: latest.listingRent,
-        imageUrl: latest.listingImage,
-        applications: sortedRows,
-        total: sortedRows.length,
-        firstSubmittedAt: first?.submittedAtTime ?? 0,
-        lastSubmittedAt: latest?.submittedAtTime ?? 0,
-        trend: buildMonthlyTrend(sortedRows, 6),
-      };
-    })
-    .sort((a, b) => {
-      if (b.total !== a.total) return b.total - a.total;
-      return b.lastSubmittedAt - a.lastSubmittedAt;
-    });
-}
-
-function formatRent(value: number | undefined, locale: Locale) {
-  return typeof value === "number" && Number.isFinite(value)
-    ? localizedText(
-        locale,
-        `${value.toLocaleString(numberLocale(locale))} kr/mån`,
-        `SEK ${value.toLocaleString(numberLocale(locale))}/mo`
-      )
-    : null;
-}
-
-function getRecentCount(applications: PortalApplication[], start: Date, end: Date) {
-  return applications.filter((application) => {
-    const timestamp = application.submittedAtTime;
-    return timestamp >= start.getTime() && timestamp < end.getTime();
-  }).length;
-}
-
-function formatPercentChange(current: number, previous: number, locale: Locale) {
-  if (previous === 0) {
-    return current > 0 ? "+100%" : null;
-  }
-
-  const change = ((current - previous) / previous) * 100;
-  const prefix = change > 0 ? "+" : "";
-
-  return `${prefix}${change.toLocaleString(numberLocale(locale), {
+  return `${(numericValue / 1000).toLocaleString(numberLocale(locale), {
     maximumFractionDigits: 1,
-  })}%`;
+  })}K`;
 }
 
 function getApplicationStatusLabel(status: ApplicationStatus, locale: Locale) {
@@ -254,14 +215,6 @@ function getApplicationStatusLabel(status: ApplicationStatus, locale: Locale) {
   }
 }
 
-const applicationStatusBadgeClassName: Record<ApplicationStatus, string> = {
-  SUBMITTED: "border-gray-200 bg-gray-50 text-gray-700",
-  UNDER_REVIEW: "border-amber-200 bg-amber-50 text-amber-800",
-  ACCEPTED: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  OFFERED: "border-sky-200 bg-sky-50 text-sky-700",
-  REJECTED: "border-red-200 bg-red-50 text-red-700",
-};
-
 function ApplicationStatusBadge({
   status,
   locale,
@@ -272,7 +225,7 @@ function ApplicationStatusBadge({
   if (!status) {
     return (
       <span className="inline-flex h-7 items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-500">
-        {localizedText(locale, "Ok\u00e4nd", "Unknown")}
+        {localizedText(locale, "Okänd", "Unknown")}
       </span>
     );
   }
@@ -305,21 +258,266 @@ function getApplicantDisplayName(application: PortalApplication, locale: Locale)
     );
   }
 
-  return localizedText(locale, "S\u00f6kande", "Applicant");
+  return localizedText(locale, "Sökande", "Applicant");
 }
 
-function getApplicationDetail(application: PortalApplication, locale: Locale) {
-  if (application.message) return application.message;
-  if (application.studentSchool) return application.studentSchool;
-  if (application.applicationId != null) {
-    return localizedText(
-      locale,
-      `Ans\u00f6kan #${application.applicationId}`,
-      `Application #${application.applicationId}`
-    );
+function getApplicantFacts(application: PortalApplication) {
+  return [
+    application.studentSchool,
+    application.studentProgram,
+    application.studentCity,
+  ].filter(Boolean);
+}
+
+function getListingFacts(application: PortalApplication, locale: Locale) {
+  const facts = [
+    application.listingCity,
+    application.listingRooms
+      ? localizedText(
+          locale,
+          `${application.listingRooms} rok`,
+          `${application.listingRooms} rooms`
+        )
+      : null,
+    application.listingSizeM2
+      ? localizedText(
+          locale,
+          `${application.listingSizeM2} m²`,
+          `${application.listingSizeM2} sqm`
+        )
+      : null,
+    application.listingRent
+      ? localizedText(
+          locale,
+          `${application.listingRent.toLocaleString(numberLocale(locale))} kr/mån`,
+          `SEK ${application.listingRent.toLocaleString(numberLocale(locale))}/mo`
+        )
+      : null,
+  ];
+
+  return facts.filter(Boolean).join(" · ");
+}
+
+function getApplicationMessage(application: PortalApplication, locale: Locale) {
+  return (
+    application.message ||
+    application.studentSchool ||
+    localizedText(locale, "Ingen kommentar", "No comment")
+  );
+}
+
+function getRecentCount(applications: PortalApplication[], days: number) {
+  const now = Date.now();
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+
+  return applications.filter(
+    (application) =>
+      application.submittedAtTime >= start.getTime() &&
+      application.submittedAtTime <= now
+  ).length;
+}
+
+function getBackendAnalyticsRange() {
+  const to = new Date();
+  const from = new Date(to);
+  from.setFullYear(from.getFullYear() - 1);
+
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+  };
+}
+
+function formatCount(value: number, locale: Locale) {
+  return value.toLocaleString(numberLocale(locale));
+}
+
+function formatShare(value: number, total: number, locale: Locale) {
+  const share = total > 0 ? value / total : 0;
+
+  return `${(share * 100).toLocaleString(numberLocale(locale), {
+    maximumFractionDigits: 1,
+  })}%`;
+}
+
+function getBucketTotal(buckets: AnalyticsCountBucket[]) {
+  return buckets.reduce((sum, bucket) => sum + bucket.count, 0);
+}
+
+function getBucketCountByKeys(buckets: AnalyticsCountBucket[], keys: string[]) {
+  const normalizedKeys = new Set(keys.map((key) => key.toUpperCase()));
+
+  return buckets.reduce((sum, bucket) => {
+    const key = bucket.key.trim().toUpperCase();
+    return normalizedKeys.has(key) ? sum + bucket.count : sum;
+  }, 0);
+}
+
+function buildStatusBucketsFromApplications(
+  applications: PortalApplication[]
+): AnalyticsCountBucket[] {
+  return APPLICATION_STATUS_VALUES.map((status) => ({
+    key: status,
+    count: applications.filter((application) => application.status === status).length,
+  }));
+}
+
+function buildOutcomeBucketsFromApplications(
+  applications: PortalApplication[]
+): AnalyticsCountBucket[] {
+  return [
+    {
+      key: "ACCEPTED",
+      count: applications.filter((application) => application.status === "ACCEPTED")
+        .length,
+    },
+    {
+      key: "REJECTED",
+      count: applications.filter((application) => application.status === "REJECTED")
+        .length,
+    },
+  ];
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfWeek(date: Date) {
+  const start = startOfDay(date);
+  const dayOffset = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - dayOffset);
+  return start;
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function getPeriodStart(date: Date, granularity: TrendGranularity) {
+  if (granularity === "week") return startOfWeek(date);
+  if (granularity === "month") return startOfMonth(date);
+  return startOfDay(date);
+}
+
+function addPeriod(date: Date, granularity: TrendGranularity) {
+  const next = new Date(date);
+
+  if (granularity === "month") {
+    next.setMonth(next.getMonth() + 1);
+  } else if (granularity === "week") {
+    next.setDate(next.getDate() + 7);
+  } else {
+    next.setDate(next.getDate() + 1);
   }
 
-  return localizedText(locale, "Ingen kommentar", "No comment");
+  return next;
+}
+
+function getPeriodEnd(date: Date, granularity: TrendGranularity, maxDate: Date) {
+  const next = addPeriod(date, granularity);
+  next.setDate(next.getDate() - 1);
+
+  return next.getTime() > maxDate.getTime() ? maxDate : next;
+}
+
+function dateKey(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function resolveRange(interval: IntervalOption) {
+  const to = startOfDay(new Date());
+  const from = new Date(to);
+
+  if (interval.days) {
+    from.setDate(from.getDate() - interval.days + 1);
+  } else if (interval.months) {
+    from.setMonth(from.getMonth() - interval.months);
+    from.setDate(from.getDate() + 1);
+  }
+
+  return { from, to };
+}
+
+function buildTrendPoints({
+  applications,
+  from,
+  to,
+  granularity,
+  locale,
+}: {
+  applications: PortalApplication[];
+  from: Date;
+  to: Date;
+  granularity: TrendGranularity;
+  locale: Locale;
+}): ApplicationTrendPoint[] {
+  const countsByPeriod = new Map<string, number>();
+  const fromTime = from.getTime();
+  const toEnd = new Date(to);
+  toEnd.setHours(23, 59, 59, 999);
+  const toTime = toEnd.getTime();
+
+  applications.forEach((application) => {
+    const timestamp = application.submittedAtTime;
+
+    if (!Number.isFinite(timestamp) || timestamp < fromTime || timestamp > toTime) {
+      return;
+    }
+
+    const periodStart = getPeriodStart(new Date(timestamp), granularity);
+    const key = dateKey(periodStart);
+    countsByPeriod.set(key, (countsByPeriod.get(key) ?? 0) + 1);
+  });
+
+  const points: ApplicationTrendPoint[] = [];
+
+  for (
+    let cursor = getPeriodStart(from, granularity);
+    cursor.getTime() <= to.getTime();
+    cursor = addPeriod(cursor, granularity)
+  ) {
+    const periodEnd = getPeriodEnd(cursor, granularity, to);
+    points.push({
+      timestamp: new Date(cursor),
+      label: formatAxisDate(cursor, granularity, locale),
+      fullLabel:
+        granularity === "day"
+          ? formatFullDate(cursor, locale)
+          : `${formatFullDate(cursor, locale)} - ${formatFullDate(periodEnd, locale)}`,
+      applications: countsByPeriod.get(dateKey(cursor)) ?? 0,
+    });
+  }
+
+  return points;
+}
+
+function applicationMatchesSearch(application: PortalApplication, search: string) {
+  const query = search.trim().toLowerCase();
+
+  if (!query) return true;
+
+  return [
+    application.firstName,
+    application.surname,
+    application.studentEmail,
+    application.studentSchool,
+    application.studentProgram,
+    application.studentCity,
+    application.listingName,
+    application.address,
+    application.listingCity,
+    application.message,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
 }
 
 function ApplicationStatusControl({
@@ -334,7 +532,7 @@ function ApplicationStatusControl({
   pendingApplicationId: number | null;
 }) {
   const currentStatus = application.status;
-  const [selectedStatus, setSelectedStatus] = useState<ApplicationStatus>(
+  const [selectedStatus, setSelectedStatus] = React.useState<ApplicationStatus>(
     currentStatus ?? "SUBMITTED"
   );
   const applicationId = application.applicationId;
@@ -347,7 +545,7 @@ function ApplicationStatusControl({
   const isSaving = pendingApplicationId === applicationId;
   const hasChanged = currentStatus !== selectedStatus;
 
-  useEffect(() => {
+  React.useEffect(() => {
     setSelectedStatus(currentStatus ?? "SUBMITTED");
   }, [applicationId, currentStatus]);
 
@@ -361,8 +559,8 @@ function ApplicationStatusControl({
           value={selectedStatus}
         >
           <SelectTrigger
-            aria-label={localizedText(locale, "V\u00e4lj status", "Choose status")}
-            className="h-8 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs sm:w-[170px]"
+            aria-label={localizedText(locale, "Välj status", "Choose status")}
+            className="h-8 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs sm:w-[170px]"
           >
             <SelectValue />
           </SelectTrigger>
@@ -392,420 +590,825 @@ function ApplicationStatusControl({
   );
 }
 
-function StatTile({
+function ApplicationsCountBlock({
+  applications,
+  locale,
+}: {
+  applications: PortalApplication[];
+  locale: Locale;
+}) {
+  const recent30 = getRecentCount(applications, 30);
+  const latest = applications[0]?.submittedAtTime ?? 0;
+
+  return (
+    <AnalyticsBlock contentClassName="p-5 sm:p-5" size="2x1">
+      <div className="flex h-full min-h-[160px] min-w-0 flex-col justify-between">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-brand-600">
+            <FileUser className="h-5 w-5" />
+          </div>
+          <span className="truncate rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-semibold text-gray-600">
+            {localizedText(
+              locale,
+              `${recent30.toLocaleString(numberLocale(locale))} senaste 30 d`,
+              `${recent30.toLocaleString(numberLocale(locale))} last 30d`
+            )}
+          </span>
+        </div>
+
+        <div className="min-w-0">
+          <p className="truncate text-theme-sm font-medium text-gray-500">
+            {localizedText(locale, "Mottagna ansökningar", "Received applications")}
+          </p>
+          <p className="mt-1 truncate text-3xl font-bold leading-9 tracking-normal text-gray-800 tabular-nums">
+            {applications.length.toLocaleString(numberLocale(locale))}
+          </p>
+          <p className="mt-2 flex min-w-0 items-center gap-1.5 truncate text-xs font-medium text-gray-500">
+            <Clock3 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              {latest > 0
+                ? localizedText(
+                    locale,
+                    `Senaste: ${formatTimestamp(latest, locale)}`,
+                    `Latest: ${formatTimestamp(latest, locale)}`
+                  )
+                : localizedText(locale, "Inga ansökningar än", "No applications yet")}
+            </span>
+          </p>
+        </div>
+      </div>
+    </AnalyticsBlock>
+  );
+}
+
+function ApplicationsTrendBlock({
+  applications,
+  locale,
+}: {
+  applications: PortalApplication[];
+  locale: Locale;
+}) {
+  const [selectedInterval, setSelectedInterval] = React.useState("90d");
+  const [selectedGranularity, setSelectedGranularity] =
+    React.useState<TrendGranularity>("week");
+  const interval =
+    intervalOptions.find((option) => option.value === selectedInterval) ??
+    intervalOptions[2]!;
+  const range = React.useMemo(() => resolveRange(interval), [interval]);
+  const data = React.useMemo(
+    () =>
+      buildTrendPoints({
+        applications,
+        from: range.from,
+        to: range.to,
+        granularity: selectedGranularity,
+        locale,
+      }),
+    [applications, locale, range.from, range.to, selectedGranularity]
+  );
+  const hasData = data.some((point) => point.applications > 0);
+  const chartConfig = React.useMemo(
+    () =>
+      ({
+        applications: {
+          label: localizedText(locale, "Ansökningar", "Applications"),
+          color: "#004225",
+        },
+      }) satisfies ChartConfig,
+    [locale]
+  );
+  const selectTriggerClassName =
+    "h-8 rounded-lg border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10";
+  const controls = (
+    <div className="flex min-w-max items-center gap-2">
+      <Select onValueChange={setSelectedInterval} value={selectedInterval}>
+        <SelectTrigger
+          aria-label={localizedText(locale, "Tidsintervall", "Time interval")}
+          className={cn(selectTriggerClassName, "w-[86px]")}
+          size="sm"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="border-gray-200 bg-white">
+          {intervalOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {localizedText(locale, option.label, option.labelEn)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        onValueChange={(value) => setSelectedGranularity(value as TrendGranularity)}
+        value={selectedGranularity}
+      >
+        <SelectTrigger
+          aria-label={localizedText(locale, "Upplösning", "Resolution")}
+          className={cn(selectTriggerClassName, "w-[96px]")}
+          size="sm"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="border-gray-200 bg-white">
+          {granularityOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {localizedText(locale, option.label, option.labelEn)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  return (
+    <AnalyticsBlock
+      action={controls}
+      contentClassName="overflow-hidden p-3 pt-1 sm:p-4 sm:pt-1"
+      size="2x3"
+      title={localizedText(locale, "Ansökningar över tid", "Applications over time")}
+    >
+      {hasData ? (
+        <ChartContainer
+          className="h-full min-h-[160px] w-full min-w-0"
+          config={chartConfig}
+        >
+          <LineChart
+            accessibilityLayer
+            data={data}
+            margin={{
+              bottom: 0,
+              left: 0,
+              right: 8,
+              top: 8,
+            }}
+          >
+            <CartesianGrid stroke="#f0f2f7" vertical={false} />
+            <XAxis
+              axisLine={false}
+              dataKey="label"
+              interval={data.length > 18 ? "preserveStartEnd" : 0}
+              minTickGap={8}
+              tick={{ fill: "#9ca3af", fontSize: 11 }}
+              tickLine={false}
+              tickMargin={12}
+            />
+            <YAxis
+              allowDecimals={false}
+              axisLine={false}
+              tick={{ fill: "#9ca3af", fontSize: 11 }}
+              tickFormatter={(value) => formatAxisValue(value, locale)}
+              tickLine={false}
+              tickMargin={8}
+              width={38}
+            />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  labelFormatter={(_, payload) => {
+                    const row = payload?.[0]?.payload as
+                      | ApplicationTrendPoint
+                      | undefined;
+
+                    return row?.fullLabel ?? "";
+                  }}
+                />
+              }
+              cursor={false}
+            />
+            <Line
+              activeDot={{ r: 4 }}
+              dataKey="applications"
+              dot={false}
+              name={localizedText(locale, "Ansökningar", "Applications")}
+              stroke="var(--color-applications)"
+              strokeWidth={2}
+              type="monotone"
+            />
+          </LineChart>
+        </ChartContainer>
+      ) : (
+        <div className="flex h-full min-h-[160px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 text-center text-theme-sm text-gray-500">
+          {localizedText(
+            locale,
+            "Det finns inga ansökningar i valt intervall.",
+            "There are no applications in the selected interval."
+          )}
+        </div>
+      )}
+    </AnalyticsBlock>
+  );
+}
+
+function PipelineMetric({
+  icon: Icon,
   label,
   value,
   detail,
-  icon: Icon,
-  tone,
+  className,
 }: {
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  detail?: string | null;
-  icon: ComponentType<{ className?: string }>;
-  tone: "brand" | "blue" | "rose" | "amber";
+  detail: string;
+  className: string;
 }) {
-  const toneClass = {
-    brand: "border-gray-200 bg-white text-brand-600",
-    blue: "border-gray-200 bg-white text-sky-600",
-    rose: "border-gray-200 bg-white text-rose-600",
-    amber: "border-gray-200 bg-white text-amber-600",
-  }[tone];
-
   return (
-    <div className={cn("min-w-0 rounded-2xl border p-5 shadow-theme-xs", toneClass)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-gray-50">
-          <Icon className="h-5 w-5" />
+    <div className="portal-inner-surface min-w-0 px-3 py-3">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-medium text-gray-500">{label}</p>
+          <p className="mt-1 truncate text-2xl font-semibold leading-8 text-gray-900 tabular-nums">
+            {value}
+          </p>
         </div>
-        {detail ? (
-          <span className="truncate rounded-full border border-white/80 bg-white/80 px-2 py-1 text-[11px] font-semibold text-gray-600">
-            {detail}
-          </span>
-        ) : null}
+        <span
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+            className
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
       </div>
-      <p className="mt-4 truncate text-theme-sm font-medium text-gray-500">
-        {label}
-      </p>
-      <p className="mt-1 truncate text-2xl font-bold leading-8 tracking-normal text-gray-800 tabular-nums">
-        {value}
+      <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500">
+        {detail}
       </p>
     </div>
   );
 }
 
-function ApplicationStatsGrid({
+function PipelineStatusRow({
+  status,
+  count,
+  total,
+  locale,
+}: {
+  status: ApplicationStatus;
+  count: number;
+  total: number;
+  locale: Locale;
+}) {
+  const width = total > 0 ? Math.max((count / total) * 100, count > 0 ? 4 : 0) : 0;
+
+  return (
+    <div className="min-w-0">
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <p className="truncate text-xs font-medium text-gray-600">
+          {getApplicationStatusLabel(status, locale)}
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-xs font-semibold text-gray-900 tabular-nums">
+            {formatCount(count, locale)}
+          </span>
+          <span className="w-11 text-right text-[11px] font-semibold text-gray-500 tabular-nums">
+            {formatShare(count, total, locale)}
+          </span>
+        </div>
+      </div>
+      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-gray-100">
+        <div
+          className={cn("h-full rounded-full", applicationStatusBarClassName[status])}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ApplicationPipelineBlock({
   applications,
-  groups,
+  companyId,
+  listingId,
   locale,
 }: {
   applications: PortalApplication[];
-  groups: ListingApplicationGroup[];
+  companyId: number;
+  listingId?: string | null;
   locale: Locale;
 }) {
-  const now = new Date();
-  const currentStart = new Date(now);
-  currentStart.setDate(currentStart.getDate() - 30);
-  const previousStart = new Date(now);
-  previousStart.setDate(previousStart.getDate() - 60);
-  const current30 = getRecentCount(applications, currentStart, now);
-  const previous30 = getRecentCount(applications, previousStart, currentStart);
-  const average = groups.length > 0 ? applications.length / groups.length : 0;
+  const useBackendBuckets = !listingId;
+  const range = React.useMemo(() => getBackendAnalyticsRange(), []);
+  const statusQuery = useCompanyApplicationStatusCounts(companyId, {
+    enabled: useBackendBuckets,
+    from: range.from,
+    to: range.to,
+  });
+  const outcomeQuery = useCompanyApplicationOutcomeCounts(companyId, {
+    enabled: useBackendBuckets,
+    from: range.from,
+    to: range.to,
+  });
+  const statusBuckets = React.useMemo(
+    () =>
+      useBackendBuckets
+        ? (statusQuery.data ?? [])
+        : buildStatusBucketsFromApplications(applications),
+    [applications, statusQuery.data, useBackendBuckets]
+  );
+  const outcomeBuckets = React.useMemo(
+    () =>
+      useBackendBuckets
+        ? (outcomeQuery.data ?? [])
+        : buildOutcomeBucketsFromApplications(applications),
+    [applications, outcomeQuery.data, useBackendBuckets]
+  );
+  const isLoading =
+    useBackendBuckets && (statusQuery.isLoading || outcomeQuery.isLoading);
+  const error =
+    useBackendBuckets && (statusQuery.isError || outcomeQuery.isError)
+      ? statusQuery.error instanceof Error
+        ? statusQuery.error.message
+        : outcomeQuery.error instanceof Error
+          ? outcomeQuery.error.message
+          : localizedText(
+              locale,
+              "Kunde inte h\u00e4mta pipeline-data.",
+              "Could not load pipeline data."
+            )
+      : null;
+  const statusTotal = useBackendBuckets
+    ? getBucketTotal(statusBuckets)
+    : applications.length;
+  const openCount = getBucketCountByKeys(
+    statusBuckets,
+    openApplicationStatusKeys
+  );
+  const acceptedCount = getBucketCountByKeys(outcomeBuckets, ["ACCEPTED"]);
+  const rejectedCount = getBucketCountByKeys(outcomeBuckets, ["REJECTED"]);
+  const outcomeTotal = Math.max(getBucketTotal(outcomeBuckets), 0);
+  const decidedCount = outcomeTotal || acceptedCount + rejectedCount;
+  const statusRows = APPLICATION_STATUS_VALUES.map((status) => ({
+    status,
+    count: getBucketCountByKeys(statusBuckets, [status]),
+  }));
 
   return (
-    <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
-      <StatTile
-        detail={localizedText(locale, "alla öppna", "all open")}
-        icon={FileUser}
-        label={localizedText(locale, "Totalt antal ansökningar", "Total applications")}
-        tone="brand"
-        value={applications.length.toLocaleString(numberLocale(locale))}
+    <AnalyticsBlock
+      contentClassName="overflow-hidden"
+      description={
+        listingId
+          ? localizedText(locale, "Vald bostad", "Selected listing")
+          : localizedText(locale, "Senaste 12 m\u00e5naderna", "Last 12 months")
+      }
+      size="2x2"
+      title={localizedText(locale, "Ans\u00f6kningspipeline", "Application pipeline")}
+    >
+      {isLoading ? (
+        <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            {[0, 1, 2].map((item) => (
+              <Skeleton className="h-[96px] rounded-lg" key={item} />
+            ))}
+          </div>
+          <div className="space-y-4">
+            {[0, 1, 2, 3, 4].map((item) => (
+              <div className="space-y-2" key={item}>
+                <div className="flex justify-between gap-3">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-3.5 w-16" />
+                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">
+          {error}
+        </div>
+      ) : (
+        <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="grid min-h-0 gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            <PipelineMetric
+              className="bg-sky-50 text-sky-600"
+              detail={localizedText(
+                locale,
+                `${formatShare(openCount, statusTotal, locale)} av pipeline`,
+                `${formatShare(openCount, statusTotal, locale)} of pipeline`
+              )}
+              icon={FileUser}
+              label={localizedText(locale, "\u00d6ppna \u00e4renden", "Open cases")}
+              value={formatCount(openCount, locale)}
+            />
+            <PipelineMetric
+              className="bg-emerald-50 text-emerald-600"
+              detail={localizedText(
+                locale,
+                `${formatCount(decidedCount, locale)} avgjorda \u00e4renden`,
+                `${formatCount(decidedCount, locale)} resolved cases`
+              )}
+              icon={CheckCircle}
+              label={localizedText(locale, "Antagna", "Accepted")}
+              value={formatCount(acceptedCount, locale)}
+            />
+            <PipelineMetric
+              className="bg-amber-50 text-amber-700"
+              detail={localizedText(
+                locale,
+                `${formatCount(rejectedCount, locale)} avslag`,
+                `${formatCount(rejectedCount, locale)} rejections`
+              )}
+              icon={Percent}
+              label={localizedText(locale, "Acceptansgrad", "Acceptance rate")}
+              value={formatShare(acceptedCount, decidedCount, locale)}
+            />
+          </div>
+
+          <div className="min-h-0 min-w-0 overflow-y-auto pr-1">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-600">
+                  <SlidersHorizontal className="h-4 w-4" />
+                </span>
+                <h3 className="truncate text-sm font-semibold text-gray-900">
+                  {localizedText(locale, "Statusf\u00f6rdelning", "Status breakdown")}
+                </h3>
+              </div>
+              <span className="shrink-0 text-sm font-semibold text-gray-900 tabular-nums">
+                {formatCount(statusTotal, locale)}
+              </span>
+            </div>
+            <div className="mt-4 space-y-3">
+              {statusRows.map((row) => (
+                <PipelineStatusRow
+                  count={row.count}
+                  key={row.status}
+                  locale={locale}
+                  status={row.status}
+                  total={statusTotal}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </AnalyticsBlock>
+  );
+}
+
+function ApplicationsOverview({
+  applications,
+  companyId,
+  listingId,
+  locale,
+}: {
+  applications: PortalApplication[];
+  companyId: number;
+  listingId?: string | null;
+  locale: Locale;
+}) {
+  return (
+    <AnalyticsGrid>
+      <ApplicationsCountBlock applications={applications} locale={locale} />
+      <ApplicationPipelineBlock
+        applications={applications}
+        companyId={companyId}
+        listingId={listingId}
+        locale={locale}
       />
-      <StatTile
-        detail={localizedText(locale, "med ansökningar", "with applications")}
-        icon={Home}
-        label={localizedText(locale, "Annonser", "Listings")}
-        tone="blue"
-        value={groups.length.toLocaleString(numberLocale(locale))}
+      <ApplicationsTrendBlock applications={applications} locale={locale} />
+    </AnalyticsGrid>
+  );
+}
+
+function ApplicationRow({
+  application,
+  index,
+  locale,
+  onStatusChange,
+  pendingApplicationId,
+}: {
+  application: PortalApplication;
+  index: number;
+  locale: Locale;
+  onStatusChange: HandleApplicationStatusChange;
+  pendingApplicationId: number | null;
+}) {
+  const applicantFacts = getApplicantFacts(application);
+  const listingFacts = getListingFacts(application, locale);
+  const listingHref =
+    application.listingId != null
+      ? `${dashboardRelPath}/listings/${encodeURIComponent(String(application.listingId))}`
+      : null;
+
+  return (
+    <div className="grid gap-4 border-t border-gray-100 px-4 py-4 transition-colors hover:bg-gray-50/50 sm:px-5 xl:grid-cols-[minmax(230px,1fr)_minmax(260px,1.2fr)_minmax(150px,0.7fr)_auto] xl:items-center">
+      <div className="flex min-w-0 gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-brand-600">
+          <UserCircle className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-gray-900">
+            {getApplicantDisplayName(application, locale)}
+          </p>
+          {application.studentEmail ? (
+            <p className="mt-1 flex min-w-0 items-center gap-1.5 truncate text-xs text-gray-500">
+              <Mail className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{application.studentEmail}</span>
+            </p>
+          ) : null}
+          {applicantFacts.length > 0 ? (
+            <p className="mt-1 flex min-w-0 items-center gap-1.5 truncate text-xs text-gray-500">
+              <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{applicantFacts.join(" · ")}</span>
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <Home className="h-4 w-4 shrink-0 text-gray-400" />
+          <p className="truncate text-sm font-semibold text-gray-900">
+            {application.listingName}
+          </p>
+          {listingHref ? (
+            <Link
+              aria-label={localizedText(locale, "Öppna bostad", "Open listing")}
+              className="shrink-0 text-gray-400 transition hover:text-[#004225]"
+              href={listingHref}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          ) : null}
+        </div>
+        <p className="mt-1 flex min-w-0 items-center gap-1.5 truncate text-xs text-gray-500">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">
+            {application.address ||
+              application.listingCity ||
+              localizedText(locale, "Adress saknas", "Address missing")}
+          </span>
+        </p>
+        {listingFacts ? (
+          <p className="mt-1 truncate text-xs text-gray-500">{listingFacts}</p>
+        ) : null}
+        <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500">
+          {getApplicationMessage(application, locale)}
+        </p>
+      </div>
+
+      <div className="min-w-0">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+          <CalendarDays className="h-3.5 w-3.5" />
+          {localizedText(locale, "Inkommen", "Received")}
+        </p>
+        <p className="mt-1 text-sm font-semibold text-gray-800">
+          {formatTimestamp(application.submittedAtTime, locale)}
+        </p>
+      </div>
+
+      <ApplicationStatusControl
+        application={application}
+        locale={locale}
+        onStatusChange={onStatusChange}
+        pendingApplicationId={pendingApplicationId}
       />
-      <StatTile
-        detail={formatPercentChange(current30, previous30, locale) ?? localizedText(locale, "oför.", "unch.")}
-        icon={CalendarDays}
-        label={localizedText(locale, "Senaste 30 dagar", "Last 30 days")}
-        tone="rose"
-        value={current30.toLocaleString(numberLocale(locale))}
-      />
-      <StatTile
-        detail={localizedText(locale, "per annons", "per listing")}
-        icon={BarChart3}
-        label={localizedText(locale, "Snittansökningar", "Average applications")}
-        tone="amber"
-        value={average.toLocaleString(numberLocale(locale), {
-          maximumFractionDigits: 1,
-        })}
-      />
+
+      <span className="sr-only">
+        {localizedText(locale, `Rad ${index + 1}`, `Row ${index + 1}`)}
+      </span>
     </div>
+  );
+}
+
+function ApplicationsList({
+  applications,
+  listingId,
+  locale,
+  onStatusChange,
+  pendingApplicationId,
+}: {
+  applications: PortalApplication[];
+  listingId?: string | null;
+  locale: Locale;
+  onStatusChange: HandleApplicationStatusChange;
+  pendingApplicationId: number | null;
+}) {
+  const [search, setSearch] = React.useState("");
+  const [statusFilter, setStatusFilter] =
+    React.useState<ApplicationStatusFilter>("all");
+  const [sort, setSort] = React.useState<ApplicationSort>("newest");
+  const filteredApplications = React.useMemo(() => {
+    return applications
+      .filter((application) =>
+        statusFilter === "all" ? true : application.status === statusFilter
+      )
+      .filter((application) => applicationMatchesSearch(application, search))
+      .sort((left, right) =>
+        sort === "newest"
+          ? right.submittedAtTime - left.submittedAtTime
+          : left.submittedAtTime - right.submittedAtTime
+      );
+  }, [applications, search, sort, statusFilter]);
+  const selectTriggerClassName =
+    "h-9 rounded-lg border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10";
+
+  return (
+    <section className="portal-surface overflow-hidden">
+      <div className="flex min-w-0 flex-col gap-4 border-b border-gray-100 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold leading-6 text-gray-900">
+            {listingId
+              ? localizedText(locale, "Kandidater för vald bostad", "Candidates for selected listing")
+              : localizedText(locale, "Kandidatlista", "Candidate list")}
+          </h2>
+          <p className="mt-1 text-theme-sm text-gray-500">
+            {localizedText(
+              locale,
+              `${filteredApplications.length.toLocaleString(numberLocale(locale))} av ${applications.length.toLocaleString(numberLocale(locale))} visas`,
+              `${filteredApplications.length.toLocaleString(numberLocale(locale))} of ${applications.length.toLocaleString(numberLocale(locale))} shown`
+            )}
+          </p>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center">
+          <div className="relative min-w-0 md:w-[260px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Input
+              aria-label={localizedText(locale, "Sök ansökningar", "Search applications")}
+              className="portal-control h-9 pl-9 text-sm"
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={localizedText(locale, "Sök namn, bostad, skola", "Search name, listing, school")}
+              value={search}
+            />
+          </div>
+
+          <Select
+            onValueChange={(value) => setStatusFilter(value as ApplicationStatusFilter)}
+            value={statusFilter}
+          >
+            <SelectTrigger
+              aria-label={localizedText(locale, "Filtrera status", "Filter status")}
+              className={cn(selectTriggerClassName, "w-full md:w-[170px]")}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-gray-200 bg-white">
+              <SelectItem value="all">
+                {localizedText(locale, "Alla statusar", "All statuses")}
+              </SelectItem>
+              {APPLICATION_STATUS_VALUES.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {getApplicationStatusLabel(status, locale)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            onValueChange={(value) => setSort(value as ApplicationSort)}
+            value={sort}
+          >
+            <SelectTrigger
+              aria-label={localizedText(locale, "Sortera", "Sort")}
+              className={cn(selectTriggerClassName, "w-full md:w-[130px]")}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-gray-200 bg-white">
+              <SelectItem value="newest">
+                {localizedText(locale, "Nyast först", "Newest first")}
+              </SelectItem>
+              <SelectItem value="oldest">
+                {localizedText(locale, "Äldst först", "Oldest first")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {filteredApplications.length > 0 ? (
+        <div>
+          <div className="hidden border-b border-gray-100 bg-gray-50/70 px-5 py-2 text-xs font-semibold uppercase tracking-normal text-gray-500 xl:grid xl:grid-cols-[minmax(230px,1fr)_minmax(260px,1.2fr)_minmax(150px,0.7fr)_auto]">
+            <span>{localizedText(locale, "Sökande", "Applicant")}</span>
+            <span>{localizedText(locale, "Bostad", "Listing")}</span>
+            <span>{localizedText(locale, "Inkommen", "Received")}</span>
+            <span className="text-right">
+              {localizedText(locale, "Hantering", "Handling")}
+            </span>
+          </div>
+          {filteredApplications.map((application, index) => (
+            <ApplicationRow
+              application={application}
+              index={index}
+              key={`${application.applicationId ?? application.id ?? "application"}-${application.studentId}-${application.submittedAtTime}-${index}`}
+              locale={locale}
+              onStatusChange={onStatusChange}
+              pendingApplicationId={pendingApplicationId}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex min-h-[260px] flex-col items-center justify-center px-6 py-10 text-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-gray-500">
+            <SlidersHorizontal className="h-5 w-5" />
+          </div>
+          <p className="mt-3 text-sm font-semibold text-gray-900">
+            {localizedText(locale, "Inga ansökningar matchar filtret", "No applications match the filter")}
+          </p>
+          <p className="mt-1 max-w-md text-theme-sm text-gray-500">
+            {localizedText(
+              locale,
+              "Justera sökningen eller statusfiltret för att visa fler ansökningar.",
+              "Adjust the search or status filter to show more applications."
+            )}
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
 function LoadingApplicationsLayout({ locale }: { locale: Locale }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <AnalyticsGrid>
-        <div className="sm:col-span-2 xl:col-span-4">
-          <div className="grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton className="h-full min-h-[120px] rounded-2xl" key={index} />
-            ))}
+        <AnalyticsBlock contentClassName="p-5 sm:p-5" size="2x1">
+          <div className="flex h-full min-h-[160px] flex-col justify-between">
+            <div className="flex items-start justify-between gap-3">
+              <Skeleton className="h-10 w-10 rounded-xl" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-4 w-40" />
+            </div>
           </div>
-        </div>
-        <AnalyticsBlock size="2x2" title={localizedText(locale, "Ansökningstrend", "Application trend")}>
-          <Skeleton className="h-full min-h-[220px] rounded-md" />
         </AnalyticsBlock>
-        <AnalyticsBlock size="2x2" title={localizedText(locale, "Trending annonser", "Trending listings")}>
-          <Skeleton className="h-full min-h-[220px] rounded-md" />
-        </AnalyticsBlock>
-      </AnalyticsGrid>
-
-      <div className="grid min-h-[520px] gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4">
-          <Skeleton className="h-5 w-40 rounded" />
-          <div className="mt-5 grid gap-3">
-            {[0, 1, 2, 3, 4].map((item) => (
-              <Skeleton className="h-20 rounded-xl" key={item} />
-            ))}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-6">
-          <Skeleton className="h-7 w-64 rounded" />
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <Skeleton className="h-24 rounded-xl" />
-            <Skeleton className="h-24 rounded-xl" />
-            <Skeleton className="h-24 rounded-xl" />
-          </div>
-          <Skeleton className="mt-6 h-28 rounded-xl" />
-          <div className="mt-6 grid gap-3">
-            <Skeleton className="h-24 rounded-xl" />
-            <Skeleton className="h-24 rounded-xl" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ListingApplicationsLayout({
-  groups,
-  selectedGroup,
-  onSelect,
-  locale,
-  onStatusChange,
-  pendingApplicationId,
-}: {
-  groups: ListingApplicationGroup[];
-  selectedGroup: ListingApplicationGroup | null;
-  onSelect: (key: string) => void;
-  locale: Locale;
-  onStatusChange: HandleApplicationStatusChange;
-  pendingApplicationId: number | null;
-}) {
-  return (
-    <div className="grid min-h-[520px] gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-[340px_minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        {groups.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center px-5 py-10 text-center text-theme-sm text-gray-500">
-            {localizedText(locale, "Det finns inga annonser med ansökningar att visa ännu.", "There are no listings with applications to show yet.")}
-          </div>
-        ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto p-2">
-            <div className="grid gap-1">
-              {groups.map((group) => (
-                <ListingListItem
-                  group={group}
-                  isSelected={selectedGroup?.key === group.key}
-                  key={group.key}
-                  locale={locale}
-                  onSelect={() => onSelect(group.key)}
-                />
+        <AnalyticsBlock
+          size="2x2"
+          title={localizedText(locale, "Ans\u00f6kningspipeline", "Application pipeline")}
+        >
+          <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+              {[0, 1, 2].map((item) => (
+                <Skeleton className="h-[96px] rounded-lg" key={item} />
+              ))}
+            </div>
+            <div className="space-y-4">
+              {[0, 1, 2, 3, 4].map((item) => (
+                <div className="space-y-2" key={item}>
+                  <div className="flex justify-between gap-3">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-3.5 w-16" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
               ))}
             </div>
           </div>
-        )}
-      </aside>
+        </AnalyticsBlock>
+        <AnalyticsBlock
+          size="2x3"
+          title={localizedText(locale, "Ansökningar över tid", "Applications over time")}
+        >
+          <Skeleton className="h-full min-h-[160px] rounded-xl" />
+        </AnalyticsBlock>
+      </AnalyticsGrid>
 
-      <section className="min-h-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        {selectedGroup ? (
-          <SelectedListingDetails
-            group={selectedGroup}
-            locale={locale}
-            onStatusChange={onStatusChange}
-            pendingApplicationId={pendingApplicationId}
-          />
-        ) : (
-          <div className="flex h-full min-h-[360px] items-center justify-center px-6 py-10 text-center text-theme-sm text-gray-500">
-            {localizedText(locale, "Välj en annons i listan för att visa ansökningarna.", "Choose a listing in the list to view applications.")}
+      <section className="portal-surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-28" />
           </div>
-        )}
+          <Skeleton className="h-9 w-64 rounded-lg" />
+        </div>
+        {[0, 1, 2, 3, 4].map((item) => (
+          <div
+            className="grid gap-4 border-t border-gray-100 px-5 py-4 xl:grid-cols-[minmax(230px,1fr)_minmax(260px,1.2fr)_minmax(150px,0.7fr)_auto]"
+            key={item}
+          >
+            <Skeleton className="h-12 rounded-xl" />
+            <Skeleton className="h-12 rounded-xl" />
+            <Skeleton className="h-10 rounded-xl" />
+            <Skeleton className="h-16 rounded-xl" />
+          </div>
+        ))}
       </section>
     </div>
   );
 }
 
-function TrendingListings({ groups, locale }: { groups: ListingApplicationGroup[]; locale: Locale }) {
-  const topGroups = groups.slice(0, 5);
-
-  if (topGroups.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-sm text-gray-500">
-        {localizedText(locale, "Det finns inga annonser med ansökningar ännu.", "There are no listings with applications yet.")}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3 overflow-y-auto pr-1">
-      {topGroups.map((group, index) => (
-        <div
-          className="flex min-w-0 items-center gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-xs"
-          key={group.key}
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700">
-            {index + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-gray-950">
-              {group.title}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-gray-500">
-              {group.address}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-lg font-semibold leading-6 text-gray-950 tabular-nums">
-              {group.total.toLocaleString(numberLocale(locale))}
-            </p>
-            <p className="text-xs text-gray-500">{localizedText(locale, "ans.", "apps")}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ListingListItem({
-  group,
-  isSelected,
-  onSelect,
-  locale,
-}: {
-  group: ListingApplicationGroup;
-  isSelected: boolean;
-  onSelect: () => void;
-  locale: Locale;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={isSelected}
-      className={cn(
-        "relative w-full rounded-lg px-3 py-3 pl-4 text-left transition-colors",
-        isSelected
-          ? "bg-[#004225]/5 text-[#004225]"
-          : "text-gray-700 hover:bg-gray-50"
-      )}
-      onClick={onSelect}
-    >
-      {isSelected ? (
-        <span className="absolute bottom-2 left-1.5 top-2 w-1 rounded-full bg-[#004225]" />
-      ) : null}
-
-      <span className="block truncate text-sm font-semibold">
-        {group.title}
-      </span>
-      <span className="mt-1 block truncate text-xs text-gray-500">
-        {group.city || localizedText(locale, "Stad saknas", "City missing")}
-      </span>
-    </button>
-  );
-}
-
-function SelectedListingDetails({
-  group,
-  locale,
-  onStatusChange,
-  pendingApplicationId,
-}: {
-  group: ListingApplicationGroup;
-  locale: Locale;
-  onStatusChange: HandleApplicationStatusChange;
-  pendingApplicationId: number | null;
-}) {
-  const href =
-    group.listingId != null
-      ? `${dashboardRelPath}/listings/${encodeURIComponent(String(group.listingId))}`
-      : null;
-  const rent = formatRent(group.rent, locale);
-  const facts = [group.city, rent].filter(Boolean).join(" · ");
-
-  return (
-    <div className="h-full min-h-0 overflow-y-auto px-5 py-5 sm:px-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex min-w-0 flex-col gap-4 border-b border-gray-100 pb-5 md:flex-row md:items-start">
-          <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-xl bg-gray-100 md:w-44">
-            {group.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-                src={group.imageUrl}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-brand-50 text-xs font-semibold text-brand-500">
-                {localizedText(locale, "Ingen bild", "No image")}
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h2 className="break-words text-xl font-semibold text-gray-900">
-                  {group.title}
-                </h2>
-                <p className="mt-2 flex min-w-0 items-center gap-2 text-theme-sm text-gray-500">
-                  <MapPin className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{group.address}</span>
-                </p>
-                {facts ? (
-                  <p className="mt-1 text-theme-sm text-gray-500">{facts}</p>
-                ) : null}
-              </div>
-
-              <div className="shrink-0 sm:text-right">
-                {href ? (
-                  <Link
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 text-sm font-medium text-gray-900 transition hover:bg-gray-50"
-                    href={href}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    {localizedText(locale, "Öppna annons", "Open listing")}
-                  </Link>
-                ) : null}
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-500">
-                    {localizedText(locale, "Totalt antal ansökningar", "Total applications")}
-                  </p>
-                  <p className="mt-0.5 text-xl font-semibold leading-7 text-gray-950 tabular-nums">
-                    {group.total.toLocaleString(numberLocale(locale))}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold text-gray-950">{localizedText(locale, "Ansökningar", "Applications")}</h3>
-          <div className="mt-3 grid gap-2">
-            {group.applications.map((application) => (
-              <div
-                className="grid gap-3 rounded-lg border border-gray-100 bg-gray-50/70 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                key={`${application.applicationId ?? application.id}-${application.submittedAtTime}`}
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-gray-900">
-                    {getApplicantDisplayName(application, locale)}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs text-gray-500">
-                    {getApplicationDetail(application, locale)}
-                  </p>
-                </div>
-                <div className="flex min-w-0 flex-col gap-2 sm:items-end">
-                  <ApplicationStatusControl
-                    application={application}
-                    locale={locale}
-                    onStatusChange={onStatusChange}
-                    pendingApplicationId={pendingApplicationId}
-                  />
-                  <span className="shrink-0 text-xs font-medium text-gray-500">
-                    {formatTimestamp(application.submittedAtTime, locale)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function Ansokningar({
-  listingId = null,
-}: AnsokningarProps) {
+export default function Ansokningar({ listingId = null }: AnsokningarProps) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
-  const [selectedListingKey, setSelectedListingKey] = useState<string | null>(null);
   const handleApplicationMutation = useHandleCompanyApplication();
 
   const applicationsQuery = useCompanyApplications(companyId, {
     enabled: !authLoading,
   });
-  const applications = useMemo(
+  const applications = React.useMemo(
     () =>
       (applicationsQuery.data ?? [])
         .map((application) => toPortalApplication(application, locale))
-        .sort((a, b) => b.submittedAtTime - a.submittedAtTime),
+        .sort((left, right) => right.submittedAtTime - left.submittedAtTime),
     [applicationsQuery.data, locale]
   );
-  const loading = applicationsQuery.isLoading;
-  const error = applicationsQuery.isError
-    ? applicationsQuery.error instanceof Error
-      ? applicationsQuery.error.message
-      : localizedText(locale, "Kunde inte h\u00e4mta ans\u00f6kningar.", "Could not load applications.")
-    : null;
-  const visibleApplications = useMemo(() => {
+  const visibleApplications = React.useMemo(() => {
     if (!listingId) {
       return applications;
     }
@@ -814,42 +1417,17 @@ export default function Ansokningar({
       (application) => String(application.listingId ?? "") === String(listingId)
     );
   }, [applications, listingId]);
-
-  const listingGroups = useMemo(
-    () => buildListingGroups(visibleApplications, locale),
-    [locale, visibleApplications]
-  );
-  const applicationTrend = useMemo(
-    () => buildMonthlyTrend(visibleApplications, 12),
-    [visibleApplications]
-  );
-  const showOverviewAnalytics = !listingId;
-
-  useEffect(() => {
-    if (listingGroups.length === 0) {
-      setSelectedListingKey(null);
-      return;
-    }
-
-    setSelectedListingKey((current) => {
-      if (current && listingGroups.some((group) => group.key === current)) {
-        return current;
-      }
-
-      return listingGroups[0].key;
-    });
-  }, [listingGroups]);
-
-  const selectedGroup = useMemo(() => {
-    if (!selectedListingKey) return listingGroups[0] ?? null;
-    return (
-      listingGroups.find((group) => group.key === selectedListingKey) ??
-      listingGroups[0] ??
-      null
-    );
-  }, [listingGroups, selectedListingKey]);
   const pendingApplicationId = handleApplicationMutation.isPending
     ? handleApplicationMutation.variables?.payload.applicationId ?? null
+    : null;
+  const error = applicationsQuery.isError
+    ? applicationsQuery.error instanceof Error
+      ? applicationsQuery.error.message
+      : localizedText(
+          locale,
+          "Kunde inte hämta ansökningar.",
+          "Could not load applications."
+        )
     : null;
 
   const handleStatusChange: HandleApplicationStatusChange = (
@@ -858,11 +1436,7 @@ export default function Ansokningar({
   ) => {
     if (!companyId) {
       toast.error(
-        localizedText(
-          locale,
-          "F\u00f6retagskonto saknas.",
-          "Company account is missing."
-        )
+        localizedText(locale, "Företagskonto saknas.", "Company account is missing.")
       );
       return;
     }
@@ -880,7 +1454,7 @@ export default function Ansokningar({
       toast.error(
         localizedText(
           locale,
-          "Ans\u00f6kan saknar n\u00f6dv\u00e4ndiga id:n.",
+          "Ansökan saknar nödvändiga id:n.",
           "The application is missing required ids."
         )
       );
@@ -901,7 +1475,7 @@ export default function Ansokningar({
           toast.success(
             localizedText(
               locale,
-              "Ans\u00f6kningsstatus uppdaterades.",
+              "Ansökningsstatus uppdaterades.",
               "Application status was updated."
             )
           );
@@ -912,7 +1486,7 @@ export default function Ansokningar({
               ? error.message
               : localizedText(
                   locale,
-                  "Kunde inte uppdatera ans\u00f6kningsstatus.",
+                  "Kunde inte uppdatera ansökningsstatus.",
                   "Could not update application status."
                 )
           );
@@ -923,7 +1497,7 @@ export default function Ansokningar({
 
   if (authLoading) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
+      <div className="portal-surface p-6 text-sm text-gray-500">
         {localizedText(locale, "Laddar ansökningar...", "Loading applications...")}
       </div>
     );
@@ -931,16 +1505,24 @@ export default function Ansokningar({
 
   if (!user) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        {localizedText(locale, "Logga in för att se företagets ansökningar.", "Log in to view the company's applications.")}
+      <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
+        {localizedText(
+          locale,
+          "Logga in för att se företagets ansökningar.",
+          "Log in to view the company's applications."
+        )}
       </div>
     );
   }
 
   if (!companyId) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
+      <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
+        {localizedText(
+          locale,
+          "Denna sida är bara tillgänglig för företagskonton.",
+          "This page is only available for company accounts."
+        )}
       </div>
     );
   }
@@ -948,63 +1530,46 @@ export default function Ansokningar({
   return (
     <div className="space-y-6">
       <PortalPageHeader
-        title={localizedText(locale, "Ans\u00f6kningar", "Applications")}
-        description={localizedText(
-          locale,
-          "F\u00f6lj inkommande ans\u00f6kningar, trender och status per annons.",
-          "Track incoming applications, trends and status per listing."
-        )}
+        title={
+          listingId
+            ? localizedText(locale, "Annonsans\u00f6kningar", "Listing applications")
+            : localizedText(locale, "Ans\u00f6kningar", "Applications")
+        }
+        description={
+          listingId
+            ? localizedText(
+                locale,
+                "Hantera kandidater, statusar och pipeline f\u00f6r vald bostad.",
+                "Manage candidates, statuses and pipeline for the selected listing."
+              )
+            : localizedText(
+                locale,
+                "Hantera inkommande ans\u00f6kningar, statusar och pipeline f\u00f6r hela portf\u00f6ljen.",
+                "Manage incoming applications, statuses and pipeline for the full portfolio."
+              )
+        }
       />
 
-      {error && (
+      {error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
-      )}
+      ) : null}
 
-      {loading ? (
+      {applicationsQuery.isLoading ? (
         <LoadingApplicationsLayout locale={locale} />
       ) : (
         <>
-          {showOverviewAnalytics ? (
-            <AnalyticsGrid>
-              <div className="sm:col-span-2 xl:col-span-4">
-                <ApplicationStatsGrid
-                  applications={visibleApplications}
-                  groups={listingGroups}
-                  locale={locale}
-                />
-              </div>
-
-              <AnalyticsBlock size="2x2" title={localizedText(locale, "Ansökningstrend", "Application trend")}>
-                <TrendBarChart
-                  data={applicationTrend}
-                  defaultInterval="1m"
-                  embedded
-                  emptyMessage={localizedText(locale, "Det finns inga ansökningar registrerade ännu.", "There are no applications registered yet.")}
-                  showHeader={false}
-                  showSummary={false}
-                  title={localizedText(locale, "Ansökningstrend", "Application trend")}
-                  valueLabel={localizedText(locale, "Ansökningar", "Applications")}
-                />
-              </AnalyticsBlock>
-
-              <AnalyticsBlock
-                action={<TrendingUp className="h-5 w-5 text-brand-500" />}
-                contentClassName="overflow-hidden"
-                size="2x2"
-                title={localizedText(locale, "Trending annonser", "Trending listings")}
-              >
-                <TrendingListings groups={listingGroups} locale={locale} />
-              </AnalyticsBlock>
-            </AnalyticsGrid>
-          ) : null}
-
-          <ListingApplicationsLayout
-            groups={listingGroups}
-            selectedGroup={selectedGroup}
+          <ApplicationsOverview
+            applications={visibleApplications}
+            companyId={companyId}
+            listingId={listingId}
             locale={locale}
-            onSelect={setSelectedListingKey}
+          />
+          <ApplicationsList
+            applications={visibleApplications}
+            listingId={listingId}
+            locale={locale}
             onStatusChange={handleStatusChange}
             pendingApplicationId={pendingApplicationId}
           />

@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { Heart, MousePointerClick, Smartphone } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/context/AuthContext";
 import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
 import { useListingByAllCategoriesDemography } from "@/features/analytics/hooks/useDemographics";
 import {
@@ -19,6 +20,7 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
+import { getActiveCompanyId } from "@/lib/company-access";
 
 type ChartDatum = {
   label: string;
@@ -259,7 +261,7 @@ function StatCard({
   const top = toData(data, locale)[0];
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <div className="portal-inner-surface p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-500">{label}</p>
@@ -290,15 +292,19 @@ export default function ListingDemographicsPanel({
   periodLabel?: string;
 }) {
   const { locale } = useI18n();
+  const { user, isLoading: authLoading } = useAuth();
+  const companyId = getActiveCompanyId(user);
   const fallbackRange = React.useMemo(() => getRange(), []);
   const fromValue = from ?? fallbackRange.from;
   const toValue = to ?? fallbackRange.to;
   const fromKey = fromValue.toISOString();
   const toKey = toValue.toISOString();
   const demographyQuery = useListingByAllCategoriesDemography(
+    companyId,
     listingId,
     fromKey,
-    toKey
+    toKey,
+    !authLoading
   );
   const data = demographyQuery.data ?? {
     VIEW_TYPE: null,
@@ -313,15 +319,17 @@ export default function ListingDemographicsPanel({
     ? demographyQuery.error instanceof Error
       ? demographyQuery.error.message
       : localizedText(locale, "Kunde inte hämta annonsdemografi.", "Could not load listing demographics.")
+    : !authLoading && !companyId
+    ? localizedText(locale, "Kunde inte hitta aktivt företag.", "Could not find active company.")
     : null;
   const localizedPeriodLabel =
     periodLabel === "senaste 90 dagarna"
       ? localizedText(locale, "senaste 90 dagarna", "the last 90 days")
       : periodLabel;
 
-  if (demographyQuery.isLoading) {
+  if (authLoading || demographyQuery.isLoading) {
     return (
-      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+      <section className="portal-surface p-5">
         <Skeleton className="h-6 w-44" />
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-[240px] rounded-xl" />
@@ -340,7 +348,7 @@ export default function ListingDemographicsPanel({
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <section className="portal-surface p-5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-gray-950">
@@ -422,7 +430,7 @@ function ChartCard({
   legend: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs">
+    <div className="portal-inner-surface p-4">
       <h3 className="mb-2 text-sm font-semibold text-gray-900">{title}</h3>
       {chart}
       {legend}

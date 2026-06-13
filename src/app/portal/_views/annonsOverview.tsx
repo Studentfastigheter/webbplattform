@@ -61,12 +61,10 @@ import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
   type ApplicationStatisticEntry,
-  type ListingViewCounts,
-  type ObjectApplicationCount,
+  type ListingAnalyticsPerformance,
 } from "@/features/companies/services/company-service";
 import {
-  useApplicationCountsPerObject,
-  useListingViewCounts,
+  useCompanyListingPerformanceDetail,
   useTimedApplicationsForListing,
 } from "@/features/companies/hooks/useCompanies";
 import { useListingDemography } from "@/features/analytics/hooks/useDemographics";
@@ -209,13 +207,6 @@ function pickString(source: Record<string, unknown>, paths: string[]): string | 
   return undefined;
 }
 
-function normalizeKey(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[\s,.-]+/g, "")
-    .replace(/[|]/g, "");
-}
-
 function mapStatus(statusRaw: string | undefined, locale: Locale): {
   label: string;
   tone: PortalListingStatusTone;
@@ -325,8 +316,12 @@ function formatDwellingType(value: string | null | undefined, locale: Locale): s
 function resolveApplicationCount(
   listing: ListingDetailDTO,
   companyListing: RawListing | null,
-  source: ObjectApplicationCount[]
+  listingPerformance: ListingAnalyticsPerformance | null
 ): number {
+  if (listingPerformance) {
+    return listingPerformance.currentApplications;
+  }
+
   const fromCompanyListing = companyListing
     ? pickNumber(companyListing, [
         "applications",
@@ -343,33 +338,23 @@ function resolveApplicationCount(
     return fromCompanyListing;
   }
 
-  const byId = source.find((item) => String(item.listingId) === String(listing.id));
-  if (byId) {
-    return byId.numApplications;
-  }
+  const fromListing = pickNumber(listing as unknown as Record<string, unknown>, [
+    "applications",
+    "applicationCount",
+    "applicationsCount",
+    "numApplications",
+    "stats.applications",
+    "analytics.applications",
+    "statistics.applications",
+  ]);
 
-  const candidates = [
-    listing.fullAddress,
-    [listing.area, listing.city].filter(Boolean).join(", "),
-    listing.title,
-  ].filter((value): value is string => Boolean(value));
-
-  for (const candidate of candidates) {
-    const key = normalizeKey(candidate);
-    const match = source.find((item) => normalizeKey(item.address) === key);
-    if (match) {
-      return match.numApplications;
-    }
-  }
-
-  return 0;
+  return fromListing ?? 0;
 }
 
 function resolveListingMeta(
   listing: ListingDetailDTO,
   companyListing: RawListing | null,
-  applicationsByObject: ObjectApplicationCount[],
-  viewCounts: ListingViewCounts | null,
+  listingPerformance: ListingAnalyticsPerformance | null,
   locale: Locale
 ): ListingMeta {
   const rawDetail = listing as unknown as Record<string, unknown>;
@@ -381,6 +366,7 @@ function resolveListingMeta(
       ? pickString(companyListing, ["updatedAt", "modifiedAt", "lastEditedAt"])
       : undefined) ?? pickString(rawDetail, ["updatedAt", "modifiedAt", "lastEditedAt"]);
   const { label, tone, value } = mapStatus(
+    listingPerformance?.status ??
     (companyListing
       ? pickString(companyListing, ["status", "listingStatus", "state"])
       : undefined) ?? pickString(rawDetail, ["status", "listingStatus", "state"]),
@@ -388,9 +374,9 @@ function resolveListingMeta(
   );
 
   return {
-    applications: resolveApplicationCount(listing, companyListing, applicationsByObject),
+    applications: resolveApplicationCount(listing, companyListing, listingPerformance),
     quickViews:
-      viewCounts?.quickViews ??
+      listingPerformance?.lifetimeQuickViews ??
       (companyListing
         ? pickNumber(companyListing, [
             "quickViews",
@@ -408,7 +394,7 @@ function resolveListingMeta(
         : undefined) ??
       0,
     detailedViews:
-      viewCounts?.detailedViews ??
+      listingPerformance?.lifetimeDetailedViews ??
       (companyListing
         ? pickNumber(companyListing, [
             "detailedViews",
@@ -465,7 +451,7 @@ function RequirementProfileCard({
   profileId?: string | null;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <section className="portal-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700">
@@ -501,7 +487,7 @@ function RequirementProfileCard({
         </p>
       ) : (
         <div className="mt-4 space-y-4">
-          <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+          <div className="portal-inner-surface px-4 py-3">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
               {localizedText(locale, "Ålderskrav", "Age requirements")}
             </p>
@@ -522,7 +508,7 @@ function RequirementProfileCard({
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {profile.requiredDocuments.map((document, index) => (
                   <div
-                    className="rounded-xl border border-gray-200 bg-white px-4 py-3"
+                    className="portal-inner-surface bg-white px-4 py-3"
                     key={`${document.caption ?? "document"}-${index}`}
                   >
                     <p className="text-sm font-medium text-gray-900">
@@ -557,7 +543,7 @@ function ListingDetailsCard({
   meta: ListingMeta;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <section className="portal-surface p-5">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="mt-1 text-base font-semibold text-gray-950">
@@ -643,32 +629,32 @@ const metricToneClass: Record<
   { tile: string; icon: string; accent: string }
 > = {
   green: {
-    tile: "border-gray-200 bg-white",
+    tile: "",
     icon: "border-green-100 bg-green-50 text-green-600",
     accent: "from-green-500/20",
   },
   sky: {
-    tile: "border-gray-200 bg-white",
+    tile: "",
     icon: "border-sky-100 bg-sky-50 text-sky-500",
     accent: "from-sky-400/20",
   },
   rose: {
-    tile: "border-gray-200 bg-white",
+    tile: "",
     icon: "border-rose-100 bg-rose-50 text-rose-500",
     accent: "from-rose-400/20",
   },
   amber: {
-    tile: "border-gray-200 bg-white",
+    tile: "",
     icon: "border-amber-100 bg-amber-50 text-amber-500",
     accent: "from-amber-400/20",
   },
   teal: {
-    tile: "border-gray-200 bg-white",
+    tile: "",
     icon: "border-teal-100 bg-teal-50 text-teal-500",
     accent: "from-teal-400/20",
   },
   violet: {
-    tile: "border-gray-200 bg-white",
+    tile: "",
     icon: "border-violet-100 bg-violet-50 text-violet-500",
     accent: "from-violet-400/20",
   },
@@ -728,7 +714,7 @@ function MetricTile({
   return (
     <div
       className={cn(
-        "relative min-h-[116px] min-w-0 overflow-hidden rounded-2xl border p-4 shadow-theme-xs transition-colors hover:border-gray-300",
+        "portal-inner-surface relative min-h-[116px] min-w-0 overflow-hidden p-4 transition-colors hover:border-gray-300",
         tone.tile
       )}
     >
@@ -904,11 +890,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     error: listingErr,
   } = useListing(id, { enabled: !authLoading });
   const { data: companyListings = [] } = useAllCompanyListings(companyId, 0, 200);
-  const { data: applicationsByObject = [] } = useApplicationCountsPerObject(
+  const { data: listingPerformance = null } = useCompanyListingPerformanceDetail(
     companyId,
-    200,
+    id || null,
+    { enabled: !authLoading && Boolean(id) }
   );
-  const { data: viewCounts = null } = useListingViewCounts(companyId, id);
   const { data: requirementsProfile = null } = useRequirementsProfile(
     listing?.requirementsProfileId ?? null,
   );
@@ -936,11 +922,10 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return resolveListingMeta(
       listing,
       matchedCompanyListing,
-      applicationsByObject as ObjectApplicationCount[],
-      viewCounts as ListingViewCounts | null,
+      listingPerformance,
       locale,
     );
-  }, [listing, companyListings, applicationsByObject, viewCounts, locale]);
+  }, [listing, companyListings, listingPerformance, locale]);
 
   useEffect(() => {
     if (!metaInitialized && listing) {
@@ -1009,11 +994,12 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     : null;
 
   const favoritesDemographyQuery = useListingDemography(
+    companyId,
     id || null,
     analyticsFromIso,
     analyticsToIso,
     "RESULTED_IN_LIKE",
-    Boolean(id)
+    Boolean(companyId) && Boolean(id)
   );
   const analyticsFavorites =
     favoritesDemographyQuery.data?.buckets?.find(
@@ -1030,7 +1016,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         ? (meta.applications / meta.detailedViews) * 100
         : 0;
 
-    return [
+    const metrics: AnalyticsMetricItem[] = [
       {
         key: "applications",
         label: localizedText(locale, "Ansökningar", "Applications"),
@@ -1096,6 +1082,8 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         tone: "rose",
       },
     ];
+
+    return metrics.filter((metric) => metric.key !== "applications");
   }, [meta, locale, analyticsFavorites]);
 
   const updateListing = useUpdateListing();
@@ -1161,7 +1149,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (authLoading || loading) {
     return (
       <main className="pb-12">
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
+        <div className="portal-surface p-8 text-center text-sm text-gray-500">
           {localizedText(locale, "Laddar annons...", "Loading listing...")}
         </div>
       </main>
@@ -1171,7 +1159,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!user) {
     return (
       <main className="pb-12">
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
+        <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
           {localizedText(locale, "Logga in för att se annonsen.", "Sign in to view the listing.")}
         </div>
       </main>
@@ -1181,7 +1169,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!companyId) {
     return (
       <main className="pb-12">
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
+        <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
           {localizedText(
             locale,
             "Denna sida är bara tillgänglig för företagskonton.",
@@ -1205,7 +1193,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!isOwnListing) {
     return (
       <main className="pb-12">
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
+        <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
           {localizedText(
             locale,
             "Annonsen hittades inte bland företagets annonser.",
@@ -1224,11 +1212,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   return (
     <main className="pb-12">
       <Tabs defaultValue="info" className="space-y-6">
-        <header className="border-b border-gray-200 pb-6">
+        <header className="portal-surface p-5 sm:p-6">
           <div className="space-y-5">
             <Link
               href={`${dashboardRelPath}/listings`}
-              className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
+              className="portal-control inline-flex h-9 w-fit items-center gap-2 px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-[#004225]"
             >
               <ArrowLeft className="h-4 w-4" />
               {localizedText(locale, "Tillbaka till annonser", "Back to listings")}
@@ -1293,7 +1281,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
             </div>
 
             <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 xl:flex-row xl:items-center xl:justify-between">
-              <TabsList className="h-10 w-full justify-start rounded-lg border border-gray-200 bg-white p-1 sm:w-fit">
+              <TabsList className="portal-control h-10 w-full justify-start bg-white p-1 sm:w-fit">
                 <TabsTrigger
                   className="h-8 flex-1 rounded-md px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
                   value="info"
@@ -1314,7 +1302,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 sm:px-1">
                   {localizedText(locale, "Status", "Status")}
                 </span>
-                <div className="grid w-full grid-cols-3 rounded-lg border border-gray-200 bg-gray-100 p-1 sm:w-[420px]">
+                <div className="portal-control grid w-full grid-cols-3 bg-gray-50 p-1 sm:w-[420px]">
                   {listingStatusOptions.map((option) => {
                     const Icon = option.icon;
                     const isCurrent = meta.statusValue === option.value;
@@ -1326,7 +1314,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                         className={cn(
                           "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
                           isCurrent
-                            ? "bg-white text-[#004225]"
+                            ? "bg-white text-[#004225] shadow-theme-xs"
                             : "text-gray-500 hover:text-gray-900"
                         )}
                         disabled={actionState !== "idle" || isCurrent}
@@ -1387,62 +1375,19 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
             <AnalyticsGrid>
               <AnalyticsBlock
-                size="2x2"
+                size="2x4"
                 title={localizedText(
                   locale,
-                  "Ansökningar i perioden",
-                  "Applications in the period"
+                  "Respons och konvertering",
+                  "Response and conversion"
                 )}
-                description={
-                  applicationTrendError ??
-                  localizedText(
-                    locale,
-                    `${localizedAnalyticsInterval.detailLabel}. Totalt ${formatNumber(
-                      meta.applications,
-                      locale
-                    )} mottagna.`,
-                    `${localizedAnalyticsInterval.detailLabel}. Total ${formatNumber(
-                      meta.applications,
-                      locale
-                    )} received.`
-                  )
-                }
-              >
-                {timedApplicationsQuery.isLoading ? (
-                  <div className="flex h-full items-center gap-4">
-                    <span className="h-12 w-12 animate-pulse rounded-lg bg-gray-100" />
-                    <div className="space-y-2">
-                      <span className="block h-8 w-24 animate-pulse rounded bg-gray-100" />
-                      <span className="block h-3.5 w-40 animate-pulse rounded bg-gray-100" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex h-full items-end justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-theme-sm font-medium text-gray-500">
-                        {localizedAnalyticsInterval.detailLabel}
-                      </p>
-                      <p className="mt-2 text-3xl font-bold leading-10 tracking-normal text-gray-800 tabular-nums">
-                        {formatNumber(periodApplicationsCount, locale)}
-                      </p>
-                    </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-green-100 bg-green-50 text-green-600">
-                      <FileUser className="h-5 w-5 sm:h-6 sm:w-6" />
-                    </div>
-                  </div>
-                )}
-              </AnalyticsBlock>
-
-              <AnalyticsBlock
-                size="2x2"
-                title={localizedText(locale, "Nyckeltal", "Key metrics")}
                 description={localizedText(
                   locale,
-                  "Visningar och konvertering för annonsen.",
-                  "Views and conversion for the listing."
+                  "Visningar, engagemang och andelar för annonsen.",
+                  "Views, engagement and rates for the listing."
                 )}
               >
-                <div className="grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
                   {analyticsMetrics.map((metric) => (
                     <MetricTile item={metric} key={metric.key} locale={locale} />
                   ))}

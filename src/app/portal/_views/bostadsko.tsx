@@ -224,7 +224,7 @@ export default function Bostadsko() {
 
   if (!user) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
         {localizedText(locale, "Logga in för att se företagets bostadsköer.", "Log in to view the company's housing queues.")}
       </div>
     );
@@ -232,7 +232,7 @@ export default function Bostadsko() {
 
   if (!companyId) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
         {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
       </div>
     );
@@ -256,12 +256,11 @@ export default function Bostadsko() {
       ) : null}
 
       {queues.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+        <div className="portal-surface border-dashed p-10 text-center text-sm text-gray-500">
           {localizedText(locale, "Inga bostadsköer hittades för företaget.", "No housing queues were found for the company.")}
         </div>
       ) : (
-        <div>
-          <main className="min-w-0 space-y-5">
+        <main className="min-w-0 space-y-5">
             <AnalyticsGrid>
               <QueueApplicationCountBlock
                 count={queueApplicationCountQuery.data ?? 0}
@@ -304,8 +303,7 @@ export default function Bostadsko() {
                 useCompaniesQuery
               />
             </AnalyticsGrid>
-          </main>
-        </div>
+        </main>
       )}
     </div>
   );
