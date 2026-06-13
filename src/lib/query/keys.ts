@@ -129,6 +129,22 @@ export const qk = {
         to,
         granularity,
       ] as const,
+    overviewTrend: (
+      companyId: number,
+      from: string,
+      to: string,
+      granularity: string,
+    ) =>
+      [
+        "companies",
+        "overview-trend",
+        companyId,
+        from,
+        to,
+        granularity,
+      ] as const,
+    overviewTrendByCompany: (companyId: number) =>
+      ["companies", "overview-trend", companyId] as const,
     generalAnalytics: (companyId: number) =>
       ["companies", "general-analytics", companyId] as const,
     residentAnalytics: (companyId: number) =>

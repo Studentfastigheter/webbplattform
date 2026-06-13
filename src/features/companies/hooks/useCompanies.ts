@@ -29,6 +29,8 @@ import {
   type HandleCompanyApplicationRequest,
   type CompanyChangeableDataDTO,
   type CompanyImageTarget,
+  type CompanyOverviewTrendEntry,
+  type CompanyOverviewTrendGranularity,
   type CompanyPrivateDTO,
   type CompanyPublicDTO,
   type CompanyRole,
@@ -247,6 +249,43 @@ export function useCompanyQueueApplicationsTrend(
         from,
         to,
         granularity,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyOverviewTrend(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    granularity = "day",
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    granularity?: CompanyOverviewTrendGranularity;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<CompanyOverviewTrendEntry[]>({
+    queryKey: qk.companies.overviewTrend(
+      companyId ?? -1,
+      fromKey,
+      toKey,
+      granularity
+    ),
+    queryFn: ({ signal }) =>
+      companyService.overviewTrend(companyId!, {
+        from,
+        to,
+        granularity,
+        signal,
       }),
     enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
@@ -494,6 +533,7 @@ export function useRefreshCompanyListings() {
       qc.invalidateQueries({ queryKey: qk.companies.applicationCounts(id, 200) });
       qc.invalidateQueries({ queryKey: qk.companies.applicationsByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.companies.applicationsTimeline(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.overviewTrendByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.companies.generalAnalytics(id) });
       qc.invalidateQueries({ queryKey: qk.companies.residentAnalytics(id) });
       qc.invalidateQueries({ queryKey: qk.companies.viewCountsByCompany(id) });

@@ -287,6 +287,17 @@ export type QueueApplicationTrendEntry = {
   numApplications: number;
 };
 
+export type CompanyOverviewTrendGranularity = QueueApplicationTrendGranularity;
+
+export type CompanyOverviewTrendEntry = {
+  periodStart: string;
+  periodEnd: string;
+  granularity: CompanyOverviewTrendGranularity;
+  companyProfileViews: number;
+  queueApplications: number;
+  listingApplications: number;
+};
+
 export const APPLICATION_STATUS_VALUES = [
   "SUBMITTED",
   "UNDER_REVIEW",
@@ -571,6 +582,35 @@ function normalizeQueueApplicationTrendEntry(value: unknown): QueueApplicationTr
     periodEnd,
     granularity,
     numApplications: toNumber(value.numApplications ?? value.count),
+  };
+}
+
+function normalizeCompanyOverviewTrendEntry(value: unknown): CompanyOverviewTrendEntry | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const periodStart = firstString(value.periodStart);
+  const periodEnd = firstString(value.periodEnd);
+  const rawGranularity = firstString(value.granularity)?.toLowerCase();
+  const granularity: CompanyOverviewTrendGranularity =
+    rawGranularity === "week" || rawGranularity === "month"
+      ? rawGranularity
+      : "day";
+
+  if (!periodStart || !periodEnd) {
+    return null;
+  }
+
+  return {
+    periodStart,
+    periodEnd,
+    granularity,
+    companyProfileViews: toNumber(value.companyProfileViews ?? value.profileViews),
+    queueApplications: toNumber(value.queueApplications),
+    listingApplications: toNumber(
+      value.listingApplications ?? value.applications ?? value.totalApplications
+    ),
   };
 }
 
@@ -1322,6 +1362,30 @@ export const companyService = {
     return toArray<unknown>(result, true)
       .map(normalizeQueueApplicationTrendEntry)
       .filter((entry): entry is QueueApplicationTrendEntry => entry !== null);
+  },
+
+  overviewTrend: async (
+    id: number,
+    options: {
+      from?: string | Date;
+      to?: string | Date;
+      granularity?: CompanyOverviewTrendGranularity;
+      signal?: AbortSignal;
+    } = {}
+  ): Promise<CompanyOverviewTrendEntry[]> => {
+    const query = buildQuery({
+      from: options.from instanceof Date ? options.from.toISOString() : options.from,
+      to: options.to instanceof Date ? options.to.toISOString() : options.to,
+      granularity: options.granularity ?? "day",
+    });
+    const result = await apiClient<unknown>(
+      `/analytics/${pathSegment(id)}/overview-trend${query}`,
+      { signal: options.signal }
+    );
+
+    return toArray<unknown>(result, true)
+      .map(normalizeCompanyOverviewTrendEntry)
+      .filter((entry): entry is CompanyOverviewTrendEntry => entry !== null);
   },
   
   applicationsTimeline: async (

@@ -1,11 +1,11 @@
 "use client";
 
-import { AnalyticsBlock, AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
+import { AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
-import AnalyticsApplicationsTrend from "../analytics/AnalyticsApplicationsTrend";
 import AnalyticsGeneralStats from "../analytics/AnalyticsGeneralStats";
 import PortalPageHeader from "../shared/PortalPageHeader";
+import OverviewEngagementTrend from "./OverviewEngagementTrend";
 
 export default function PortalOverview() {
   const { locale } = useI18n();
@@ -26,13 +26,7 @@ export default function PortalOverview() {
           <AnalyticsGeneralStats />
         </div>
 
-        <AnalyticsBlock size="2x2" title={localizedText(locale, "Ans\u00f6kningstrend", "Application trend")}>
-          <AnalyticsApplicationsTrend
-            embedded
-            showHeader={false}
-            showSummary={false}
-          />
-        </AnalyticsBlock>
+        <OverviewEngagementTrend size="3x4" />
       </AnalyticsGrid>
     </div>
   );
