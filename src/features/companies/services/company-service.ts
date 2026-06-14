@@ -1911,7 +1911,7 @@ export const companyService = {
 
   refreshCompanyListings: async (id: number): Promise<void> => {
     await apiClient<void>(
-      `/admin/company/${pathSegment(id)}/refresh-listings`,
+      `/companies/${pathSegment(id)}/refresh-listings`,
       {
         method: "POST",
       }
