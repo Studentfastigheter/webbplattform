@@ -98,6 +98,7 @@ import type {
   ModifyCityRequest,
   School,
 } from "@/types";
+import { cn } from "@/lib/utils";
 
 type AdminActionState = {
   status: "idle" | "loading" | "success" | "error";
@@ -118,6 +119,66 @@ const ADMIN_TABS = [
 ] as const;
 
 export type AdminSection = (typeof ADMIN_TABS)[number];
+
+const ADMIN_SECTION_DETAILS = {
+  tags: {
+    title: "Tags",
+    description: "Manage listing tags, labels, icons, and selectable values.",
+    badge: "Content taxonomy",
+  },
+  schools: {
+    title: "Schools",
+    description: "Create, update, import, and connect schools to cities.",
+    badge: "Campus data",
+  },
+  cities: {
+    title: "Cities",
+    description: "Maintain city records, descriptions, banners, and linked companies.",
+    badge: "Market data",
+  },
+  locations: {
+    title: "Locations",
+    description: "Manage location categories used by maps and nearby points of interest.",
+    badge: "Map metadata",
+  },
+  companies: {
+    title: "Companies",
+    description: "Create, update, verify, refresh, and remove landlord company profiles.",
+    badge: "Landlord records",
+  },
+  "external-companies": {
+    title: "External Companies",
+    description: "Manage external housing providers and their city or school coverage.",
+    badge: "External providers",
+  },
+  accounts: {
+    title: "Accounts",
+    description: "Create company admins, update permissions, and verify access.",
+    badge: "Access control",
+  },
+  activities: {
+    title: "Activities",
+    description: "Maintain points of interest and activity data for city pages.",
+    badge: "Local content",
+  },
+  waitlist: {
+    title: "Waitlist",
+    description: "Review signups, daily trends, source storage, and registered emails.",
+    badge: "Launch demand",
+  },
+  statistics: {
+    title: "Statistics",
+    description: "Fetch admin reporting data for registered users and growth analysis.",
+    badge: "Reporting",
+  },
+} satisfies Record<
+  AdminSection,
+  {
+    title: string;
+    description: string;
+    badge: string;
+  }
+>;
 
 function toInputValue(value: unknown) {
   return value === undefined || value === null ? "" : String(value);
@@ -267,11 +328,11 @@ function ResultBlock({ state }: { state: AdminActionState }) {
   return (
     <div
       className={[
-        "mt-4 rounded-[8px] border px-4 py-3 text-sm",
+        "mt-4 rounded-lg border px-4 py-3 text-sm shadow-theme-xs",
         isError
           ? "border-red-200 bg-red-50 text-red-800"
           : isLoading
-            ? "border-[#dfe7e3] bg-white text-[#36534d]"
+            ? "border-gray-200 bg-white text-gray-600"
             : "border-emerald-200 bg-emerald-50 text-emerald-800",
       ].join(" ")}
     >
@@ -291,8 +352,8 @@ function ResultBlock({ state }: { state: AdminActionState }) {
 
 function EndpointBadge({ method, endpoint }: { method: string; endpoint: string }) {
   return (
-    <code className="inline-flex max-w-full items-center gap-2 rounded-[8px] border border-[#dfe7e3] bg-white px-2.5 py-1.5 text-xs font-medium text-[#36534d] shadow-sm">
-      <span className="rounded-[6px] bg-[#004225] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+    <code className="inline-flex max-w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 shadow-theme-xs">
+      <span className="rounded-md bg-brand-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
         {method}
       </span>
       <span className="break-all">{endpoint}</span>
@@ -326,12 +387,12 @@ function ActionShell({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[8px] border border-[#dfe7e3] bg-white p-5 shadow-sm">
+    <section className="portal-surface-hoverable min-w-0 p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h3 className="text-base font-semibold text-[#111827]">{title}</h3>
+          <h3 className="text-base font-semibold text-gray-950">{title}</h3>
           {description && (
-            <p className="mt-1 text-sm leading-6 text-[#66716f]">{description}</p>
+            <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>
           )}
         </div>
         <EndpointBadge method={method} endpoint={endpoint} />
@@ -343,7 +404,7 @@ function ActionShell({
 
 function FieldRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="grid gap-2 text-xs font-semibold uppercase tracking-wide text-[#476e66]">
+    <label className="grid gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
       {label}
       {children}
     </label>
@@ -373,7 +434,7 @@ function FormInput({
         disabled={disabled}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 rounded-[8px] border-[#dfe7e3] bg-white normal-case tracking-normal text-[#111827]"
+        className="h-10 rounded-lg border-gray-200 bg-white normal-case tracking-normal text-gray-950 shadow-theme-xs transition focus-visible:border-brand-500 focus-visible:ring-brand-500/15"
       />
     </FieldRow>
   );
@@ -396,7 +457,7 @@ function FormTextarea({
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-24 rounded-[8px] border-[#dfe7e3] bg-white normal-case tracking-normal text-[#111827]"
+        className="min-h-24 rounded-lg border-gray-200 bg-white normal-case tracking-normal text-gray-950 shadow-theme-xs transition focus-visible:border-brand-500 focus-visible:ring-brand-500/15"
       />
     </FieldRow>
   );
@@ -421,7 +482,7 @@ function FormSelect({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
-        className="h-10 rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm normal-case tracking-normal text-[#111827] outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/20"
+        className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm normal-case tracking-normal text-gray-950 shadow-theme-xs outline-none transition focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/15"
       >
         {children}
       </select>
@@ -446,7 +507,7 @@ function SubmitButton({
       isLoading={isLoading}
       isDisabled={disabled}
       onPress={onPress}
-      className="mt-4 bg-[#004225] text-white hover:bg-[#00351e]"
+      className="mt-4 bg-brand-500 text-white shadow-theme-xs hover:bg-brand-700"
     >
       {children}
     </Button>
@@ -477,48 +538,48 @@ function TagIconPicker({
   );
 
   return (
-    <div className="grid gap-2 text-xs font-semibold uppercase tracking-wide text-[#476e66] md:col-span-2">
+    <div className="grid gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 md:col-span-2">
       <span>Ikon</span>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="flex min-h-10 w-full items-center justify-between gap-3 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 text-left normal-case tracking-normal text-[#111827] transition hover:border-[#b8cbc5] focus:outline-none focus:ring-4 focus:ring-[#004225]/10"
+            className="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left normal-case tracking-normal text-gray-950 shadow-theme-xs transition hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
           >
             <span className="flex min-w-0 items-center gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border border-[#dfe7e3] bg-[#f7faf8] text-[#004225]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-brand-50 text-brand-500">
                 {selected ? (
                   <selected.Icon className="h-5 w-5" />
                 ) : (
-                  <SearchIcon className="h-5 w-5 text-[#7a8c87]" />
+                  <SearchIcon className="h-5 w-5 text-gray-400" />
                 )}
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold">
                   {selected?.label ?? (value.trim() || "Välj ikon")}
                 </span>
-                <span className="block truncate text-xs font-medium text-[#66716f]">
+                <span className="block truncate text-xs font-medium text-gray-500">
                   {selected?.name ?? (value.trim() || "Ingen ikon vald")}
                 </span>
               </span>
             </span>
-            <ChevronDownIcon className="h-4 w-4 shrink-0 text-[#66716f]" />
+            <ChevronDownIcon className="h-4 w-4 shrink-0 text-gray-500" />
           </button>
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="w-[min(92vw,720px)] overflow-hidden rounded-[8px] border-[#dfe7e3] p-0 shadow-xl"
+          className="w-[min(92vw,720px)] overflow-hidden portal-surface p-0 shadow-theme-lg"
         >
-          <div className="border-b border-[#e5ece9] bg-[#fbfdfc] p-3">
+          <div className="border-b border-gray-200 bg-gray-50 p-3">
             <div className="grid gap-2 sm:grid-cols-[1fr_180px]">
               <label className="relative block">
                 <span className="sr-only">Sök ikon</span>
-                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8c87]" />
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Sök ikon..."
-                  className="h-10 rounded-[8px] border-[#dfe7e3] bg-white pl-9 normal-case tracking-normal text-[#111827]"
+                  className="h-10 rounded-lg border-gray-200 bg-white pl-9 normal-case tracking-normal text-gray-950 shadow-theme-xs"
                 />
               </label>
               <label>
@@ -528,7 +589,7 @@ function TagIconPicker({
                   onChange={(event) =>
                     setCategory(event.target.value as AppIconCategory | "all")
                   }
-                  className="h-10 w-full rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm font-medium normal-case tracking-normal text-[#111827] outline-none transition focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10"
+                  className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-gray-950 shadow-theme-xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
                 >
                   <option value="all">Alla typer</option>
                   {APP_ICON_CATEGORIES.map((item) => (
@@ -539,7 +600,7 @@ function TagIconPicker({
                 </select>
               </label>
             </div>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs normal-case tracking-normal text-[#66716f]">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs normal-case tracking-normal text-gray-500">
               <span>
                 {filteredIcons.length} ikon{filteredIcons.length === 1 ? "" : "er"}
               </span>
@@ -550,7 +611,7 @@ function TagIconPicker({
                     onChange("");
                     setOpen(false);
                   }}
-                  className="inline-flex items-center gap-1 rounded-[6px] px-2 py-1 font-semibold text-[#004225] transition hover:bg-[#004225]/10"
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-semibold text-brand-700 transition hover:bg-brand-50"
                 >
                   <XIcon className="h-3.5 w-3.5" />
                   Rensa
@@ -571,14 +632,14 @@ function TagIconPicker({
                         onChange(icon.name);
                         setOpen(false);
                       }}
-                      className={`flex min-w-0 items-center gap-2 rounded-[8px] border px-2.5 py-2 text-left normal-case tracking-normal transition ${
+                      className={`flex min-w-0 items-center gap-2 rounded-lg border px-2.5 py-2 text-left normal-case tracking-normal transition ${
                         isSelected
-                          ? "border-[#004225] bg-[#004225] text-white"
-                          : "border-transparent bg-white text-[#111827] hover:border-[#dfe7e3] hover:bg-[#f7faf8]"
+                          ? "border-brand-500 bg-brand-500 text-white"
+                          : "border-transparent bg-white text-gray-950 hover:border-gray-200 hover:bg-gray-50"
                       }`}
                     >
                       <icon.Icon
-                        className={`h-5 w-5 shrink-0 ${isSelected ? "text-white" : "text-[#004225]"}`}
+                        className={`h-5 w-5 shrink-0 ${isSelected ? "text-white" : "text-brand-500"}`}
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">
@@ -586,7 +647,7 @@ function TagIconPicker({
                         </span>
                         <span
                           className={`block truncate text-[11px] font-medium ${
-                            isSelected ? "text-white/75" : "text-[#66716f]"
+                            isSelected ? "text-white/75" : "text-gray-500"
                           }`}
                         >
                           {icon.name}
@@ -598,7 +659,7 @@ function TagIconPicker({
                 })}
               </div>
             ) : (
-              <div className="px-3 py-8 text-center text-sm normal-case tracking-normal text-[#66716f]">
+              <div className="px-3 py-8 text-center text-sm normal-case tracking-normal text-gray-500">
                 Ingen ikon matchar sökningen.
               </div>
             )}
@@ -4529,8 +4590,32 @@ function UserStatisticsAction() {
 }
 
 export function AdminToolPage({ section }: { section: AdminSection }) {
+  const details = ADMIN_SECTION_DETAILS[section];
+
   return (
-    <main className="flex flex-col gap-6 text-[#1f2937]">
+    <main className="space-y-6 text-gray-800">
+      <header className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-semibold leading-8 text-gray-950">
+            {details.title}
+          </h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-500">
+            {details.description}
+          </p>
+        </div>
+        <div className="portal-control flex h-10 w-fit shrink-0 items-center gap-2 px-3 text-xs font-semibold text-gray-600">
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              section === "waitlist" || section === "statistics"
+                ? "bg-emerald-500"
+                : "bg-brand-500"
+            )}
+          />
+          {details.badge}
+        </div>
+      </header>
+
       <div className="flex flex-col gap-5">
         <SectionContent active={section} value="tags">
           <TagsForm />
