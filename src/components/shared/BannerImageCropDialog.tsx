@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Move, RotateCcw } from "@/components/icons";
+import { useCallback, useEffect, useState } from "react";
+import Cropper, {
+  type Area,
+  type Point,
+} from "react-easy-crop";
+import { RotateCcw } from "@/components/icons";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import {
@@ -19,22 +23,6 @@ import {
   COMPANY_BANNER_WIDTH,
 } from "@/lib/banner-image";
 
-type Size = {
-  width: number;
-  height: number;
-};
-
-type Point = {
-  x: number;
-  y: number;
-};
-
-type DragState = {
-  pointerId: number;
-  startPointer: Point;
-  startCrop: Point;
-};
-
 type BannerImageCropDialogProps = {
   file: File | null;
   open: boolean;
@@ -45,43 +33,79 @@ type BannerImageCropDialogProps = {
 
 const outputType = "image/jpeg";
 const outputQuality = 0.94;
-const emptySize: Size = { width: 0, height: 0 };
-const cropInset = 20;
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function getCropSize(image: Size): Size {
-  if (!image.width || !image.height) return emptySize;
-
-  const ratio = COMPANY_BANNER_WIDTH / COMPANY_BANNER_HEIGHT;
-  const width = Math.min(COMPANY_BANNER_WIDTH, image.width, image.height * ratio);
-  const height = width / ratio;
-
-  return {
-    width: Math.max(1, Math.floor(width)),
-    height: Math.max(1, Math.floor(height)),
-  };
-}
-
-function clampCropPosition(position: Point, image: Size, crop: Size): Point {
-  return {
-    x: clamp(position.x, 0, Math.max(0, image.width - crop.width)),
-    y: clamp(position.y, 0, Math.max(0, image.height - crop.height)),
-  };
-}
-
-function centeredCropPosition(image: Size, crop: Size): Point {
-  return {
-    x: Math.max(0, Math.round((image.width - crop.width) / 2)),
-    y: Math.max(0, Math.round((image.height - crop.height) / 2)),
-  };
-}
+const minZoom = 1;
+const maxZoom = 4;
+const zoomStep = 0.05;
+const bannerAspect = COMPANY_BANNER_WIDTH / COMPANY_BANNER_HEIGHT;
 
 function croppedFileName(file: File) {
   const base = file.name.replace(/\.[^.]+$/, "").trim() || "banner";
   return `${base}-banner.jpg`;
+}
+
+function createImage(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", reject);
+    image.crossOrigin = "anonymous";
+    image.src = url;
+  });
+}
+
+async function createCroppedBannerFile(
+  imageSrc: string,
+  cropPixels: Area,
+  sourceFile: File
+) {
+  if (!cropPixels.width || !cropPixels.height) {
+    throw new Error("Bilden kunde inte beskäras.");
+  }
+
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  canvas.width = COMPANY_BANNER_WIDTH;
+  canvas.height = COMPANY_BANNER_HEIGHT;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Canvas kunde inte startas.");
+  }
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.fillStyle = "#f3f4f6";
+  context.fillRect(0, 0, COMPANY_BANNER_WIDTH, COMPANY_BANNER_HEIGHT);
+  context.drawImage(
+    image,
+    cropPixels.x,
+    cropPixels.y,
+    cropPixels.width,
+    cropPixels.height,
+    0,
+    0,
+    COMPANY_BANNER_WIDTH,
+    COMPANY_BANNER_HEIGHT
+  );
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (nextBlob) => {
+        if (nextBlob) {
+          resolve(nextBlob);
+        } else {
+          reject(new Error("Bilden kunde inte beskäras."));
+        }
+      },
+      outputType,
+      outputQuality
+    );
+  });
+
+  return new File([blob], croppedFileName(sourceFile), {
+    type: outputType,
+    lastModified: Date.now(),
+  });
 }
 
 export default function BannerImageCropDialog({
@@ -92,157 +116,70 @@ export default function BannerImageCropDialog({
   onCropComplete,
 }: BannerImageCropDialogProps) {
   const { locale } = useI18n();
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const dragRef = useRef<DragState | null>(null);
-
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
-  const [imageSize, setImageSize] = useState<Size>(emptySize);
-  const [cropPosition, setCropPosition] = useState<Point>({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isCropping, setIsCropping] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const cropSize = useMemo(() => getCropSize(imageSize), [imageSize]);
-  const canCrop = Boolean(objectUrl && imageSize.width && cropSize.width);
-  const stageWidth = imageSize.width ? imageSize.width + cropInset * 2 : 640;
-  const stageHeight = imageSize.height ? imageSize.height + cropInset * 2 : 260;
-  const isUsingNativeOutputSize =
-    cropSize.width === COMPANY_BANNER_WIDTH &&
-    cropSize.height === COMPANY_BANNER_HEIGHT;
+  const zoomLabel = `${Math.round(zoom * 100)}%`;
+  const canCrop = Boolean(objectUrl && croppedAreaPixels);
 
   useEffect(() => {
     if (!file) {
       setObjectUrl(null);
-      setImageSize(emptySize);
-      setCropPosition({ x: 0, y: 0 });
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+      setIsCropping(false);
       setError(null);
       return;
     }
 
     const url = URL.createObjectURL(file);
     setObjectUrl(url);
-    setImageSize(emptySize);
-    setCropPosition({ x: 0, y: 0 });
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setIsCropping(false);
     setError(null);
 
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  useEffect(() => {
-    if (!imageSize.width || !cropSize.width) return;
-    setCropPosition((current) =>
-      clampCropPosition(current, imageSize, cropSize)
-    );
-  }, [cropSize, imageSize]);
-
-  const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const nextImageSize = {
-      width: event.currentTarget.naturalWidth,
-      height: event.currentTarget.naturalHeight,
-    };
-    const nextCropSize = getCropSize(nextImageSize);
-
-    setImageSize(nextImageSize);
-    setCropPosition(centeredCropPosition(nextImageSize, nextCropSize));
-  };
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!imageSize.width || isCropping) return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startPointer: { x: event.clientX, y: event.clientY },
-      startCrop: cropPosition,
-    };
-    setIsDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-
-    setCropPosition(
-      clampCropPosition(
-        {
-          x: drag.startCrop.x + event.clientX - drag.startPointer.x,
-          y: drag.startCrop.y + event.clientY - drag.startPointer.y,
-        },
-        imageSize,
-        cropSize
-      )
-    );
-  };
-
-  const stopDragging = (event?: React.PointerEvent<HTMLDivElement>) => {
-    if (event && dragRef.current?.pointerId === event.pointerId) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    dragRef.current = null;
-    setIsDragging(false);
-  };
+  const handleCropAreaChange = useCallback(
+    (_croppedArea: Area, nextCroppedAreaPixels: Area) => {
+      setCroppedAreaPixels(nextCroppedAreaPixels);
+    },
+    []
+  );
 
   const resetCrop = () => {
-    setCropPosition(centeredCropPosition(imageSize, cropSize));
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
     setError(null);
   };
 
   const handleCrop = async () => {
-    if (!file || !imageRef.current || !cropSize.width || !cropSize.height) return;
+    if (!file || !objectUrl || !croppedAreaPixels) return;
 
     setIsCropping(true);
     setError(null);
 
     try {
-      const canvas = document.createElement("canvas");
-      canvas.width = COMPANY_BANNER_WIDTH;
-      canvas.height = COMPANY_BANNER_HEIGHT;
-
-      const context = canvas.getContext("2d");
-      if (!context) {
-        throw new Error("Canvas kunde inte startas.");
-      }
-
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
-      context.fillStyle = "#f3f4f6";
-      context.fillRect(0, 0, COMPANY_BANNER_WIDTH, COMPANY_BANNER_HEIGHT);
-      context.drawImage(
-        imageRef.current,
-        cropPosition.x,
-        cropPosition.y,
-        cropSize.width,
-        cropSize.height,
-        0,
-        0,
-        COMPANY_BANNER_WIDTH,
-        COMPANY_BANNER_HEIGHT
-      );
-
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (nextBlob) => {
-            if (nextBlob) resolve(nextBlob);
-            else reject(new Error("Bilden kunde inte beskäras."));
-          },
-          outputType,
-          outputQuality
-        );
-      });
-
       onCropComplete(
-        new File([blob], croppedFileName(file), {
-          type: outputType,
-          lastModified: Date.now(),
-        })
+        await createCroppedBannerFile(objectUrl, croppedAreaPixels, file)
       );
     } catch (cropError) {
       setError(
         cropError instanceof Error
           ? cropError.message
-          : localizedText(locale, "Bilden kunde inte beskäras.", "The image could not be cropped.")
+          : localizedText(
+              locale,
+              "Bilden kunde inte beskäras.",
+              "The image could not be cropped."
+            )
       );
     } finally {
       setIsCropping(false);
@@ -251,60 +188,54 @@ export default function BannerImageCropDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100vh-2rem)] w-[min(calc(100vw-2rem),1280px)] max-w-none flex-col gap-0 overflow-hidden p-0">
-        <DialogHeader className="border-b border-gray-200 px-5 py-4">
-          <DialogTitle>{localizedText(locale, "Placera bannerutsnitt", "Position banner crop")}</DialogTitle>
-          <DialogDescription className="text-sm">
-            {localizedText(locale, "Bilden visas i originalstorlek. Dra ramen till det utsnitt som ska sparas.", "The image is shown at original size. Drag the frame to the crop that should be saved.")}
+      <DialogContent className="flex max-h-[calc(100vh-2rem)] w-[min(calc(100vw-2rem),980px)] !max-w-[min(calc(100vw-2rem),980px)] flex-col gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-xl">
+        <DialogHeader className="px-6 pb-4 pt-6 pr-12">
+          <DialogTitle>
+            {localizedText(locale, "Placera bannerutsnitt", "Position banner crop")}
+          </DialogTitle>
+          <DialogDescription className="text-sm text-gray-500">
+            {localizedText(
+              locale,
+              "Dra bilden i ramen och justera zoom.",
+              "Drag the image inside the frame and adjust zoom."
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-          <div className="mb-3 grid gap-2 text-xs font-medium text-gray-600 sm:grid-cols-3">
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="text-gray-400">{localizedText(locale, "Bild", "Image")}</span>{" "}
-              {imageSize.width || "-"} x {imageSize.height || "-"} px
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="text-gray-400">{localizedText(locale, "Ram", "Frame")}</span>{" "}
-              {Math.round(cropSize.width || 0)} x {Math.round(cropSize.height || 0)} px
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <span className="text-gray-400">{localizedText(locale, "Sparas som", "Saved as")}</span>{" "}
-              {COMPANY_BANNER_WIDTH} x {COMPANY_BANNER_HEIGHT} px
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            {!isUsingNativeOutputSize && imageSize.width > 0 && (
-              <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
-                {localizedText(locale, "Bilden är mindre än standardbannern. Utsnittet skalas upp när du sparar.", "The image is smaller than the standard banner. The crop will be scaled up when you save.")}
-              </div>
-            )}
-
-            <div className="max-h-[58vh] min-h-[220px] overflow-auto bg-[linear-gradient(45deg,#f4f6f8_25%,transparent_25%),linear-gradient(-45deg,#f4f6f8_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f4f6f8_75%),linear-gradient(-45deg,transparent_75%,#f4f6f8_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-5">
+          <div className="overflow-hidden">
               <div
-                className="relative mx-auto"
+                className="relative mx-auto w-full overflow-hidden rounded-lg border border-gray-300 bg-gray-100"
                 style={{
-                  width: stageWidth,
-                  height: stageHeight,
+                  aspectRatio: COMPANY_BANNER_ASPECT_RATIO,
                 }}
               >
                 {objectUrl ? (
-                  <img
-                    ref={imageRef}
-                    src={objectUrl}
-                    alt=""
-                    draggable={false}
-                    onLoad={handleImageLoad}
-                    onError={() => setError(localizedText(locale, "Bilden kunde inte laddas.", "The image could not be loaded."))}
-                    className="absolute select-none"
-                    style={{
-                      left: cropInset,
-                      top: cropInset,
-                      width: imageSize.width || "auto",
-                      height: imageSize.height || "auto",
-                      maxWidth: "none",
+                  <Cropper
+                    image={objectUrl}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={bannerAspect}
+                    minZoom={minZoom}
+                    maxZoom={maxZoom}
+                    zoomSpeed={0.8}
+                    objectFit="cover"
+                    restrictPosition
+                    showGrid={false}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
+                    onCropAreaChange={handleCropAreaChange}
+                    onCropComplete={handleCropAreaChange}
+                    mediaProps={{
+                      alt: localizedText(
+                        locale,
+                        "Vald bannerbild",
+                        "Selected banner image"
+                      ),
+                    }}
+                    classes={{
+                      cropAreaClassName:
+                        "!border !border-white/95 !shadow-none",
                     }}
                   />
                 ) : (
@@ -312,31 +243,30 @@ export default function BannerImageCropDialog({
                     {localizedText(locale, "Ingen bild vald.", "No image selected.")}
                   </div>
                 )}
+              </div>
 
-                {canCrop && (
-                  <div
-                    className={`absolute touch-none rounded-lg border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.42),0_12px_34px_rgba(0,0,0,0.28),inset_0_0_0_1px_rgba(0,0,0,0.25)] ${
-                      isDragging ? "cursor-grabbing" : "cursor-grab"
-                    }`}
-                    style={{
-                      left: cropInset + cropPosition.x,
-                      top: cropInset + cropPosition.y,
-                      width: cropSize.width,
-                      height: cropSize.height,
-                      aspectRatio: COMPANY_BANNER_ASPECT_RATIO,
-                    }}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={stopDragging}
-                    onPointerCancel={stopDragging}
-                  >
-                    <div className="pointer-events-none absolute inset-0 rounded-md bg-[linear-gradient(to_right,rgba(255,255,255,0.42)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.42)_1px,transparent_1px)] bg-[length:33.333%_33.333%]" />
-                    <div className="pointer-events-none absolute left-1/2 top-3 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm">
-                      <Move className="h-3 w-3" />
-                      {localizedText(locale, "Dra ramen", "Drag the frame")}
-                    </div>
-                  </div>
-                )}
+            <div className="mt-4">
+              <div className="grid gap-2 sm:grid-cols-[3.5rem_minmax(0,1fr)_3rem] sm:items-center">
+                <label
+                  htmlFor="banner-crop-zoom"
+                  className="text-sm text-gray-600"
+                >
+                  {localizedText(locale, "Zoom", "Zoom")}
+                </label>
+                <input
+                  id="banner-crop-zoom"
+                  type="range"
+                  min={minZoom}
+                  max={maxZoom}
+                  step={zoomStep}
+                  value={zoom}
+                  disabled={!objectUrl || isCropping}
+                  onChange={(event) => setZoom(Number(event.target.value))}
+                  className="h-1.5 w-full cursor-pointer accent-[#004225] disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <span className="text-right text-sm tabular-nums text-gray-600">
+                  {zoomLabel}
+                </span>
               </div>
             </div>
           </div>
@@ -348,7 +278,7 @@ export default function BannerImageCropDialog({
           )}
         </div>
 
-        <DialogFooter className="border-t border-gray-200 bg-white px-5 py-4 sm:justify-between">
+        <DialogFooter className="px-6 pb-6 pt-0 sm:justify-between">
           <Button
             type="button"
             variant="outline"
@@ -356,7 +286,7 @@ export default function BannerImageCropDialog({
             isDisabled={!canCrop || isCropping}
           >
             <RotateCcw className="h-4 w-4" />
-            {localizedText(locale, "Centrera ram", "Center frame")}
+            {localizedText(locale, "Återställ bild", "Reset image")}
           </Button>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

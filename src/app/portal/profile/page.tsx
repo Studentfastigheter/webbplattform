@@ -103,6 +103,9 @@ const inlineInputClass =
 const iconInputClass =
   "min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition hover:border-[#004225]/30 focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10";
 
+const imageEditButtonClass =
+  "!border-white/80 !bg-white/95 !text-[#004225] shadow-[0_10px_24px_rgba(15,23,42,0.16)] ring-1 ring-white/70 backdrop-blur-md transition-[background-color,border-color,box-shadow,color,transform] duration-150 hover:!border-[#004225]/25 hover:!bg-white hover:!text-[#00351e] hover:shadow-[0_12px_28px_rgba(0,66,37,0.18)] data-[hover=true]:!border-[#004225]/25 data-[hover=true]:!bg-white data-[hover=true]:!text-[#00351e] data-[hover=true]:!opacity-100 data-[pressed=true]:!bg-[#f2f8f5]";
+
 function platformKey(value: string) {
   return value.trim().toLowerCase();
 }
@@ -695,7 +698,7 @@ function EditableCompanyPreview({
           type="button"
           variant="outline"
           onFileSelect={(file) => onImageSelect("bannerUrl", file)}
-          className="absolute right-4 top-4 bg-white/95 shadow-sm backdrop-blur"
+          className={`${imageEditButtonClass} absolute right-4 top-4`}
         >
           <Pencil className="h-4 w-4" />
           {localizedText(locale, "Omslagsbild", "Cover image")}
@@ -724,7 +727,7 @@ function EditableCompanyPreview({
               aria-label={localizedText(locale, "Redigera logga", "Edit logo")}
               title={localizedText(locale, "Redigera logga", "Edit logo")}
               onFileSelect={(file) => onImageSelect("logoUrl", file)}
-              className="absolute right-1 top-1 min-w-0 bg-white/95 shadow-sm backdrop-blur"
+              className={`${imageEditButtonClass} absolute right-1 top-1 min-w-0`}
             >
               <Pencil className="h-4 w-4" />
             </UploadButton>
