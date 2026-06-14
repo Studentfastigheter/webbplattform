@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, X } from "@/components/icons";
+import { RichTextParagraph } from "@/components/ui/RichText";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
@@ -285,9 +286,10 @@ function RequirementsProfileSection({
         </h2>
         {ageRange && <p className="text-sm font-medium text-gray-700">{ageRange}</p>}
         {profile.description && (
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-700">
-            {profile.description}
-          </p>
+          <RichTextParagraph
+            text={profile.description}
+            className="mt-2 max-w-3xl text-sm leading-6 text-gray-700"
+          />
         )}
       </div>
 

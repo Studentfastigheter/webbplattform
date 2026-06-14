@@ -8,6 +8,7 @@ import {
   type FormEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import {
   Field,
   FieldGroup,
@@ -68,6 +69,8 @@ import {
 } from "@/lib/youtube-url";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { useUploadCompanyPublicMedia } from "@/features/media/hooks/useMedia";
+import { PortalPage, PortalSurface } from "../_components/shared/PortalGrid";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 type ProfileDraft = {
   companyId: number;
@@ -868,10 +871,10 @@ function EditableCompanyPreview({
 
         <div className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-gray-900">{localizedText(locale, "Om oss", "About us")}</h2>
-          <textarea
+          <RichTextTextarea
             aria-label={localizedText(locale, "Om oss", "About us")}
             value={draft.description}
-            onChange={(event) => onDraftChange("description", event.target.value)}
+            onValueChange={(value) => onDraftChange("description", value)}
             className={`${inlineInputClass} min-h-40 w-full resize-y text-base leading-relaxed text-gray-600`}
             placeholder={localizedText(locale, "Beskriv företaget", "Describe the company")}
           />
@@ -1242,45 +1245,49 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500">
+      <PortalSurface className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500" padding="md">
         <Loader2 className="h-4 w-4 animate-spin" />
         {localizedText(locale, "Laddar profil...", "Loading profile...")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (!user) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Logga in för att hantera företagsprofilen.", "Log in to manage the company profile.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (companyId == null || Number.isNaN(companyId)) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Denna profilsida gäller bara för företagskonton.", "This profile page is only for company accounts.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (loading || !draft) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500">
+      <PortalSurface className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500" padding="md">
         <Loader2 className="h-4 w-4 animate-spin" />
         {localizedText(locale, "Hämtar företagsprofil...", "Loading company profile...")}
-      </div>
+      </PortalSurface>
     );
   }
 
   return (
-    <main className="pb-12">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {localizedText(locale, "Redigera profil", "Edit profile")}
-        </h1>
-      </div>
+    <PortalPage className="pb-12">
+      <PortalPageHeader
+        className="mb-6"
+        title={localizedText(locale, "Redigera profil", "Edit profile")}
+        description={localizedText(
+          locale,
+          "Uppdatera f\u00f6retagets publika profil, media och kontaktuppgifter.",
+          "Update the company's public profile, media and contact details."
+        )}
+      />
 
       {error && (
         <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -1378,6 +1385,6 @@ export default function ProfilePage() {
           "The image gallery has been saved."
         )}
       />
-    </main>
+    </PortalPage>
   );
 }

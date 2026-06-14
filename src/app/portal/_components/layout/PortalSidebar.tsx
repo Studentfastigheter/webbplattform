@@ -19,6 +19,7 @@ import {
   type CompanyPortalNavSection,
 } from "../../_config/company-portal-access";
 import { dashboardRelPath } from "../../_statics/variables";
+import { useCompanyPortal } from "./CompanyPortalContext";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
 type SectionKey = CompanyPortalNavSection["key"];
@@ -55,16 +56,18 @@ export default function PortalSidebar() {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = usePortalSidebar();
   const { locale } = useI18n();
   const permission = useCurrentCompanyPermission();
+  const portal = useCompanyPortal();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const expanded = isExpanded || isHovered || isMobileOpen;
   const navSections = useMemo(
-    () => getCompanyPortalNavSectionsForRole(permission.roleName),
-    [permission.roleName]
+    () => getCompanyPortalNavSectionsForRole(permission.roleName, portal.systemProvider),
+    [permission.roleName, portal.systemProvider]
   );
   const portalHomeHref =
-    getDefaultCompanyPortalPath(permission.roleName) ?? dashboardRelPath;
+    getDefaultCompanyPortalPath(permission.roleName, portal.systemProvider) ??
+    dashboardRelPath;
 
   const [openSubmenu, setOpenSubmenu] = useState<OpenSubmenu>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
@@ -127,7 +130,7 @@ export default function PortalSidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-gray-200 bg-white px-5 text-gray-900 transition-all duration-300 ease-in-out lg:translate-x-0",
+        "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-gray-200/80 bg-white px-5 text-gray-900 transition-all duration-300 ease-in-out lg:translate-x-0",
         isExpanded || isMobileOpen
           ? "w-[290px]"
           : isHovered

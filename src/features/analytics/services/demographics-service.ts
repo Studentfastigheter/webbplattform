@@ -146,6 +146,32 @@ export function ignoreDemographicsRecordError() {
   // Demographics writes are best-effort telemetry and must not interrupt browsing.
 }
 
+function companyDemographicsEndpoint(companyId: number, path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `/companies/${pathSegment(companyId)}/demographics${normalizedPath}`;
+}
+
+function emptyListingDemographyBatchByCategory(): Record<
+  DemographyCategory,
+  Record<string, ListingDemography>
+> {
+  return Object.fromEntries(
+    LISTING_DEMOGRAPHY_CATEGORIES.map((category) => [category, {}])
+  ) as Record<DemographyCategory, Record<string, ListingDemography>>;
+}
+
+function emptyApplicationDemographyBatchByCategory(): Record<
+  ApplicationDemographyCategory,
+  Record<string, ApplicationDemography>
+> {
+  return Object.fromEntries(
+    APPLICATION_DEMOGRAPHY_CATEGORIES.map((category) => [category, {}])
+  ) as Record<
+    ApplicationDemographyCategory,
+    Record<string, ApplicationDemography>
+  >;
+}
+
 export const demographicsService = {
   getListing: async (
     listingId: string,
@@ -189,6 +215,39 @@ export const demographicsService = {
     >;
   },
 
+  getCompanyListing: async (
+    companyId: number,
+    listingId: string,
+    from: string | Date,
+    to: string | Date,
+    category: DemographyCategory,
+    options?: ServiceOptions
+  ): Promise<ListingDemography> => {
+    return apiClient<ListingDemography>(
+      `${companyDemographicsEndpoint(
+        companyId,
+        `/listings/${pathSegment(listingId)}`
+      )}${demographyQuery(from, to, category)}`,
+      { signal: options?.signal }
+    );
+  },
+
+  getCompanyListingByAllCategories: async (
+    companyId: number,
+    listingId: string,
+    from: string | Date,
+    to: string | Date,
+    options?: ServiceOptions
+  ): Promise<Record<DemographyCategory, ListingDemography | null>> => {
+    return apiClient<Record<DemographyCategory, ListingDemography | null>>(
+      `${companyDemographicsEndpoint(
+        companyId,
+        `/listings/${pathSegment(listingId)}/all`
+      )}${demographyQuery(from, to)}`,
+      { signal: options?.signal }
+    );
+  },
+
   recordListingView: async (
     listingId: string,
     payload: NewListingViewDemographicsRequest
@@ -197,6 +256,23 @@ export const demographicsService = {
       method: "POST",
       body: JSON.stringify(payload),
     });
+  },
+
+  recordCompanyListingView: async (
+    companyId: number,
+    listingId: string,
+    payload: NewListingViewDemographicsRequest
+  ): Promise<void> => {
+    await apiClient<void>(
+      companyDemographicsEndpoint(
+        companyId,
+        `/listings/${pathSegment(listingId)}/views`
+      ),
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
   },
 
   getListingsBatch: async (
@@ -208,7 +284,7 @@ export const demographicsService = {
     options?: ServiceOptions
   ): Promise<Record<string, ListingDemography>> => {
     return apiClient<Record<string, ListingDemography>>(
-      `/demographics/listings/query/${pathSegment(companyId)}${demographyQuery(
+      `${companyDemographicsEndpoint(companyId, "/listings/query")}${demographyQuery(
         from,
         to,
         category
@@ -228,27 +304,21 @@ export const demographicsService = {
     to: string | Date,
     options?: ServiceOptions
   ): Promise<Record<DemographyCategory, Record<string, ListingDemography>>> => {
-    const entries = await Promise.all(
-      LISTING_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value =
-          listingIds.length > 0
-            ? await demographicsService.getListingsBatch(
-                companyId,
-                listingIds,
-                from,
-                to,
-                category,
-                options
-              )
-            : {};
-        return [category, value] as const;
-      })
-    );
+    if (listingIds.length === 0) {
+      return emptyListingDemographyBatchByCategory();
+    }
 
-    return Object.fromEntries(entries) as Record<
-      DemographyCategory,
-      Record<string, ListingDemography>
-    >;
+    return apiClient<Record<DemographyCategory, Record<string, ListingDemography>>>(
+      `${companyDemographicsEndpoint(
+        companyId,
+        "/listings/query/all"
+      )}${demographyQuery(from, to)}`,
+      {
+        method: "POST",
+        body: JSON.stringify(listingIds),
+        signal: options?.signal,
+      }
+    );
   },
 
   getFullCompanyListings: async (
@@ -259,7 +329,7 @@ export const demographicsService = {
     options?: ServiceOptions
   ): Promise<Record<string, ListingDemography>> => {
     return apiClient<Record<string, ListingDemography>>(
-      `/demographics/company/${pathSegment(companyId)}/listings${demographyQuery(
+      `${companyDemographicsEndpoint(companyId, "/listings")}${demographyQuery(
         from,
         to,
         category
@@ -274,23 +344,13 @@ export const demographicsService = {
     to: string | Date,
     options?: ServiceOptions
   ): Promise<Record<DemographyCategory, Record<string, ListingDemography>>> => {
-    const entries = await Promise.all(
-      LISTING_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value = await demographicsService.getFullCompanyListings(
-          companyId,
-          from,
-          to,
-          category,
-          options
-        );
-        return [category, value] as const;
-      })
+    return apiClient<Record<DemographyCategory, Record<string, ListingDemography>>>(
+      `${companyDemographicsEndpoint(companyId, "/listings/all")}${demographyQuery(
+        from,
+        to
+      )}`,
+      { signal: options?.signal }
     );
-
-    return Object.fromEntries(entries) as Record<
-      DemographyCategory,
-      Record<string, ListingDemography>
-    >;
   },
 
   getCompany: async (
@@ -301,7 +361,7 @@ export const demographicsService = {
     options?: ServiceOptions
   ): Promise<CompanyDemography> => {
     return apiClient<CompanyDemography>(
-      `/demographics/company/${pathSegment(companyId)}${demographyQuery(
+      `${companyDemographicsEndpoint(companyId, "/profile")}${demographyQuery(
         from,
         to,
         category
@@ -316,33 +376,26 @@ export const demographicsService = {
     to: string | Date,
     options?: ServiceOptions
   ): Promise<Record<CompanyDemographyCategory, CompanyDemography | null>> => {
-    const entries = await Promise.all(
-      COMPANY_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value = await demographicsService.getCompany(
-          companyId,
-          from,
-          to,
-          category,
-          options
-        );
-        return [category, value] as const;
-      })
+    return apiClient<Record<CompanyDemographyCategory, CompanyDemography | null>>(
+      `${companyDemographicsEndpoint(companyId, "/profile/all")}${demographyQuery(
+        from,
+        to
+      )}`,
+      { signal: options?.signal }
     );
-
-    return Object.fromEntries(entries) as Record<
-      CompanyDemographyCategory,
-      CompanyDemography | null
-    >;
   },
 
   recordCompanyView: async (
     companyId: number,
     payload: NewCompanyDemographicsRequest
   ): Promise<void> => {
-    await apiClient<void>(`/demographics/company/${pathSegment(companyId)}`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    await apiClient<void>(
+      companyDemographicsEndpoint(companyId, "/profile/views"),
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
   },
 
   getCompaniesBatch: async (
@@ -352,6 +405,18 @@ export const demographicsService = {
     category: CompanyDemographyCategory,
     options?: ServiceOptions
   ): Promise<Record<string, CompanyDemography>> => {
+    if (companyIds.length === 1) {
+      const companyId = companyIds[0];
+      const value = await demographicsService.getCompany(
+        companyId,
+        from,
+        to,
+        category,
+        options
+      );
+      return { [String(companyId)]: value };
+    }
+
     return apiClient<Record<string, CompanyDemography>>(
       `/demographics/companies/query${demographyQuery(from, to, category)}`,
       {
@@ -368,6 +433,31 @@ export const demographicsService = {
     to: string | Date,
     options?: ServiceOptions
   ): Promise<Record<CompanyDemographyCategory, Record<string, CompanyDemography>>> => {
+    if (companyIds.length === 0) {
+      return Object.fromEntries(
+        COMPANY_DEMOGRAPHY_CATEGORIES.map((category) => [category, {}])
+      ) as Record<CompanyDemographyCategory, Record<string, CompanyDemography>>;
+    }
+
+    if (companyIds.length === 1) {
+      const companyId = companyIds[0];
+      const allCategories = await demographicsService.getCompanyByAllCategories(
+        companyId,
+        from,
+        to,
+        options
+      );
+
+      return Object.fromEntries(
+        COMPANY_DEMOGRAPHY_CATEGORIES.map((category) => [
+          category,
+          allCategories[category]
+            ? { [String(companyId)]: allCategories[category] as CompanyDemography }
+            : {},
+        ])
+      ) as Record<CompanyDemographyCategory, Record<string, CompanyDemography>>;
+    }
+
     const entries = await Promise.all(
       COMPANY_DEMOGRAPHY_CATEGORIES.map(async (category) => {
         const value =
@@ -388,6 +478,43 @@ export const demographicsService = {
       CompanyDemographyCategory,
       Record<string, CompanyDemography>
     >;
+  },
+
+  getCompanyApplication: async (
+    companyId: number,
+    listingId: string,
+    from: string | Date,
+    to: string | Date,
+    category: ApplicationDemographyCategory,
+    gotListing?: GotListingFilter,
+    options?: ServiceOptions
+  ): Promise<ApplicationDemography> => {
+    return apiClient<ApplicationDemography>(
+      `${companyDemographicsEndpoint(
+        companyId,
+        `/applications/listings/${pathSegment(listingId)}`
+      )}${demographyQuery(from, to, category, gotListing)}`,
+      { signal: options?.signal }
+    );
+  },
+
+  getCompanyApplicationByAllCategories: async (
+    companyId: number,
+    listingId: string,
+    from: string | Date,
+    to: string | Date,
+    gotListing?: GotListingFilter,
+    options?: ServiceOptions
+  ): Promise<Record<ApplicationDemographyCategory, ApplicationDemography | null>> => {
+    return apiClient<
+      Record<ApplicationDemographyCategory, ApplicationDemography | null>
+    >(
+      `${companyDemographicsEndpoint(
+        companyId,
+        `/applications/listings/${pathSegment(listingId)}/all`
+      )}${demographyQuery(from, to, undefined, gotListing)}`,
+      { signal: options?.signal }
+    );
   },
 
   getApplication: async (
@@ -443,8 +570,9 @@ export const demographicsService = {
     options?: ServiceOptions
   ): Promise<Record<string, ApplicationDemography>> => {
     return apiClient<Record<string, ApplicationDemography>>(
-      `/demographics/applications/listings/query/${pathSegment(
-        companyId
+      `${companyDemographicsEndpoint(
+        companyId,
+        "/applications/listings/query"
       )}${demographyQuery(from, to, category, gotListing)}`,
       {
         method: "POST",
@@ -464,29 +592,23 @@ export const demographicsService = {
   ): Promise<
     Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>
   > => {
-    const entries = await Promise.all(
-      APPLICATION_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value =
-          listingIds.length > 0
-            ? await demographicsService
-                .getApplicationsBatch(
-                  companyId,
-                  listingIds,
-                  from,
-                to,
-                category,
-                gotListing,
-                options
-              )
-            : {};
-        return [category, value] as const;
-      })
-    );
+    if (listingIds.length === 0) {
+      return emptyApplicationDemographyBatchByCategory();
+    }
 
-    return Object.fromEntries(entries) as Record<
-      ApplicationDemographyCategory,
-      Record<string, ApplicationDemography>
-    >;
+    return apiClient<
+      Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>
+    >(
+      `${companyDemographicsEndpoint(
+        companyId,
+        "/applications/listings/query/all"
+      )}${demographyQuery(from, to, undefined, gotListing)}`,
+      {
+        method: "POST",
+        body: JSON.stringify(listingIds),
+        signal: options?.signal,
+      }
+    );
   },
 
   getFullCompanyListingsApplications: async (
@@ -498,9 +620,10 @@ export const demographicsService = {
     options?: ServiceOptions
   ): Promise<Record<string, ApplicationDemography>> => {
     return apiClient<Record<string, ApplicationDemography>>(
-      `/demographics/applications/company/${pathSegment(
-        companyId
-      )}/listings${demographyQuery(from, to, category, gotListing)}`,
+      `${companyDemographicsEndpoint(
+        companyId,
+        "/applications/listings"
+      )}${demographyQuery(from, to, category, gotListing)}`,
       { signal: options?.signal }
     );
   },
@@ -514,23 +637,14 @@ export const demographicsService = {
   ): Promise<
     Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>
   > => {
-    const entries = await Promise.all(
-      APPLICATION_DEMOGRAPHY_CATEGORIES.map(async (category) => {
-        const value = await demographicsService.getFullCompanyListingsApplications(
-          companyId,
-          from,
-          to,
-          category,
-          gotListing,
-          options
-        );
-        return [category, value] as const;
-      })
+    return apiClient<
+      Record<ApplicationDemographyCategory, Record<string, ApplicationDemography>>
+    >(
+      `${companyDemographicsEndpoint(
+        companyId,
+        "/applications/listings/all"
+      )}${demographyQuery(from, to, undefined, gotListing)}`,
+      { signal: options?.signal }
     );
-
-    return Object.fromEntries(entries) as Record<
-      ApplicationDemographyCategory,
-      Record<string, ApplicationDemography>
-    >;
   },
 };

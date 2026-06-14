@@ -2,9 +2,11 @@
 
 import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
+import { cn } from "@/lib/utils";
 import PortalBackdrop from "./PortalBackdrop";
 import PortalHeader from "./PortalHeader";
 import PortalSidebar from "./PortalSidebar";
+import { useCompanyPortal } from "./CompanyPortalContext";
 import {
   PortalSidebarProvider,
   usePortalSidebar,
@@ -24,6 +26,7 @@ function DashboardFrame({
   footerContent?: ReactNode;
 }) {
   const { isExpanded, isHovered, isMobileOpen } = usePortalSidebar();
+  const portal = useCompanyPortal();
   const mainContentMargin = isMobileOpen
     ? "ml-0"
     : isExpanded || isHovered
@@ -31,14 +34,21 @@ function DashboardFrame({
       : "lg:ml-[90px]";
 
   return (
-    <div className="portal-admin min-h-screen overflow-x-clip bg-gray-50 xl:flex">
+    <div
+      className={cn(
+        "portal-admin min-h-screen overflow-x-clip bg-[#f6f7f9] xl:flex",
+        portal.policy.shellClassName
+      )}
+      data-portal-variant={portal.policy.variant}
+      data-system-provider={portal.systemProvider ?? undefined}
+    >
       <PortalSidebar />
       <PortalBackdrop />
       <div
         className={`min-w-0 flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
       >
         <PortalHeader />
-        <div className="mx-auto w-full max-w-[1536px] min-w-0 px-3 py-4 sm:px-4 md:p-6">
+        <div className="mx-auto w-full max-w-[1536px] min-w-0 p-4 pb-20 md:p-6 md:pb-8">
           {children}
         </div>
       </div>

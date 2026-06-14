@@ -2,21 +2,22 @@
 
 import * as React from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
   Cell,
-  ComposedChart,
   Legend,
-  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
-import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  PortalBarLineChart,
+  PortalHorizontalBarChart,
+  PortalVerticalBarChart,
+} from "@/features/analytics/components/PortalBarCharts";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -443,7 +444,7 @@ function CategorySelect<TCategory extends string>({
 
   return (
     <Select onValueChange={(next) => onChange(next as TCategory)} value={value}>
-      <SelectTrigger className="h-8 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:w-[170px]">
+      <SelectTrigger className="h-9 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs sm:w-[170px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent className="border-gray-200 bg-white">
@@ -554,36 +555,14 @@ function HorizontalBars({
   }
 
   return (
-    <div className={compact ? "min-h-[140px] min-w-0 h-[160px]" : "min-h-[140px] min-w-0 h-[160px]"}>
-      <ResponsiveContainer>
-        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
-          <CartesianGrid horizontal={false} stroke="#edf0f4" />
-          <XAxis axisLine={false} tick={{ fontSize: 11 }} tickLine={false} type="number" />
-          <YAxis
-            axisLine={false}
-            dataKey="label"
-            tick={{ fontSize: 11 }}
-            tickLine={false}
-            type="category"
-            width={92}
-          />
-          <Tooltip
-            contentStyle={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-              fontSize: 12,
-            }}
-            formatter={(value) => [formatNumber(Number(value), locale), resolvedValueLabel]}
-          />
-          <Bar barSize={18} dataKey="value" radius={[0, 6, 6, 0]}>
-            {data.map((entry) => (
-              <Cell fill={entry.fill} key={entry.key} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <PortalHorizontalBarChart
+      data={data}
+      heightClassName={compact ? "h-[160px]" : "h-[160px]"}
+      labelFormatter={(entry) => entry.label}
+      useDatumFill
+      valueFormatter={(value) => formatNumber(value, locale)}
+      valueLabel={resolvedValueLabel}
+    />
   );
 }
 
@@ -603,36 +582,21 @@ function CategoryBars({
   }
 
   return (
-    <div className="min-h-[250px] min-w-0 h-[280px]">
-      <ResponsiveContainer>
-        <BarChart data={data} margin={{ left: 4, right: 16, top: 8, bottom: 40 }}>
-          <CartesianGrid stroke="#edf0f4" vertical={false} />
-          <XAxis
-            dataKey="category"
-            interval={0}
-            tick={{ fill: "#6b7280", fontSize: 10, angle: -45, textAnchor: "end" } as any}
-            tickLine={false}
-            height={60}
-          />
-          <YAxis
-            allowDecimals={false}
-            axisLine={false}
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickLine={false}
-          />
-          <Tooltip
-            contentStyle={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-              fontSize: 12,
-            }}
-            formatter={(value) => [formatNumber(Number(value), locale), resolvedValueLabel]}
-          />
-          <Bar barSize={16} dataKey="value" fill="#16a34a" radius={[6, 6, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <PortalVerticalBarChart
+      data={data.map((entry) => ({
+        label: entry.category,
+        value: entry.value,
+      }))}
+      heightClassName="h-[280px]"
+      labelFormatter={(entry) => entry.label}
+      margin={{ left: 4, right: 16, top: 8, bottom: 40 }}
+      maxBarSize={28}
+      minWidthClassName={data.length > 8 ? "min-w-[720px]" : "min-w-full"}
+      valueFormatter={(value) => formatNumber(value, locale)}
+      valueLabel={resolvedValueLabel}
+      xAxisHeight={60}
+      xAxisTickAngle={-45}
+    />
   );
 }
 
@@ -670,15 +634,15 @@ function ApplicationPortfolioSummary({
         <SummaryMetric label={localizedText(locale, "Nekade", "Rejected")} value={rejected} locale={locale} />
       </div>
       <div className="grid min-h-0 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-gray-100 bg-white p-4">
+        <div className="portal-inner-surface p-4">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Skolor", "Schools")}</h3>
           <HorizontalBars data={schoolData} locale={locale} />
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4">
+        <div className="portal-inner-surface p-4">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Dagar i kö", "Days in queue")}</h3>
           <HorizontalBars data={queueData} locale={locale} />
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4">
+        <div className="portal-inner-surface p-4">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Maxhyra", "Max rent")}</h3>
           <HorizontalBars data={rentData} locale={locale} />
         </div>
@@ -693,71 +657,23 @@ function ListingPortfolioChart({ rows, locale }: { rows: ListingRow[]; locale: L
   }
 
   const data = rows.map((row, index) => ({
-    ...row,
-    shortTitle: `#${index + 1}`,
+    fullLabel: row.title,
+    label: `#${index + 1}`,
+    lineValue: row.topShare,
+    value: row.totalViews,
   }));
 
   return (
-    <div className="min-h-[240px] min-w-0 h-[280px]">
-      <ResponsiveContainer>
-        <ComposedChart data={data} margin={{ left: 4, right: 18, top: 8, bottom: 4 }}>
-          <CartesianGrid stroke="#edf0f4" vertical={false} />
-          <XAxis
-            dataKey="shortTitle"
-            interval={0}
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickLine={false}
-          />
-          <YAxis
-            allowDecimals={false}
-            axisLine={false}
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickLine={false}
-            yAxisId="views"
-          />
-          <YAxis
-            axisLine={false}
-            orientation="right"
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickFormatter={(value) => `${value}%`}
-            tickLine={false}
-            yAxisId="share"
-          />
-          <Tooltip
-            contentStyle={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-              fontSize: 12,
-            }}
-            formatter={(value, name) => [
-              name === "topShare" ? formatPercent(Number(value), locale) : formatNumber(Number(value), locale),
-              name === "topShare" ? localizedText(locale, "Andel toppsegment", "Top segment share") : localizedText(locale, "Visningar", "Views"),
-            ]}
-            labelFormatter={(_, payload: unknown[]) => {
-              const item = payload?.[0] as { payload?: { title?: string } } | undefined;
-              return item?.payload?.title ?? "";
-            }}
-          />
-          <Bar
-            barSize={20}
-            dataKey="totalViews"
-            fill="#16a34a"
-            name={localizedText(locale, "Visningar", "Views")}
-            radius={[6, 6, 0, 0]}
-            yAxisId="views"
-          />
-          <Line
-            dataKey="topShare"
-            dot={{ r: 3 }}
-            name={localizedText(locale, "Andel toppsegment", "Top segment share")}
-            stroke="#f472b6"
-            strokeWidth={2}
-            yAxisId="share"
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
+    <PortalBarLineChart
+      barLabel={localizedText(locale, "Visningar", "Views")}
+      data={data}
+      heightClassName="h-[280px]"
+      labelFormatter={(entry) => entry.fullLabel}
+      lineAxisFormatter={(value) => `${value}%`}
+      lineFormatter={(value) => formatPercent(value, locale)}
+      lineLabel={localizedText(locale, "Andel toppsegment", "Top segment share")}
+      valueFormatter={(value) => formatNumber(value, locale)}
+    />
   );
 }
 
@@ -773,7 +689,7 @@ function SummaryMetric({
   locale: Locale;
 }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
+    <div className="portal-inner-surface px-3 py-2.5">
       <p className="truncate text-[11px] font-medium leading-4 text-gray-500 sm:text-xs">
         {label}
       </p>
@@ -818,7 +734,7 @@ function ListingPortfolioSummary({
 
       {/* Charts: 3-col grid for toppannonser, enheter, städer */}
       <div className="grid h-full gap-4 grid-cols-1 lg:grid-cols-4">
-        <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-2">
+        <div className="portal-inner-surface p-4 col-span-1 lg:col-span-2">
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h3 className="text-sm font-semibold text-gray-900">
               {localizedText(locale, "Toppannonser", "Top listings")}
@@ -828,11 +744,11 @@ function ListingPortfolioSummary({
           <ListingPortfolioChart rows={summary.rows} locale={locale} />
         </div>
 
-        <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-1">
+        <div className="portal-inner-surface p-4 col-span-1 lg:col-span-1">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Enheter", "Devices")}</h3>
           <PieDistribution compact data={summary.deviceData} locale={locale} />
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 col-span-1 lg:col-span-1">
+        <div className="portal-inner-surface p-4 col-span-1 lg:col-span-1">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">{localizedText(locale, "Städer", "Cities")}</h3>
           <HorizontalBars compact data={summary.cityData} locale={locale} />
         </div>
@@ -842,15 +758,24 @@ function ListingPortfolioSummary({
 }
 
 type CompanyDemographyBlockProps = {
+  className?: string;
   deferUntilSelection?: boolean;
   description?: React.ReactNode;
+  size?: AnalyticsBlockSize;
   title?: React.ReactNode;
   useCompaniesQuery?: boolean;
 };
 
+type PortalAnalyticsBlockProps = {
+  className?: string;
+  size?: AnalyticsBlockSize;
+};
+
 export function CompanyDemographyBlock({
+  className,
   deferUntilSelection = false,
   description,
+  size = "2x2",
   title,
   useCompaniesQuery = false,
 }: CompanyDemographyBlockProps = {}) {
@@ -927,7 +852,8 @@ export function CompanyDemographyBlock({
           <ApplicationIntervalToggle onChange={handleRangeChange} value={range} />
         </div>
       }
-      size="2x2"
+      className={className}
+      size={size}
       title={title ?? localizedText(locale, "Företagsprofil", "Company profile")}
       description={description ?? localizedText(locale, "Besökare uppdelade efter vald kategori.", "Visitors split by the selected category.")}
     >
@@ -946,7 +872,10 @@ export function CompanyDemographyBlock({
   );
 }
 
-export function CompanyDemographyBatchBlock() {
+export function CompanyDemographyBatchBlock({
+  className,
+  size = "2x2",
+}: PortalAnalyticsBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -985,7 +914,8 @@ export function CompanyDemographyBatchBlock() {
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setRange} value={range} />}
-      size="2x2"
+      className={className}
+      size={size}
       title={localizedText(locale, "Demografi per kategori", "Demographics by category")}
       description={localizedText(locale, "Samlad bild av företagets besökare.", "Overview of the company's visitors.")}
     >
@@ -1000,7 +930,10 @@ export function CompanyDemographyBatchBlock() {
   );
 }
 
-export function ListingDemographyBatchBlock() {
+export function ListingDemographyBatchBlock({
+  className,
+  size = "4x4",
+}: PortalAnalyticsBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -1045,8 +978,9 @@ export function ListingDemographyBatchBlock() {
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setRange} value={range} />}
+      className={className}
       contentClassName="overflow-hidden p-4"
-      size="4x4"
+      size={size}
       title={localizedText(locale, "Annonsportfölj", "Listing portfolio")}
       description={localizedText(locale, "Summerad demografi för alla företagets annonser.", "Aggregated demographics for all company listings.")}
     >
@@ -1063,7 +997,10 @@ export function ListingDemographyBatchBlock() {
   );
 }
 
-export function ApplicationDemographyPortfolioBlock() {
+export function ApplicationDemographyPortfolioBlock({
+  className,
+  size = "2x4",
+}: PortalAnalyticsBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -1186,14 +1123,14 @@ export function ApplicationDemographyPortfolioBlock() {
         <div className="flex max-w-full flex-wrap items-center gap-2">
           <Input
             aria-label={localizedText(locale, "Från", "From")}
-            className="h-8 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
+            className="h-9 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs"
             onChange={(event) => setFromValue(event.target.value)}
             type="datetime-local"
             value={fromValue}
           />
           <Input
             aria-label={localizedText(locale, "Till", "To")}
-            className="h-8 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
+            className="h-9 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs"
             onChange={(event) => setToValue(event.target.value)}
             type="datetime-local"
             value={toValue}
@@ -1207,7 +1144,7 @@ export function ApplicationDemographyPortfolioBlock() {
             onValueChange={(value) => setGotListing(value as GotListingFilter)}
             value={gotListing}
           >
-            <SelectTrigger className="h-8 w-[140px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+            <SelectTrigger className="h-9 w-[140px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="border-gray-200 bg-white">
@@ -1220,8 +1157,9 @@ export function ApplicationDemographyPortfolioBlock() {
           </Select>
         </div>
       }
+      className={className}
       contentClassName="overflow-hidden p-3 pt-1"
-      size="2x4"
+      size={size}
       title={localizedText(locale, "Ansökningsdemografi", "Application demographics")}
       description={localizedText(locale, "Ansökningsstatistik uppdelad per annons och vald kategori.", "Application statistics split by listing and selected category.")}
     >
@@ -1247,13 +1185,13 @@ export function ApplicationDemographyPortfolioBlock() {
             />
           </div>
           <div className="grid min-h-0 gap-4 xl:grid-cols-2">
-            <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <div className="portal-inner-surface p-4">
               <h3 className="mb-2 text-sm font-semibold text-gray-900">
                 {labelFor(locale, category)}
               </h3>
               <HorizontalBars data={bucketData} valueLabel={localizedText(locale, "Ansökningar", "Applications")} locale={locale} />
             </div>
-            <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <div className="portal-inner-surface p-4">
               <h3 className="mb-2 text-sm font-semibold text-gray-900">
                 {localizedText(locale, "Ansökningar per annons", "Applications per listing")}
               </h3>
@@ -1268,7 +1206,10 @@ export function ApplicationDemographyPortfolioBlock() {
   );
 }
 
-export function ListingDemographyDrilldownBlock() {
+export function ListingDemographyDrilldownBlock({
+  className,
+  size = "2x2",
+}: PortalAnalyticsBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -1298,6 +1239,7 @@ export function ListingDemographyDrilldownBlock() {
   }, [range]);
 
   const listingDemographyQuery = useListingDemography(
+    companyId,
     listingId || null,
     fromIso,
     toIso,
@@ -1320,7 +1262,7 @@ export function ListingDemographyDrilldownBlock() {
       action={
         <div className="flex max-w-full flex-col gap-2 sm:flex-row">
           <Select onValueChange={setListingId} value={listingId}>
-            <SelectTrigger className="h-8 w-full min-w-[180px] rounded-lg border-gray-200 bg-white text-xs shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:w-[210px]">
+            <SelectTrigger className="h-9 w-full min-w-[180px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs sm:w-[210px]">
               <SelectValue placeholder={localizedText(locale, "Välj annons", "Choose listing")} />
             </SelectTrigger>
             <SelectContent className="border-gray-200 bg-white">
@@ -1339,7 +1281,8 @@ export function ListingDemographyDrilldownBlock() {
           <ApplicationIntervalToggle onChange={setRange} value={range} />
         </div>
       }
-      size="2x2"
+      className={className}
+      size={size}
       title={localizedText(locale, "Annonsdetalj", "Listing detail")}
       description={localizedText(locale, "Demografi för vald annons och period.", "Demographics for the selected listing and period.")}
     >

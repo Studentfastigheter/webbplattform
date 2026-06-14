@@ -1,10 +1,9 @@
-import Ansokningar from "../_views/ansokningar"
 import { redirect } from "next/navigation";
+
 import { dashboardRelPath } from "../_statics/variables";
+import ApplicationsView from "./ApplicationsView";
 
-
-
-export default async function Applications({
+export default async function ApplicationsPage({
   searchParams,
 }: {
   searchParams?: Promise<{
@@ -14,19 +13,15 @@ export default async function Applications({
 }) {
   const resolvedSearchParams = await searchParams;
   const filter = Array.isArray(resolvedSearchParams?.filter)
-    ? resolvedSearchParams?.filter[0]
+    ? resolvedSearchParams.filter[0]
     : resolvedSearchParams?.filter;
   const listingId = Array.isArray(resolvedSearchParams?.listingId)
-    ? resolvedSearchParams?.listingId[0]
+    ? resolvedSearchParams.listingId[0]
     : resolvedSearchParams?.listingId;
-  const mode = filter === "ko" ? "queue" : "interest";
 
-  if (mode === "queue") {
+  if (filter === "ko") {
     redirect(`${dashboardRelPath}/housing-queue`);
   }
 
-  return (
-    <Ansokningar listingId={listingId} />
-  )
-
+  return <ApplicationsView listingId={listingId} />;
 }

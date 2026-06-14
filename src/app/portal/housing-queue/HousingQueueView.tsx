@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { UsersRound } from "@/components/icons";
-import { AnalyticsBlock, AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import {
   TrendBarChart,
   type TrendBarChartPoint,
@@ -26,6 +25,13 @@ import type {
 import {
   CompanyDemographyBlock,
 } from "../_components/analytics/DemographicsEndpointBlocks";
+import {
+  PortalGrid,
+  PortalGridItem,
+  PortalPage,
+  PortalSurface,
+} from "../_components/shared/PortalGrid";
+import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 const trendGranularities: Array<{
   value: QueueApplicationTrendGranularity;
@@ -94,7 +100,7 @@ function QueueApplicationCountBlock({
   queueCount: number;
 }) {
   return (
-    <AnalyticsBlock
+    <PortalGridItem
       contentClassName="flex"
       size="1x2"
       title={localizedText(locale, "Studenter i bostadskö", "Students in housing queue")}
@@ -112,25 +118,25 @@ function QueueApplicationCountBlock({
           {error}
         </div>
       ) : (
-        <div className="flex w-full items-center justify-between gap-4 rounded-xl border border-brand-100 bg-brand-25/70 px-4 py-3">
+        <div className="flex w-full items-end justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+            <p className="text-theme-sm font-medium text-gray-500">
               {localizedText(
                 locale,
                 queueCount === 1 ? "1 aktiv bostadskö" : `${queueCount} aktiva bostadsköer`,
                 queueCount === 1 ? "1 active housing queue" : `${queueCount} active housing queues`
               )}
             </p>
-            <p className="mt-1 text-[32px] font-semibold leading-9 tracking-normal text-gray-950 tabular-nums sm:text-[38px] sm:leading-10">
+            <p className="mt-2 text-3xl font-bold leading-10 tracking-normal text-gray-800 tabular-nums">
               {count.toLocaleString(numberLocale(locale))}
             </p>
           </div>
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-100 bg-white text-brand-500 shadow-[0_8px_20px_rgba(0,66,37,0.08)] sm:h-12 sm:w-12">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-brand-500">
             <UsersRound className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
         </div>
       )}
-    </AnalyticsBlock>
+    </PortalGridItem>
   );
 }
 
@@ -145,7 +151,7 @@ function QueueTrendGranularityToggle({
 }) {
   return (
     <ToggleGroup
-      className="w-full max-w-full justify-start overflow-x-auto rounded-md bg-gray-50 p-0.5 sm:w-auto"
+      className="w-full max-w-full justify-start overflow-x-auto rounded-lg bg-gray-100 p-0.5 sm:w-auto"
       onValueChange={(nextValue) => {
         if (trendGranularities.some((item) => item.value === nextValue)) {
           onChange(nextValue as QueueApplicationTrendGranularity);
@@ -158,7 +164,7 @@ function QueueTrendGranularityToggle({
       {trendGranularities.map((item) => (
         <ToggleGroupItem
           aria-label={localizedText(locale, item.labelSv, item.labelEn)}
-          className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
+          className="h-8 shrink-0 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
           key={item.value}
           value={item.value}
         >
@@ -169,7 +175,7 @@ function QueueTrendGranularityToggle({
   );
 }
 
-export default function Bostadsko() {
+export default function HousingQueueView() {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -215,30 +221,39 @@ export default function Bostadsko() {
 
   if (authLoading || queuesLoading) {
     return (
-      <div className="space-y-6">
+      <PortalPage>
         <Skeleton className="h-[520px] rounded-xl" />
-      </div>
+      </PortalPage>
     );
   }
 
   if (!user) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Logga in för att se företagets bostadsköer.", "Log in to view the company's housing queues.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (!companyId) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PortalPage>
+      <PortalPageHeader
+        title={localizedText(locale, "Bostadsk\u00f6", "Housing queue")}
+        description={localizedText(
+          locale,
+          "F\u00f6lj k\u00f6ans\u00f6kningar, studentvolym och bes\u00f6kardemografi.",
+          "Track queue applications, student volume and visitor demographics."
+        )}
+      />
+
       {error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -246,13 +261,12 @@ export default function Bostadsko() {
       ) : null}
 
       {queues.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+        <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
           {localizedText(locale, "Inga bostadsköer hittades för företaget.", "No housing queues were found for the company.")}
-        </div>
+        </PortalSurface>
       ) : (
-        <div>
-          <main className="min-w-0 space-y-5">
-            <AnalyticsGrid>
+        <main className="min-w-0 space-y-5">
+            <PortalGrid>
               <QueueApplicationCountBlock
                 count={queueApplicationCountQuery.data ?? 0}
                 error={countError}
@@ -261,7 +275,7 @@ export default function Bostadsko() {
                 queueCount={queues.length}
               />
 
-              <AnalyticsBlock
+              <PortalGridItem
                 action={
                   <QueueTrendGranularityToggle
                     locale={locale}
@@ -285,7 +299,7 @@ export default function Bostadsko() {
                   title={localizedText(locale, "Köansökningar över tid", "Queue applications over time")}
                   valueLabel={localizedText(locale, "Köansökningar", "Queue applications")}
                 />
-              </AnalyticsBlock>
+              </PortalGridItem>
 
               <CompanyDemographyBlock
                 deferUntilSelection
@@ -293,10 +307,9 @@ export default function Bostadsko() {
                 title={localizedText(locale, "Besökardemografi", "Visitor demographics")}
                 useCompaniesQuery
               />
-            </AnalyticsGrid>
-          </main>
-        </div>
+            </PortalGrid>
+        </main>
       )}
-    </div>
+    </PortalPage>
   );
 }

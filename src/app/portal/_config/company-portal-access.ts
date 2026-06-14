@@ -12,11 +12,43 @@ import {
   Users,
 } from "@/components/icons";
 import { normalizeRoute } from "@/lib/utils";
+import type { SystemProvider } from "@/types/common";
 import { dashboardRelPath } from "../_statics/variables";
 
 export const companyPortalRoles = ["Agent", "Manager", "Admin"] as const;
 
 export type CompanyPortalRole = (typeof companyPortalRoles)[number];
+export type CompanyPortalSystemProvider = SystemProvider | string | null | undefined;
+
+export type CompanyPortalFeature =
+  | "overview"
+  | "listings"
+  | "listingDetailsAndEdit"
+  | "applications"
+  | "housingQueue"
+  | "analytics"
+  | "productNews"
+  | "guides"
+  | "settings"
+  | "requirementProfiles"
+  | "users"
+  | "companyProfile"
+  | "listingCreate"
+  | "listingImport"
+  | "listingSync"
+  | "applicationManagement"
+  | "profileEdit"
+  | "userManagement";
+
+export type CompanyPortalPolicy = {
+  key: string;
+  systemProvider: SystemProvider | null;
+  variant: "standard" | "integrated" | "internal";
+  labelSv: string;
+  labelEn: string;
+  shellClassName?: string;
+  features: readonly CompanyPortalFeature[];
+};
 
 const roleAliases: Record<string, CompanyPortalRole> = {
   AGENT: "Agent",
@@ -34,16 +66,17 @@ export const companyPortalRoleGroups = {
 } as const satisfies Record<string, readonly CompanyPortalRole[]>;
 
 type RoleList = readonly CompanyPortalRole[];
+type FeatureList = readonly CompanyPortalFeature[];
 
 export type CompanyPortalNavItem = {
-  id: string;
+  id: CompanyPortalFeature;
   nameSv: string;
   nameEn: string;
   path: string;
   icon: LucideIcon;
   roles: RoleList;
   subItems?: readonly {
-    id: string;
+    id: CompanyPortalFeature;
     nameSv: string;
     nameEn: string;
     path: string;
@@ -59,11 +92,149 @@ export type CompanyPortalNavSection = {
 };
 
 export type CompanyPortalPageRule = {
-  id: string;
+  id: CompanyPortalFeature;
   path: string;
   match: "exact" | "prefix";
   roles: RoleList;
 };
+
+const systemProviderValues = [
+  "HOGIA",
+  "PIGELLO",
+  "DEMO",
+  "MOMENTUM",
+  "FAST2",
+  "HOGIA_LANDLORD",
+] as const satisfies readonly SystemProvider[];
+
+const basePortalFeatures = [
+  "overview",
+  "listings",
+  "listingDetailsAndEdit",
+  "applications",
+  "housingQueue",
+  "analytics",
+  "productNews",
+  "guides",
+  "settings",
+  "requirementProfiles",
+  "users",
+  "companyProfile",
+  "listingCreate",
+  "listingImport",
+  "profileEdit",
+  "userManagement",
+] as const satisfies FeatureList;
+
+const managedPortalFeatures = [
+  ...basePortalFeatures,
+  "applicationManagement",
+] as const satisfies FeatureList;
+
+const providerSyncedPortalFeatures = [
+  ...basePortalFeatures,
+  "listingSync",
+] as const satisfies FeatureList;
+
+const defaultPortalPolicy: CompanyPortalPolicy = {
+  key: "default",
+  systemProvider: null,
+  variant: "standard",
+  labelSv: "Standard",
+  labelEn: "Standard",
+  shellClassName: "portal-provider-standard",
+  features: managedPortalFeatures,
+};
+
+const companyPortalProviderPolicies = {
+  HOGIA: {
+    key: "hogia",
+    systemProvider: "HOGIA",
+    variant: "integrated",
+    labelSv: "Hogia",
+    labelEn: "Hogia",
+    shellClassName: "portal-provider-hogia",
+    features: providerSyncedPortalFeatures,
+  },
+  HOGIA_LANDLORD: {
+    key: "hogia-landlord",
+    systemProvider: "HOGIA_LANDLORD",
+    variant: "internal",
+    labelSv: "Hogia Landlord",
+    labelEn: "Hogia Landlord",
+    shellClassName: "portal-provider-hogia-landlord",
+    features: providerSyncedPortalFeatures,
+  },
+  DEMO: {
+    key: "demo",
+    systemProvider: "DEMO",
+    variant: "standard",
+    labelSv: "Demo",
+    labelEn: "Demo",
+    shellClassName: "portal-provider-demo",
+    features: managedPortalFeatures,
+  },
+  PIGELLO: {
+    key: "pigello",
+    systemProvider: "PIGELLO",
+    variant: "integrated",
+    labelSv: "Pigello",
+    labelEn: "Pigello",
+    shellClassName: "portal-provider-pigello",
+    features: managedPortalFeatures,
+  },
+  MOMENTUM: {
+    key: "momentum",
+    systemProvider: "MOMENTUM",
+    variant: "integrated",
+    labelSv: "Momentum",
+    labelEn: "Momentum",
+    shellClassName: "portal-provider-momentum",
+    features: managedPortalFeatures,
+  },
+  FAST2: {
+    key: "fast2",
+    systemProvider: "FAST2",
+    variant: "integrated",
+    labelSv: "Fast2",
+    labelEn: "Fast2",
+    shellClassName: "portal-provider-fast2",
+    features: managedPortalFeatures,
+  },
+} as const satisfies Record<SystemProvider, CompanyPortalPolicy>;
+
+export function normalizeCompanyPortalSystemProvider(
+  systemProvider: CompanyPortalSystemProvider
+): SystemProvider | null {
+  if (typeof systemProvider !== "string") {
+    return null;
+  }
+
+  const normalized = systemProvider.trim().toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+
+  return systemProviderValues.includes(normalized as SystemProvider)
+    ? (normalized as SystemProvider)
+    : null;
+}
+
+export function getCompanyPortalPolicy(
+  systemProvider: CompanyPortalSystemProvider
+): CompanyPortalPolicy {
+  const normalizedProvider = normalizeCompanyPortalSystemProvider(systemProvider);
+  return normalizedProvider
+    ? companyPortalProviderPolicies[normalizedProvider]
+    : defaultPortalPolicy;
+}
+
+export function canCompanyPortalProviderUseFeature(
+  systemProvider: CompanyPortalSystemProvider,
+  feature: CompanyPortalFeature
+) {
+  return getCompanyPortalPolicy(systemProvider).features.includes(feature);
+}
 
 // Ändra rollerna här för att styra vilka flikar som visas i företagsportalen.
 export const companyPortalNavSections: readonly CompanyPortalNavSection[] = [
@@ -193,6 +364,18 @@ export const companyPortalPageRules = [
     roles: companyPortalRoleGroups.all,
   },
   {
+    id: "listingCreate",
+    path: `${dashboardRelPath}/listings/new`,
+    match: "prefix",
+    roles: companyPortalRoleGroups.managerAndAdmin,
+  },
+  {
+    id: "listingImport",
+    path: `${dashboardRelPath}/listings/import`,
+    match: "exact",
+    roles: companyPortalRoleGroups.managerAndAdmin,
+  },
+  {
     id: "listingDetailsAndEdit",
     path: `${dashboardRelPath}/listings/`,
     match: "prefix",
@@ -270,25 +453,34 @@ export function canCompanyPortalRoleAccess(
 }
 
 export function getCompanyPortalNavSectionsForRole(
-  roleName: string | null | undefined
+  roleName: string | null | undefined,
+  systemProvider?: CompanyPortalSystemProvider
 ): CompanyPortalNavSection[] {
   return companyPortalNavSections
     .map((section) => ({
       ...section,
       items: section.items
-        .filter((item) => canCompanyPortalRoleAccess(item.roles, roleName))
+        .filter(
+          (item) =>
+            canCompanyPortalRoleAccess(item.roles, roleName) &&
+            canCompanyPortalProviderUseFeature(systemProvider, item.id)
+        )
         .map((item) => ({
           ...item,
           subItems: item.subItems?.filter((subItem) =>
-            canCompanyPortalRoleAccess(subItem.roles, roleName)
+            canCompanyPortalRoleAccess(subItem.roles, roleName) &&
+            canCompanyPortalProviderUseFeature(systemProvider, subItem.id)
           ),
         })),
     }))
     .filter((section) => section.items.length > 0);
 }
 
-export function getDefaultCompanyPortalPath(roleName: string | null | undefined) {
-  for (const section of getCompanyPortalNavSectionsForRole(roleName)) {
+export function getDefaultCompanyPortalPath(
+  roleName: string | null | undefined,
+  systemProvider?: CompanyPortalSystemProvider
+) {
+  for (const section of getCompanyPortalNavSectionsForRole(roleName, systemProvider)) {
     for (const item of section.items) {
       if (item.subItems?.length) {
         return item.subItems[0].path;
@@ -303,7 +495,8 @@ export function getDefaultCompanyPortalPath(roleName: string | null | undefined)
 
 export function isCompanyPortalPathAllowed(
   pathname: string,
-  roleName: string | null | undefined
+  roleName: string | null | undefined,
+  systemProvider?: CompanyPortalSystemProvider
 ) {
   const normalizedPathname = normalizeRoute(pathname);
   const rule = companyPortalPageRules.find((entry) => {
@@ -323,5 +516,8 @@ export function isCompanyPortalPathAllowed(
     return false;
   }
 
-  return canCompanyPortalRoleAccess(rule.roles, roleName);
+  return (
+    canCompanyPortalRoleAccess(rule.roles, roleName) &&
+    canCompanyPortalProviderUseFeature(systemProvider, rule.id)
+  );
 }

@@ -4,6 +4,7 @@ import { CircleQuestionMark, Upload } from "@/components/icons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import { cn } from "@/lib/utils";
 import Container from "@/app/portal/_components/Container";
 import React from "react";
@@ -157,8 +158,8 @@ export function TextAreaField({
     ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     return (
-        <div className="relative">
-            <textarea
+        <div>
+            <RichTextTextarea
                 {...props}
                 className={cn("w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-none placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004225]/15 disabled:cursor-not-allowed disabled:opacity-50", className)}
             />

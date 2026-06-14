@@ -24,17 +24,25 @@ import { qk } from "@/lib/query/keys";
 import { useAuth } from "@/context/AuthContext";
 import {
   companyService,
+  type AnalyticsCountBucket,
   type AnalyticalQuantities,
   type ApplicationStatisticEntry,
   type HandleCompanyApplicationRequest,
+  type CompanyAnalyticsFunnel,
   type CompanyChangeableDataDTO,
   type CompanyImageTarget,
+  type CompanyOverviewTrendEntry,
+  type CompanyOverviewTrendGranularity,
+  type CompanyPortalAnalyticsDashboard,
+  type CompanyPortalAnalyticsOverview,
   type CompanyPrivateDTO,
   type CompanyPublicDTO,
   type CompanyRole,
   type CompanyUserCreateRequest,
   type CompanyUserDTO,
   type CompanyUserUpdateRequest,
+  type ListingAnalyticsPerformance,
+  type ListingPerformanceSort,
   type ListingViewCounts,
   type NewApplication,
   type ObjectApplicationCount,
@@ -156,6 +164,278 @@ export function useCompanyApplications(
   });
 }
 
+export function useCompanyAnalyticsOverview(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    granularity = "day",
+    limit = 5,
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    granularity?: CompanyOverviewTrendGranularity;
+    limit?: number;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<CompanyPortalAnalyticsOverview>({
+    queryKey: qk.companies.analyticsOverview(
+      companyId ?? -1,
+      fromKey,
+      toKey,
+      granularity,
+      limit
+    ),
+    queryFn: ({ signal }) =>
+      companyService.analyticsOverview(companyId!, {
+        from,
+        to,
+        granularity,
+        limit,
+        signal,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyAnalyticsDashboard(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    granularity = "day",
+    limit = 10,
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    granularity?: CompanyOverviewTrendGranularity;
+    limit?: number;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<CompanyPortalAnalyticsDashboard>({
+    queryKey: qk.companies.analyticsDashboard(
+      companyId ?? -1,
+      fromKey,
+      toKey,
+      granularity,
+      limit
+    ),
+    queryFn: ({ signal }) =>
+      companyService.analyticsDashboard(companyId!, {
+        from,
+        to,
+        granularity,
+        limit,
+        signal,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyAnalyticsFunnel(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<CompanyAnalyticsFunnel>({
+    queryKey: qk.companies.analyticsFunnel(companyId ?? -1, fromKey, toKey),
+    queryFn: ({ signal }) =>
+      companyService.analyticsFunnel(companyId!, {
+        from,
+        to,
+        signal,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyListingPerformance(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    sortBy = "periodTotalViews",
+    limit = 50,
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    sortBy?: ListingPerformanceSort;
+    limit?: number;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<ListingAnalyticsPerformance[]>({
+    queryKey: qk.companies.listingPerformance(
+      companyId ?? -1,
+      fromKey,
+      toKey,
+      sortBy,
+      limit
+    ),
+    queryFn: ({ signal }) =>
+      companyService.listingPerformance(companyId!, {
+        from,
+        to,
+        sortBy,
+        limit,
+        signal,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyListingPerformanceDetail(
+  companyId: number | null | undefined,
+  listingId: string | null | undefined,
+  {
+    from,
+    to,
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<ListingAnalyticsPerformance>({
+    queryKey: qk.companies.listingPerformanceDetail(
+      companyId ?? -1,
+      listingId ?? "",
+      fromKey,
+      toKey
+    ),
+    queryFn: ({ signal }) =>
+      companyService.listingPerformanceDetail(companyId!, listingId!, {
+        from,
+        to,
+        signal,
+      }),
+    enabled:
+      enabled &&
+      Boolean(user) &&
+      companyId != null &&
+      companyId > 0 &&
+      Boolean(listingId),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyListingStatusCounts(
+  companyId: number | null | undefined
+) {
+  const { user } = useAuth();
+
+  return useQuery<AnalyticsCountBucket[]>({
+    queryKey: qk.companies.listingStatuses(companyId ?? -1),
+    queryFn: ({ signal }) =>
+      companyService.listingStatusCounts(companyId!, { signal }),
+    enabled: Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyApplicationStatusCounts(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<AnalyticsCountBucket[]>({
+    queryKey: qk.companies.applicationStatuses(
+      companyId ?? -1,
+      fromKey,
+      toKey
+    ),
+    queryFn: ({ signal }) =>
+      companyService.applicationStatusCounts(companyId!, {
+        from,
+        to,
+        signal,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyApplicationOutcomeCounts(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<AnalyticsCountBucket[]>({
+    queryKey: qk.companies.applicationOutcomes(
+      companyId ?? -1,
+      fromKey,
+      toKey
+    ),
+    queryFn: ({ signal }) =>
+      companyService.applicationOutcomeCounts(companyId!, {
+        from,
+        to,
+        signal,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
 export function useHandleCompanyApplication() {
   const qc = useQueryClient();
 
@@ -169,6 +449,24 @@ export function useHandleCompanyApplication() {
     onSettled: (_data, _err, { companyId }) => {
       qc.invalidateQueries({
         queryKey: qk.companies.applicationsByCompany(companyId),
+      });
+      qc.invalidateQueries({
+        queryKey: qk.companies.analyticsDashboardByCompany(companyId),
+      });
+      qc.invalidateQueries({
+        queryKey: qk.companies.analyticsFunnelByCompany(companyId),
+      });
+      qc.invalidateQueries({
+        queryKey: qk.companies.applicationStatusesByCompany(companyId),
+      });
+      qc.invalidateQueries({
+        queryKey: qk.companies.applicationOutcomesByCompany(companyId),
+      });
+      qc.invalidateQueries({
+        queryKey: qk.companies.listingPerformanceByCompany(companyId),
+      });
+      qc.invalidateQueries({
+        queryKey: qk.companies.generalAnalytics(companyId),
       });
     },
   });
@@ -247,6 +545,43 @@ export function useCompanyQueueApplicationsTrend(
         from,
         to,
         granularity,
+      }),
+    enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useCompanyOverviewTrend(
+  companyId: number | null | undefined,
+  {
+    from,
+    to,
+    granularity = "day",
+    enabled = true,
+  }: {
+    from?: string | Date;
+    to?: string | Date;
+    granularity?: CompanyOverviewTrendGranularity;
+    enabled?: boolean;
+  } = {}
+) {
+  const { user } = useAuth();
+  const fromKey = from instanceof Date ? from.toISOString() : (from ?? "");
+  const toKey = to instanceof Date ? to.toISOString() : (to ?? "");
+
+  return useQuery<CompanyOverviewTrendEntry[]>({
+    queryKey: qk.companies.overviewTrend(
+      companyId ?? -1,
+      fromKey,
+      toKey,
+      granularity
+    ),
+    queryFn: ({ signal }) =>
+      companyService.overviewTrend(companyId!, {
+        from,
+        to,
+        granularity,
+        signal,
       }),
     enabled: enabled && Boolean(user) && companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
@@ -494,9 +829,16 @@ export function useRefreshCompanyListings() {
       qc.invalidateQueries({ queryKey: qk.companies.applicationCounts(id, 200) });
       qc.invalidateQueries({ queryKey: qk.companies.applicationsByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.companies.applicationsTimeline(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.overviewTrendByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.companies.generalAnalytics(id) });
       qc.invalidateQueries({ queryKey: qk.companies.residentAnalytics(id) });
       qc.invalidateQueries({ queryKey: qk.companies.viewCountsByCompany(id) });
+      qc.invalidateQueries({ queryKey: ["companies", "analytics-dashboard", id] });
+      qc.invalidateQueries({ queryKey: ["companies", "analytics-funnel", id] });
+      qc.invalidateQueries({ queryKey: ["companies", "listing-performance", id] });
+      qc.invalidateQueries({ queryKey: ["companies", "listing-statuses", id] });
+      qc.invalidateQueries({ queryKey: ["companies", "application-statuses", id] });
+      qc.invalidateQueries({ queryKey: ["companies", "application-outcomes", id] });
     },
   });
 }

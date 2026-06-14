@@ -32,6 +32,7 @@ import {
 const STALE_30_SECONDS = 30_000;
 
 export function useListingDemography(
+  companyId: number | null | undefined,
   listingId: string | null | undefined,
   from: string,
   to: string,
@@ -39,25 +40,60 @@ export function useListingDemography(
   enabled = true
 ) {
   return useQuery<ListingDemography>({
-    queryKey: qk.demographics.listing(listingId ?? "", from, to, category),
+    queryKey: qk.demographics.listing(
+      companyId ?? -1,
+      listingId ?? "",
+      from,
+      to,
+      category
+    ),
     queryFn: () =>
-      demographicsService.getListing(listingId!, from, to, category),
-    enabled: enabled && Boolean(listingId) && !!from && !!to,
+      demographicsService.getCompanyListing(
+        companyId!,
+        listingId!,
+        from,
+        to,
+        category
+      ),
+    enabled:
+      enabled &&
+      companyId != null &&
+      companyId > 0 &&
+      Boolean(listingId) &&
+      !!from &&
+      !!to,
     staleTime: STALE_30_SECONDS,
   });
 }
 
 export function useListingByAllCategoriesDemography(
+  companyId: number | null | undefined,
   listingId: string | null | undefined,
   from: string,
   to: string,
   enabled = true
 ) {
   return useQuery<Record<DemographyCategory, ListingDemography | null>>({
-    queryKey: qk.demographics.listingByAllCategories(listingId ?? "", from, to),
+    queryKey: qk.demographics.listingByAllCategories(
+      companyId ?? -1,
+      listingId ?? "",
+      from,
+      to
+    ),
     queryFn: () =>
-      demographicsService.getListingByAllCategories(listingId!, from, to),
-    enabled: enabled && Boolean(listingId) && !!from && !!to,
+      demographicsService.getCompanyListingByAllCategories(
+        companyId!,
+        listingId!,
+        from,
+        to
+      ),
+    enabled:
+      enabled &&
+      companyId != null &&
+      companyId > 0 &&
+      Boolean(listingId) &&
+      !!from &&
+      !!to,
     staleTime: STALE_30_SECONDS,
   });
 }
@@ -165,6 +201,7 @@ export function useApplicationsBatchDemography(
 }
 
 export function useApplicationDemography(
+  companyId: number | null | undefined,
   listingId: string | null | undefined,
   from: string,
   to: string,
@@ -174,6 +211,7 @@ export function useApplicationDemography(
 ) {
   return useQuery<ApplicationDemography>({
     queryKey: qk.demographics.application(
+      companyId ?? -1,
       listingId ?? "",
       from,
       to,
@@ -181,14 +219,58 @@ export function useApplicationDemography(
       gotListing
     ),
     queryFn: () =>
-      demographicsService.getApplication(
+      demographicsService.getCompanyApplication(
+        companyId!,
         listingId!,
         from,
         to,
         category,
         gotListing
       ),
-    enabled: enabled && Boolean(listingId) && !!from && !!to,
+    enabled:
+      enabled &&
+      companyId != null &&
+      companyId > 0 &&
+      Boolean(listingId) &&
+      !!from &&
+      !!to,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useApplicationByAllCategoriesDemography(
+  companyId: number | null | undefined,
+  listingId: string | null | undefined,
+  from: string,
+  to: string,
+  gotListing: GotListingFilter = "BOTH",
+  enabled = true
+) {
+  return useQuery<
+    Record<ApplicationDemographyCategory, ApplicationDemography | null>
+  >({
+    queryKey: qk.demographics.applicationByAllCategories(
+      companyId ?? -1,
+      listingId ?? "",
+      from,
+      to,
+      gotListing
+    ),
+    queryFn: () =>
+      demographicsService.getCompanyApplicationByAllCategories(
+        companyId!,
+        listingId!,
+        from,
+        to,
+        gotListing
+      ),
+    enabled:
+      enabled &&
+      companyId != null &&
+      companyId > 0 &&
+      Boolean(listingId) &&
+      !!from &&
+      !!to,
     staleTime: STALE_30_SECONDS,
   });
 }

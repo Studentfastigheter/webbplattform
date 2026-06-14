@@ -11,6 +11,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
@@ -45,6 +49,7 @@ type AnalyticsApplicationsTrendProps = {
   showSummary?: boolean;
   className?: string;
   chartClassName?: string;
+  size?: AnalyticsBlockSize;
 };
 
 const intervals: Interval[] = [
@@ -149,7 +154,7 @@ function formatAxisValue(value: string | number, locale: Locale) {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="rounded-md border border-error-500/20 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
+    <div className="rounded-xl border border-error-500/20 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
       {message}
     </div>
   );
@@ -157,19 +162,18 @@ function ErrorState({ message }: { message: string }) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex min-h-[180px] flex-1 items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-theme-sm text-gray-500">
+    <div className="flex min-h-[180px] flex-1 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 text-center text-theme-sm text-gray-500">
       {message}
     </div>
   );
 }
 
-export default function AnalyticsApplicationsTrend({
-  embedded = false,
+function AnalyticsApplicationsTrendContent({
   showHeader = true,
   showSummary = true,
   className,
   chartClassName,
-}: AnalyticsApplicationsTrendProps) {
+}: Omit<AnalyticsApplicationsTrendProps, "embedded" | "size">) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -225,14 +229,11 @@ export default function AnalyticsApplicationsTrend({
     (entry) => entry.comparisonApplications !== undefined
   );
   const loading = authLoading || trendQuery.isLoading;
-  const Root = embedded ? "div" : "section";
 
   return (
-    <Root
+    <div
       className={cn(
-        embedded
-          ? "flex h-full min-h-0 min-w-0 flex-col"
-          : "flex min-w-0 flex-col rounded-lg border border-gray-100 bg-white px-5 py-5 shadow-[0_18px_50px_rgba(15,23,42,0.04)] sm:px-6",
+        "flex h-full min-h-0 min-w-0 flex-col",
         className
       )}
     >
@@ -242,13 +243,10 @@ export default function AnalyticsApplicationsTrend({
             <h2 className="truncate text-sm font-semibold text-gray-800">
               {localizedText(locale, "Ansökningstrend", "Application trend")}
             </h2>
-            <p className="mt-1 max-w-[36rem] text-theme-xs text-gray-400">
-              {localizedText(locale, "Antal mottagna ansökningar per kalendermånad.", "Number of received applications per calendar month.")}
-            </p>
           </div>
 
           <ToggleGroup
-            className="w-full max-w-full shrink-0 justify-start overflow-x-auto rounded-md bg-transparent sm:w-auto"
+            className="w-full max-w-full shrink-0 justify-start overflow-x-auto rounded-lg bg-gray-100 p-0.5 sm:w-auto"
             onValueChange={(value) => {
               if (value) {
                 setSelectedInterval(value);
@@ -261,7 +259,7 @@ export default function AnalyticsApplicationsTrend({
             {intervals.map((interval) => (
               <ToggleGroupItem
                 aria-label={localizedText(locale, interval.label, interval.labelEn)}
-                className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-700 data-[state=on]:bg-gray-50 data-[state=on]:text-gray-900"
+                className="h-8 shrink-0 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
                 key={interval.value}
                 value={interval.value}
               >
@@ -274,7 +272,7 @@ export default function AnalyticsApplicationsTrend({
 
       {loading ? (
         <div className={cn("min-h-0 flex-1", showHeader ? "mt-6" : "h-full")}>
-          <Skeleton className="h-full min-h-[180px] w-full rounded-md" />
+          <Skeleton className="h-full min-h-[180px] w-full rounded-xl" />
         </div>
       ) : error ? (
         <div className={showHeader ? "mt-6" : "mt-0"}>
@@ -295,9 +293,7 @@ export default function AnalyticsApplicationsTrend({
             <ChartContainer
               className={cn(
                 "aspect-auto w-full min-w-0",
-                embedded
-                  ? "h-full min-h-[180px]"
-                  : "h-[clamp(220px,32vw,310px)]",
+                "h-full min-h-[180px]",
                 chartClassName
               )}
               config={chartConfig}
@@ -307,7 +303,7 @@ export default function AnalyticsApplicationsTrend({
                 margin={{
                   bottom: 0,
                   left: 0,
-                  right: embedded ? 2 : 8,
+                  right: 2,
                   top: 14,
                 }}
               >
@@ -363,7 +359,7 @@ export default function AnalyticsApplicationsTrend({
                   tickFormatter={(value) => formatAxisValue(value, locale)}
                   tickLine={false}
                   tickMargin={8}
-                  width={embedded ? 34 : 44}
+                  width={34}
                 />
 
                 <ChartTooltip
@@ -413,6 +409,40 @@ export default function AnalyticsApplicationsTrend({
           ) : null}
         </div>
       )}
-    </Root>
+    </div>
+  );
+}
+
+export default function AnalyticsApplicationsTrend({
+  embedded = false,
+  showHeader = true,
+  showSummary = true,
+  className,
+  chartClassName,
+  size = "2x2",
+}: AnalyticsApplicationsTrendProps) {
+  if (embedded) {
+    return (
+      <AnalyticsApplicationsTrendContent
+        chartClassName={chartClassName}
+        className={className}
+        showHeader={showHeader}
+        showSummary={showSummary}
+      />
+    );
+  }
+
+  return (
+    <AnalyticsBlock
+      className={className}
+      contentClassName="overflow-hidden"
+      size={size}
+    >
+      <AnalyticsApplicationsTrendContent
+        chartClassName={chartClassName}
+        showHeader={showHeader}
+        showSummary={showSummary}
+      />
+    </AnalyticsBlock>
   );
 }

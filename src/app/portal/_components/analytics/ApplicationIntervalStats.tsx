@@ -2,7 +2,10 @@
 
 import * as React from "react";
 import { FileUser } from "@/components/icons";
-import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +23,11 @@ export type ApplicationInterval = {
   label: string;
   detailLabel: string;
   subtract: (date: Date) => Date;
+};
+
+type ApplicationIntervalStatsProps = {
+  className?: string;
+  size?: AnalyticsBlockSize;
 };
 
 export const applicationIntervals: ApplicationInterval[] = [
@@ -139,7 +147,7 @@ export function ApplicationIntervalToggle({
 
   return (
     <ToggleGroup
-      className="w-full max-w-full justify-start overflow-x-auto rounded-md bg-gray-50 p-0.5 sm:w-auto"
+      className="w-full max-w-full justify-start overflow-x-auto rounded-lg bg-gray-100 p-0.5 sm:w-auto"
       onValueChange={(nextValue) => {
         if (applicationIntervals.some((interval) => interval.value === nextValue)) {
           onChange(nextValue as ApplicationIntervalValue);
@@ -155,7 +163,7 @@ export function ApplicationIntervalToggle({
         return (
         <ToggleGroupItem
           aria-label={localizedInterval.label}
-          className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
+          className="h-8 shrink-0 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
           key={interval.value}
           value={interval.value}
         >
@@ -167,7 +175,10 @@ export function ApplicationIntervalToggle({
   );
 }
 
-export default function ApplicationIntervalStats() {
+export default function ApplicationIntervalStats({
+  className,
+  size = "2x2",
+}: ApplicationIntervalStatsProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -206,7 +217,8 @@ export default function ApplicationIntervalStats() {
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setInterval} value={interval} />}
-      size="2x2"
+      className={className}
+      size={size}
       title={localizedText(locale, "Ansökningar totalt", "Total applications")}
     >
       {authLoading || timedApplicationsQuery.isLoading ? (
@@ -222,16 +234,16 @@ export default function ApplicationIntervalStats() {
           {error}
         </div>
       ) : (
-        <div className="flex h-full items-center justify-between gap-4 rounded-xl border border-brand-100 bg-brand-25/70 px-4 py-3">
+        <div className="flex h-full items-end justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+            <p className="text-theme-sm font-medium text-gray-500">
               {selectedInterval.detailLabel}
             </p>
-            <p className="mt-0.5 text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[34px] sm:leading-9">
+            <p className="mt-2 text-3xl font-bold leading-10 tracking-normal text-gray-800 tabular-nums">
               {count.toLocaleString(numberLocale(locale))}
             </p>
           </div>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-100 bg-white text-brand-500 shadow-[0_8px_20px_rgba(0,66,37,0.08)] sm:h-12 sm:w-12">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-brand-500">
             <FileUser className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
         </div>
