@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import { Clock3 } from "@/components/icons";
-import { Card, CardContent } from "@/components/ui/card";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { dashboardRelPath } from "../../_statics/variables";
+import {
+  PortalEmptyState,
+  PortalGrid,
+  PortalGridItem,
+  PortalPage,
+} from "./PortalGrid";
+import PortalPageHeader from "./PortalPageHeader";
 
 type PortalPlaceholderPageProps = {
   title: string;
@@ -24,49 +30,44 @@ export default function PortalPlaceholderPage({
   const localizedNotes = locale === "en" ? notesEn : notes;
 
   return (
-    <div className="space-y-5">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {localizedText(locale, title, titleEn)}
-        </h1>
-      </header>
+    <PortalPage>
+      <PortalPageHeader title={localizedText(locale, title, titleEn)} />
 
-      <Card className="border-gray-200 bg-white shadow-sm">
-        <CardContent className="flex flex-col items-start gap-4 px-6 py-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-100 text-gray-700">
-            <Clock3 className="h-5 w-5" />
-          </div>
-
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {localizedText(locale, "Kommer snart", "Coming soon")}
-            </h2>
-            <p className="text-sm text-gray-500">
-              {localizedText(locale, "Sidan är under arbete.", "This page is under development.")}
-            </p>
-          </div>
+      <PortalGrid>
+        <PortalGridItem contentClassName="flex flex-col gap-5 p-6 sm:p-6" size="2x4">
+          <PortalEmptyState
+            action={
+              <Link
+                className="inline-flex items-center text-sm font-medium text-[#004225] hover:underline"
+                href={dashboardRelPath}
+              >
+                {localizedText(locale, "Till \u00f6versikten", "Go to overview")}
+              </Link>
+            }
+            className="min-h-0 items-start justify-start text-left"
+            description={localizedText(
+              locale,
+              "Sidan \u00e4r under arbete.",
+              "This page is under development."
+            )}
+            icon={<Clock3 className="h-5 w-5" />}
+            title={localizedText(locale, "Kommer snart", "Coming soon")}
+          />
 
           {localizedNotes.length > 0 ? (
-            <ul className="space-y-2 text-sm text-gray-600">
+            <ul className="grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
               {localizedNotes.map((note) => (
                 <li
+                  className="min-w-0 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
                   key={note}
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
                 >
                   {note}
                 </li>
               ))}
             </ul>
           ) : null}
-
-          <Link
-            href={dashboardRelPath}
-            className="inline-flex items-center text-sm font-medium text-[#004225] hover:underline"
-          >
-            {localizedText(locale, "Till översikten", "Go to overview")}
-          </Link>
-        </CardContent>
-      </Card>
-    </div>
+        </PortalGridItem>
+      </PortalGrid>
+    </PortalPage>
   );
 }

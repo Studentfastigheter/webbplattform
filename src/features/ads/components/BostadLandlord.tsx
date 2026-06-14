@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
+import { RichTextParagraph } from "@/components/ui/RichText";
 import Tag from "@/components/ui/Tag";
 import type { AdvertiserSummary } from "@/types";
 import { ArrowRight, Check, Star } from "@/components/icons";
@@ -32,6 +33,13 @@ export default function BostadLandlord({ advertiser }: Props) {
   const hasRating = advertiser.rating != null;
   const hasApartments = advertiser.totalApartments != null;
   const hasStats = hasApartments || hasRating;
+  const descriptionText =
+    advertiser.description ||
+    localizedText(
+      locale,
+      "Här visas information om bostäderna, området och annat som kan vara relevant för dig som söker boende.",
+      "This is where information about the homes, area and other relevant details is shown.",
+    );
 
   return (
     <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
@@ -111,14 +119,10 @@ export default function BostadLandlord({ advertiser }: Props) {
               {localizedText(locale, "Beskrivning", "Description")}
             </h3>
 
-            <p className="mt-3 max-w-3xl text-[15px] leading-7 text-gray-700">
-              {advertiser.description ||
-                localizedText(
-                  locale,
-                  "Här visas information om bostäderna, området och annat som kan vara relevant för dig som söker boende.",
-                  "This is where information about the homes, area and other relevant details is shown.",
-                )}
-            </p>
+            <RichTextParagraph
+              text={descriptionText}
+              className="mt-3 max-w-3xl text-[15px] leading-7 text-gray-700"
+            />
 
             {highlights.length > 0 && (
               <div className="mt-5 flex flex-wrap items-center gap-2">

@@ -29,21 +29,19 @@ import {
   Percent,
   Trash2,
 } from "@/components/icons";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import BostadAbout from "@/features/ads/components/BostadAbout";
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import {
   AnalyticsBlock,
   AnalyticsGrid,
+  type AnalyticsBlockSize,
 } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  PORTAL_BAR_COLOR,
+  PortalBarChartSkeleton,
+  PortalBarChartState,
+  PortalVerticalBarChart,
+} from "@/features/analytics/components/PortalBarCharts";
 import { Button } from "@/components/ui/button";
 import {
   Tabs,
@@ -59,16 +57,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RichTextParagraph } from "@/components/ui/RichText";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
   type ApplicationStatisticEntry,
-  type ListingViewCounts,
-  type ObjectApplicationCount,
+  type ListingAnalyticsPerformance,
 } from "@/features/companies/services/company-service";
 import {
-  useApplicationCountsPerObject,
-  useListingViewCounts,
+  useCompanyListingPerformanceDetail,
   useTimedApplicationsForListing,
 } from "@/features/companies/hooks/useCompanies";
 import { useListingDemography } from "@/features/analytics/hooks/useDemographics";
@@ -87,23 +84,23 @@ import {
 } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
-} from "../_components/shared/PortalListingStatusTag";
+} from "../../_components/shared/PortalListingStatusTag";
 import {
   ApplicationIntervalToggle,
   getApplicationIntervalRange,
   getLocalizedApplicationInterval,
   sumApplicationStatistics,
   type ApplicationIntervalValue,
-} from "../_components/analytics/ApplicationIntervalStats";
-import ListingDemographicsPanel from "../_components/analytics/ListingDemographicsPanel";
-import ApplicationDemographicsPanel from "../_components/analytics/ApplicationDemographicsPanel";
-import { dashboardRelPath } from "../_statics/variables";
+} from "../../_components/analytics/ApplicationIntervalStats";
+import ListingDemographicsPanel from "../../_components/analytics/ListingDemographicsPanel";
+import ApplicationDemographicsPanel from "../../_components/analytics/ApplicationDemographicsPanel";
+import { dashboardRelPath } from "../../_statics/variables";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { cn } from "@/lib/utils";
 
-type AnnonsOverviewProps = {
+type ListingOverviewViewProps = {
   id: string;
 };
 
@@ -209,13 +206,6 @@ function pickString(source: Record<string, unknown>, paths: string[]): string | 
   }
 
   return undefined;
-}
-
-function normalizeKey(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[\s,.-]+/g, "")
-    .replace(/[|]/g, "");
 }
 
 function mapStatus(statusRaw: string | undefined, locale: Locale): {
@@ -327,8 +317,12 @@ function formatDwellingType(value: string | null | undefined, locale: Locale): s
 function resolveApplicationCount(
   listing: ListingDetailDTO,
   companyListing: RawListing | null,
-  source: ObjectApplicationCount[]
+  listingPerformance: ListingAnalyticsPerformance | null
 ): number {
+  if (listingPerformance) {
+    return listingPerformance.currentApplications;
+  }
+
   const fromCompanyListing = companyListing
     ? pickNumber(companyListing, [
         "applications",
@@ -345,33 +339,23 @@ function resolveApplicationCount(
     return fromCompanyListing;
   }
 
-  const byId = source.find((item) => String(item.listingId) === String(listing.id));
-  if (byId) {
-    return byId.numApplications;
-  }
+  const fromListing = pickNumber(listing as unknown as Record<string, unknown>, [
+    "applications",
+    "applicationCount",
+    "applicationsCount",
+    "numApplications",
+    "stats.applications",
+    "analytics.applications",
+    "statistics.applications",
+  ]);
 
-  const candidates = [
-    listing.fullAddress,
-    [listing.area, listing.city].filter(Boolean).join(", "),
-    listing.title,
-  ].filter((value): value is string => Boolean(value));
-
-  for (const candidate of candidates) {
-    const key = normalizeKey(candidate);
-    const match = source.find((item) => normalizeKey(item.address) === key);
-    if (match) {
-      return match.numApplications;
-    }
-  }
-
-  return 0;
+  return fromListing ?? 0;
 }
 
 function resolveListingMeta(
   listing: ListingDetailDTO,
   companyListing: RawListing | null,
-  applicationsByObject: ObjectApplicationCount[],
-  viewCounts: ListingViewCounts | null,
+  listingPerformance: ListingAnalyticsPerformance | null,
   locale: Locale
 ): ListingMeta {
   const rawDetail = listing as unknown as Record<string, unknown>;
@@ -383,6 +367,7 @@ function resolveListingMeta(
       ? pickString(companyListing, ["updatedAt", "modifiedAt", "lastEditedAt"])
       : undefined) ?? pickString(rawDetail, ["updatedAt", "modifiedAt", "lastEditedAt"]);
   const { label, tone, value } = mapStatus(
+    listingPerformance?.status ??
     (companyListing
       ? pickString(companyListing, ["status", "listingStatus", "state"])
       : undefined) ?? pickString(rawDetail, ["status", "listingStatus", "state"]),
@@ -390,9 +375,9 @@ function resolveListingMeta(
   );
 
   return {
-    applications: resolveApplicationCount(listing, companyListing, applicationsByObject),
+    applications: resolveApplicationCount(listing, companyListing, listingPerformance),
     quickViews:
-      viewCounts?.quickViews ??
+      listingPerformance?.lifetimeQuickViews ??
       (companyListing
         ? pickNumber(companyListing, [
             "quickViews",
@@ -410,7 +395,7 @@ function resolveListingMeta(
         : undefined) ??
       0,
     detailedViews:
-      viewCounts?.detailedViews ??
+      listingPerformance?.lifetimeDetailedViews ??
       (companyListing
         ? pickNumber(companyListing, [
             "detailedViews",
@@ -467,10 +452,10 @@ function RequirementProfileCard({
   profileId?: string | null;
 }) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5">
+    <section className="portal-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700">
             <FileText className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -503,7 +488,7 @@ function RequirementProfileCard({
         </p>
       ) : (
         <div className="mt-4 space-y-4">
-          <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+          <div className="portal-inner-surface px-4 py-3">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
               {localizedText(locale, "Ålderskrav", "Age requirements")}
             </p>
@@ -513,7 +498,10 @@ function RequirementProfileCard({
           </div>
 
           {profile.description ? (
-            <p className="text-sm leading-6 text-gray-600">{profile.description}</p>
+            <RichTextParagraph
+              text={profile.description}
+              className="text-sm leading-6 text-gray-600"
+            />
           ) : null}
 
           {profile.requiredDocuments?.length ? (
@@ -524,7 +512,7 @@ function RequirementProfileCard({
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {profile.requiredDocuments.map((document, index) => (
                   <div
-                    className="rounded-lg border border-gray-200 bg-white px-4 py-3"
+                    className="portal-inner-surface px-4 py-3"
                     key={`${document.caption ?? "document"}-${index}`}
                   >
                     <p className="text-sm font-medium text-gray-900">
@@ -559,7 +547,7 @@ function ListingDetailsCard({
   meta: ListingMeta;
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+    <section className="portal-surface p-5">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="mt-1 text-base font-semibold text-gray-950">
@@ -606,7 +594,7 @@ function ListingPreview({
       {images.length ? (
         <BostadImagePreviewGrid images={images} readOnly />
       ) : (
-        <div className="flex h-[320px] items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+        <div className="flex h-[320px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
           <div className="flex flex-col items-center gap-2">
             <ImageIcon className="h-8 w-8 text-gray-300" />
             {localizedText(locale, "Ingen bild uppladdad", "No image uploaded")}
@@ -645,40 +633,36 @@ const metricToneClass: Record<
   { tile: string; icon: string; accent: string }
 > = {
   green: {
-    tile: "border-green-100 bg-green-50/70",
-    icon: "border-green-100 bg-white text-green-600 shadow-[0_8px_20px_rgba(22,163,74,0.08)]",
+    tile: "",
+    icon: "border-green-100 bg-green-50 text-green-600",
     accent: "from-green-500/20",
   },
   sky: {
-    tile: "border-sky-100 bg-sky-50/70",
-    icon: "border-sky-100 bg-white text-sky-500 shadow-[0_8px_20px_rgba(56,189,248,0.08)]",
+    tile: "",
+    icon: "border-sky-100 bg-sky-50 text-sky-500",
     accent: "from-sky-400/20",
   },
   rose: {
-    tile: "border-rose-100 bg-rose-50/70",
-    icon: "border-rose-100 bg-white text-rose-500 shadow-[0_8px_20px_rgba(251,113,133,0.08)]",
+    tile: "",
+    icon: "border-rose-100 bg-rose-50 text-rose-500",
     accent: "from-rose-400/20",
   },
   amber: {
-    tile: "border-amber-100 bg-amber-50/70",
-    icon: "border-amber-100 bg-white text-amber-500 shadow-[0_8px_20px_rgba(251,191,36,0.08)]",
+    tile: "",
+    icon: "border-amber-100 bg-amber-50 text-amber-500",
     accent: "from-amber-400/20",
   },
   teal: {
-    tile: "border-teal-100 bg-teal-50/70",
-    icon: "border-teal-100 bg-white text-teal-500 shadow-[0_8px_20px_rgba(45,212,191,0.08)]",
+    tile: "",
+    icon: "border-teal-100 bg-teal-50 text-teal-500",
     accent: "from-teal-400/20",
   },
   violet: {
-    tile: "border-violet-100 bg-violet-50/70",
-    icon: "border-violet-100 bg-white text-violet-500 shadow-[0_8px_20px_rgba(167,139,250,0.08)]",
+    tile: "",
+    icon: "border-violet-100 bg-violet-50 text-violet-500",
     accent: "from-violet-400/20",
   },
 };
-
-// Hex equivalents used for charts that need raw colors (not Tailwind
-// classes). Kept in lockstep with the tone keys above.
-const TREND_GREEN = "#16a34a";
 
 function formatChangeText(change: number | null, locale: Locale) {
   if (change === null) return null;
@@ -734,7 +718,7 @@ function MetricTile({
   return (
     <div
       className={cn(
-        "relative min-h-[116px] min-w-0 overflow-hidden rounded-xl border p-3 transition-colors sm:p-4",
+        "portal-inner-surface relative min-h-[116px] min-w-0 overflow-hidden p-4 transition-colors hover:border-gray-300",
         tone.tile
       )}
     >
@@ -748,20 +732,20 @@ function MetricTile({
       <div className="flex min-w-0 items-start justify-between gap-2">
         <div
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border sm:h-10 sm:w-10",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
             tone.icon
           )}
         >
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+          <Icon className="h-5 w-5" />
         </div>
         <TrendBadge change={item.change} locale={locale} />
       </div>
 
       <div className="mt-3 min-w-0">
-        <p className="truncate text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
+        <p className="truncate text-theme-sm font-medium text-gray-500">
           {item.label}
         </p>
-        <p className="mt-0.5 truncate text-xl font-semibold leading-7 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[26px] sm:leading-8">
+        <p className="mt-1 truncate text-2xl font-bold leading-8 tracking-normal text-gray-800 tabular-nums">
           {valueLabel}
         </p>
         {item.helper ? (
@@ -789,18 +773,13 @@ function applicationStatisticsToTrendPoints(
     .sort((left, right) => left.timestamp.getTime() - right.timestamp.getTime());
 }
 
-/**
- * Standalone trend card for the analytics tab. Renders an inline bar chart
- * using #16a34a (the analytics page's primary green) so it visually matches
- * the demographic charts. Height is fixed via the chart container, not
- * driven by AnalyticsGrid row-spans.
- */
 function ApplicationTrendCard({
   data,
   error,
   loading,
   locale,
   periodLabel,
+  size = "2x4",
   total,
 }: {
   data: TrendPoint[];
@@ -808,6 +787,7 @@ function ApplicationTrendCard({
   loading: boolean;
   locale: Locale;
   periodLabel: string;
+  size?: AnalyticsBlockSize;
   total: number;
 }) {
   const chartData = useMemo(
@@ -829,25 +809,13 @@ function ApplicationTrendCard({
   const hasData = chartData.length > 0;
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-gray-950">
-            {localizedText(locale, "Ansökningstrend", "Application trend")}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {localizedText(
-              locale,
-              `Mottagna ansökningar ${periodLabel}.`,
-              `Received applications during ${periodLabel}.`
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
+    <AnalyticsBlock
+      action={
+        <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
           <span
             aria-hidden="true"
             className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: TREND_GREEN }}
+            style={{ backgroundColor: PORTAL_BAR_COLOR }}
           />
           {localizedText(
             locale,
@@ -855,80 +823,51 @@ function ApplicationTrendCard({
             `${formatNumber(total, locale)} applications`
           )}
         </div>
-      </div>
-
-      <div className="mt-4 h-[240px] w-full">
-        {loading ? (
-          <div className="h-full w-full animate-pulse rounded-md bg-gray-100" />
-        ) : error ? (
-          <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">
-            {error}
-          </div>
-        ) : !hasData ? (
-          <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 px-4 text-center text-sm text-gray-500">
-            {localizedText(
-              locale,
-              "Det finns inga ansökningar registrerade för perioden.",
-              "There are no applications registered for this period."
-            )}
-          </div>
-        ) : (
-          <ResponsiveContainer height="100%" width="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 12, right: 8, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid stroke="#f0f2f7" vertical={false} />
-              <XAxis
-                axisLine={false}
-                dataKey="label"
-                interval={chartData.length > 14 ? "preserveStartEnd" : 0}
-                minTickGap={8}
-                tick={{ fill: "#6b7280", fontSize: 11 }}
-                tickLine={false}
-                tickMargin={8}
-              />
-              <YAxis
-                allowDecimals={false}
-                axisLine={false}
-                tick={{ fill: "#6b7280", fontSize: 11 }}
-                tickLine={false}
-                tickMargin={6}
-                width={32}
-              />
-              <RechartsTooltip
-                contentStyle={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-                }}
-                cursor={{ fill: "rgba(22, 163, 74, 0.06)" }}
-                formatter={(value) => [
-                  formatNumber(Number(value), locale),
-                  localizedText(locale, "Ansökningar", "Applications"),
-                ]}
-                labelFormatter={(_, payload) => {
-                  const row = payload?.[0]?.payload as
-                    | { fullLabel: string }
-                    | undefined;
-                  return row?.fullLabel ?? "";
-                }}
-              />
-              <Bar
-                dataKey="value"
-                fill={TREND_GREEN}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={10}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-    </section>
+      }
+      description={localizedText(
+        locale,
+        `Mottagna ansökningar ${periodLabel}.`,
+        `Received applications during ${periodLabel}.`
+      )}
+      contentClassName="overflow-hidden"
+      size={size}
+      title={localizedText(locale, "Ansökningstrend", "Application trend")}
+    >
+      {loading ? (
+        <PortalBarChartSkeleton className="h-[240px]" />
+      ) : error ? (
+        <PortalBarChartState className="h-[240px]" tone="error">
+          {error}
+        </PortalBarChartState>
+      ) : !hasData ? (
+        <PortalBarChartState className="h-[240px]">
+          {localizedText(
+            locale,
+            "Det finns inga ansökningar registrerade för perioden.",
+            "There are no applications registered for this period."
+          )}
+        </PortalBarChartState>
+      ) : (
+        <PortalVerticalBarChart
+          data={chartData}
+          heightClassName="h-[240px]"
+          labelFormatter={(entry) => entry.fullLabel}
+          margin={{ top: 12, right: 8, left: 0, bottom: 0 }}
+          maxBarSize={30}
+          minWidthClassName={
+            chartData.length > 14 ? "min-w-[720px]" : "min-w-full"
+          }
+          valueFormatter={(value) => formatNumber(value, locale)}
+          valueLabel={localizedText(locale, "Ansökningar", "Applications")}
+          xAxisInterval={chartData.length > 14 ? "preserveStartEnd" : 0}
+          yAxisWidth={34}
+        />
+      )}
+    </AnalyticsBlock>
   );
 }
 
-export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
+export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { locale } = useI18n();
@@ -953,11 +892,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     error: listingErr,
   } = useListing(id, { enabled: !authLoading });
   const { data: companyListings = [] } = useAllCompanyListings(companyId, 0, 200);
-  const { data: applicationsByObject = [] } = useApplicationCountsPerObject(
+  const { data: listingPerformance = null } = useCompanyListingPerformanceDetail(
     companyId,
-    200,
+    id || null,
+    { enabled: !authLoading && Boolean(id) }
   );
-  const { data: viewCounts = null } = useListingViewCounts(companyId, id);
   const { data: requirementsProfile = null } = useRequirementsProfile(
     listing?.requirementsProfileId ?? null,
   );
@@ -985,11 +924,10 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     return resolveListingMeta(
       listing,
       matchedCompanyListing,
-      applicationsByObject as ObjectApplicationCount[],
-      viewCounts as ListingViewCounts | null,
+      listingPerformance,
       locale,
     );
-  }, [listing, companyListings, applicationsByObject, viewCounts, locale]);
+  }, [listing, companyListings, listingPerformance, locale]);
 
   useEffect(() => {
     if (!metaInitialized && listing) {
@@ -1058,11 +996,12 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
     : null;
 
   const favoritesDemographyQuery = useListingDemography(
+    companyId,
     id || null,
     analyticsFromIso,
     analyticsToIso,
     "RESULTED_IN_LIKE",
-    Boolean(id)
+    Boolean(companyId) && Boolean(id)
   );
   const analyticsFavorites =
     favoritesDemographyQuery.data?.buckets?.find(
@@ -1079,7 +1018,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         ? (meta.applications / meta.detailedViews) * 100
         : 0;
 
-    return [
+    const metrics: AnalyticsMetricItem[] = [
       {
         key: "applications",
         label: localizedText(locale, "Ansökningar", "Applications"),
@@ -1145,6 +1084,8 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
         tone: "rose",
       },
     ];
+
+    return metrics.filter((metric) => metric.key !== "applications");
   }, [meta, locale, analyticsFavorites]);
 
   const updateListing = useUpdateListing();
@@ -1210,7 +1151,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (authLoading || loading) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="portal-surface p-8 text-center text-sm text-gray-500">
           {localizedText(locale, "Laddar annons...", "Loading listing...")}
         </div>
       </main>
@@ -1220,7 +1161,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!user) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
           {localizedText(locale, "Logga in för att se annonsen.", "Sign in to view the listing.")}
         </div>
       </main>
@@ -1230,7 +1171,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!companyId) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
           {localizedText(
             locale,
             "Denna sida är bara tillgänglig för företagskonton.",
@@ -1244,7 +1185,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (error || !listing) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-800">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-800">
           {error ?? localizedText(locale, "Annonsen kunde inte hittas.", "The listing could not be found.")}
         </div>
       </main>
@@ -1254,7 +1195,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   if (!isOwnListing) {
     return (
       <main className="pb-12">
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
           {localizedText(
             locale,
             "Annonsen hittades inte bland företagets annonser.",
@@ -1273,11 +1214,11 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
   return (
     <main className="pb-12">
       <Tabs defaultValue="info" className="space-y-6">
-        <header className="border-b border-gray-200 pb-6">
+        <header className="portal-surface p-5 sm:p-6">
           <div className="space-y-5">
             <Link
               href={`${dashboardRelPath}/listings`}
-              className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#004225]"
+              className="portal-control inline-flex h-9 w-fit items-center gap-2 px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-[#004225]"
             >
               <ArrowLeft className="h-4 w-4" />
               {localizedText(locale, "Tillbaka till annonser", "Back to listings")}
@@ -1342,7 +1283,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
             </div>
 
             <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 xl:flex-row xl:items-center xl:justify-between">
-              <TabsList className="h-10 w-full justify-start rounded-lg border border-gray-200 bg-white p-1 sm:w-fit">
+              <TabsList className="portal-control h-10 w-full justify-start bg-white p-1 sm:w-fit">
                 <TabsTrigger
                   className="h-8 flex-1 rounded-md px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
                   value="info"
@@ -1363,7 +1304,7 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 sm:px-1">
                   {localizedText(locale, "Status", "Status")}
                 </span>
-                <div className="grid w-full grid-cols-3 rounded-full border border-gray-200 bg-gray-100 p-1 sm:w-[420px]">
+                <div className="portal-control grid w-full grid-cols-3 bg-gray-50 p-1 sm:w-[420px]">
                   {listingStatusOptions.map((option) => {
                     const Icon = option.icon;
                     const isCurrent = meta.statusValue === option.value;
@@ -1373,9 +1314,9 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                         key={option.value}
                         type="button"
                         className={cn(
-                          "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
+                          "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
                           isCurrent
-                            ? "bg-white text-[#004225]"
+                            ? "bg-white text-[#004225] shadow-theme-xs"
                             : "text-gray-500 hover:text-gray-900"
                         )}
                         disabled={actionState !== "idle" || isCurrent}
@@ -1420,13 +1361,6 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 <h2 className="text-lg font-semibold text-gray-950">
                   {localizedText(locale, "Annonsanalys", "Listing analytics")}
                 </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  {localizedText(
-                    locale,
-                    "Översikt av ansökningar, visningar och demografi för denna annons.",
-                    "Overview of applications, views and demographics for this listing."
-                  )}
-                </p>
               </div>
               <ApplicationIntervalToggle
                 onChange={setApplicationInterval}
@@ -1436,95 +1370,50 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
 
             <AnalyticsGrid>
               <AnalyticsBlock
-                size="2x2"
+                size="2x4"
                 title={localizedText(
                   locale,
-                  "Ansökningar i perioden",
-                  "Applications in the period"
+                  "Respons och konvertering",
+                  "Response and conversion"
                 )}
-                description={
-                  applicationTrendError ??
-                  localizedText(
-                    locale,
-                    `${localizedAnalyticsInterval.detailLabel}. Totalt ${formatNumber(
-                      meta.applications,
-                      locale
-                    )} mottagna.`,
-                    `${localizedAnalyticsInterval.detailLabel}. Total ${formatNumber(
-                      meta.applications,
-                      locale
-                    )} received.`
-                  )
-                }
-              >
-                {timedApplicationsQuery.isLoading ? (
-                  <div className="flex h-full items-center gap-4">
-                    <span className="h-12 w-12 animate-pulse rounded-lg bg-gray-100" />
-                    <div className="space-y-2">
-                      <span className="block h-8 w-24 animate-pulse rounded bg-gray-100" />
-                      <span className="block h-3.5 w-40 animate-pulse rounded bg-gray-100" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex h-full items-center justify-between gap-4 rounded-xl border border-green-100 bg-green-50/70 px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
-                        {localizedAnalyticsInterval.detailLabel}
-                      </p>
-                      <p className="mt-0.5 text-[28px] font-semibold leading-8 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[34px] sm:leading-9">
-                        {formatNumber(periodApplicationsCount, locale)}
-                      </p>
-                    </div>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-green-100 bg-white text-green-600 shadow-[0_8px_20px_rgba(22,163,74,0.08)] sm:h-12 sm:w-12">
-                      <FileUser className="h-5 w-5 sm:h-6 sm:w-6" />
-                    </div>
-                  </div>
-                )}
-              </AnalyticsBlock>
-
-              <AnalyticsBlock
-                size="2x2"
-                title={localizedText(locale, "Nyckeltal", "Key metrics")}
                 description={localizedText(
                   locale,
-                  "Visningar och konvertering för annonsen.",
-                  "Views and conversion for the listing."
+                  "Visningar, engagemang och andelar för annonsen.",
+                  "Views, engagement and rates for the listing."
                 )}
               >
-                <div className="grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
                   {analyticsMetrics.map((metric) => (
                     <MetricTile item={metric} key={metric.key} locale={locale} />
                   ))}
                 </div>
               </AnalyticsBlock>
+
+              <ApplicationTrendCard
+                data={applicationTrendPoints}
+                error={applicationTrendError}
+                loading={timedApplicationsQuery.isLoading}
+                locale={locale}
+                periodLabel={localizedAnalyticsInterval.detailLabel}
+                size="2x4"
+                total={periodApplicationsCount}
+              />
+
+              <ListingDemographicsPanel
+                from={analyticsRange.from}
+                listingId={listing.id}
+                periodLabel={localizedAnalyticsInterval.detailLabel}
+                size="4x4"
+                to={analyticsRange.to}
+              />
+              <ApplicationDemographicsPanel
+                from={analyticsRange.from}
+                listingId={listing.id}
+                periodLabel={localizedAnalyticsInterval.detailLabel}
+                size="3x4"
+                to={analyticsRange.to}
+              />
             </AnalyticsGrid>
-
-            {/* Trend lives outside the AnalyticsGrid because the grid's
-                auto-row sizing pairs row-spans with column width, which
-                makes a full-width 2-row chart taller than the screen.
-                A standalone card with a fixed chart height keeps the
-                proportions sane. */}
-            <ApplicationTrendCard
-              data={applicationTrendPoints}
-              error={applicationTrendError}
-              loading={timedApplicationsQuery.isLoading}
-              locale={locale}
-              periodLabel={localizedAnalyticsInterval.detailLabel}
-              total={periodApplicationsCount}
-            />
-
-            <ListingDemographicsPanel
-              from={analyticsRange.from}
-              listingId={listing.id}
-              periodLabel={localizedAnalyticsInterval.detailLabel}
-              to={analyticsRange.to}
-            />
-            <ApplicationDemographicsPanel
-              from={analyticsRange.from}
-              listingId={listing.id}
-              periodLabel={localizedAnalyticsInterval.detailLabel}
-              to={analyticsRange.to}
-            />
           </div>
         </TabsContent>
       </Tabs>

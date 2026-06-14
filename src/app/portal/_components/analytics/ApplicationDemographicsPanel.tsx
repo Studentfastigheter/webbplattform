@@ -2,20 +2,21 @@
 
 import * as React from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
   Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
 import { BadgeCheck, GraduationCap, WalletCards } from "@/components/icons";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/context/AuthContext";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
+import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
 import {
   Select,
   SelectContent,
@@ -33,12 +34,22 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
+import { getActiveCompanyId } from "@/lib/company-access";
 
 type ChartDatum = {
   label: string;
   value: number;
   share: number;
   fill: string;
+};
+
+type ApplicationDemographicsPanelProps = {
+  className?: string;
+  from: Date;
+  listingId: string;
+  periodLabel?: string;
+  size?: AnalyticsBlockSize;
+  to: Date;
 };
 
 // Palette mirrors the portfolio analytics blocks so listing-level
@@ -180,31 +191,17 @@ function MiniBars({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
 
   return (
     <div className="h-[210px] min-w-0">
-      <ResponsiveContainer>
-        <BarChart data={data.slice(0, 6)} margin={{ left: 4, right: 10 }}>
-          <CartesianGrid stroke="#edf0f4" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: "#6b7280", fontSize: 11 }} tickLine={false} />
-          <YAxis
-            allowDecimals={false}
-            axisLine={false}
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickLine={false}
-          />
-          <Tooltip
-            contentStyle={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-            }}
-            formatter={(value) => [formatNumber(Number(value), locale), localizedText(locale, "Ansökningar", "Applications")]}
-          />
-          <Bar dataKey="value" maxBarSize={18} radius={[4, 4, 0, 0]}>
-            {data.map((entry) => (
-              <Cell fill={entry.fill} key={entry.label} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <PortalVerticalBarChart
+        data={data.slice(0, 6)}
+        heightClassName="h-[210px]"
+        labelFormatter={(entry) => entry.label}
+        margin={{ left: 4, right: 10, top: 12, bottom: 0 }}
+        maxBarSize={22}
+        useDatumFill
+        valueFormatter={(value) => formatNumber(value, locale)}
+        valueLabel={localizedText(locale, "Ansökningar", "Applications")}
+        yAxisWidth={36}
+      />
     </div>
   );
 }
@@ -299,7 +296,7 @@ function SummaryCard({
   helper?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+    <div className="portal-inner-surface p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-500">{label}</p>
@@ -307,7 +304,7 @@ function SummaryCard({
             {value}
           </p>
         </div>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#004225] shadow-sm">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-[#004225]">
           {icon}
         </span>
       </div>
@@ -319,16 +316,16 @@ function SummaryCard({
 }
 
 export default function ApplicationDemographicsPanel({
+  className,
   listingId,
   from,
   to,
-}: {
-  listingId: string;
-  from: Date;
-  to: Date;
-  periodLabel?: string;
-}) {
+  periodLabel,
+  size = "3x4",
+}: ApplicationDemographicsPanelProps) {
   const { locale } = useI18n();
+  const { user, isLoading: authLoading } = useAuth();
+  const companyId = getActiveCompanyId(user);
   const [fromValue, setFromValue] = React.useState(() => toDateTimeLocalValue(from));
   const [toValue, setToValue] = React.useState(() => toDateTimeLocalValue(to));
   const [category, setCategory] =
@@ -348,12 +345,13 @@ export default function ApplicationDemographicsPanel({
     return null;
   }, [fromIso, locale, toIso]);
   const applicationQuery = useApplicationDemography(
+    companyId,
     listingId,
     fromIso ?? "",
     toIso ?? "",
     category,
     gotListing,
-    !dateError
+    !authLoading && !dateError
   );
   const data = applicationQuery.data ?? null;
   const error =
@@ -362,6 +360,8 @@ export default function ApplicationDemographicsPanel({
       ? applicationQuery.error instanceof Error
         ? applicationQuery.error.message
         : "Kunde inte hämta ansökningsdemografi."
+      : !authLoading && !companyId
+      ? localizedText(locale, "Kunde inte hitta aktivt företag.", "Could not find active company.")
       : null);
 
   React.useEffect(() => {
@@ -372,74 +372,96 @@ export default function ApplicationDemographicsPanel({
   const chartData = React.useMemo(() => toData(data, locale), [data, locale]);
   const total = totalApplications(data);
   const top = chartData[0];
+  const blockTitle = localizedText(locale, "Ansökningsdemografi", "Application demographics");
+  const blockDescription = periodLabel
+    ? localizedText(
+        locale,
+        `Ansökningar för vald annons ${periodLabel}, uppdelade efter kategori och utfall.`,
+        `Applications for the selected listing during ${periodLabel}, split by category and outcome.`
+      )
+    : localizedText(
+        locale,
+        "Ansökningar för vald annons uppdelade efter kategori och utfall.",
+        "Applications for the selected listing split by category and outcome."
+      );
+  const blockAction = (
+    <div className="grid max-w-full gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:justify-end">
+      <Input
+        aria-label={localizedText(locale, "Från", "From")}
+        className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
+        onChange={(event) => setFromValue(event.target.value)}
+        type="datetime-local"
+        value={fromValue}
+      />
+      <Input
+        aria-label={localizedText(locale, "Till", "To")}
+        className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
+        onChange={(event) => setToValue(event.target.value)}
+        type="datetime-local"
+        value={toValue}
+      />
+      <CategorySelect onChange={setCategory} value={category} />
+      <Select
+        onValueChange={(value) => setGotListing(value as GotListingFilter)}
+        value={gotListing}
+      >
+        <SelectTrigger className="h-9 w-full rounded-lg border-gray-200 bg-white text-sm sm:w-[170px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="border-gray-200 bg-white">
+          {(Object.keys(filterLabels) as GotListingFilter[]).map((filter) => (
+            <SelectItem key={filter} value={filter}>
+              {filterLabelFor(locale, filter)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
-  if (applicationQuery.isLoading) {
+  if (authLoading || applicationQuery.isLoading) {
     return (
-      <section className="rounded-xl border border-gray-200 bg-white p-5">
-        <Skeleton className="h-6 w-52" />
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <AnalyticsBlock
+        action={blockAction}
+        className={className}
+        description={blockDescription}
+        size={size}
+        title={blockTitle}
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
           <Skeleton className="h-[240px] rounded-xl" />
           <Skeleton className="h-[240px] rounded-xl" />
           <Skeleton className="h-[240px] rounded-xl" />
         </div>
-      </section>
+      </AnalyticsBlock>
     );
   }
 
   if (error) {
     return (
-      <section className="rounded-xl border border-error-500/20 bg-error-50 p-5 text-sm text-error-700">
-        {error}
-      </section>
+      <AnalyticsBlock
+        action={blockAction}
+        className={className}
+        description={blockDescription}
+        size={size}
+        title={blockTitle}
+      >
+        <div className="flex h-full min-h-[180px] items-center rounded-xl border border-error-500/20 bg-error-50 px-4 text-sm text-error-700">
+          {error}
+        </div>
+      </AnalyticsBlock>
     );
   }
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-gray-950">
-            {localizedText(locale, "Ansökningsdemografi", "Application demographics")}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {localizedText(locale, "Data från GET /demographics/applications/listing för vald annons.", "Data from GET /demographics/applications/listing for the selected listing.")}
-          </p>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:justify-end">
-          <Input
-            aria-label={localizedText(locale, "Från", "From")}
-            className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
-            onChange={(event) => setFromValue(event.target.value)}
-            type="datetime-local"
-            value={fromValue}
-          />
-          <Input
-            aria-label={localizedText(locale, "Till", "To")}
-            className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
-            onChange={(event) => setToValue(event.target.value)}
-            type="datetime-local"
-            value={toValue}
-          />
-          <CategorySelect onChange={setCategory} value={category} />
-          <Select
-            onValueChange={(value) => setGotListing(value as GotListingFilter)}
-            value={gotListing}
-          >
-            <SelectTrigger className="h-9 w-full rounded-lg border-gray-200 bg-white text-sm sm:w-[170px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border-gray-200 bg-white">
-              {(Object.keys(filterLabels) as GotListingFilter[]).map((filter) => (
-                <SelectItem key={filter} value={filter}>
-                  {filterLabelFor(locale, filter)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <AnalyticsBlock
+      action={blockAction}
+      className={className}
+      description={blockDescription}
+      size={size}
+      title={blockTitle}
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <SummaryCard
           icon={<BadgeCheck className="h-4 w-4" />}
           label={labelFor(locale, category)}
@@ -461,7 +483,7 @@ export default function ApplicationDemographicsPanel({
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+        <div className="portal-inner-surface p-4">
           <h3 className="mb-2 text-sm font-semibold text-gray-900">
             {labelFor(locale, category)}
           </h3>
@@ -476,7 +498,7 @@ export default function ApplicationDemographicsPanel({
             locale={locale}
           />
         </div>
-        <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+        <div className="portal-inner-surface p-4">
           <h3 className="text-sm font-semibold text-gray-900">{localizedText(locale, "Sammanfattning", "Summary")}</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
@@ -498,6 +520,6 @@ export default function ApplicationDemographicsPanel({
           </dl>
         </div>
       </div>
-    </section>
+    </AnalyticsBlock>
   );
 }

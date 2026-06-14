@@ -12,6 +12,7 @@ import ProfileHero, {
 } from "@/features/students/components/ProfileHero";
 import ProfileDocumentsSection from "@/features/students/components/ProfileDocumentsSection";
 import { Button } from "@/components/ui/button";
+import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import {
@@ -419,12 +420,13 @@ function EditableStudentProfile({
                 <h2 className="mb-3 text-lg font-semibold text-gray-900">
                   {localizedText(locale, "Om mig", "About me")}
                 </h2>
-                <textarea
+                <RichTextTextarea
                   aria-label={localizedText(locale, "Om mig", "About me")}
                   value={draft.description}
                   onChange={(event) =>
                     onDraftChange("description", event.target.value)
                   }
+                  onValueChange={(value) => onDraftChange("description", value)}
                   className={`${inlineInputClass} min-h-44 w-full resize-y text-base leading-relaxed text-gray-600`}
                   placeholder={localizedText(locale, "Berätta lite om dig själv", "Tell us a little about yourself")}
                 />

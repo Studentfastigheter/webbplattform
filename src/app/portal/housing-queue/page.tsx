@@ -1,5 +1,5 @@
-import Bostadsko from "../_views/bostadsko";
+import HousingQueueView from "./HousingQueueView";
 
-export default function BostadskoPage() {
-  return <Bostadsko />;
+export default function HousingQueuePage() {
+  return <HousingQueueView />;
 }

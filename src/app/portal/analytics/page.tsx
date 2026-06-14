@@ -1,7 +1,5 @@
-import Analytics from "../_views/analytics";
+import AnalyticsView from "./AnalyticsView";
 
 export default function AnalyticsPage() {
-  return (
-    <Analytics />
-  )
+  return <AnalyticsView />;
 }

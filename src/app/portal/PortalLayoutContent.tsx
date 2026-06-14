@@ -7,6 +7,7 @@ import { PortalAccountGuard } from "@/features/auth/components/AccountRouteGuard
 import { stripLocaleFromPathname } from "@/i18n/config";
 import { DashboardShell } from "./_components/layout/DashboardShell";
 import { CompanyPortalAccessGuard } from "./_components/layout/CompanyPortalAccessGuard";
+import { CompanyPortalProvider } from "./_components/layout/CompanyPortalContext";
 
 export function PortalLayoutContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -18,9 +19,11 @@ export function PortalLayoutContent({ children }: { children: ReactNode }) {
 
   return (
     <PortalAccountGuard>
-      <CompanyPortalAccessGuard>
-        <DashboardShell>{children}</DashboardShell>
-      </CompanyPortalAccessGuard>
+      <CompanyPortalProvider>
+        <CompanyPortalAccessGuard>
+          <DashboardShell>{children}</DashboardShell>
+        </CompanyPortalAccessGuard>
+      </CompanyPortalProvider>
     </PortalAccountGuard>
   );
 }

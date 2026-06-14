@@ -2,14 +2,11 @@
 
 import * as React from "react";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
   BarChart3,
   Eye,
   FileUser,
   Heart,
   Home,
-  Minus,
   MousePointerClick,
   Percent,
 } from "@/components/icons";
@@ -20,6 +17,10 @@ import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { useCompanyGeneralAnalytics } from "@/features/companies/hooks/useCompanies";
 import {
   type AnalyticalQuantity,
@@ -45,6 +46,12 @@ type MetricItem = {
   change: number | null;
   icon: React.ComponentType<{ className?: string }>;
   tone: MetricTone;
+};
+
+type AnalyticsGeneralStatsProps = {
+  className?: string;
+  size?: AnalyticsBlockSize;
+  variant?: AnalyticsGeneralStatsVariant;
 };
 
 const metrics: MetricConfig[] = [
@@ -86,28 +93,23 @@ const metricToneClass: Record<
   {
     tile: string;
     icon: string;
-    accent: string;
   }
 > = {
   brand: {
-    tile: "border-brand-100 bg-brand-25/70",
-    icon: "border-brand-100 bg-white text-brand-500 shadow-[0_8px_20px_rgba(0,66,37,0.08)]",
-    accent: "from-brand-500/20",
+    tile: "text-brand-600",
+    icon: "border-gray-100 bg-gray-50",
   },
   blue: {
-    tile: "border-sky-100 bg-sky-50/70",
-    icon: "border-sky-100 bg-white text-sky-600 shadow-[0_8px_20px_rgba(2,132,199,0.08)]",
-    accent: "from-sky-500/20",
+    tile: "text-sky-600",
+    icon: "border-gray-100 bg-gray-50",
   },
   rose: {
-    tile: "border-rose-100 bg-rose-50/70",
-    icon: "border-rose-100 bg-white text-rose-600 shadow-[0_8px_20px_rgba(225,29,72,0.08)]",
-    accent: "from-rose-500/20",
+    tile: "text-rose-600",
+    icon: "border-gray-100 bg-gray-50",
   },
   amber: {
-    tile: "border-amber-100 bg-amber-50/70",
-    icon: "border-amber-100 bg-white text-amber-600 shadow-[0_8px_20px_rgba(217,119,6,0.08)]",
-    accent: "from-amber-500/20",
+    tile: "text-amber-600",
+    icon: "border-gray-100 bg-gray-50",
   },
 };
 
@@ -290,53 +292,79 @@ function formatMetricValue(item: MetricItem, locale: Locale) {
   return item.valueLabel ?? item.value.toLocaleString(numberLocale(locale));
 }
 
-function formatChange(change: number | null, locale: Locale) {
-  if (change === null) {
-    return null;
-  }
-
-  const prefix = change > 0 ? "+" : "";
-
-  return `${prefix}${change.toLocaleString(numberLocale(locale), {
-    maximumFractionDigits: 1,
-  })}%`;
+function MetricSkeletonCard({
+  className,
+  size,
+}: {
+  className?: string;
+  size: AnalyticsBlockSize;
+}) {
+  return (
+    <AnalyticsBlock
+      className={className}
+      contentClassName="flex min-h-[124px] flex-col justify-between p-4 sm:p-5"
+      size={size}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+        <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+      </div>
+    </AnalyticsBlock>
+  );
 }
 
-function TrendBadge({ change, locale }: { change: number | null; locale: Locale }) {
-  const formattedChange = formatChange(change, locale);
-
-  if (!formattedChange) {
-    return (
-      <span className="inline-flex h-6 items-center gap-1 rounded-full border border-gray-200 bg-white px-2 text-[11px] font-semibold leading-none text-gray-500 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-        <Minus className="h-3 w-3" />
-        {localizedText(locale, "Oför.", "Unch.")}
-      </span>
-    );
-  }
-
-  const isPositive = (change ?? 0) >= 0;
-  const TrendIcon = isPositive ? ArrowUpRight : ArrowDownRight;
+function MetricStatCard({
+  className,
+  item,
+  locale,
+  size,
+}: {
+  className?: string;
+  item: MetricItem;
+  locale: Locale;
+  size: AnalyticsBlockSize;
+}) {
+  const Icon = item.icon;
+  const tone = metricToneClass[item.tone];
 
   return (
-    <span
-      className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[11px] font-semibold leading-none shadow-[0_1px_2px_rgba(16,24,40,0.04)]",
-        isPositive
-          ? "border-success-500/15 bg-success-50 text-success-700"
-          : "border-error-500/15 bg-error-50 text-error-700"
-      )}
+    <AnalyticsBlock
+      className={cn(className, tone.tile)}
+      contentClassName="flex min-h-[124px] flex-col justify-between p-4 sm:p-5"
+      size={size}
     >
-      <TrendIcon className="h-3 w-3" />
-      {formattedChange}
-    </span>
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-theme-sm font-medium text-gray-500">
+            {item.label}
+          </p>
+          <p className="mt-2 truncate text-2xl font-bold leading-8 tracking-normal text-gray-900 tabular-nums">
+            {formatMetricValue(item, locale)}
+          </p>
+        </div>
+
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
+            tone.icon
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+
+    </AnalyticsBlock>
   );
 }
 
 export default function AnalyticsGeneralStats({
+  className,
+  size = "1x1",
   variant = "overview",
-}: {
-  variant?: AnalyticsGeneralStatsVariant;
-}) {
+}: AnalyticsGeneralStatsProps) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -362,86 +390,46 @@ export default function AnalyticsGeneralStats({
             )
         : null;
   const skeletonCount = variant === "analytics" ? 6 : metrics.length;
-  const gridClassName =
-    variant === "analytics"
-      ? "grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3"
-      : "grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4";
 
   if (authLoading || generalAnalyticsQuery.isLoading) {
     return (
-      <div className={gridClassName}>
+      <>
         {Array.from({ length: skeletonCount }).map((_, index) => (
-          <div
-            className="relative min-h-[116px] min-w-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50/70 p-4"
-            key={index}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
-              <Skeleton className="h-6 w-14 rounded-full" />
-            </div>
-            <div className="mt-4 space-y-2">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-7 w-16" />
-            </div>
-          </div>
+          <MetricSkeletonCard
+            className={className}
+            key={`general-stats-skeleton-${index}`}
+            size={size}
+          />
         ))}
-      </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">
-        {error}
-      </div>
+      <AnalyticsBlock
+        className={cn(className, "border-error-500/20 bg-error-50")}
+        contentClassName="flex min-h-[124px] items-center p-4 sm:p-5"
+        size={size}
+      >
+        <p className="text-theme-sm font-medium text-error-700">{error}</p>
+      </AnalyticsBlock>
     );
   }
 
   return (
-    <div className={gridClassName}>
+    <>
       {items.map((item) => {
-        const Icon = item.icon;
-        const tone = metricToneClass[item.tone];
-
         return (
-          <div
-            className={cn(
-              "relative min-h-[100px] min-w-0 overflow-hidden rounded-xl border p-3 transition-colors sm:p-4",
-              tone.tile
-            )}
+          <MetricStatCard
+            className={className}
+            item={item}
             key={item.label}
-          >
-            <div
-              className={cn(
-                "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r to-transparent",
-                tone.accent
-              )}
-            />
-
-            <div className="flex min-w-0 items-start justify-between gap-2">
-              <div
-                className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border sm:h-10 sm:w-10",
-                  tone.icon
-                )}
-              >
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-              </div>
-
-              <TrendBadge change={item.change} locale={locale} />
-            </div>
-
-            <div className="mt-3 min-w-0">
-              <p className="truncate text-[12px] font-medium leading-4 text-gray-500 sm:text-[13px] sm:leading-5">
-                {item.label}
-              </p>
-              <p className="mt-0.5 truncate text-xl font-semibold leading-7 tracking-normal text-gray-950 tabular-nums sm:mt-1 sm:text-[28px] sm:leading-8">
-                {formatMetricValue(item, locale)}
-              </p>
-            </div>
-          </div>
+            locale={locale}
+            size={size}
+          />
         );
       })}
-    </div>
+    </>
   );
 }

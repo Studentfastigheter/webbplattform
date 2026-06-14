@@ -7,6 +7,7 @@ import { getAppIconElement } from "@/components/icons/catalog";
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
+import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import { useAuth } from "@/context/AuthContext";
 import {
   useListing,
@@ -23,8 +24,9 @@ import {
   ListingTagDTO,
   UpdateListingRequest,
 } from "@/types/listing";
+import PortalPageHeader from "../../../_components/shared/PortalPageHeader";
 
-type AnnonsPageProps = {
+type ListingEditViewProps = {
   id: string;
 };
 
@@ -563,10 +565,10 @@ function EditableListingPreview({
             <h2 className="mb-2 border-b border-gray-100 pb-2 text-lg font-semibold text-gray-900">
               {localizedText(locale, "Om boendet", "About the dwelling")}
             </h2>
-            <textarea
+            <RichTextTextarea
               aria-label={localizedText(locale, "Beskrivning", "Description")}
               value={draft.description ?? ""}
-              onChange={(event) => onDraftChange({ description: event.target.value })}
+              onValueChange={(value) => onDraftChange({ description: value })}
               className={`${inlineInputClass} min-h-44 w-full resize-y text-[15px] leading-relaxed text-gray-700`}
               placeholder={localizedText(locale, "Beskriv bostaden", "Describe the dwelling")}
             />
@@ -577,7 +579,7 @@ function EditableListingPreview({
   );
 }
 
-export default function Annons({ id }: AnnonsPageProps) {
+export default function ListingEditView({ id }: ListingEditViewProps) {
   const { locale } = useI18n();
   const { user } = useAuth();
   const activeCompanyId = getActiveCompanyId(user);
@@ -831,11 +833,15 @@ export default function Annons({ id }: AnnonsPageProps) {
   return (
     <>
       <main className="pb-12">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {localizedText(locale, "Redigera annons", "Edit listing")}
-          </h1>
-        </div>
+        <PortalPageHeader
+          className="mb-6"
+          title={localizedText(locale, "Redigera annons", "Edit listing")}
+          description={localizedText(
+            locale,
+            "Finjustera annonsens information, bilder, fakta och taggar.",
+            "Refine the listing's information, images, facts and tags."
+          )}
+        />
 
         <form onSubmit={handleSave} className="grid gap-6">
           <EditableListingPreview

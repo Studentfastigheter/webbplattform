@@ -2,19 +2,20 @@
 
 import * as React from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
   Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
 import { Heart, MousePointerClick, Smartphone } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/context/AuthContext";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
+import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
 import { useListingByAllCategoriesDemography } from "@/features/analytics/hooks/useDemographics";
 import {
   type DemographyCategory,
@@ -23,12 +24,22 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
+import { getActiveCompanyId } from "@/lib/company-access";
 
 type ChartDatum = {
   label: string;
   value: number;
   share: number;
   fill: string;
+};
+
+type ListingDemographicsPanelProps = {
+  className?: string;
+  from?: Date;
+  listingId: string;
+  periodLabel?: string;
+  size?: AnalyticsBlockSize;
+  to?: Date;
 };
 
 // Palette mirrors the one used in the portfolio analytics blocks
@@ -233,35 +244,17 @@ function MiniBars({ data, locale }: { data: ChartDatum[]; locale: Locale }) {
 
   return (
     <div className="h-[210px] min-w-0">
-      <ResponsiveContainer>
-        <BarChart data={data.slice(0, 5)} margin={{ left: 4, right: 10 }}>
-          <CartesianGrid stroke="#edf0f4" vertical={false} />
-          <XAxis
-            dataKey="label"
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickLine={false}
-          />
-          <YAxis
-            allowDecimals={false}
-            axisLine={false}
-            tick={{ fill: "#6b7280", fontSize: 11 }}
-            tickLine={false}
-          />
-          <Tooltip
-            contentStyle={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
-            }}
-            formatter={(value) => [formatNumber(Number(value), locale), localizedText(locale, "Visningar", "Views")]}
-          />
-          <Bar dataKey="value" maxBarSize={18} radius={[4, 4, 0, 0]}>
-            {data.map((entry) => (
-              <Cell fill={entry.fill} key={entry.label} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <PortalVerticalBarChart
+        data={data.slice(0, 5)}
+        heightClassName="h-[210px]"
+        labelFormatter={(entry) => entry.label}
+        margin={{ left: 4, right: 10, top: 12, bottom: 0 }}
+        maxBarSize={22}
+        useDatumFill
+        valueFormatter={(value) => formatNumber(value, locale)}
+        valueLabel={localizedText(locale, "Visningar", "Views")}
+        yAxisWidth={36}
+      />
     </div>
   );
 }
@@ -281,7 +274,7 @@ function StatCard({
   const top = toData(data, locale)[0];
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+    <div className="portal-inner-surface p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-500">{label}</p>
@@ -289,7 +282,7 @@ function StatCard({
             {formatNumber(total, locale)}
           </p>
         </div>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#004225] shadow-sm">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-[#004225]">
           {icon}
         </span>
       </div>
@@ -301,26 +294,27 @@ function StatCard({
 }
 
 export default function ListingDemographicsPanel({
+  className,
   listingId,
   from,
   to,
   periodLabel = "senaste 90 dagarna",
-}: {
-  listingId: string;
-  from?: Date;
-  to?: Date;
-  periodLabel?: string;
-}) {
+  size = "4x4",
+}: ListingDemographicsPanelProps) {
   const { locale } = useI18n();
+  const { user, isLoading: authLoading } = useAuth();
+  const companyId = getActiveCompanyId(user);
   const fallbackRange = React.useMemo(() => getRange(), []);
   const fromValue = from ?? fallbackRange.from;
   const toValue = to ?? fallbackRange.to;
   const fromKey = fromValue.toISOString();
   const toKey = toValue.toISOString();
   const demographyQuery = useListingByAllCategoriesDemography(
+    companyId,
     listingId,
     fromKey,
-    toKey
+    toKey,
+    !authLoading
   );
   const data = demographyQuery.data ?? {
     VIEW_TYPE: null,
@@ -335,46 +329,63 @@ export default function ListingDemographicsPanel({
     ? demographyQuery.error instanceof Error
       ? demographyQuery.error.message
       : localizedText(locale, "Kunde inte hämta annonsdemografi.", "Could not load listing demographics.")
+    : !authLoading && !companyId
+    ? localizedText(locale, "Kunde inte hitta aktivt företag.", "Could not find active company.")
     : null;
   const localizedPeriodLabel =
     periodLabel === "senaste 90 dagarna"
       ? localizedText(locale, "senaste 90 dagarna", "the last 90 days")
       : periodLabel;
+  const blockTitle = localizedText(
+    locale,
+    `Demografi ${localizedPeriodLabel}`,
+    `Demographics ${localizedPeriodLabel}`
+  );
+  const blockDescription = localizedText(
+    locale,
+    "Annonsens visningar uppdelade på beteende, enhet, favorit och stad.",
+    "Listing views split by behavior, device, favorite status and city."
+  );
 
-  if (demographyQuery.isLoading) {
+  if (authLoading || demographyQuery.isLoading) {
     return (
-      <section className="rounded-xl border border-gray-200 bg-white p-5">
-        <Skeleton className="h-6 w-44" />
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <AnalyticsBlock
+        className={className}
+        description={blockDescription}
+        size={size}
+        title={blockTitle}
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-[240px] rounded-xl" />
           <Skeleton className="h-[240px] rounded-xl" />
         </div>
-      </section>
+      </AnalyticsBlock>
     );
   }
 
   if (error) {
     return (
-      <section className="rounded-xl border border-error-500/20 bg-error-50 p-5 text-sm text-error-700">
-        {error}
-      </section>
+      <AnalyticsBlock
+        className={className}
+        description={blockDescription}
+        size={size}
+        title={blockTitle}
+      >
+        <div className="flex h-full min-h-[180px] items-center rounded-xl border border-error-500/20 bg-error-50 px-4 text-sm text-error-700">
+          {error}
+        </div>
+      </AnalyticsBlock>
     );
   }
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-gray-950">
-            {localizedText(locale, `Demografi ${localizedPeriodLabel}`, `Demographics ${localizedPeriodLabel}`)}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {localizedText(locale, "Annonsens visningar uppdelade på beteende, enhet, favorit och stad.", "Listing views split by behavior, device, favorite status and city.")}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <AnalyticsBlock
+      className={className}
+      description={blockDescription}
+      size={size}
+      title={blockTitle}
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard
           data={data.VIEW_TYPE}
           icon={<MousePointerClick className="h-4 w-4" />}
@@ -430,7 +441,7 @@ export default function ListingDemographicsPanel({
           title={localizedText(locale, "Kön", "Gender")}
         />
       </div>
-    </section>
+    </AnalyticsBlock>
   );
 }
 
@@ -444,7 +455,7 @@ function ChartCard({
   legend: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+    <div className="portal-inner-surface p-4">
       <h3 className="mb-2 text-sm font-semibold text-gray-900">{title}</h3>
       {chart}
       {legend}

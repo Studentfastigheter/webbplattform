@@ -12,7 +12,13 @@ export type City = string;
 export type Area = string;
 export type UrlString = string;
 export type Tag = string;
-export type SystemProvider = "HOGIA" | "PIGELLO" | "DEMO" | "MOMENTUM" | "FAST2";
+export type SystemProvider =
+  | "HOGIA"
+  | "PIGELLO"
+  | "DEMO"
+  | "MOMENTUM"
+  | "FAST2"
+  | "HOGIA_LANDLORD";
 export type DocumentFileType = "PDF" | "TXT" | "PICTURE" | "DOCX";
 export type DeviceType = "MOBILE" | "DESKTOP";
 export type ViewType = "QUICK" | "DETAILED";

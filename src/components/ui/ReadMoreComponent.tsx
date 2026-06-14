@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { RichText } from "@/components/ui/RichText";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
@@ -156,12 +157,11 @@ export default function ReadMoreComponent({
         style={{ overflow: "hidden" }}
       >
         <div className="relative">
-          <div
+          <RichText
             ref={measureRef}
+            text={expanded ? text : collapsedText}
             className={`text-base leading-relaxed ${textClassName}`}
-          >
-            {expanded ? text : collapsedText}
-          </div>
+          />
 
           {/* Gradient i botten när texten är kollapsad */}
           {!expanded && needsToggle && (

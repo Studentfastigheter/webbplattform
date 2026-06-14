@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RichTextParagraph } from "@/components/ui/RichText";
 import { Textarea } from "@/components/ui/textarea";
 import { cx } from "@/lib/utils/cx";
 import type { Locale } from "@/i18n/config";
@@ -922,9 +923,10 @@ export default function ProfileDocumentsSection() {
                                   : localizedText(locale, "Uppladdad sedan tidigare", "Uploaded previously")}
                               </p>
                               {document.note && (
-                                <p className="mt-1 leading-6">
-                                  {document.note}
-                                </p>
+                                <RichTextParagraph
+                                  text={document.note}
+                                  className="mt-1 leading-6"
+                                />
                               )}
                               {document.errorMessage && (
                                 <p className="mt-1 text-red-600">

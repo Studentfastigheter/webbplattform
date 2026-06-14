@@ -7,6 +7,7 @@ import {
   type ServiceOptions,
 } from "@/lib/api/client";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
+import type { SystemProvider } from "@/types/common";
 
 export type GraphEntry = {
 	category: string,
@@ -45,6 +46,7 @@ export type CompanyPrivateDTO = {
   pictureUrlList?: string[];
   videoUrlList?: string[];
   socialLinks?: Record<string, string>;
+  systemProvider?: SystemProvider | string | null;
 };
 
 export type CompanyPublicDTO = {
@@ -204,6 +206,96 @@ export type ResidentAnalyticsData = {
   residentTowns: ResidentsTownCount[];
 };
 
+export type CompanyPortalAnalyticsOverview = {
+  summary: AnalyticalQuantities;
+  trend: CompanyOverviewTrendEntry[];
+  residents: ResidentAnalyticsData;
+  applicationsByListing: ObjectApplicationCount[];
+  queueApplicationCount: number;
+  generatedAt?: string;
+};
+
+export type AnalyticsCountBucket = {
+  key: string;
+  count: number;
+};
+
+export type CompanyAnalyticsFunnel = {
+  from?: string;
+  to?: string;
+  companyProfileViews: number;
+  listingQuickViews: number;
+  listingDetailedViews: number;
+  listingTotalViews: number;
+  listingLikes: number;
+  viewEventsResultingInLike: number;
+  queueApplications: number;
+  listingApplications: number;
+  resolvedApplications: number;
+  acceptedApplications: number;
+  rejectedApplications: number;
+  detailedViewRate: number;
+  applicationConversionRate: number;
+  acceptanceRate: number;
+  likeRate: number;
+};
+
+export type ListingAnalyticsPerformance = {
+  listingId: string;
+  title?: string;
+  address?: string;
+  city?: string;
+  area?: string;
+  dwellingType?: string;
+  status?: string;
+  rent?: number;
+  rooms?: number;
+  sizeM2?: number;
+  availableFrom?: string;
+  applyBy?: string;
+  createdAt?: string;
+  lifetimeQuickViews: number;
+  lifetimeDetailedViews: number;
+  lifetimeTotalViews: number;
+  periodQuickViews: number;
+  periodDetailedViews: number;
+  periodTotalViews: number;
+  periodViewEventsResultingInLike: number;
+  lifetimeLikes: number;
+  periodLikes: number;
+  currentApplications: number;
+  periodApplications: number;
+  periodAcceptedApplications: number;
+  periodRejectedApplications: number;
+  periodDetailedViewRate: number;
+  periodApplicationConversionRate: number;
+  periodLikeRate: number;
+};
+
+export type ListingPerformanceSort =
+  | "periodTotalViews"
+  | "periodDetailedViews"
+  | "periodApplications"
+  | "periodLikes"
+  | "conversionRate"
+  | "likeRate"
+  | "currentApplications"
+  | "lifetimeTotalViews"
+  | "lifetimeQuickViews"
+  | "lifetimeDetailedViews"
+  | "periodAcceptedApplications"
+  | "periodRejectedApplications";
+
+export type CompanyPortalAnalyticsDashboard = {
+  overview: CompanyPortalAnalyticsOverview;
+  funnel: CompanyAnalyticsFunnel;
+  listingStatuses: AnalyticsCountBucket[];
+  applicationStatuses: AnalyticsCountBucket[];
+  applicationOutcomes: AnalyticsCountBucket[];
+  topListings: ListingAnalyticsPerformance[];
+  generatedAt?: string;
+};
+
 export type NewApplication = {
   applicationId?: number;
   id?: string | number;
@@ -287,6 +379,17 @@ export type QueueApplicationTrendEntry = {
   numApplications: number;
 };
 
+export type CompanyOverviewTrendGranularity = QueueApplicationTrendGranularity;
+
+export type CompanyOverviewTrendEntry = {
+  periodStart: string;
+  periodEnd: string;
+  granularity: CompanyOverviewTrendGranularity;
+  companyProfileViews: number;
+  queueApplications: number;
+  listingApplications: number;
+};
+
 export const APPLICATION_STATUS_VALUES = [
   "SUBMITTED",
   "UNDER_REVIEW",
@@ -304,6 +407,14 @@ export type HandleCompanyApplicationRequest = {
 };
 
 const defaultGeneralAnalyticsPeriods = ["P7D", "P1M", "P3M", "P1Y"];
+const systemProviderValues = [
+  "HOGIA",
+  "PIGELLO",
+  "DEMO",
+  "MOMENTUM",
+  "FAST2",
+  "HOGIA_LANDLORD",
+] as const satisfies readonly SystemProvider[];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -320,6 +431,18 @@ function firstString(...values: unknown[]): string | undefined {
   return values.find(
     (value): value is string => typeof value === "string" && value.trim().length > 0
   )?.trim();
+}
+
+function normalizeSystemProvider(value: unknown): SystemProvider | string | null {
+  const provider = firstString(value);
+  if (!provider) {
+    return null;
+  }
+
+  const normalized = provider.toUpperCase();
+  return systemProviderValues.includes(normalized as SystemProvider)
+    ? (normalized as SystemProvider)
+    : provider;
 }
 
 function firstNumber(...values: unknown[]): number | undefined {
@@ -574,6 +697,35 @@ function normalizeQueueApplicationTrendEntry(value: unknown): QueueApplicationTr
   };
 }
 
+function normalizeCompanyOverviewTrendEntry(value: unknown): CompanyOverviewTrendEntry | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const periodStart = firstString(value.periodStart);
+  const periodEnd = firstString(value.periodEnd);
+  const rawGranularity = firstString(value.granularity)?.toLowerCase();
+  const granularity: CompanyOverviewTrendGranularity =
+    rawGranularity === "week" || rawGranularity === "month"
+      ? rawGranularity
+      : "day";
+
+  if (!periodStart || !periodEnd) {
+    return null;
+  }
+
+  return {
+    periodStart,
+    periodEnd,
+    granularity,
+    companyProfileViews: toNumber(value.companyProfileViews ?? value.profileViews),
+    queueApplications: toNumber(value.queueApplications),
+    listingApplications: toNumber(
+      value.listingApplications ?? value.applications ?? value.totalApplications
+    ),
+  };
+}
+
 function normalizeObjectApplicationCount(value: unknown): ObjectApplicationCount | null {
   if (!isRecord(value)) {
     return null;
@@ -589,6 +741,115 @@ function normalizeObjectApplicationCount(value: unknown): ObjectApplicationCount
     address: typeof value.address === "string" ? value.address : "",
     numApplications: toNumber(value.numApplications),
   };
+}
+
+function normalizeAnalyticsCountBucket(value: unknown): AnalyticsCountBucket | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const key = firstString(value.key, value.status, value.name, value.label);
+
+  if (!key) {
+    return null;
+  }
+
+  return {
+    key,
+    count: toNumber(value.count ?? value.total ?? value.value),
+  };
+}
+
+function normalizeAnalyticsCountBuckets(value: unknown): AnalyticsCountBucket[] {
+  return toArray<unknown>(value, true)
+    .map(normalizeAnalyticsCountBucket)
+    .filter((entry): entry is AnalyticsCountBucket => entry !== null);
+}
+
+function normalizeCompanyAnalyticsFunnel(value: unknown): CompanyAnalyticsFunnel {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    from: firstString(source.from),
+    to: firstString(source.to),
+    companyProfileViews: toNumber(source.companyProfileViews),
+    listingQuickViews: toNumber(source.listingQuickViews),
+    listingDetailedViews: toNumber(source.listingDetailedViews),
+    listingTotalViews: toNumber(source.listingTotalViews),
+    listingLikes: toNumber(source.listingLikes),
+    viewEventsResultingInLike: toNumber(source.viewEventsResultingInLike),
+    queueApplications: toNumber(source.queueApplications),
+    listingApplications: toNumber(source.listingApplications),
+    resolvedApplications: toNumber(source.resolvedApplications),
+    acceptedApplications: toNumber(source.acceptedApplications),
+    rejectedApplications: toNumber(source.rejectedApplications),
+    detailedViewRate: toNumber(source.detailedViewRate),
+    applicationConversionRate: toNumber(source.applicationConversionRate),
+    acceptanceRate: toNumber(source.acceptanceRate),
+    likeRate: toNumber(source.likeRate),
+  };
+}
+
+function normalizeListingAnalyticsPerformance(
+  value: unknown
+): ListingAnalyticsPerformance | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const listingId = value.listingId;
+  const normalizedListingId =
+    typeof listingId === "string" || typeof listingId === "number"
+      ? String(listingId)
+      : "";
+
+  if (!normalizedListingId) {
+    return null;
+  }
+
+  return {
+    listingId: normalizedListingId,
+    title: firstString(value.title),
+    address: firstString(value.address),
+    city: firstString(value.city),
+    area: firstString(value.area),
+    dwellingType: firstString(value.dwellingType),
+    status: firstString(value.status),
+    rent: firstNumber(value.rent),
+    rooms: firstNumber(value.rooms),
+    sizeM2: firstNumber(value.sizeM2),
+    availableFrom: firstString(value.availableFrom),
+    applyBy: firstString(value.applyBy),
+    createdAt: firstString(value.createdAt),
+    lifetimeQuickViews: toNumber(value.lifetimeQuickViews),
+    lifetimeDetailedViews: toNumber(value.lifetimeDetailedViews),
+    lifetimeTotalViews: toNumber(value.lifetimeTotalViews),
+    periodQuickViews: toNumber(value.periodQuickViews),
+    periodDetailedViews: toNumber(value.periodDetailedViews),
+    periodTotalViews: toNumber(value.periodTotalViews),
+    periodViewEventsResultingInLike: toNumber(
+      value.periodViewEventsResultingInLike
+    ),
+    lifetimeLikes: toNumber(value.lifetimeLikes),
+    periodLikes: toNumber(value.periodLikes),
+    currentApplications: toNumber(value.currentApplications),
+    periodApplications: toNumber(value.periodApplications),
+    periodAcceptedApplications: toNumber(value.periodAcceptedApplications),
+    periodRejectedApplications: toNumber(value.periodRejectedApplications),
+    periodDetailedViewRate: toNumber(value.periodDetailedViewRate),
+    periodApplicationConversionRate: toNumber(
+      value.periodApplicationConversionRate
+    ),
+    periodLikeRate: toNumber(value.periodLikeRate),
+  };
+}
+
+function normalizeListingAnalyticsPerformanceList(
+  value: unknown
+): ListingAnalyticsPerformance[] {
+  return toArray<unknown>(value, true)
+    .map(normalizeListingAnalyticsPerformance)
+    .filter((entry): entry is ListingAnalyticsPerformance => entry !== null);
 }
 
 function normalizeListingViewCounts(value: unknown): ListingViewCounts {
@@ -717,6 +978,43 @@ function normalizeResidentAnalyticsData(value: unknown): ResidentAnalyticsData {
   };
 }
 
+function normalizeCompanyPortalAnalyticsOverview(
+  value: unknown
+): CompanyPortalAnalyticsOverview {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    summary: normalizeAnalyticalQuantities(source.summary),
+    trend: toArray<unknown>(source.trend, true)
+      .map(normalizeCompanyOverviewTrendEntry)
+      .filter((entry): entry is CompanyOverviewTrendEntry => entry !== null),
+    residents: normalizeResidentAnalyticsData(source.residents),
+    applicationsByListing: toArray<unknown>(source.applicationsByListing, true)
+      .map(normalizeObjectApplicationCount)
+      .filter((entry): entry is ObjectApplicationCount => entry !== null),
+    queueApplicationCount: toNumber(source.queueApplicationCount),
+    generatedAt: firstString(source.generatedAt),
+  };
+}
+
+function normalizeCompanyPortalAnalyticsDashboard(
+  value: unknown
+): CompanyPortalAnalyticsDashboard {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    overview: normalizeCompanyPortalAnalyticsOverview(source.overview),
+    funnel: normalizeCompanyAnalyticsFunnel(source.funnel),
+    listingStatuses: normalizeAnalyticsCountBuckets(source.listingStatuses),
+    applicationStatuses: normalizeAnalyticsCountBuckets(
+      source.applicationStatuses
+    ),
+    applicationOutcomes: normalizeAnalyticsCountBuckets(source.applicationOutcomes),
+    topListings: normalizeListingAnalyticsPerformanceList(source.topListings),
+    generatedAt: firstString(source.generatedAt),
+  };
+}
+
 function normalizeCompanyPublic(value: unknown): CompanyPublicDTO | null {
   if (!isRecord(value)) {
     return null;
@@ -821,6 +1119,9 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
     videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
     socialLinks: normalizeStringRecord(value.socialLinks),
+    systemProvider: normalizeSystemProvider(
+      value.systemProvider ?? value.propertySystem ?? value.provider
+    ),
   };
 }
 
@@ -1014,6 +1315,15 @@ function companyApplicationsEndpoint(id: number, page: number, size: number): st
     page,
     size,
   })}`;
+}
+
+function companyPortalAnalyticsEndpoint(id: number, path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `/companies/${pathSegment(id)}/analytics${normalizedPath}`;
+}
+
+function dateTimeParam(value: string | Date | undefined): string | undefined {
+  return value instanceof Date ? value.toISOString() : value;
 }
 
 export const companyService = {
@@ -1278,8 +1588,160 @@ export const companyService = {
     return applications;
   },
 
+  analyticsOverview: async (
+    id: number,
+    options: {
+      from?: string | Date;
+      to?: string | Date;
+      granularity?: CompanyOverviewTrendGranularity;
+      limit?: number;
+      signal?: AbortSignal;
+    } = {}
+  ): Promise<CompanyPortalAnalyticsOverview> => {
+    const result = await apiClient<unknown>(
+      `${companyPortalAnalyticsEndpoint(id, "/overview")}${buildQuery({
+        from: dateTimeParam(options.from),
+        to: dateTimeParam(options.to),
+        granularity: options.granularity ?? "day",
+        limit: options.limit,
+      })}`,
+      { signal: options.signal }
+    );
+
+    return normalizeCompanyPortalAnalyticsOverview(result);
+  },
+
+  analyticsDashboard: async (
+    id: number,
+    options: {
+      from?: string | Date;
+      to?: string | Date;
+      granularity?: CompanyOverviewTrendGranularity;
+      limit?: number;
+      signal?: AbortSignal;
+    } = {}
+  ): Promise<CompanyPortalAnalyticsDashboard> => {
+    const result = await apiClient<unknown>(
+      `${companyPortalAnalyticsEndpoint(id, "/dashboard")}${buildQuery({
+        from: dateTimeParam(options.from),
+        to: dateTimeParam(options.to),
+        granularity: options.granularity ?? "day",
+        limit: options.limit,
+      })}`,
+      { signal: options.signal }
+    );
+
+    return normalizeCompanyPortalAnalyticsDashboard(result);
+  },
+
+  analyticsFunnel: async (
+    id: number,
+    options: { from?: string | Date; to?: string | Date; signal?: AbortSignal } = {}
+  ): Promise<CompanyAnalyticsFunnel> => {
+    const result = await apiClient<unknown>(
+      `${companyPortalAnalyticsEndpoint(id, "/funnel")}${buildQuery({
+        from: dateTimeParam(options.from),
+        to: dateTimeParam(options.to),
+      })}`,
+      { signal: options.signal }
+    );
+
+    return normalizeCompanyAnalyticsFunnel(result);
+  },
+
+  listingPerformance: async (
+    id: number,
+    options: {
+      from?: string | Date;
+      to?: string | Date;
+      sortBy?: ListingPerformanceSort;
+      limit?: number;
+      signal?: AbortSignal;
+    } = {}
+  ): Promise<ListingAnalyticsPerformance[]> => {
+    const result = await apiClient<unknown>(
+      `${companyPortalAnalyticsEndpoint(id, "/listings/performance")}${buildQuery({
+        from: dateTimeParam(options.from),
+        to: dateTimeParam(options.to),
+        sortBy: options.sortBy,
+        limit: options.limit,
+      })}`,
+      { signal: options.signal }
+    );
+
+    return normalizeListingAnalyticsPerformanceList(result);
+  },
+
+  listingPerformanceDetail: async (
+    id: number,
+    listingId: string | number,
+    options: { from?: string | Date; to?: string | Date; signal?: AbortSignal } = {}
+  ): Promise<ListingAnalyticsPerformance> => {
+    const result = await apiClient<unknown>(
+      `${companyPortalAnalyticsEndpoint(
+        id,
+        `/listings/${pathSegment(listingId)}/performance`
+      )}${buildQuery({
+        from: dateTimeParam(options.from),
+        to: dateTimeParam(options.to),
+      })}`,
+      { signal: options.signal }
+    );
+    const normalized = normalizeListingAnalyticsPerformance(result);
+
+    if (!normalized) {
+      throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+    }
+
+    return normalized;
+  },
+
+  listingStatusCounts: async (
+    id: number,
+    options?: ServiceOptions
+  ): Promise<AnalyticsCountBucket[]> => {
+    const result = await apiClient<unknown>(
+      companyPortalAnalyticsEndpoint(id, "/listings/statuses"),
+      { signal: options?.signal }
+    );
+
+    return normalizeAnalyticsCountBuckets(result);
+  },
+
+  applicationStatusCounts: async (
+    id: number,
+    options: { from?: string | Date; to?: string | Date; signal?: AbortSignal } = {}
+  ): Promise<AnalyticsCountBucket[]> => {
+    const result = await apiClient<unknown>(
+      `${companyPortalAnalyticsEndpoint(id, "/applications/statuses")}${buildQuery({
+        from: dateTimeParam(options.from),
+        to: dateTimeParam(options.to),
+      })}`,
+      { signal: options.signal }
+    );
+
+    return normalizeAnalyticsCountBuckets(result);
+  },
+
+  applicationOutcomeCounts: async (
+    id: number,
+    options: { from?: string | Date; to?: string | Date; signal?: AbortSignal } = {}
+  ): Promise<AnalyticsCountBucket[]> => {
+    const result = await apiClient<unknown>(
+      `${companyPortalAnalyticsEndpoint(id, "/applications/outcomes")}${buildQuery({
+        from: dateTimeParam(options.from),
+        to: dateTimeParam(options.to),
+      })}`,
+      { signal: options.signal }
+    );
+
+    return normalizeAnalyticsCountBuckets(result);
+  },
+
   applicationCount: async (id: number): Promise<number> => {
-    const result = await apiClient<unknown>(`/analytics/${pathSegment(id)}/general`);
+    const result = await apiClient<unknown>(
+      companyPortalAnalyticsEndpoint(id, "/summary")
+    );
 
     if (isRecord(result)) {
       return toNumber(result.currentApplications);
@@ -1293,7 +1755,7 @@ export const companyService = {
     options?: ServiceOptions
   ): Promise<number> => {
     const result = await apiClient<unknown>(
-      `/companies/${pathSegment(id)}/queues/applications/count`,
+      companyPortalAnalyticsEndpoint(id, "/queues/applications/count"),
       { signal: options?.signal }
     );
 
@@ -1310,18 +1772,42 @@ export const companyService = {
     } = {}
   ): Promise<QueueApplicationTrendEntry[]> => {
     const query = buildQuery({
-      from: options.from instanceof Date ? options.from.toISOString() : options.from,
-      to: options.to instanceof Date ? options.to.toISOString() : options.to,
+      from: dateTimeParam(options.from),
+      to: dateTimeParam(options.to),
       granularity: options.granularity ?? "day",
     });
     const result = await apiClient<unknown>(
-      `/companies/${pathSegment(id)}/queues/applications/trend${query}`,
+      `${companyPortalAnalyticsEndpoint(id, "/queues/applications/trend")}${query}`,
       { signal: options.signal }
     );
 
     return toArray<unknown>(result, true)
       .map(normalizeQueueApplicationTrendEntry)
       .filter((entry): entry is QueueApplicationTrendEntry => entry !== null);
+  },
+
+  overviewTrend: async (
+    id: number,
+    options: {
+      from?: string | Date;
+      to?: string | Date;
+      granularity?: CompanyOverviewTrendGranularity;
+      signal?: AbortSignal;
+    } = {}
+  ): Promise<CompanyOverviewTrendEntry[]> => {
+    const query = buildQuery({
+      from: dateTimeParam(options.from),
+      to: dateTimeParam(options.to),
+      granularity: options.granularity ?? "day",
+    });
+    const result = await apiClient<unknown>(
+      `${companyPortalAnalyticsEndpoint(id, "/trend")}${query}`,
+      { signal: options.signal }
+    );
+
+    return toArray<unknown>(result, true)
+      .map(normalizeCompanyOverviewTrendEntry)
+      .filter((entry): entry is CompanyOverviewTrendEntry => entry !== null);
   },
   
   applicationsTimeline: async (
@@ -1356,10 +1842,11 @@ export const companyService = {
     to: string | Date,
     options?: ServiceOptions
   ): Promise<ApplicationStatisticEntry[]> => {
-    const fromValue = from instanceof Date ? from.toISOString() : from;
-    const toValue = to instanceof Date ? to.toISOString() : to;
+    const fromValue = dateTimeParam(from);
+    const toValue = dateTimeParam(to);
+    const query = buildQuery({ from: fromValue, to: toValue });
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/timed-applications/${pathSegment(fromValue)}/${pathSegment(toValue)}`,
+      `${companyPortalAnalyticsEndpoint(id, "/applications/trend")}${query}`,
       { signal: options?.signal }
     );
 
@@ -1375,10 +1862,11 @@ export const companyService = {
     listingId: string | number,
     options?: ServiceOptions
   ): Promise<ApplicationStatisticEntry[]> => {
-    const fromValue = from instanceof Date ? from.toISOString() : from;
-    const toValue = to instanceof Date ? to.toISOString() : to;
+    const fromValue = dateTimeParam(from);
+    const toValue = dateTimeParam(to);
+    const query = buildQuery({ from: fromValue, to: toValue, listingId });
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/timed-applications/${pathSegment(fromValue)}/${pathSegment(toValue)}/${pathSegment(listingId)}`,
+      `${companyPortalAnalyticsEndpoint(id, "/applications/trend")}${query}`,
       { signal: options?.signal }
     );
 
@@ -1394,7 +1882,7 @@ export const companyService = {
   ): Promise<ObjectApplicationCount[]> => {
     const query = buildQuery({ limit: limit === null ? 5 : limit });
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/current_applications/by_object${query}`,
+      `${companyPortalAnalyticsEndpoint(id, "/applications/by-listing")}${query}`,
       { signal: options?.signal }
     );
 
@@ -1411,7 +1899,10 @@ export const companyService = {
     options?: ServiceOptions
   ): Promise<ListingViewCounts> => {
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/listing/${pathSegment(listingId)}/`,
+      companyPortalAnalyticsEndpoint(
+        id,
+        `/listings/${pathSegment(listingId)}/views`
+      ),
       { signal: options?.signal }
     );
 
@@ -1432,7 +1923,7 @@ export const companyService = {
     options?: ServiceOptions
   ): Promise<AnalyticalQuantities> => {
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/general`,
+      companyPortalAnalyticsEndpoint(id, "/summary"),
       { signal: options?.signal }
     );
 
@@ -1444,7 +1935,7 @@ export const companyService = {
     options?: ServiceOptions
   ): Promise<ResidentAnalyticsData> => {
     const result = await apiClient<unknown>(
-      `/analytics/${pathSegment(id)}/residents/data`,
+      companyPortalAnalyticsEndpoint(id, "/residents"),
       { signal: options?.signal }
     );
 

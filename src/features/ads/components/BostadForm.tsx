@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/popover"
 import { InputField } from "@/features/business-portal/components/Form";
 import { useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import { toast } from "sonner";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -312,7 +312,7 @@ export default function BostadForm({
                             </div>
                             <div className="grid gap-3">
                                 <Label htmlFor="description">{localizedText(locale, "Beskrivning", "Description")}</Label>
-                                <Textarea 
+                                <RichTextTextarea 
                                     id="description" 
                                     name="description" 
                                     defaultValue={listing.description}

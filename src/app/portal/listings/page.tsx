@@ -35,6 +35,7 @@ import { type ListingCardDTO } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
 } from "../_components/shared/PortalListingStatusTag";
+import { useCompanyPortal } from "../_components/layout/CompanyPortalContext";
 import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
 import { dashboardRelPath } from "../_statics/variables";
 
@@ -283,6 +284,7 @@ export default function PortalAdsPage() {
   const { locale } = useI18n();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const portal = useCompanyPortal();
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -291,6 +293,7 @@ export default function PortalAdsPage() {
   const hasActiveFilters = statusFilter !== "all" || cityFilter !== "all";
 
   const companyId = getActiveCompanyId(user);
+  const canSyncListings = portal.canUseFeature("listingSync");
   const refreshListingsMutation = useRefreshCompanyListings();
   const refreshingListings = refreshListingsMutation.isPending;
 
@@ -341,7 +344,7 @@ export default function PortalAdsPage() {
   // counts, per-listing view counts). The hook reports `isPending` which
   // we surface as `refreshingListings` for the button-disabled state.
   const handleRefreshListings = useCallback(async () => {
-    if (!companyId || refreshingListings) {
+    if (!companyId || refreshingListings || !canSyncListings) {
       return;
     }
 
@@ -355,7 +358,13 @@ export default function PortalAdsPage() {
           : localizedText(locale, "Kunde inte starta annonssynken.", "Could not start listing sync.")
       );
     }
-  }, [companyId, locale, refreshingListings, refreshListingsMutation]);
+  }, [
+    canSyncListings,
+    companyId,
+    locale,
+    refreshingListings,
+    refreshListingsMutation,
+  ]);
 
   const ads = useMemo<PortalListing[]>(() => {
     if (!companyListings || companyListings.length === 0) return [];
@@ -468,16 +477,18 @@ export default function PortalAdsPage() {
             <h1 className="text-2xl font-semibold text-gray-900">
               {localizedText(locale, "Mina annonser", "My listings")}
             </h1>
-            <Button
-              className="w-full sm:w-auto"
-              isDisabled={loading || refreshingListings}
-              isLoading={refreshingListings}
-              onPress={() => void handleRefreshListings()}
-              variant="outline"
-            >
-              <RefreshCw className="h-4 w-4" />
-              {localizedText(locale, "Synka annonser", "Sync listings")}
-            </Button>
+            {canSyncListings ? (
+              <Button
+                className="w-full sm:w-auto"
+                isDisabled={loading || refreshingListings}
+                isLoading={refreshingListings}
+                onPress={() => void handleRefreshListings()}
+                variant="outline"
+              >
+                <RefreshCw className="h-4 w-4" />
+                {localizedText(locale, "Synka annonser", "Sync listings")}
+              </Button>
+            ) : null}
           </div>
         </div>
 

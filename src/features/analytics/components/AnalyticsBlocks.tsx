@@ -3,13 +3,13 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type AnalyticsBlockColumns = 1 | 2 | 3 | 4;
-type AnalyticsBlockRows = 1 | 2 | 3 | 4;
+export type AnalyticsBlockColumns = 1 | 2 | 3 | 4;
+export type AnalyticsBlockRows = 1 | 2 | 3 | 4;
 
 export type AnalyticsBlockSize =
   `${AnalyticsBlockRows}x${AnalyticsBlockColumns}`;
 
-type AnalyticsBlockContextValue = {
+export type AnalyticsBlockContextValue = {
   rows: AnalyticsBlockRows;
   columns: AnalyticsBlockColumns;
   size: AnalyticsBlockSize;
@@ -19,7 +19,7 @@ type AnalyticsGridProps = React.ComponentProps<"div"> & {
   rowHeightClassName?: string;
 };
 
-type AnalyticsBlockProps = Omit<React.ComponentProps<"section">, "title"> & {
+export type AnalyticsBlockProps = Omit<React.ComponentProps<"section">, "title"> & {
   size?: AnalyticsBlockSize;
   rowSpan?: AnalyticsBlockRows;
   colSpan?: AnalyticsBlockColumns;
@@ -125,7 +125,7 @@ export function AnalyticsGrid({
     <div
       ref={gridRef}
       className={cn(
-        "grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:[grid-auto-flow:dense]",
+        "grid min-w-0 grid-cols-1 gap-4 md:gap-6 sm:grid-cols-2 xl:grid-cols-4 xl:[grid-auto-flow:dense]",
         rowHeightClassName,
         className
       )}
@@ -151,13 +151,13 @@ export function AnalyticsBlock({
   const rows = rowSpan ?? parsedSize.rows;
   const columns = colSpan ?? parsedSize.columns;
   const resolvedSize = toSize(rows, columns);
-  const hasHeader = Boolean(title || description || action);
+  const hasHeader = Boolean(title || action);
 
   return (
     <AnalyticsBlockContext.Provider value={{ rows, columns, size: resolvedSize }}>
       <section
         className={cn(
-          "flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-[#1f2937] shadow-theme-xs",
+          "portal-surface flex min-h-0 min-w-0 flex-col overflow-hidden text-gray-800",
           colSpanClass[columns],
           rowSpanClass[rows],
           className
@@ -168,17 +168,12 @@ export function AnalyticsBlock({
         {...props}
       >
         {hasHeader ? (
-          <div className="flex min-h-[64px] min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-gray-100 px-4 py-4 sm:items-center sm:px-5">
+          <div className="flex min-h-[56px] min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-gray-100/80 px-5 py-3.5 sm:items-start sm:px-6">
             <div className="min-w-0 flex-1 basis-[180px]">
               {title ? (
-                <h2 className="text-base font-semibold leading-6 text-[#111827]">
+                <h2 className="text-[15px] font-semibold leading-6 text-gray-900">
                   {title}
                 </h2>
-              ) : null}
-              {description ? (
-                <p className="mt-1 line-clamp-2 text-sm leading-5 text-[#6b7280]">
-                  {description}
-                </p>
               ) : null}
             </div>
             {action ? <div className="max-w-full overflow-x-auto">{action}</div> : null}
@@ -187,8 +182,8 @@ export function AnalyticsBlock({
 
         <div
           className={cn(
-            "min-h-0 min-w-0 flex-1 bg-white",
-            hasHeader ? "px-4 pb-4 pt-1 sm:px-5 sm:pb-5" : "p-4 sm:p-5",
+            "min-h-0 min-w-0 flex-1 bg-transparent",
+            "p-5 sm:p-6",
             contentClassName
           )}
         >

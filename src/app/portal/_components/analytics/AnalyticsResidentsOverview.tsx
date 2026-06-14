@@ -3,7 +3,10 @@
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { GraduationCap, MapPin } from "@/components/icons";
-import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import {
   ChartContainer,
   ChartTooltip,
@@ -44,6 +47,11 @@ type DistributionItem = {
   name: string;
   detail?: string;
   residents: number;
+};
+
+type AnalyticsResidentsOverviewProps = {
+  distributionSize?: AnalyticsBlockSize;
+  trendSize?: AnalyticsBlockSize;
 };
 
 const intervals: Interval[] = [
@@ -181,7 +189,7 @@ function IntervalToggle({
 
   return (
     <ToggleGroup
-      className="max-w-full justify-start overflow-x-auto rounded-md bg-gray-50 p-0.5"
+      className="max-w-full justify-start overflow-x-auto rounded-lg bg-gray-100 p-0.5"
       onValueChange={(nextValue) => {
         if (nextValue) {
           onChange(nextValue);
@@ -194,7 +202,7 @@ function IntervalToggle({
       {intervals.map((interval) => (
         <ToggleGroupItem
           aria-label={localizedText(locale, interval.label, interval.labelEn)}
-          className="h-7 shrink-0 border-0 px-2 text-[11px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
+          className="h-8 shrink-0 rounded-md border-0 px-3 text-theme-xs font-medium text-gray-500 hover:bg-white hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-theme-xs"
           key={interval.value}
           value={interval.value}
         >
@@ -420,7 +428,10 @@ function DistributionSkeleton() {
   );
 }
 
-export default function AnalyticsResidentsOverview() {
+export default function AnalyticsResidentsOverview({
+  distributionSize = "2x2",
+  trendSize = "2x2",
+}: AnalyticsResidentsOverviewProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -456,7 +467,7 @@ export default function AnalyticsResidentsOverview() {
           <IntervalToggle onChange={setIntervalValue} value={intervalValue} />
         }
         description={localizedText(locale, "Nya boende grupperade per månad.", "New residents grouped by month.")}
-        size="2x2"
+        size={trendSize}
         title={localizedText(locale, "Boendetrend", "Resident trend")}
       >
         {loading ? (
@@ -470,7 +481,7 @@ export default function AnalyticsResidentsOverview() {
 
       <AnalyticsBlock
         description={localizedText(locale, "Totalt antal boende uppdelat på stad och skola.", "Total residents split by city and school.")}
-        size="2x2"
+        size={distributionSize}
         title={localizedText(locale, "Boende per stad och skola", "Residents by city and school")}
       >
         {loading ? (

@@ -4,6 +4,7 @@ import React from "react";
 import { Building2, Plus } from "@/components/icons";
 
 import { Button } from "@/components/ui/button";
+import { RichTextParagraph } from "@/components/ui/RichText";
 import VerifiedTag from "@/components/ui/VerifiedTag";
 import type { Tag as TagType } from "@/types";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -122,7 +123,8 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
         </div>
       </div>
 
-      <p
+      <RichTextParagraph
+        text={description || fallbackDescription}
         className="min-h-[38px] shrink-0 text-left text-[14px] font-normal leading-[19px] text-[#202020]"
         style={{
           display: "-webkit-box",
@@ -132,9 +134,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           textOverflow: "ellipsis",
           wordBreak: "break-word",
         }}
-      >
-        {description || fallbackDescription}
-      </p>
+      />
 
       <div className="mt-1 grid shrink-0 grid-cols-1 gap-2.5 sm:mt-2 sm:grid-cols-2 sm:gap-3">
         <Button

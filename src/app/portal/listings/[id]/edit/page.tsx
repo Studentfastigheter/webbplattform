@@ -1,11 +1,11 @@
-import Annons from "@/app/portal/_views/annons";
+import ListingEditView from "./ListingEditView";
 
-type AnnonsEditPageProps = {
+type ListingEditPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function AnnonsEditPage({ params }: AnnonsEditPageProps) {
+export default async function ListingEditPage({ params }: ListingEditPageProps) {
   const { id } = await params;
 
-  return <Annons id={id} />;
+  return <ListingEditView id={id} />;
 }

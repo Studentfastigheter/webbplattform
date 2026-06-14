@@ -1000,16 +1000,61 @@ img, svg, video, canvas {
   font-family: var(--font-outfit), var(--font-geist-sans), sans-serif;
 }
 
+@layer components {
+  .portal-surface,
+  .portal-surface-hoverable {
+    border: 1px solid rgb(226 232 240 / 0.95);
+    border-radius: 0.75rem;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.035);
+  }
+
+  .portal-surface-hover,
+  .portal-surface-hoverable {
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .portal-surface.border-dashed,
+  .portal-surface-hoverable.border-dashed,
+  .portal-inner-surface.border-dashed {
+    border-style: dashed;
+  }
+
+  .portal-surface-hoverable:hover,
+  .portal-surface-hover:hover {
+    border-color: rgb(209 213 219 / 0.95);
+    box-shadow: 0 4px 10px rgb(16 24 40 / 0.045);
+  }
+
+  .portal-inner-surface {
+    border: 1px solid rgb(226 232 240 / 0.85);
+    border-radius: 0.625rem;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.025);
+  }
+
+  .portal-control {
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.04);
+  }
+}
+
 @utility menu-item {
   @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm font-medium;
 }
 
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-500;
+  @apply bg-brand-50 text-brand-700;
+  box-shadow: inset 0 0 0 1px rgb(204 232 216 / 0.75);
 }
 
 @utility menu-item-inactive {
-  @apply text-gray-700 hover:bg-gray-100 hover:text-gray-700;
+  @apply text-gray-700 hover:bg-gray-50 hover:text-gray-900;
 }
 
 @utility menu-item-icon-active {
@@ -1025,11 +1070,12 @@ img, svg, video, canvas {
 }
 
 @utility menu-dropdown-item-active {
-  @apply bg-brand-50 text-brand-500;
+  @apply bg-brand-50 text-brand-700;
+  box-shadow: inset 0 0 0 1px rgb(204 232 216 / 0.75);
 }
 
 @utility menu-dropdown-item-inactive {
-  @apply text-gray-700 hover:bg-gray-100;
+  @apply text-gray-700 hover:bg-gray-50 hover:text-gray-900;
 }
 
 @utility no-scrollbar {
