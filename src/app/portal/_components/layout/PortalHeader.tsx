@@ -16,32 +16,24 @@ import { useAuth } from "@/context/AuthContext";
 import { useCurrentCompanyPermission } from "@/features/companies/hooks/useCurrentCompanyPermission";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
-import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
-import { useCompanyPrivate } from "@/features/companies/hooks/useCompanies";
+import { getActiveCompanySummary } from "@/lib/company-access";
 import {
   getDefaultCompanyPortalPath,
   isCompanyPortalPathAllowed,
 } from "../../_config/company-portal-access";
 import { dashboardRelPath } from "../../_statics/variables";
+import { useCompanyPortal } from "./CompanyPortalContext";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
 export default function PortalHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = usePortalSidebar();
-  const { user, isLoading, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { locale } = useI18n();
   const permission = useCurrentCompanyPermission();
+  const portal = useCompanyPortal();
   const activeCompany = getActiveCompanySummary(user);
-  const companyId = getActiveCompanyId(user);
-  const shouldLoadCompanyLogo =
-    Boolean(activeCompany) &&
-    !isLoading &&
-    companyId != null &&
-    !activeCompany?.logoUrl &&
-    !user?.logoUrl;
-  const { data: companyLogoSource } = useCompanyPrivate(companyId, {
-    enabled: shouldLoadCompanyLogo,
-  });
   const displayName =
+    portal.company?.name ||
     activeCompany?.name ||
     user?.companyName ||
     user?.displayName ||
@@ -52,14 +44,21 @@ export default function PortalHeader() {
     ? localizedText(locale, "Hämtar...", "Loading...")
     : permission.label || localizedText(locale, "Okänd behörighet", "Unknown permission");
   const portalHomeHref =
-    getDefaultCompanyPortalPath(permission.roleName) ?? dashboardRelPath;
+    getDefaultCompanyPortalPath(permission.roleName, portal.systemProvider) ??
+    dashboardRelPath;
   const canAccessAccountSettings = isCompanyPortalPathAllowed(
     `${dashboardRelPath}/settings`,
-    permission.roleName
+    permission.roleName,
+    portal.systemProvider
+  );
+  const providerLabel = localizedText(
+    locale,
+    portal.policy.labelSv,
+    portal.policy.labelEn
   );
   const avatarSrc =
     activeCompany
-      ? companyLogoSource?.logoUrl || activeCompany.logoUrl || user?.logoUrl || ""
+      ? portal.company?.logoUrl || activeCompany.logoUrl || user?.logoUrl || ""
       : user?.logoUrl || "";
   const initials = displayName
     .split(" ")
@@ -139,6 +138,11 @@ export default function PortalHeader() {
                 <span className="mt-1 block truncate text-theme-xs text-gray-400">
                   {localizedText(locale, "Behörighet", "Permission")}: {permissionLabel}
                 </span>
+                {portal.systemProvider ? (
+                  <span className="mt-1 block truncate text-theme-xs text-gray-400">
+                    {localizedText(locale, "System", "System")}: {providerLabel}
+                  </span>
+                ) : null}
               </DropdownMenuLabel>
               <div className="flex flex-col gap-1 border-b border-gray-200 pb-3 pt-4">
                 {canAccessAccountSettings && (

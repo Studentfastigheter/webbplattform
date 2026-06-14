@@ -7,6 +7,7 @@ import { getAppIconElement } from "@/components/icons/catalog";
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
+import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import { useAuth } from "@/context/AuthContext";
 import {
   useListing,
@@ -564,10 +565,10 @@ function EditableListingPreview({
             <h2 className="mb-2 border-b border-gray-100 pb-2 text-lg font-semibold text-gray-900">
               {localizedText(locale, "Om boendet", "About the dwelling")}
             </h2>
-            <textarea
+            <RichTextTextarea
               aria-label={localizedText(locale, "Beskrivning", "Description")}
               value={draft.description ?? ""}
-              onChange={(event) => onDraftChange({ description: event.target.value })}
+              onValueChange={(value) => onDraftChange({ description: value })}
               className={`${inlineInputClass} min-h-44 w-full resize-y text-[15px] leading-relaxed text-gray-700`}
               placeholder={localizedText(locale, "Beskriv bostaden", "Describe the dwelling")}
             />

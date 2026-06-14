@@ -57,6 +57,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RichTextParagraph } from "@/components/ui/RichText";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
@@ -497,7 +498,10 @@ function RequirementProfileCard({
           </div>
 
           {profile.description ? (
-            <p className="text-sm leading-6 text-gray-600">{profile.description}</p>
+            <RichTextParagraph
+              text={profile.description}
+              className="text-sm leading-6 text-gray-600"
+            />
           ) : null}
 
           {profile.requiredDocuments?.length ? (

@@ -66,6 +66,7 @@ import {
   PortalPage,
   PortalSurface,
 } from "../_components/shared/PortalGrid";
+import { useCompanyPortal } from "../_components/layout/CompanyPortalContext";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
 import { dashboardRelPath } from "../_statics/variables";
 
@@ -524,11 +525,13 @@ function applicationMatchesSearch(application: PortalApplication, search: string
 
 function ApplicationStatusControl({
   application,
+  canManageApplications,
   locale,
   onStatusChange,
   pendingApplicationId,
 }: {
   application: PortalApplication;
+  canManageApplications: boolean;
   locale: Locale;
   onStatusChange: HandleApplicationStatusChange;
   pendingApplicationId: number | null;
@@ -550,6 +553,21 @@ function ApplicationStatusControl({
   React.useEffect(() => {
     setSelectedStatus(currentStatus ?? "SUBMITTED");
   }, [applicationId, currentStatus]);
+
+  if (!canManageApplications) {
+    return (
+      <div className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:items-end">
+        <ApplicationStatusBadge locale={locale} status={currentStatus} />
+        <p className="max-w-[190px] text-left text-xs leading-5 text-gray-500 sm:text-right">
+          {localizedText(
+            locale,
+            "Hanteras i Hogia DHMarknad",
+            "Managed in Hogia DHMarknad"
+          )}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
@@ -1075,12 +1093,14 @@ function ApplicationsOverview({
 
 function ApplicationRow({
   application,
+  canManageApplications,
   index,
   locale,
   onStatusChange,
   pendingApplicationId,
 }: {
   application: PortalApplication;
+  canManageApplications: boolean;
   index: number;
   locale: Locale;
   onStatusChange: HandleApplicationStatusChange;
@@ -1162,6 +1182,7 @@ function ApplicationRow({
 
       <ApplicationStatusControl
         application={application}
+        canManageApplications={canManageApplications}
         locale={locale}
         onStatusChange={onStatusChange}
         pendingApplicationId={pendingApplicationId}
@@ -1176,12 +1197,14 @@ function ApplicationRow({
 
 function ApplicationsList({
   applications,
+  canManageApplications,
   listingId,
   locale,
   onStatusChange,
   pendingApplicationId,
 }: {
   applications: PortalApplication[];
+  canManageApplications: boolean;
   listingId?: string | null;
   locale: Locale;
   onStatusChange: HandleApplicationStatusChange;
@@ -1287,12 +1310,15 @@ function ApplicationsList({
             <span>{localizedText(locale, "Bostad", "Listing")}</span>
             <span>{localizedText(locale, "Inkommen", "Received")}</span>
             <span className="text-right">
-              {localizedText(locale, "Hantering", "Handling")}
+              {canManageApplications
+                ? localizedText(locale, "Hantering", "Handling")
+                : localizedText(locale, "Status", "Status")}
             </span>
           </div>
           {filteredApplications.map((application, index) => (
             <ApplicationRow
               application={application}
+              canManageApplications={canManageApplications}
               index={index}
               key={`${application.applicationId ?? application.id ?? "application"}-${application.studentId}-${application.submittedAtTime}-${index}`}
               locale={locale}
@@ -1399,7 +1425,9 @@ export default function ApplicationsView({
 }: ApplicationsViewProps) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
+  const portal = useCompanyPortal();
   const companyId = getActiveCompanyId(user);
+  const canManageApplications = portal.canUseFeature("applicationManagement");
   const handleApplicationMutation = useHandleCompanyApplication();
 
   const applicationsQuery = useCompanyApplications(companyId, {
@@ -1438,6 +1466,17 @@ export default function ApplicationsView({
     application,
     newStatus
   ) => {
+    if (!canManageApplications) {
+      toast.info(
+        localizedText(
+          locale,
+          "Ansökningar för Hogia-kopplade företag hanteras i Hogia DHMarknad.",
+          "Applications for Hogia-connected companies are managed in Hogia DHMarknad."
+        )
+      );
+      return;
+    }
+
     if (!companyId) {
       toast.error(
         localizedText(locale, "Företagskonto saknas.", "Company account is missing.")
@@ -1541,16 +1580,28 @@ export default function ApplicationsView({
         }
         description={
           listingId
-            ? localizedText(
-                locale,
-                "Hantera kandidater, statusar och pipeline f\u00f6r vald bostad.",
-                "Manage candidates, statuses and pipeline for the selected listing."
-              )
-            : localizedText(
-                locale,
-                "Hantera inkommande ans\u00f6kningar, statusar och pipeline f\u00f6r hela portf\u00f6ljen.",
-                "Manage incoming applications, statuses and pipeline for the full portfolio."
-              )
+            ? canManageApplications
+              ? localizedText(
+                  locale,
+                  "Hantera kandidater, statusar och pipeline f\u00f6r vald bostad.",
+                  "Manage candidates, statuses and pipeline for the selected listing."
+                )
+              : localizedText(
+                  locale,
+                  "Visa inkommande ans\u00f6kningar och statistik f\u00f6r vald bostad. Urval och status hanteras i Hogia DHMarknad.",
+                  "View incoming applications and statistics for the selected listing. Selection and statuses are handled in Hogia DHMarknad."
+                )
+            : canManageApplications
+              ? localizedText(
+                  locale,
+                  "Hantera inkommande ans\u00f6kningar, statusar och pipeline f\u00f6r hela portf\u00f6ljen.",
+                  "Manage incoming applications, statuses and pipeline for the full portfolio."
+                )
+              : localizedText(
+                  locale,
+                  "Visa inkommande ans\u00f6kningar och statistik. Urval och status hanteras i Hogia DHMarknad.",
+                  "View incoming applications and statistics. Selection and statuses are handled in Hogia DHMarknad."
+                )
         }
       />
 
@@ -1572,6 +1623,7 @@ export default function ApplicationsView({
           />
           <ApplicationsList
             applications={visibleApplications}
+            canManageApplications={canManageApplications}
             listingId={listingId}
             locale={locale}
             onStatusChange={handleStatusChange}

@@ -14,15 +14,6 @@ export default function PortalOverview() {
 
   return (
     <PortalPage>
-      <PortalPageHeader
-        title={localizedText(locale, "\u00d6versikt", "Overview")}
-        description={localizedText(
-          locale,
-          "Aff\u00e4rsl\u00e4ge, respons och pipeline f\u00f6r bostadsportf\u00f6ljen.",
-          "Business position, response and pipeline for the housing portfolio."
-        )}
-      />
-
       <PortalGrid>
         <AnalyticsGeneralStats size="1x1" />
         <OverviewEngagementTrend size="3x4" />

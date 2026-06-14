@@ -1,3 +1,9 @@
+import {
+  decodeRichText,
+  decodeRichTextPayload,
+  encodeRichTextPayload,
+} from "@/lib/rich-text";
+
 export const normalizeApiBase = (value: string): string => {
   const trimmed = value.trim().replace(/\/+$/, "");
   return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
@@ -108,6 +114,34 @@ function createReadRequestKey(
   return `${method} ${url} ${responseType ?? "json"} ${headerKey}`;
 }
 
+function getHeaderValue(headers: Record<string, string>, name: string) {
+  const normalizedName = name.toLowerCase();
+
+  return Object.entries(headers).find(
+    ([key]) => key.toLowerCase() === normalizedName
+  )?.[1];
+}
+
+function encodeJsonRequestBody(
+  body: BodyInit | null | undefined,
+  headers: Record<string, string>
+): BodyInit | null | undefined {
+  if (typeof body !== "string") {
+    return body;
+  }
+
+  const contentType = getHeaderValue(headers, "content-type");
+  if (!contentType?.toLowerCase().includes("application/json")) {
+    return body;
+  }
+
+  try {
+    return JSON.stringify(encodeRichTextPayload(JSON.parse(body)));
+  } catch {
+    return body;
+  }
+}
+
 export function arrayFromApiResponse<T>(value: unknown): T[] {
   if (Array.isArray(value)) {
     return value as T[];
@@ -196,6 +230,8 @@ export async function apiClient<T>(
     defaultHeaders.Authorization = `Bearer ${authToken}`;
   }
 
+  const requestBody = encodeJsonRequestBody(customOptions.body, defaultHeaders);
+
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   const url =
     typeof window !== "undefined"
@@ -208,6 +244,7 @@ export async function apiClient<T>(
     try {
       res = await fetch(url, {
         ...customOptions,
+        body: requestBody,
         headers: defaultHeaders,
         cache: customOptions.cache ?? "no-store",
       });
@@ -234,6 +271,8 @@ export async function apiClient<T>(
       }
     }
 
+    const decodedBody = decodeRichTextPayload(parsed);
+
     if (!res.ok) {
       // Om token var ogiltig (401), rensa den direkt så vi slipper problem vid nästa laddning
       if (res.status === 401 && typeof window !== "undefined") {
@@ -241,19 +280,20 @@ export async function apiClient<T>(
       }
 
       const message =
-        parsed?.message ||
-        parsed?.error ||
-        (typeof parsed === "string" ? parsed : null) ||
+        decodedBody?.message ||
+        decodedBody?.error ||
+        decodedBody?.detail ||
+        (typeof decodedBody === "string" ? decodedBody : null) ||
         STATUS_MESSAGES[res.status] ||
         res.statusText ||
         `Något gick fel (${res.status}).`;
 
-      throw new ApiError(String(message), res.status, parsed);
+      throw new ApiError(String(message), res.status, decodedBody);
     }
 
     if (!rawBody) return undefined as T;
-    if (responseType === "text") return rawBody as T;
-    return parsed as T;
+    if (responseType === "text") return decodeRichText(rawBody) as T;
+    return decodedBody as T;
   };
 
   const shouldDedupeRead =

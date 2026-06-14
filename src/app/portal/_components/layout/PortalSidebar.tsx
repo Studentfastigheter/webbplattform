@@ -19,6 +19,7 @@ import {
   type CompanyPortalNavSection,
 } from "../../_config/company-portal-access";
 import { dashboardRelPath } from "../../_statics/variables";
+import { useCompanyPortal } from "./CompanyPortalContext";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
 type SectionKey = CompanyPortalNavSection["key"];
@@ -55,16 +56,18 @@ export default function PortalSidebar() {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = usePortalSidebar();
   const { locale } = useI18n();
   const permission = useCurrentCompanyPermission();
+  const portal = useCompanyPortal();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const expanded = isExpanded || isHovered || isMobileOpen;
   const navSections = useMemo(
-    () => getCompanyPortalNavSectionsForRole(permission.roleName),
-    [permission.roleName]
+    () => getCompanyPortalNavSectionsForRole(permission.roleName, portal.systemProvider),
+    [permission.roleName, portal.systemProvider]
   );
   const portalHomeHref =
-    getDefaultCompanyPortalPath(permission.roleName) ?? dashboardRelPath;
+    getDefaultCompanyPortalPath(permission.roleName, portal.systemProvider) ??
+    dashboardRelPath;
 
   const [openSubmenu, setOpenSubmenu] = useState<OpenSubmenu>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});

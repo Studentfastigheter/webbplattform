@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { GraduationCapIcon, HomeIcon, MapPinIcon } from "@/components/icons";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
+import { RichTextParagraph } from "@/components/ui/RichText";
 import type { BaseMarker } from "@/components/shared/map/BaseMap";
 import { useAuth } from "@/context/AuthContext";
 import { formatCityName } from "@/features/cities/city-utils";
@@ -324,9 +325,10 @@ export default function CityDetailPage() {
               {cityName}
             </h1>
             {cityDescription && (
-              <p className="mt-4 text-base leading-relaxed text-gray-600">
-                {cityDescription}
-              </p>
+              <RichTextParagraph
+                text={cityDescription}
+                className="mt-4 text-base leading-relaxed text-gray-600"
+              />
             )}
           </div>
         </section>

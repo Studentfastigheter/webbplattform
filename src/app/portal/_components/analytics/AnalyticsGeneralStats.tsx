@@ -2,14 +2,11 @@
 
 import * as React from "react";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
   BarChart3,
   Eye,
   FileUser,
   Heart,
   Home,
-  Minus,
   MousePointerClick,
   Percent,
 } from "@/components/icons";
@@ -295,48 +292,6 @@ function formatMetricValue(item: MetricItem, locale: Locale) {
   return item.valueLabel ?? item.value.toLocaleString(numberLocale(locale));
 }
 
-function formatChange(change: number | null, locale: Locale) {
-  if (change === null) {
-    return null;
-  }
-
-  const prefix = change > 0 ? "+" : "";
-
-  return `${prefix}${change.toLocaleString(numberLocale(locale), {
-    maximumFractionDigits: 1,
-  })}%`;
-}
-
-function TrendBadge({ change, locale }: { change: number | null; locale: Locale }) {
-  const formattedChange = formatChange(change, locale);
-
-  if (!formattedChange) {
-    return (
-      <span className="inline-flex max-w-[120px] items-center gap-1 truncate rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-semibold text-gray-500">
-        <Minus className="h-3 w-3" />
-        {localizedText(locale, "Oför.", "Unch.")}
-      </span>
-    );
-  }
-
-  const isPositive = (change ?? 0) >= 0;
-  const TrendIcon = isPositive ? ArrowUpRight : ArrowDownRight;
-
-  return (
-    <span
-      className={cn(
-        "inline-flex max-w-[120px] items-center gap-1 truncate rounded-full border px-2 py-1 text-[11px] font-semibold",
-        isPositive
-          ? "border-success-500/15 bg-success-50 text-success-700"
-          : "border-error-500/15 bg-error-50 text-error-700"
-      )}
-    >
-      <TrendIcon className="h-3 w-3" />
-      {formattedChange}
-    </span>
-  );
-}
-
 function MetricSkeletonCard({
   className,
   size,
@@ -357,7 +312,6 @@ function MetricSkeletonCard({
         </div>
         <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
       </div>
-      <Skeleton className="h-6 w-16 rounded-full" />
     </AnalyticsBlock>
   );
 }
@@ -402,9 +356,6 @@ function MetricStatCard({
         </div>
       </div>
 
-      <div className="mt-4">
-        <TrendBadge change={item.change} locale={locale} />
-      </div>
     </AnalyticsBlock>
   );
 }

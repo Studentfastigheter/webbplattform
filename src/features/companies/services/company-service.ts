@@ -7,6 +7,7 @@ import {
   type ServiceOptions,
 } from "@/lib/api/client";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
+import type { SystemProvider } from "@/types/common";
 
 export type GraphEntry = {
 	category: string,
@@ -45,6 +46,7 @@ export type CompanyPrivateDTO = {
   pictureUrlList?: string[];
   videoUrlList?: string[];
   socialLinks?: Record<string, string>;
+  systemProvider?: SystemProvider | string | null;
 };
 
 export type CompanyPublicDTO = {
@@ -405,6 +407,14 @@ export type HandleCompanyApplicationRequest = {
 };
 
 const defaultGeneralAnalyticsPeriods = ["P7D", "P1M", "P3M", "P1Y"];
+const systemProviderValues = [
+  "HOGIA",
+  "PIGELLO",
+  "DEMO",
+  "MOMENTUM",
+  "FAST2",
+  "HOGIA_LANDLORD",
+] as const satisfies readonly SystemProvider[];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -421,6 +431,18 @@ function firstString(...values: unknown[]): string | undefined {
   return values.find(
     (value): value is string => typeof value === "string" && value.trim().length > 0
   )?.trim();
+}
+
+function normalizeSystemProvider(value: unknown): SystemProvider | string | null {
+  const provider = firstString(value);
+  if (!provider) {
+    return null;
+  }
+
+  const normalized = provider.toUpperCase();
+  return systemProviderValues.includes(normalized as SystemProvider)
+    ? (normalized as SystemProvider)
+    : provider;
 }
 
 function firstNumber(...values: unknown[]): number | undefined {
@@ -1097,6 +1119,9 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
     videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
     socialLinks: normalizeStringRecord(value.socialLinks),
+    systemProvider: normalizeSystemProvider(
+      value.systemProvider ?? value.propertySystem ?? value.provider
+    ),
   };
 }
 

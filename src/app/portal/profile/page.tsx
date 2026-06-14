@@ -8,6 +8,7 @@ import {
   type FormEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import {
   Field,
   FieldGroup,
@@ -870,10 +871,10 @@ function EditableCompanyPreview({
 
         <div className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-gray-900">{localizedText(locale, "Om oss", "About us")}</h2>
-          <textarea
+          <RichTextTextarea
             aria-label={localizedText(locale, "Om oss", "About us")}
             value={draft.description}
-            onChange={(event) => onDraftChange("description", event.target.value)}
+            onValueChange={(value) => onDraftChange("description", value)}
             className={`${inlineInputClass} min-h-40 w-full resize-y text-base leading-relaxed text-gray-600`}
             placeholder={localizedText(locale, "Beskriv företaget", "Describe the company")}
           />

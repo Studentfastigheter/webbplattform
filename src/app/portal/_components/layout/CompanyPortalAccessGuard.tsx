@@ -13,31 +13,60 @@ import {
   getDefaultCompanyPortalPath,
   isCompanyPortalPathAllowed,
 } from "../../_config/company-portal-access";
+import { useCompanyPortal } from "./CompanyPortalContext";
 
 export function CompanyPortalAccessGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { locale } = useI18n();
   const permission = useCurrentCompanyPermission();
+  const portal = useCompanyPortal();
   const routingPathname = normalizeRoute(stripLocaleFromPathname(pathname));
   const roleName = permission.roleName || null;
-  const isAllowed = isCompanyPortalPathAllowed(routingPathname, roleName);
-  const fallbackPath = getDefaultCompanyPortalPath(roleName);
+  const isAccessLoading = (permission.isLoading && !roleName) || portal.isLoading;
+  const isAllowed = isCompanyPortalPathAllowed(
+    routingPathname,
+    roleName,
+    portal.systemProvider
+  );
+  const fallbackPath = getDefaultCompanyPortalPath(roleName, portal.systemProvider);
   const isRedirecting =
     Boolean(fallbackPath) && normalizeRoute(fallbackPath ?? "") !== routingPathname;
 
   useEffect(() => {
-    if (permission.isLoading && !roleName) return;
+    if (isAccessLoading || portal.isError) return;
     if (isAllowed || !fallbackPath) return;
 
     router.replace(fallbackPath);
-  }, [fallbackPath, isAllowed, permission.isLoading, roleName, router]);
+  }, [fallbackPath, isAccessLoading, isAllowed, portal.isError, router]);
 
-  if (permission.isLoading && !roleName) {
+  if (isAccessLoading) {
     return (
       <LoadingScreen
         label={localizedText(locale, "Kontrollerar behörighet...", "Checking access...")}
       />
+    );
+  }
+
+  if (portal.isError) {
+    const message =
+      portal.error instanceof Error
+        ? portal.error.message
+        : localizedText(
+            locale,
+            "Kunde inte hämta företagets portalinställningar.",
+            "Could not load the company's portal settings."
+          );
+
+    return (
+      <main className="flex min-h-svh items-center justify-center bg-gray-50 px-6">
+        <section className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-lg font-semibold text-gray-900">
+            {localizedText(locale, "Portalen kunde inte laddas", "Could not load portal")}
+          </h1>
+          <p className="mt-2 text-sm text-gray-500">{message}</p>
+        </section>
+      </main>
     );
   }
 
