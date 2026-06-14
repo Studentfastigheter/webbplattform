@@ -683,7 +683,7 @@ export default function UsersPage() {
                       : localizedText(locale, "Välj roll", "Choose role")}
                   />
                 </PortalControlSelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[1002] border-gray-200 bg-white">
                   {roles.map((role) => {
                     const roleName = role.name?.trim();
                     if (!roleName) return null;
