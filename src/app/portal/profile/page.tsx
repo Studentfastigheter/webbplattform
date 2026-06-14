@@ -68,6 +68,7 @@ import {
 } from "@/lib/youtube-url";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { useUploadCompanyPublicMedia } from "@/features/media/hooks/useMedia";
+import { PortalPage, PortalSurface } from "../_components/shared/PortalGrid";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 type ProfileDraft = {
@@ -1243,40 +1244,40 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500">
+      <PortalSurface className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500" padding="md">
         <Loader2 className="h-4 w-4 animate-spin" />
         {localizedText(locale, "Laddar profil...", "Loading profile...")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (!user) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Logga in för att hantera företagsprofilen.", "Log in to manage the company profile.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (companyId == null || Number.isNaN(companyId)) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Denna profilsida gäller bara för företagskonton.", "This profile page is only for company accounts.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (loading || !draft) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500">
+      <PortalSurface className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500" padding="md">
         <Loader2 className="h-4 w-4 animate-spin" />
         {localizedText(locale, "Hämtar företagsprofil...", "Loading company profile...")}
-      </div>
+      </PortalSurface>
     );
   }
 
   return (
-    <main className="pb-12">
+    <PortalPage className="pb-12">
       <PortalPageHeader
         className="mb-6"
         title={localizedText(locale, "Redigera profil", "Edit profile")}
@@ -1383,6 +1384,6 @@ export default function ProfilePage() {
           "The image gallery has been saved."
         )}
       />
-    </main>
+    </PortalPage>
   );
 }

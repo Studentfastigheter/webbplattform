@@ -44,6 +44,7 @@ import {
   useVerifyCompanyUser,
 } from "@/features/companies/hooks/useCompanies";
 import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
+import { PortalPage, PortalSurface } from "../_components/shared/PortalGrid";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
@@ -513,30 +514,30 @@ export default function UsersPage() {
 
   if (authLoading) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-theme-xs">
+      <PortalSurface className="text-sm text-gray-500" padding="md">
         {localizedText(locale, "Laddar användare...", "Loading users...")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (!user) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Logga in för att visa användare i företagsportalen.", "Log in to view users in the company portal.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (!companyId) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-theme-xs">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PortalPage>
       <div className="flex flex-col gap-4">
         <PortalPageHeader
           title={localizedText(locale, "Anv\u00e4ndare", "Users")}
@@ -895,6 +896,6 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PortalPage>
   );
 }

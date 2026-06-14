@@ -23,10 +23,6 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
-import {
-  AnalyticsBlock,
-  type AnalyticsBlockSize,
-} from "@/features/analytics/components/AnalyticsBlocks";
 import { useCompanyOverviewTrend } from "@/features/companies/hooks/useCompanies";
 import type {
   CompanyOverviewTrendEntry,
@@ -37,6 +33,10 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
+import {
+  PortalGridItem,
+  type PortalGridItemSize,
+} from "../shared/PortalGrid";
 
 type IntervalOption = {
   value: string;
@@ -62,7 +62,7 @@ type TrendMetricKey =
 
 type OverviewEngagementTrendProps = {
   className?: string;
-  size?: AnalyticsBlockSize;
+  size?: PortalGridItemSize;
 };
 
 const intervalOptions: IntervalOption[] = [
@@ -116,7 +116,7 @@ const blockHeightClassByRows: Record<string, string> = {
   "4": "xl:h-[calc(var(--analytics-block-unit)*4+4.5rem)]",
 };
 
-function rowsFromSize(size: AnalyticsBlockSize) {
+function rowsFromSize(size: PortalGridItemSize) {
   return size.split("x")[0];
 }
 
@@ -364,7 +364,7 @@ export default function OverviewEngagementTrend({
   );
 
   return (
-    <AnalyticsBlock
+    <PortalGridItem
       className={cn(
         blockHeightClass,
         className
@@ -463,6 +463,6 @@ export default function OverviewEngagementTrend({
           </div>
         )}
       </div>
-    </AnalyticsBlock>
+    </PortalGridItem>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import AnalyticsGeneralStats from "../analytics/AnalyticsGeneralStats";
 import AnalyticsStatusBreakdownBlock from "../analytics/AnalyticsStatusBreakdownBlock";
+import { PortalGrid, PortalPage } from "../shared/PortalGrid";
 import PortalPageHeader from "../shared/PortalPageHeader";
 import OverviewEngagementTrend from "./OverviewEngagementTrend";
 import OverviewInsightSummary from "./OverviewInsightSummary";
@@ -13,7 +13,7 @@ export default function PortalOverview() {
   const { locale } = useI18n();
 
   return (
-    <div className="space-y-6">
+    <PortalPage>
       <PortalPageHeader
         title={localizedText(locale, "\u00d6versikt", "Overview")}
         description={localizedText(
@@ -23,14 +23,12 @@ export default function PortalOverview() {
         )}
       />
 
-      <AnalyticsGrid>
+      <PortalGrid>
         <AnalyticsGeneralStats size="1x1" />
-
-        <OverviewInsightSummary size="2x4" />
-
         <OverviewEngagementTrend size="3x4" />
-        <AnalyticsStatusBreakdownBlock size="2x2" />
-      </AnalyticsGrid>
-    </div>
+        <OverviewInsightSummary size="2x4" />
+        <AnalyticsStatusBreakdownBlock size="2x4" />
+      </PortalGrid>
+    </PortalPage>
   );
 }

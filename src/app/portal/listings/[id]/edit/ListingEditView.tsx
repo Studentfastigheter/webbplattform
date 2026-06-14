@@ -23,9 +23,9 @@ import {
   ListingTagDTO,
   UpdateListingRequest,
 } from "@/types/listing";
-import PortalPageHeader from "../_components/shared/PortalPageHeader";
+import PortalPageHeader from "../../../_components/shared/PortalPageHeader";
 
-type AnnonsPageProps = {
+type ListingEditViewProps = {
   id: string;
 };
 
@@ -578,7 +578,7 @@ function EditableListingPreview({
   );
 }
 
-export default function Annons({ id }: AnnonsPageProps) {
+export default function ListingEditView({ id }: ListingEditViewProps) {
   const { locale } = useI18n();
   const { user } = useAuth();
   const activeCompanyId = getActiveCompanyId(user);

@@ -11,11 +11,6 @@ import {
   TrendingUp,
 } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AnalyticsBlock,
-  type AnalyticsBlockSize,
-  useAnalyticsBlock,
-} from "@/features/analytics/components/AnalyticsBlocks";
 import { useCompanyAnalyticsDashboard } from "@/features/companies/hooks/useCompanies";
 import type {
   AnalyticsCountBucket,
@@ -29,6 +24,11 @@ import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
 import { dashboardRelPath } from "../../_statics/variables";
+import {
+  PortalGridItem,
+  type PortalGridItemSize,
+  usePortalGridItem,
+} from "../shared/PortalGrid";
 
 type InsightMetric = {
   label: string;
@@ -40,7 +40,7 @@ type InsightMetric = {
 
 type OverviewInsightSummaryProps = {
   className?: string;
-  size?: AnalyticsBlockSize;
+  size?: PortalGridItemSize;
 };
 
 const openApplicationStatusKeys = ["SUBMITTED", "UNDER_REVIEW", "OFFERED"];
@@ -270,7 +270,7 @@ function ListingRow({
 }
 
 function LoadingState() {
-  const block = useAnalyticsBlock();
+  const block = usePortalGridItem();
   const isWideBlock = (block?.columns ?? 2) >= 3;
 
   return (
@@ -311,7 +311,7 @@ function InsightContent({
   data: CompanyPortalAnalyticsDashboard;
   locale: Locale;
 }) {
-  const block = useAnalyticsBlock();
+  const block = usePortalGridItem();
   const isWideBlock = (block?.columns ?? 2) >= 3;
   const metrics = buildMetrics(data, locale);
   const topListings = data.topListings.slice(0, 4);
@@ -421,7 +421,7 @@ export default function OverviewInsightSummary({
         : null;
 
   return (
-    <AnalyticsBlock
+    <PortalGridItem
       className={className}
       contentClassName="overflow-hidden"
       description={localizedText(locale, "Senaste 12 m\u00e5naderna", "Last 12 months")}
@@ -445,6 +445,6 @@ export default function OverviewInsightSummary({
           )}
         </div>
       )}
-    </AnalyticsBlock>
+    </PortalGridItem>
   );
 }

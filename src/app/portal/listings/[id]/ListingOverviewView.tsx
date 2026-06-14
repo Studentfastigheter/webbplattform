@@ -83,23 +83,23 @@ import {
 } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
-} from "../_components/shared/PortalListingStatusTag";
+} from "../../_components/shared/PortalListingStatusTag";
 import {
   ApplicationIntervalToggle,
   getApplicationIntervalRange,
   getLocalizedApplicationInterval,
   sumApplicationStatistics,
   type ApplicationIntervalValue,
-} from "../_components/analytics/ApplicationIntervalStats";
-import ListingDemographicsPanel from "../_components/analytics/ListingDemographicsPanel";
-import ApplicationDemographicsPanel from "../_components/analytics/ApplicationDemographicsPanel";
-import { dashboardRelPath } from "../_statics/variables";
+} from "../../_components/analytics/ApplicationIntervalStats";
+import ListingDemographicsPanel from "../../_components/analytics/ListingDemographicsPanel";
+import ApplicationDemographicsPanel from "../../_components/analytics/ApplicationDemographicsPanel";
+import { dashboardRelPath } from "../../_statics/variables";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { cn } from "@/lib/utils";
 
-type AnnonsOverviewProps = {
+type ListingOverviewViewProps = {
   id: string;
 };
 
@@ -863,7 +863,7 @@ function ApplicationTrendCard({
   );
 }
 
-export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
+export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { locale } = useI18n();

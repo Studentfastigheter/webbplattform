@@ -1,12 +1,11 @@
-import AnnonsOverview from "@/app/portal/_views/annonsOverview";
+import ListingOverviewView from "./ListingOverviewView";
 
-
-type AnnonsPageProps = {
+type ListingPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function AnnonsPage({ params }: AnnonsPageProps) {
+export default async function ListingPage({ params }: ListingPageProps) {
   const { id } = await params;
 
-  return <AnnonsOverview id={id} />;
+  return <ListingOverviewView id={id} />;
 }

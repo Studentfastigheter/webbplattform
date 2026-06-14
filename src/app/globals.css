@@ -1000,53 +1000,48 @@ img, svg, video, canvas {
   font-family: var(--font-outfit), var(--font-geist-sans), sans-serif;
 }
 
-@utility portal-surface {
-  border: 1px solid rgb(226 232 240 / 0.95);
-  border-radius: 0.75rem;
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(16 24 40 / 0.035);
-}
+@layer components {
+  .portal-surface,
+  .portal-surface-hoverable {
+    border: 1px solid rgb(226 232 240 / 0.95);
+    border-radius: 0.75rem;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.035);
+  }
 
-@utility portal-surface-hover {
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease;
-}
+  .portal-surface-hover,
+  .portal-surface-hoverable {
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease;
+  }
 
-@utility portal-surface-hoverable {
-  border: 1px solid rgb(226 232 240 / 0.95);
-  border-radius: 0.75rem;
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(16 24 40 / 0.035);
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease;
-}
+  .portal-surface.border-dashed,
+  .portal-surface-hoverable.border-dashed,
+  .portal-inner-surface.border-dashed {
+    border-style: dashed;
+  }
 
-.portal-surface-hoverable:hover {
-  border-color: rgb(209 213 219 / 0.95);
-  box-shadow: 0 4px 10px rgb(16 24 40 / 0.045);
-}
+  .portal-surface-hoverable:hover,
+  .portal-surface-hover:hover {
+    border-color: rgb(209 213 219 / 0.95);
+    box-shadow: 0 4px 10px rgb(16 24 40 / 0.045);
+  }
 
-.portal-surface-hover:hover {
-  border-color: rgb(209 213 219 / 0.95);
-  box-shadow: 0 4px 10px rgb(16 24 40 / 0.045);
-}
+  .portal-inner-surface {
+    border: 1px solid rgb(226 232 240 / 0.85);
+    border-radius: 0.625rem;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.025);
+  }
 
-@utility portal-inner-surface {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-@utility portal-control {
-  border: 1px solid rgb(229 231 235);
-  border-radius: 0.5rem;
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(16 24 40 / 0.04);
+  .portal-control {
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.04);
+  }
 }
 
 @utility menu-item {

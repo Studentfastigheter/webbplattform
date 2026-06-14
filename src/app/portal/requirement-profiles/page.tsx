@@ -8,6 +8,7 @@ import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { useCompanyRequirementsProfiles } from "@/features/listings/hooks/useListings";
 import type { RequirementsProfileDTO } from "@/types/listing";
+import { PortalPage, PortalSurface } from "../_components/shared/PortalGrid";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 function getProfileKey(profile: RequirementsProfileDTO, index: number) {
@@ -65,7 +66,7 @@ export default function RequirementsProfilesPage() {
   const selectedDocuments = selectedProfile?.requiredDocuments ?? [];
 
   return (
-    <div className="space-y-6">
+    <PortalPage>
       <PortalPageHeader
         title={localizedText(locale, "Kravprofiler", "Requirement profiles")}
         description={localizedText(
@@ -95,12 +96,12 @@ export default function RequirementsProfilesPage() {
           </div>
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-xs">
+        <PortalSurface padding="md">
           <h2 className="text-lg font-semibold text-gray-900">
             {localizedText(locale, "Kravprofiler", "Requirement profiles")}
           </h2>
           <p className="mt-2 text-theme-sm text-gray-500">{error}</p>
-        </div>
+        </PortalSurface>
       ) : (
         <div className="grid min-h-[520px] gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-[320px_minmax(0,1fr)]">
           <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white">
@@ -218,6 +219,6 @@ export default function RequirementsProfilesPage() {
           </section>
         </div>
       )}
-    </div>
+    </PortalPage>
   );
 }

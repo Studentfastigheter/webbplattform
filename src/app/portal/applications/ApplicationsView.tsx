@@ -43,10 +43,6 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  AnalyticsBlock,
-  AnalyticsGrid,
-} from "@/features/analytics/components/AnalyticsBlocks";
-import {
   useCompanyApplicationOutcomeCounts,
   useCompanyApplicationStatusCounts,
   useCompanyApplications,
@@ -64,10 +60,16 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
+import {
+  PortalGrid,
+  PortalGridItem,
+  PortalPage,
+  PortalSurface,
+} from "../_components/shared/PortalGrid";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
 import { dashboardRelPath } from "../_statics/variables";
 
-type AnsokningarProps = {
+type ApplicationsViewProps = {
   listingId?: string | null;
 };
 
@@ -601,7 +603,7 @@ function ApplicationsCountBlock({
   const latest = applications[0]?.submittedAtTime ?? 0;
 
   return (
-    <AnalyticsBlock contentClassName="p-5 sm:p-5" size="2x1">
+    <PortalGridItem contentClassName="p-5 sm:p-5" size="2x1">
       <div className="flex h-full min-h-[160px] min-w-0 flex-col justify-between">
         <div className="flex items-start justify-between gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-brand-600">
@@ -637,7 +639,7 @@ function ApplicationsCountBlock({
           </p>
         </div>
       </div>
-    </AnalyticsBlock>
+    </PortalGridItem>
   );
 }
 
@@ -721,10 +723,10 @@ function ApplicationsTrendBlock({
   );
 
   return (
-    <AnalyticsBlock
+    <PortalGridItem
       action={controls}
       contentClassName="overflow-hidden p-3 pt-1 sm:p-4 sm:pt-1"
-      size="2x3"
+      size="2x4"
       title={localizedText(locale, "Ansökningar över tid", "Applications over time")}
     >
       {hasData ? (
@@ -795,7 +797,7 @@ function ApplicationsTrendBlock({
           )}
         </div>
       )}
-    </AnalyticsBlock>
+    </PortalGridItem>
   );
 }
 
@@ -943,14 +945,14 @@ function ApplicationPipelineBlock({
   }));
 
   return (
-    <AnalyticsBlock
+    <PortalGridItem
       contentClassName="overflow-hidden"
       description={
         listingId
           ? localizedText(locale, "Vald bostad", "Selected listing")
           : localizedText(locale, "Senaste 12 m\u00e5naderna", "Last 12 months")
       }
-      size="2x2"
+      size="2x3"
       title={localizedText(locale, "Ans\u00f6kningspipeline", "Application pipeline")}
     >
       {isLoading ? (
@@ -1042,7 +1044,7 @@ function ApplicationPipelineBlock({
           </div>
         </div>
       )}
-    </AnalyticsBlock>
+    </PortalGridItem>
   );
 }
 
@@ -1058,7 +1060,7 @@ function ApplicationsOverview({
   locale: Locale;
 }) {
   return (
-    <AnalyticsGrid>
+    <PortalGrid>
       <ApplicationsCountBlock applications={applications} locale={locale} />
       <ApplicationPipelineBlock
         applications={applications}
@@ -1067,7 +1069,7 @@ function ApplicationsOverview({
         locale={locale}
       />
       <ApplicationsTrendBlock applications={applications} locale={locale} />
-    </AnalyticsGrid>
+    </PortalGrid>
   );
 }
 
@@ -1322,9 +1324,9 @@ function ApplicationsList({
 
 function LoadingApplicationsLayout({ locale }: { locale: Locale }) {
   return (
-    <div className="space-y-6">
-      <AnalyticsGrid>
-        <AnalyticsBlock contentClassName="p-5 sm:p-5" size="2x1">
+    <PortalPage>
+      <PortalGrid>
+        <PortalGridItem contentClassName="p-5 sm:p-5" size="2x1">
           <div className="flex h-full min-h-[160px] flex-col justify-between">
             <div className="flex items-start justify-between gap-3">
               <Skeleton className="h-10 w-10 rounded-xl" />
@@ -1336,9 +1338,9 @@ function LoadingApplicationsLayout({ locale }: { locale: Locale }) {
               <Skeleton className="h-4 w-40" />
             </div>
           </div>
-        </AnalyticsBlock>
-        <AnalyticsBlock
-          size="2x2"
+        </PortalGridItem>
+        <PortalGridItem
+          size="2x3"
           title={localizedText(locale, "Ans\u00f6kningspipeline", "Application pipeline")}
         >
           <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
@@ -1359,14 +1361,14 @@ function LoadingApplicationsLayout({ locale }: { locale: Locale }) {
               ))}
             </div>
           </div>
-        </AnalyticsBlock>
-        <AnalyticsBlock
-          size="2x3"
+        </PortalGridItem>
+        <PortalGridItem
+          size="2x4"
           title={localizedText(locale, "Ansökningar över tid", "Applications over time")}
         >
           <Skeleton className="h-full min-h-[160px] rounded-xl" />
-        </AnalyticsBlock>
-      </AnalyticsGrid>
+        </PortalGridItem>
+      </PortalGrid>
 
       <section className="portal-surface overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -1388,11 +1390,13 @@ function LoadingApplicationsLayout({ locale }: { locale: Locale }) {
           </div>
         ))}
       </section>
-    </div>
+    </PortalPage>
   );
 }
 
-export default function Ansokningar({ listingId = null }: AnsokningarProps) {
+export default function ApplicationsView({
+  listingId = null,
+}: ApplicationsViewProps) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -1497,38 +1501,38 @@ export default function Ansokningar({ listingId = null }: AnsokningarProps) {
 
   if (authLoading) {
     return (
-      <div className="portal-surface p-6 text-sm text-gray-500">
+      <PortalSurface className="text-sm text-gray-500" padding="md">
         {localizedText(locale, "Laddar ansökningar...", "Loading applications...")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (!user) {
     return (
-      <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(
           locale,
           "Logga in för att se företagets ansökningar.",
           "Log in to view the company's applications."
         )}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (!companyId) {
     return (
-      <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(
           locale,
           "Denna sida är bara tillgänglig för företagskonton.",
           "This page is only available for company accounts."
         )}
-      </div>
+      </PortalSurface>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PortalPage>
       <PortalPageHeader
         title={
           listingId
@@ -1575,6 +1579,6 @@ export default function Ansokningar({ listingId = null }: AnsokningarProps) {
           />
         </>
       )}
-    </div>
+    </PortalPage>
   );
 }

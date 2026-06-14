@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { UsersRound } from "@/components/icons";
-import { AnalyticsBlock, AnalyticsGrid } from "@/features/analytics/components/AnalyticsBlocks";
 import {
   TrendBarChart,
   type TrendBarChartPoint,
@@ -26,6 +25,12 @@ import type {
 import {
   CompanyDemographyBlock,
 } from "../_components/analytics/DemographicsEndpointBlocks";
+import {
+  PortalGrid,
+  PortalGridItem,
+  PortalPage,
+  PortalSurface,
+} from "../_components/shared/PortalGrid";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 const trendGranularities: Array<{
@@ -95,7 +100,7 @@ function QueueApplicationCountBlock({
   queueCount: number;
 }) {
   return (
-    <AnalyticsBlock
+    <PortalGridItem
       contentClassName="flex"
       size="1x2"
       title={localizedText(locale, "Studenter i bostadskö", "Students in housing queue")}
@@ -131,7 +136,7 @@ function QueueApplicationCountBlock({
           </div>
         </div>
       )}
-    </AnalyticsBlock>
+    </PortalGridItem>
   );
 }
 
@@ -170,7 +175,7 @@ function QueueTrendGranularityToggle({
   );
 }
 
-export default function Bostadsko() {
+export default function HousingQueueView() {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -216,30 +221,30 @@ export default function Bostadsko() {
 
   if (authLoading || queuesLoading) {
     return (
-      <div className="space-y-6">
+      <PortalPage>
         <Skeleton className="h-[520px] rounded-xl" />
-      </div>
+      </PortalPage>
     );
   }
 
   if (!user) {
     return (
-      <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Logga in för att se företagets bostadsköer.", "Log in to view the company's housing queues.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   if (!companyId) {
     return (
-      <div className="portal-surface border-dashed p-8 text-center text-sm text-gray-500">
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
         {localizedText(locale, "Denna sida är bara tillgänglig för företagskonton.", "This page is only available for company accounts.")}
-      </div>
+      </PortalSurface>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PortalPage>
       <PortalPageHeader
         title={localizedText(locale, "Bostadsk\u00f6", "Housing queue")}
         description={localizedText(
@@ -256,12 +261,12 @@ export default function Bostadsko() {
       ) : null}
 
       {queues.length === 0 ? (
-        <div className="portal-surface border-dashed p-10 text-center text-sm text-gray-500">
+        <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
           {localizedText(locale, "Inga bostadsköer hittades för företaget.", "No housing queues were found for the company.")}
-        </div>
+        </PortalSurface>
       ) : (
         <main className="min-w-0 space-y-5">
-            <AnalyticsGrid>
+            <PortalGrid>
               <QueueApplicationCountBlock
                 count={queueApplicationCountQuery.data ?? 0}
                 error={countError}
@@ -270,7 +275,7 @@ export default function Bostadsko() {
                 queueCount={queues.length}
               />
 
-              <AnalyticsBlock
+              <PortalGridItem
                 action={
                   <QueueTrendGranularityToggle
                     locale={locale}
@@ -294,7 +299,7 @@ export default function Bostadsko() {
                   title={localizedText(locale, "Köansökningar över tid", "Queue applications over time")}
                   valueLabel={localizedText(locale, "Köansökningar", "Queue applications")}
                 />
-              </AnalyticsBlock>
+              </PortalGridItem>
 
               <CompanyDemographyBlock
                 deferUntilSelection
@@ -302,9 +307,9 @@ export default function Bostadsko() {
                 title={localizedText(locale, "Besökardemografi", "Visitor demographics")}
                 useCompaniesQuery
               />
-            </AnalyticsGrid>
+            </PortalGrid>
         </main>
       )}
-    </div>
+    </PortalPage>
   );
 }
