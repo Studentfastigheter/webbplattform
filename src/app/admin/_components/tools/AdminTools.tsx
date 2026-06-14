@@ -2422,7 +2422,7 @@ function CompaniesForm() {
         title="Synka företagsannonser"
         description="POST startar en ny import av företagets annonser i bakgrunden."
         method="POST"
-        endpoint="/api/admin/company/{id}/refresh-listings"
+        endpoint="/api/companies/{id}/refresh-listings"
       >
         <FormSelect label="Välj företag" value={refreshId} onChange={setRefreshId}>
           <option value="">Välj företag</option>
