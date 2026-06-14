@@ -2,7 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +18,11 @@ import type { ListingAnalyticsPerformance } from "@/features/companies/services/
 import { dashboardRelPath } from "../../_statics/variables";
 
 type Limit = 5 | 10;
+
+type AnalyticsApplicationsByObjectBlockProps = {
+  className?: string;
+  size?: AnalyticsBlockSize;
+};
 
 type ObjectApplicationRow = {
   listingId?: string | number;
@@ -195,7 +203,7 @@ function ListingApplicationPreviewRow({
 
   if (!href) {
     return (
-      <div className="portal-inner-surface min-h-[118px] overflow-hidden bg-white">
+      <div className="portal-inner-surface min-h-[118px] overflow-hidden">
         {content}
       </div>
     );
@@ -203,7 +211,7 @@ function ListingApplicationPreviewRow({
 
   return (
     <Link
-      className="portal-inner-surface group block min-h-[118px] overflow-hidden bg-white transition hover:border-brand-100 hover:bg-brand-25/40"
+      className="portal-inner-surface group block min-h-[118px] overflow-hidden transition hover:border-brand-100 hover:bg-brand-25/40"
       href={href}
     >
       {content}
@@ -251,7 +259,7 @@ function LoadingList() {
     <div className="space-y-3">
       {Array.from({ length: 5 }).map((_, index) => (
         <div
-          className="portal-inner-surface min-h-[118px] overflow-hidden bg-white"
+          className="portal-inner-surface min-h-[118px] overflow-hidden"
           key={index}
         >
           <div className="grid min-h-[118px] grid-cols-[96px_minmax(0,1fr)] sm:grid-cols-[132px_minmax(0,1fr)]">
@@ -274,7 +282,10 @@ function LoadingList() {
   );
 }
 
-export default function AnalyticsApplicationsByObjectBlock() {
+export default function AnalyticsApplicationsByObjectBlock({
+  className,
+  size = "2x2",
+}: AnalyticsApplicationsByObjectBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -307,8 +318,9 @@ export default function AnalyticsApplicationsByObjectBlock() {
   return (
     <AnalyticsBlock
       action={<LimitToggle onChange={setLimit} value={limit} />}
+      className={className}
       contentClassName="overflow-hidden"
-      size="2x2"
+      size={size}
       title={localizedText(locale, "Ansökningar per annons", "Applications per listing")}
     >
       {authLoading || performanceQuery.isLoading ? (

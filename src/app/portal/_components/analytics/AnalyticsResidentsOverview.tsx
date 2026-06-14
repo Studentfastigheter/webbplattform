@@ -3,7 +3,10 @@
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { GraduationCap, MapPin } from "@/components/icons";
-import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import {
   ChartContainer,
   ChartTooltip,
@@ -44,6 +47,11 @@ type DistributionItem = {
   name: string;
   detail?: string;
   residents: number;
+};
+
+type AnalyticsResidentsOverviewProps = {
+  distributionSize?: AnalyticsBlockSize;
+  trendSize?: AnalyticsBlockSize;
 };
 
 const intervals: Interval[] = [
@@ -420,7 +428,10 @@ function DistributionSkeleton() {
   );
 }
 
-export default function AnalyticsResidentsOverview() {
+export default function AnalyticsResidentsOverview({
+  distributionSize = "2x2",
+  trendSize = "2x2",
+}: AnalyticsResidentsOverviewProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -456,7 +467,7 @@ export default function AnalyticsResidentsOverview() {
           <IntervalToggle onChange={setIntervalValue} value={intervalValue} />
         }
         description={localizedText(locale, "Nya boende grupperade per månad.", "New residents grouped by month.")}
-        size="2x2"
+        size={trendSize}
         title={localizedText(locale, "Boendetrend", "Resident trend")}
       >
         {loading ? (
@@ -470,7 +481,7 @@ export default function AnalyticsResidentsOverview() {
 
       <AnalyticsBlock
         description={localizedText(locale, "Totalt antal boende uppdelat på stad och skola.", "Total residents split by city and school.")}
-        size="2x2"
+        size={distributionSize}
         title={localizedText(locale, "Boende per stad och skola", "Residents by city and school")}
       >
         {loading ? (

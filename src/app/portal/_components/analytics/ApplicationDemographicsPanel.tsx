@@ -12,6 +12,10 @@ import { BadgeCheck, GraduationCap, WalletCards } from "@/components/icons";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
 import {
   Select,
@@ -37,6 +41,15 @@ type ChartDatum = {
   value: number;
   share: number;
   fill: string;
+};
+
+type ApplicationDemographicsPanelProps = {
+  className?: string;
+  from: Date;
+  listingId: string;
+  periodLabel?: string;
+  size?: AnalyticsBlockSize;
+  to: Date;
 };
 
 // Palette mirrors the portfolio analytics blocks so listing-level
@@ -303,15 +316,13 @@ function SummaryCard({
 }
 
 export default function ApplicationDemographicsPanel({
+  className,
   listingId,
   from,
   to,
-}: {
-  listingId: string;
-  from: Date;
-  to: Date;
-  periodLabel?: string;
-}) {
+  periodLabel,
+  size = "3x4",
+}: ApplicationDemographicsPanelProps) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -361,74 +372,96 @@ export default function ApplicationDemographicsPanel({
   const chartData = React.useMemo(() => toData(data, locale), [data, locale]);
   const total = totalApplications(data);
   const top = chartData[0];
+  const blockTitle = localizedText(locale, "Ansökningsdemografi", "Application demographics");
+  const blockDescription = periodLabel
+    ? localizedText(
+        locale,
+        `Ansökningar för vald annons ${periodLabel}, uppdelade efter kategori och utfall.`,
+        `Applications for the selected listing during ${periodLabel}, split by category and outcome.`
+      )
+    : localizedText(
+        locale,
+        "Ansökningar för vald annons uppdelade efter kategori och utfall.",
+        "Applications for the selected listing split by category and outcome."
+      );
+  const blockAction = (
+    <div className="grid max-w-full gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:justify-end">
+      <Input
+        aria-label={localizedText(locale, "Från", "From")}
+        className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
+        onChange={(event) => setFromValue(event.target.value)}
+        type="datetime-local"
+        value={fromValue}
+      />
+      <Input
+        aria-label={localizedText(locale, "Till", "To")}
+        className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
+        onChange={(event) => setToValue(event.target.value)}
+        type="datetime-local"
+        value={toValue}
+      />
+      <CategorySelect onChange={setCategory} value={category} />
+      <Select
+        onValueChange={(value) => setGotListing(value as GotListingFilter)}
+        value={gotListing}
+      >
+        <SelectTrigger className="h-9 w-full rounded-lg border-gray-200 bg-white text-sm sm:w-[170px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="border-gray-200 bg-white">
+          {(Object.keys(filterLabels) as GotListingFilter[]).map((filter) => (
+            <SelectItem key={filter} value={filter}>
+              {filterLabelFor(locale, filter)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   if (authLoading || applicationQuery.isLoading) {
     return (
-      <section className="portal-surface p-5">
-        <Skeleton className="h-6 w-52" />
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <AnalyticsBlock
+        action={blockAction}
+        className={className}
+        description={blockDescription}
+        size={size}
+        title={blockTitle}
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
           <Skeleton className="h-[240px] rounded-xl" />
           <Skeleton className="h-[240px] rounded-xl" />
           <Skeleton className="h-[240px] rounded-xl" />
         </div>
-      </section>
+      </AnalyticsBlock>
     );
   }
 
   if (error) {
     return (
-      <section className="rounded-2xl border border-error-500/20 bg-error-50 p-5 text-sm text-error-700">
-        {error}
-      </section>
+      <AnalyticsBlock
+        action={blockAction}
+        className={className}
+        description={blockDescription}
+        size={size}
+        title={blockTitle}
+      >
+        <div className="flex h-full min-h-[180px] items-center rounded-xl border border-error-500/20 bg-error-50 px-4 text-sm text-error-700">
+          {error}
+        </div>
+      </AnalyticsBlock>
     );
   }
 
   return (
-    <section className="portal-surface p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-gray-950">
-            {localizedText(locale, "Ansökningsdemografi", "Application demographics")}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {localizedText(locale, "Ansökningar för vald annons uppdelade efter kategori och utfall.", "Applications for the selected listing split by category and outcome.")}
-          </p>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:justify-end">
-          <Input
-            aria-label={localizedText(locale, "Från", "From")}
-            className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
-            onChange={(event) => setFromValue(event.target.value)}
-            type="datetime-local"
-            value={fromValue}
-          />
-          <Input
-            aria-label={localizedText(locale, "Till", "To")}
-            className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
-            onChange={(event) => setToValue(event.target.value)}
-            type="datetime-local"
-            value={toValue}
-          />
-          <CategorySelect onChange={setCategory} value={category} />
-          <Select
-            onValueChange={(value) => setGotListing(value as GotListingFilter)}
-            value={gotListing}
-          >
-            <SelectTrigger className="h-9 w-full rounded-lg border-gray-200 bg-white text-sm sm:w-[170px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border-gray-200 bg-white">
-              {(Object.keys(filterLabels) as GotListingFilter[]).map((filter) => (
-                <SelectItem key={filter} value={filter}>
-                  {filterLabelFor(locale, filter)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <AnalyticsBlock
+      action={blockAction}
+      className={className}
+      description={blockDescription}
+      size={size}
+      title={blockTitle}
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <SummaryCard
           icon={<BadgeCheck className="h-4 w-4" />}
           label={labelFor(locale, category)}
@@ -487,6 +520,6 @@ export default function ApplicationDemographicsPanel({
           </dl>
         </div>
       </div>
-    </section>
+    </AnalyticsBlock>
   );
 }

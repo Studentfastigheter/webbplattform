@@ -11,6 +11,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
@@ -45,6 +49,7 @@ type AnalyticsApplicationsTrendProps = {
   showSummary?: boolean;
   className?: string;
   chartClassName?: string;
+  size?: AnalyticsBlockSize;
 };
 
 const intervals: Interval[] = [
@@ -163,13 +168,12 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-export default function AnalyticsApplicationsTrend({
-  embedded = false,
+function AnalyticsApplicationsTrendContent({
   showHeader = true,
   showSummary = true,
   className,
   chartClassName,
-}: AnalyticsApplicationsTrendProps) {
+}: Omit<AnalyticsApplicationsTrendProps, "embedded" | "size">) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -225,14 +229,11 @@ export default function AnalyticsApplicationsTrend({
     (entry) => entry.comparisonApplications !== undefined
   );
   const loading = authLoading || trendQuery.isLoading;
-  const Root = embedded ? "div" : "section";
 
   return (
-    <Root
+    <div
       className={cn(
-        embedded
-          ? "flex h-full min-h-0 min-w-0 flex-col"
-          : "portal-surface flex min-w-0 flex-col overflow-hidden px-5 py-5 sm:px-6",
+        "flex h-full min-h-0 min-w-0 flex-col",
         className
       )}
     >
@@ -242,9 +243,6 @@ export default function AnalyticsApplicationsTrend({
             <h2 className="truncate text-sm font-semibold text-gray-800">
               {localizedText(locale, "Ansökningstrend", "Application trend")}
             </h2>
-            <p className="mt-1 max-w-[36rem] text-theme-xs text-gray-400">
-              {localizedText(locale, "Antal mottagna ansökningar per kalendermånad.", "Number of received applications per calendar month.")}
-            </p>
           </div>
 
           <ToggleGroup
@@ -295,9 +293,7 @@ export default function AnalyticsApplicationsTrend({
             <ChartContainer
               className={cn(
                 "aspect-auto w-full min-w-0",
-                embedded
-                  ? "h-full min-h-[180px]"
-                  : "h-[clamp(220px,32vw,310px)]",
+                "h-full min-h-[180px]",
                 chartClassName
               )}
               config={chartConfig}
@@ -307,7 +303,7 @@ export default function AnalyticsApplicationsTrend({
                 margin={{
                   bottom: 0,
                   left: 0,
-                  right: embedded ? 2 : 8,
+                  right: 2,
                   top: 14,
                 }}
               >
@@ -363,7 +359,7 @@ export default function AnalyticsApplicationsTrend({
                   tickFormatter={(value) => formatAxisValue(value, locale)}
                   tickLine={false}
                   tickMargin={8}
-                  width={embedded ? 34 : 44}
+                  width={34}
                 />
 
                 <ChartTooltip
@@ -413,6 +409,40 @@ export default function AnalyticsApplicationsTrend({
           ) : null}
         </div>
       )}
-    </Root>
+    </div>
+  );
+}
+
+export default function AnalyticsApplicationsTrend({
+  embedded = false,
+  showHeader = true,
+  showSummary = true,
+  className,
+  chartClassName,
+  size = "2x2",
+}: AnalyticsApplicationsTrendProps) {
+  if (embedded) {
+    return (
+      <AnalyticsApplicationsTrendContent
+        chartClassName={chartClassName}
+        className={className}
+        showHeader={showHeader}
+        showSummary={showSummary}
+      />
+    );
+  }
+
+  return (
+    <AnalyticsBlock
+      className={className}
+      contentClassName="overflow-hidden"
+      size={size}
+    >
+      <AnalyticsApplicationsTrendContent
+        chartClassName={chartClassName}
+        showHeader={showHeader}
+        showSummary={showSummary}
+      />
+    </AnalyticsBlock>
   );
 }

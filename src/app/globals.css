@@ -1004,9 +1004,7 @@ img, svg, video, canvas {
   border: 1px solid rgb(226 232 240 / 0.95);
   border-radius: 0.75rem;
   background: #fff;
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.04),
-    0 8px 22px rgb(16 24 40 / 0.03);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.035);
 }
 
 @utility portal-surface-hover {
@@ -1020,9 +1018,7 @@ img, svg, video, canvas {
   border: 1px solid rgb(226 232 240 / 0.95);
   border-radius: 0.75rem;
   background: #fff;
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.04),
-    0 8px 22px rgb(16 24 40 / 0.03);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.035);
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
@@ -1031,23 +1027,19 @@ img, svg, video, canvas {
 
 .portal-surface-hoverable:hover {
   border-color: rgb(209 213 219 / 0.95);
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.04),
-    0 12px 28px rgb(16 24 40 / 0.045);
+  box-shadow: 0 4px 10px rgb(16 24 40 / 0.045);
 }
 
 .portal-surface-hover:hover {
   border-color: rgb(209 213 219 / 0.95);
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.04),
-    0 12px 28px rgb(16 24 40 / 0.045);
+  box-shadow: 0 4px 10px rgb(16 24 40 / 0.045);
 }
 
 @utility portal-inner-surface {
-  border: 1px solid rgb(226 232 240 / 0.7);
-  border-radius: 0.625rem;
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(16 24 40 / 0.025);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 @utility portal-control {

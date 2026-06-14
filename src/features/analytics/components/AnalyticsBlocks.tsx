@@ -3,13 +3,13 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type AnalyticsBlockColumns = 1 | 2 | 3 | 4;
-type AnalyticsBlockRows = 1 | 2 | 3 | 4;
+export type AnalyticsBlockColumns = 1 | 2 | 3 | 4;
+export type AnalyticsBlockRows = 1 | 2 | 3 | 4;
 
 export type AnalyticsBlockSize =
   `${AnalyticsBlockRows}x${AnalyticsBlockColumns}`;
 
-type AnalyticsBlockContextValue = {
+export type AnalyticsBlockContextValue = {
   rows: AnalyticsBlockRows;
   columns: AnalyticsBlockColumns;
   size: AnalyticsBlockSize;
@@ -19,7 +19,7 @@ type AnalyticsGridProps = React.ComponentProps<"div"> & {
   rowHeightClassName?: string;
 };
 
-type AnalyticsBlockProps = Omit<React.ComponentProps<"section">, "title"> & {
+export type AnalyticsBlockProps = Omit<React.ComponentProps<"section">, "title"> & {
   size?: AnalyticsBlockSize;
   rowSpan?: AnalyticsBlockRows;
   colSpan?: AnalyticsBlockColumns;
@@ -151,7 +151,7 @@ export function AnalyticsBlock({
   const rows = rowSpan ?? parsedSize.rows;
   const columns = colSpan ?? parsedSize.columns;
   const resolvedSize = toSize(rows, columns);
-  const hasHeader = Boolean(title || description || action);
+  const hasHeader = Boolean(title || action);
 
   return (
     <AnalyticsBlockContext.Provider value={{ rows, columns, size: resolvedSize }}>
@@ -168,17 +168,12 @@ export function AnalyticsBlock({
         {...props}
       >
         {hasHeader ? (
-          <div className="flex min-h-[64px] min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-gray-100 px-5 py-4 sm:items-start sm:px-6">
+          <div className="flex min-h-[56px] min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-gray-100/80 px-5 py-3.5 sm:items-start sm:px-6">
             <div className="min-w-0 flex-1 basis-[180px]">
               {title ? (
                 <h2 className="text-[15px] font-semibold leading-6 text-gray-900">
                   {title}
                 </h2>
-              ) : null}
-              {description ? (
-                <p className="mt-1 line-clamp-2 text-theme-sm leading-5 text-gray-500">
-                  {description}
-                </p>
               ) : null}
             </div>
             {action ? <div className="max-w-full overflow-x-auto">{action}</div> : null}
@@ -187,7 +182,7 @@ export function AnalyticsBlock({
 
         <div
           className={cn(
-            "min-h-0 min-w-0 flex-1 bg-white",
+            "min-h-0 min-w-0 flex-1 bg-transparent",
             "p-5 sm:p-6",
             contentClassName
           )}

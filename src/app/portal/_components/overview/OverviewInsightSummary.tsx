@@ -11,7 +11,11 @@ import {
   TrendingUp,
 } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+  useAnalyticsBlock,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { useCompanyAnalyticsDashboard } from "@/features/companies/hooks/useCompanies";
 import type {
   AnalyticsCountBucket,
@@ -32,6 +36,11 @@ type InsightMetric = {
   detail: string;
   icon: React.ComponentType<{ className?: string }>;
   tone: "brand" | "sky" | "emerald" | "amber";
+};
+
+type OverviewInsightSummaryProps = {
+  className?: string;
+  size?: AnalyticsBlockSize;
 };
 
 const openApplicationStatusKeys = ["SUBMITTED", "UNDER_REVIEW", "OFFERED"];
@@ -261,8 +270,16 @@ function ListingRow({
 }
 
 function LoadingState() {
+  const block = useAnalyticsBlock();
+  const isWideBlock = (block?.columns ?? 2) >= 3;
+
   return (
-    <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+    <div
+      className={cn(
+        "grid h-full min-h-0 gap-4",
+        isWideBlock ? "lg:grid-cols-[1.1fr_0.9fr]" : "grid-cols-1"
+      )}
+    >
       <div className="grid gap-3 sm:grid-cols-2">
         {Array.from({ length: 4 }).map((_, index) => (
           <div className="portal-inner-surface px-3 py-3" key={index}>
@@ -294,6 +311,8 @@ function InsightContent({
   data: CompanyPortalAnalyticsDashboard;
   locale: Locale;
 }) {
+  const block = useAnalyticsBlock();
+  const isWideBlock = (block?.columns ?? 2) >= 3;
   const metrics = buildMetrics(data, locale);
   const topListings = data.topListings.slice(0, 4);
   const maxApplications = Math.max(
@@ -304,8 +323,13 @@ function InsightContent({
   const totalListings = sumBuckets(data.listingStatuses);
 
   return (
-    <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-      <div className="grid min-h-0 gap-3 sm:grid-cols-2">
+    <div
+      className={cn(
+        "grid h-full min-h-0 gap-4",
+        isWideBlock ? "lg:grid-cols-[1.1fr_0.9fr]" : "grid-cols-1"
+      )}
+    >
+      <div className="grid min-h-0 gap-3 min-[520px]:grid-cols-2">
         {metrics.map((metric) => (
           <MetricTile key={metric.label} metric={metric} />
         ))}
@@ -364,7 +388,10 @@ function InsightContent({
   );
 }
 
-export default function OverviewInsightSummary() {
+export default function OverviewInsightSummary({
+  className,
+  size = "2x4",
+}: OverviewInsightSummaryProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -395,9 +422,10 @@ export default function OverviewInsightSummary() {
 
   return (
     <AnalyticsBlock
+      className={className}
       contentClassName="overflow-hidden"
       description={localizedText(locale, "Senaste 12 m\u00e5naderna", "Last 12 months")}
-      size="2x4"
+      size={size}
       title={localizedText(locale, "Aff\u00e4rsl\u00e4ge", "Business position")}
     >
       {authLoading || dashboardQuery.isLoading ? (

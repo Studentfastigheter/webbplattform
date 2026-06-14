@@ -34,10 +34,10 @@ import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreview
 import {
   AnalyticsBlock,
   AnalyticsGrid,
+  type AnalyticsBlockSize,
 } from "@/features/analytics/components/AnalyticsBlocks";
 import {
   PORTAL_BAR_COLOR,
-  PortalBarChartCard,
   PortalBarChartSkeleton,
   PortalBarChartState,
   PortalVerticalBarChart,
@@ -508,7 +508,7 @@ function RequirementProfileCard({
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {profile.requiredDocuments.map((document, index) => (
                   <div
-                    className="portal-inner-surface bg-white px-4 py-3"
+                    className="portal-inner-surface px-4 py-3"
                     key={`${document.caption ?? "document"}-${index}`}
                   >
                     <p className="text-sm font-medium text-gray-900">
@@ -769,18 +769,13 @@ function applicationStatisticsToTrendPoints(
     .sort((left, right) => left.timestamp.getTime() - right.timestamp.getTime());
 }
 
-/**
- * Standalone trend card for the analytics tab. Renders an inline bar chart
- * using #16a34a (the analytics page's primary green) so it visually matches
- * the demographic charts. Height is fixed via the chart container, not
- * driven by AnalyticsGrid row-spans.
- */
 function ApplicationTrendCard({
   data,
   error,
   loading,
   locale,
   periodLabel,
+  size = "2x4",
   total,
 }: {
   data: TrendPoint[];
@@ -788,6 +783,7 @@ function ApplicationTrendCard({
   loading: boolean;
   locale: Locale;
   periodLabel: string;
+  size?: AnalyticsBlockSize;
   total: number;
 }) {
   const chartData = useMemo(
@@ -809,7 +805,7 @@ function ApplicationTrendCard({
   const hasData = chartData.length > 0;
 
   return (
-    <PortalBarChartCard
+    <AnalyticsBlock
       action={
         <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
           <span
@@ -829,6 +825,8 @@ function ApplicationTrendCard({
         `Mottagna ansökningar ${periodLabel}.`,
         `Received applications during ${periodLabel}.`
       )}
+      contentClassName="overflow-hidden"
+      size={size}
       title={localizedText(locale, "Ansökningstrend", "Application trend")}
     >
       {loading ? (
@@ -861,7 +859,7 @@ function ApplicationTrendCard({
           yAxisWidth={34}
         />
       )}
-    </PortalBarChartCard>
+    </AnalyticsBlock>
   );
 }
 
@@ -1359,13 +1357,6 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                 <h2 className="text-lg font-semibold text-gray-950">
                   {localizedText(locale, "Annonsanalys", "Listing analytics")}
                 </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  {localizedText(
-                    locale,
-                    "Översikt av ansökningar, visningar och demografi för denna annons.",
-                    "Overview of applications, views and demographics for this listing."
-                  )}
-                </p>
               </div>
               <ApplicationIntervalToggle
                 onChange={setApplicationInterval}
@@ -1393,34 +1384,32 @@ export default function AnnonsOverview({ id }: AnnonsOverviewProps) {
                   ))}
                 </div>
               </AnalyticsBlock>
+
+              <ApplicationTrendCard
+                data={applicationTrendPoints}
+                error={applicationTrendError}
+                loading={timedApplicationsQuery.isLoading}
+                locale={locale}
+                periodLabel={localizedAnalyticsInterval.detailLabel}
+                size="2x4"
+                total={periodApplicationsCount}
+              />
+
+              <ListingDemographicsPanel
+                from={analyticsRange.from}
+                listingId={listing.id}
+                periodLabel={localizedAnalyticsInterval.detailLabel}
+                size="4x4"
+                to={analyticsRange.to}
+              />
+              <ApplicationDemographicsPanel
+                from={analyticsRange.from}
+                listingId={listing.id}
+                periodLabel={localizedAnalyticsInterval.detailLabel}
+                size="3x4"
+                to={analyticsRange.to}
+              />
             </AnalyticsGrid>
-
-            {/* Trend lives outside the AnalyticsGrid because the grid's
-                auto-row sizing pairs row-spans with column width, which
-                makes a full-width 2-row chart taller than the screen.
-                A standalone card with a fixed chart height keeps the
-                proportions sane. */}
-            <ApplicationTrendCard
-              data={applicationTrendPoints}
-              error={applicationTrendError}
-              loading={timedApplicationsQuery.isLoading}
-              locale={locale}
-              periodLabel={localizedAnalyticsInterval.detailLabel}
-              total={periodApplicationsCount}
-            />
-
-            <ListingDemographicsPanel
-              from={analyticsRange.from}
-              listingId={listing.id}
-              periodLabel={localizedAnalyticsInterval.detailLabel}
-              to={analyticsRange.to}
-            />
-            <ApplicationDemographicsPanel
-              from={analyticsRange.from}
-              listingId={listing.id}
-              periodLabel={localizedAnalyticsInterval.detailLabel}
-              to={analyticsRange.to}
-            />
           </div>
         </TabsContent>
       </Tabs>

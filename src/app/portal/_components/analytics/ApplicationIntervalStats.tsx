@@ -2,7 +2,10 @@
 
 import * as React from "react";
 import { FileUser } from "@/components/icons";
-import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +23,11 @@ export type ApplicationInterval = {
   label: string;
   detailLabel: string;
   subtract: (date: Date) => Date;
+};
+
+type ApplicationIntervalStatsProps = {
+  className?: string;
+  size?: AnalyticsBlockSize;
 };
 
 export const applicationIntervals: ApplicationInterval[] = [
@@ -167,7 +175,10 @@ export function ApplicationIntervalToggle({
   );
 }
 
-export default function ApplicationIntervalStats() {
+export default function ApplicationIntervalStats({
+  className,
+  size = "2x2",
+}: ApplicationIntervalStatsProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -206,7 +217,8 @@ export default function ApplicationIntervalStats() {
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setInterval} value={interval} />}
-      size="2x2"
+      className={className}
+      size={size}
       title={localizedText(locale, "Ansökningar totalt", "Total applications")}
     >
       {authLoading || timedApplicationsQuery.isLoading ? (

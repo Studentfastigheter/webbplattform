@@ -11,6 +11,10 @@ import {
 import { Heart, MousePointerClick, Smartphone } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
 import { useListingByAllCategoriesDemography } from "@/features/analytics/hooks/useDemographics";
 import {
@@ -27,6 +31,15 @@ type ChartDatum = {
   value: number;
   share: number;
   fill: string;
+};
+
+type ListingDemographicsPanelProps = {
+  className?: string;
+  from?: Date;
+  listingId: string;
+  periodLabel?: string;
+  size?: AnalyticsBlockSize;
+  to?: Date;
 };
 
 // Palette mirrors the one used in the portfolio analytics blocks
@@ -281,16 +294,13 @@ function StatCard({
 }
 
 export default function ListingDemographicsPanel({
+  className,
   listingId,
   from,
   to,
   periodLabel = "senaste 90 dagarna",
-}: {
-  listingId: string;
-  from?: Date;
-  to?: Date;
-  periodLabel?: string;
-}) {
+  size = "4x4",
+}: ListingDemographicsPanelProps) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -326,41 +336,56 @@ export default function ListingDemographicsPanel({
     periodLabel === "senaste 90 dagarna"
       ? localizedText(locale, "senaste 90 dagarna", "the last 90 days")
       : periodLabel;
+  const blockTitle = localizedText(
+    locale,
+    `Demografi ${localizedPeriodLabel}`,
+    `Demographics ${localizedPeriodLabel}`
+  );
+  const blockDescription = localizedText(
+    locale,
+    "Annonsens visningar uppdelade på beteende, enhet, favorit och stad.",
+    "Listing views split by behavior, device, favorite status and city."
+  );
 
   if (authLoading || demographyQuery.isLoading) {
     return (
-      <section className="portal-surface p-5">
-        <Skeleton className="h-6 w-44" />
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <AnalyticsBlock
+        className={className}
+        description={blockDescription}
+        size={size}
+        title={blockTitle}
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-[240px] rounded-xl" />
           <Skeleton className="h-[240px] rounded-xl" />
         </div>
-      </section>
+      </AnalyticsBlock>
     );
   }
 
   if (error) {
     return (
-      <section className="rounded-2xl border border-error-500/20 bg-error-50 p-5 text-sm text-error-700">
-        {error}
-      </section>
+      <AnalyticsBlock
+        className={className}
+        description={blockDescription}
+        size={size}
+        title={blockTitle}
+      >
+        <div className="flex h-full min-h-[180px] items-center rounded-xl border border-error-500/20 bg-error-50 px-4 text-sm text-error-700">
+          {error}
+        </div>
+      </AnalyticsBlock>
     );
   }
 
   return (
-    <section className="portal-surface p-5">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-gray-950">
-            {localizedText(locale, `Demografi ${localizedPeriodLabel}`, `Demographics ${localizedPeriodLabel}`)}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {localizedText(locale, "Annonsens visningar uppdelade på beteende, enhet, favorit och stad.", "Listing views split by behavior, device, favorite status and city.")}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <AnalyticsBlock
+      className={className}
+      description={blockDescription}
+      size={size}
+      title={blockTitle}
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard
           data={data.VIEW_TYPE}
           icon={<MousePointerClick className="h-4 w-4" />}
@@ -416,7 +441,7 @@ export default function ListingDemographicsPanel({
           title={localizedText(locale, "Kön", "Gender")}
         />
       </div>
-    </section>
+    </AnalyticsBlock>
   );
 }
 

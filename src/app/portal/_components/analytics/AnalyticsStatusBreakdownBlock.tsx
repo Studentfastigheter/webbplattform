@@ -22,6 +22,7 @@ type StatusSectionConfig = {
 };
 
 type AnalyticsStatusBreakdownBlockProps = {
+  className?: string;
   size?: AnalyticsBlockSize;
 };
 
@@ -153,6 +154,7 @@ function StatusSection({
 }
 
 export default function AnalyticsStatusBreakdownBlock({
+  className,
   size = "2x2",
 }: AnalyticsStatusBreakdownBlockProps) {
   const { locale } = useI18n();
@@ -204,6 +206,7 @@ export default function AnalyticsStatusBreakdownBlock({
 
   return (
     <AnalyticsBlock
+      className={className}
       contentClassName="overflow-hidden"
       description={localizedText(locale, "Senaste 12 m\u00e5naderna", "Last 12 months")}
       size={size}

@@ -9,7 +9,10 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { AnalyticsBlock } from "@/features/analytics/components/AnalyticsBlocks";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import {
   PortalBarLineChart,
   PortalHorizontalBarChart,
@@ -755,15 +758,24 @@ function ListingPortfolioSummary({
 }
 
 type CompanyDemographyBlockProps = {
+  className?: string;
   deferUntilSelection?: boolean;
   description?: React.ReactNode;
+  size?: AnalyticsBlockSize;
   title?: React.ReactNode;
   useCompaniesQuery?: boolean;
 };
 
+type PortalAnalyticsBlockProps = {
+  className?: string;
+  size?: AnalyticsBlockSize;
+};
+
 export function CompanyDemographyBlock({
+  className,
   deferUntilSelection = false,
   description,
+  size = "2x2",
   title,
   useCompaniesQuery = false,
 }: CompanyDemographyBlockProps = {}) {
@@ -840,7 +852,8 @@ export function CompanyDemographyBlock({
           <ApplicationIntervalToggle onChange={handleRangeChange} value={range} />
         </div>
       }
-      size="2x2"
+      className={className}
+      size={size}
       title={title ?? localizedText(locale, "Företagsprofil", "Company profile")}
       description={description ?? localizedText(locale, "Besökare uppdelade efter vald kategori.", "Visitors split by the selected category.")}
     >
@@ -859,7 +872,10 @@ export function CompanyDemographyBlock({
   );
 }
 
-export function CompanyDemographyBatchBlock() {
+export function CompanyDemographyBatchBlock({
+  className,
+  size = "2x2",
+}: PortalAnalyticsBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -898,7 +914,8 @@ export function CompanyDemographyBatchBlock() {
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setRange} value={range} />}
-      size="2x2"
+      className={className}
+      size={size}
       title={localizedText(locale, "Demografi per kategori", "Demographics by category")}
       description={localizedText(locale, "Samlad bild av företagets besökare.", "Overview of the company's visitors.")}
     >
@@ -913,7 +930,10 @@ export function CompanyDemographyBatchBlock() {
   );
 }
 
-export function ListingDemographyBatchBlock() {
+export function ListingDemographyBatchBlock({
+  className,
+  size = "4x4",
+}: PortalAnalyticsBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -958,8 +978,9 @@ export function ListingDemographyBatchBlock() {
   return (
     <AnalyticsBlock
       action={<ApplicationIntervalToggle onChange={setRange} value={range} />}
+      className={className}
       contentClassName="overflow-hidden p-4"
-      size="4x4"
+      size={size}
       title={localizedText(locale, "Annonsportfölj", "Listing portfolio")}
       description={localizedText(locale, "Summerad demografi för alla företagets annonser.", "Aggregated demographics for all company listings.")}
     >
@@ -976,7 +997,10 @@ export function ListingDemographyBatchBlock() {
   );
 }
 
-export function ApplicationDemographyPortfolioBlock() {
+export function ApplicationDemographyPortfolioBlock({
+  className,
+  size = "2x4",
+}: PortalAnalyticsBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -1133,8 +1157,9 @@ export function ApplicationDemographyPortfolioBlock() {
           </Select>
         </div>
       }
+      className={className}
       contentClassName="overflow-hidden p-3 pt-1"
-      size="2x4"
+      size={size}
       title={localizedText(locale, "Ansökningsdemografi", "Application demographics")}
       description={localizedText(locale, "Ansökningsstatistik uppdelad per annons och vald kategori.", "Application statistics split by listing and selected category.")}
     >
@@ -1181,7 +1206,10 @@ export function ApplicationDemographyPortfolioBlock() {
   );
 }
 
-export function ListingDemographyDrilldownBlock() {
+export function ListingDemographyDrilldownBlock({
+  className,
+  size = "2x2",
+}: PortalAnalyticsBlockProps = {}) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -1253,7 +1281,8 @@ export function ListingDemographyDrilldownBlock() {
           <ApplicationIntervalToggle onChange={setRange} value={range} />
         </div>
       }
-      size="2x2"
+      className={className}
+      size={size}
       title={localizedText(locale, "Annonsdetalj", "Listing detail")}
       description={localizedText(locale, "Demografi för vald annons och period.", "Demographics for the selected listing and period.")}
     >

@@ -24,11 +24,9 @@ export default function PortalOverview() {
       />
 
       <AnalyticsGrid>
-        <OverviewInsightSummary />
+        <AnalyticsGeneralStats size="1x1" />
 
-        <div className="sm:col-span-2 xl:col-span-4">
-          <AnalyticsGeneralStats />
-        </div>
+        <OverviewInsightSummary size="2x4" />
 
         <OverviewEngagementTrend size="3x4" />
         <AnalyticsStatusBreakdownBlock size="2x2" />

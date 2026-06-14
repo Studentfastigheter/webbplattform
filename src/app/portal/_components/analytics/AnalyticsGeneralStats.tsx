@@ -20,6 +20,10 @@ import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
 import { cn } from "@/lib/utils";
+import {
+  AnalyticsBlock,
+  type AnalyticsBlockSize,
+} from "@/features/analytics/components/AnalyticsBlocks";
 import { useCompanyGeneralAnalytics } from "@/features/companies/hooks/useCompanies";
 import {
   type AnalyticalQuantity,
@@ -45,6 +49,12 @@ type MetricItem = {
   change: number | null;
   icon: React.ComponentType<{ className?: string }>;
   tone: MetricTone;
+};
+
+type AnalyticsGeneralStatsProps = {
+  className?: string;
+  size?: AnalyticsBlockSize;
+  variant?: AnalyticsGeneralStatsVariant;
 };
 
 const metrics: MetricConfig[] = [
@@ -327,11 +337,83 @@ function TrendBadge({ change, locale }: { change: number | null; locale: Locale 
   );
 }
 
-export default function AnalyticsGeneralStats({
-  variant = "overview",
+function MetricSkeletonCard({
+  className,
+  size,
 }: {
-  variant?: AnalyticsGeneralStatsVariant;
+  className?: string;
+  size: AnalyticsBlockSize;
 }) {
+  return (
+    <AnalyticsBlock
+      className={className}
+      contentClassName="flex min-h-[124px] flex-col justify-between p-4 sm:p-5"
+      size={size}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+        <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+      </div>
+      <Skeleton className="h-6 w-16 rounded-full" />
+    </AnalyticsBlock>
+  );
+}
+
+function MetricStatCard({
+  className,
+  item,
+  locale,
+  size,
+}: {
+  className?: string;
+  item: MetricItem;
+  locale: Locale;
+  size: AnalyticsBlockSize;
+}) {
+  const Icon = item.icon;
+  const tone = metricToneClass[item.tone];
+
+  return (
+    <AnalyticsBlock
+      className={cn(className, tone.tile)}
+      contentClassName="flex min-h-[124px] flex-col justify-between p-4 sm:p-5"
+      size={size}
+    >
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-theme-sm font-medium text-gray-500">
+            {item.label}
+          </p>
+          <p className="mt-2 truncate text-2xl font-bold leading-8 tracking-normal text-gray-900 tabular-nums">
+            {formatMetricValue(item, locale)}
+          </p>
+        </div>
+
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
+            tone.icon
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <TrendBadge change={item.change} locale={locale} />
+      </div>
+    </AnalyticsBlock>
+  );
+}
+
+export default function AnalyticsGeneralStats({
+  className,
+  size = "1x1",
+  variant = "overview",
+}: AnalyticsGeneralStatsProps) {
   const { locale } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const companyId = getActiveCompanyId(user);
@@ -357,77 +439,46 @@ export default function AnalyticsGeneralStats({
             )
         : null;
   const skeletonCount = variant === "analytics" ? 6 : metrics.length;
-  const gridClassName =
-    variant === "analytics"
-      ? "grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3"
-      : "grid h-full min-w-0 grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-4";
 
   if (authLoading || generalAnalyticsQuery.isLoading) {
     return (
-      <div className={gridClassName}>
+      <>
         {Array.from({ length: skeletonCount }).map((_, index) => (
-          <div
-            className="portal-surface relative min-h-[116px] min-w-0 overflow-hidden p-5"
-            key={index}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
-              <Skeleton className="h-6 w-14 rounded-full" />
-            </div>
-            <div className="mt-4 space-y-2">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-7 w-16" />
-            </div>
-          </div>
+          <MetricSkeletonCard
+            className={className}
+            key={`general-stats-skeleton-${index}`}
+            size={size}
+          />
         ))}
-      </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-full items-center rounded-md border border-error-500/20 bg-error-50 px-4 text-theme-sm text-error-700">
-        {error}
-      </div>
+      <AnalyticsBlock
+        className={cn(className, "border-error-500/20 bg-error-50")}
+        contentClassName="flex min-h-[124px] items-center p-4 sm:p-5"
+        size={size}
+      >
+        <p className="text-theme-sm font-medium text-error-700">{error}</p>
+      </AnalyticsBlock>
     );
   }
 
   return (
-    <div className={gridClassName}>
+    <>
       {items.map((item) => {
-        const Icon = item.icon;
-        const tone = metricToneClass[item.tone];
-
         return (
-          <div
-            className={cn(
-              "portal-surface portal-surface-hover min-h-[120px] min-w-0 p-5",
-              tone.tile
-            )}
+          <MetricStatCard
+            className={className}
+            item={item}
             key={item.label}
-          >
-            <div className="flex min-w-0 items-start justify-between gap-3">
-              <div
-                className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
-                  tone.icon
-                )}
-              >
-                <Icon className="h-5 w-5" />
-              </div>
-
-              <TrendBadge change={item.change} locale={locale} />
-            </div>
-
-            <p className="mt-4 truncate text-theme-sm font-medium text-gray-500">
-              {item.label}
-            </p>
-            <p className="mt-1 truncate text-2xl font-bold leading-8 tracking-normal text-gray-800 tabular-nums">
-              {formatMetricValue(item, locale)}
-            </p>
-          </div>
+            locale={locale}
+            size={size}
+          />
         );
       })}
-    </div>
+    </>
   );
 }

@@ -29,6 +29,7 @@ type FunnelStep = {
 };
 
 type AnalyticsFunnelBlockProps = {
+  className?: string;
   size?: AnalyticsBlockSize;
 };
 
@@ -190,6 +191,7 @@ function FunnelContent({
 }
 
 export default function AnalyticsFunnelBlock({
+  className,
   size = "2x2",
 }: AnalyticsFunnelBlockProps) {
   const { locale } = useI18n();
@@ -220,6 +222,7 @@ export default function AnalyticsFunnelBlock({
 
   return (
     <AnalyticsBlock
+      className={className}
       contentClassName="overflow-hidden"
       description={localizedText(locale, "Senaste 12 m\u00e5naderna", "Last 12 months")}
       size={size}
