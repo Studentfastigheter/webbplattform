@@ -56,5 +56,19 @@ export function getBusinessTestimonials(locale: Locale): BusinessTestimonial[] {
       companyLogoSrc: "/partners/GFS.svg",
       companyLogoAlt: localizedText(locale, "Göteborgs förenade studentkårer logotyp", "Gothenburg's united student unions logo"),
     },
+    {
+      quote: localizedText(
+        locale,
+        "Ett tryggt studentboende är en av grundstenarna för en lyckad studietid, därför var Campuslyan ett självklart val för oss. Campuslyan samlar seriösa aktörer och hjälper studenten hitta hem!",
+        "Safe student housing is one of the foundations of a successful study period, which made Campuslyan an obvious choice for us. Campuslyan brings together serious actors and helps students find a home!",
+      ),
+      authorName: "Frida Karlsson Blandlund",
+      title: localizedText(locale, "VD", "CEO"),
+      companyName: "Campus Roslagen",
+      portraitSrc: "/testimonials/frida_karlsson.jpg",
+      portraitAlt: "Frida Karlsson Blandlund",
+      companyLogoSrc: "/partners/CampusRoslagen.svg",
+      companyLogoAlt: localizedText(locale, "Campus Roslagen logotyp", "Campus Roslagen logo"),
+    },
   ];
 }
