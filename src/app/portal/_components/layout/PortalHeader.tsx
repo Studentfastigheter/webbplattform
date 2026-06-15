@@ -17,6 +17,7 @@ import { useCurrentCompanyPermission } from "@/features/companies/hooks/useCurre
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { getActiveCompanySummary } from "@/lib/company-access";
+import type { User } from "@/types";
 import {
   getDefaultCompanyPortalPath,
   isCompanyPortalPathAllowed,
@@ -25,6 +26,21 @@ import { dashboardRelPath } from "../../_statics/variables";
 import { useCompanyPortal } from "./CompanyPortalContext";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
+function getPortalUserDisplayName(user: User | null) {
+  const fullName = [user?.firstName, user?.surname]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    fullName ||
+    user?.fullName?.trim() ||
+    user?.displayName?.trim() ||
+    user?.email?.trim() ||
+    "Account"
+  );
+}
+
 export default function PortalHeader() {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = usePortalSidebar();
   const { user, logout } = useAuth();
@@ -32,13 +48,7 @@ export default function PortalHeader() {
   const permission = useCurrentCompanyPermission();
   const portal = useCompanyPortal();
   const activeCompany = getActiveCompanySummary(user);
-  const displayName =
-    portal.company?.name ||
-    activeCompany?.name ||
-    user?.companyName ||
-    user?.displayName ||
-    user?.email ||
-    "Account";
+  const displayName = getPortalUserDisplayName(user);
   const email = user?.email || "";
   const permissionLabel = permission.isLoading
     ? localizedText(locale, "Hämtar...", "Loading...")
