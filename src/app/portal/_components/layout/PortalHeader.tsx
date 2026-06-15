@@ -26,17 +26,49 @@ import { dashboardRelPath } from "../../_statics/variables";
 import { useCompanyPortal } from "./CompanyPortalContext";
 import { usePortalSidebar } from "./PortalSidebarContext";
 
-function getPortalUserDisplayName(user: User | null) {
-  const fullName = [user?.firstName, user?.surname]
+type PortalCompanyUserNameSource = {
+  firstName?: string | null;
+  surname?: string | null;
+  email?: string | null;
+};
+
+function joinName(...parts: Array<string | null | undefined>) {
+  return parts
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(" ");
+}
+
+function normalizeName(value: string | null | undefined) {
+  return value?.trim().toLocaleLowerCase("sv-SE") ?? "";
+}
+
+function isCompanyName(value: string | null | undefined, companyNames: string[]) {
+  const normalized = normalizeName(value);
+
+  return Boolean(
+    normalized &&
+      companyNames.some((companyName) => normalizeName(companyName) === normalized)
+  );
+}
+
+function getPortalUserDisplayName(
+  user: User | null,
+  companyUser: PortalCompanyUserNameSource | null | undefined,
+  companyNames: string[]
+) {
+  const companyUserName = joinName(companyUser?.firstName, companyUser?.surname);
+  const authUserName = joinName(user?.firstName, user?.surname);
+  const fullName = user?.fullName?.trim();
+  const displayName = user?.displayName?.trim();
+  const email = companyUser?.email?.trim() || user?.email?.trim();
 
   return (
-    fullName ||
-    user?.fullName?.trim() ||
-    user?.displayName?.trim() ||
-    user?.email?.trim() ||
+    companyUserName ||
+    authUserName ||
+    (!isCompanyName(fullName, companyNames) ? fullName : "") ||
+    (!isCompanyName(displayName, companyNames) ? displayName : "") ||
+    email ||
     "Account"
   );
 }
@@ -48,8 +80,17 @@ export default function PortalHeader() {
   const permission = useCurrentCompanyPermission();
   const portal = useCompanyPortal();
   const activeCompany = getActiveCompanySummary(user);
-  const displayName = getPortalUserDisplayName(user);
-  const email = user?.email || "";
+  const companyNames = [
+    activeCompany?.name,
+    portal.company?.name,
+    user?.companyName,
+  ].filter((name): name is string => Boolean(name?.trim()));
+  const displayName = getPortalUserDisplayName(
+    user,
+    permission.currentCompanyUser,
+    companyNames
+  );
+  const email = permission.currentCompanyUser?.email?.trim() || user?.email || "";
   const permissionLabel = permission.isLoading
     ? localizedText(locale, "Hämtar...", "Loading...")
     : permission.label || localizedText(locale, "Okänd behörighet", "Unknown permission");

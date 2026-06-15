@@ -92,6 +92,7 @@ export function useCurrentCompanyPermission() {
     getCompanyRoleAccessLevel(rootRole);
 
   return {
+    currentCompanyUser,
     roleName,
     label: roleName ? getCompanyRoleDisplayName(roleName, locale) : "",
     description,
