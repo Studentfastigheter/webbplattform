@@ -604,14 +604,15 @@ export const APP_ICON_OPTIONS: AppIconOption[] = createIconOptions();
 const ICON_OPTION_BY_KEY = (() => {
   const map = new Map<string, AppIconOption>();
 
+  const setIfMissing = (key: string, option: AppIconOption) => {
+    const normalizedKey = normalizeIconName(key);
+    if (normalizedKey && !map.has(normalizedKey)) {
+      map.set(normalizedKey, option);
+    }
+  };
+
   APP_ICON_OPTIONS.forEach((option) => {
-    [
-      option.name,
-      option.exportName,
-      option.label,
-      ...option.keywords,
-      option.exportName.replace(/Icon$/, ""),
-    ].forEach((key) => {
+    [option.name, option.exportName, option.exportName.replace(/Icon$/, "")].forEach((key) => {
       const normalizedKey = normalizeIconName(key);
       if (normalizedKey) {
         map.set(normalizedKey, option);
@@ -619,10 +620,14 @@ const ICON_OPTION_BY_KEY = (() => {
     });
   });
 
+  APP_ICON_OPTIONS.forEach((option) => {
+    [option.label, ...option.keywords].forEach((key) => setIfMissing(key, option));
+  });
+
   Object.entries(ICON_ALIASES).forEach(([alias, target]) => {
     const targetOption = map.get(normalizeIconName(target));
     if (targetOption) {
-      map.set(normalizeIconName(alias), targetOption);
+      setIfMissing(alias, targetOption);
     }
   });
 
@@ -671,4 +676,3 @@ export function TagIcon({
   const Icon = getAppIconComponent(name);
   return Icon ? <Icon className={className} {...props} /> : <>{fallback}</>;
 }
-

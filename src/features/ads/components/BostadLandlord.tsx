@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { RichTextParagraph } from "@/components/ui/RichText";
 import Tag from "@/components/ui/Tag";
@@ -49,12 +48,10 @@ export default function BostadLandlord({ advertiser }: Props) {
             <div className="flex min-w-0 items-center gap-3">
               <div className="relative h-24 w-28 shrink-0 overflow-hidden sm:w-32">
                 {advertiser.logoUrl ? (
-                  <Image
+                  <img
                     src={advertiser.logoUrl}
                     alt={advertiser.displayName}
-                    fill
-                    sizes="160px"
-                    className="object-contain object-left"
+                    className="block h-full w-full object-contain object-left"
                   />
                 ) : (
                   <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-50 text-2xl font-semibold text-gray-300">
