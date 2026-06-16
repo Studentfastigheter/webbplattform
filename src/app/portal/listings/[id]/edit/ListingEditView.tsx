@@ -90,8 +90,22 @@ function normalizeTagValue(value: string | ListingTagDTO) {
     .trim();
 }
 
+function normalizeTagIdentifier(value: string | ListingTagDTO) {
+  return (typeof value === "string" ? value : value.tagKey || value.displayName || "")
+    .normalize("NFC")
+    .trim();
+}
+
 function normalizeTagKey(value: string | ListingTagDTO) {
-  return normalizeTagValue(value).toLocaleLowerCase("sv-SE");
+  return normalizeTagIdentifier(value).toLocaleLowerCase("sv-SE");
+}
+
+function getTagSelectionKeys(value: string | ListingTagDTO) {
+  const keys = [normalizeTagIdentifier(value), normalizeTagValue(value)]
+    .map((tag) => tag.toLocaleLowerCase("sv-SE"))
+    .filter(Boolean);
+
+  return Array.from(new Set(keys));
 }
 
 function normalizeTagList(tags: Array<string | ListingTagDTO> | undefined) {
@@ -99,7 +113,7 @@ function normalizeTagList(tags: Array<string | ListingTagDTO> | undefined) {
   const normalizedTags: string[] = [];
 
   (tags ?? []).forEach((tag) => {
-    const normalizedTag = normalizeTagValue(tag);
+    const normalizedTag = normalizeTagIdentifier(tag);
     const key = normalizeTagKey(normalizedTag);
 
     if (!normalizedTag || seen.has(key)) {
@@ -118,10 +132,11 @@ function getSelectableTags(tags: ListingTagDTO[]) {
   const selectableTags: ListingTagDTO[] = [];
 
   tags.forEach((tag) => {
-    const label = normalizeTagValue(tag.displayName);
-    const key = normalizeTagKey(label);
+    const label = normalizeTagValue(tag);
+    const identifier = normalizeTagIdentifier(tag);
+    const key = normalizeTagKey(identifier);
 
-    if (!label || seen.has(key)) {
+    if (!label || !identifier || seen.has(key)) {
       return;
     }
 
@@ -134,7 +149,7 @@ function getSelectableTags(tags: ListingTagDTO[]) {
 
 function isTagSelected(selectedTags: string[], tag: ListingTagDTO) {
   const selectedKeys = new Set(selectedTags.map(normalizeTagKey));
-  return selectedKeys.has(normalizeTagKey(tag.displayName));
+  return getTagSelectionKeys(tag).some((key) => selectedKeys.has(key));
 }
 
 function areStringArraysEqual(left: string[] | undefined, right: string[] | undefined) {
@@ -165,15 +180,32 @@ function getEndpointTagsFromSelection(
   selectedTags: Array<string | ListingTagDTO> | undefined,
   availableTags: ListingTagDTO[]
 ) {
-  const selectedKeys = new Set(normalizeTagList(selectedTags).map(normalizeTagKey));
+  const selectedKeys = new Set(
+    (selectedTags ?? []).flatMap((tag) => getTagSelectionKeys(tag))
+  );
 
   if (availableTags.length === 0) {
     return normalizeTagList(selectedTags);
   }
 
-  return availableTags
-    .map((tag) => normalizeTagValue(tag.displayName))
-    .filter((tag) => tag && selectedKeys.has(normalizeTagKey(tag)));
+  const endpointTags: string[] = [];
+  const seen = new Set<string>();
+
+  availableTags.forEach((tag) => {
+    const endpointTag = normalizeTagIdentifier(tag);
+    const endpointKey = normalizeTagKey(endpointTag);
+
+    if (
+      endpointTag &&
+      !seen.has(endpointKey) &&
+      getTagSelectionKeys(tag).some((key) => selectedKeys.has(key))
+    ) {
+      seen.add(endpointKey);
+      endpointTags.push(endpointTag);
+    }
+  });
+
+  return endpointTags;
 }
 
 function getEditableSnapshot(
@@ -334,14 +366,19 @@ function EditableListingPreview({
   const selectedTags = draft.tags ?? [];
   const toggleTag = (tag: ListingTagDTO) => {
     const selected = isTagSelected(selectedTags, tag);
+    const endpointTag = normalizeTagIdentifier(tag);
+
+    if (!endpointTag) {
+      return;
+    }
 
     onDraftChange({
       tags: selected
         ? selectedTags.filter(
             (selectedTag) =>
-              normalizeTagKey(selectedTag) !== normalizeTagKey(tag.displayName)
+              !getTagSelectionKeys(tag).includes(normalizeTagKey(selectedTag))
           )
-        : [...selectedTags, tag.displayName],
+        : [...selectedTags, endpointTag],
     });
   };
 
@@ -534,7 +571,7 @@ function EditableListingPreview({
 
                   return (
                     <button
-                      key={tag.displayName}
+                      key={normalizeTagIdentifier(tag)}
                       type="button"
                       aria-pressed={selected}
                       onClick={() => toggleTag(tag)}
