@@ -45,13 +45,13 @@ export default function BostadLandlord({ advertiser }: Props) {
       <div className="flex flex-col gap-7">
         <header className="border-b border-gray-100 pb-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="relative h-24 w-28 shrink-0 overflow-hidden sm:w-32">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="flex h-28 w-40 shrink-0 items-center justify-start sm:h-32 sm:w-52">
                 {advertiser.logoUrl ? (
                   <img
                     src={advertiser.logoUrl}
                     alt={advertiser.displayName}
-                    className="block h-full w-full object-contain object-left"
+                    className="block h-auto max-h-full w-auto max-w-full object-contain object-left"
                   />
                 ) : (
                   <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-50 text-2xl font-semibold text-gray-300">
