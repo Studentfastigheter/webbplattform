@@ -7,7 +7,6 @@ import {
   FileUser,
   Heart,
   Home,
-  MousePointerClick,
   Percent,
 } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,7 +63,7 @@ const metrics: MetricConfig[] = [
   },
   {
     key: "views",
-    fallbackKeys: ["viewings", "quickViews", "detailedViews"],
+    fallbackKeys: ["viewings", "detailedViews"],
     label: "Visningar",
     labelEn: "Views",
     icon: BarChart3,
@@ -218,7 +217,7 @@ function buildOverviewMetricItems(
     if (metric.key === "views") {
       const detailedQuantity = pickQuantityFromKeys(analytics, ["detailedViews"]);
       const fallbackQuantity = pickQuantityFromKeys(analytics, ["views", "viewings"]);
-      const resolvedQuantity = detailedQuantity ?? fallbackQuantity ?? quantity;
+      const resolvedQuantity = detailedQuantity ?? fallbackQuantity;
 
       return {
         label: localizedText(locale, metric.label, metric.labelEn),
@@ -245,28 +244,21 @@ function buildAnalyticsMetricItems(
   const fallbackViewsQuantity = pickQuantityFromKeys(analytics, ["views", "viewings"]);
   const quickValue = getMetricValue(quickQuantity);
   const detailedValue = getMetricValue(detailedQuantity ?? fallbackViewsQuantity);
-  const detailRatio = quickValue > 0 ? (detailedValue / quickValue) * 100 : 0;
+  const clickThroughRate = quickValue > 0 ? (detailedValue / quickValue) * 100 : 0;
 
   return [
     applicationMetric ? buildBaseMetricItem(analytics, applicationMetric, locale) : null,
     {
-      label: localizedText(locale, "Detaljvisningar", "Detailed views"),
+      label: localizedText(locale, "Visningar", "Views"),
       value: detailedValue,
       change: getMetricChange(detailedQuantity ?? fallbackViewsQuantity),
       icon: Eye,
       tone: "blue",
     },
     {
-      label: localizedText(locale, "Snabbvisningar", "Quick views"),
-      value: quickValue,
-      change: getMetricChange(quickQuantity),
-      icon: MousePointerClick,
-      tone: "brand",
-    },
-    {
-      label: localizedText(locale, "Detaljratio", "Detail ratio"),
-      value: detailRatio,
-      valueLabel: `${detailRatio.toLocaleString(numberLocale(locale), {
+      label: localizedText(locale, "Klickfrekvens", "Click-through rate"),
+      value: clickThroughRate,
+      valueLabel: `${clickThroughRate.toLocaleString(numberLocale(locale), {
         maximumFractionDigits: 1,
       })}%`,
       change: null,

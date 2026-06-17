@@ -5,8 +5,6 @@ import {
   Eye,
   FileUser,
   Heart,
-  MousePointerClick,
-  Percent,
 } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -55,6 +53,11 @@ function formatPercent(value: number, locale: Locale) {
 }
 
 function buildSteps(data: CompanyAnalyticsFunnel, locale: Locale): FunnelStep[] {
+  const clickThroughRate =
+    data.listingQuickViews > 0
+      ? data.listingDetailedViews / data.listingQuickViews
+      : 0;
+
   return [
     {
       label: localizedText(locale, "F\u00f6retagsprofil", "Company profile"),
@@ -63,14 +66,9 @@ function buildSteps(data: CompanyAnalyticsFunnel, locale: Locale): FunnelStep[] 
     },
     {
       label: localizedText(locale, "Annonsvisningar", "Listing views"),
-      value: data.listingTotalViews,
-      icon: MousePointerClick,
-    },
-    {
-      label: localizedText(locale, "Detaljvisningar", "Detailed views"),
       value: data.listingDetailedViews,
-      rate: data.detailedViewRate,
-      icon: Percent,
+      rate: clickThroughRate,
+      icon: Eye,
     },
     {
       label: localizedText(locale, "Ans\u00f6kningar", "Applications"),
@@ -90,7 +88,7 @@ function buildSteps(data: CompanyAnalyticsFunnel, locale: Locale): FunnelStep[] 
 function LoadingState() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      {Array.from({ length: 5 }).map((_, index) => (
+      {Array.from({ length: 4 }).map((_, index) => (
         <div
           className="portal-inner-surface flex items-center gap-3 px-3 py-3"
           key={index}
@@ -115,6 +113,10 @@ function FunnelContent({
   locale: Locale;
 }) {
   const steps = buildSteps(data, locale);
+  const favoriteRate =
+    data.listingDetailedViews > 0
+      ? data.listingLikes / data.listingDetailedViews
+      : 0;
   const maxValue = Math.max(...steps.map((step) => step.value), 1);
 
   return (
@@ -125,7 +127,7 @@ function FunnelContent({
             {localizedText(locale, "Favoritering", "Favorite rate")}
           </p>
           <p className="mt-1 text-lg font-semibold leading-7 text-gray-900 tabular-nums">
-            {formatPercent(data.likeRate, locale)}
+            {formatPercent(favoriteRate, locale)}
           </p>
         </div>
         <div className="portal-inner-surface px-3 py-2">

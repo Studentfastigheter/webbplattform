@@ -25,7 +25,6 @@ import {
   Home,
   ImageIcon,
   MapPin,
-  MousePointerClick,
   Percent,
   Trash2,
 } from "@/components/icons";
@@ -1008,11 +1007,8 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
       (bucket) => String(bucket.key) === "true"
     )?.totalViews ?? 0;
   const analyticsMetrics: AnalyticsMetricItem[] = useMemo(() => {
-    const computedTotalViews = meta.quickViews + meta.detailedViews;
-    const detailRatio =
-      computedTotalViews > 0
-        ? (meta.detailedViews / computedTotalViews) * 100
-        : 0;
+    const clickThroughRate =
+      meta.quickViews > 0 ? (meta.detailedViews / meta.quickViews) * 100 : 0;
     const applicationRate =
       meta.detailedViews > 0
         ? (meta.applications / meta.detailedViews) * 100
@@ -1030,7 +1026,7 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
       },
       {
         key: "detailed",
-        label: localizedText(locale, "Detaljvisningar", "Detailed views"),
+        label: localizedText(locale, "Visningar", "Views"),
         value: meta.detailedViews,
         helper: localizedText(locale, "Öppningar av annonsen", "Listing opens"),
         change: null,
@@ -1038,22 +1034,17 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
         tone: "sky",
       },
       {
-        key: "quick",
-        label: localizedText(locale, "Snabbvisningar", "Quick views"),
-        value: meta.quickViews,
-        helper: localizedText(locale, "Visningar i listor", "Impressions in lists"),
-        change: null,
-        icon: MousePointerClick,
-        tone: "teal",
-      },
-      {
-        key: "detail-ratio",
-        label: localizedText(locale, "Detaljratio", "Detail ratio"),
-        value: detailRatio,
-        valueLabel: `${detailRatio.toLocaleString(numberLocale(locale), {
+        key: "click-through-rate",
+        label: localizedText(locale, "Klickfrekvens", "Click-through rate"),
+        value: clickThroughRate,
+        valueLabel: `${clickThroughRate.toLocaleString(numberLocale(locale), {
           maximumFractionDigits: 1,
         })}%`,
-        helper: localizedText(locale, "Detalj vs. snabb", "Detailed vs. quick"),
+        helper: localizedText(
+          locale,
+          "Andel listvisningar som öppnades",
+          "Share of list impressions opened"
+        ),
         change: null,
         icon: Percent,
         tone: "amber",
@@ -1209,7 +1200,7 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
   const locationLabel = listing.fullAddress
     ? `${listing.fullAddress}, ${listing.city}`
     : [listing.area, listing.city].filter(Boolean).join(", ");
-  const totalViews = meta.quickViews + meta.detailedViews;
+  const listingViews = meta.detailedViews;
 
   return (
     <main className="pb-12">
@@ -1246,7 +1237,7 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
                   <HeaderStat
                     icon={Eye}
                     label={localizedText(locale, "visningar", "views")}
-                    value={formatNumber(totalViews, locale)}
+                    value={formatNumber(listingViews, locale)}
                   />
                 </div>
               </div>
@@ -1382,7 +1373,7 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
                   "Views, engagement and rates for the listing."
                 )}
               >
-                <div className="grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                <div className="grid h-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                   {analyticsMetrics.map((metric) => (
                     <MetricTile item={metric} key={metric.key} locale={locale} />
                   ))}

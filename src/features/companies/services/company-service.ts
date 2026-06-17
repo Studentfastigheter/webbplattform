@@ -567,13 +567,9 @@ function normalizeAnalyticalQuantities(value: unknown): AnalyticalQuantities {
   const totalApplications = toNumber(value.totalApplications, Number.NaN);
   const quickViews = toNumber(value.quickViews, Number.NaN);
   const detailedViews = toNumber(value.detailedViews, Number.NaN);
-  const viewings = toNumber(
-    value.viewings ?? value.views,
-    Number.isFinite(quickViews) || Number.isFinite(detailedViews)
-      ? (Number.isFinite(quickViews) ? quickViews : 0) +
-          (Number.isFinite(detailedViews) ? detailedViews : 0)
-      : Number.NaN
-  );
+  const viewings = Number.isFinite(detailedViews)
+    ? detailedViews
+    : toNumber(value.viewings ?? value.views, Number.NaN);
   const likes = toNumber(value.likes, Number.NaN);
   const currentListings = toNumber(value.currentListings, Number.NaN);
   const hasSwaggerShape = [
@@ -623,22 +619,32 @@ function normalizeAnalyticalQuantities(value: unknown): AnalyticalQuantities {
     };
   }
 
+  const detailedViewQuantities = toArray<unknown>(value.detailedViews)
+    .map(normalizeAnalyticalQuantity)
+    .filter((item): item is AnalyticalQuantity => item !== null);
+  const viewingQuantities =
+    detailedViewQuantities.length > 0
+      ? detailedViewQuantities
+      : toArray<unknown>(value.viewings)
+          .map(normalizeAnalyticalQuantity)
+          .filter((item): item is AnalyticalQuantity => item !== null);
+  const viewQuantities =
+    detailedViewQuantities.length > 0
+      ? detailedViewQuantities
+      : toArray<unknown>(value.views)
+          .map(normalizeAnalyticalQuantity)
+          .filter((item): item is AnalyticalQuantity => item !== null);
+
   return {
     applications: toArray<unknown>(value.applications)
       .map(normalizeAnalyticalQuantity)
       .filter((item): item is AnalyticalQuantity => item !== null),
-    viewings: toArray<unknown>(value.viewings)
-      .map(normalizeAnalyticalQuantity)
-      .filter((item): item is AnalyticalQuantity => item !== null),
-    views: toArray<unknown>(value.views)
-      .map(normalizeAnalyticalQuantity)
-      .filter((item): item is AnalyticalQuantity => item !== null),
+    viewings: viewingQuantities,
+    views: viewQuantities,
     quickViews: toArray<unknown>(value.quickViews)
       .map(normalizeAnalyticalQuantity)
       .filter((item): item is AnalyticalQuantity => item !== null),
-    detailedViews: toArray<unknown>(value.detailedViews)
-      .map(normalizeAnalyticalQuantity)
-      .filter((item): item is AnalyticalQuantity => item !== null),
+    detailedViews: detailedViewQuantities,
     likes: toArray<unknown>(value.likes)
       .map(normalizeAnalyticalQuantity)
       .filter((item): item is AnalyticalQuantity => item !== null),

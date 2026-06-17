@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { useQueries } from "@tanstack/react-query";
 import {
   Eye,
-  MousePointerClick,
   RefreshCw,
   Search,
   X,
@@ -46,7 +45,6 @@ type DateSort = "newest" | "oldest";
 
 type PortalListing = {
   listing: ListingCardDTO;
-  quickViews: number;
   detailedViews: number;
   applications: number;
   publishedAt: string;
@@ -371,7 +369,7 @@ export default function PortalAdsPage() {
     const applicationsLookup = createApplicationLookup(applicationsByObject);
     return companyListings.map((dto) => {
       const raw = dto as RawListing;
-      const { quickViews, detailedViews } = resolveListingViewCounts(
+      const { detailedViews } = resolveListingViewCounts(
         raw,
         viewCountsByListingId,
       );
@@ -383,7 +381,6 @@ export default function PortalAdsPage() {
       );
       return {
         listing: dto,
-        quickViews,
         detailedViews,
         applications,
         publishedAt: formatDate(publishedAtRaw, locale),
@@ -656,11 +653,7 @@ export default function PortalAdsPage() {
                       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
                           <Eye className="h-3 w-3 text-gray-500" />
-                          {item.quickViews.toLocaleString(numberLocale(locale))} {localizedText(locale, "snabb", "quick")}
-                        </span>
-                        <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
-                          <MousePointerClick className="h-3 w-3 text-gray-500" />
-                          {item.detailedViews.toLocaleString(numberLocale(locale))} {localizedText(locale, "klicks", "clicks")}
+                          {item.detailedViews.toLocaleString(numberLocale(locale))} {localizedText(locale, "visningar", "views")}
                         </span>
                       </div>
                       <span className="shrink-0 whitespace-nowrap text-right">

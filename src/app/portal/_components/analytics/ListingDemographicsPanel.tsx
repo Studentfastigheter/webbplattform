@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { Heart, MousePointerClick, Smartphone } from "@/components/icons";
+import { Heart, Smartphone } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -57,8 +57,6 @@ const colors = [
 ];
 
 const labels: Record<string, { sv: string; en: string }> = {
-  QUICK: { sv: "Snabb", en: "Quick" },
-  DETAILED: { sv: "Detalj", en: "Detailed" },
   MOBILE: { sv: "Mobil", en: "Mobile" },
   DESKTOP: { sv: "Desktop", en: "Desktop" },
   true: { sv: "Favorit", en: "Favorite" },
@@ -343,8 +341,8 @@ export default function ListingDemographicsPanel({
   );
   const blockDescription = localizedText(
     locale,
-    "Annonsens visningar uppdelade på beteende, enhet, favorit och stad.",
-    "Listing views split by behavior, device, favorite status and city."
+    "Annonsens visningar uppdelade på enhet, favorit och stad.",
+    "Listing views split by device, favorite status and city."
   );
 
   if (authLoading || demographyQuery.isLoading) {
@@ -385,13 +383,7 @@ export default function ListingDemographicsPanel({
       size={size}
       title={blockTitle}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard
-          data={data.VIEW_TYPE}
-          icon={<MousePointerClick className="h-4 w-4" />}
-          label={localizedText(locale, "Visningstyper", "View types")}
-          locale={locale}
-        />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <StatCard
           data={data.DEVICE_TYPE}
           icon={<Smartphone className="h-4 w-4" />}
@@ -411,11 +403,6 @@ export default function ListingDemographicsPanel({
           chart={<MiniPie data={toData(data.DEVICE_TYPE, locale)} locale={locale} />}
           legend={<ChartLegend data={toData(data.DEVICE_TYPE, locale)} locale={locale} />}
           title={localizedText(locale, "Enheter", "Devices")}
-        />
-        <ChartCard
-          chart={<MiniPie data={toData(data.VIEW_TYPE, locale)} locale={locale} />}
-          legend={<ChartLegend data={toData(data.VIEW_TYPE, locale)} locale={locale} />}
-          title={localizedText(locale, "Visningstyp", "View type")}
         />
         <ChartCard
           chart={<MiniBars data={toData(data.CITY, locale)} locale={locale} />}

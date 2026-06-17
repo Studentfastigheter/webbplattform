@@ -71,9 +71,7 @@ type ListingRow = {
   listingId: string;
   title: string;
   totalViews: number;
-  topLabel: string;
-  topViews: number;
-  topShare: number;
+  clickThroughRate: number;
 };
 
 type ApplicationListingRow = {
@@ -85,8 +83,7 @@ type ApplicationListingRow = {
 type PortfolioSummary = {
   rows: ListingRow[];
   totalViews: number;
-  quickViews: number;
-  detailedViews: number;
+  clickThroughRate: number;
   likes: number;
   listingsWithViews: number;
   deviceData: BucketDatum[];
@@ -110,19 +107,23 @@ const labels: Record<string, { sv: string; en: string }> = {
   CITY: { sv: "Stad", en: "City" },
   SCHOOL: { sv: "Skola", en: "School" },
   RESULTED_IN_LIKE: { sv: "Favorit", en: "Favorite" },
-  VIEW_TYPE: { sv: "Visningstyp", en: "View type" },
   DEVICE_TYPE: { sv: "Enhet", en: "Device" },
   PREFERRED_MAX_RENT: { sv: "Maxhyra", en: "Max rent" },
   DAYS_IN_QUEUE: { sv: "Dagar i kö", en: "Days in queue" },
   APPLICANT_OTHER_APPLICATIONS: { sv: "Andra ansökningar", en: "Other applications" },
   GOT_LISTING: { sv: "Utfall", en: "Outcome" },
-  QUICK: { sv: "Snabb", en: "Quick" },
-  DETAILED: { sv: "Detalj", en: "Detailed" },
   MOBILE: { sv: "Mobil", en: "Mobile" },
   DESKTOP: { sv: "Desktop", en: "Desktop" },
   true: { sv: "Favorit", en: "Favorite" },
   false: { sv: "Ingen favorit", en: "No favorite" },
 };
+
+const visibleCompanyDemographyCategories = COMPANY_DEMOGRAPHY_CATEGORIES.filter(
+  (category) => category !== "VIEW_TYPE"
+);
+const visibleListingDemographyCategories = LISTING_DEMOGRAPHY_CATEGORIES.filter(
+  (category) => category !== "VIEW_TYPE"
+);
 
 const gotListingLabels: Record<GotListingFilter, { sv: string; en: string }> = {
   BOTH: { sv: "Alla utfall", en: "All outcomes" },
@@ -266,14 +267,13 @@ function mapListingRows(
 
   return Object.entries(batch)
     .map(([listingId, demography]) => {
-      const top = bucketsToData(demography, 1, locale)[0];
+      const detailedViews = bucketValue(demography, "DETAILED");
+      const quickViews = bucketValue(demography, "QUICK");
       return {
         listingId,
         title: titleById.get(listingId) ?? localizedText(locale, `Annons ${listingId.slice(0, 8)}`, `Listing ${listingId.slice(0, 8)}`),
-        totalViews: totalViews(demography),
-        topLabel: top?.label ?? localizedText(locale, "Saknas", "Missing"),
-        topViews: top?.value ?? 0,
-        topShare: top?.share ?? 0,
+        totalViews: detailedViews,
+        clickThroughRate: quickViews > 0 ? (detailedViews / quickViews) * 100 : 0,
       };
     })
     .filter((row) => row.totalViews > 0)
@@ -395,26 +395,24 @@ function buildPortfolioSummary(
   const rows = mapListingRows(viewTypeByListing, listings, locale);
   const viewTypeValues = Object.values(viewTypeByListing);
   const resultedInLikeValues = Object.values(data.RESULTED_IN_LIKE ?? {});
+  const quickViews = viewTypeValues.reduce(
+    (sum, demography) => sum + bucketValue(demography, "QUICK"),
+    0
+  );
+  const detailedViews = viewTypeValues.reduce(
+    (sum, demography) => sum + bucketValue(demography, "DETAILED"),
+    0
+  );
 
   return {
     rows,
-    totalViews: viewTypeValues.reduce(
-      (sum, demography) => sum + totalViews(demography),
-      0
-    ),
-    quickViews: viewTypeValues.reduce(
-      (sum, demography) => sum + bucketValue(demography, "QUICK"),
-      0
-    ),
-    detailedViews: viewTypeValues.reduce(
-      (sum, demography) => sum + bucketValue(demography, "DETAILED"),
-      0
-    ),
+    totalViews: detailedViews,
+    clickThroughRate: quickViews > 0 ? (detailedViews / quickViews) * 100 : 0,
     likes: resultedInLikeValues.reduce(
       (sum, demography) => sum + bucketValue(demography, true),
       0
     ),
-    listingsWithViews: viewTypeValues.filter((demography) => totalViews(demography) > 0)
+    listingsWithViews: viewTypeValues.filter((demography) => bucketValue(demography, "DETAILED") > 0)
       .length,
     deviceData: mergeBuckets(Object.values(data.DEVICE_TYPE ?? {}), 6, locale),
     cityData: mergeBuckets(Object.values(data.CITY ?? {}), 6, locale),
@@ -659,7 +657,7 @@ function ListingPortfolioChart({ rows, locale }: { rows: ListingRow[]; locale: L
   const data = rows.map((row, index) => ({
     fullLabel: row.title,
     label: `#${index + 1}`,
-    lineValue: row.topShare,
+    lineValue: row.clickThroughRate,
     value: row.totalViews,
   }));
 
@@ -671,7 +669,7 @@ function ListingPortfolioChart({ rows, locale }: { rows: ListingRow[]; locale: L
       labelFormatter={(entry) => entry.fullLabel}
       lineAxisFormatter={(value) => `${value}%`}
       lineFormatter={(value) => formatPercent(value, locale)}
-      lineLabel={localizedText(locale, "Andel toppsegment", "Top segment share")}
+      lineLabel={localizedText(locale, "Klickfrekvens", "Click-through rate")}
       valueFormatter={(value) => formatNumber(value, locale)}
     />
   );
@@ -680,11 +678,13 @@ function ListingPortfolioChart({ rows, locale }: { rows: ListingRow[]; locale: L
 function SummaryMetric({
   label,
   value,
+  valueLabel,
   helper,
   locale,
 }: {
   label: string;
   value: number;
+  valueLabel?: string;
   helper?: string;
   locale: Locale;
 }) {
@@ -694,7 +694,7 @@ function SummaryMetric({
         {label}
       </p>
       <p className="mt-0.5 text-lg font-semibold text-gray-950 tabular-nums sm:text-xl">
-        {formatNumber(value, locale)}
+        {valueLabel ?? formatNumber(value, locale)}
       </p>
       {helper ? (
         <p className="mt-0.5 truncate text-[11px] text-gray-400">{helper}</p>
@@ -719,10 +719,14 @@ function ListingPortfolioSummary({
   return (
     <div className="grid h-full min-h-0 gap-4 w-full">
       {/* Compact metrics row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        <SummaryMetric label={localizedText(locale, "Totala visningar", "Total views")} value={summary.totalViews} locale={locale} />
-        <SummaryMetric label={localizedText(locale, "Snabbvisningar", "Quick views")} value={summary.quickViews} locale={locale} />
-        <SummaryMetric label={localizedText(locale, "Detaljvisningar", "Detailed views")} value={summary.detailedViews} locale={locale} />
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <SummaryMetric label={localizedText(locale, "Visningar", "Views")} value={summary.totalViews} locale={locale} />
+        <SummaryMetric
+          label={localizedText(locale, "Klickfrekvens", "Click-through rate")}
+          value={summary.clickThroughRate}
+          valueLabel={formatPercent(summary.clickThroughRate, locale)}
+          locale={locale}
+        />
         <SummaryMetric label={localizedText(locale, "Favoriter", "Favorites")} value={summary.likes} locale={locale} />
         <SummaryMetric
           helper={localizedText(locale, "Med minst en visning", "With at least one view")}
@@ -784,7 +788,7 @@ export function CompanyDemographyBlock({
   const companyId = getActiveCompanyId(user);
   const [range, setRange] = React.useState<ApplicationIntervalValue>("1m");
   const [category, setCategory] =
-    React.useState<CompanyDemographyCategory>("VIEW_TYPE");
+    React.useState<CompanyDemographyCategory>("DEVICE_TYPE");
   const [hasSelection, setHasSelection] = React.useState(!deferUntilSelection);
 
   // Stable from/to strings for the query key — deriving them in a memo (vs
@@ -845,7 +849,7 @@ export function CompanyDemographyBlock({
       action={
         <div className="flex max-w-full flex-col gap-2 sm:flex-row">
           <CategorySelect
-            categories={COMPANY_DEMOGRAPHY_CATEGORIES}
+            categories={visibleCompanyDemographyCategories}
             onChange={handleCategoryChange}
             value={category}
           />
@@ -863,7 +867,7 @@ export function CompanyDemographyBlock({
         <ErrorState message={error} />
       ) : deferUntilSelection && !hasSelection ? (
         <EmptyState message={localizedText(locale, "Välj kategori eller tidsintervall för att ladda demografi.", "Choose a category or time interval to load demographics.")} />
-      ) : category === "GENDER" || category === "VIEW_TYPE" || category === "DEVICE_TYPE" ? (
+      ) : category === "GENDER" || category === "DEVICE_TYPE" ? (
         <PieDistribution data={bucketsToData(demography, 8, locale)} locale={locale} />
       ) : (
         <HorizontalBars data={bucketsToData(demography, 8, locale)} locale={locale} />
@@ -897,7 +901,7 @@ export function CompanyDemographyBatchBlock({
   // when the query data changes — no manual setData/cancelled bookkeeping.
   const data = React.useMemo(() => {
     if (!batchQuery.data || !companyId) return [];
-    return COMPANY_DEMOGRAPHY_CATEGORIES.map((category) => ({
+    return visibleCompanyDemographyCategories.map((category) => ({
       category: labelFor(locale, category),
       value: totalViews(batchQuery.data?.[category]?.[String(companyId)] ?? null),
     })).filter((item) => item.value > 0);
@@ -1274,7 +1278,7 @@ export function ListingDemographyDrilldownBlock({
             </SelectContent>
           </Select>
           <CategorySelect
-            categories={LISTING_DEMOGRAPHY_CATEGORIES}
+            categories={visibleListingDemographyCategories}
             onChange={setCategory}
             value={category}
           />
@@ -1290,7 +1294,7 @@ export function ListingDemographyDrilldownBlock({
         <BlockSkeleton />
       ) : error ? (
         <ErrorState message={error} />
-      ) : category === "GENDER" || category === "VIEW_TYPE" || category === "RESULTED_IN_LIKE" || category === "DEVICE_TYPE" ? (
+      ) : category === "GENDER" || category === "RESULTED_IN_LIKE" || category === "DEVICE_TYPE" ? (
         <PieDistribution data={bucketsToData(demography, 8, locale)} locale={locale} />
       ) : (
         <HorizontalBars data={bucketsToData(demography, 8, locale)} locale={locale} />
