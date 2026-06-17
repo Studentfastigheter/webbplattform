@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { GraduationCapIcon, HomeIcon, MapPinIcon } from "@/components/icons";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { RichTextParagraph } from "@/components/ui/RichText";
 import type { BaseMarker } from "@/components/shared/map/BaseMap";
 import { useAuth } from "@/context/AuthContext";
@@ -20,9 +22,16 @@ import {
   useListingsSearch,
   useToggleFavorite,
 } from "@/features/listings/hooks/useListings";
+import {
+  listingService,
+  normalizeListingSearchParams,
+  type ListingSearchParams,
+} from "@/features/listings/services/listing-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
+import { qk } from "@/lib/query/keys";
 import type { CityCompanyDTO } from "@/types/city";
+import type { ListingCardDTO } from "@/types/listing";
 
 const CityPointsMap = dynamic(() => import("@/components/shared/map/BaseMap"), {
   ssr: false,
@@ -40,6 +49,9 @@ const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"),
 
 const linkButtonClassName =
   "inline-flex h-9 items-center justify-center rounded-full border border-black/10 px-4 text-sm font-semibold text-[#004225] transition-colors hover:bg-[#004225]/5";
+
+const CITY_LISTINGS_PAGE_SIZE = 6;
+const CITY_MAP_PAGE_SIZE = 500;
 
 type CityMapLayer = "homes" | "schools" | "activities";
 
@@ -75,6 +87,51 @@ const cityCompanyToPublicCompany = (
 
 const hasMapCoordinates = (value: { lat?: number | null; lng?: number | null }) =>
   Number.isFinite(value.lat) && Number.isFinite(value.lng);
+
+const getTotalPagesFromResponse = (res: unknown, pageSize: number) => {
+  if (!res || typeof res !== "object") {
+    return 1;
+  }
+
+  const response = res as {
+    totalPages?: number;
+    totalElements?: number;
+    page?: { totalPages?: number; totalElements?: number };
+  };
+
+  return (
+    response.totalPages ??
+    response.page?.totalPages ??
+    (response.totalElements != null
+      ? Math.ceil(response.totalElements / pageSize)
+      : response.page?.totalElements != null
+        ? Math.ceil(response.page.totalElements / pageSize)
+        : 1)
+  );
+};
+
+const getTotalElementsFromResponse = (res: unknown) => {
+  if (!res || typeof res !== "object") {
+    return 0;
+  }
+
+  const response = res as {
+    totalElements?: number;
+    page?: { totalElements?: number };
+  };
+
+  return response.totalElements ?? response.page?.totalElements ?? 0;
+};
+
+const uniqueListingsById = (items: ListingCardDTO[]) => {
+  const byId = new Map<string, ListingCardDTO>();
+  items.forEach((item) => {
+    if (!byId.has(item.id)) {
+      byId.set(item.id, item);
+    }
+  });
+  return Array.from(byId.values());
+};
 
 function CityPointPopup({
   title,
@@ -113,6 +170,7 @@ export default function CityDetailPage() {
   const router = useRouter();
   const { locale, localizedHref } = useI18n();
   const { user } = useAuth();
+  const homesSectionRef = useRef<HTMLElement | null>(null);
   const routeCity = decodeRouteParam(params?.city);
   const fallbackCityName = formatCityName(routeCity) || localizedText(locale, "Stad", "City");
 
@@ -130,14 +188,34 @@ export default function CityDetailPage() {
   const cityDescription = cityDetail?.description?.trim() || "";
   const cityBannerUrl = cityDetail?.bannerUrl?.trim() || null;
 
-  // Listings in this city — page 0, 6 items (preview strip on the page).
-  // Cached per cityName so navigating away and back is instant.
+  const [cityListingsPage, setCityListingsPage] = useState(1);
+
+  useEffect(() => {
+    setCityListingsPage(1);
+  }, [cityName]);
+
+  // Listings in this city — paged card section, 6 items per page.
+  // The map below has its own all-pages query so map markers are not limited by
+  // this card page size.
+  const cityListingsSearchParams = useMemo<ListingSearchParams>(
+    () => ({
+      city: cityName,
+      page: cityListingsPage - 1,
+      size: CITY_LISTINGS_PAGE_SIZE,
+    }),
+    [cityName, cityListingsPage]
+  );
   const {
     data: listingsPage,
     isLoading: listingsLoading,
     isError: isListingsError,
-  } = useListingsSearch({ city: cityName, page: 0, size: 6 });
+  } = useListingsSearch(cityListingsSearchParams);
   const listings = listingsPage?.content ?? [];
+  const listingsTotalPages = getTotalPagesFromResponse(
+    listingsPage,
+    CITY_LISTINGS_PAGE_SIZE
+  );
+  const listingsTotalElements = getTotalElementsFromResponse(listingsPage);
   const listingsError = isListingsError
     ? localizedText(
         locale,
@@ -145,6 +223,78 @@ export default function CityDetailPage() {
         "Could not load homes in the city.",
       )
     : null;
+
+  const cityMapSearchParams = useMemo(
+    () =>
+      normalizeListingSearchParams(
+        { city: cityName },
+        {
+          includePageable: false,
+        }
+      ),
+    [cityName]
+  );
+
+  const mapListingsQuery = useQuery<ListingCardDTO[]>({
+    queryKey: qk.listings.map(cityMapSearchParams),
+    enabled: Boolean(cityName),
+    staleTime: 30_000,
+    queryFn: async () => {
+      const firstPage = await listingService.getAll({
+        ...cityMapSearchParams,
+        page: 0,
+        size: CITY_MAP_PAGE_SIZE,
+      });
+
+      const pageCount = Math.max(
+        1,
+        getTotalPagesFromResponse(firstPage, CITY_MAP_PAGE_SIZE)
+      );
+      const pages = [firstPage.content ?? []];
+
+      if (pageCount > 1) {
+        const remainingPages = await Promise.all(
+          Array.from({ length: pageCount - 1 }, (_, index) =>
+            listingService.getAll({
+              ...cityMapSearchParams,
+              page: index + 1,
+              size: CITY_MAP_PAGE_SIZE,
+            })
+          )
+        );
+
+        pages.push(...remainingPages.map((res) => res.content ?? []));
+      }
+
+      return uniqueListingsById(pages.flat());
+    },
+  });
+  const mapListings = mapListingsQuery.data ?? listings;
+  const mapListingsCount =
+    listingsTotalElements > 0 ? listingsTotalElements : mapListings.length;
+
+  useEffect(() => {
+    if (listingsTotalPages > 0 && cityListingsPage > listingsTotalPages) {
+      setCityListingsPage(listingsTotalPages);
+    }
+  }, [cityListingsPage, listingsTotalPages]);
+
+  const goToCityListingsPage = useCallback(
+    (nextPage: number) => {
+      const clampedPage = Math.min(
+        Math.max(1, nextPage),
+        Math.max(listingsTotalPages, 1)
+      );
+      setCityListingsPage(clampedPage);
+      window.requestAnimationFrame(() => {
+        homesSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    },
+    [listingsTotalPages]
+  );
 
   // Favorites: one shared cache entry across the whole app. Toggling here
   // updates every page that reads from the same key (saved/, housing/, etc.)
@@ -278,7 +428,7 @@ export default function CityDetailPage() {
     {
       value: "homes" as const,
       label: localizedText(locale, "Bostäder", "Homes"),
-      count: listings.length,
+      count: mapListingsCount,
       icon: HomeIcon,
     },
     {
@@ -295,11 +445,23 @@ export default function CityDetailPage() {
     },
   ];
   const emptyMapMessage =
-    mapLayer === "schools" && schoolMarkers.length === 0
-      ? localizedText(locale, "Inga skolor med koordinater.", "No schools with coordinates.")
-      : mapLayer === "activities" && activityMarkers.length === 0
-        ? localizedText(locale, "Inga aktiviteter valda.", "No activities selected.")
-        : null;
+    mapLayer === "homes" && mapListingsQuery.isLoading
+      ? localizedText(
+          locale,
+          "Hämtar alla bostäder till kartan...",
+          "Loading all homes for the map..."
+        )
+      : mapLayer === "homes" && mapListingsQuery.isError
+        ? localizedText(
+            locale,
+            "Kunde inte ladda alla bostäder till kartan.",
+            "Could not load all homes for the map."
+          )
+        : mapLayer === "schools" && schoolMarkers.length === 0
+          ? localizedText(locale, "Inga skolor med koordinater.", "No schools with coordinates.")
+          : mapLayer === "activities" && activityMarkers.length === 0
+            ? localizedText(locale, "Inga aktiviteter valda.", "No activities selected.")
+            : null;
 
   return (
     <main className="flex h-auto w-full flex-col gap-6 pb-12 pt-4 sm:gap-8">
@@ -333,7 +495,7 @@ export default function CityDetailPage() {
           </div>
         </section>
 
-        <section className="mt-12 w-full">
+        <section ref={homesSectionRef} className="mt-12 w-full">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
               {localizedText(locale, `Bostäder i ${cityName}`, `Homes in ${cityName}`)}
@@ -361,18 +523,34 @@ export default function CityDetailPage() {
               {localizedText(locale, `Inga bostäder hittades i ${cityName} just nu.`, `No homes were found in ${cityName} right now.`)}
             </div>
           ) : (
-            <div className="grid grid-cols-1 justify-items-center gap-3 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
-              {listings.map((listing) => (
-                <div key={listing.id} className="flex w-full justify-center">
-                  <ListingCardFromDTO
-                    listing={listing}
-                    isFavorite={favoriteIds.has(listing.id)}
-                    onFavoriteToggle={handleFavoriteToggle}
-                    onOpen={(id) => router.push(localizedHref(`/housing/${id}`))}
-                  />
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 justify-items-center gap-3 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
+                {listings.map((listing) => (
+                  <div key={listing.id} className="flex w-full justify-center">
+                    <ListingCardFromDTO
+                      listing={listing}
+                      isFavorite={favoriteIds.has(listing.id)}
+                      onFavoriteToggle={handleFavoriteToggle}
+                      onOpen={(id) => router.push(localizedHref(`/housing/${id}`))}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <PaginationControls
+                className="mt-8"
+                currentPage={cityListingsPage}
+                totalPages={listingsTotalPages}
+                onPageChange={goToCityListingsPage}
+                isDisabled={listingsLoading}
+                ariaLabel={localizedText(locale, "Sidnavigering för bostäder i staden", "Pagination for homes in the city")}
+                previousLabel={localizedText(locale, "Föregående", "Previous")}
+                nextLabel={localizedText(locale, "Nästa", "Next")}
+                pageLabel={(pageNumber) =>
+                  localizedText(locale, `Sida ${pageNumber}`, `Page ${pageNumber}`)
+                }
+              />
+            </>
           )}
         </section>
 
@@ -461,7 +639,7 @@ export default function CityDetailPage() {
             )}
             {mapLayer === "homes" ? (
               <ListingsMap
-                listings={listings}
+                listings={mapListings}
                 className="h-full w-full"
                 fillContainer
                 getIsFavorite={(id) => favoriteIds.has(id)}
@@ -484,13 +662,13 @@ export default function CityDetailPage() {
         <section className="mt-12 w-full">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              {localizedText(locale, "Företag", "Companies")}
+              {localizedText(locale, `Företag i ${cityName}`, `Companies in ${cityName}`)}
             </h2>
             <LocalizedLink
               href={`/all-queues?city=${encodeURIComponent(cityName)}`}
               className={linkButtonClassName}
             >
-              {localizedText(locale, "Fler företag", "More companies")}
+              {localizedText(locale, "Sök alla", "Search all")}
             </LocalizedLink>
           </div>
 
@@ -542,7 +720,7 @@ export default function CityDetailPage() {
 
         <section className="mt-12 w-full">
           <h2 className="mb-5 text-lg font-semibold text-gray-900">
-            {localizedText(locale, "Andra företag", "Other companies")}
+            {localizedText(locale, `Övriga företag i ${cityName}`, `Other companies in ${cityName}`)}
           </h2>
 
           {companiesError && (
