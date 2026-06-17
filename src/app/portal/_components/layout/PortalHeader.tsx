@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, HelpCircle, LogOut, Menu, Settings, X } from "@/components/icons";
+import { ChevronDown, LogOut, Menu, Settings, X } from "@/components/icons";
 import CompanyLogo from "@/components/shared/CompanyLogo";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
@@ -209,15 +209,6 @@ export default function PortalHeader() {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem asChild className="rounded-lg p-0">
-                  <Link
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"
-                    href="/faq"
-                  >
-                    <HelpCircle className="h-6 w-6 text-gray-500" />
-                    {localizedText(locale, "Support", "Support")}
-                  </Link>
-                </DropdownMenuItem>
               </div>
               <DropdownMenuItem
                 className="mt-3 flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 text-theme-sm hover:bg-gray-100 hover:text-gray-700"

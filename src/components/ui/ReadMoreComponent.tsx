@@ -4,7 +4,6 @@ import React, {
   useLayoutEffect,
   useRef,
   useState,
-  useEffect,
 } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -32,29 +31,6 @@ interface ReadMoreProps {
   scrollOffset?: number;
 }
 
-function smartTruncate(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text;
-
-  const slice = text.slice(0, maxChars);
-
-  // Försök kapa vid slutet på en mening
-  const sentenceMatch = slice.match(/([.!?])(?=\s|$)[^.?!]*$/);
-  if (
-    sentenceMatch &&
-    sentenceMatch.index !== undefined &&
-    sentenceMatch.index > maxChars * 0.5
-  ) {
-    return slice.slice(0, sentenceMatch.index + 1);
-  }
-
-  // Annars kapa vid senaste mellanslag
-  const lastSpace = slice.lastIndexOf(" ");
-  if (lastSpace > maxChars * 0.4) {
-    return slice.slice(0, lastSpace) + "…";
-  }
-  return slice + "…";
-}
-
 export default function ReadMoreComponent({
   text,
   variant = "small",
@@ -74,8 +50,6 @@ export default function ReadMoreComponent({
   const [collapsedHeight, setCollapsedHeight] = useState<number>(0);
   const [fullHeight, setFullHeight] = useState<number>(0);
 
-  const [collapsedText, setCollapsedText] = useState<string>(text);
-
   const measureRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -89,7 +63,15 @@ export default function ReadMoreComponent({
 
     const computeHeights = () => {
       const style = window.getComputedStyle(el);
-      const lineHeight = parseFloat(style.lineHeight || "0");
+      const lineHeightValue = parseFloat(style.lineHeight || "0");
+      const fontSize = parseFloat(style.fontSize || "0");
+      const fallbackLineHeight = Number.isFinite(fontSize) ? fontSize * 1.5 : 24;
+      const lineHeight =
+        Number.isFinite(lineHeightValue) && lineHeightValue > 0
+          ? lineHeightValue < fallbackLineHeight * 0.8
+            ? lineHeightValue * fontSize
+            : lineHeightValue
+          : fallbackLineHeight;
       const paddingTop = parseFloat(style.paddingTop || "0");
       const paddingBottom = parseFloat(style.paddingBottom || "0");
       const full = el.scrollHeight;
@@ -109,14 +91,11 @@ export default function ReadMoreComponent({
     return () => ro.disconnect();
   }, [text, collapsedLines]);
 
-  // Ta fram en kortare text för "collapsed"-läget
-  useEffect(() => {
-    const approxCharsPerLine = 100;
-    const maxChars = approxCharsPerLine * collapsedLines;
-    setCollapsedText(smartTruncate(text, maxChars));
-  }, [text, collapsedLines]);
-
-  const targetHeight = expanded ? fullHeight : collapsedHeight;
+  const targetHeight = needsToggle
+    ? expanded
+      ? fullHeight
+      : collapsedHeight
+    : fullHeight;
   const resolvedMoreLabel = moreLabel ?? localizedText(locale, "Läs mer", "Read more");
   const resolvedLessLabel = lessLabel ?? localizedText(locale, "Visa mindre", "Show less");
 
@@ -159,7 +138,7 @@ export default function ReadMoreComponent({
         <div className="relative">
           <RichText
             ref={measureRef}
-            text={expanded ? text : collapsedText}
+            text={text}
             className={`text-base leading-relaxed ${textClassName}`}
           />
 

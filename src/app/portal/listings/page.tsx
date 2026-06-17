@@ -479,7 +479,7 @@ export default function PortalAdsPage() {
             </h1>
             {canSyncListings ? (
               <Button
-                className="w-full sm:w-auto"
+                className="w-full bg-white sm:w-auto"
                 isDisabled={loading || refreshingListings}
                 isLoading={refreshingListings}
                 onPress={() => void handleRefreshListings()}
@@ -492,67 +492,8 @@ export default function PortalAdsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-6 border-b border-gray-200 pb-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] lg:grid-rows-[auto_auto] lg:items-start">
-          <div className="order-2 w-full lg:col-start-1 lg:row-start-2">
-            <div className="w-full sm:max-w-md">
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
-                  <div className="min-w-0">
-                    <Select
-                      value={statusFilter}
-                      onValueChange={(value) =>
-                        setStatusFilter(value as StatusFilter)
-                      }
-                    >
-                      <PortalControlSelectTrigger
-                        aria-label={localizedText(locale, "Filtrera på status", "Filter by status")}
-                      >
-                        <SelectValue />
-                      </PortalControlSelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{localizedText(locale, "Alla statusar", "All statuses")}</SelectItem>
-                        <SelectItem value="active">{localizedText(locale, "Aktiva", "Active")}</SelectItem>
-                        <SelectItem value="inactive">{localizedText(locale, "Inaktiva", "Inactive")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="min-w-0">
-                    <Select value={cityFilter} onValueChange={setCityFilter}>
-                      <PortalControlSelectTrigger
-                        aria-label={localizedText(locale, "Filtrera på stad", "Filter by city")}
-                      >
-                        <SelectValue />
-                      </PortalControlSelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{localizedText(locale, "Alla städer", "All cities")}</SelectItem>
-                        {availableCities.map((city) => (
-                          <SelectItem key={city} value={city}>
-                            {city}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {hasActiveFilters && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setCityFilter("all");
-                    }}
-                    className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-[#004225]"
-                  >
-                    {localizedText(locale, "Rensa filter", "Clear filters")}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="order-1 w-full lg:col-start-2 lg:row-start-1">
+        <div className="flex min-w-0 flex-col gap-3 border-b border-gray-200 pb-4">
+          <div className="w-full lg:mx-auto lg:max-w-[720px]">
             <form
               className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:h-14 xl:pl-6 xl:pr-2"
               onSubmit={(event) => {
@@ -588,12 +529,11 @@ export default function PortalAdsPage() {
                 {localizedText(locale, "Sök", "Search")}
               </button>
             </form>
+          </div>
 
-            <div className="hidden">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
-                {localizedText(locale, "Filtrera", "Filter")}
-              </span>
-              <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="flex w-full min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto lg:grid-cols-[repeat(2,minmax(160px,180px))]">
                 <div className="min-w-0">
                   <Select
                     value={statusFilter}
@@ -640,16 +580,14 @@ export default function PortalAdsPage() {
                     setStatusFilter("all");
                     setCityFilter("all");
                   }}
-                  className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-[#004225]"
+                  className="h-9 w-full shrink-0 rounded-lg px-3 text-left text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-[#004225] sm:w-auto sm:text-center"
                 >
                   {localizedText(locale, "Rensa filter", "Clear filters")}
                 </button>
               )}
             </div>
-          </div>
 
-          <div className="order-3 w-full lg:col-start-3 lg:row-start-2">
-            <div className="w-full sm:ml-auto sm:w-44">
+            <div className="w-full min-w-0 lg:ml-auto lg:w-[180px]">
               <Select
                 value={dateSort}
                 onValueChange={(value) => setDateSort(value as DateSort)}

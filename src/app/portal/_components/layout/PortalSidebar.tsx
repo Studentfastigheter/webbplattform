@@ -65,6 +65,12 @@ export default function PortalSidebar() {
     () => getCompanyPortalNavSectionsForRole(permission.roleName, portal.systemProvider),
     [permission.roleName, portal.systemProvider]
   );
+  const comingSoonLabel = localizedText(locale, "Kommer snart", "Soon");
+  const comingSoonTitle = localizedText(
+    locale,
+    "Släpps inom kort",
+    "Coming soon"
+  );
   const portalHomeHref =
     getDefaultCompanyPortalPath(permission.roleName, portal.systemProvider) ??
     dashboardRelPath;
@@ -175,12 +181,14 @@ export default function PortalSidebar() {
                     const submenuKey = `${section.key}-${index}`;
                     const Icon = item.icon;
                     const hasSubItems = Boolean(item.subItems?.length);
+                    const itemDisabled = Boolean(item.comingSoon);
                     const submenuOpen =
                       openSubmenu?.section === section.key &&
                       openSubmenu.index === index;
                     const parentActive =
-                      isActive(item.path) ||
-                      item.subItems?.some((subItem) => isActive(subItem.path));
+                      !itemDisabled &&
+                      (isActive(item.path) ||
+                        item.subItems?.some((subItem) => isActive(subItem.path)));
 
                     return (
                       <li key={item.path}>
@@ -216,29 +224,66 @@ export default function PortalSidebar() {
                             )}
                           </button>
                         ) : (
-                          <Link
-                            className={cn(
-                              "menu-item group",
-                              parentActive ? "menu-item-active" : "menu-item-inactive",
-                              expanded ? "lg:justify-start" : "lg:justify-center"
-                            )}
-                            href={item.path}
-                          >
-                            <span
+                          itemDisabled ? (
+                            <button
+                              aria-disabled="true"
                               className={cn(
-                                parentActive
-                                  ? "menu-item-icon-active"
-                                  : "menu-item-icon-inactive"
+                                "menu-item group cursor-not-allowed text-gray-400 opacity-80 hover:bg-transparent hover:text-gray-400",
+                                expanded ? "lg:justify-start" : "lg:justify-center"
                               )}
+                              title={comingSoonTitle}
+                              type="button"
                             >
-                              <Icon className="h-5 w-5" />
-                            </span>
-                            {expanded && (
-                              <span className="menu-item-text">
-                                {localizedText(locale, item.nameSv, item.nameEn)}
+                              <span className="shrink-0 text-gray-400">
+                                <Icon className="h-5 w-5" />
                               </span>
-                            )}
-                          </Link>
+                              {expanded && (
+                                <>
+                                  <span className="menu-item-text min-w-0 flex-1 truncate text-left">
+                                    {localizedText(locale, item.nameSv, item.nameEn)}
+                                  </span>
+                                  <span className="ml-auto shrink-0 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-amber-700">
+                                    {comingSoonLabel}
+                                  </span>
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            <Link
+                              className={cn(
+                                "menu-item group",
+                                parentActive ? "menu-item-active" : "menu-item-inactive",
+                                expanded ? "lg:justify-start" : "lg:justify-center"
+                              )}
+                              href={item.path}
+                            >
+                              <span
+                                className={cn(
+                                  parentActive
+                                    ? "menu-item-icon-active"
+                                    : "menu-item-icon-inactive"
+                                )}
+                              >
+                                <Icon className="h-5 w-5" />
+                              </span>
+                              {expanded && (
+                                <>
+                                  <span className="menu-item-text min-w-0 flex-1 truncate">
+                                    {localizedText(locale, item.nameSv, item.nameEn)}
+                                  </span>
+                                  {item.badge ? (
+                                    <span className="ml-auto shrink-0 rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-sky-700">
+                                      {localizedText(
+                                        locale,
+                                        item.badge.labelSv,
+                                        item.badge.labelEn
+                                      )}
+                                    </span>
+                                  ) : null}
+                                </>
+                              )}
+                            </Link>
+                          )
                         )}
 
                         {hasSubItems && expanded && (

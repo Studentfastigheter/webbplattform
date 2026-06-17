@@ -288,6 +288,14 @@ function normalizeCompanyDto(value: unknown): CompanyDTO {
     companyId: firstNumber(source.companyId, source.id),
     name: firstString(source.name, source.companyName),
     companyName: firstString(source.companyName, source.name),
+    description: firstString(
+      source.description,
+      source.companyDescription,
+      source.bio,
+      source.companyBio,
+      source.about,
+      source.aboutText
+    ),
     website: firstString(source.website, source.websiteUrl),
     websiteUrl: firstString(source.websiteUrl, source.website),
     termsUrl: firstString(source.termsUrl),

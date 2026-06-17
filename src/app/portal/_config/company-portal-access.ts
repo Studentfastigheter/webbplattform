@@ -68,6 +68,12 @@ export const companyPortalRoleGroups = {
 type RoleList = readonly CompanyPortalRole[];
 type FeatureList = readonly CompanyPortalFeature[];
 
+type CompanyPortalNavBadge = {
+  labelSv: string;
+  labelEn: string;
+  tone?: "beta";
+};
+
 export type CompanyPortalNavItem = {
   id: CompanyPortalFeature;
   nameSv: string;
@@ -75,12 +81,16 @@ export type CompanyPortalNavItem = {
   path: string;
   icon: LucideIcon;
   roles: RoleList;
+  badge?: CompanyPortalNavBadge;
+  comingSoon?: boolean;
   subItems?: readonly {
     id: CompanyPortalFeature;
     nameSv: string;
     nameEn: string;
     path: string;
     roles: RoleList;
+    badge?: CompanyPortalNavBadge;
+    comingSoon?: boolean;
   }[];
 };
 
@@ -134,6 +144,11 @@ const managedPortalFeatures = [
 const providerSyncedPortalFeatures = [
   ...basePortalFeatures,
   "listingSync",
+] as const satisfies FeatureList;
+
+const companyPortalComingSoonFeatures = [
+  "productNews",
+  "guides",
 ] as const satisfies FeatureList;
 
 const defaultPortalPolicy: CompanyPortalPolicy = {
@@ -289,6 +304,11 @@ export const companyPortalNavSections: readonly CompanyPortalNavSection[] = [
         path: `${dashboardRelPath}/analytics`,
         icon: BarChart3,
         roles: companyPortalRoleGroups.managerAndAdmin,
+        badge: {
+          labelSv: "Beta",
+          labelEn: "Beta",
+          tone: "beta",
+        },
       },
       {
         id: "productNews",
@@ -297,6 +317,7 @@ export const companyPortalNavSections: readonly CompanyPortalNavSection[] = [
         path: `${dashboardRelPath}/product-news`,
         icon: Newspaper,
         roles: companyPortalRoleGroups.all,
+        comingSoon: true,
       },
       {
         id: "guides",
@@ -305,6 +326,7 @@ export const companyPortalNavSections: readonly CompanyPortalNavSection[] = [
         path: `${dashboardRelPath}/guides`,
         icon: BookOpen,
         roles: companyPortalRoleGroups.all,
+        comingSoon: true,
       },
     ],
   },
@@ -452,6 +474,14 @@ export function canCompanyPortalRoleAccess(
   return normalizedRole ? roles.includes(normalizedRole) : false;
 }
 
+export function isCompanyPortalFeatureComingSoon(
+  feature: CompanyPortalFeature
+) {
+  return (companyPortalComingSoonFeatures as readonly CompanyPortalFeature[]).includes(
+    feature
+  );
+}
+
 export function getCompanyPortalNavSectionsForRole(
   roleName: string | null | undefined,
   systemProvider?: CompanyPortalSystemProvider
@@ -517,6 +547,7 @@ export function isCompanyPortalPathAllowed(
   }
 
   return (
+    !isCompanyPortalFeatureComingSoon(rule.id) &&
     canCompanyPortalRoleAccess(rule.roles, roleName) &&
     canCompanyPortalProviderUseFeature(systemProvider, rule.id)
   );
