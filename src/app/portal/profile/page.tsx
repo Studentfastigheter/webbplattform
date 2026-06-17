@@ -7,6 +7,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/shared/CompanyLogo";
 import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
@@ -934,8 +935,6 @@ export default function ProfilePage() {
   const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
 
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const companyId = getActiveCompanyId(user);
   const updateCompanyData = useUpdateCompanyData();
@@ -954,9 +953,6 @@ export default function ProfilePage() {
       }
     };
   }, []);
-
-  const isInvalidCompanyId =
-    !authLoading && user != null && (companyId == null || Number.isNaN(companyId));
 
   // Three parallel reads. Each cached under its own key — opening another
   // company portal page reuses these without a network call.
@@ -1004,20 +1000,6 @@ export default function ProfilePage() {
     hydratedCompanyId,
   ]);
 
-  useEffect(() => {
-    if (isInvalidCompanyId) {
-      setError(localizedText(locale, "Ogiltigt företags-ID.", "Invalid company ID."));
-    } else if (isCompanyError) {
-      setError(
-        companyErr instanceof Error
-          ? companyErr.message
-          : localizedText(locale, "Kunde inte ladda företagsprofilen.", "Could not load the company profile.")
-      );
-    } else {
-      setError(null);
-    }
-  }, [isInvalidCompanyId, isCompanyError, companyErr, locale]);
-
   const loading = (authLoading || companyLoading) && !company;
 
   const savedSnapshot = useMemo(() => {
@@ -1036,7 +1018,6 @@ export default function ProfilePage() {
     key: K,
     value: ProfileDraft[K]
   ) => {
-    setSaveMessage(null);
     setDraft((current) => {
       if (!current) return current;
       return { ...current, [key]: value };
@@ -1104,7 +1085,6 @@ export default function ProfilePage() {
     setCompany((current) =>
       current ? { ...current, pictureUrlList } : current
     );
-    setSaveMessage(localizedText(locale, "Bildgalleriet har sparats.", "The image gallery has been saved."));
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -1113,8 +1093,7 @@ export default function ProfilePage() {
 
     const invalidVideoUrls = getInvalidYouTubeVideoUrls(draft.videoUrlList);
     if (invalidVideoUrls.length > 0) {
-      setSaveMessage(null);
-      setError(
+      toast.error(
         localizedText(
           locale,
           "Video-URL:er måste vara YouTube-länkar.",
@@ -1125,8 +1104,6 @@ export default function ProfilePage() {
     }
 
     setSaving(true);
-    setError(null);
-    setSaveMessage(null);
 
     try {
       const selectedImages = selectedImageFilesRef.current;
@@ -1213,13 +1190,13 @@ export default function ProfilePage() {
           savedQueue ?? undefined
         )
       );
-      setSaveMessage(localizedText(locale, "Företagsprofilen har sparats.", "The company profile has been saved."));
+      toast.success(localizedText(locale, "Företagsprofilen har sparats.", "The company profile has been saved."));
       // Note: invalidation is already handled by the mutation hooks above
       // (uploadLogo / uploadBanner / updateCompanyData each drop the
       // private + public + queue caches on settle). No manual invalidate
       // needed here.
     } catch (saveError) {
-      setError(
+      toast.error(
         saveError instanceof Error
           ? saveError.message
           : localizedText(locale, "Kunde inte spara företagsprofilen.", "Could not save the company profile.")
@@ -1269,6 +1246,16 @@ export default function ProfilePage() {
     );
   }
 
+  if (isCompanyError && !company) {
+    return (
+      <PortalSurface dashed className="text-center text-sm text-gray-500" padding="lg">
+        {companyErr instanceof Error
+          ? companyErr.message
+          : localizedText(locale, "Kunde inte ladda företagsprofilen.", "Could not load the company profile.")}
+      </PortalSurface>
+    );
+  }
+
   if (loading || !draft) {
     return (
       <PortalSurface className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-gray-500" padding="md">
@@ -1289,18 +1276,6 @@ export default function ProfilePage() {
           "Update the company's public profile, media and contact details."
         )}
       />
-
-      {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {saveMessage && (
-        <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {saveMessage}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="grid gap-6">
         <EditableCompanyPreview

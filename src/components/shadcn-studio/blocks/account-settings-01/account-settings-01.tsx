@@ -4,7 +4,6 @@ import { useRef, useState } from 'react'
 import { CheckIcon, Loader2Icon, SaveIcon } from "@/components/icons"
 
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 
 import AccountPermission from '@/components/shadcn-studio/blocks/account-settings-01/content/account-permission'
 import DangerZone from '@/components/shadcn-studio/blocks/account-settings-01/content/danger-zone'
@@ -55,8 +54,8 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
   }
 
   return (
-    <section className='py-3'>
-      <div className='mx-auto max-w-5xl space-y-8'>
+    <section className='divide-y divide-gray-100'>
+      <div className='pb-6'>
         <PersonalInfo
           ref={personalInfoRef}
           options={{
@@ -65,48 +64,62 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
           }}
         />
 
-        {options.showAccountPermission ? <AccountPermission /> : null}
+        <div className='mt-6 grid grid-cols-1 gap-10 lg:grid-cols-3'>
+          <div className='hidden lg:block' />
+          <div className='flex flex-col gap-3 lg:col-span-2 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='min-w-0 flex-1'>
+              {error ? <p className='text-sm text-destructive'>{error}</p> : null}
+              {success ? (
+                <p className='flex items-center gap-1 text-sm text-green-600'>
+                  <CheckIcon className='size-4' />
+                  {localizedText(locale, 'Ändringar sparade!', 'Changes saved!')}
+                </p>
+              ) : null}
+            </div>
 
-        {error ? <p className='text-sm text-destructive'>{error}</p> : null}
-        {success ? (
-          <p className='flex items-center gap-1 text-sm text-green-600'>
-            <CheckIcon className='size-4' />
-            {localizedText(locale, 'Ändringar sparade!', 'Changes saved!')}
-          </p>
-        ) : null}
-
-        <div className='flex justify-end'>
-          <Button
-            type='button'
-            className='max-sm:w-full rounded-md'
-            isDisabled={saving}
-            onClick={handleSaveAll}
-          >
-            {saving ? (
-              <>
-                <Loader2Icon className='size-4 animate-spin' />
-                {localizedText(locale, 'Sparar...', 'Saving...')}
-              </>
-            ) : (
-              <>
-                <SaveIcon className='size-4' />
-                {localizedText(locale, 'Spara ändringar', 'Save changes')}
-              </>
-            )}
-          </Button>
+            <Button
+              type='button'
+              className='max-sm:w-full rounded-md'
+              isDisabled={saving}
+              onClick={handleSaveAll}
+            >
+              {saving ? (
+                <>
+                  <Loader2Icon className='size-4 animate-spin' />
+                  {localizedText(locale, 'Sparar...', 'Saving...')}
+                </>
+              ) : (
+                <>
+                  <SaveIcon className='size-4' />
+                  {localizedText(locale, 'Spara ändringar', 'Save changes')}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-
-        <Separator />
-        <IdentityVerification enabled={showVerification} />
-        <PasswordSection />
-
-        {showDangerZone ? (
-          <>
-            <Separator />
-            <DangerZone />
-          </>
-        ) : null}
       </div>
+
+      {options.showAccountPermission ? (
+        <div className='py-6'>
+          <AccountPermission />
+        </div>
+      ) : null}
+
+      {showVerification ? (
+        <div className='py-6'>
+          <IdentityVerification enabled={showVerification} />
+        </div>
+      ) : null}
+
+      <div className='py-6'>
+        <PasswordSection />
+      </div>
+
+      {showDangerZone ? (
+        <div className='pt-6'>
+          <DangerZone />
+        </div>
+      ) : null}
     </section>
   )
 }

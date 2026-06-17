@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { toast } from "sonner";
 import { Home, MapPin, Pencil } from "@/components/icons";
 import { getAppIconElement } from "@/components/icons/catalog";
 
@@ -787,29 +788,35 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
     const payload = createUpdatePayload(draft, listing, availableTags);
 
     if (Object.keys(payload).length === 0) {
-      setSaveState({
+      const nextSaveState: SaveState = {
         status: "success",
         message: null,
         messageKey: "noChanges",
-      });
+      };
+      setSaveState(nextSaveState);
+      toast.info(getSaveStateMessage(locale, nextSaveState));
       return;
     }
 
     if (payload.tags && listingTagsLoading) {
-      setSaveState({
+      const nextSaveState: SaveState = {
         status: "error",
         message: null,
         messageKey: "tagsStillLoading",
-      });
+      };
+      setSaveState(nextSaveState);
+      toast.error(getSaveStateMessage(locale, nextSaveState));
       return;
     }
 
     if (payload.tags && listingTagsError) {
-      setSaveState({
+      const nextSaveState: SaveState = {
         status: "error",
         message: null,
         messageKey: "tagsUnavailable",
-      });
+      };
+      setSaveState(nextSaveState);
+      toast.error(getSaveStateMessage(locale, nextSaveState));
       return;
     }
 
@@ -820,20 +827,24 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
       // Mutation hook owns invalidation (listings.all + queues.all). The
       // useListing query re-fetches and the hydration effect re-seeds draft.
       await updateListing.mutateAsync({ id, payload });
-      setSaveState({
+      const nextSaveState: SaveState = {
         status: "success",
         message: null,
         messageKey: "saved",
-      });
+      };
+      setSaveState(nextSaveState);
+      toast.success(getSaveStateMessage(locale, nextSaveState));
     } catch (err) {
-      setSaveState({
+      const nextSaveState: SaveState = {
         status: "error",
         message:
           err instanceof Error
             ? err.message
             : null,
         messageKey: err instanceof Error ? undefined : "saveFailed",
-      });
+      };
+      setSaveState(nextSaveState);
+      toast.error(getSaveStateMessage(locale, nextSaveState));
     }
   };
 
@@ -845,7 +856,6 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
 
   const openImageEditor = () => setUploadGalleryVisible(true);
   const tagsErrorMessage = getTagsErrorMessage(locale, listingTagsError);
-  const saveMessage = getSaveStateMessage(locale, saveState);
 
   if (loading) {
     return (
@@ -892,12 +902,6 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
             onDraftChange={updateDraft}
             onNumberChange={updateNumber}
           />
-
-          {saveState.status === "error" && saveMessage && (
-            <div className="mx-auto w-full max-w-6xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-              {saveMessage}
-            </div>
-          )}
 
           <div className="sticky bottom-4 z-10 mx-auto flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">

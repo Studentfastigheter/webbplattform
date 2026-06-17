@@ -320,105 +320,103 @@ export default function IdentityVerification({
       </div>
 
       <div className='lg:col-span-2'>
-        <div className='rounded-[8px] border border-gray-200 bg-white px-4 py-3'>
-          <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-            <div className='flex flex-wrap items-center gap-2.5'>
-              <Image
-                src={frejaLogoPath}
-                alt='Freja'
-                width={300}
-                height={72}
-                style={{ width: 64, height: 'auto' }}
-              />
-              {accountVerified ? (
-                <span className='inline-flex h-6 items-center gap-1.5 rounded-full border border-green-200 bg-white px-2 text-xs font-medium text-green-700'>
-                  <CheckCircle2Icon className='size-3.5 text-green-700' />
-                  {localizedText(locale, 'Verifierad', 'Verified')}
-                </span>
-              ) : (
-                <span className='inline-flex h-6 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2 text-xs font-medium text-muted-foreground'>
-                  {localizedText(locale, 'Quick-register', 'Quick-register')}
-                </span>
-              )}
-              {!accountVerified && statusCopy && statusStyles ? (
-                <span className={`inline-flex h-6 items-center rounded-full border px-2 text-xs font-medium ${statusStyles.pill}`}>
-                  {statusCopy.label}
-                </span>
-              ) : null}
-            </div>
-
-            {!accountVerified ? (
-              <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end'>
-                {isStarting || isActiveVerification ? (
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    className='rounded-md text-red-700 hover:bg-red-50 sm:w-auto'
-                    onClick={cancelAccountVerification}
-                  >
-                    {localizedText(locale, 'Avbryt', 'Cancel')}
-                  </Button>
-                ) : null}
-
-                {!isActiveVerification ? (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    className='rounded-md border-gray-200 text-gray-900 sm:w-auto'
-                    isLoading={isStarting || authLoading}
-                    isDisabled={!canStartVerification}
-                    onClick={startAccountVerification}
-                  >
-                    {authLoading
-                      ? localizedText(locale, 'Kontrollerar', 'Checking')
-                      : hasTerminalStatus
-                        ? localizedText(locale, 'Starta igen', 'Start again')
-                        : localizedText(locale, 'Verifiera nu', 'Verify now')}
-                  </Button>
-                ) : null}
-              </div>
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <div className='flex flex-wrap items-center gap-2.5'>
+            <Image
+              src={frejaLogoPath}
+              alt='Freja'
+              width={300}
+              height={72}
+              style={{ width: 64, height: 'auto' }}
+            />
+            {accountVerified ? (
+              <span className='inline-flex h-6 items-center gap-1.5 rounded-full bg-green-50 px-2 text-xs font-medium text-green-700'>
+                <CheckCircle2Icon className='size-3.5 text-green-700' />
+                {localizedText(locale, 'Verifierad', 'Verified')}
+              </span>
+            ) : (
+              <span className='inline-flex h-6 items-center gap-1.5 rounded-full bg-gray-100 px-2 text-xs font-medium text-muted-foreground'>
+                {localizedText(locale, 'Quick-register', 'Quick-register')}
+              </span>
+            )}
+            {!accountVerified && statusCopy && statusStyles ? (
+              <span className={`inline-flex h-6 items-center rounded-full px-2 text-xs font-medium ${statusStyles.pill}`}>
+                {statusCopy.label}
+              </span>
             ) : null}
           </div>
 
-          {!accountVerified && isActiveVerification && frejaAuthUrl ? (
-            <div className='mt-4 flex items-center gap-4 border-t border-gray-100 pt-4'>
-              <div className='rounded-[8px] border border-gray-200 bg-white p-2'>
-                <QRCodeSVG
-                  value={frejaAuthUrl}
-                  size={104}
-                  fgColor='#111827'
-                  bgColor='#ffffff'
-                  level='M'
-                  marginSize={2}
-                />
-              </div>
-              <p className='flex items-center gap-2 text-sm text-muted-foreground'>
-                {loading ? <Loader2Icon className='size-4 animate-spin' /> : null}
-                {localizedText(locale, 'Kontrollerar verifieringen automatiskt.', 'Checking the verification automatically.')}
-              </p>
+          {!accountVerified ? (
+            <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end'>
+              {isStarting || isActiveVerification ? (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  className='rounded-md text-red-700 hover:bg-red-50 sm:w-auto'
+                  onClick={cancelAccountVerification}
+                >
+                  {localizedText(locale, 'Avbryt', 'Cancel')}
+                </Button>
+              ) : null}
+
+              {!isActiveVerification ? (
+                <Button
+                  type='button'
+                  variant='outline'
+                  className='rounded-md border-gray-200 text-gray-900 sm:w-auto'
+                  isLoading={isStarting || authLoading}
+                  isDisabled={!canStartVerification}
+                  onClick={startAccountVerification}
+                >
+                  {authLoading
+                    ? localizedText(locale, 'Kontrollerar', 'Checking')
+                    : hasTerminalStatus
+                      ? localizedText(locale, 'Starta igen', 'Start again')
+                      : localizedText(locale, 'Verifiera nu', 'Verify now')}
+                </Button>
+              ) : null}
             </div>
           ) : null}
-
-          {!accountVerified && statusCopy && statusStyles && StatusIcon ? (
-            <div
-              className={`mt-4 flex gap-3 rounded-[8px] border px-3 py-3 text-sm ${statusStyles.panel}`}
-              role={status === 'PENDING' ? 'status' : 'alert'}
-              aria-live='polite'
-            >
-              <StatusIcon
-                className={`mt-0.5 size-4 shrink-0 ${statusStyles.icon} ${
-                  status === 'PENDING' ? 'animate-pulse' : ''
-                }`}
-              />
-              <div className='min-w-0'>
-                <p className='font-medium'>{statusCopy.title}</p>
-                <p className='mt-1 text-xs leading-5'>{statusCopy.description}</p>
-              </div>
-            </div>
-          ) : null}
-
-          {error ? <p className='mt-4 text-sm text-destructive'>{error}</p> : null}
         </div>
+
+        {!accountVerified && isActiveVerification && frejaAuthUrl ? (
+          <div className='mt-4 flex items-center gap-4 border-t border-gray-100 pt-4'>
+            <div className='rounded-[8px] bg-white p-2'>
+              <QRCodeSVG
+                value={frejaAuthUrl}
+                size={104}
+                fgColor='#111827'
+                bgColor='#ffffff'
+                level='M'
+                marginSize={2}
+              />
+            </div>
+            <p className='flex items-center gap-2 text-sm text-muted-foreground'>
+              {loading ? <Loader2Icon className='size-4 animate-spin' /> : null}
+              {localizedText(locale, 'Kontrollerar verifieringen automatiskt.', 'Checking the verification automatically.')}
+            </p>
+          </div>
+        ) : null}
+
+        {!accountVerified && statusCopy && statusStyles && StatusIcon ? (
+          <div
+            className={`mt-4 flex gap-3 rounded-[8px] border px-3 py-3 text-sm ${statusStyles.panel}`}
+            role={status === 'PENDING' ? 'status' : 'alert'}
+            aria-live='polite'
+          >
+            <StatusIcon
+              className={`mt-0.5 size-4 shrink-0 ${statusStyles.icon} ${
+                status === 'PENDING' ? 'animate-pulse' : ''
+              }`}
+            />
+            <div className='min-w-0'>
+              <p className='font-medium'>{statusCopy.title}</p>
+              <p className='mt-1 text-xs leading-5'>{statusCopy.description}</p>
+            </div>
+          </div>
+        ) : null}
+
+        {error ? <p className='mt-4 text-sm text-destructive'>{error}</p> : null}
       </div>
     </div>
   )

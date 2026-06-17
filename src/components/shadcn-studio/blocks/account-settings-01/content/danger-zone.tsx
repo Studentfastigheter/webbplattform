@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Loader2Icon, Trash2Icon } from "@/components/icons"
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogClose,
@@ -66,78 +65,74 @@ const DangerZone = () => {
       </div>
 
       <div className='space-y-6 lg:col-span-2'>
-        <Card className='rounded-[8px] border-gray-200 shadow-none'>
-          <CardContent className='px-4 py-3'>
-            <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-              <span className='text-sm font-semibold text-gray-950'>
-                {localizedText(locale, 'Radera konto', 'Delete account')}
-              </span>
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <span className='text-sm font-semibold text-gray-950'>
+            {localizedText(locale, 'Radera konto', 'Delete account')}
+          </span>
 
-              <Dialog
-                open={open}
-                onOpenChange={(nextOpen) => {
-                  if (deleting) return
-                  setOpen(nextOpen)
-                  if (!nextOpen) setError(null)
-                }}
+          <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+              if (deleting) return
+              setOpen(nextOpen)
+              if (!nextOpen) setError(null)
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button
+                type='button'
+                variant='outline'
+                className='rounded-md border-red-200 text-red-700 hover:bg-red-50 sm:w-auto'
               >
-                <DialogTrigger asChild>
+                <Trash2Icon className='size-4' />
+                {localizedText(locale, 'Radera konto', 'Delete account')}
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent className='sm:max-w-md'>
+              <DialogHeader className='space-y-2'>
+                <DialogTitle>{localizedText(locale, 'Radera konto', 'Delete account')}</DialogTitle>
+                <div className='text-muted-foreground text-sm'>
+                  {localizedText(locale, 'Detta tar bort kontot permanent och går inte att ångra.', 'This permanently deletes the account and cannot be undone.')}
+                </div>
+              </DialogHeader>
+
+              {error ? (
+                <p className='text-sm text-destructive'>{error}</p>
+              ) : null}
+
+              <DialogFooter className='mt-4 gap-4 sm:justify-end'>
+                <DialogClose asChild>
                   <Button
                     type='button'
                     variant='outline'
-                    className='rounded-md border-red-200 text-red-700 hover:bg-red-50 sm:w-auto'
+                    className='rounded-md'
+                    isDisabled={deleting}
                   >
-                    <Trash2Icon className='size-4' />
-                    {localizedText(locale, 'Radera konto', 'Delete account')}
+                    {localizedText(locale, 'Avbryt', 'Cancel')}
                   </Button>
-                </DialogTrigger>
-
-                <DialogContent className='sm:max-w-md'>
-                  <DialogHeader className='space-y-2'>
-                    <DialogTitle>{localizedText(locale, 'Radera konto', 'Delete account')}</DialogTitle>
-                    <div className='text-muted-foreground text-sm'>
-                      {localizedText(locale, 'Detta tar bort kontot permanent och går inte att ångra.', 'This permanently deletes the account and cannot be undone.')}
-                    </div>
-                  </DialogHeader>
-
-                  {error ? (
-                    <p className='text-sm text-destructive'>{error}</p>
-                  ) : null}
-
-                  <DialogFooter className='mt-4 gap-4 sm:justify-end'>
-                    <DialogClose asChild>
-                      <Button
-                        type='button'
-                        variant='outline'
-                        className='rounded-md'
-                        isDisabled={deleting}
-                      >
-                        {localizedText(locale, 'Avbryt', 'Cancel')}
-                      </Button>
-                    </DialogClose>
-                    <Button
-                      type='button'
-                      variant='destructive'
-                      className='rounded-md'
-                      isLoading={deleting}
-                      isDisabled={deleting}
-                      onClick={handleDeleteAccount}
-                    >
-                      {deleting ? (
-                        <>
-                          <Loader2Icon className='size-4 animate-spin' />
-                          {localizedText(locale, 'Raderar...', 'Deleting...')}
-                        </>
-                      ) : (
-                        localizedText(locale, 'Radera konto', 'Delete account')
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardContent>
-        </Card>
+                </DialogClose>
+                <Button
+                  type='button'
+                  variant='destructive'
+                  className='rounded-md'
+                  isLoading={deleting}
+                  isDisabled={deleting}
+                  onClick={handleDeleteAccount}
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2Icon className='size-4 animate-spin' />
+                      {localizedText(locale, 'Raderar...', 'Deleting...')}
+                    </>
+                  ) : (
+                    localizedText(locale, 'Radera konto', 'Delete account')
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </div>
   )

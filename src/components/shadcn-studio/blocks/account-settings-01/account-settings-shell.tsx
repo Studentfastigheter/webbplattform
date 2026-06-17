@@ -27,12 +27,14 @@ const AccountSettingsShell = ({
           </p>
         </div>
 
-        <UserGeneral
-          options={{
-            ...generalOptions,
-            showVerification,
-          }}
-        />
+        <div className='rounded-[8px] border border-gray-200 bg-white p-4 shadow-theme-xs sm:p-6'>
+          <UserGeneral
+            options={{
+              ...generalOptions,
+              showVerification,
+            }}
+          />
+        </div>
       </div>
     </div>
   )
