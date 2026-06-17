@@ -2,7 +2,7 @@ import { normalizePathname } from "@/i18n/config";
 
 const enabledValues = new Set(["1", "true", "yes", "on", "launched"]);
 
-const prelaunchPublicSitePaths = new Set([
+export const prelaunchPublicSitePathnames = [
   "/",
   "/for-business",
   "/partners",
@@ -10,7 +10,9 @@ const prelaunchPublicSitePaths = new Set([
   "/terms-of-service",
   "/privacy-policy",
   "/cookie-policy",
-]);
+] as const;
+
+const prelaunchPublicSitePaths = new Set<string>(prelaunchPublicSitePathnames);
 
 export function isPlatformLaunched() {
   const value = process.env.NEXT_PUBLIC_PLATFORM_LAUNCHED ?? "";

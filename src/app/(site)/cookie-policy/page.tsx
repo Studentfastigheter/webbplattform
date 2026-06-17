@@ -3,29 +3,22 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { localizeHref } from "@/i18n/config";
 import { getRequestLocale } from "@/i18n/server";
+import { createPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
 
-  if (locale === "en") {
-    return {
-      title: "Cookie Policy",
-      description: "Cookie Policy for CampusLyan.",
-      alternates: {
-        canonical: "/en/cookie-policy",
-      },
-    };
-  }
-
-  return {
-    title: "Cookiepolicy",
-    description: "Cookiepolicy för CampusLyan.",
-    alternates: {
-      canonical: "/cookie-policy",
-    },
-  };
+  return createPageMetadata({
+    locale,
+    path: "/cookie-policy",
+    title: locale === "en" ? "Cookie Policy" : "Cookiepolicy",
+    description:
+      locale === "en"
+        ? "Cookie Policy for CampusLyan."
+        : "Cookiepolicy för CampusLyan.",
+  });
 }
 
 const lastUpdated = "17 maj 2026";

@@ -31,8 +31,8 @@ export function getBusinessTestimonials(locale: Locale): BusinessTestimonial[] {
     {
       quote: localizedText(
         locale,
-        "CampusLyan är ett mycket efterfrågat initiativ som har potential att stärka studenters möjligheter att hitta boende i hela Sverige. Jag ser med stor förväntan på den fortsatta utvecklingen av plattformen och vilka värden den kan skapa för både studenter och uthyrare!",
-        "CampusLyan is a highly requested initiative with the potential to strengthen students' ability to find housing across Sweden. I look forward to the continued development of the platform and the value it can create for both students and landlords!",
+        "CampusLyan är ett mycket efterfrågat initiativ som har potential att stärka studenters möjligheter att hitta boende i hela Sverige. Jag ser med stor förväntan på den fortsatta utvecklingen av plattformen och vilka värden den kan skapa för både studenter och bostadsaktörer!",
+        "CampusLyan is a highly requested initiative with the potential to strengthen students' ability to find housing across Sweden. I look forward to the continued development of the platform and the value it can create for both students and housing providers!",
       ),
       authorName: "Gabriella Näslund",
       title: localizedText(locale, "Vice ordförande", "Vice Chair"),

@@ -89,8 +89,8 @@ export default function Page() {
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {localizedText(
             locale,
-            "Denna sida är för företags- och hyresvärdskonton.",
-            "This page is for company and landlord accounts.",
+            "Denna sida är för företagskonton.",
+            "This page is for company accounts.",
           )}
         </div>
       )}

@@ -29,7 +29,6 @@ const legacyRouteRedirects = [
   ["/stader", "/cities"],
   ["/registrera", "/register"],
   ["/glomt-losenord", "/forgot-password"],
-  ["/fakturering", "/billing"],
   ["/anvandarvillkor", "/terms-of-service"],
   ["/integritetspolicy", "/privacy-policy"],
   ["/cookiepolicy", "/cookie-policy"],

@@ -8,17 +8,17 @@
   "siteMetadata": {
     "titleDefault": "CampusLyan - Gratis studentbostäder samlade på ett ställe",
     "titleTemplate": "%s | CampusLyan",
-    "description": "CampusLyan är en gratis plattform där studenter enkelt hittar bostäder, rum och andrahandslägenheter från både privatpersoner och studentbostadsbolag.",
+    "description": "CampusLyan är en gratis plattform där studenter enkelt hittar studentbostäder, rum och bostadsköer från verifierade bostadsbolag.",
     "ogTitle": "CampusLyan - Gratis plattform för studentbostäder",
-    "ogDescription": "Hitta studentbostäder gratis. CampusLyan samlar annonser från både privatpersoner och etablerade bostadsbolag.",
+    "ogDescription": "Hitta studentbostäder gratis. CampusLyan samlar annonser och köer från verifierade bostadsbolag.",
     "keywords": [
       "studentbostad",
       "studentlägenhet",
       "studentboende",
       "bostad student",
-      "hyra rum student",
+      "studentrum",
       "CampusLyan",
-      "andrahand student",
+      "bostadskö student",
       "gratis bostadsplattform",
       "StudentLyan"
     ]
@@ -34,7 +34,6 @@
     },
     "roles": {
       "student": "Student",
-      "privateLandlord": "Privat uthyrare",
       "company": "Företag"
     },
     "nav": {
@@ -55,8 +54,7 @@
     "account": {
       "myAccount": "Mitt konto",
       "settings": "Inställningar",
-      "help": "Hjälp",
-      "billing": "Fakturering"
+      "help": "Hjälp"
     }
   },
   "siteFooter": {
@@ -88,7 +86,7 @@
     "hero": {
       "title": "Lyor för studenter i",
       "flipWords": ["Göteborg", "Stockholm", "Lund", "Uppsala", "Linköping"],
-      "subtitle": "Allt för studentboende i hela Sverige. Bostäder, köer, verifierade privatuthyrare och guider. Helt gratis.",
+      "subtitle": "Allt för studentboende i hela Sverige. Bostäder, köer, verifierade bostadsbolag och guider. Helt gratis.",
       "interestCta": "Anmäl intresse",
       "businessCta": "För företag",
       "previewAlt": "Preview av CampusLyan plattformen"
@@ -100,7 +98,7 @@
       "items": [
         {
           "title": "Skapa din profil",
-          "desc": "Fyll i dina uppgifter en gång och använd profilen när du söker bostad eller kontaktar uthyrare."
+          "desc": "Fyll i dina uppgifter en gång och använd profilen när du söker bostad eller kontaktar bostadsbolag."
         },
         {
           "title": "Hitta rätt bostäder och köer",
@@ -108,7 +106,7 @@
         },
         {
           "title": "Sök och flytta in",
-          "desc": "Ansök direkt, kontakta verifierade privatuthyrare och byt bostad om du ska på utbyte, praktik eller sommarjobb."
+          "desc": "Ansök direkt, följ bostadsköer och samla dina kontakter med verifierade bostadsbolag."
         }
       ]
     },
@@ -121,8 +119,8 @@
           "text": "Hitta studentbostäder i hela Sverige och ställ dig i rätt köer utan att hoppa mellan olika sidor."
         },
         {
-          "title": "Trygg privatuthyrning",
-          "text": "Verifierade uthyrare och säkrare kontakt än i öppna Facebook grupper med mindre risk för bedrägerier."
+          "title": "Verifierade bostadsbolag",
+          "text": "Se annonser och köer från etablerade aktörer med tydlig information om villkor, ansökan och nästa steg."
         },
         {
           "title": "Guider som hjälper dig lyckas",

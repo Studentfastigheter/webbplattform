@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import {
   Users2,
@@ -7,6 +8,22 @@ import {
 import type { Locale } from "@/i18n/config";
 import { getRequestLocale } from "@/i18n/server";
 import { localizedText } from "@/i18n/text";
+import { createPageMetadata } from "@/lib/seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+
+  return createPageMetadata({
+    locale,
+    path: "/about-us",
+    title: localizedText(locale, "Om CampusLyan", "About CampusLyan"),
+    description: localizedText(
+      locale,
+      "Lär känna teamet bakom CampusLyan och vår mission att göra studentbostäder enklare att hitta i Sverige.",
+      "Meet the team behind CampusLyan and our mission to make student housing easier to find in Sweden."
+    ),
+  });
+}
 
 // --- DATA ---
 type TeamMember = { 

@@ -9,7 +9,7 @@ export default function VerifiedTag() {
 
   return (
     <Tag
-      text={localizedText(locale, "Verifierad hyresvärd", "Verified landlord")}
+      text={localizedText(locale, "Verifierat bostadsbolag", "Verified housing company")}
       textColor="#FFFFFF"
       bgColor="#0F4D0F"
       className="inline-flex items-center"

@@ -75,7 +75,6 @@ const getPropertyTypeOptions = (locale: "sv" | "en") => [
 
 const getHostTypeOptions = (locale: "sv" | "en") => [
   { id: "COMPANY", label: localizedText(locale, "Företag", "Company") },
-  { id: "PRIVATE", label: localizedText(locale, "Privat värd", "Private landlord") },
 ];
 
 const getAmenityOptions = (locale: "sv" | "en") => [

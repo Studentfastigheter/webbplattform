@@ -3,29 +3,22 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { localizeHref } from "@/i18n/config";
 import { getRequestLocale } from "@/i18n/server";
+import { createPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
 
-  if (locale === "en") {
-    return {
-      title: "Terms of Use",
-      description: "Terms of Use for CampusLyan.",
-      alternates: {
-        canonical: "/en/terms-of-service",
-      },
-    };
-  }
-
-  return {
-    title: "Användarvillkor",
-    description: "Användarvillkor för CampusLyan.",
-    alternates: {
-      canonical: "/terms-of-service",
-    },
-  };
+  return createPageMetadata({
+    locale,
+    path: "/terms-of-service",
+    title: locale === "en" ? "Terms of Use" : "Användarvillkor",
+    description:
+      locale === "en"
+        ? "Terms of Use for CampusLyan."
+        : "Användarvillkor för CampusLyan.",
+  });
 }
 
 const lastUpdated = "21 maj 2026";
@@ -87,7 +80,7 @@ function EnglishTermsPage() {
                 These terms govern your use of <InlineLink href="https://www.campuslyan.se">www.campuslyan.se</InlineLink> and the services provided by CampusLyan Nordics AB, company registration number 559587-0048.
               </Paragraph>
               <Paragraph>
-                CampusLyan is not a landlord, legal housing agency, representative of landlords or party to any rental agreement. We provide a technical platform and marketplace.
+                CampusLyan is not a housing provider, legal housing agency, representative of housing providers or party to any rental agreement. We provide a technical platform and marketplace.
               </Paragraph>
             </TermsSection>
 
@@ -102,7 +95,7 @@ function EnglishTermsPage() {
 
             <TermsSection title="3. Listings, Queues and Applications">
               <Paragraph>
-                Housing information may come from CampusLyan, partner housing providers, property owners or other sources. You are responsible for reviewing the landlord's terms, queue rules and rental conditions before applying.
+                Housing information may come from CampusLyan, partner housing providers, property owners or other sources. You are responsible for reviewing the housing provider's terms, queue rules and rental conditions before applying.
               </Paragraph>
               <Paragraph>
                 CampusLyan may help you express interest, manage queue information or navigate to external housing actors, but final allocation and rental decisions are made by the relevant housing actor.
@@ -123,7 +116,7 @@ function EnglishTermsPage() {
 
             <TermsSection title="6. Liability">
               <Paragraph>
-                CampusLyan is not responsible for external landlords' decisions, third-party websites, incorrect information supplied by users or external actors, or rental agreements entered into outside the platform.
+                CampusLyan is not responsible for external housing providers' decisions, third-party websites, incorrect information supplied by users or external actors, or rental agreements entered into outside the platform.
               </Paragraph>
             </TermsSection>
 
@@ -198,8 +191,8 @@ export default async function TermsPage() {
                 accepterar du dessa användarvillkor.
               </Paragraph>
               <Paragraph>
-                CampusLyan är inte hyresvärd, bostadsförmedling i juridisk
-                mening, ombud för hyresvärdar eller part i något hyresavtal.
+                CampusLyan är inte bostadsaktör, bostadsförmedling i juridisk
+                mening, ombud för bostadsaktörer eller part i något hyresavtal.
                 CampusLyan tillhandahåller en teknisk plattform och marknadsplats
                 som gör det enklare för studenter och andra bostadssökande att
                 hitta relevant bostadsinformation, få överblick över bostadsköer

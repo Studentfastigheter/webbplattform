@@ -8,17 +8,17 @@
   "siteMetadata": {
     "titleDefault": "CampusLyan - Free student housing in one place",
     "titleTemplate": "%s | CampusLyan",
-    "description": "CampusLyan is a free platform where students can find housing, rooms and second-hand rentals from both private landlords and student housing companies.",
+    "description": "CampusLyan is a free platform where students can find student housing, rooms and housing queues from verified housing companies.",
     "ogTitle": "CampusLyan - Free platform for student housing",
-    "ogDescription": "Find student housing for free. CampusLyan collects listings from both private landlords and established housing companies.",
+    "ogDescription": "Find student housing for free. CampusLyan collects listings and queues from verified housing companies.",
     "keywords": [
       "student housing",
       "student apartment",
       "student accommodation",
       "housing for students",
-      "rent room student",
+      "student room",
       "CampusLyan",
-      "second hand student housing",
+      "student housing queue",
       "free housing platform",
       "StudentLyan"
     ]
@@ -34,7 +34,6 @@
     },
     "roles": {
       "student": "Student",
-      "privateLandlord": "Private landlord",
       "company": "Company"
     },
     "nav": {
@@ -55,8 +54,7 @@
     "account": {
       "myAccount": "My account",
       "settings": "Settings",
-      "help": "Help",
-      "billing": "Billing"
+      "help": "Help"
     }
   },
   "siteFooter": {
@@ -88,7 +86,7 @@
     "hero": {
       "title": "Student homes in",
       "flipWords": ["Gothenburg", "Stockholm", "Lund", "Uppsala", "Linköping"],
-      "subtitle": "Everything for student housing across Sweden. Listings, queues, verified private landlords and guides. Completely free.",
+      "subtitle": "Everything for student housing across Sweden. Listings, queues, verified housing companies and guides. Completely free.",
       "interestCta": "Join the waitlist",
       "businessCta": "For companies",
       "previewAlt": "Preview of the CampusLyan platform"
@@ -100,7 +98,7 @@
       "items": [
         {
           "title": "Create your profile",
-          "desc": "Enter your details once and use your profile when you apply for housing or contact landlords."
+          "desc": "Enter your details once and use your profile when you apply for housing or contact housing companies."
         },
         {
           "title": "Find the right homes and queues",
@@ -108,7 +106,7 @@
         },
         {
           "title": "Apply and move in",
-          "desc": "Apply directly, contact verified private landlords and swap housing when you go on exchange, internship or summer work."
+          "desc": "Apply directly, follow housing queues and keep your contacts with verified housing companies in one place."
         }
       ]
     },
@@ -121,8 +119,8 @@
           "text": "Find student housing across Sweden and join the right queues without jumping between different websites."
         },
         {
-          "title": "Safer private rentals",
-          "text": "Verified landlords and safer contact than open Facebook groups, with less risk of scams."
+          "title": "Verified housing companies",
+          "text": "See listings and queues from established providers with clear information about terms, applications and next steps."
         },
         {
           "title": "Guides that help you succeed",

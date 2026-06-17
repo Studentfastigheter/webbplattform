@@ -595,7 +595,7 @@ export default function ListingDetailPage() {
         : null,
       subtitle: isCompany
         ? localizedText(locale, "Företag", "Company")
-        : localizedText(locale, "Privat hyresvärd", "Private landlord"),
+        : localizedText(locale, "Bostadsaktör", "Housing provider"),
       companyPageUrl: isCompany ? `/all-queues/${listing.ownerId}` : undefined,
     };
   }, [companyLogoUrl, listing, locale]);
@@ -703,7 +703,7 @@ export default function ListingDetailPage() {
             </div>
           </section>
 
-          {/* 4. Landlord info */}
+          {/* 4. Provider info */}
           <BostadLandlord advertiser={advertiser} />
 
           {/* 5. Full image slideshow */}

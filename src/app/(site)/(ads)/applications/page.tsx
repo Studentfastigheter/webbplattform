@@ -115,7 +115,7 @@ function buildApplicationRow(
   const title = detail?.title ?? app.listingTitle ?? localizedText(actions.locale, "Annons", "Listing");
   const imageUrl = detail?.imageUrls?.[0] ?? app.listingImage ?? "";
   const ownerType = detail?.ownerType ?? app.hostType;
-  const ownerName = detail?.ownerName ?? app.hostType ?? localizedText(actions.locale, "Hyresvärd", "Landlord");
+  const ownerName = detail?.ownerName ?? app.hostType ?? localizedText(actions.locale, "Bostadsaktör", "Housing provider");
   const hasOffer = Number.isFinite(applicationId) && hasOfferStatus(app.status);
 
   return {
@@ -325,7 +325,7 @@ export default function MyApplicationsPage() {
         advertiser: {
           type: app.hostType === "Företag" ? "company" : "private_landlord",
           id: (detail?.ownerId ?? 0) as CompanyId,
-          displayName: detail?.ownerName ?? app.hostType ?? localizedText(locale, "Hyresvärd", "Landlord"),
+          displayName: detail?.ownerName ?? app.hostType ?? localizedText(locale, "Bostadsaktör", "Housing provider"),
           logoUrl: detail?.ownerLogoUrl ?? null,
           bannerUrl: null,
           phone: null,
@@ -381,7 +381,7 @@ export default function MyApplicationsPage() {
     router,
   ]);
 
-  // Private-landlord view isn't wired to a real endpoint in the original;
+  // Provider view isn't wired to a real endpoint in the original;
   // keep the same empty-state behavior.
   const landlordApplications: StudentApplicationRowProps[] = [];
   const loading = isStudent ? applicationsLoading : false;

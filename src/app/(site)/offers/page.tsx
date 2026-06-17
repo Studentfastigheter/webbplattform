@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
+
 import { getRequestLocale } from "@/i18n/server";
 import { localizedText } from "@/i18n/text";
+import { createNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = createNoIndexMetadata(
+  "Erbjudanden",
+  "Erbjudandesidan publiceras när innehållet är färdigt."
+);
 
 export default async function Page() {
   const locale = await getRequestLocale();

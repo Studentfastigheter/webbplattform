@@ -12,6 +12,13 @@ import { Toaster } from "@/components/ui/sonner";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { getDictionary, getRequestLocale } from "@/i18n/server";
+import {
+  indexableRobots,
+  languageAlternates,
+  safeJsonLd,
+  siteConfig,
+  websiteJsonLd,
+} from "@/lib/seo";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -25,9 +32,14 @@ export const viewport: Viewport = {
 export async function generateMetadata(): Promise<Metadata> {
   const [dictionary, locale] = await Promise.all([getDictionary(), getRequestLocale()]);
   const metadata = dictionary.siteMetadata;
+  const canonical = locale === "en" ? "/en" : "/";
 
   return {
-    metadataBase: new URL("https://www.campuslyan.se"),
+    metadataBase: new URL(siteConfig.url),
+    applicationName: "CampusLyan",
+    creator: "CampusLyan Nordics AB",
+    publisher: "CampusLyan Nordics AB",
+    category: "student housing",
     title: {
       default: metadata.titleDefault,
       template: metadata.titleTemplate,
@@ -35,15 +47,12 @@ export async function generateMetadata(): Promise<Metadata> {
     description: metadata.description,
     keywords: [...metadata.keywords],
     alternates: {
-      canonical: locale === "en" ? "/en" : "/",
-      languages: {
-        sv: "/",
-        en: "/en",
-      },
+      canonical,
+      languages: languageAlternates("/"),
     },
     openGraph: {
       type: "website",
-      url: locale === "en" ? "/en" : "/",
+      url: canonical,
       siteName: "CampusLyan",
       title: metadata.ogTitle,
       description: metadata.ogDescription,
@@ -60,16 +69,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: metadata.ogDescription,
       images: ["/campuslyan-og.png"],
     },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        "max-snippet": -1,
-        "max-image-preview": "large",
-      },
-    },
+    robots: indexableRobots,
     icons: {
       icon: [
         { url: "/favicon.ico" },
@@ -90,13 +90,18 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await getRequestLocale();
+  const [dictionary, locale] = await Promise.all([getDictionary(), getRequestLocale()]);
+  const structuredData = websiteJsonLd(locale, dictionary.siteMetadata.description);
 
   return (
     <html lang={locale}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans bg-background text-foreground`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
+        />
         <Script
           id="google-adsense"
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ACCOUNT}`}

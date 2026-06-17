@@ -81,9 +81,7 @@ export default function SiteHeader() {
       ? t("siteHeader.roles.student")
       : isQuickRegister
         ? localizedText(locale, "Quick-register konto", "Quick-register account")
-        : userType === "private_landlord"
-        ? t("siteHeader.roles.privateLandlord")
-        : userType === "company"
+        : userType === "private_landlord" || userType === "company"
           ? t("siteHeader.roles.company")
           : null;
   const displayName = getUserDisplayName(currentUser);
@@ -181,7 +179,6 @@ export default function SiteHeader() {
     accountMenuItems = [
       { name: t("siteHeader.account.myAccount"), link: localizedHref("/profile") },
       { name: t("siteHeader.account.settings"), link: localizedHref("/settings") },
-      { name: t("siteHeader.account.billing"), link: localizedHref("/billing") },
       { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
   } else if (currentUser) {

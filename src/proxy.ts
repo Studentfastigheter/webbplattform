@@ -14,6 +14,9 @@ import {
   isPlatformLaunched,
   isPrelaunchPublicSitePath,
 } from "@/lib/platform-launch";
+import { isPrivateIndexingHost } from "@/lib/seo";
+
+const PRIVATE_SUBDOMAIN_ROBOTS_HEADER = "noindex, nofollow, noarchive, nosnippet";
 
 function getHostname(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
@@ -89,6 +92,11 @@ function redirectWithLocale(url: URL, locale: Locale) {
   return response;
 }
 
+function withNoIndexHeader(response: NextResponse) {
+  response.headers.set("X-Robots-Tag", PRIVATE_SUBDOMAIN_ROBOTS_HEADER);
+  return response;
+}
+
 function redirectToPrelaunchHome(url: URL, locale: Locale) {
   url.pathname = localizePathname("/", locale);
   url.search = "";
@@ -110,38 +118,39 @@ export function proxy(req: NextRequest) {
 
   const isPortalSubdomain = hostname.startsWith("portal.");
   const isAdminSubdomain = hostname.startsWith("admin.");
+  const isPrivateSubdomain = isPrivateIndexingHost(hostname);
 
   if (isPortalSubdomain) {
     if (!pathStartsWithSegment(routingPathname, "/portal")) {
       url.pathname = `/portal${routingPathname === "/" ? "" : routingPathname}`;
-      return rewriteWithLocale(req, url, locale);
+      return withNoIndexHeader(rewriteWithLocale(req, url, locale));
     }
 
     if (urlLocale) {
       url.pathname = routingPathname;
-      return rewriteWithLocale(req, url, locale);
+      return withNoIndexHeader(rewriteWithLocale(req, url, locale));
     }
 
-    return nextWithLocale(req, locale);
+    return withNoIndexHeader(nextWithLocale(req, locale));
   }
 
   if (isAdminSubdomain) {
     if (routingPathname === "/" || routingPathname === "/admin") {
       url.pathname = "/tags";
-      return redirectWithLocale(url, locale);
+      return withNoIndexHeader(redirectWithLocale(url, locale));
     }
 
     if (!pathStartsWithSegment(routingPathname, "/admin")) {
       url.pathname = `/admin${routingPathname === "/" ? "" : routingPathname}`;
-      return rewriteWithLocale(req, url, locale);
+      return withNoIndexHeader(rewriteWithLocale(req, url, locale));
     }
 
     if (urlLocale) {
       url.pathname = routingPathname;
-      return rewriteWithLocale(req, url, locale);
+      return withNoIndexHeader(rewriteWithLocale(req, url, locale));
     }
 
-    return nextWithLocale(req, locale);
+    return withNoIndexHeader(nextWithLocale(req, locale));
   }
 
   if (
@@ -149,7 +158,8 @@ export function proxy(req: NextRequest) {
     pathStartsWithSegment(routingPathname, "/admin")
   ) {
     url.pathname = "/404";
-    return rewriteWithLocale(req, url, locale);
+    const response = rewriteWithLocale(req, url, locale);
+    return isPrivateSubdomain ? withNoIndexHeader(response) : response;
   }
 
   if (!isPlatformLaunched() && !isPrelaunchPublicSitePath(routingPathname)) {

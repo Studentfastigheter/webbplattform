@@ -22,7 +22,7 @@ export type ListingCardSmallProps = {
   rent: number;
   tags?: Array<string | ListingTagDTO>;
   imageUrl?: string;      // En enkel sträng nu (URL)
-  landlordType?: string;  // Motsvarar hostType ("Privat värd" / "Företag")
+  landlordType?: string;  // Motsvarar hostType ("Företag")
   hostName?: string;
   hostLogoUrl?: string;
   isVerified?: boolean;

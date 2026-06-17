@@ -2,27 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { getRequestLocale } from "@/i18n/server";
+import { createPageMetadata } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
 
-  if (locale === "en") {
-    return {
-      title: "Privacy Policy",
-      description: "Privacy Policy for CampusLyan.",
-      alternates: {
-        canonical: "/en/privacy-policy",
-      },
-    };
-  }
-
-  return {
-    title: "Integritetspolicy",
-    description: "Integritetspolicy för CampusLyan.",
-    alternates: {
-      canonical: "/privacy-policy",
-    },
-  };
+  return createPageMetadata({
+    locale,
+    path: "/privacy-policy",
+    title: locale === "en" ? "Privacy Policy" : "Integritetspolicy",
+    description:
+      locale === "en"
+        ? "Privacy Policy for CampusLyan."
+        : "Integritetspolicy för CampusLyan.",
+  });
 }
 
 export const dynamic = "force-dynamic";
@@ -80,7 +73,7 @@ const dataTypeRows: PolicyTableRow[] = [
     id: "applications",
     cells: [
       "Intresseanmälningar och bostadsansökningar",
-      "Uppgifter om bostäder du visar intresse för, anmäler intresse till, ansöker om eller skickar förfrågningar om via CampusLyan. Det kan omfatta bostadsobjekt, ort, hyresvärd, önskad inflyttningsperiod, ansökningsstatus, meddelanden och annan information som du lämnar i samband med intresseanmälan, köansökan, bostadsansökan eller förfrågan.",
+      "Uppgifter om bostäder du visar intresse för, anmäler intresse till, ansöker om eller skickar förfrågningar om via CampusLyan. Det kan omfatta bostadsobjekt, ort, bostadsaktör, önskad inflyttningsperiod, ansökningsstatus, meddelanden och annan information som du lämnar i samband med intresseanmälan, köansökan, bostadsansökan eller förfrågan.",
       "Användaren, CampusLyans plattform och i vissa fall samarbetspartners",
     ],
   },
@@ -663,7 +656,7 @@ export default async function IntegritetspolicyPage() {
                 Anslutna bostadsföretag, fastighetsägare, studentkårer och
                 andra samarbetspartners kan genom CampusLyan tillgängliggöra
                 information, synliggöra bostäder och nå ut till relevanta
-                studentgrupper. CampusLyan är dock inte hyresvärd, förmedlar
+                studentgrupper. CampusLyan är dock inte bostadsaktör, förmedlar
                 inte hyresavtal i eget namn och fattar inte beslut om vem som får
                 en bostad.
               </Paragraph>

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
+
 import FAQ from "@/components/shadcn-studio/blocks/faq-component-01/faq-component-01";
 import { getRequestLocale } from "@/i18n/server";
 import { localizedText } from "@/i18n/text";
+import { createPageMetadata, faqJsonLd, safeJsonLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -31,14 +34,36 @@ const getFaqItems = (locale: "sv" | "en") => [
   },
 ];
 
-export default async function FaqPage() {
+export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
 
+  return createPageMetadata({
+    locale,
+    path: "/faq",
+    title: localizedText(locale, "Vanliga frågor om CampusLyan", "CampusLyan FAQ"),
+    description: localizedText(
+      locale,
+      "Svar på vanliga frågor om CampusLyan, studentbostäder, köer, verifiering och hur plattformen fungerar.",
+      "Answers to common questions about CampusLyan, student housing, queues, verification and how the platform works."
+    ),
+  });
+}
+
+export default async function FaqPage() {
+  const locale = await getRequestLocale();
+  const faqItems = getFaqItems(locale);
+
   return (
-    <FAQ
-      faqItems={getFaqItems(locale)}
-      title={localizedText(locale, "Behöver du hjälp? Vi har svaren", "Need help? We have answers")}
-      description={localizedText(locale, "Här hittar du svar på de vanligaste frågorna och all information du behöver.", "Here you will find answers to the most common questions and the information you need.")}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd(faqItems)) }}
+      />
+      <FAQ
+        faqItems={faqItems}
+        title={localizedText(locale, "Behöver du hjälp? Vi har svaren", "Need help? We have answers")}
+        description={localizedText(locale, "Här hittar du svar på de vanligaste frågorna och all information du behöver.", "Here you will find answers to the most common questions and the information you need.")}
+      />
+    </>
   );
 }
