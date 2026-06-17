@@ -82,6 +82,9 @@ const roleLabels: Record<UserRole, { sv: string; en: string }> = {
   agent: { sv: "Agent", en: "Agent" },
 };
 
+const userListGridColumnsClassName =
+  "xl:grid-cols-[minmax(12rem,1.05fr)_minmax(13rem,1.2fr)_minmax(7rem,0.55fr)_minmax(8rem,0.65fr)_minmax(14rem,0.95fr)]";
+
 function createEmptyUserAccountForm(roleName = ""): UserAccountFormState {
   return {
     firstName: "",
@@ -767,7 +770,7 @@ export default function UsersPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card className="rounded-2xl border-gray-200 bg-white py-0 shadow-theme-xs">
+      <Card className="overflow-hidden rounded-2xl border-gray-200 bg-white py-0 shadow-theme-xs">
         <CardContent className="px-0">
           {loadingUsers ? (
             <div className="flex items-center gap-2 px-6 py-10 text-sm text-gray-500">
@@ -796,12 +799,17 @@ export default function UsersPage() {
                   {usersError}
                 </div>
               ) : null}
-              <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_280px] gap-4 border-b border-gray-100 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
-                <span>{localizedText(locale, "Namn", "Name")}</span>
-                <span>{localizedText(locale, "Kontaktuppgifter", "Contact details")}</span>
-                <span>{localizedText(locale, "Roll", "Role")}</span>
-                <span>{localizedText(locale, "Status", "Status")}</span>
-                <span>{localizedText(locale, "Åtgärd", "Action")}</span>
+              <div
+                className={[
+                  "hidden gap-4 border-b border-gray-100 px-6 py-4 text-[11px] font-semibold uppercase leading-5 tracking-wide text-gray-500 xl:grid",
+                  userListGridColumnsClassName,
+                ].join(" ")}
+              >
+                <span className="min-w-0 truncate">{localizedText(locale, "Namn", "Name")}</span>
+                <span className="min-w-0 truncate">{localizedText(locale, "Kontaktuppgifter", "Contact details")}</span>
+                <span className="min-w-0 truncate">{localizedText(locale, "Roll", "Role")}</span>
+                <span className="min-w-0 truncate">{localizedText(locale, "Status", "Status")}</span>
+                <span className="min-w-0 truncate">{localizedText(locale, "Åtgärd", "Action")}</span>
               </div>
 
               <div className="divide-y divide-gray-100">
@@ -813,10 +821,16 @@ export default function UsersPage() {
                   return (
                     <article
                       key={entry.id}
-                      className="grid gap-4 px-6 py-4 transition-colors hover:bg-gray-50/80 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_130px_140px_280px] md:items-center"
+                      className={[
+                        "grid gap-4 px-4 py-4 transition-colors hover:bg-gray-50/80 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:items-center",
+                        userListGridColumnsClassName,
+                      ].join(" ")}
                     >
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-gray-900">{entry.name}</p>
+                        <span className="mb-1 block text-[11px] font-semibold uppercase leading-4 tracking-wide text-gray-400 xl:hidden">
+                          {localizedText(locale, "Namn", "Name")}
+                        </span>
+                        <p className="break-words font-medium leading-6 text-gray-900 xl:truncate xl:break-normal">{entry.name}</p>
                         {isCurrentUser ? (
                           <p className="mt-1 text-xs font-medium text-[#004225]">
                             {localizedText(locale, "Du", "You")}
@@ -825,68 +839,82 @@ export default function UsersPage() {
                       </div>
 
                       <div className="min-w-0">
-                        <p className="truncate text-sm text-gray-600">{entry.email}</p>
+                        <span className="mb-1 block text-[11px] font-semibold uppercase leading-4 tracking-wide text-gray-400 xl:hidden">
+                          {localizedText(locale, "Kontakt", "Contact")}
+                        </span>
+                        <p className="break-all text-sm leading-6 text-gray-600 xl:truncate xl:break-normal">{entry.email}</p>
                         {entry.phone ? (
-                          <p className="mt-1 truncate text-sm text-gray-500">
+                          <p className="mt-1 break-words text-sm leading-6 text-gray-500 xl:truncate xl:break-normal">
                             {entry.phone}
                           </p>
                         ) : null}
                       </div>
 
-                      <div>
-                        <span className="text-sm text-gray-700">
+                      <div className="min-w-0">
+                        <span className="mb-1 block text-[11px] font-semibold uppercase leading-4 tracking-wide text-gray-400 xl:hidden">
+                          {localizedText(locale, "Roll", "Role")}
+                        </span>
+                        <span className="text-sm leading-6 text-gray-700">
                           {localizedText(locale, roleLabels[entry.role].sv, roleLabels[entry.role].en)}
                         </span>
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
+                        <span className="mb-1 block text-[11px] font-semibold uppercase leading-4 tracking-wide text-gray-400 xl:hidden">
+                          {localizedText(locale, "Status", "Status")}
+                        </span>
                         <VerificationBadge verified={entry.verified} locale={locale} />
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {canManageUsers ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="min-w-[90px]"
-                            isDisabled={savingAccount || deletingUserId !== null}
-                            onPress={() => openEditDialog(entry)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                            {localizedText(locale, "Ändra", "Edit")}
-                          </Button>
-                        ) : null}
-                        {canVerifyUsers && !entry.verified && !isCurrentUser ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="min-w-[126px]"
-                            isLoading={isVerifying}
-                            isDisabled={verifyingUserId !== null || deletingUserId !== null}
-                            onPress={() => handleVerifyUser(entry)}
-                          >
-                            <UserCheck className="h-4 w-4" />
-                            {localizedText(locale, "Verifiera", "Verify")}
-                          </Button>
-                        ) : !canManageUsers ? (
-                          <span className="text-sm text-gray-400">-</span>
-                        ) : null}
-                        {canManageUsers && !isCurrentUser ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            className="min-w-[104px]"
-                            isLoading={isDeleting}
-                            isDisabled={savingAccount || deletingUserId !== null}
-                            onPress={() => openDeleteDialog(entry)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            {localizedText(locale, "Ta bort", "Delete")}
-                          </Button>
-                        ) : null}
+                      <div className="min-w-0 md:col-span-2 xl:col-span-1">
+                        <span className="mb-2 block text-[11px] font-semibold uppercase leading-4 tracking-wide text-gray-400 xl:hidden">
+                          {localizedText(locale, "Åtgärd", "Action")}
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {canManageUsers ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="min-w-[7rem] flex-1 sm:flex-none xl:min-w-[90px]"
+                              isDisabled={savingAccount || deletingUserId !== null}
+                              onPress={() => openEditDialog(entry)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              {localizedText(locale, "Ändra", "Edit")}
+                            </Button>
+                          ) : null}
+                          {canVerifyUsers && !entry.verified && !isCurrentUser ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="min-w-[8.75rem] flex-1 sm:flex-none xl:min-w-[126px]"
+                              isLoading={isVerifying}
+                              isDisabled={verifyingUserId !== null || deletingUserId !== null}
+                              onPress={() => handleVerifyUser(entry)}
+                            >
+                              <UserCheck className="h-4 w-4" />
+                              {localizedText(locale, "Verifiera", "Verify")}
+                            </Button>
+                          ) : !canManageUsers ? (
+                            <span className="text-sm text-gray-400">-</span>
+                          ) : null}
+                          {canManageUsers && !isCurrentUser ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              className="min-w-[8rem] flex-1 sm:flex-none xl:min-w-[104px]"
+                              isLoading={isDeleting}
+                              isDisabled={savingAccount || deletingUserId !== null}
+                              onPress={() => openDeleteDialog(entry)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              {localizedText(locale, "Ta bort", "Delete")}
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
                     </article>
                   );
