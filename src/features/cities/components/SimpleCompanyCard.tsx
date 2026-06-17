@@ -53,6 +53,19 @@ export default function SimpleCompanyCard({
               </h3>
             </div>
 
+            <RichTextParagraph
+              text={description}
+              className="min-h-[38px] shrink-0 text-left text-[14px] font-normal leading-[19px] text-[#202020]"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                wordBreak: "break-word",
+              }}
+            />
+
             {websiteUrl && (
               <span className="min-h-[17px] max-w-full truncate text-[13px] font-medium leading-[17px] text-[#004225]">
                 {websiteUrl.replace(/^https?:\/\//i, "")}
@@ -61,24 +74,11 @@ export default function SimpleCompanyCard({
           </div>
         </div>
       </div>
-
-      <RichTextParagraph
-        text={description}
-        className="min-h-[38px] shrink-0 text-left text-[14px] font-normal leading-[19px] text-[#202020]"
-        style={{
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          wordBreak: "break-word",
-        }}
-      />
     </>
   );
 
   const className =
-    "relative flex h-full min-h-[206px] w-full max-w-none flex-col gap-4 overflow-hidden rounded-[32px] border border-black/[0.04] bg-white px-4 pb-4 pt-4 shadow-md transition-shadow duration-200 hover:shadow-lg sm:min-h-[188px] sm:px-5 sm:pt-5";
+    "relative flex h-full min-h-[188px] w-full max-w-none flex-col gap-4 overflow-hidden rounded-[32px] border border-black/[0.04] bg-white px-4 pb-4 pt-4 shadow-md transition-shadow duration-200 hover:shadow-lg sm:min-h-[188px] sm:px-5 sm:pt-5";
 
   if (!websiteUrl) {
     return <article className={className}>{content}</article>;
