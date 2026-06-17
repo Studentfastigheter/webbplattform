@@ -260,14 +260,14 @@ export default function QueueDetailPage() {
 
       listingQuickDemographicsRecordedIds.current.add(listing.id);
       demographicsService
-        .recordListingView(listing.id, {
+        .recordListingViewWithCompanyScope(companyIdNumber, listing.id, {
           deviceType: getClientDeviceType(),
           viewType: "QUICK",
           resultedInLike: favoriteIds.has(listing.id),
         })
         .catch(ignoreDemographicsRecordError);
     });
-  }, [authLoading, favoriteIds, listings, user]);
+  }, [authLoading, companyIdNumber, favoriteIds, listings, user]);
 
   // Bygg ett HousingQueueDTO-liknande objekt från company-data för QueueHero
   const companyRecord = company as (CompanyDTO & Record<string, unknown>) | null;
@@ -430,7 +430,7 @@ export default function QueueDetailPage() {
 
     if (isFav && canRecordDemographicsForUser(user)) {
       demographicsService
-        .recordListingView(id, {
+        .recordListingViewWithCompanyScope(companyIdNumber, id, {
           deviceType: getClientDeviceType(),
           viewType: "QUICK",
           resultedInLike: true,

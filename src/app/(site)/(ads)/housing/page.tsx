@@ -371,7 +371,7 @@ export default function ListingsPage() {
 
       if (isFav && canRecordDemographicsForUser(user)) {
         demographicsService
-          .recordListingView(id, {
+          .recordListingViewWithCompanyScope(null, id, {
             deviceType: getClientDeviceType(),
             viewType: "QUICK",
             resultedInLike: true,
@@ -531,7 +531,7 @@ export default function ListingsPage() {
       ) {
         quickViewDemographicsRecordedIds.current.add(listing.id);
         demographicsService
-          .recordListingView(listing.id, {
+          .recordListingViewWithCompanyScope(null, listing.id, {
             deviceType: getClientDeviceType(),
             viewType: "QUICK",
             resultedInLike: false,

@@ -11,9 +11,9 @@
  * listing-selector dropdown. After migration, those three calls collapse to
  * a single shared cache entry via useAllCompanyListings (see queues hooks).
  *
- * Action-only calls (recordListingView, recordCompanyView) are NOT hooks —
- * they fire-and-forget. Keep them as direct service calls inside event
- * handlers / Set-guarded effects.
+ * Action-only calls (recordListingViewWithCompanyScope, recordCompanyView)
+ * are NOT hooks — they fire-and-forget. Keep them as direct service calls
+ * inside event handlers / Set-guarded effects.
  */
 
 import { useQuery } from "@tanstack/react-query";

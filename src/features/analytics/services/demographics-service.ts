@@ -146,6 +146,10 @@ export function ignoreDemographicsRecordError() {
   // Demographics writes are best-effort telemetry and must not interrupt browsing.
 }
 
+function isValidCompanyId(companyId: number | null | undefined): companyId is number {
+  return typeof companyId === "number" && Number.isFinite(companyId) && companyId > 0;
+}
+
 function companyDemographicsEndpoint(companyId: number, path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `/companies/${pathSegment(companyId)}/demographics${normalizedPath}`;
@@ -273,6 +277,23 @@ export const demographicsService = {
         body: JSON.stringify(payload),
       }
     );
+  },
+
+  recordListingViewWithCompanyScope: async (
+    companyId: number | null | undefined,
+    listingId: string,
+    payload: NewListingViewDemographicsRequest
+  ): Promise<void> => {
+    if (isValidCompanyId(companyId)) {
+      await demographicsService.recordCompanyListingView(
+        companyId,
+        listingId,
+        payload
+      );
+      return;
+    }
+
+    await demographicsService.recordListingView(listingId, payload);
   },
 
   getListingsBatch: async (

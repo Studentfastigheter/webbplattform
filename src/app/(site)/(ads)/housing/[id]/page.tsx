@@ -380,6 +380,33 @@ export default function ListingDetailPage() {
   const { data: company } = useQueueCompany(companyId);
   const companyLogoUrl = company?.logoUrl ?? null;
 
+  useEffect(() => {
+    if (!listing?.id) return;
+
+    if (!detailedViewIncrementedIds.current.has(listing.id)) {
+      detailedViewIncrementedIds.current.add(listing.id);
+      listingService
+        .incrementViews(listing.id, "DETAILED")
+        .catch((err) =>
+          console.error("Failed to increment detailed view:", err)
+        );
+    }
+
+    if (
+      canRecordDemographicsForUser(user) &&
+      !detailedViewDemographicsRecordedIds.current.has(listing.id)
+    ) {
+      detailedViewDemographicsRecordedIds.current.add(listing.id);
+      demographicsService
+        .recordListingViewWithCompanyScope(companyId, listing.id, {
+          deviceType: getClientDeviceType(),
+          viewType: "DETAILED",
+          resultedInLike: favoriteIds.has(listing.id),
+        })
+        .catch(ignoreDemographicsRecordError);
+    }
+  }, [companyId, favoriteIds, listing?.id, user]);
+
   // Nearby listings — preserves the same two-step fetch fallback the old
   // code had (try city-filtered, then fall back to unfiltered if too few).
   // Wrapped in a single useQuery so the whole "nearby" view caches under
@@ -489,7 +516,7 @@ export default function ListingDetailPage() {
 
       if (isFav && canRecordDemographicsForUser(user)) {
         demographicsService
-          .recordListingView(id, {
+          .recordListingViewWithCompanyScope(companyId, id, {
             deviceType: getClientDeviceType(),
             viewType: "DETAILED",
             resultedInLike: true,
@@ -497,7 +524,7 @@ export default function ListingDetailPage() {
           .catch(ignoreDemographicsRecordError);
       }
     },
-    [user, toggleFavorite, locale]
+    [companyId, user, toggleFavorite, locale]
   );
 
   const openLightbox = useCallback((index: number) => {

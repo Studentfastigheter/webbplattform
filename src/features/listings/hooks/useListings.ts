@@ -18,10 +18,11 @@
  *   cache → return snapshot → on error restore → on settled invalidate.
  *
  * What is NOT in this file:
- * - listingService.incrementViews + demographicsService.recordListingView:
- *   these are fire-and-forget action calls, not "server state" in the
- *   TanStack sense. Keep them as direct service calls inside onClick/effect
- *   handlers with the existing Set-ref guards.
+ * - listingService.incrementViews +
+ *   demographicsService.recordListingViewWithCompanyScope: these are
+ *   fire-and-forget action calls, not "server state" in the TanStack sense.
+ *   Keep them as direct service calls inside onClick/effect handlers with the
+ *   existing Set-ref guards.
  */
 
 import {
