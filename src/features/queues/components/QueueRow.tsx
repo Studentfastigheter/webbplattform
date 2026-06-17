@@ -1,6 +1,7 @@
 import React from "react";
 import clsx from "clsx";
-import { Building2, ChevronRight, MapPin } from "@/components/icons";
+import { ChevronRight, MapPin } from "@/components/icons";
+import CompanyLogo from "@/components/shared/CompanyLogo";
 import type { ListFrameRow } from "@/components/layout/ListFrame";
 import Tag from "@/components/ui/Tag";
 import { Button } from "@/components/ui/button";
@@ -23,13 +24,13 @@ const NameCell: React.FC<Pick<QueueRowProps, "name" | "logoUrl">> = ({
   logoUrl,
 }) => (
   <div className="flex min-w-0 items-center gap-3">
-    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
-      {logoUrl ? (
-        <img src={logoUrl} alt={name} className="h-full w-full object-contain" />
-      ) : (
-        <Building2 className="h-7 w-7 text-gray-400" strokeWidth={1.6} />
-      )}
-    </div>
+    <CompanyLogo
+      src={logoUrl}
+      alt={name}
+      name={name}
+      className="h-14 w-14 flex-shrink-0 rounded-lg bg-white"
+      imageClassName="p-1.5"
+    />
     <div className="min-w-0 truncate text-[15px] font-semibold leading-5 text-gray-950">
       {name}
     </div>

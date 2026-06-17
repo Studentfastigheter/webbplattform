@@ -1,6 +1,7 @@
 "use client";
 
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
+import CompanyLogo from "@/components/shared/CompanyLogo";
 import { RichTextParagraph } from "@/components/ui/RichText";
 import Tag from "@/components/ui/Tag";
 import type { AdvertiserSummary } from "@/types";
@@ -44,26 +45,33 @@ export default function BostadLandlord({ advertiser }: Props) {
     <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
       <div className="flex flex-col gap-7">
         <header className="border-b border-gray-100 pb-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <div className="flex min-w-0 items-center gap-4">
-              <div className="flex h-28 w-40 shrink-0 items-center justify-start sm:h-32 sm:w-52">
-                {advertiser.logoUrl ? (
-                  <img
-                    src={advertiser.logoUrl}
-                    alt={advertiser.displayName}
-                    className="block h-auto max-h-full w-auto max-w-full object-contain object-left"
-                  />
-                ) : (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-50 text-2xl font-semibold text-gray-300">
-                    {advertiser.displayName?.charAt(0)}
-                  </div>
-                )}
+              <div className="flex shrink-0 items-center justify-start">
+                <CompanyLogo
+                  src={advertiser.logoUrl}
+                  alt={advertiser.displayName}
+                  name={advertiser.displayName}
+                  className="h-24 w-24 rounded-none bg-white ring-0 shadow-none sm:h-28 sm:w-28"
+                  imageClassName="p-0"
+                  fallbackClassName="text-2xl text-gray-400"
+                />
               </div>
 
               <div className="min-w-0">
                 <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-[28px]">
                   {advertiser.displayName}
                 </h2>
+
+                {advertiser.companyPageUrl && (
+                  <Link
+                    href={advertiser.companyPageUrl}
+                    className="group mt-3 inline-flex h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#00331b] hover:shadow-md active:scale-[0.98]"
+                  >
+                    {localizedText(locale, "Visa profil", "View profile")}
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                )}
 
                 {hasStats && (
                   <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
@@ -97,16 +105,6 @@ export default function BostadLandlord({ advertiser }: Props) {
                 )}
               </div>
             </div>
-
-            {advertiser.companyPageUrl && (
-              <Link
-                href={advertiser.companyPageUrl}
-                className="group inline-flex h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#00331b] hover:shadow-md active:scale-[0.98]"
-              >
-                {localizedText(locale, "Visa profil", "View profile")}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            )}
           </div>
         </header>
 

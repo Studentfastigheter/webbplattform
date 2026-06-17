@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Building2, Plus } from "@/components/icons";
+import { Plus } from "@/components/icons";
+import CompanyLogo from "@/components/shared/CompanyLogo";
 
 import { Button } from "@/components/ui/button";
 import { RichTextParagraph } from "@/components/ui/RichText";
@@ -66,15 +67,13 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
     >
       <div className="grid shrink-0 gap-3 sm:grid-cols-[112px_minmax(0,1fr)] sm:items-start sm:gap-4 md:grid-cols-[124px_minmax(0,1fr)]">
         <div className="flex h-20 items-center justify-center border-black/[0.04] sm:h-24 sm:border-r sm:pr-4">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={logoAlt ?? name}
-              className="max-h-[76px] w-full max-w-[128px] object-contain"
-            />
-          ) : (
-            <Building2 className="h-10 w-10 text-gray-400" strokeWidth={1.6} />
-          )}
+          <CompanyLogo
+            src={logoUrl}
+            alt={logoAlt ?? name}
+            name={name}
+            className="h-20 w-20 rounded-2xl bg-white ring-0 sm:h-24 sm:w-24"
+            imageClassName="p-0"
+          />
         </div>
 
         <div className="flex min-w-0 flex-col items-start gap-2 pt-3 sm:pt-4 sm:text-left">

@@ -1,4 +1,5 @@
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
+import CompanyLogo from "@/components/shared/CompanyLogo";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
@@ -23,18 +24,14 @@ export default function SimpleCompanyCard({
 
   const content = (
     <>
-      <div className="flex w-[108px] shrink-0 self-stretch items-center justify-center bg-white p-1 sm:w-[120px]">
-        {company.logoUrl ? (
-          <img
-            src={company.logoUrl}
-            alt={localizedText(locale, `${company.name} logotyp`, `${company.name} logo`)}
-            className="h-full max-h-[118px] w-full object-contain"
-          />
-        ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gray-100 text-xl font-semibold text-gray-500">
-            {company.name.trim().charAt(0).toUpperCase() || localizedText(locale, "F", "C")}
-          </div>
-        )}
+      <div className="flex w-[108px] shrink-0 self-stretch items-center justify-center bg-white p-3 sm:w-[120px]">
+        <CompanyLogo
+          src={company.logoUrl}
+          alt={localizedText(locale, `${company.name} logotyp`, `${company.name} logo`)}
+          name={company.name || localizedText(locale, "Företag", "Company")}
+          className="h-20 w-20 rounded-xl bg-gray-50 sm:h-24 sm:w-24"
+          imageClassName="p-2"
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-start px-3.5 py-4 sm:px-4 sm:py-5">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import CompanyLogo from "@/components/shared/CompanyLogo";
 import Tag from "@/components/ui/Tag";
 import { Heart } from "@/components/icons";
 import { getAppIconElement } from "@/components/icons/catalog";
@@ -162,7 +163,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     localizedText(locale, "Ej angivet", "Not specified");
   const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} ${localizedText(locale, "rum", "rooms")} \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
   const shouldShowHostLogo = showHostLogo && Boolean(hostLogoUrl);
-  const logoSize = variant === "compact" ? 44 : 54;
+  const logoSize = variant === "compact" ? 60 : 76;
   const contentPadding = isCompact ? 12 : 14;
   const logoRightOffset = shouldShowHostLogo ? 14 : 0;
   const hasContentTopRight = Boolean(contentTopRightContent);
@@ -281,14 +282,13 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
               transform: "translateY(-50%)",
             }}
           >
-            <img
+            <CompanyLogo
               src={hostLogoUrl}
               alt={logoAlt}
-              className="block h-full w-full"
-              style={{
-                borderRadius: scaleValue(6),
-                objectFit: "contain",
-              }}
+              name={hostName ?? landlordType}
+              className="h-full w-full bg-white ring-1 ring-black/5"
+              imageClassName="p-0"
+              style={{ borderRadius: scaleValue(6) }}
             />
           </div>
         )}

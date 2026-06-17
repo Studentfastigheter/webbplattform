@@ -8,6 +8,7 @@ import {
   type FormEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
+import CompanyLogo from "@/components/shared/CompanyLogo";
 import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import {
   Field,
@@ -708,17 +709,14 @@ function EditableCompanyPreview({
       <section className="relative rounded-3xl border border-black/5 bg-white/80 px-4 pb-8 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:px-6">
         <div className="relative -mt-14 mb-4 sm:-mt-24">
           <div className="relative h-28 w-28 overflow-hidden rounded-2xl border-4 border-white bg-white shadow-lg sm:h-36 sm:w-36">
-            {draft.logoUrl ? (
-              <img
-                src={draft.logoUrl}
-                alt=""
-                className="h-full w-full object-contain p-2"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gray-50 text-4xl font-semibold text-gray-500 sm:text-5xl">
-                {draft.name.trim().charAt(0).toUpperCase() || "?"}
-              </div>
-            )}
+            <CompanyLogo
+              src={draft.logoUrl}
+              alt=""
+              name={draft.name}
+              className="h-full w-full rounded-xl bg-white ring-0"
+              imageClassName="p-2"
+              fallbackClassName="text-4xl sm:text-5xl"
+            />
 
             <UploadButton
               type="button"

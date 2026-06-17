@@ -7,6 +7,7 @@ import {
   type ServiceOptions,
 } from "@/lib/api/client";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
+import { createSquareCompanyLogoFile } from "@/lib/company-logo";
 import type { SystemProvider } from "@/types/common";
 
 export type GraphEntry = {
@@ -1421,9 +1422,13 @@ export const companyService = {
     file: File,
     options: { mediaType?: string } = {}
   ): Promise<string | null> => {
+    const uploadFile =
+      target === "logo" ? await createSquareCompanyLogoFile(file) : file;
     const formData = new FormData();
-    formData.append("file", file, file.name);
-    const query = buildQuery({ mediaType: options.mediaType });
+    formData.append("file", uploadFile, uploadFile.name);
+    const query = buildQuery({
+      mediaType: target === "logo" ? "image/png" : options.mediaType,
+    });
 
     const url = await apiClient<unknown>(
       `/companies/${pathSegment(id)}/changeData/${pathSegment(target)}${query}`,

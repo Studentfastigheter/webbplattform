@@ -1,6 +1,7 @@
 import React from "react";
 import clsx from "clsx";
 import { ChevronRight, Home, MapPin, Ruler, Trash2 } from "@/components/icons";
+import CompanyLogo from "@/components/shared/CompanyLogo";
 import { getAppIconElement } from "@/components/icons/catalog";
 import Tag from "@/components/ui/Tag";
 import type { ListFrameRow } from "@/components/layout/ListFrame";
@@ -116,18 +117,14 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
             : landlordName}
         </div>
         <div className="mt-auto flex min-w-0 items-center gap-2 pt-2">
-          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-50">
-            {landlordLogo ? (
-              <img
-                src={landlordLogo}
-                alt={landlordName}
-                className="h-full w-full object-contain"
-                loading="lazy"
-              />
-            ) : (
-              <Home className="h-3.5 w-3.5 text-gray-400" />
-            )}
-          </div>
+          <CompanyLogo
+            src={landlordLogo}
+            alt={landlordName}
+            name={landlordName}
+            className="h-6 w-6 flex-shrink-0 rounded-md bg-gray-50 ring-0"
+            imageClassName="p-0.5"
+            fallback={<Home className="h-3.5 w-3.5 text-gray-400" />}
+          />
           <span className="truncate text-xs font-medium leading-4 text-gray-600">
             {landlordName}
           </span>

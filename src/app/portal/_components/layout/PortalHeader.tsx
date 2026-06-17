@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { ChevronDown, HelpCircle, LogOut, Menu, Settings, X } from "@/components/icons";
+import CompanyLogo from "@/components/shared/CompanyLogo";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { CampusLyanBrandLink } from "@/components/layout/CampusLyanBrandLink";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,6 +111,7 @@ export default function PortalHeader() {
     activeCompany
       ? portal.company?.logoUrl || activeCompany.logoUrl || user?.logoUrl || ""
       : user?.logoUrl || "";
+  const logoName = companyNames[0] ?? displayName;
   const initials = displayName
     .split(" ")
     .map((part) => part[0])
@@ -157,18 +158,19 @@ export default function PortalHeader() {
                 className="group flex items-center rounded-xl px-1.5 py-1 text-gray-700 transition hover:bg-gray-50"
                 type="button"
               >
-                <Avatar className="mr-3 h-11 w-11 overflow-hidden rounded-none bg-transparent">
-                  {avatarSrc ? (
-                    <AvatarImage
-                      alt={`${displayName} logo`}
-                      className="object-contain"
-                      src={avatarSrc}
-                    />
-                  ) : null}
-                  <AvatarFallback className="rounded-md bg-brand-50 text-brand-500">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                <CompanyLogo
+                  src={avatarSrc}
+                  alt={`${logoName} logo`}
+                  name={logoName}
+                  className="mr-3 h-11 w-11 rounded-lg bg-white"
+                  imageClassName="p-1.5"
+                  fallbackClassName="bg-brand-50 text-sm text-brand-500"
+                  fallback={
+                    <span className="flex h-full w-full items-center justify-center rounded-lg bg-brand-50 text-sm font-semibold text-brand-500">
+                      {initials}
+                    </span>
+                  }
+                />
                 <span className="mr-1 hidden max-w-36 truncate font-medium text-theme-sm sm:block">
                   {displayName}
                 </span>

@@ -317,8 +317,16 @@ export default function SiteHeader() {
                   <AccountAvatar
                     src={avatarSrc}
                     alt={displayName}
-                    className="h-8 w-8 rounded-full object-cover"
-                    fallbackClassName="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600"
+                    className={cn(
+                      "h-8 w-8",
+                      userType === "company"
+                        ? "rounded-md bg-white object-contain p-0.5 ring-1 ring-neutral-200"
+                        : "rounded-full object-cover"
+                    )}
+                    fallbackClassName={cn(
+                      "flex h-8 w-8 items-center justify-center bg-neutral-100 text-xs font-semibold text-neutral-600",
+                      userType === "company" ? "rounded-md" : "rounded-full"
+                    )}
                     initial={accountInitial}
                   />
                   <div className="hidden max-w-32 sm:block">
@@ -340,8 +348,16 @@ export default function SiteHeader() {
                       <AccountAvatar
                         src={avatarSrc}
                         alt={displayName}
-                        className="h-9 w-9 rounded-full object-cover"
-                        fallbackClassName="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-600"
+                        className={cn(
+                          "h-9 w-9",
+                          userType === "company"
+                            ? "rounded-md bg-white object-contain p-0.5 ring-1 ring-neutral-200"
+                            : "rounded-full object-cover"
+                        )}
+                        fallbackClassName={cn(
+                          "flex h-9 w-9 items-center justify-center bg-white text-sm font-semibold text-neutral-600",
+                          userType === "company" ? "rounded-md" : "rounded-full"
+                        )}
                         initial={accountInitial}
                       />
                       <div className="min-w-0">
@@ -463,8 +479,16 @@ export default function SiteHeader() {
                   <AccountAvatar
                     src={avatarSrc}
                     alt={displayName}
-                    className="h-9 w-9 rounded-full object-cover"
-                    fallbackClassName="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-sm font-semibold text-neutral-600"
+                    className={cn(
+                      "h-9 w-9",
+                      userType === "company"
+                        ? "rounded-md bg-white object-contain p-0.5 ring-1 ring-neutral-200"
+                        : "rounded-full object-cover"
+                    )}
+                    fallbackClassName={cn(
+                      "flex h-9 w-9 items-center justify-center bg-neutral-100 text-sm font-semibold text-neutral-600",
+                      userType === "company" ? "rounded-md" : "rounded-full"
+                    )}
                     initial={accountInitial}
                   />
                   <div className="min-w-0">
