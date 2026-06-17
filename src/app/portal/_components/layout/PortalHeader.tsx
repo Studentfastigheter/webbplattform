@@ -162,11 +162,11 @@ export default function PortalHeader() {
                   src={avatarSrc}
                   alt={`${logoName} logo`}
                   name={logoName}
-                  className="mr-3 h-11 w-11 rounded-lg bg-white"
-                  imageClassName="p-1.5"
+                  className="mr-3 h-11 w-11 rounded-none bg-white ring-0"
+                  imageClassName="p-0"
                   fallbackClassName="bg-brand-50 text-sm text-brand-500"
                   fallback={
-                    <span className="flex h-full w-full items-center justify-center rounded-lg bg-brand-50 text-sm font-semibold text-brand-500">
+                    <span className="flex h-full w-full items-center justify-center bg-brand-50 text-sm font-semibold text-brand-500">
                       {initials}
                     </span>
                   }
