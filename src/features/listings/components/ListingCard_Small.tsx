@@ -288,6 +288,8 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
               name={hostName ?? landlordType}
               className="h-full w-full bg-white ring-1 ring-black/5"
               imageClassName="p-0"
+              loading="eager"
+              fetchPriority="high"
               style={{ borderRadius: scaleValue(6) }}
             />
           </div>

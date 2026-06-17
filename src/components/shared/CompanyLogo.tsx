@@ -11,6 +11,7 @@ type CompanyLogoProps = Omit<ComponentProps<"div">, "children"> & {
   iconClassName?: string;
   fallback?: ReactNode;
   loading?: ImgHTMLAttributes<HTMLImageElement>["loading"];
+  fetchPriority?: ImgHTMLAttributes<HTMLImageElement>["fetchPriority"];
   referrerPolicy?: ImgHTMLAttributes<HTMLImageElement>["referrerPolicy"];
 };
 
@@ -28,6 +29,7 @@ export default function CompanyLogo({
   iconClassName,
   fallback,
   loading = "lazy",
+  fetchPriority,
   referrerPolicy,
   ...props
 }: CompanyLogoProps) {
@@ -47,6 +49,7 @@ export default function CompanyLogo({
           alt={alt}
           className={cn("block h-full w-full object-contain p-1.5", imageClassName)}
           loading={loading}
+          fetchPriority={fetchPriority}
           decoding="async"
           referrerPolicy={referrerPolicy}
         />
