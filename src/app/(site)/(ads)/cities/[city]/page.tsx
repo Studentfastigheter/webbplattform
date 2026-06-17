@@ -560,7 +560,7 @@ export default function CityDetailPage() {
               {localizedText(locale, "Inga andra företag hittades just nu.", "No other companies were found right now.")}
             </div>
           ) : (
-            <div className="grid w-full grid-cols-1 justify-start gap-3 sm:grid-cols-[repeat(auto-fill,minmax(360px,380px))] sm:gap-5 lg:gap-6">
+            <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
               {externalCompanies.map((company) => (
                 <SimpleCompanyCard key={company.id} company={company} />
               ))}
