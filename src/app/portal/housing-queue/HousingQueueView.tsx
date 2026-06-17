@@ -31,7 +31,6 @@ import {
   PortalPage,
   PortalSurface,
 } from "../_components/shared/PortalGrid";
-import PortalPageHeader from "../_components/shared/PortalPageHeader";
 
 const trendGranularities: Array<{
   value: QueueApplicationTrendGranularity;
@@ -91,18 +90,16 @@ function QueueApplicationCountBlock({
   error,
   loading,
   locale,
-  queueCount,
 }: {
   count: number;
   error: string | null;
   loading: boolean;
   locale: Locale;
-  queueCount: number;
 }) {
   return (
     <PortalGridItem
       contentClassName="flex"
-      size="1x2"
+      size="2x1"
       title={localizedText(locale, "Studenter i bostadskö", "Students in housing queue")}
     >
       {loading ? (
@@ -120,14 +117,7 @@ function QueueApplicationCountBlock({
       ) : (
         <div className="flex w-full items-end justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-theme-sm font-medium text-gray-500">
-              {localizedText(
-                locale,
-                queueCount === 1 ? "1 aktiv bostadskö" : `${queueCount} aktiva bostadsköer`,
-                queueCount === 1 ? "1 active housing queue" : `${queueCount} active housing queues`
-              )}
-            </p>
-            <p className="mt-2 text-3xl font-bold leading-10 tracking-normal text-gray-800 tabular-nums">
+            <p className="text-3xl font-bold leading-10 tracking-normal text-gray-800 tabular-nums">
               {count.toLocaleString(numberLocale(locale))}
             </p>
           </div>
@@ -245,15 +235,6 @@ export default function HousingQueueView() {
 
   return (
     <PortalPage>
-      <PortalPageHeader
-        title={localizedText(locale, "Bostadsk\u00f6", "Housing queue")}
-        description={localizedText(
-          locale,
-          "F\u00f6lj k\u00f6ans\u00f6kningar, studentvolym och bes\u00f6kardemografi.",
-          "Track queue applications, student volume and visitor demographics."
-        )}
-      />
-
       {error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -272,7 +253,6 @@ export default function HousingQueueView() {
                 error={countError}
                 loading={queueApplicationCountQuery.isLoading}
                 locale={locale}
-                queueCount={queues.length}
               />
 
               <PortalGridItem
@@ -283,7 +263,7 @@ export default function HousingQueueView() {
                     value={granularity}
                   />
                 }
-                size="2x2"
+                size="2x3"
                 title={localizedText(locale, "Köansökningar över tid", "Queue applications over time")}
               >
                 <TrendBarChart
@@ -304,6 +284,7 @@ export default function HousingQueueView() {
               <CompanyDemographyBlock
                 deferUntilSelection
                 description={null}
+                size="4x4"
                 title={localizedText(locale, "Besökardemografi", "Visitor demographics")}
                 useCompaniesQuery
               />

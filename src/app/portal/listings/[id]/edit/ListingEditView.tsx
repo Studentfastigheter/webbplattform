@@ -458,13 +458,6 @@ function EditableListingPreview({
                   <div className="flex flex-wrap items-center gap-2">
                     <Home className="h-4 w-4 shrink-0 text-green-700" />
                     <input
-                      aria-label={localizedText(locale, "Bostadstyp", "Dwelling type")}
-                      value={draft.dwellingType ?? ""}
-                      readOnly
-                      className={`${inlineInputClass} w-full font-medium sm:w-auto sm:min-w-[150px]`}
-                      placeholder={localizedText(locale, "Bostadstyp", "Dwelling type")}
-                    />
-                    <input
                       aria-label={localizedText(locale, "Rum", "Rooms")}
                       type="number"
                       value={draft.rooms ?? ""}

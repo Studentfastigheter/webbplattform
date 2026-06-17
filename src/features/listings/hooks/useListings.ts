@@ -43,6 +43,7 @@ import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access
 import type {
   ListingCardDTO,
   ListingDetailDTO,
+  ListingStatus,
   ListingTagDTO,
   PageResponse,
   RequirementsProfileDTO,
@@ -54,6 +55,99 @@ const STALE_2_MINUTES = 2 * 60_000;
 const STALE_5_MINUTES = 5 * 60_000;
 const FAVORITES_STUDENT_ONLY_MESSAGE =
   "Du behöver vara inloggad som student för att spara bostäder.";
+
+type CachedListingStatusSnapshot = Array<[readonly unknown[], unknown]>;
+
+const LISTING_STATUS_LIST_FIELDS = [
+  "content",
+  "data",
+  "items",
+  "results",
+  "topListings",
+  "pages",
+] as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isListingStatusPatchQuery(queryKey: readonly unknown[]) {
+  const [root, scope] = queryKey;
+
+  if (root === "listings") {
+    return ["detail", "list", "map", "my", "queue", "favorites"].includes(
+      String(scope)
+    );
+  }
+
+  if (root === "queues") {
+    return ["all-company-listings", "company-listings-page"].includes(
+      String(scope)
+    );
+  }
+
+  if (root === "companies") {
+    return [
+      "listing-performance",
+      "listing-performance-detail",
+      "analytics-dashboard",
+    ].includes(String(scope));
+  }
+
+  return false;
+}
+
+function matchesListingId(record: Record<string, unknown>, listingId: string) {
+  const candidateId = record.id ?? record.listingId;
+  return candidateId != null && String(candidateId) === listingId;
+}
+
+function patchListingStatusInCache<T>(
+  data: T,
+  listingId: string,
+  status: ListingStatus
+): T {
+  if (Array.isArray(data)) {
+    let changed = false;
+    const patched = data.map((item) => {
+      const nextItem = patchListingStatusInCache(item, listingId, status);
+      if (nextItem !== item) {
+        changed = true;
+      }
+      return nextItem;
+    });
+
+    return (changed ? patched : data) as T;
+  }
+
+  if (!isRecord(data)) {
+    return data;
+  }
+
+  let next: Record<string, unknown> | null = null;
+  const ensureNext = () => {
+    next ??= { ...data };
+    return next;
+  };
+
+  if (matchesListingId(data, listingId) && data.status !== status) {
+    ensureNext().status = status;
+  }
+
+  for (const field of LISTING_STATUS_LIST_FIELDS) {
+    const value = data[field];
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    const patchedValue = patchListingStatusInCache(value, listingId, status);
+    if (patchedValue !== value) {
+      ensureNext()[field] = patchedValue;
+    }
+  }
+
+  return (next ?? data) as T;
+}
 
 export function canUseFavorites(user: { accountType?: string } | null | undefined) {
   return user?.accountType === "student";
@@ -361,9 +455,36 @@ export function useUpdateListing() {
   return useMutation<
     void,
     Error,
-    { id: string; payload: Parameters<typeof listingService.update>[1] }
+    { id: string; payload: Parameters<typeof listingService.update>[1] },
+    { previousStatusQueries: CachedListingStatusSnapshot }
   >({
     mutationFn: ({ id, payload }) => listingService.update(id, payload),
+    onMutate: async ({ id, payload }) => {
+      const nextStatus = payload.status;
+      if (!nextStatus) {
+        return { previousStatusQueries: [] };
+      }
+
+      await qc.cancelQueries({
+        predicate: (query) => isListingStatusPatchQuery(query.queryKey),
+      });
+      const previousStatusQueries = qc.getQueriesData<unknown>({
+        predicate: (query) => isListingStatusPatchQuery(query.queryKey),
+      });
+
+      previousStatusQueries.forEach(([queryKey]) => {
+        qc.setQueryData(queryKey, (current: unknown) =>
+          patchListingStatusInCache(current, id, nextStatus)
+        );
+      });
+
+      return { previousStatusQueries };
+    },
+    onError: (_err, _vars, ctx) => {
+      ctx?.previousStatusQueries.forEach(([queryKey, data]) => {
+        qc.setQueryData(queryKey, data);
+      });
+    },
     onSettled: () => {
       // Broad invalidation: a listing edit can change anything that's
       // surfaced from a listing — search lists, map view, facets, detail,
@@ -371,6 +492,16 @@ export function useUpdateListing() {
       // Cheaper than enumerating each.
       qc.invalidateQueries({ queryKey: qk.listings.all });
       qc.invalidateQueries({ queryKey: qk.queues.all });
+      qc.invalidateQueries({
+        queryKey: ["companies", "analytics-dashboard"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["companies", "listing-performance"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["companies", "listing-performance-detail"],
+      });
+      qc.invalidateQueries({ queryKey: ["companies", "listing-statuses"] });
     },
   });
 }
