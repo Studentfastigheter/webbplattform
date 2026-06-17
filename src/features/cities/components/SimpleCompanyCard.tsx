@@ -25,7 +25,7 @@ export default function SimpleCompanyCard({
 
   const content = (
     <>
-      <div className="grid shrink-0 gap-3 sm:grid-cols-[112px_minmax(0,1fr)] sm:items-start sm:gap-4 md:grid-cols-[124px_minmax(0,1fr)]">
+      <div className="grid shrink-0 gap-3 sm:grid-cols-[112px_minmax(0,1fr)] sm:items-center sm:gap-4 md:grid-cols-[124px_minmax(0,1fr)]">
         <div className="flex h-20 items-center justify-center border-black/[0.04] sm:h-24 sm:border-r sm:pr-4">
           <CompanyLogo
             src={company.logoUrl}
@@ -36,7 +36,7 @@ export default function SimpleCompanyCard({
           />
         </div>
 
-        <div className="flex min-w-0 flex-col items-start gap-2 pt-3 sm:pt-4 sm:text-left">
+        <div className="flex min-w-0 flex-col items-start gap-2 sm:text-left">
           <div className="flex min-w-0 flex-col items-start gap-1">
             <div className="flex min-h-[30px] min-w-0 flex-wrap items-start justify-start gap-2 overflow-hidden">
               <h3
@@ -78,7 +78,7 @@ export default function SimpleCompanyCard({
   );
 
   const className =
-    "relative flex h-full min-h-[188px] w-full max-w-none flex-col gap-4 overflow-hidden rounded-[32px] border border-black/[0.04] bg-white px-4 pb-4 pt-4 shadow-md transition-shadow duration-200 hover:shadow-lg sm:min-h-[188px] sm:px-5 sm:pt-5";
+    "relative flex h-full w-full max-w-none flex-col gap-4 overflow-hidden rounded-[32px] border border-black/[0.04] bg-white px-4 py-4 shadow-md transition-shadow duration-200 hover:shadow-lg sm:px-5 sm:py-5";
 
   if (!websiteUrl) {
     return <article className={className}>{content}</article>;
