@@ -22,12 +22,15 @@
  */
 
 import {
+  type UseQueryResult,
   useMutation,
   useQuery,
   useQueryClient,
+  useQueries,
 } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import { adminService } from "@/features/admin/services/admin-service";
+import type { AdminCompanyListingStatusStats } from "@/features/admin/services/admin-service";
 import type {
   AdminAddSchoolRequest,
   AdminCityPayload,
@@ -146,6 +149,21 @@ export function useAdminCompanyDetail(companyId: number | null | undefined) {
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
+}
+
+export function useAdminCompanyListingStatuses(companyIds: number[]) {
+  const uniqueCompanyIds = Array.from(new Set(companyIds)).filter(
+    (companyId) => Number.isFinite(companyId) && companyId > 0
+  );
+
+  return useQueries({
+    queries: uniqueCompanyIds.map((companyId) => ({
+      queryKey: qk.admin.companyListingStatuses(companyId),
+      queryFn: ({ signal }) =>
+        adminService.getCompanyListingStatuses(companyId, { signal }),
+      staleTime: STALE_30_SECONDS,
+    })),
+  }) as UseQueryResult<AdminCompanyListingStatusStats, Error>[];
 }
 
 export function useAdminCompanyRoles() {

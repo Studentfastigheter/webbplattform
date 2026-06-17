@@ -425,6 +425,8 @@ export const qk = {
     companyRoles: () => ["admin", "company-roles"] as const,
     companyUsers: (companyId: number) =>
       ["admin", "company-users", companyId] as const,
+    companyListingStatuses: (companyId: number) =>
+      ["admin", "company-listing-statuses", companyId] as const,
     externalCompanies: () => ["admin", "external-companies"] as const,
     userStatistics: (from?: string, to?: string) =>
       ["admin", "user-statistics", from ?? "", to ?? ""] as const,

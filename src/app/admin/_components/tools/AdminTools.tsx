@@ -99,6 +99,7 @@ import type {
   School,
 } from "@/types";
 import { cn } from "@/lib/utils";
+import { AdminAnalyticsDashboard } from "./AdminAnalyticsDashboard";
 
 type AdminActionState = {
   status: "idle" | "loading" | "success" | "error";
@@ -116,6 +117,7 @@ const ADMIN_TABS = [
   "activities",
   "waitlist",
   "statistics",
+  "analytics",
 ] as const;
 
 export type AdminSection = (typeof ADMIN_TABS)[number];
@@ -170,6 +172,11 @@ const ADMIN_SECTION_DETAILS = {
     title: "Statistics",
     description: "Fetch admin reporting data for registered users and growth analysis.",
     badge: "Reporting",
+  },
+  analytics: {
+    title: "Analytics",
+    description: "Review listing status distribution per company and across the platform.",
+    badge: "Company analytics",
   },
 } satisfies Record<
   AdminSection,
@@ -4657,6 +4664,10 @@ export function AdminToolPage({ section }: { section: AdminSection }) {
           <div className="grid gap-4 xl:grid-cols-2">
             <UserStatisticsAction />
           </div>
+        </SectionContent>
+
+        <SectionContent active={section} value="analytics">
+          <AdminAnalyticsDashboard />
         </SectionContent>
       </div>
     </main>

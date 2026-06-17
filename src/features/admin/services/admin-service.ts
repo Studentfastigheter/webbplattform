@@ -1,8 +1,10 @@
 import {
+  ApiError,
   apiClient,
   arrayFromApiResponse,
   buildQuery,
   pathSegment,
+  type ServiceOptions,
 } from "@/lib/api/client";
 import type {
   AdminAddSchoolRequest,
@@ -33,13 +35,65 @@ import {
 } from "@/features/cities/services/city-service";
 import {
   companyService,
+  type AnalyticsCountBucket,
   type CreateExternalCompanyRequest,
   type ExternalCompanyDTO,
   type ModifyExternalCompanyRequest,
 } from "@/features/companies/services/company-service";
+import { queueService } from "@/features/queues/services/queue-service";
+
+export type AdminCompanyListingStatusSource = "analytics-endpoint" | "all-listings";
+
+export type AdminCompanyListingStatusStats = {
+  companyId: number;
+  buckets: AnalyticsCountBucket[];
+  source: AdminCompanyListingStatusSource;
+};
 
 function jsonBody(value: unknown) {
   return JSON.stringify(value);
+}
+
+function isAuthorizationError(error: unknown) {
+  return error instanceof ApiError && (error.status === 401 || error.status === 403);
+}
+
+function bucketizeListingStatuses(
+  listings: Array<{ status?: string | null }>
+): AnalyticsCountBucket[] {
+  const counts = new Map<string, number>();
+
+  listings.forEach((listing) => {
+    const key = listing.status?.trim().toUpperCase();
+    if (!key) return;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  });
+
+  return Array.from(counts, ([key, count]) => ({ key, count })).sort((left, right) => {
+    if (right.count !== left.count) return right.count - left.count;
+    return left.key.localeCompare(right.key);
+  });
+}
+
+async function getListingStatusBucketsFromAllListings(
+  companyId: number,
+  options?: ServiceOptions
+): Promise<AnalyticsCountBucket[]> {
+  const pageSize = 500;
+  const firstPage = await queueService.getAllCompanyListingsPage(companyId, 0, pageSize, options);
+  const listings = [...firstPage.content];
+  const totalPages = Math.max(1, firstPage.totalPages ?? 1);
+
+  if (totalPages > 1) {
+    const remainingPages = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) =>
+        queueService.getAllCompanyListingsPage(companyId, index + 1, pageSize, options)
+      )
+    );
+    remainingPages.forEach((page) => listings.push(...page.content));
+  }
+
+  return bucketizeListingStatuses(listings);
 }
 
 function normalizeSchoolCityPayload(school: AdminAddSchoolRequest): AdminAddSchoolRequest {
@@ -186,6 +240,29 @@ export const adminService = {
     return apiClient<AdminCompanyDetailedDTO>(`/companies/${companyId}`, {
       auth: false,
     });
+  },
+
+  getCompanyListingStatuses: async (
+    companyId: number,
+    options?: ServiceOptions
+  ): Promise<AdminCompanyListingStatusStats> => {
+    try {
+      return {
+        companyId,
+        buckets: await companyService.listingStatusCounts(companyId, options),
+        source: "analytics-endpoint",
+      };
+    } catch (error) {
+      if (!isAuthorizationError(error)) {
+        throw error;
+      }
+
+      return {
+        companyId,
+        buckets: await getListingStatusBucketsFromAllListings(companyId, options),
+        source: "all-listings",
+      };
+    }
   },
 
   getCompanyRoles: async (): Promise<AdminCompanyRole[]> => {
