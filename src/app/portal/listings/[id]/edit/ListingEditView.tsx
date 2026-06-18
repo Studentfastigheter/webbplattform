@@ -58,6 +58,9 @@ const genericTagsLoadError = "__TAGS_LOAD_ERROR__";
 const inlineInputClass =
   "min-w-0 rounded-md border border-[#004225]/10 bg-[#004225]/[0.035] px-2 py-1 outline-none transition hover:border-[#004225]/25 hover:bg-white focus:border-[#004225] focus:bg-white focus:ring-4 focus:ring-[#004225]/10";
 
+const imageEditButtonClass =
+  "!border-white/80 !bg-white/95 !text-[#004225] shadow-[0_10px_24px_rgba(15,23,42,0.16)] ring-1 ring-white/70 backdrop-blur-md transition-[background-color,border-color,box-shadow,color,transform] duration-150 hover:!border-[#004225]/25 hover:!bg-white hover:!text-[#00351e] hover:shadow-[0_12px_28px_rgba(0,66,37,0.18)] data-[hover=true]:!border-[#004225]/25 data-[hover=true]:!bg-white data-[hover=true]:!text-[#00351e] data-[hover=true]:!opacity-100 data-[pressed=true]:!bg-[#f2f8f5]";
+
 function toDateInputValue(value?: string | null) {
   if (!value) return "";
 
@@ -405,7 +408,7 @@ function EditableListingPreview({
           type="button"
           variant="outline"
           onClick={onImageEdit}
-          className="absolute right-4 top-4 bg-white/95 shadow-sm backdrop-blur"
+          className={`${imageEditButtonClass} absolute right-4 top-4`}
         >
           <Pencil className="h-4 w-4" />
           {localizedText(locale, "Bilder", "Images")}

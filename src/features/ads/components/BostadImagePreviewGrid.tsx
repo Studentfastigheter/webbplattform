@@ -20,6 +20,8 @@ type TileProps = {
   readOnly: boolean;
 };
 
+const MAX_PREVIEW_IMAGES = 3;
+
 function ImageTile({
   src,
   alt,
@@ -31,7 +33,7 @@ function ImageTile({
 }: TileProps) {
   const content = (
     <>
-      <img src={src} alt={alt} className="absolute inset-0 h-full w-full object-cover" />
+      <img src={src} alt={alt} className="absolute inset-0 h-full w-full object-cover object-center" />
       <div
         className={cn(
           "absolute inset-0 flex items-center justify-center bg-black/0",
@@ -70,7 +72,7 @@ export default function BostadImagePreviewGrid({
   const { locale } = useI18n();
   if (images.length === 0) return null;
 
-  const shown = images.slice(0, 5);
+  const shown = images.slice(0, MAX_PREVIEW_IMAGES);
 
   if (shown.length === 1) {
     return (
@@ -82,24 +84,6 @@ export default function BostadImagePreviewGrid({
         readOnly={readOnly}
         className="h-[420px] w-full rounded-2xl"
       />
-    );
-  }
-
-  if (shown.length === 2) {
-    return (
-      <div className="grid h-[420px] grid-cols-2 gap-1.5">
-        {shown.map((src, index) => (
-          <ImageTile
-            key={index}
-            src={src}
-            alt={localizedText(locale, `Bild ${index + 1}`, `Image ${index + 1}`)}
-            index={index}
-            onImageClick={onImageClick}
-            readOnly={readOnly}
-            className={index === 0 ? "rounded-l-2xl" : "rounded-r-2xl"}
-          />
-        ))}
-      </div>
     );
   }
 
@@ -122,7 +106,7 @@ export default function BostadImagePreviewGrid({
       >
         {side.map((src, index) => {
           const imageIndex = index + 1;
-          const isLast = index === side.length - 1 && images.length > 5;
+          const isLast = index === side.length - 1 && images.length > MAX_PREVIEW_IMAGES;
           const isFirst = index === 0;
           const isEnd = index === side.length - 1;
 
@@ -141,7 +125,7 @@ export default function BostadImagePreviewGrid({
             >
               {isLast && (
                 <span className="rounded-lg bg-black/40 px-3 py-1 text-lg font-semibold text-white drop-shadow-lg">
-                  +{images.length - 5} {localizedText(locale, "fler", "more")}
+                  +{images.length - MAX_PREVIEW_IMAGES} {localizedText(locale, "fler", "more")}
                 </span>
               )}
             </ImageTile>

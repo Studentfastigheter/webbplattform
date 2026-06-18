@@ -43,7 +43,7 @@ export default function ImageSlideshow({ images, title }: ImageSlideshowProps) {
         <img
           src={images[currentIndex]}
           alt={localizedText(locale, `${title} - bild ${currentIndex + 1}`, `${title} - image ${currentIndex + 1}`)}
-          className="h-full w-full object-cover transition-all duration-300"
+          className="h-full w-full object-cover object-center transition-all duration-300"
         />
         <span className="absolute bottom-4 right-4 rounded-full bg-black/50 px-3 py-1 text-sm font-medium text-white">
           {currentIndex + 1} / {images.length}
@@ -90,7 +90,7 @@ export default function ImageSlideshow({ images, title }: ImageSlideshowProps) {
                   : "border-transparent opacity-60 hover:opacity-90"
               }`}
             >
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <img src={src} alt="" className="h-full w-full object-cover object-center" />
             </button>
           ))}
         </div>

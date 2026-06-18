@@ -143,7 +143,7 @@ function Lightbox({
                 i === current ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-75"
               }`}
             >
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <img src={src} alt="" className="h-full w-full object-cover object-center" />
             </button>
           ))}
         </div>
@@ -152,7 +152,9 @@ function Lightbox({
   );
 }
 
-// ─── Top 5-image preview grid ────────────────────────────────────────────────
+const MAX_PREVIEW_IMAGES = 3;
+
+// ─── Top 3-image preview grid ────────────────────────────────────────────────
 function ImagePreviewGrid({
   images,
   onImageClick,
@@ -163,7 +165,7 @@ function ImagePreviewGrid({
   const { locale } = useI18n();
   if (images.length === 0) return null;
 
-  const shown = images.slice(0, 5);
+  const shown = images.slice(0, MAX_PREVIEW_IMAGES);
 
   if (shown.length === 1) {
     return (
@@ -171,33 +173,13 @@ function ImagePreviewGrid({
         className="relative w-full h-[420px] overflow-hidden rounded-2xl"
         onClick={() => onImageClick(0)}
       >
-        <img src={shown[0]} alt={localizedText(locale, "Bild 1", "Image 1")} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={shown[0]} alt={localizedText(locale, "Bild 1", "Image 1")} className="absolute inset-0 h-full w-full object-cover object-center" />
         <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
       </button>
     );
   }
 
-  if (shown.length === 2) {
-    return (
-      <div className="grid grid-cols-2 gap-1.5 h-[420px]">
-        {shown.map((src, i) => (
-          <button
-            key={i}
-            className={cn(
-              "relative overflow-hidden",
-              i === 0 ? "rounded-l-2xl" : "rounded-r-2xl"
-            )}
-            onClick={() => onImageClick(i)}
-          >
-            <img src={src} alt={localizedText(locale, `Bild ${i + 1}`, `Image ${i + 1}`)} className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  // 3–5 images: main left + side thumbnails
+  // 2-3 images: main left + side thumbnails
   const side = shown.slice(1);
   return (
     <div className="grid grid-cols-[1fr_0.5fr] gap-1.5 h-[460px]">
@@ -206,14 +188,14 @@ function ImagePreviewGrid({
         className="relative row-span-full overflow-hidden rounded-l-2xl"
         onClick={() => onImageClick(0)}
       >
-        <img src={shown[0]} alt={localizedText(locale, "Bild 1", "Image 1")} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={shown[0]} alt={localizedText(locale, "Bild 1", "Image 1")} className="absolute inset-0 h-full w-full object-cover object-center" />
         <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
       </button>
 
       {/* Side thumbnails — evenly split the full height */}
       <div className="grid grid-rows-subgrid row-span-full" style={{ gridTemplateRows: `repeat(${side.length}, 1fr)`, gap: "6px" }}>
         {side.map((src, i) => {
-          const isLast = i === side.length - 1 && images.length > 5;
+          const isLast = i === side.length - 1 && images.length > MAX_PREVIEW_IMAGES;
           const isFirst = i === 0;
           const isEnd = i === side.length - 1;
           return (
@@ -226,11 +208,11 @@ function ImagePreviewGrid({
               )}
               onClick={() => onImageClick(i + 1)}
             >
-              <img src={src} alt={localizedText(locale, `Bild ${i + 2}`, `Image ${i + 2}`)} className="absolute inset-0 h-full w-full object-cover" />
+              <img src={src} alt={localizedText(locale, `Bild ${i + 2}`, `Image ${i + 2}`)} className="absolute inset-0 h-full w-full object-cover object-center" />
               <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition flex items-center justify-center">
                 {isLast && (
                   <span className="text-white font-semibold text-lg drop-shadow-lg bg-black/40 px-3 py-1 rounded-lg">
-                    +{images.length - 5} {localizedText(locale, "fler", "more")}
+                    +{images.length - MAX_PREVIEW_IMAGES} {localizedText(locale, "fler", "more")}
                   </span>
                 )}
               </div>
