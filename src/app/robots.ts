@@ -16,7 +16,6 @@ const prelaunchBlockedPaths = [
   "/api/",
   "/applications",
   "/cities",
-  "/forgot-password",
   "/housing",
   "/knowledge-bank",
   "/login",

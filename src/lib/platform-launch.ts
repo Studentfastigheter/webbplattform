@@ -10,6 +10,7 @@ export const prelaunchPublicSitePathnames = [
   "/terms-of-service",
   "/privacy-policy",
   "/cookie-policy",
+  "/forgot-password",
 ] as const;
 
 const prelaunchPublicSitePaths = new Set<string>(prelaunchPublicSitePathnames);
@@ -20,5 +21,10 @@ export function isPlatformLaunched() {
 }
 
 export function isPrelaunchPublicSitePath(pathname: string) {
-  return prelaunchPublicSitePaths.has(normalizePathname(pathname));
+  const normalizedPathname = normalizePathname(pathname);
+
+  return (
+    prelaunchPublicSitePaths.has(normalizedPathname) ||
+    normalizedPathname.startsWith("/forgot-password/")
+  );
 }

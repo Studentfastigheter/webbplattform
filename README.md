@@ -45,7 +45,8 @@ FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----
 
 Utan extra konfiguration kor frontend i pre-launch-lage. Da ar bara startsidan,
 `/for-foretag`, `/partners`, `/om-oss`, `/anvandarvillkor`,
-`/integritetspolicy` och `/cookiepolicy` publika pa huvuddomanen.
+`/integritetspolicy`, `/cookiepolicy` och losenordsaterstallning via
+`/glomt-losenord` publika pa huvuddomanen.
 
 Satt `NEXT_PUBLIC_PLATFORM_LAUNCHED=true` och redeploya nar hela plattformen ska
 oppnas. Det slar pa plattformsnavigation, publika bostads-/ko-sidor och
