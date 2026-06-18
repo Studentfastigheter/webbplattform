@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type DragEvent,
 } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,6 @@ import {
 import { useQueuesByCompany } from "@/features/queues/hooks/useQueues";
 import { type HousingQueueDTO } from "@/types/queue";
 import { formatCityName } from "@/features/cities/city-utils";
-import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
 import CompanyVideoSection, {
   type CompanyVideo,
 } from "@/features/ads/components/CompanyVideoSection";
@@ -69,7 +69,6 @@ import {
   getYouTubeVideoId,
   isYouTubeVideoUrl,
 } from "@/lib/youtube-url";
-import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { useUploadCompanyPublicMedia } from "@/features/media/hooks/useMedia";
 import { PortalPage, PortalSurface } from "../_components/shared/PortalGrid";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
@@ -426,41 +425,175 @@ function ContactFormSection({
 function EditableImageGallerySection({
   imageUrls,
   companyName,
-  onOpen,
+  onUploadImages,
+  onSaveImages,
 }: {
   imageUrls?: string[];
   companyName: string;
-  onOpen: () => void;
+  onUploadImages: (files: File[]) => Promise<string[]>;
+  onSaveImages: (imageUrls: string[]) => Promise<void>;
 }) {
   const { locale } = useI18n();
   const visibleImages = normalizeUrlList(imageUrls);
+  const [pendingGalleryAction, setPendingGalleryAction] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const uploadInputId = "company-profile-gallery-upload";
+
+  const uploadFiles = async (files: File[]) => {
+    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+    if (imageFiles.length === 0 || pendingGalleryAction) return;
+
+    setPendingGalleryAction(true);
+    try {
+      const uploadedUrls = await onUploadImages(imageFiles);
+      if (uploadedUrls.length === 0) return;
+
+      const nextImages = [...visibleImages, ...uploadedUrls];
+      await onSaveImages(nextImages);
+      toast.success(
+        localizedText(
+          locale,
+          uploadedUrls.length === 1
+            ? "Bilden har laddats upp."
+            : "Bilderna har laddats upp.",
+          uploadedUrls.length === 1
+            ? "The image has been uploaded."
+            : "The images have been uploaded."
+        )
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : localizedText(locale, "Kunde inte ladda upp bilden.", "Could not upload the image.")
+      );
+    } finally {
+      setPendingGalleryAction(false);
+      setIsDragActive(false);
+    }
+  };
+
+  const removeImage = async (index: number) => {
+    if (pendingGalleryAction) return;
+    setPendingGalleryAction(true);
+
+    try {
+      const nextImages = visibleImages.filter(
+        (_, imageIndex) => imageIndex !== index
+      );
+      await onSaveImages(nextImages);
+      toast.success(localizedText(locale, "Bilden har tagits bort.", "The image has been removed."));
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : localizedText(locale, "Kunde inte ta bort bilden.", "Could not remove the image.")
+      );
+    } finally {
+      setPendingGalleryAction(false);
+    }
+  };
+
+  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragActive(false);
+    void uploadFiles(Array.from(event.dataTransfer.files));
+  };
 
   return (
     <section
-      className="mx-auto w-full max-w-4xl"
+      className="mx-auto w-full max-w-6xl"
       aria-label={localizedText(locale, "Bildgalleri", "Image gallery")}
     >
-      {visibleImages.length === 0 ? (
-        <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-gray-500">
-          <ImageIcon className="h-7 w-7 text-gray-400" />
-          <span>
-            {localizedText(
-              locale,
-              "Inga bilder i galleriet \u00e4n.",
-              "No images in the gallery yet.",
-            )}
-          </span>
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {localizedText(locale, "Bildgalleri", "Image gallery")}
+            </h2>
+            <span className="rounded-full bg-[#004225]/[0.08] px-2.5 py-1 text-xs font-semibold text-[#004225]">
+              {visibleImages.length}{" "}
+              {localizedText(
+                locale,
+                visibleImages.length === 1 ? "bild" : "bilder",
+                visibleImages.length === 1 ? "image" : "images"
+              )}
+            </span>
+          </div>
         </div>
-      ) : (
-        <ImageSlideshow images={visibleImages} title={companyName} />
-      )}
-
-      <div className="mt-4 flex justify-end">
-        <Button type="button" variant="outline" size="sm" onClick={onOpen}>
-          <ImageIcon className="h-4 w-4" />
-          {localizedText(locale, "Redigera bilder", "Edit images")}
-        </Button>
       </div>
+
+      <input
+        id={uploadInputId}
+        type="file"
+        accept="image/*"
+        multiple
+        disabled={pendingGalleryAction}
+        className="sr-only"
+        onChange={(event) => {
+          void uploadFiles(Array.from(event.target.files ?? []));
+          event.target.value = "";
+        }}
+      />
+      <label
+        htmlFor={uploadInputId}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setIsDragActive(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+          setIsDragActive(true);
+        }}
+        onDragLeave={() => setIsDragActive(false)}
+        onDrop={handleDrop}
+        className={`flex min-h-[180px] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-4 py-8 text-center text-sm font-medium transition ${
+          isDragActive
+            ? "border-[#004225] bg-[#004225]/[0.04] text-[#004225]"
+            : "border-gray-300 bg-gray-50 text-gray-500 hover:border-[#004225]/40 hover:bg-[#004225]/[0.03]"
+        } ${pendingGalleryAction ? "pointer-events-none opacity-60" : ""}`}
+      >
+        <ImageIcon className="h-8 w-8 text-[#004225]" />
+        <span>{localizedText(locale, "Släpp bilder här", "Drop images here")}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#004225] px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+          <Plus className="h-3.5 w-3.5" />
+          {localizedText(locale, "Välj bilder", "Choose images")}
+        </span>
+      </label>
+
+      {visibleImages.length > 0 ? (
+        <div className="mt-6 columns-1 gap-4 sm:columns-2 lg:columns-3">
+          {visibleImages.map((image, index) => (
+            <figure
+              key={`${image}-${index}`}
+              className="relative mb-4 block w-full break-inside-avoid align-top"
+            >
+              <img
+                src={image}
+                alt={localizedText(
+                  locale,
+                  `${companyName} - bild ${index + 1}`,
+                  `${companyName} - image ${index + 1}`
+                )}
+                className="block h-auto w-full rounded-xl"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                aria-label={localizedText(locale, "Ta bort bild", "Remove image")}
+                title={localizedText(locale, "Ta bort bild", "Remove image")}
+                onClick={() => void removeImage(index)}
+                isDisabled={pendingGalleryAction}
+                className="absolute right-2 top-2 min-w-0 border-red-200 bg-white/95 text-red-600 shadow-sm hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </figure>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -475,12 +608,13 @@ function EditableVideoSection({
   onChange: (values: string[]) => void;
 }) {
   const { locale } = useI18n();
-  const listValues = videoUrls ?? [];
+  const listValues = videoUrls && videoUrls.length > 0 ? videoUrls : [""];
   const videos = useMemo<CompanyVideo[]>(() => {
-    return normalizeUrlList(listValues)
+    return normalizeUrlList(videoUrls)
       .map(toCompanyVideo)
       .filter((video): video is CompanyVideo => video !== null);
-  }, [listValues]);
+  }, [videoUrls]);
+  const canAddVideo = listValues.every((value) => value.trim());
 
   const updateValue = (index: number, value: string) => {
     onChange(
@@ -491,82 +625,87 @@ function EditableVideoSection({
   };
 
   const addValue = () => {
+    if (!canAddVideo) return;
     onChange([...listValues, ""]);
   };
 
   const removeValue = (index: number) => {
-    onChange(listValues.filter((_, entryIndex) => entryIndex !== index));
+    const nextValues = listValues.filter(
+      (_, entryIndex) => entryIndex !== index
+    );
+    onChange(nextValues.length > 0 ? nextValues : []);
   };
 
-  const addButton = (
-    <Button type="button" variant="outline" size="sm" onClick={addValue}>
-      <Plus className="h-4 w-4" />
-      {localizedText(locale, "L\u00e4gg till video", "Add video")}
-    </Button>
-  );
-
   return (
-    <section className="mx-auto w-full max-w-4xl">
+    <section
+      className="mx-auto w-full max-w-6xl"
+      aria-label={localizedText(locale, "Videor", "Videos")}
+    >
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">
+          {localizedText(locale, "Videor", "Videos")}
+        </h2>
+      </div>
+
       {videos.length > 0 ? (
         <CompanyVideoSection
           videos={videos}
           companyName={companyName}
         />
       ) : (
-        <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-gray-500">
+        <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-gray-500">
           <Video className="h-7 w-7 text-gray-400" />
           <span>
             {localizedText(
               locale,
-              "Inga YouTube-videor tillagda.",
-              "No YouTube videos added.",
+              "Inga videor tillagda.",
+              "No videos added.",
             )}
           </span>
         </div>
       )}
 
-      {listValues.length > 0 && (
-        <div className="mt-4 grid gap-2">
-          {listValues.map((value, index) => {
-            const isInvalid = Boolean(
-              value.trim() && !isYouTubeVideoUrl(value)
-            );
+      <div className="mt-4 grid gap-2">
+        {listValues.map((value, index) => {
+          const isInvalid = Boolean(
+            value.trim() && !isYouTubeVideoUrl(value)
+          );
+          const canRemove = listValues.length > 1 || value.trim();
 
-            return (
-              <div
-                key={index}
-                className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]"
-              >
-                <div className="grid gap-1">
-                  <input
-                    aria-invalid={isInvalid || undefined}
-                    aria-label={localizedText(
-                      locale,
-                      `Video ${index + 1}`,
-                      `Video ${index + 1}`,
-                    )}
-                    type="url"
-                    value={value}
-                    onChange={(event) =>
-                      updateValue(index, event.target.value)
-                    }
-                    className={`${iconInputClass} ${
-                      isInvalid
-                        ? "border-red-300 text-red-700 focus:border-red-500 focus:ring-red-100"
-                        : ""
-                    }`}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
-                  {isInvalid && (
-                    <p className="text-xs font-medium text-red-600">
-                      {localizedText(
-                        locale,
-                        "Endast YouTube-l\u00e4nkar accepteras.",
-                        "Only YouTube links are accepted.",
-                      )}
-                    </p>
+          return (
+            <div
+              key={index}
+              className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]"
+            >
+              <div className="grid gap-1">
+                <input
+                  aria-invalid={isInvalid || undefined}
+                  aria-label={localizedText(
+                    locale,
+                    `YouTube-länk ${index + 1}`,
+                    `YouTube link ${index + 1}`,
                   )}
-                </div>
+                  type="url"
+                  value={value}
+                  onChange={(event) => updateValue(index, event.target.value)}
+                  className={`${iconInputClass} ${
+                    isInvalid
+                      ? "border-red-300 text-red-700 focus:border-red-500 focus:ring-red-100"
+                      : ""
+                  }`}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                {isInvalid && (
+                  <p className="text-xs font-medium text-red-600">
+                    {localizedText(
+                      locale,
+                      "Endast YouTube-länkar accepteras.",
+                      "Only YouTube links are accepted.",
+                    )}
+                  </p>
+                )}
+              </div>
+              {canRemove ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -576,22 +715,29 @@ function EditableVideoSection({
                     "Ta bort video",
                     "Remove video",
                   )}
-                  title={localizedText(
-                    locale,
-                    "Ta bort video",
-                    "Remove video",
-                  )}
+                  title={localizedText(locale, "Ta bort video", "Remove video")}
                   onClick={() => removeValue(index)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
 
-      <div className="mt-4 flex justify-end">{addButton}</div>
+      <div className="mt-3 flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addValue}
+          isDisabled={!canAddVideo}
+        >
+          <Plus className="h-4 w-4" />
+          {localizedText(locale, "Lägg till video", "Add video")}
+        </Button>
+      </div>
     </section>
   );
 }
@@ -629,7 +775,8 @@ function EditableCompanyPreview({
   socialPlatformOptions,
   onDraftChange,
   onImageSelect,
-  onOpenImageGallery,
+  onUploadGalleryImages,
+  onSaveGalleryImages,
 }: {
   draft: ProfileDraft;
   companyQueue: HousingQueueDTO | null;
@@ -639,7 +786,8 @@ function EditableCompanyPreview({
     value: ProfileDraft[K]
   ) => void;
   onImageSelect: (field: "logoUrl" | "bannerUrl", file: File) => void;
-  onOpenImageGallery: () => void;
+  onUploadGalleryImages: (files: File[]) => Promise<string[]>;
+  onSaveGalleryImages: (imageUrls: string[]) => Promise<void>;
 }) {
   const { locale } = useI18n();
   const updateAdditionalSocialLink = (
@@ -891,7 +1039,8 @@ function EditableCompanyPreview({
         companyName={
           draft.name || localizedText(locale, "F\u00f6retagsprofil", "Company profile")
         }
-        onOpen={onOpenImageGallery}
+        onUploadImages={onUploadGalleryImages}
+        onSaveImages={onSaveGalleryImages}
       />
 
       <EditableVideoSection
@@ -932,7 +1081,6 @@ export default function ProfilePage() {
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
   const [hydratedCompanyId, setHydratedCompanyId] = useState<number | null>(null);
   const [bannerFileToCrop, setBannerFileToCrop] = useState<File | null>(null);
-  const [uploadGalleryVisible, setUploadGalleryVisible] = useState(false);
 
   const [saving, setSaving] = useState(false);
 
@@ -1284,7 +1432,8 @@ export default function ProfilePage() {
           socialPlatformOptions={socialPlatformOptions}
           onDraftChange={updateDraftField}
           onImageSelect={handleImageSelect}
-          onOpenImageGallery={() => setUploadGalleryVisible(true)}
+          onUploadGalleryImages={uploadGalleryImages}
+          onSaveGalleryImages={persistGalleryImages}
         />
 
         <div className="sticky bottom-4 z-10 mx-auto flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
@@ -1336,30 +1485,6 @@ export default function ProfilePage() {
         }}
         onCancel={handleBannerCropCancel}
         onCropComplete={handleBannerCropComplete}
-      />
-
-      <ImageUploadGallery
-        open={uploadGalleryVisible}
-        setOpen={setUploadGalleryVisible}
-        imageUrls={normalizeUrlList(draft.pictureUrlList)}
-        onUploadImages={uploadGalleryImages}
-        onSave={persistGalleryImages}
-        locale={locale}
-        uploadSuccessMessage={localizedText(
-          locale,
-          "Bilden har laddats upp och sparats i bildgalleriet.",
-          "The image has been uploaded and saved to the image gallery."
-        )}
-        replaceSuccessMessage={localizedText(
-          locale,
-          "Bilden har bytts och sparats i bildgalleriet.",
-          "The image has been replaced and saved to the image gallery."
-        )}
-        saveSuccessMessage={localizedText(
-          locale,
-          "Bildgalleriet har sparats.",
-          "The image gallery has been saved."
-        )}
       />
     </PortalPage>
   );

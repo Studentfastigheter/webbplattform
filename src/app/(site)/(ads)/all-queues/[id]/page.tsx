@@ -1,10 +1,10 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/features/ads/components/QueueHero";
 import QueueListings from "@/features/ads/components/QueueListings";
-import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
 import CompanyMap from "@/features/ads/components/CompanyMap";
 import CompanyVideoSection, {
   type CompanyVideo,
@@ -102,6 +102,40 @@ const toCompanyVideo = (url: string): CompanyVideo | null => {
   };
 };
 
+function CompanyImageBoard({
+  images,
+  title,
+}: {
+  images: string[];
+  title: string;
+}) {
+  const { locale } = useI18n();
+
+  if (images.length === 0) return null;
+
+  return (
+    <section
+      className="w-full"
+      aria-label={localizedText(locale, "Bildgalleri", "Image gallery")}
+    >
+      <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
+        {images.map((image, index) => (
+          <img
+            key={`${image}-${index}`}
+            src={image}
+            alt={localizedText(
+              locale,
+              `${title} - bild ${index + 1}`,
+              `${title} - image ${index + 1}`
+            )}
+            className="mb-4 block h-auto w-full break-inside-avoid rounded-xl"
+            loading={index < 3 ? "eager" : "lazy"}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 const uniqueCityLabels = (values: Array<string | null | undefined>) => {
   const labels = new Map<string, string>();
@@ -540,7 +574,7 @@ export default function QueueDetailPage() {
       {/* Image gallery */}
       {galleryImages.length > 0 && (
         <div className="mt-12 w-full">
-          <ImageSlideshow
+          <CompanyImageBoard
             images={galleryImages}
             title={companyName}
           />
