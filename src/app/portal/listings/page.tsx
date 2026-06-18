@@ -40,7 +40,8 @@ import { dashboardRelPath } from "../_statics/variables";
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
 
-type StatusFilter = "all" | "active" | "inactive";
+type PortalListingStatusValue = "available" | "hidden" | "rented";
+type StatusFilter = "all" | PortalListingStatusValue;
 type DateSort = "newest" | "oldest";
 
 type PortalListing = {
@@ -51,6 +52,7 @@ type PortalListing = {
   publishedAtTime: number | null;
   statusLabel: string;
   statusTone: PortalListingStatusTone;
+  statusValue: PortalListingStatusValue | null;
 };
 
 type StatsLookup = Map<string, number>;
@@ -112,11 +114,13 @@ function normalizeKey(value: string): string {
     .replace(/[|]/g, "");
 }
 
-function mapStatus(statusRaw: string | undefined, locale: Locale): {
-  label: string;
-  tone: PortalListingStatusTone;
-} {
-  const status = (statusRaw ?? "published").toLowerCase().trim();
+function normalizeListingStatus(
+  statusRaw: string | undefined
+): PortalListingStatusValue | null {
+  const status = statusRaw?.toLowerCase().trim();
+  if (!status) return null;
+
+  const compactStatus = status.replace(/[\s_-]+/g, "");
 
   if (
     [
@@ -127,28 +131,79 @@ function mapStatus(statusRaw: string | undefined, locale: Locale): {
       "publicerad",
       "open",
       "live",
-    ].includes(status)
+    ].includes(compactStatus)
   ) {
-    return { label: localizedText(locale, "Aktiv", "Active"), tone: "success" };
+    return "available";
   }
 
   if (
     [
       "paused",
       "hidden",
+      "dold",
+      "gomd",
+      "gömd",
       "inactive",
       "inaktiv",
       "archived",
-      "closed",
       "draft",
-      "rented",
-      "uthyrd",
-    ].includes(status)
+      "coming",
+    ].includes(compactStatus)
   ) {
-    return { label: localizedText(locale, "Inaktiv", "Inactive"), tone: "warning" };
+    return "hidden";
   }
 
-  return { label: statusRaw ?? localizedText(locale, "Okänd", "Unknown"), tone: "neutral" };
+  if (
+    [
+      "rented",
+      "rentedout",
+      "uthyrd",
+      "closed",
+      "expired",
+    ].includes(compactStatus)
+  ) {
+    return "rented";
+  }
+
+  return null;
+}
+
+function mapStatus(statusRaw: string | undefined, locale: Locale): {
+  label: string;
+  tone: PortalListingStatusTone;
+  value: PortalListingStatusValue | null;
+} {
+  const status = normalizeListingStatus(statusRaw);
+
+  if (status === "available") {
+    return {
+      label: localizedText(locale, "Tillgänglig", "Available"),
+      tone: "success",
+      value: status,
+    };
+  }
+
+  if (status === "hidden") {
+    return {
+      label: localizedText(locale, "Dold", "Hidden"),
+      tone: "warning",
+      value: status,
+    };
+  }
+
+  if (status === "rented") {
+    return {
+      label: localizedText(locale, "Uthyrd", "Rented"),
+      tone: "neutral",
+      value: status,
+    };
+  }
+
+  return {
+    label: statusRaw ?? localizedText(locale, "Okänd", "Unknown"),
+    tone: "neutral",
+    value: null,
+  };
 }
 
 function formatDate(value: string | undefined, locale: Locale): string {
@@ -375,7 +430,7 @@ export default function PortalAdsPage() {
       );
       const applications = resolveApplicationCount(raw, applicationsLookup) ?? 0;
       const publishedAtRaw = pickString(raw, ["published"]);
-      const { label, tone } = mapStatus(
+      const { label, tone, value } = mapStatus(
         pickString(raw, ["status", "listingStatus", "state"]),
         locale
       );
@@ -387,6 +442,7 @@ export default function PortalAdsPage() {
         publishedAtTime: parseDateTime(publishedAtRaw),
         statusLabel: label,
         statusTone: tone,
+        statusValue: value,
       };
     });
   }, [applicationsByObject, companyListings, locale, viewCountsByListingId]);
@@ -412,9 +468,7 @@ export default function PortalAdsPage() {
         const statusPass =
           statusFilter === "all"
             ? true
-            : statusFilter === "active"
-              ? item.statusTone === "success"
-              : item.statusTone !== "success";
+            : item.statusValue === statusFilter;
 
         if (!statusPass) return false;
 
@@ -545,8 +599,9 @@ export default function PortalAdsPage() {
                     </PortalControlSelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">{localizedText(locale, "Alla statusar", "All statuses")}</SelectItem>
-                      <SelectItem value="active">{localizedText(locale, "Aktiva", "Active")}</SelectItem>
-                      <SelectItem value="inactive">{localizedText(locale, "Inaktiva", "Inactive")}</SelectItem>
+                      <SelectItem value="available">{localizedText(locale, "Tillgängliga", "Available")}</SelectItem>
+                      <SelectItem value="hidden">{localizedText(locale, "Dolda", "Hidden")}</SelectItem>
+                      <SelectItem value="rented">{localizedText(locale, "Uthyrda", "Rented")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

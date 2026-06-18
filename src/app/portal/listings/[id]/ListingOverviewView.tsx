@@ -152,8 +152,8 @@ const listingStatusOptions: Array<{
   labelEn: string;
   icon: typeof CircleCheck;
 }> = [
-  { value: "AVAILABLE", labelSv: "Aktiv", labelEn: "Active", icon: CircleCheck },
-  { value: "HIDDEN", labelSv: "Gömd", labelEn: "Hidden", icon: CirclePause },
+  { value: "AVAILABLE", labelSv: "Tillgänglig", labelEn: "Available", icon: CircleCheck },
+  { value: "HIDDEN", labelSv: "Dold", labelEn: "Hidden", icon: CirclePause },
   { value: "RENTED", labelSv: "Uthyrd", labelEn: "Rented", icon: Home },
 ];
 
@@ -212,9 +212,11 @@ function mapStatus(statusRaw: string | undefined, locale: Locale): {
   tone: PortalListingStatusTone;
   value: ListingStatus | null;
 } {
-  const status = (statusRaw ?? "published").toLowerCase().trim();
+  const status = statusRaw?.toLowerCase().trim();
+  const compactStatus = status?.replace(/[\s_-]+/g, "");
 
   if (
+    compactStatus &&
     [
       "active",
       "aktiv",
@@ -223,16 +225,25 @@ function mapStatus(statusRaw: string | undefined, locale: Locale): {
       "publicerad",
       "open",
       "live",
-    ].includes(status)
+    ].includes(compactStatus)
   ) {
     return {
-      label: localizedText(locale, "Aktiv", "Active"),
+      label: localizedText(locale, "Tillgänglig", "Available"),
       tone: "success",
       value: "AVAILABLE",
     };
   }
 
-  if (["rented", "rentedout", "rented_out", "uthyrd"].includes(status)) {
+  if (
+    compactStatus &&
+    [
+      "rented",
+      "rentedout",
+      "uthyrd",
+      "closed",
+      "expired",
+    ].includes(compactStatus)
+  ) {
     return {
       label: localizedText(locale, "Uthyrd", "Rented"),
       tone: "neutral",
@@ -241,18 +252,22 @@ function mapStatus(statusRaw: string | undefined, locale: Locale): {
   }
 
   if (
+    compactStatus &&
     [
       "paused",
       "hidden",
+      "dold",
+      "gomd",
+      "gömd",
       "inactive",
       "inaktiv",
       "archived",
-      "closed",
       "draft",
-    ].includes(status)
+      "coming",
+    ].includes(compactStatus)
   ) {
     return {
-      label: localizedText(locale, "Gömd", "Hidden"),
+      label: localizedText(locale, "Dold", "Hidden"),
       tone: "warning",
       value: "HIDDEN",
     };
