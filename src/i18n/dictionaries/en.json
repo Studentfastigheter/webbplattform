@@ -97,8 +97,8 @@
       "headingEnd": "in three steps",
       "items": [
         {
-          "title": "Create your profile",
-          "desc": "Enter your details once and use your profile when you apply for housing or contact housing companies."
+          "title": "Create your account",
+          "desc": "Enter your details and collect the documents you need when applying for housing or contacting housing companies."
         },
         {
           "title": "Find the right homes and queues",
@@ -144,9 +144,9 @@
           "tags": ["Miss no queues", "City by city", "Prioritize smartly"]
         },
         {
-          "badge": "Profile",
-          "title": "Apply with a profile that makes a serious impression",
-          "tags": ["Fast contact", "Professional", "Save time"]
+          "badge": "Account",
+          "title": "Keep your details and documents in one place",
+          "tags": ["Fast contact", "Documents", "Save time"]
         },
         {
           "badge": "Student life",

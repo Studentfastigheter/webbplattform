@@ -18,7 +18,7 @@ export default function Page() {
 
   useEffect(() => {
     if (authLoading || canViewNotifications) return;
-    router.replace(localizedHref(user ? "/profile" : "/login"));
+    router.replace(user ? localizedHref("/account") : "/");
   }, [authLoading, canViewNotifications, localizedHref, router, user]);
 
   if (authLoading || !canViewNotifications) {

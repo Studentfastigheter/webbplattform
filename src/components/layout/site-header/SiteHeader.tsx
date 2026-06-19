@@ -1,12 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { IconChevronDown } from "@/components/icons";
+import { IconChevronDown, UserCircle } from "@/components/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
-import { type User } from "@/types";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -25,43 +24,16 @@ import {
 
 type NavItem = NavbarItem;
 
-const getInitial = (value: string) => value.trim().charAt(0).toUpperCase() || "C";
-const getLogoUrl = (user?: User | null) => user?.logoUrl?.trim() || "";
-
-type AccountAvatarProps = {
-  src?: string | null;
-  alt: string;
-  className: string;
-  fallbackClassName: string;
-  initial: string;
-};
-
-function AccountAvatar({
-  src,
-  alt,
-  className,
-  fallbackClassName,
-  initial,
-}: AccountAvatarProps) {
-  const [currentSrc, setCurrentSrc] = useState(src || "");
-
-  useEffect(() => {
-    setCurrentSrc(src || "");
-  }, [src]);
-
-  if (!currentSrc) {
-    return <div className={fallbackClassName}>{initial}</div>;
-  }
-
+function AccountIcon({ className }: { className?: string }) {
   return (
-    <img
-      src={currentSrc}
-      alt={alt}
-      className={className}
-      referrerPolicy="no-referrer"
-      decoding="async"
-      onError={() => setCurrentSrc("")}
-    />
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-[#004225]/10 text-[#004225]",
+        className
+      )}
+    >
+      <UserCircle className="h-[70%] w-[70%]" aria-hidden="true" />
+    </span>
   );
 }
 
@@ -85,8 +57,6 @@ export default function SiteHeader() {
           ? t("siteHeader.roles.company")
           : null;
   const displayName = getUserDisplayName(currentUser);
-  const accountInitial = getInitial(displayName || "CampusLyan");
-  const avatarSrc = getLogoUrl(currentUser);
 
   const publicNavItems = useMemo<NavItem[]>(
     () =>
@@ -166,24 +136,22 @@ export default function SiteHeader() {
 
   if (userType === "student") {
     accountMenuItems = [
-      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profile") },
-      { name: t("siteHeader.account.settings"), link: localizedHref("/settings") },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/account") },
       { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
   } else if (isQuickRegister) {
     accountMenuItems = [
-      { name: t("siteHeader.account.settings"), link: localizedHref("/settings") },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/account") },
       { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
   } else if (userType === "private_landlord" || userType === "company") {
     accountMenuItems = [
-      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profile") },
-      { name: t("siteHeader.account.settings"), link: localizedHref("/settings") },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/account") },
       { name: t("siteHeader.account.help"), link: localizedHref("/faq") },
     ];
   } else if (currentUser) {
     accountMenuItems = [
-      { name: t("siteHeader.account.myAccount"), link: localizedHref("/profile") },
+      { name: t("siteHeader.account.myAccount"), link: localizedHref("/account") },
     ];
   }
 
@@ -311,21 +279,7 @@ export default function SiteHeader() {
                   onClick={handleAccountToggle}
                   className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
                 >
-                  <AccountAvatar
-                    src={avatarSrc}
-                    alt={displayName}
-                    className={cn(
-                      "h-8 w-8",
-                      userType === "company"
-                        ? "rounded-md bg-white object-contain p-0.5 ring-1 ring-neutral-200"
-                        : "rounded-full object-cover"
-                    )}
-                    fallbackClassName={cn(
-                      "flex h-8 w-8 items-center justify-center bg-neutral-100 text-xs font-semibold text-neutral-600",
-                      userType === "company" ? "rounded-md" : "rounded-full"
-                    )}
-                    initial={accountInitial}
-                  />
+                  <AccountIcon className="h-8 w-8" />
                   <div className="hidden max-w-32 sm:block">
                     <p className="truncate text-left text-sm font-medium text-neutral-900">
                       {displayName}
@@ -342,21 +296,7 @@ export default function SiteHeader() {
                 {isAccountMenuOpen && (
                   <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] animate-dropdown">
                     <div className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-3">
-                      <AccountAvatar
-                        src={avatarSrc}
-                        alt={displayName}
-                        className={cn(
-                          "h-9 w-9",
-                          userType === "company"
-                            ? "rounded-md bg-white object-contain p-0.5 ring-1 ring-neutral-200"
-                            : "rounded-full object-cover"
-                        )}
-                        fallbackClassName={cn(
-                          "flex h-9 w-9 items-center justify-center bg-white text-sm font-semibold text-neutral-600",
-                          userType === "company" ? "rounded-md" : "rounded-full"
-                        )}
-                        initial={accountInitial}
-                      />
+                      <AccountIcon className="h-9 w-9 bg-white" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-neutral-950">
                           {displayName}
@@ -473,21 +413,7 @@ export default function SiteHeader() {
                   </Link>
                 ) : null}
                 <div className="mb-3 flex items-center gap-3 px-1">
-                  <AccountAvatar
-                    src={avatarSrc}
-                    alt={displayName}
-                    className={cn(
-                      "h-9 w-9",
-                      userType === "company"
-                        ? "rounded-md bg-white object-contain p-0.5 ring-1 ring-neutral-200"
-                        : "rounded-full object-cover"
-                    )}
-                    fallbackClassName={cn(
-                      "flex h-9 w-9 items-center justify-center bg-neutral-100 text-sm font-semibold text-neutral-600",
-                      userType === "company" ? "rounded-md" : "rounded-full"
-                    )}
-                    initial={accountInitial}
-                  />
+                  <AccountIcon className="h-9 w-9" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-neutral-950">
                       {displayName}

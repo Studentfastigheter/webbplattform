@@ -47,6 +47,28 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
   return children;
 }
 
+export function AuthenticatedSiteRouteGuard({ children }: RouteGuardProps) {
+  const router = useRouter();
+  const { locale } = useI18n();
+  const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (isLoading || user) return;
+
+    router.replace("/");
+  }, [isLoading, router, user]);
+
+  if (isLoading || !user) {
+    return (
+      <RouteFallback
+        message={localizedText(locale, "Skickar dig vidare...", "Redirecting you...")}
+      />
+    );
+  }
+
+  return children;
+}
+
 export function PortalAccountGuard({ children }: RouteGuardProps) {
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();

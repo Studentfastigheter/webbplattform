@@ -97,8 +97,8 @@
       "headingEnd": "i tre steg",
       "items": [
         {
-          "title": "Skapa din profil",
-          "desc": "Fyll i dina uppgifter en gång och använd profilen när du söker bostad eller kontaktar bostadsbolag."
+          "title": "Skapa ditt konto",
+          "desc": "Fyll i dina uppgifter och samla dokumenten du behöver när du söker bostad eller kontaktar bostadsbolag."
         },
         {
           "title": "Hitta rätt bostäder och köer",
@@ -144,9 +144,9 @@
           "tags": ["Missa inga köer", "Stad för stad", "Prioritera smart"]
         },
         {
-          "badge": "Profil",
-          "title": "Ansök med en profil som ger seriöst intryck",
-          "tags": ["Snabb kontakt", "Proffsigt", "Spara tid"]
+          "badge": "Konto",
+          "title": "Samla uppgifter och dokument på ett ställe",
+          "tags": ["Snabb kontakt", "Dokument", "Spara tid"]
         },
         {
           "badge": "Studentliv",

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { AuthenticatedSiteRouteGuard } from "@/features/auth/components/AccountRouteGuards";
 import { createNoIndexMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createNoIndexMetadata(
@@ -9,5 +10,5 @@ export const metadata: Metadata = createNoIndexMetadata(
 );
 
 export default function SavedLayout({ children }: { children: ReactNode }) {
-  return children;
+  return <AuthenticatedSiteRouteGuard>{children}</AuthenticatedSiteRouteGuard>;
 }

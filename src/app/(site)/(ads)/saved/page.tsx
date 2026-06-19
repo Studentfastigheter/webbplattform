@@ -40,7 +40,7 @@ export default function Page() {
 
   useEffect(() => {
     if (authLoading || canViewFavorites) return;
-    router.replace(localizedHref(user ? "/housing" : "/login"));
+    router.replace(user ? localizedHref("/housing") : "/");
   }, [authLoading, canViewFavorites, localizedHref, router, user]);
 
   /**

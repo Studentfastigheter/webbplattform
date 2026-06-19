@@ -5,10 +5,10 @@ import { AuthenticatedSiteRouteGuard } from "@/features/auth/components/AccountR
 import { createNoIndexMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createNoIndexMetadata(
-  "Meddelanden",
-  "Personliga meddelanden i CampusLyan."
+  "Mitt konto",
+  "Personliga kontoinställningar och dokument för CampusLyan."
 );
 
-export default function MessagesLayout({ children }: { children: ReactNode }) {
+export default function AccountLayout({ children }: { children: ReactNode }) {
   return <AuthenticatedSiteRouteGuard>{children}</AuthenticatedSiteRouteGuard>;
 }

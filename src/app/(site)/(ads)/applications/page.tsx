@@ -186,7 +186,7 @@ export default function MyApplicationsPage() {
 
   useEffect(() => {
     if (authLoading || isStudent) return;
-    router.replace(localizedHref(user ? "/profile" : "/login"));
+    router.replace(user ? localizedHref("/account") : "/");
   }, [authLoading, isStudent, localizedHref, router, user]);
 
   // My applications — shared cache. Re-fetches automatically when any

@@ -1289,7 +1289,7 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
             </div>
 
             <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 xl:flex-row xl:items-center xl:justify-between">
-              <TabsList className="portal-control h-10 w-full justify-start bg-white p-1 sm:w-fit">
+              <TabsList className="portal-control h-10 w-full justify-start bg-gray-50 p-1 sm:w-fit">
                 <TabsTrigger
                   className="h-8 flex-1 rounded-md px-4 data-[state=active]:bg-brand-50 data-[state=active]:text-brand-500 data-[state=active]:shadow-none sm:flex-none"
                   value="info"
@@ -1319,14 +1319,18 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
                       <button
                         key={option.value}
                         type="button"
+                        aria-pressed={isCurrent}
                         className={cn(
                           "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
                           isCurrent
-                            ? "bg-white text-[#004225] shadow-theme-xs"
-                            : "text-gray-500 hover:text-gray-900"
+                            ? "bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100 shadow-none"
+                            : "text-gray-500 hover:bg-white hover:text-gray-900"
                         )}
-                        disabled={actionState !== "idle" || isCurrent}
-                        onClick={() => handleStatusChange(option.value)}
+                        disabled={actionState !== "idle"}
+                        onClick={() => {
+                          if (isCurrent) return;
+                          handleStatusChange(option.value);
+                        }}
                       >
                         <Icon className="h-4 w-4 shrink-0" />
                         <span className="truncate">

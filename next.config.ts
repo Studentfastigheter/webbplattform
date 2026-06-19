@@ -22,8 +22,8 @@ const legacyRouteRedirects = [
   ["/sparade", "/saved"],
   ["/meddelanden", "/messages"],
   ["/notiser", "/notifications"],
-  ["/profil", "/profile"],
-  ["/installningar", "/settings"],
+  ["/profil", "/account"],
+  ["/installningar", "/account"],
   ["/alla-koer", "/all-queues"],
   ["/koer", "/queues"],
   ["/stader", "/cities"],
@@ -118,6 +118,8 @@ const nextConfig: NextConfig = {
       { source: "/en/logga-in", destination: "/en/login", permanent: true },
       { source: "/logga-in/freja-id", destination: "/register/freja-id?start=freja", permanent: true },
       { source: "/en/logga-in/freja-id", destination: "/en/register/freja-id?start=freja", permanent: true },
+      ...routeRedirects("/profile", "/account"),
+      ...routeRedirects("/settings", "/account"),
       ...legacyNestedRouteRedirects.flatMap(([source, destination]) =>
         routeRedirects(source, destination)
       ),

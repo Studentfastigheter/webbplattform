@@ -38,7 +38,7 @@ export default function Page() {
 
   useEffect(() => {
     if (authLoading || canViewQueues) return;
-    router.replace(localizedHref(user ? "/profile" : "/login"));
+    router.replace(user ? localizedHref("/account") : "/");
   }, [authLoading, canViewQueues, localizedHref, router, user]);
 
   // hydrated=true so we get queue + company info for the row rendering.

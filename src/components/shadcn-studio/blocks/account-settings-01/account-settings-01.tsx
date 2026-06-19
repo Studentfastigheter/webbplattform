@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useRef, useState } from 'react'
 import { CheckIcon, Loader2Icon, SaveIcon } from "@/components/icons"
 
@@ -23,7 +24,13 @@ export type UserGeneralOptions = {
   showAccountPermission?: boolean
 }
 
-const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
+const UserGeneral = ({
+  options = {},
+  children,
+}: {
+  options?: UserGeneralOptions
+  children?: ReactNode
+}) => {
   const { locale } = useI18n()
   const showDangerZone = options.showDangerZone ?? true
   const showVerification = options.showVerification ?? false
@@ -110,6 +117,8 @@ const UserGeneral = ({ options = {} }: { options?: UserGeneralOptions }) => {
           <IdentityVerification enabled={showVerification} />
         </div>
       ) : null}
+
+      {children ? <div className='py-6'>{children}</div> : null}
 
       <div className='py-6'>
         <PasswordSection />

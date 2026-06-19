@@ -32,6 +32,7 @@ import {
   useMyDocuments,
   useUploadDocument,
 } from "@/features/documents/hooks/useDocuments";
+import type { DocumentFileType } from "@/types/common";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf";
@@ -39,7 +40,7 @@ const ACCEPTED_FILE_TYPES = ".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf";
 type FileIconType = FileListItemProps["type"];
 type BaseButtonProps = ComponentProps<typeof Button>;
 
-type StudentDocument = {
+type AccountDocument = {
   id: string;
   title: string;
   note?: string;
@@ -115,7 +116,23 @@ function getFileIconType(file: File): FileIconType {
   return "empty";
 }
 
-function getFileListItemType(document: StudentDocument): FileIconType {
+function getDocumentFileType(file: File): DocumentFileType {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+
+  if (extension === "pdf" || file.type === "application/pdf") return "PDF";
+  if (
+    extension === "jpg" ||
+    extension === "jpeg" ||
+    extension === "png" ||
+    file.type.startsWith("image/")
+  ) {
+    return "PICTURE";
+  }
+
+  return "DOCX";
+}
+
+function getFileListItemType(document: AccountDocument): FileIconType {
   if (document.type) return document.type;
 
   const extension = document.name.split(".").pop()?.toLowerCase();
@@ -131,18 +148,18 @@ function getFileExtension(fileName: string) {
   return fileName.split(".").pop()?.toLowerCase() ?? "";
 }
 
-function getDocumentHref(document: StudentDocument) {
+function getDocumentHref(document: AccountDocument) {
   return document.objectUrl ?? document.downloadUrl;
 }
 
-function isPdfDocument(document: StudentDocument) {
+function isPdfDocument(document: AccountDocument) {
   return (
     document.mimeType === "application/pdf" ||
     getFileExtension(document.name) === "pdf"
   );
 }
 
-function isImageDocument(document: StudentDocument) {
+function isImageDocument(document: AccountDocument) {
   const extension = getFileExtension(document.name);
 
   return (
@@ -249,7 +266,7 @@ function getUploadErrorMessage(error: unknown, locale: Locale) {
   return localizedText(locale, "Kunde inte ladda upp dokumentet till backend.", "Could not upload the document to the backend.");
 }
 
-function createDocumentFromFile(file: File): StudentDocument {
+function createDocumentFromFile(file: File): AccountDocument {
   return {
     id: crypto.randomUUID(),
     title: titleFromFileName(file.name),
@@ -264,7 +281,7 @@ function createDocumentFromFile(file: File): StudentDocument {
   };
 }
 
-function createDocumentFromUploaded(document: UploadedDocument): StudentDocument {
+function createDocumentFromUploaded(document: UploadedDocument): AccountDocument {
   return {
     id: crypto.randomUUID(),
     title: document.title ?? titleFromFileName(document.name),
@@ -277,14 +294,14 @@ function createDocumentFromUploaded(document: UploadedDocument): StudentDocument
   };
 }
 
-export default function ProfileDocumentsSection() {
+export default function AccountDocumentsSection() {
   const { locale } = useI18n();
   const uploadDocument = useUploadDocument();
   const deleteDocument = useDeleteDocument();
   // `documents` is local state because uploads add transient items (with
   // progress) before they exist server-side. We seed and merge from the
   // useMyDocuments cache via the effect below.
-  const [documents, setDocuments] = useState<StudentDocument[]>([]);
+  const [documents, setDocuments] = useState<AccountDocument[]>([]);
   const [message, setMessage] = useState<StatusMessage | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft>(emptyEditDraft);
@@ -314,9 +331,8 @@ export default function ProfileDocumentsSection() {
     };
   }, []);
 
-  // Documents server cache. Mutations (upload/delete) will invalidate this
-  // key in Phase 2; for now we read it and merge into local `documents`
-  // state below.
+  // Documents server cache is merged into local state so in-flight uploads can
+  // keep their progress rows without disappearing during a refetch.
   const {
     data: uploadedDocuments,
     isLoading: isLoadingDocuments,
@@ -442,6 +458,7 @@ export default function ProfileDocumentsSection() {
     try {
       const result = await uploadDocument.mutateAsync({
         file,
+        type: getDocumentFileType(file),
         signal: controller.signal,
       });
 
@@ -520,7 +537,7 @@ export default function ProfileDocumentsSection() {
   };
 
   const handleRejectedFiles = () => {
-    setMessage(localizedText(locale, "Filtypen stöds inte. Ladda upp PDF, Word eller bild.", "This file type is not supported. Upload a PDF, Word document or image."));
+      setMessage(localizedText(locale, "Filtypen stöds inte. Ladda upp PDF, Word eller bild.", "This file type is not supported. Upload a PDF, Word document or image."));
   };
 
   const handleOversizedFiles = () => {
@@ -647,7 +664,7 @@ export default function ProfileDocumentsSection() {
     }
   };
 
-  const handleStartEdit = (document: StudentDocument) => {
+  const handleStartEdit = (document: AccountDocument) => {
     setEditingId(document.id);
     setEditDraft({
       title: document.title,
@@ -702,7 +719,7 @@ export default function ProfileDocumentsSection() {
     );
   };
 
-  const renderPreviewContent = (document: StudentDocument) => {
+  const renderPreviewContent = (document: AccountDocument) => {
     const documentHref = getDocumentHref(document);
 
     if (!documentHref) {
@@ -758,24 +775,32 @@ export default function ProfileDocumentsSection() {
   const messageText = typeof message === "string" ? message : message?.text;
 
   return (
-    <section className="mx-auto mt-12 max-w-4xl px-4 sm:px-6">
-      <div className="border-t border-gray-200 pt-10">
-        <div className="max-w-2xl">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#004225]">
-              {localizedText(locale, "Profilbilagor", "Profile attachments")}
-            </p>
-            <h2 className="mt-1 text-2xl font-bold text-gray-900">
-              {localizedText(locale, "Mina dokument", "My documents")}
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
-              {localizedText(
-                locale,
-                "Samla intyg, studiebevis och andra filer som kan behövas i en bostadsansökan. PDF fungerar bäst.",
-                "Collect certificates, proof of studies and other files that may be needed for a housing application. PDF works best.",
-              )}
-            </p>
-          </div>
+    <section className="grid grid-cols-1 gap-10 lg:grid-cols-3">
+      <div className="flex flex-col space-y-1">
+        <h3 className="font-semibold">
+          {localizedText(locale, "Dokument", "Documents")}
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          {localizedText(
+            locale,
+            "Ladda upp intyg, studiebevis och andra filer till ditt konto.",
+            "Upload certificates, proof of studies and other files to your account."
+          )}
+        </p>
+      </div>
+
+      <div className="lg:col-span-2">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {localizedText(locale, "Mina dokument", "My documents")}
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
+            {localizedText(
+              locale,
+              "Spara de dokument du ofta behöver när du söker bostad. Du kan ladda upp PDF, Word-dokument och bilder.",
+              "Save the documents you often need when applying for housing. You can upload PDFs, Word documents and images."
+            )}
+          </p>
         </div>
 
         <div className="mt-6">

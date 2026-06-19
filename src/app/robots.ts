@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 const prelaunchBlockedPaths = [
   "/admin",
+  "/account",
   "/all-queues",
   "/api/",
   "/applications",
@@ -24,11 +25,9 @@ const prelaunchBlockedPaths = [
   "/notifications",
   "/offers",
   "/portal",
-  "/profile",
   "/queues",
   "/register",
   "/saved",
-  "/settings",
 ];
 
 function localizedRobotsPaths(paths: readonly string[]) {
