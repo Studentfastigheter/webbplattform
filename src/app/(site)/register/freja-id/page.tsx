@@ -338,7 +338,8 @@ function FrejaIdRegisterContent() {
             alt="Freja"
             width={132}
             height={32}
-            className="mt-6 h-auto w-[132px]"
+            className="mt-6"
+            style={{ width: 132, height: "auto" }}
             priority
           />
         </div>
@@ -354,18 +355,18 @@ function FrejaIdRegisterContent() {
         </FieldDescription>
       }
     >
-      <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
+      <div className="flex min-h-[340px] min-w-0 flex-col items-center justify-center text-center sm:min-h-[360px]">
         <div className="mb-4 flex w-full items-center justify-center">
           <StatusPill status={status} />
         </div>
 
-        <div className="rounded-[8px] border border-slate-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.10)]">
+        <div className="w-full max-w-[242px] rounded-[8px] border border-slate-200 bg-white p-2 shadow-[0_2px_12px_rgba(15,23,42,0.10)] sm:max-w-[258px] sm:p-4">
           {startError ? (
-            <div className="flex h-[224px] w-[224px] items-center justify-center p-4">
+            <div className="flex aspect-square w-full items-center justify-center p-4">
               <FieldError>{startError}</FieldError>
             </div>
           ) : !authRef ? (
-            <div className="flex h-[224px] w-[224px] items-center justify-center p-4">
+            <div className="flex aspect-square w-full items-center justify-center p-4">
               <FieldError>
                 {isStarting
                   ? localizedText(locale, "Startar verifiering...", "Starting verification...")
@@ -373,7 +374,7 @@ function FrejaIdRegisterContent() {
               </FieldError>
             </div>
           ) : useSameDeviceLaunch ? (
-            <div className="flex h-[224px] w-[224px] flex-col items-center justify-center gap-3 p-4">
+            <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 p-4">
               <Button
                 as="a"
                 href={frejaAuthUrl}
@@ -391,6 +392,7 @@ function FrejaIdRegisterContent() {
             <QRCodeSVG
               value={frejaAuthUrl}
               size={224}
+              className="h-auto w-full"
               fgColor="#17142F"
               bgColor="#ffffff"
               level="M"

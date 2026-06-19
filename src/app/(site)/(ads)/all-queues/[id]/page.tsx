@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import QueueHero from "@/features/ads/components/QueueHero";
 import QueueListings from "@/features/ads/components/QueueListings";
 import CompanyMap from "@/features/ads/components/CompanyMap";
+import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
 import CompanyVideoSection, {
   type CompanyVideo,
 } from "@/features/ads/components/CompanyVideoSection";
@@ -501,7 +502,7 @@ export default function QueueDetailPage() {
       )}
 
       {queueToJoin && (
-        <div className="mt-8 flex w-full flex-col items-start gap-3">
+        <div className="mt-8 flex w-full flex-col items-center gap-3 md:items-start">
           <Button
             onClick={() => handleJoinQueue(queueToJoin.id)}
             isDisabled={
@@ -543,7 +544,7 @@ export default function QueueDetailPage() {
           {companyPolicyLinks.length > 0 ? (
             <nav
               aria-label={t("queueCard.policyAria", { name: companyName })}
-              className="flex min-h-[17px] flex-wrap items-center gap-x-4 gap-y-1 overflow-hidden text-[13px] font-medium leading-[17px] text-[#004225]"
+              className="flex min-h-[17px] w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 overflow-hidden text-center text-[13px] font-medium leading-[17px] text-[#004225] md:w-auto md:justify-start md:text-left"
             >
               {companyPolicyLinks.map((link, index) => (
                 <span key={link.label} className="inline-flex items-center gap-x-4">
@@ -574,10 +575,15 @@ export default function QueueDetailPage() {
       {/* Image gallery */}
       {galleryImages.length > 0 && (
         <div className="mt-12 w-full">
-          <CompanyImageBoard
-            images={galleryImages}
-            title={companyName}
-          />
+          <div className="md:hidden">
+            <ImageSlideshow images={galleryImages} title={companyName} />
+          </div>
+          <div className="hidden md:block">
+            <CompanyImageBoard
+              images={galleryImages}
+              title={companyName}
+            />
+          </div>
         </div>
       )}
 

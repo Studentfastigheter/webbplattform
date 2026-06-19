@@ -31,13 +31,13 @@ const FeatureRow = ({
   children,
 }: FeatureRowProps) => {
   return (
-    <div className={`flex flex-col items-center gap-8 ${flipped ? "lg:flex-row-reverse" : "lg:flex-row"} lg:gap-16`}>
-      <div className="flex-1 space-y-4 text-left">
+    <div className={`flex min-w-0 flex-col items-center gap-8 ${flipped ? "lg:flex-row-reverse" : "lg:flex-row"} lg:gap-16`}>
+      <div className="min-w-0 flex-1 space-y-4 text-left">
         <h2 className="text-3xl font-bold leading-tight text-foreground lg:text-4xl">{title}</h2>
         <p className="text-lg leading-relaxed text-muted-foreground">{description}</p>
       </div>
 
-      <div className="w-full flex-1">{children}</div>
+      <div className="w-full min-w-0 flex-1">{children}</div>
     </div>
   );
 };
@@ -81,7 +81,7 @@ export default function ForForetagPage() {
               <div className="h-2 w-24 rounded-full bg-secondary" />
             </div>
 
-            <div className="relative z-10 w-64 space-y-3 lg:w-72">
+            <div className="relative z-10 w-full max-w-64 space-y-3 lg:max-w-72">
               <div className="animate-[slideUp_4s_infinite] flex items-center gap-4 rounded-xl border border-border bg-background p-3 shadow-md lg:p-4">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary lg:h-10 lg:w-10">
                   <Users size={18} className="text-muted-foreground" />

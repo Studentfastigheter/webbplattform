@@ -36,7 +36,7 @@ export function AdminSidebarProvider({
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 768;
+      const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
 
       if (!mobile) {

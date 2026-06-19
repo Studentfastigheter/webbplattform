@@ -278,7 +278,7 @@ export default function SiteHeader() {
 
         <NavItems items={navItems} onItemClick={() => setIsAccountMenuOpen(false)} />
 
-        <div className="relative z-20 hidden items-center gap-2 lg:flex">
+        <div className="relative z-20 hidden items-center gap-2 xl:flex">
           <LanguageSwitcher compact />
           {platformLaunched && !currentUser ? (
             <>

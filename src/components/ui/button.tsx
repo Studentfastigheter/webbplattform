@@ -102,13 +102,13 @@ export function buttonVariants({
 }
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold disabled:pointer-events-none disabled:opacity-50";
 
 const sizeClasses: Record<AppButtonSize, string> = {
-  xs: "h-7 px-3 text-xs min-w-[120px]",
-  sm: "h-8 px-3 min-w-[130px]",
-  md: "h-9 px-4 min-w-[140px]",
-  lg: "h-10 px-6 min-w-[136px]",
+  xs: "h-7 px-3 text-xs sm:min-w-[120px]",
+  sm: "h-8 px-3 sm:min-w-[130px]",
+  md: "h-9 px-4 sm:min-w-[140px]",
+  lg: "h-10 px-6 sm:min-w-[136px]",
   icon: "h-9 w-9 p-0",
   "icon-sm": "h-8 w-8 p-0",
   "icon-lg": "h-10 w-10 p-0",

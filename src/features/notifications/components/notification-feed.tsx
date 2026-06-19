@@ -51,8 +51,8 @@ export function NotificationsFeed({ items: initialItems }: Props) {
   }
 
   return (
-    <div className="grid h-full grid-rows-[auto_1fr] overflow-hidden">
-      <ScrollArea className="h-full">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-2 p-3">
           {ordered.length === 0 ? (
             <div className="bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">

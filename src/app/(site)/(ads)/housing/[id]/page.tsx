@@ -43,12 +43,12 @@ import { localizedText } from "@/i18n/text";
 const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"), {
   ssr: false,
   loading: () => (
-    <div className="min-h-[400px] w-full rounded-3xl bg-gray-100 animate-pulse" aria-hidden />
+    <div className="min-h-[300px] w-full rounded-2xl bg-gray-100 animate-pulse sm:min-h-[360px] sm:rounded-3xl lg:min-h-[420px]" aria-hidden />
   ),
 });
 
 const DETAIL_PAGE_CONTAINER_CLASS =
-  "container mx-auto min-h-screen bg-white px-3 pb-12 pt-4 sm:px-4 md:px-6 lg:px-8 lg:pt-10";
+  "mx-auto min-h-screen w-full max-w-7xl bg-white px-4 pb-10 pt-4 sm:px-6 sm:pb-12 lg:px-8 lg:pt-8";
 const NEARBY_LISTINGS_PAGE_SIZE = 6;
 const NEARBY_LISTINGS_FETCH_SIZE = 60;
 
@@ -84,12 +84,12 @@ function Lightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 px-3 py-16 sm:px-6"
       onClick={onClose}
     >
       {/* Close */}
       <button
-        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+        className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-4 sm:top-4"
         onClick={onClose}
         aria-label={localizedText(locale, "Stäng", "Close")}
       >
@@ -104,7 +104,7 @@ function Lightbox({
       {/* Prev */}
       {images.length > 1 && (
         <button
-          className="absolute left-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+          className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-4 sm:h-12 sm:w-12"
           onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c - 1 + images.length) % images.length); }}
           aria-label={localizedText(locale, "Föregående bild", "Previous image")}
         >
@@ -113,18 +113,18 @@ function Lightbox({
       )}
 
       {/* Image */}
-      <div className="max-h-[85vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-[calc(100vh-9rem)] max-w-[94vw]" onClick={(e) => e.stopPropagation()}>
         <img
           src={images[current]}
           alt={localizedText(locale, `Bild ${current + 1}`, `Image ${current + 1}`)}
-          className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+          className="max-h-[calc(100vh-9rem)] max-w-[94vw] rounded-xl object-contain shadow-2xl"
         />
       </div>
 
       {/* Next */}
       {images.length > 1 && (
         <button
-          className="absolute right-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+          className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-4 sm:h-12 sm:w-12"
           onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c + 1) % images.length); }}
           aria-label={localizedText(locale, "Nästa bild", "Next image")}
         >
@@ -134,10 +134,11 @@ function Lightbox({
 
       {/* Thumbnail strip */}
       {images.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] px-2 pb-1">
+        <div className="absolute bottom-3 left-1/2 flex max-w-[94vw] -translate-x-1/2 gap-2 overflow-x-auto px-2 pb-1 sm:bottom-4">
           {images.map((src, i) => (
             <button
-              key={i}
+              key={`${src}-${i}`}
+              type="button"
               onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
               className={`shrink-0 h-14 w-20 overflow-hidden rounded-lg border-2 transition ${
                 i === current ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-75"
@@ -153,6 +154,8 @@ function Lightbox({
 }
 
 const MAX_PREVIEW_IMAGES = 3;
+const PREVIEW_IMAGE_CLASS =
+  "absolute inset-0 block h-full w-full max-w-none scale-[1.025] object-cover object-center transition duration-300 group-hover:scale-[1.04]";
 
 // ─── Top 3-image preview grid ────────────────────────────────────────────────
 function ImagePreviewGrid({
@@ -170,11 +173,16 @@ function ImagePreviewGrid({
   if (shown.length === 1) {
     return (
       <button
-        className="relative w-full h-[420px] overflow-hidden rounded-2xl"
+        type="button"
+        className="group relative block aspect-[16/10] w-full overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-[#004225] focus-visible:ring-offset-2 sm:aspect-[16/9] lg:aspect-[16/8] lg:rounded-3xl"
         onClick={() => onImageClick(0)}
       >
-        <img src={shown[0]} alt={localizedText(locale, "Bild 1", "Image 1")} className="absolute inset-0 h-full w-full object-cover object-center" />
-        <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
+        <img
+          src={shown[0]}
+          alt={localizedText(locale, "Bild 1", "Image 1")}
+          className={PREVIEW_IMAGE_CLASS}
+        />
+        <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
       </button>
     );
   }
@@ -182,36 +190,53 @@ function ImagePreviewGrid({
   // 2-3 images: main left + side thumbnails
   const side = shown.slice(1);
   return (
-    <div className="grid grid-cols-[1fr_0.5fr] gap-1.5 h-[460px]">
+    <div className="grid w-full gap-2 lg:h-[clamp(360px,42vw,520px)] lg:grid-cols-[minmax(0,1.65fr)_minmax(220px,0.75fr)]">
       {/* Main image */}
       <button
-        className="relative row-span-full overflow-hidden rounded-l-2xl"
+        type="button"
+        className="group relative aspect-[16/10] overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-[#004225] focus-visible:ring-offset-2 sm:aspect-[16/9] lg:h-full lg:aspect-auto lg:rounded-l-3xl lg:rounded-r-none"
         onClick={() => onImageClick(0)}
       >
-        <img src={shown[0]} alt={localizedText(locale, "Bild 1", "Image 1")} className="absolute inset-0 h-full w-full object-cover object-center" />
-        <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition" />
+        <img
+          src={shown[0]}
+          alt={localizedText(locale, "Bild 1", "Image 1")}
+          className={PREVIEW_IMAGE_CLASS}
+        />
+        <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
       </button>
 
-      {/* Side thumbnails — evenly split the full height */}
-      <div className="grid grid-rows-subgrid row-span-full" style={{ gridTemplateRows: `repeat(${side.length}, 1fr)`, gap: "6px" }}>
+      {/* Side thumbnails */}
+      <div
+        className={cn(
+          "grid gap-2",
+          side.length === 1 ? "grid-cols-1 lg:grid-rows-1" : "grid-cols-2 lg:grid-rows-2",
+          "lg:h-full lg:grid-cols-1",
+        )}
+      >
         {side.map((src, i) => {
           const isLast = i === side.length - 1 && images.length > MAX_PREVIEW_IMAGES;
           const isFirst = i === 0;
           const isEnd = i === side.length - 1;
           return (
             <button
-              key={i + 1}
+              key={`${src}-${i + 1}`}
+              type="button"
               className={cn(
-                "relative overflow-hidden",
-                isFirst && "rounded-tr-2xl",
-                isEnd && "rounded-br-2xl"
+                "group relative aspect-[16/10] min-h-[118px] overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-[#004225] focus-visible:ring-offset-2 sm:aspect-[16/9] lg:h-full lg:min-h-0 lg:aspect-auto",
+                side.length > 1 && isFirst && "lg:rounded-bl-none lg:rounded-br-none lg:rounded-tl-none lg:rounded-tr-3xl",
+                side.length > 1 && isEnd && "lg:rounded-br-3xl lg:rounded-tl-none lg:rounded-tr-none",
+                side.length === 1 && "lg:rounded-l-none lg:rounded-r-3xl"
               )}
               onClick={() => onImageClick(i + 1)}
             >
-              <img src={src} alt={localizedText(locale, `Bild ${i + 2}`, `Image ${i + 2}`)} className="absolute inset-0 h-full w-full object-cover object-center" />
-              <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition flex items-center justify-center">
+              <img
+                src={src}
+                alt={localizedText(locale, `Bild ${i + 2}`, `Image ${i + 2}`)}
+                className={PREVIEW_IMAGE_CLASS}
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/10">
                 {isLast && (
-                  <span className="text-white font-semibold text-lg drop-shadow-lg bg-black/40 px-3 py-1 rounded-lg">
+                  <span className="rounded-full bg-black/55 px-3 py-1.5 text-sm font-semibold text-white shadow-sm sm:text-base">
                     +{images.length - MAX_PREVIEW_IMAGES} {localizedText(locale, "fler", "more")}
                   </span>
                 )}
@@ -234,8 +259,8 @@ function RequirementsProfileSection({
   const { locale } = useI18n();
   if (loading) {
     return (
-      <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+      <section className="rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:rounded-3xl sm:p-6">
+        <h2 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
           {localizedText(locale, "Kravprofil", "Requirements profile")}
         </h2>
         <p className="mt-3 text-sm text-gray-500">
@@ -258,12 +283,12 @@ function RequirementsProfileSection({
       : null;
 
   return (
-    <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+    <section className="rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:rounded-3xl sm:p-6">
       <div className="flex flex-col gap-2">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-green-900">
           {localizedText(locale, "Ansökningskrav", "Application requirements")}
         </p>
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+        <h2 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
           {profile.title || localizedText(locale, "Kravprofil", "Requirements profile")}
         </h2>
         {ageRange && <p className="text-sm font-medium text-gray-700">{ageRange}</p>}
@@ -276,16 +301,16 @@ function RequirementsProfileSection({
       </div>
 
       {profile.requiredDocuments?.length ? (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="mt-5 grid gap-3 min-[520px]:grid-cols-2">
           {profile.requiredDocuments.map((document, index) => (
             <div
-              className="rounded-2xl border border-gray-200 bg-white px-4 py-3"
+              className="min-w-0 rounded-2xl border border-gray-200 bg-white px-4 py-3"
               key={`${document.caption ?? "document"}-${index}`}
             >
               <p className="text-sm font-semibold text-gray-900">
                 {document.caption ?? localizedText(locale, "Dokument", "Document")}
               </p>
-              <p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-gray-500">
+              <p className="mt-1 break-words text-xs font-medium uppercase tracking-[0.08em] text-gray-500">
                 {document.validTypes?.join(", ") || localizedText(locale, "Valfri filtyp", "Any file type")}
               </p>
             </div>
@@ -633,7 +658,7 @@ export default function ListingDetailPage() {
       )}
 
       <main className={DETAIL_PAGE_CONTAINER_CLASS}>
-        <div className="flex w-full flex-col gap-10">
+        <div className="flex w-full flex-col gap-6 sm:gap-8 lg:gap-10">
 
           {/* Feedback messages */}
           {applySuccess && (
@@ -672,10 +697,7 @@ export default function ListingDetailPage() {
 
           {/* 3. Map — own dedicated section */}
           <section className="w-full">
-            <h2 className="text-2xl font-bold text-gray-900 mb-5 tracking-tight">
-              {localizedText(locale, "Karta", "Map")}
-            </h2>
-            <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+            <div className="h-[300px] w-full overflow-hidden rounded-2xl border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:h-[360px] sm:rounded-3xl lg:h-[420px]">
               <ListingsMap
                 listings={mapListings}
                 className="h-full w-full"
@@ -690,13 +712,13 @@ export default function ListingDetailPage() {
 
           {/* 5. Full image slideshow */}
           {galleryImages.length > 0 && (
-            <div className="pt-4 border-t border-gray-100">
+            <div className="border-t border-gray-100 pt-5 sm:pt-6">
               <ImageSlideshow images={galleryImages} title={listing.title} />
             </div>
           )}
 
           {/* 6. Nearby listings */}
-          <section id="nearby-listings" className="scroll-mt-24 pt-8 border-t border-gray-100">
+          <section id="nearby-listings" className="scroll-mt-24 border-t border-gray-100 pt-6 sm:pt-8">
             {!nearbyLoading && !nearbyError && nearbyPageListings.length > 0 ? (
               <QueueListings
                 listings={nearbyPageListings}
@@ -707,12 +729,12 @@ export default function ListingDetailPage() {
               />
             ) : (
               <>
-                <h2 className="mb-6 text-2xl font-bold tracking-tight text-gray-900">
+                <h2 className="mb-5 text-xl font-bold tracking-tight text-gray-900 sm:mb-6 sm:text-2xl">
                   {localizedText(locale, "Fler bostäder i närheten", "More homes nearby")}
                 </h2>
 
                 <div
-                  className={`rounded-xl border border-dashed p-10 text-center ${
+                  className={`rounded-xl border border-dashed px-4 py-8 text-center sm:p-10 ${
                     nearbyError
                       ? "border-red-200 bg-red-50 text-red-700"
                       : "border-gray-300 bg-gray-50 text-gray-500"

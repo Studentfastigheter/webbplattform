@@ -30,12 +30,12 @@ export default function Page() {
   }
 
   return (
-    <main className="h-screen overflow-hidden py-6">
+    <main className="flex min-h-[calc(100svh-7rem)] w-full flex-col py-4 sm:py-6">
       <h1 className="text-2xl font-semibold">
         {localizedText(locale, "Notiser", "Notifications")}
       </h1>
 
-      <div className="mt-4 h-[calc(80%)]">
+      <div className="mt-4 min-h-[420px] flex-1 overflow-hidden">
         <NotificationsFeed />
       </div>
     </main>

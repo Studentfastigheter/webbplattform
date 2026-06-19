@@ -54,17 +54,17 @@ export function NotificationCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <span
-                className={cn("h-2 w-2 rounded-full", accentStyle.dot)}
+                className={cn("h-2 w-2 shrink-0 rounded-full", accentStyle.dot)}
                 aria-hidden
               />
-              <div className="text-sm font-semibold leading-tight text-foreground">
+              <div className="min-w-0 break-words text-sm font-semibold leading-tight text-foreground">
                 {title}
               </div>
             </div>
-            <div className="shrink-0 text-xs text-muted-foreground">
+            <div className="max-w-[7rem] shrink-0 text-right text-xs text-muted-foreground">
               {timeLabel}
             </div>
           </div>

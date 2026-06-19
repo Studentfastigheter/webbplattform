@@ -47,8 +47,8 @@ const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"),
   ),
 });
 
-const linkButtonClassName =
-  "inline-flex h-9 items-center justify-center rounded-full border border-black/10 px-4 text-sm font-semibold text-[#004225] transition-colors hover:bg-[#004225]/5";
+const inlineLinkButtonClassName =
+  "inline-flex shrink-0 items-center justify-center text-sm font-semibold leading-tight text-[#004225] underline-offset-4 transition-colors hover:text-[#005b33] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]";
 
 const CITY_LISTINGS_PAGE_SIZE = 6;
 const CITY_MAP_PAGE_SIZE = 500;
@@ -464,12 +464,11 @@ export default function CityDetailPage() {
             : null;
 
   return (
-    <main className="flex h-auto w-full flex-col gap-6 pb-12 pt-4 sm:gap-8">
+    <main className="flex h-auto w-full flex-col pb-10 pt-3 sm:pb-12 sm:pt-4">
       <div className="container mx-auto h-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <section className="mt-6 w-full sm:mt-10">
+        <section className="mt-4 w-full sm:mt-8 lg:mt-10">
           <div
-            className="relative w-full overflow-hidden rounded-2xl bg-gray-100"
-            style={{ aspectRatio: "1440 / 425" }}
+            className="relative min-h-[180px] w-full overflow-hidden rounded-[22px] bg-gray-100 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:aspect-[1440/425] sm:min-h-0 sm:rounded-3xl"
           >
             {cityBannerUrl ? (
               <div
@@ -482,191 +481,193 @@ export default function CityDetailPage() {
             ) : null}
           </div>
 
-          <div className="mx-auto max-w-4xl px-4 pt-8 sm:px-6 sm:pt-10">
-            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+          <div className="mx-auto max-w-4xl px-1 pt-5 sm:px-6 sm:pt-9">
+            <h1 className="text-[28px] font-bold leading-tight text-gray-900 sm:text-3xl">
               {cityName}
             </h1>
             {cityDescription && (
               <RichTextParagraph
                 text={cityDescription}
-                className="mt-4 text-base leading-relaxed text-gray-600"
+                className="mt-3 text-[15px] leading-relaxed text-gray-600 sm:mt-4 sm:text-base"
               />
             )}
           </div>
         </section>
 
-        <section ref={homesSectionRef} className="mt-12 w-full">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {localizedText(locale, `Bostäder i ${cityName}`, `Homes in ${cityName}`)}
-            </h2>
-            <LocalizedLink
-              href={`/housing?city=${encodeURIComponent(cityName)}&page=1`}
-              className={linkButtonClassName}
-            >
-              {localizedText(locale, "Fler bostäder", "More homes")}
-            </LocalizedLink>
-          </div>
-
-          {listingsError && (
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-              {listingsError}
-            </div>
-          )}
-
-          {listingsLoading ? (
-            <div className="py-12 text-center text-sm text-gray-500">
-              {localizedText(locale, "Hämtar bostäder...", "Loading homes...")}
-            </div>
-          ) : listings.length === 0 ? (
-            <div className="py-12 text-center text-sm text-gray-500">
-              {localizedText(locale, `Inga bostäder hittades i ${cityName} just nu.`, `No homes were found in ${cityName} right now.`)}
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 justify-items-center gap-3 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
-                {listings.map((listing) => (
-                  <div key={listing.id} className="flex w-full justify-center">
-                    <ListingCardFromDTO
-                      listing={listing}
-                      isFavorite={favoriteIds.has(listing.id)}
-                      onFavoriteToggle={handleFavoriteToggle}
-                      onOpen={(id) => router.push(localizedHref(`/housing/${id}`))}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <PaginationControls
-                className="mt-8"
-                currentPage={cityListingsPage}
-                totalPages={listingsTotalPages}
-                onPageChange={goToCityListingsPage}
-                isDisabled={listingsLoading}
-                ariaLabel={localizedText(locale, "Sidnavigering för bostäder i staden", "Pagination for homes in the city")}
-                previousLabel={localizedText(locale, "Föregående", "Previous")}
-                nextLabel={localizedText(locale, "Nästa", "Next")}
-                pageLabel={(pageNumber) =>
-                  localizedText(locale, `Sida ${pageNumber}`, `Page ${pageNumber}`)
-                }
-              />
-            </>
-          )}
-        </section>
-
-        <section className="mt-12 w-full">
-          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {localizedText(locale, "Karta", "Map")}
-            </h2>
-            <div className="flex flex-col gap-3 lg:items-end">
-              <div
-                role="tablist"
-                aria-label={localizedText(locale, "Kartlager", "Map layer")}
-                className="inline-flex w-full overflow-hidden rounded-full border border-black/10 bg-white p-1 shadow-sm sm:w-auto"
+        <div className="mt-8 flex flex-col gap-10 sm:mt-10 lg:mt-12 lg:gap-12">
+          <section ref={homesSectionRef} className="order-2 w-full lg:order-1">
+            <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
+              <h2 className="min-w-0 text-lg font-semibold leading-tight text-gray-900">
+                {localizedText(locale, `Bostäder i ${cityName}`, `Homes in ${cityName}`)}
+              </h2>
+              <LocalizedLink
+                href={`/housing?city=${encodeURIComponent(cityName)}&page=1`}
+                className={inlineLinkButtonClassName}
               >
-                {mapLayerOptions.map((option) => {
-                  const Icon = option.icon;
-                  const isActive = mapLayer === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="tab"
-                      aria-selected={isActive}
-                      onClick={() => setMapLayer(option.value)}
-                      className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:flex-none sm:px-4 ${
-                        isActive
-                          ? "bg-[#004225] text-white shadow-sm"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{option.label}</span>
-                      <span
-                        className={`rounded-full px-1.5 py-0.5 text-[11px] ${
-                          isActive ? "bg-white/15 text-white" : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        {option.count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                {localizedText(locale, "Visa alla", "Show all")}
+              </LocalizedLink>
+            </div>
 
-              {mapLayer === "activities" && activityCategories.length > 0 && (
-                <div className="flex max-w-full flex-wrap justify-start gap-2 lg:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedActivityCategories(new Set(activityCategories))}
-                    className="h-8 rounded-full border border-black/10 px-3 text-xs font-semibold text-[#004225] transition hover:bg-[#004225]/5"
-                  >
-                    {localizedText(locale, "Alla", "All")}
-                  </button>
-                  {activityCategories.map((category) => {
-                    const isActive = selectedActivityCategories.has(category);
+            {listingsError && (
+              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                {listingsError}
+              </div>
+            )}
+
+            {listingsLoading ? (
+              <div className="rounded-2xl border border-black/5 bg-white px-4 py-10 text-center text-sm text-gray-500 shadow-sm">
+                {localizedText(locale, "Hämtar bostäder...", "Loading homes...")}
+              </div>
+            ) : listings.length === 0 ? (
+              <div className="rounded-2xl border border-black/5 bg-white px-4 py-10 text-center text-sm text-gray-500 shadow-sm">
+                {localizedText(locale, `Inga bostäder hittades i ${cityName} just nu.`, `No homes were found in ${cityName} right now.`)}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 justify-items-center gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
+                  {listings.map((listing) => (
+                    <div key={listing.id} className="flex w-full justify-center">
+                      <ListingCardFromDTO
+                        listing={listing}
+                        isFavorite={favoriteIds.has(listing.id)}
+                        onFavoriteToggle={handleFavoriteToggle}
+                        onOpen={(id) => router.push(localizedHref(`/housing/${id}`))}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <PaginationControls
+                  className="mt-7 sm:mt-8"
+                  currentPage={cityListingsPage}
+                  totalPages={listingsTotalPages}
+                  onPageChange={goToCityListingsPage}
+                  isDisabled={listingsLoading}
+                  ariaLabel={localizedText(locale, "Sidnavigering för bostäder i staden", "Pagination for homes in the city")}
+                  previousLabel={localizedText(locale, "Föregående", "Previous")}
+                  nextLabel={localizedText(locale, "Nästa", "Next")}
+                  pageLabel={(pageNumber) =>
+                    localizedText(locale, `Sida ${pageNumber}`, `Page ${pageNumber}`)
+                  }
+                />
+              </>
+            )}
+          </section>
+
+          <section className="order-1 w-full lg:order-2">
+            <div className="mb-4 flex flex-col gap-3 lg:mb-5 lg:flex-row lg:items-center lg:justify-between">
+              <h2 className="text-lg font-semibold leading-tight text-gray-900">
+                {localizedText(locale, "Karta", "Map")}
+              </h2>
+              <div className="flex min-w-0 flex-col gap-3 lg:items-end">
+                <div
+                  role="tablist"
+                  aria-label={localizedText(locale, "Kartlager", "Map layer")}
+                  className="grid w-full grid-cols-3 overflow-hidden rounded-full border border-black/10 bg-white p-1 shadow-sm sm:inline-flex sm:w-auto"
+                >
+                  {mapLayerOptions.map((option) => {
+                    const Icon = option.icon;
+                    const isActive = mapLayer === option.value;
                     return (
                       <button
-                        key={category}
+                        key={option.value}
                         type="button"
-                        aria-pressed={isActive}
-                        onClick={() => toggleActivityCategory(category)}
-                        className={`inline-flex h-8 max-w-full items-center gap-2 rounded-full border px-3 text-xs font-semibold transition ${
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => setMapLayer(option.value)}
+                        className={`flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-[11px] font-semibold transition sm:flex-none sm:gap-2 sm:px-4 sm:text-xs ${
                           isActive
-                            ? "border-pink-200 bg-pink-50 text-pink-800"
-                            : "border-black/10 bg-white text-gray-600 hover:bg-gray-50"
+                            ? "bg-[#004225] text-white shadow-sm"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         }`}
                       >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{option.label}</span>
                         <span
-                          className={`h-2 w-2 shrink-0 rounded-full ${
-                            isActive ? "bg-pink-600" : "bg-gray-300"
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] sm:text-[11px] ${
+                            isActive ? "bg-white/15 text-white" : "bg-gray-100 text-gray-500"
                           }`}
-                        />
-                        <span className="truncate">{category}</span>
+                        >
+                          {option.count}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
+
+                {mapLayer === "activities" && activityCategories.length > 0 && (
+                  <div className="flex max-w-full flex-wrap justify-start gap-2 lg:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedActivityCategories(new Set(activityCategories))}
+                      className="h-8 rounded-full border border-black/10 px-3 text-xs font-semibold text-[#004225] transition hover:bg-[#004225]/5"
+                    >
+                      {localizedText(locale, "Alla", "All")}
+                    </button>
+                    {activityCategories.map((category) => {
+                      const isActive = selectedActivityCategories.has(category);
+                      return (
+                        <button
+                          key={category}
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() => toggleActivityCategory(category)}
+                          className={`inline-flex h-8 max-w-full items-center gap-2 rounded-full border px-3 text-xs font-semibold transition ${
+                            isActive
+                              ? "border-pink-200 bg-pink-50 text-pink-800"
+                              : "border-black/10 bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span
+                            className={`h-2 w-2 shrink-0 rounded-full ${
+                              isActive ? "bg-pink-600" : "bg-gray-300"
+                            }`}
+                          />
+                          <span className="truncate">{category}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="relative isolate z-0 h-[430px] min-h-[360px] max-h-[560px] w-full overflow-hidden rounded-[24px] border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:h-[500px] sm:min-h-[440px] sm:rounded-3xl lg:h-[70vh] lg:min-h-[520px] lg:max-h-[860px]">
+              {emptyMapMessage && (
+                <div className="pointer-events-none absolute left-3 right-3 top-3 z-[600] rounded-2xl bg-white/95 px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm sm:left-4 sm:right-auto sm:top-4 sm:rounded-full sm:px-4 sm:text-sm">
+                  {emptyMapMessage}
+                </div>
+              )}
+              {mapLayer === "homes" ? (
+                <ListingsMap
+                  listings={mapListings}
+                  className="h-full w-full"
+                  fillContainer
+                  getIsFavorite={(id) => favoriteIds.has(id)}
+                  onFavoriteToggle={handleFavoriteToggle}
+                  onOpenListing={(id) => router.push(localizedHref(`/housing/${id}`))}
+                />
+              ) : (
+                <CityPointsMap
+                  key={mapLayer}
+                  markers={activePointMarkers}
+                  className="h-full w-full"
+                  fillContainer
+                  center={[62, 15]}
+                  zoom={5}
+                />
               )}
             </div>
-          </div>
-          <div className="relative isolate z-0 h-[70vh] min-h-[520px] max-h-[860px] w-full overflow-hidden rounded-3xl border border-black/5 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-            {emptyMapMessage && (
-              <div className="pointer-events-none absolute left-4 top-4 z-[600] rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
-                {emptyMapMessage}
-              </div>
-            )}
-            {mapLayer === "homes" ? (
-              <ListingsMap
-                listings={mapListings}
-                className="h-full w-full"
-                fillContainer
-                getIsFavorite={(id) => favoriteIds.has(id)}
-                onFavoriteToggle={handleFavoriteToggle}
-                onOpenListing={(id) => router.push(localizedHref(`/housing/${id}`))}
-              />
-            ) : (
-              <CityPointsMap
-                key={mapLayer}
-                markers={activePointMarkers}
-                className="h-full w-full"
-                fillContainer
-                center={[62, 15]}
-                zoom={5}
-              />
-            )}
-          </div>
-        </section>
+          </section>
+        </div>
 
-        <section className="mt-12 w-full">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <section className="mt-10 w-full sm:mt-12">
+          <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
+            <h2 className="min-w-0 text-lg font-semibold leading-tight text-gray-900">
               {localizedText(locale, `Företag i ${cityName}`, `Companies in ${cityName}`)}
             </h2>
             <LocalizedLink
               href={`/all-queues?city=${encodeURIComponent(cityName)}`}
-              className={linkButtonClassName}
+              className={inlineLinkButtonClassName}
             >
               {localizedText(locale, "Sök alla", "Search all")}
             </LocalizedLink>
@@ -687,7 +688,7 @@ export default function CityDetailPage() {
               {localizedText(locale, "Inga företag hittades just nu.", "No companies were found right now.")}
             </div>
           ) : (
-            <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
+            <div className="grid w-full grid-cols-1 justify-start gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6 2xl:grid-cols-3">
               {companies.map((company) => {
                 const cities = Array.isArray(company.cities)
                   ? company.cities.map(formatCityName).filter(Boolean)
@@ -718,8 +719,8 @@ export default function CityDetailPage() {
           )}
         </section>
 
-        <section className="mt-12 w-full">
-          <h2 className="mb-5 text-lg font-semibold text-gray-900">
+        <section className="mt-10 w-full sm:mt-12">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900 sm:mb-5">
             {localizedText(locale, `Övriga företag i ${cityName}`, `Other companies in ${cityName}`)}
           </h2>
 
@@ -738,7 +739,7 @@ export default function CityDetailPage() {
               {localizedText(locale, "Inga andra företag hittades just nu.", "No other companies were found right now.")}
             </div>
           ) : (
-            <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
+            <div className="grid w-full grid-cols-1 justify-start gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
               {externalCompanies.map((company) => (
                 <SimpleCompanyCard key={company.id} company={company} />
               ))}

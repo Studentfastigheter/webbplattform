@@ -94,9 +94,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const structuredData = websiteJsonLd(locale, dictionary.siteMetadata.description);
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable}`}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans bg-background text-foreground`}
+        className="min-h-svh overflow-x-clip bg-background font-sans text-foreground antialiased"
       >
         <script
           type="application/ld+json"

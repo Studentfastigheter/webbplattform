@@ -42,34 +42,34 @@ export default function BostadLandlord({ advertiser }: Props) {
     );
 
   return (
-    <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
-      <div className="flex flex-col gap-7">
-        <header className="border-b border-gray-100 pb-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex min-w-0 items-center gap-4">
+    <section className="rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:rounded-3xl sm:p-6">
+      <div className="flex flex-col gap-6 sm:gap-7">
+        <header className="border-b border-gray-100 pb-5 sm:pb-6">
+          <div className="flex flex-col gap-5 min-[560px]:flex-row min-[560px]:items-center min-[560px]:justify-between">
+            <div className="flex min-w-0 items-start gap-4 min-[520px]:items-center">
               <div className="flex shrink-0 items-center justify-start">
                 <CompanyLogo
                   src={advertiser.logoUrl}
                   alt={advertiser.displayName}
                   name={advertiser.displayName}
-                  className="h-24 w-24 rounded-none bg-white ring-0 shadow-none sm:h-28 sm:w-28"
+                  className="h-16 w-16 rounded-none bg-white ring-0 shadow-none sm:h-20 sm:w-20 lg:h-24 lg:w-24"
                   imageClassName="p-0"
-                  fallbackClassName="text-2xl text-gray-400"
+                  fallbackClassName="text-xl text-gray-400 sm:text-2xl"
                 />
               </div>
 
               <div className="min-w-0">
-                <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-[28px]">
+                <h2 className="break-words text-xl font-bold tracking-tight text-gray-900 sm:text-2xl lg:text-[28px]">
                   {advertiser.displayName}
                 </h2>
 
                 {advertiser.companyPageUrl && (
                   <Link
                     href={advertiser.companyPageUrl}
-                    className="group mt-3 inline-flex h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#00331b] hover:shadow-md active:scale-[0.98]"
+                    className="group mt-3 inline-flex h-9 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-4 text-[13px] font-semibold text-white shadow-[0_8px_18px_rgba(0,66,37,0.18)] transition-all hover:bg-[#00331b] hover:shadow-[0_10px_22px_rgba(0,66,37,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] active:scale-[0.98] min-[560px]:hidden"
                   >
-                    {localizedText(locale, "Visa profil", "View profile")}
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    <span>{localizedText(locale, "Visa profil", "View profile")}</span>
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 )}
 
@@ -105,10 +105,20 @@ export default function BostadLandlord({ advertiser }: Props) {
                 )}
               </div>
             </div>
+
+            {advertiser.companyPageUrl && (
+              <Link
+                href={advertiser.companyPageUrl}
+                className="group hidden h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(0,66,37,0.18)] transition-all hover:bg-[#00331b] hover:shadow-[0_10px_22px_rgba(0,66,37,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] active:scale-[0.98] min-[560px]:ml-4 min-[560px]:inline-flex min-[560px]:self-center"
+              >
+                <span>{localizedText(locale, "Visa profil", "View profile")}</span>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            )}
           </div>
         </header>
 
-        <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_330px] lg:gap-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,330px)] lg:gap-8">
           <div className="min-w-0">
             <h3 className="text-lg font-semibold text-gray-900">
               {localizedText(locale, "Beskrivning", "Description")}
@@ -134,7 +144,7 @@ export default function BostadLandlord({ advertiser }: Props) {
             )}
           </div>
 
-          <aside className="border-t border-gray-100 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+          <aside className="border-t border-gray-100 pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
             <h3 className="text-base font-semibold text-gray-900">
               {localizedText(locale, "Krav på hyresgäst", "Tenant requirements")}
             </h3>

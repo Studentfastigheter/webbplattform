@@ -123,7 +123,7 @@ export default function BostadForm({
                 <DialogTrigger asChild>
                     {children}
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[625px] max-h-4/5 overflow-y-auto">
+                <DialogContent className="max-h-[calc(100svh-2rem)] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-[625px]">
                 
                     <form
                         onSubmit={handleSubmit}
@@ -144,7 +144,7 @@ export default function BostadForm({
                             <Label htmlFor="fullAddress">{localizedText(locale, "Adress", "Address")}</Label>
                             <Input id="fullAddress" name="fullAddress" defaultValue={listing.fullAddress ?? ""} />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <div className="grid gap-3">
                                 <Label htmlFor="area">{localizedText(locale, "Område", "Area")}</Label>
                                 <Input id="area" name="area" defaultValue={listing.area} />
@@ -172,7 +172,7 @@ export default function BostadForm({
                                 variant="outline"
                                 role="combobox"
                                 aria-expanded={propertyOpen}
-                                className="w-[200px] justify-between"
+                                className="w-full justify-between"
                                 >
                                 {propertyValue
                                     ? propertyTypes.find((propertyType) => propertyType.value === propertyValue)?.label
@@ -180,7 +180,7 @@ export default function BostadForm({
                                 <ChevronsUpDown className="opacity-50" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[200px] p-0">
+                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[200px] p-0">
                                 <Command>
                                 <CommandInput placeholder={localizedText(locale, "Sök...", "Search...")} className="h-9" />
                                 <CommandList>
@@ -210,7 +210,7 @@ export default function BostadForm({
                             </PopoverContent>
                         </Popover>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <div className="grid gap-3">
                                 <Label htmlFor="rooms">{localizedText(locale, "Antal rum", "Number of rooms")}</Label>
                                 <InputField 
@@ -233,7 +233,7 @@ export default function BostadForm({
                                 />
                             </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid gap-2 sm:grid-cols-2">
                                 <div className="grid gap-3">
                                     <Label htmlFor="availableFrom">{localizedText(locale, "Tillgänglig från", "Available from")}</Label>
                                     <Input id="availableFrom" name="availableFrom" type="date" defaultValue={listing.availableFrom ?? ""} />

@@ -67,9 +67,9 @@ export default function SiteFooter() {
       </div>
 
       <div className="relative z-20 mx-auto w-full max-w-[1400px] px-6 pb-16 pt-8 sm:px-10 lg:px-16">
-        <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="flex flex-col gap-8 lg:col-span-5">
-            <div className="flex flex-row items-center gap-5">
+            <div className="flex flex-row items-center gap-4 sm:gap-5">
               <Link href="/" className="relative block h-14 w-14 shrink-0" aria-label={t("siteFooter.homeAria")}>
                 <Image
                   src="/campuslyan-logo.svg"
@@ -79,7 +79,7 @@ export default function SiteFooter() {
                 />
               </Link>
 
-              <div className="border-l-2 py-1 pl-5" style={{ borderColor: COLORS.accent }}>
+              <div className="min-w-0 border-l-2 py-1 pl-4 sm:pl-5" style={{ borderColor: COLORS.accent }}>
                 <Text
                   className="max-w-md leading-tight"
                   style={{ color: COLORS.lightestText }}
@@ -111,8 +111,8 @@ export default function SiteFooter() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-10 pt-4 lg:col-span-7 lg:pl-10">
-            <div className="grid grid-cols-2 gap-10 md:grid-cols-3">
+          <div className="flex min-w-0 flex-col gap-10 pt-4 lg:col-span-7 lg:pl-10">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-10">
               {[
                 { title: t("siteFooter.sections.platform"), links: platformLinks },
                 { title: t("siteFooter.sections.partners"), links: partnerLinks },

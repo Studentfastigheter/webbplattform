@@ -46,76 +46,77 @@ const ListFrame: React.FC<ListFrameProps> = ({
   return (
     <section
       className={clsx(
-        "w-full rounded-2xl bg-white shadow-md",
+        "w-full min-w-0 overflow-hidden rounded-2xl bg-white shadow-md",
         "border border-[#F0F0F0]",
         className
       )}
     >
-      <header
-        className={clsx(
-          "px-8",
-          "py-4",
-          "text-[14px] leading-4 text-black",
-          "grid items-center gap-4"
-        )}
-        style={{ gridTemplateColumns }}
-      >
-        {columns.map((col) => (
-          <span
-            key={col.id}
+      <div className="overflow-x-auto">
+        <div className="min-w-[760px]">
+          <header
             className={clsx(
-              "font-normal",
-              col.align === "center" && "text-center",
-              col.align === "right" && "text-right",
-              col.className
+              "grid items-center gap-4 px-4 py-4 text-[14px] leading-4 text-black sm:px-8"
             )}
-            style={{
-              marginRight:
-                col.marginRight === undefined ? undefined : col.marginRight,
-            }}
+            style={{ gridTemplateColumns }}
           >
-            {col.label}
-          </span>
-        ))}
-      </header>
-
-      <div className="mx-8 h-px bg-[#D9D9D9]" />
-
-      <div className="py-2">
-        {hasRows ? (
-          <div className="divide-y divide-[#EDEDED]">
-            {rows?.map((row) => (
-              <div
-                key={row.id}
+            {columns.map((col) => (
+              <span
+                key={col.id}
                 className={clsx(
-                  "grid items-start gap-4 px-8 py-3",
-                  row.className
+                  "min-w-0 font-normal",
+                  col.align === "center" && "text-center",
+                  col.align === "right" && "text-right",
+                  col.className
                 )}
-                style={{ gridTemplateColumns }}
+                style={{
+                  marginRight:
+                    col.marginRight === undefined ? undefined : col.marginRight,
+                }}
               >
-                {row.cells.map((cell, idx) => (
+                {col.label}
+              </span>
+            ))}
+          </header>
+
+          <div data-slot="list-frame-separator" className="mx-4 h-px bg-[#D9D9D9] sm:mx-8" />
+
+          <div className="py-2">
+            {hasRows ? (
+              <div className="divide-y divide-[#EDEDED]">
+                {rows?.map((row) => (
                   <div
-                    key={`${row.id}-${columns[idx]?.id ?? idx}`}
+                    key={row.id}
                     className={clsx(
-                      "h-full",
-                      columns[idx]?.align === "center" && "text-center",
-                      columns[idx]?.align === "right" && "text-right",
-                      columns[idx]?.className
+                      "grid items-start gap-4 px-4 py-3 sm:px-8",
+                      row.className
                     )}
+                    style={{ gridTemplateColumns }}
                   >
-                    {cell}
+                    {row.cells.map((cell, idx) => (
+                      <div
+                        key={`${row.id}-${columns[idx]?.id ?? idx}`}
+                        className={clsx(
+                          "h-full min-w-0",
+                          columns[idx]?.align === "center" && "text-center",
+                          columns[idx]?.align === "right" && "text-right",
+                          columns[idx]?.className
+                        )}
+                      >
+                        {cell}
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
-            ))}
+            ) : hasChildren ? (
+              <div className="px-4 py-6 sm:px-8">{children}</div>
+            ) : (
+              <div className="py-12 text-center text-sm text-gray-500">
+                {emptyState ?? t("listFrame.empty")}
+              </div>
+            )}
           </div>
-        ) : hasChildren ? (
-          <div className="px-8 py-6">{children}</div>
-        ) : (
-          <div className="py-12 text-center text-sm text-gray-500">
-            {emptyState ?? t("listFrame.empty")}
-          </div>
-        )}
+        </div>
       </div>
     </section>
   );

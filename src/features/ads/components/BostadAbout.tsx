@@ -121,128 +121,163 @@ function BostadAboutContent({
     },
   ];
 
+  const dateFacts = (listing.availableFrom || listing.availableTo || listing.moveIn || listing.applyBy) ? (
+    <div className="grid gap-3 min-[380px]:grid-cols-2 xl:grid-cols-4">
+      {dateItems.map((item) => (
+        <div
+          key={item.label}
+          className="flex min-w-0 flex-col border-l border-gray-200 pl-3"
+        >
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 sm:text-xs">
+            {item.label}
+          </span>
+          <span className="mt-1 break-words text-sm font-medium text-gray-900">
+            {item.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : null;
+
+  const renderActionIcons = () => {
+    if (hideStudentActions) return null;
+
+    return (
+      <div className="flex items-center justify-end gap-1.5">
+        {canFavorite && (
+          <button
+            type="button"
+            onClick={handleToggleFavorite}
+            disabled={isLoadingFav}
+            className={cn(
+              "inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+              isFav
+                ? "text-red-500 hover:bg-red-50"
+                : "text-gray-400 hover:bg-gray-100 hover:text-red-500",
+            )}
+            aria-label={
+              isFav
+                ? localizedText(locale, "Ta bort från favoriter", "Remove from favorites")
+                : localizedText(locale, "Lägg till i favoriter", "Add to favorites")
+            }
+          >
+            <Heart className={cn("h-[18px] w-[18px]", isFav && "fill-current")} />
+          </button>
+        )}
+        {canFavorite && <div className="h-5 w-px bg-gray-200" />}
+        <ShareDialog>
+          <button
+            type="button"
+            aria-label={localizedText(locale, "Dela bostad", "Share listing")}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
+            <Share2 className="h-[18px] w-[18px]" />
+          </button>
+        </ShareDialog>
+      </div>
+    );
+  };
+
+  const renderRentSummary = () => (
+    <div className="flex flex-col items-start gap-0.5 lg:items-end">
+      <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400 sm:text-xs">
+        {localizedText(locale, "Månadshyra", "Monthly rent")}
+      </span>
+      <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+        <span className="text-[26px] font-bold leading-none tracking-tight text-gray-900 sm:text-3xl lg:text-2xl">
+          {rentValue}
+        </span>
+        {isRentNumber && (
+          <span className="text-sm font-medium text-gray-400">
+            {localizedText(locale, "kr/mån", "SEK/mo")}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderApplicationAction = (placement: "mobile" | "desktop" = "desktop") => {
+    if (hideStudentActions) return null;
+
+    const actionSizeClass =
+      placement === "mobile"
+        ? "h-10 w-fit min-w-[156px] px-5"
+        : "h-11 w-full px-6 lg:w-fit lg:px-8";
+
+    return hasApplied ? (
+      <div
+        className={cn(
+          "flex items-center justify-center gap-2",
+          actionSizeClass,
+          "rounded-full",
+          "bg-green-100 text-green-800",
+          "text-[14px] font-medium",
+          "border border-green-200",
+        )}
+      >
+        <Check className="h-4 w-4" />
+        {localizedText(locale, "Du har ansökt", "You have applied")}
+      </div>
+    ) : (
+      <Button
+        onClick={onApplyClick}
+        isDisabled={applyDisabled}
+        className={cn(
+          "flex items-center justify-center gap-2",
+          actionSizeClass,
+          "rounded-full",
+          "bg-[#004225] text-white",
+          "text-[14px] font-medium",
+          "shadow-sm hover:shadow-md transition-all",
+          "hover:bg-[#00331b] active:scale-[0.98]",
+        )}
+      >
+        {localizedText(locale, "Skicka ansökan", "Send application")}
+      </Button>
+    );
+  };
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-start justify-between gap-6">
-        <div className="flex flex-col gap-4 min-w-0">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl text-balance">
-              {listing.title}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 mt-1">
-              <span className="flex items-center gap-1.5 font-medium">
-                <MapPin className="h-4 w-4 text-green-700" />
-                {listing.fullAddress
-                  ? `${listing.fullAddress}, ${listing.city}`
-                  : [listing.area, listing.city].filter(Boolean).join(", ")}
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <Home className="h-4 w-4 text-green-700" />
-                {dwellingLabel}
-              </span>
+    <div className="flex flex-col gap-5 sm:gap-6">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-2">
+              <h1 className="text-balance text-[26px] font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl lg:text-4xl">
+                {listing.title}
+              </h1>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
+                <span className="flex min-w-0 items-center gap-1.5 font-medium">
+                  <MapPin className="h-4 w-4 text-green-700" />
+                  <span className="min-w-0 break-words">
+                    {listing.fullAddress
+                      ? `${listing.fullAddress}, ${listing.city}`
+                      : [listing.area, listing.city].filter(Boolean).join(", ")}
+                  </span>
+                </span>
+                <span className="flex min-w-0 items-center gap-1.5 font-medium">
+                  <Home className="h-4 w-4 text-green-700" />
+                  <span className="min-w-0 break-words">{dwellingLabel}</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="-mr-1 shrink-0 pt-0.5">
+              {renderActionIcons()}
             </div>
           </div>
 
-          {(listing.availableFrom || listing.availableTo || listing.moveIn || listing.applyBy) && (
-            <div className="flex flex-wrap gap-y-4">
-              {dateItems.map((item, index) => (
-                <div
-                  key={item.label}
-                  className={`flex flex-col pr-4 ${index > 0 ? "border-l border-gray-200 pl-4" : ""}`}
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    {item.label}
-                  </span>
-                  <span className="text-sm font-medium text-gray-900 mt-1">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-col gap-3 pt-1 min-[380px]:flex-row min-[380px]:items-end min-[380px]:justify-between lg:hidden">
+            {renderRentSummary()}
+            {renderApplicationAction("mobile")}
+          </div>
+
+          {dateFacts}
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-3">
-          {!hideStudentActions && (
-            <div className="flex items-center gap-1.5">
-              {canFavorite && (
-                <button
-                  type="button"
-                  onClick={handleToggleFavorite}
-                  disabled={isLoadingFav}
-                  className={cn(
-                    "inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
-                    isFav
-                      ? "text-red-500 hover:bg-red-50"
-                      : "text-gray-400 hover:bg-gray-100 hover:text-red-500",
-                  )}
-                  aria-label={
-                    isFav
-                      ? localizedText(locale, "Ta bort från favoriter", "Remove from favorites")
-                      : localizedText(locale, "Lägg till i favoriter", "Add to favorites")
-                  }
-                >
-                  <Heart className={cn("h-[18px] w-[18px]", isFav && "fill-current")} />
-                </button>
-              )}
-              {canFavorite && <div className="h-5 w-px bg-gray-200" />}
-              <ShareDialog>
-                <button
-                  type="button"
-                  aria-label={localizedText(locale, "Dela bostad", "Share listing")}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                >
-                  <Share2 className="h-[18px] w-[18px]" />
-                </button>
-              </ShareDialog>
-            </div>
-          )}
-
-          <div className="flex flex-col items-end gap-0.5">
-            <span className="text-xs font-medium uppercase tracking-wider text-gray-400">
-              {localizedText(locale, "Månadshyra", "Monthly rent")}
-            </span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold tracking-tight text-gray-900">
-                {rentValue}
-              </span>
-              {isRentNumber && (
-                <span className="text-sm font-medium text-gray-400">
-                  {localizedText(locale, "kr/mån", "SEK/mo")}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {!hideStudentActions && (
-            hasApplied ? (
-              <div
-                className={cn(
-                  "h-11 px-8 flex items-center justify-center gap-2",
-                  "rounded-full",
-                  "bg-green-100 text-green-800",
-                  "text-[14px] font-medium",
-                  "border border-green-200",
-                )}
-              >
-                <Check className="h-4 w-4" />
-                {localizedText(locale, "Du har ansökt", "You have applied")}
-              </div>
-            ) : (
-              <Button
-                onClick={onApplyClick}
-                isDisabled={applyDisabled}
-                className={cn(
-                  "h-11 px-8 flex items-center justify-center gap-2",
-                  "rounded-full",
-                  "bg-[#004225] text-white",
-                  "text-[14px] font-medium",
-                  "shadow-sm hover:shadow-md transition-all",
-                  "hover:bg-[#00331b] active:scale-[0.98]",
-                )}
-              >
-                {localizedText(locale, "Skicka ansökan", "Send application")}
-              </Button>
-            )
-          )}
+        <div className="hidden w-full shrink-0 flex-col items-stretch gap-3 lg:flex lg:w-auto lg:min-w-[244px] lg:items-end">
+          {renderRentSummary()}
+          {renderApplicationAction()}
         </div>
       </div>
 
@@ -265,7 +300,7 @@ function BostadAboutContent({
       )}
 
       <div className="mt-2">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2 border-b border-gray-100 pb-2">
+        <h2 className="mb-2 border-b border-gray-100 pb-2 text-lg font-semibold text-gray-900">
           {localizedText(locale, "Om boendet", "About the home")}
         </h2>
         <ReadMoreComponent
@@ -327,7 +362,7 @@ export default function BostadAbout({
   );
 
   return (
-    <section className="rounded-3xl border border-black/5 bg-white/80 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.05)]">
+    <section className="rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:rounded-3xl sm:p-6">
       {isEditable ? (
         <EditWrapper
           isEditable={isEditable}

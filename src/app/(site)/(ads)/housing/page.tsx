@@ -668,12 +668,12 @@ export default function ListingsPage() {
   return (
     <main className="flex h-auto w-full flex-col gap-6 pb-12 pt-4 sm:gap-8">
       <div className="container mx-auto h-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <section className="mt-6 w-full sm:mt-12">
+        <section className="mt-4 w-full sm:mt-8">
           <div className="flex w-full flex-col gap-3 sm:gap-4">
-            <div className="flex w-full flex-col items-stretch gap-3 sm:gap-4 md:flex-row md:items-center md:justify-center lg:grid lg:grid-cols-[1fr_minmax(0,680px)_1fr] xl:grid-cols-[1fr_minmax(0,760px)_1fr] 2xl:grid-cols-[1fr_minmax(0,840px)_1fr]">
+            <div className="flex w-full flex-col items-stretch gap-2 sm:gap-3 md:flex-row md:items-center md:justify-center lg:grid lg:grid-cols-[1fr_minmax(0,680px)_1fr] xl:grid-cols-[1fr_minmax(0,760px)_1fr] 2xl:grid-cols-[1fr_minmax(0,840px)_1fr]">
               <div className="w-full md:max-w-[620px] md:flex-1 lg:col-start-2 lg:max-w-none">
                 <form
-                  className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:h-14 xl:pl-6 xl:pr-2"
+                  className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:pl-6 xl:pr-2"
                   onSubmit={(event) => {
                     event.preventDefault();
                     setPage(1);
@@ -760,11 +760,11 @@ export default function ListingsPage() {
           </div>
         </section>
 
-        <section className="mt-6 w-full sm:mt-8">
-          <div className="flex w-full flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <section className="mt-4 w-full sm:mt-5">
+          <div className="flex w-full items-center justify-between gap-3">
             <h2
               id="housing-heading"
-              className="text-base font-semibold text-black sm:text-lg"
+              className="min-w-0 text-base font-semibold text-black sm:text-lg"
             >
               {loading && listings.length === 0
                 ? localizedText(locale, "Laddar bostäder...", "Loading homes...")
@@ -777,13 +777,13 @@ export default function ListingsPage() {
                     "homes",
                   )}`}
             </h2>
-            <div className="w-full sm:w-auto">
+            <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
               <SwitchSelect value={view} onChange={setView} />
             </div>
           </div>
         </section>
 
-        <section className="mt-4 min-h-[400px] w-full sm:mt-6">
+        <section className="mt-3 min-h-[400px] w-full sm:mt-4">
           <FieldSet className="w-full" aria-labelledby="housing-heading">
             {error && (
               <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-800 sm:px-4 sm:text-sm">

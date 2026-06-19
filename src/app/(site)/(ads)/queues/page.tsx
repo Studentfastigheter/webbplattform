@@ -108,7 +108,7 @@ export default function Page() {
             "overflow-hidden rounded-xl border-gray-200 shadow-sm",
             "[&_header]:bg-gray-50/80 [&_header]:px-6 [&_header]:py-3",
             "[&_header_span]:text-xs [&_header_span]:font-semibold [&_header_span]:uppercase [&_header_span]:tracking-normal [&_header_span]:text-gray-500",
-            "[&_div.mx-8]:mx-0 [&_div.mx-8]:bg-gray-200",
+            "[&_[data-slot=list-frame-separator]]:mx-0 [&_[data-slot=list-frame-separator]]:bg-gray-200",
             "[&_div.divide-y]:divide-gray-100 [&_div.grid]:px-6 [&_div.grid]:py-4"
           )}
           emptyState={

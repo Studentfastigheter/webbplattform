@@ -211,7 +211,7 @@ export default function RegisterPage() {
                     alt=""
                     width={44}
                     height={14}
-                    className="h-auto w-11"
+                    style={{ width: 44, height: "auto" }}
                   />
                   <span>{localizedText(locale, "Registrera med Freja ID", "Register with Freja ID")}</span>
                 </Link>
