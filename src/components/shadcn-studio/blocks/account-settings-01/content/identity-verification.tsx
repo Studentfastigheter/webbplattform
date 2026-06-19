@@ -326,11 +326,6 @@ export default function IdentityVerification({
     <div id='verify-account' className='grid scroll-mt-28 grid-cols-1 gap-10 lg:grid-cols-3'>
       <div className='flex flex-col space-y-1'>
         <h3 className='font-semibold'>{localizedText(locale, 'Verifiera konto', 'Verify account')}</h3>
-        <p className='text-sm text-muted-foreground'>
-          {isQuickRegister
-            ? localizedText(locale, 'Verifiera med Freja när du vill för att få ett riktigt studentkonto.', 'Verify with Freja whenever you want to get a full student account.')
-            : localizedText(locale, 'Ditt konto är redan ett riktigt konto.', 'Your account is already a full account.')}
-        </p>
       </div>
 
       <div className='lg:col-span-2'>

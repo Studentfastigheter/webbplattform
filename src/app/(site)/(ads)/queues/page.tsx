@@ -5,7 +5,11 @@ import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "@/components/icons";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
-import { buildQueueRow, type QueueRowProps } from "@/features/queues/components/QueueRow";
+import {
+  buildQueueRow,
+  QueueCard,
+  type QueueRowProps,
+} from "@/features/queues/components/QueueRow";
 import { useAuth } from "@/context/AuthContext";
 import { useMyQueues } from "@/features/queues/hooks/useQueues";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -23,11 +27,10 @@ export default function Page() {
   const router = useRouter();
   const { locale, localizedHref } = useI18n();
   const columns: ListFrameColumn[] = [
-    { id: "name", label: localizedText(locale, "Kö", "Queue"), width: "2.4fr" },
-    { id: "city", label: localizedText(locale, "Stad", "City"), width: "1.6fr" },
+    { id: "name", label: localizedText(locale, "Kö", "Queue"), width: "2.7fr" },
     { id: "status", label: "Status", align: "center", width: "1.2fr" },
-    { id: "days", label: localizedText(locale, "Kötid", "Queue time"), align: "left", width: "1fr" },
-    { id: "hantera", label: " ", align: "center", width: "1.1fr" },
+    { id: "days", label: localizedText(locale, "Kötid", "Queue time"), align: "left", width: "1.2fr" },
+    { id: "hantera", label: localizedText(locale, "Hantera", "Manage"), align: "center", width: "1.1fr" },
   ];
 
   const { user, isLoading: authLoading } = useAuth();
@@ -55,8 +58,11 @@ export default function Page() {
         const queueId = String(app.queueId);
         const queue = app.queue;
         const company = queue?.company;
-        const companyId = company?.id ?? queue?.companyId;
-        const city = queue?.city ?? company?.city ?? null;
+        const rawCompanyId = company?.id ?? queue?.companyId;
+        const companyId =
+          rawCompanyId != null && Number.isFinite(Number(rawCompanyId))
+            ? Number(rawCompanyId)
+            : null;
 
         return {
           id: queueId,
@@ -66,19 +72,25 @@ export default function Page() {
             queue?.logoUrl ??
             company?.logoUrl ??
             null,
-          cities: city ? [city] : [],
           status: statusToRowStatus(app.status ?? queue?.status ?? undefined),
           days: app.queueDays ?? 0,
-          onManage: () => {
-            window.location.href = companyId != null
-              ? localizedHref(`/all-queues/${companyId}`)
-              : localizedHref("/all-queues");
-          },
+          companyProfileHref: localizedHref(
+            companyId != null ? `/all-queues/${companyId}` : "/all-queues"
+          ),
         };
       });
   }, [user, userApplications, locale, localizedHref]);
 
   const rows = useMemo(() => queueRows.map(buildQueueRow), [queueRows]);
+  const emptyState = (
+    <div className="py-16 text-center text-sm text-gray-400">
+      {loading
+        ? localizedText(locale, "Laddar dina köplatser...", "Loading your queue positions...")
+        : user
+        ? localizedText(locale, "Du står inte i några bostadsköer än.", "You are not in any housing queues yet.")
+        : localizedText(locale, "Du måste vara inloggad för att se dina köer.", "You must be logged in to view your queues.")}
+    </div>
+  );
 
   if (authLoading || !canViewQueues) {
     return (
@@ -89,7 +101,7 @@ export default function Page() {
   }
 
   return (
-    <main className="w-full py-6">
+    <main className="w-full py-4 sm:py-6">
       <div className="w-full">
         {!user && (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -101,25 +113,24 @@ export default function Page() {
             {error}
           </div>
         )}
+
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-1 xl:hidden">
+          {queueRows.length > 0
+            ? queueRows.map((queue) => <QueueCard key={queue.id} {...queue} />)
+            : emptyState}
+        </div>
+
         <ListFrame
           columns={columns}
           rows={rows}
           className={clsx(
-            "overflow-hidden rounded-xl border-gray-200 shadow-sm",
+            "hidden overflow-hidden rounded-xl border-gray-200 shadow-sm xl:block",
             "[&_header]:bg-gray-50/80 [&_header]:px-6 [&_header]:py-3",
             "[&_header_span]:text-xs [&_header_span]:font-semibold [&_header_span]:uppercase [&_header_span]:tracking-normal [&_header_span]:text-gray-500",
             "[&_[data-slot=list-frame-separator]]:mx-0 [&_[data-slot=list-frame-separator]]:bg-gray-200",
             "[&_div.divide-y]:divide-gray-100 [&_div.grid]:px-6 [&_div.grid]:py-4"
           )}
-          emptyState={
-            <div className="py-16 text-center text-sm text-gray-400">
-              {loading
-                ? localizedText(locale, "Laddar dina köplatser...", "Loading your queue positions...")
-                : user
-                ? localizedText(locale, "Du står inte i några bostadsköer än.", "You are not in any housing queues yet.")
-                : localizedText(locale, "Du måste vara inloggad för att se dina köer.", "You must be logged in to view your queues.")}
-            </div>
-          }
+          emptyState={emptyState}
         />
       </div>
     </main>

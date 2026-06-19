@@ -73,7 +73,6 @@ const PersonalInfo = forwardRef<
   const [firstName, setFirstName] = useState('')
   const [surname, setSurname] = useState('')
   const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const verifyEmail = useVerifyEmail()
   const emailVerificationLoading = verifyEmail.isPending
@@ -86,20 +85,13 @@ const PersonalInfo = forwardRef<
     setFirstName(user.firstName ?? '')
     setSurname(user.surname ?? '')
     setPhone(user.phone ?? '')
-    setEmail(user.email ?? '')
   }, [user])
 
   const save = async () => {
     setError(null)
 
     try {
-      const trimmedEmail = email.trim()
-      if (trimmedEmail && !isValidEmail(trimmedEmail)) {
-        throw new Error(localizedText(locale, 'Ange en giltig e-postadress.', 'Enter a valid email address.'))
-      }
-
       const payload: UpdateUserRequest = {
-        email: trimmedEmail || undefined,
         firstName: firstName.trim() || undefined,
         surname: surname.trim() || undefined,
         phone: normalizePhone(phone, [user?.email]),
@@ -117,7 +109,7 @@ const PersonalInfo = forwardRef<
   const startEmailVerification = async () => {
     if (emailVerificationLoading) return
 
-    const trimmedEmail = email.trim()
+    const trimmedEmail = (user?.email ?? '').trim()
     if (!trimmedEmail) {
       setError(localizedText(locale, 'Ange en e-postadress först.', 'Enter an email address first.'))
       return
@@ -145,10 +137,11 @@ const PersonalInfo = forwardRef<
     firstName,
     surname,
     phone,
-    email,
     locale,
+    user?.email,
   ])
 
+  const accountEmail = user?.email ?? ''
   const emailVerified = isVerified(user?.verifiedEmail)
 
   if (authLoading) {
@@ -210,9 +203,10 @@ const PersonalInfo = forwardRef<
                 placeholder='namn@exempel.se'
                 autoComplete='email'
                 inputMode='email'
-                value={email}
-                onChange={event => setEmail(event.target.value)}
-                className={`${inputClassName} pr-36`}
+                value={accountEmail}
+                readOnly
+                aria-readonly='true'
+                className={`${inputClassName} ${showEmailVerification ? 'pr-36' : ''} cursor-default text-[#666666]`}
               />
               {showEmailVerification ? (
                 emailVerified ? (
