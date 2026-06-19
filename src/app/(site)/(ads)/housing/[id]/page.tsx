@@ -155,7 +155,7 @@ function Lightbox({
 
 const MAX_PREVIEW_IMAGES = 3;
 const PREVIEW_IMAGE_CLASS =
-  "absolute inset-0 block h-full w-full max-w-none scale-[1.025] object-cover object-center transition duration-300 group-hover:scale-[1.04]";
+  "absolute inset-0 block !h-full !w-full !max-w-none scale-[1.025] object-cover object-center transition duration-300 group-hover:scale-[1.04]";
 
 // ─── Top 3-image preview grid ────────────────────────────────────────────────
 function ImagePreviewGrid({
@@ -208,9 +208,8 @@ function ImagePreviewGrid({
       {/* Side thumbnails */}
       <div
         className={cn(
-          "grid gap-2",
-          side.length === 1 ? "grid-cols-1 lg:grid-rows-1" : "grid-cols-2 lg:grid-rows-2",
-          "lg:h-full lg:grid-cols-1",
+          "grid gap-2 lg:h-full lg:grid-cols-1",
+          side.length === 1 ? "grid-cols-1" : "grid-cols-2 lg:grid-rows-2",
         )}
       >
         {side.map((src, i) => {
@@ -224,7 +223,7 @@ function ImagePreviewGrid({
               className={cn(
                 "group relative aspect-[16/10] min-h-[118px] overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-[#004225] focus-visible:ring-offset-2 sm:aspect-[16/9] lg:h-full lg:min-h-0 lg:aspect-auto",
                 side.length > 1 && isFirst && "lg:rounded-bl-none lg:rounded-br-none lg:rounded-tl-none lg:rounded-tr-3xl",
-                side.length > 1 && isEnd && "lg:rounded-br-3xl lg:rounded-tl-none lg:rounded-tr-none",
+                side.length > 1 && isEnd && "lg:rounded-bl-none lg:rounded-br-3xl lg:rounded-tl-none lg:rounded-tr-none",
                 side.length === 1 && "lg:rounded-l-none lg:rounded-r-3xl"
               )}
               onClick={() => onImageClick(i + 1)}

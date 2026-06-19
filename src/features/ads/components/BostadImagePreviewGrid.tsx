@@ -33,7 +33,7 @@ function ImageTile({
 }: TileProps) {
   const content = (
     <>
-      <img src={src} alt={alt} className="absolute inset-0 h-full w-full object-cover object-center" />
+      <img src={src} alt={alt} className="absolute inset-0 !h-full !w-full !max-w-none object-cover object-center" />
       <div
         className={cn(
           "absolute inset-0 flex items-center justify-center bg-black/0",

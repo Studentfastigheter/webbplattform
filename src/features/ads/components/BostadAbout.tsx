@@ -122,16 +122,16 @@ function BostadAboutContent({
   ];
 
   const dateFacts = (listing.availableFrom || listing.availableTo || listing.moveIn || listing.applyBy) ? (
-    <div className="grid gap-3 min-[380px]:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-x-3 gap-y-3 min-[360px]:grid-cols-2 xl:grid-cols-4">
       {dateItems.map((item) => (
         <div
           key={item.label}
-          className="flex min-w-0 flex-col border-l border-gray-200 pl-3"
+          className="flex min-w-0 flex-col border-l border-gray-200 pl-2.5 sm:pl-3"
         >
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 sm:text-xs">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 sm:text-xs">
             {item.label}
           </span>
-          <span className="mt-1 break-words text-sm font-medium text-gray-900">
+          <span className="mt-1 break-words text-[13px] font-semibold text-gray-900 sm:text-sm">
             {item.value}
           </span>
         </div>
@@ -139,18 +139,22 @@ function BostadAboutContent({
     </div>
   ) : null;
 
-  const renderActionIcons = () => {
+  const renderActionIcons = (placement: "mobile" | "desktop" = "desktop") => {
     if (hideStudentActions) return null;
 
+    const isMobile = placement === "mobile";
+    const iconClassName = isMobile ? "h-4 w-4" : "h-[18px] w-[18px]";
+
     return (
-      <div className="flex items-center justify-end gap-1.5">
+      <div className={cn("flex items-center justify-end", isMobile ? "gap-1" : "gap-1.5")}>
         {canFavorite && (
           <button
             type="button"
             onClick={handleToggleFavorite}
             disabled={isLoadingFav}
             className={cn(
-              "inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+              "inline-flex items-center justify-center rounded-full transition-colors",
+              isMobile ? "h-8 w-8 border border-gray-100 bg-white shadow-sm" : "h-9 w-9",
               isFav
                 ? "text-red-500 hover:bg-red-50"
                 : "text-gray-400 hover:bg-gray-100 hover:text-red-500",
@@ -161,48 +165,69 @@ function BostadAboutContent({
                 : localizedText(locale, "Lägg till i favoriter", "Add to favorites")
             }
           >
-            <Heart className={cn("h-[18px] w-[18px]", isFav && "fill-current")} />
+            <Heart className={cn(iconClassName, isFav && "fill-current")} />
           </button>
         )}
-        {canFavorite && <div className="h-5 w-px bg-gray-200" />}
+        {canFavorite && <div className={cn("w-px bg-gray-200", isMobile ? "h-4" : "h-5")} />}
         <ShareDialog>
           <button
             type="button"
             aria-label={localizedText(locale, "Dela bostad", "Share listing")}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className={cn(
+              "inline-flex items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600",
+              isMobile ? "h-8 w-8 border border-gray-100 bg-white shadow-sm" : "h-9 w-9",
+            )}
           >
-            <Share2 className="h-[18px] w-[18px]" />
+            <Share2 className={iconClassName} />
           </button>
         </ShareDialog>
       </div>
     );
   };
 
-  const renderRentSummary = () => (
-    <div className="flex flex-col items-start gap-0.5 lg:items-end">
-      <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400 sm:text-xs">
-        {localizedText(locale, "Månadshyra", "Monthly rent")}
-      </span>
-      <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-        <span className="text-[26px] font-bold leading-none tracking-tight text-gray-900 sm:text-3xl lg:text-2xl">
-          {rentValue}
+  const renderRentSummary = (placement: "mobile" | "desktop" = "desktop") => {
+    const isMobile = placement === "mobile";
+
+    return (
+      <div className={cn("flex flex-col items-start lg:items-end", isMobile ? "gap-0" : "gap-0.5")}>
+        <span
+          className={cn(
+            "font-medium uppercase tracking-wider text-gray-400",
+            isMobile ? "text-[10px]" : "text-[11px] sm:text-xs",
+          )}
+        >
+          {localizedText(locale, "Månadshyra", "Monthly rent")}
         </span>
-        {isRentNumber && (
-          <span className="text-sm font-medium text-gray-400">
-            {localizedText(locale, "kr/mån", "SEK/mo")}
+        <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+          <span
+            className={cn(
+              "font-bold leading-none tracking-tight text-gray-900",
+              isMobile
+                ? "text-[25px] min-[390px]:text-[26px]"
+                : "text-[26px] sm:text-3xl lg:text-2xl",
+            )}
+          >
+            {rentValue}
           </span>
-        )}
+          {isRentNumber && (
+            <span className={cn("font-medium text-gray-400", isMobile ? "text-[13px]" : "text-sm")}>
+              {localizedText(locale, "kr/mån", "SEK/mo")}
+            </span>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderApplicationAction = (placement: "mobile" | "desktop" = "desktop") => {
     if (hideStudentActions) return null;
 
     const actionSizeClass =
       placement === "mobile"
-        ? "h-10 w-fit min-w-[156px] px-5"
+        ? "h-10 w-fit min-w-[144px] px-4 min-[390px]:min-w-[156px] min-[390px]:px-5"
         : "h-11 w-full px-6 lg:w-fit lg:px-8";
+    const actionTextClass =
+      placement === "mobile" ? "text-[13px] min-[390px]:text-[14px]" : "text-[14px]";
 
     return hasApplied ? (
       <div
@@ -211,7 +236,8 @@ function BostadAboutContent({
           actionSizeClass,
           "rounded-full",
           "bg-green-100 text-green-800",
-          "text-[14px] font-medium",
+          actionTextClass,
+          "font-medium",
           "border border-green-200",
         )}
       >
@@ -227,7 +253,8 @@ function BostadAboutContent({
           actionSizeClass,
           "rounded-full",
           "bg-[#004225] text-white",
-          "text-[14px] font-medium",
+          actionTextClass,
+          "font-medium",
           "shadow-sm hover:shadow-md transition-all",
           "hover:bg-[#00331b] active:scale-[0.98]",
         )}
@@ -237,16 +264,40 @@ function BostadAboutContent({
     );
   };
 
+  const renderTags = (placement: "mobile" | "desktop" = "desktop") => {
+    if (!listing.tags || listing.tags.length === 0) return null;
+
+    const isMobile = placement === "mobile";
+
+    return (
+      <div className={cn("flex flex-wrap items-center", isMobile ? "gap-1.5 lg:hidden" : "hidden gap-2 lg:flex")}>
+        {listing.tags.map((tag) => {
+          const label = getListingTagLabel(tag);
+          return label ? (
+            <Tag
+              key={label}
+              text={label}
+              height={isMobile ? 26 : 28}
+              horizontalPadding={isMobile ? 12 : 14}
+              fontSize={isMobile ? 12 : 13}
+              icon={getAppIconElement(getListingTagIconName(tag), isMobile ? "h-3 w-3" : "h-3.5 w-3.5")}
+            />
+          ) : null;
+        })}
+      </div>
+    );
+  };
+
   return (
-    <div className="flex flex-col gap-5 sm:gap-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-        <div className="flex min-w-0 flex-col gap-4">
+    <div className="flex flex-col gap-4 sm:gap-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-3.5 sm:gap-4 lg:flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-2">
-              <h1 className="text-balance text-[26px] font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl lg:text-4xl">
+              <h1 className="text-balance text-[24px] font-bold leading-tight tracking-tight text-gray-900 min-[390px]:text-[25px] sm:text-3xl lg:text-4xl">
                 {listing.title}
               </h1>
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] leading-5 text-gray-600 sm:mt-1 sm:text-sm">
                 <span className="flex min-w-0 items-center gap-1.5 font-medium">
                   <MapPin className="h-4 w-4 text-green-700" />
                   <span className="min-w-0 break-words">
@@ -262,53 +313,41 @@ function BostadAboutContent({
               </div>
             </div>
 
-            <div className="-mr-1 shrink-0 pt-0.5">
-              {renderActionIcons()}
+            <div className="-mr-1 shrink-0 pt-0.5 lg:hidden">
+              {renderActionIcons("mobile")}
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 pt-1 min-[380px]:flex-row min-[380px]:items-end min-[380px]:justify-between lg:hidden">
-            {renderRentSummary()}
+          {renderTags("mobile")}
+
+          <div className="grid gap-3 pt-0.5 min-[360px]:grid-cols-[minmax(0,1fr)_auto] min-[360px]:items-center lg:hidden">
+            {renderRentSummary("mobile")}
             {renderApplicationAction("mobile")}
           </div>
 
           {dateFacts}
         </div>
 
-        <div className="hidden w-full shrink-0 flex-col items-stretch gap-3 lg:flex lg:w-auto lg:min-w-[244px] lg:items-end">
+        <div className="hidden w-full shrink-0 flex-col items-stretch gap-4 lg:flex lg:w-auto lg:min-w-[244px] lg:items-end">
+          {renderActionIcons()}
           {renderRentSummary()}
           {renderApplicationAction()}
         </div>
       </div>
 
-      {listing.tags && listing.tags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {listing.tags.map((tag) => {
-            const label = getListingTagLabel(tag);
-            return label ? (
-              <Tag
-                key={label}
-                text={label}
-                height={28}
-                horizontalPadding={14}
-                fontSize={13}
-                icon={getAppIconElement(getListingTagIconName(tag), "h-3.5 w-3.5")}
-              />
-            ) : null;
-          })}
-        </div>
-      )}
+      {renderTags()}
 
-      <div className="mt-2">
-        <h2 className="mb-2 border-b border-gray-100 pb-2 text-lg font-semibold text-gray-900">
+      <div className="mt-1 sm:mt-2">
+        <h2 className="mb-2 border-b border-gray-100 pb-2 text-[17px] font-semibold text-gray-900 sm:text-lg">
           {localizedText(locale, "Om boendet", "About the home")}
         </h2>
         <ReadMoreComponent
           text={listing.description ?? ""}
           variant="large"
           className="mt-2"
-          textClassName="text-[15px] leading-relaxed text-gray-700"
-          buttonWrapClassName="pb-4"
+          collapsedLinesLarge={5}
+          textClassName="text-[14px] leading-6 text-gray-700 sm:text-[15px] sm:leading-relaxed"
+          buttonWrapClassName="pb-3 sm:pb-4"
           moreLabel={localizedText(locale, "Läs mer", "Read more")}
           lessLabel={localizedText(locale, "Visa mindre", "Show less")}
           scrollOffset={400}
@@ -362,7 +401,7 @@ export default function BostadAbout({
   );
 
   return (
-    <section className="rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:rounded-3xl sm:p-6">
+    <section className="rounded-[20px] border border-black/5 bg-white/80 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.05)] sm:rounded-3xl sm:p-6">
       {isEditable ? (
         <EditWrapper
           isEditable={isEditable}
