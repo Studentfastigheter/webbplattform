@@ -2,7 +2,6 @@ import React from "react";
 import clsx from "clsx";
 import { ChevronRight, Home, MapPin, Ruler, Trash2 } from "@/components/icons";
 import CompanyLogo from "@/components/shared/CompanyLogo";
-import { getAppIconElement } from "@/components/icons/catalog";
 import Tag from "@/components/ui/Tag";
 import type { ListFrameRow } from "@/components/layout/ListFrame";
 import { Button } from "@/components/ui/button";
@@ -140,8 +139,6 @@ const TagsCell: React.FC<{ tags?: ListingApplicationRowProps["tags"] }> = ({
   const safeTags = (tags ?? []).slice(0, 2);
   const getTagLabel = (tag: string | ListingTagDTO) =>
     typeof tag === "string" ? tag : tag.displayName || tag.tagKey || "";
-  const getTagIconName = (tag: string | ListingTagDTO) =>
-    typeof tag === "string" ? tag : tag.icon || tag.tagKey || tag.displayName;
 
   return (
     <div className="flex min-h-16 items-center">
@@ -157,7 +154,6 @@ const TagsCell: React.FC<{ tags?: ListingApplicationRowProps["tags"] }> = ({
                 horizontalPadding={10}
                 fontSize={12}
                 fontWeight={500}
-                icon={getAppIconElement(getTagIconName(tag), "h-3.5 w-3.5")}
                 className="border-gray-200 bg-gray-50 text-gray-700"
               />
             ) : null;

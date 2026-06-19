@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import CompanyLogo from "@/components/shared/CompanyLogo";
 import Tag from "@/components/ui/Tag";
 import { Heart } from "@/components/icons";
-import { getAppIconElement } from "@/components/icons/catalog";
 import { useAuth } from "@/context/AuthContext";
 import { canUseFavorites } from "@/features/listings/hooks/useListings";
 import type { ListingTagDTO } from "@/types/listing";
@@ -56,9 +55,6 @@ const formatRent = (rent: number | null | undefined, locale: "sv" | "en") =>
 
 const getTagLabel = (tag: string | ListingTagDTO) =>
   typeof tag === "string" ? tag : tag.displayName || tag.tagKey || "";
-
-const getTagIconName = (tag: string | ListingTagDTO) =>
-  typeof tag === "string" ? tag : tag.icon || tag.tagKey || tag.displayName;
 
 const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const {
@@ -155,9 +151,9 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const safeTags = (tags ?? [])
     .map((tag) => {
       const label = getTagLabel(tag);
-      return label ? { label, iconName: getTagIconName(tag) } : null;
+      return label ? { label } : null;
     })
-    .filter((tag): tag is { label: string; iconName: string } => tag !== null);
+    .filter((tag): tag is { label: string } => tag !== null);
   const locationText =
     [area, city].filter(Boolean).join(", ") ||
     localizedText(locale, "Ej angivet", "Not specified");
@@ -379,7 +375,6 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
                 fontSize={tagSize.fontSize}
                 lineHeight={tagSize.lineHeight}
                 fontWeight={700}
-                icon={getAppIconElement(tag.iconName, "h-[1em] w-[1em]")}
                 bgColor="#f7f7f7"
                 textColor="#6f6f6f"
                 borderColor="#d7d7d7"

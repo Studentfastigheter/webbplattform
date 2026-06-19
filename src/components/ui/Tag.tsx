@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,6 @@ type TagProps = {
   fontSize?: number;
   lineHeight?: number;
   fontWeight?: CSSProperties["fontWeight"];
-  icon?: ReactNode;
   className?: string;
 };
 
@@ -32,7 +31,6 @@ export default function Tag({
   fontSize = 14,
   lineHeight,
   fontWeight = 600,
-  icon,
   className = "",
 }: TagProps) {
   const hasCustomColors = Boolean(bgColor || textColor);
@@ -78,11 +76,6 @@ export default function Tag({
             boxShadow: "0 0 0 2px rgba(47, 125, 79, 0.12)",
           }}
         />
-      )}
-      {icon && (
-        <span aria-hidden="true" className="mr-1.5 inline-flex shrink-0 items-center text-current">
-          {icon}
-        </span>
       )}
       <span
         style={{

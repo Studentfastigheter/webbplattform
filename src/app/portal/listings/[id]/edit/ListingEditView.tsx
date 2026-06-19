@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Home, MapPin, Pencil } from "@/components/icons";
-import { getAppIconElement } from "@/components/icons/catalog";
 
 import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreviewGrid";
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
@@ -579,8 +578,7 @@ function EditableListingPreview({
                       }`}
                     >
                       <span className="inline-flex items-center gap-1.5">
-                        {getAppIconElement(tag.icon || tag.tagKey || tag.displayName, "h-4 w-4")}
-                      {tag.displayName}
+                        {tag.displayName}
                       </span>
                     </button>
                   );
