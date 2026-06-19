@@ -72,7 +72,10 @@ export function GoogleAdSenseUnit({
   return (
     <ins
       ref={adRef}
-      className={cn("adsbygoogle block h-full w-full", className)}
+      className={cn(
+        "adsbygoogle !absolute !inset-0 !m-0 block !h-auto !max-h-full !w-full !max-w-full",
+        className,
+      )}
       style={{ display: "block" }}
       data-ad-client={GOOGLE_ADSENSE_CLIENT}
       data-ad-slot={slot}

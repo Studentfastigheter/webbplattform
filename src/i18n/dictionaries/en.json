@@ -186,8 +186,6 @@
   "ads": {
     "adSpace": "Ad space",
     "ad": "Ad",
-    "adFrom": "Ad from {company}",
-    "topAd": "Top ad",
     "leftAd": "Left ad slot",
     "bottomAd": "Bottom ad",
     "rightAd": "Right ad slot"

@@ -41,27 +41,13 @@ API-klienten ansvarar for:
 ## Google AdSense
 
 Publisher-ID:t ligger i root-layoutens metadata och AdSense-scriptet laddas globalt.
-De befintliga annonsrutorna anvander Google AdSense-slot `9241310200` om inget annat
-ar konfigurerat.
+Vänster sidebar använder Google AdSense-slot `9241310200`.
+Höger sidebar använder Google AdSense-slot `3754664320`.
+Den horisontella annonsytan längst ner på sidor använder Google AdSense-slot
+`6828539903`.
 
-Om olika AdSense-enheter behovs kan slot-ID:n bytas via publika env-vars:
-
-```bash
-NEXT_PUBLIC_GOOGLE_ADSENSE_PRIMARY_SLOT=
-NEXT_PUBLIC_GOOGLE_ADSENSE_SECONDARY_SLOT=
-```
-
-Eller per placering:
-
-```bash
-NEXT_PUBLIC_GOOGLE_ADSENSE_TOP_SLOT=
-NEXT_PUBLIC_GOOGLE_ADSENSE_LEFT_SLOT=
-NEXT_PUBLIC_GOOGLE_ADSENSE_BOTTOM_SLOT=
-NEXT_PUBLIC_GOOGLE_ADSENSE_RIGHT_SLOT=
-```
-
-Egna annonser fran `/api/ads` visas fore Google AdSense. Nar ingen egen annons finns
-fylls rutan av den Google-slot som ar konfigurerad.
+Annonsytorna anvander endast Google AdSense. Webbplattformen hamtar inte egna
+annonser fran `/api/ads`.
 
 ## Typer
 

@@ -34,20 +34,6 @@ export type ListingActivity = {
   distanceKm?: number | null;
 };
 
-export type RollingAd = {
-  id: number | string;
-  start?: string;
-  stop?: string;
-  company?: string;
-  data?: {
-    imageUrl?: string;
-    linkUrl?: string;
-    headline?: string;
-    ctaText?: string;
-    [key: string]: unknown;
-  } | null;
-};
-
 export type ListingSearchFacetsDTO = {
   totalHits?: number;
   totalCount?: number;
@@ -1021,41 +1007,4 @@ export const listingService = {
     });
   },
 
-  // Aktiviteter (karta/område)
-  /**
-   * Rullande annonser (Ads)
-   * Hämtar annonser som är aktiva just nu från backend.
-   */
-  getCurrentAds: async (): Promise<RollingAd[]> => {
-    try {
-      const ads = await apiClient<unknown>("/ads/current", { auth: false });
-
-      return arrayFromApiResponse<unknown>(ads)
-        .filter((ad): ad is {
-          id: number | string;
-          start?: unknown;
-          stop?: unknown;
-          company?: unknown;
-          data?: unknown;
-        } => (
-          typeof ad === "object" &&
-          ad !== null &&
-          "id" in ad &&
-          (typeof ad.id === "number" || typeof ad.id === "string")
-        ))
-        .map((ad) => ({
-          id: ad.id,
-          start: typeof ad.start === "string" ? ad.start : undefined,
-          stop: typeof ad.stop === "string" ? ad.stop : undefined,
-          company: typeof ad.company === "string" ? ad.company : undefined,
-          data:
-            typeof ad.data === "object" && ad.data !== null
-              ? (ad.data as RollingAd["data"])
-              : null,
-        }));
-    } catch (e) {
-      console.error("Kunde inte hämta annonser:", e);
-      return [];
-    }
-  },
 };

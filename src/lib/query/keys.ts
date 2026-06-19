@@ -441,10 +441,4 @@ export const qk = {
     list: () => ["cities", "list"] as const,
     detail: (code: string) => ["cities", "detail", code] as const,
   },
-
-  // Rolling marketing ads. Public, low-churn — single cache entry.
-  ads: {
-    all: ["ads"] as const,
-    current: () => ["ads", "current"] as const,
-  },
 } as const;

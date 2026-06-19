@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { IconChevronDown, UserCircle } from "@/components/icons";
+import { IconChevronDown } from "@/components/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayName } from "@/lib/user-display";
@@ -23,19 +23,6 @@ import {
 } from "@/components/ui/resizable-navbar";
 
 type NavItem = NavbarItem;
-
-function AccountIcon({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-[#004225]/10 text-[#004225]",
-        className
-      )}
-    >
-      <UserCircle className="h-[70%] w-[70%]" aria-hidden="true" />
-    </span>
-  );
-}
 
 export default function SiteHeader() {
   const { user, logout, isLoading } = useAuth();
@@ -277,9 +264,8 @@ export default function SiteHeader() {
                 <button
                   type="button"
                   onClick={handleAccountToggle}
-                  className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
+                  className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
                 >
-                  <AccountIcon className="h-8 w-8" />
                   <div className="hidden max-w-32 sm:block">
                     <p className="truncate text-left text-sm font-medium text-neutral-900">
                       {displayName}
@@ -295,8 +281,7 @@ export default function SiteHeader() {
 
                 {isAccountMenuOpen && (
                   <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] animate-dropdown">
-                    <div className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-3">
-                      <AccountIcon className="h-9 w-9 bg-white" />
+                    <div className="rounded-xl bg-neutral-50 px-3 py-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-neutral-950">
                           {displayName}
@@ -412,8 +397,7 @@ export default function SiteHeader() {
                     {localizedText(locale, "Verify now", "Verify now")}
                   </Link>
                 ) : null}
-                <div className="mb-3 flex items-center gap-3 px-1">
-                  <AccountIcon className="h-9 w-9" />
+                <div className="mb-3 px-1">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-neutral-950">
                       {displayName}

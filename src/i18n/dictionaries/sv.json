@@ -186,8 +186,6 @@
   "ads": {
     "adSpace": "Annonsutrymme",
     "ad": "Annons",
-    "adFrom": "Annons från {company}",
-    "topAd": "Toppannons",
     "leftAd": "Vänster annonsyta",
     "bottomAd": "Bottenannons",
     "rightAd": "Höger annonsyta"
