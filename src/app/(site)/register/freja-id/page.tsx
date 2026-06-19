@@ -8,14 +8,21 @@ import {
   CheckCircle2Icon,
   Clock3Icon,
   RefreshCwIcon,
+  Smartphone,
 } from "@/components/icons";
 import { QRCodeSVG } from "qrcode.react";
 
 import { AuthCard } from "@/components/ui/AuthCard";
+import { Button } from "@/components/ui/button";
 import { FieldDescription, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { authService } from "@/features/auth/services/auth-service";
+import {
+  buildCurrentPageFrejaReturnUrl,
+  buildFrejaLaunchUrl,
+  isFrejaSameDeviceLaunch,
+} from "@/features/auth/lib/freja-launch";
 import {
   clearQuickRegisterAuthRef,
   startOrResumeQuickRegisterVerification,
@@ -106,15 +113,6 @@ function getStatusAction(status: FrejaAuthStatus, flow: FrejaFlow, locale: "sv" 
   };
 }
 
-function buildFrejaAuthUrl(authRef: string) {
-  const url = new URL("https://app.test.frejaeid.com/freja");
-
-  url.searchParams.set("action", "bindUserToTransaction");
-  url.searchParams.set("transactionReference", authRef);
-
-  return url.toString();
-}
-
 function getStatusTone(status: FrejaAuthStatus) {
   if (status === "MATCHES") return "success";
   if (status === "DISAPPROVED" || status === "EXPIRED" || status === "CANCELED") {
@@ -170,11 +168,36 @@ function FrejaIdRegisterContent() {
   const [pollError, setPollError] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [useSameDeviceLaunch, setUseSameDeviceLaunch] = useState(false);
+  const [frejaReturnUrl, setFrejaReturnUrl] = useState<string | null>(null);
 
   const frejaAuthUrl = useMemo(
-    () => (authRef ? buildFrejaAuthUrl(authRef) : ""),
-    [authRef]
+    () =>
+      authRef
+        ? buildFrejaLaunchUrl(
+            authRef,
+            useSameDeviceLaunch ? frejaReturnUrl : null
+          )
+        : "",
+    [authRef, frejaReturnUrl, useSameDeviceLaunch]
   );
+
+  useEffect(() => {
+    setUseSameDeviceLaunch(isFrejaSameDeviceLaunch());
+
+    if (!authRef) {
+      setFrejaReturnUrl(null);
+      return;
+    }
+
+    setFrejaReturnUrl(
+      buildCurrentPageFrejaReturnUrl({
+        query: isFrejaOnlyFlow
+          ? { start: "freja", flow: null, authRef }
+          : { flow: "quick-register", start: null, authRef },
+      })
+    );
+  }, [authRef, isFrejaOnlyFlow]);
 
   useEffect(() => {
     if (authRef) return;
@@ -289,8 +312,12 @@ function FrejaIdRegisterContent() {
   const statusAction = getStatusAction(status, flow, locale);
   const pageTitle = localizedText(locale, "Verifiera med Freja", "Verify with Freja");
   const pageSubtitle = isFrejaOnlyFlow
-    ? localizedText(locale, "Skanna QR-koden med Freja för att skapa kontot.", "Scan the QR code with Freja to create the account.")
-    : localizedText(locale, "Skanna QR-koden med Freja för att verifiera ditt konto.", "Scan the QR code with Freja to verify your account.");
+    ? useSameDeviceLaunch
+      ? localizedText(locale, "Öppna Freja-appen för att skapa kontot.", "Open the Freja app to create the account.")
+      : localizedText(locale, "Skanna QR-koden med Freja för att skapa kontot.", "Scan the QR code with Freja to create the account.")
+    : useSameDeviceLaunch
+      ? localizedText(locale, "Öppna Freja-appen för att verifiera ditt konto.", "Open the Freja app to verify your account.")
+      : localizedText(locale, "Skanna QR-koden med Freja för att verifiera ditt konto.", "Scan the QR code with Freja to verify your account.");
 
   return (
     <AuthCard
@@ -345,6 +372,21 @@ function FrejaIdRegisterContent() {
                   : localizedText(locale, "Verifieringen saknar authRef. Starta registreringen igen.", "The verification is missing authRef. Start registration again.")}
               </FieldError>
             </div>
+          ) : useSameDeviceLaunch ? (
+            <div className="flex h-[224px] w-[224px] flex-col items-center justify-center gap-3 p-4">
+              <Button
+                as="a"
+                href={frejaAuthUrl}
+                className="rounded-md"
+                aria-label={localizedText(locale, "Öppna Freja", "Open Freja")}
+              >
+                <Smartphone className="h-4 w-4" />
+                {localizedText(locale, "Öppna Freja", "Open Freja")}
+              </Button>
+              <p className="text-xs leading-5 text-slate-500">
+                {localizedText(locale, "Återvänd hit efter godkännande.", "Return here after approval.")}
+              </p>
+            </div>
           ) : (
             <QRCodeSVG
               value={frejaAuthUrl}
@@ -376,8 +418,8 @@ export default function FrejaIdRegisterPage() {
   const { locale } = useI18n();
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm md:max-w-4xl">
+    <div className="flex min-h-svh w-full flex-col items-center justify-center overflow-x-hidden p-4 sm:p-6 md:p-10">
+      <div className="w-full max-w-sm min-w-0 md:max-w-4xl">
         <Suspense
           fallback={
             <AuthCard

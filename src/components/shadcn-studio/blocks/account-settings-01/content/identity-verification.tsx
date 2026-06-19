@@ -7,6 +7,7 @@ import {
   CheckCircle2Icon,
   Clock3Icon,
   Loader2Icon,
+  Smartphone,
   TriangleAlertIcon,
   XCircleIcon,
 } from "@/components/icons"
@@ -16,6 +17,11 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
 import { authService } from '@/features/auth/services/auth-service'
 import { useRegisterStudent } from '@/features/auth/hooks/useAuthMutations'
+import {
+  buildCurrentPageFrejaReturnUrl,
+  buildFrejaLaunchUrl,
+  isFrejaSameDeviceLaunch,
+} from '@/features/auth/lib/freja-launch'
 import {
   clearQuickRegisterAuthRef,
   startOrResumeQuickRegisterVerification,
@@ -114,15 +120,6 @@ function isFrejaAuthStatus(value: unknown): value is FrejaAuthStatus {
   )
 }
 
-function buildFrejaAuthUrl(authRef: string) {
-  const url = new URL('https://app.test.frejaeid.com/freja')
-
-  url.searchParams.set('action', 'bindUserToTransaction')
-  url.searchParams.set('transactionReference', authRef)
-
-  return url.toString()
-}
-
 function getStatusTone(status: FrejaAuthStatus) {
   if (status === 'MATCHES') return 'success'
   if (status === 'CLASHING') return 'warning'
@@ -189,6 +186,8 @@ export default function IdentityVerification({
   const [authRef, setAuthRef] = useState('')
   const [status, setStatus] = useState<FrejaAuthStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [useSameDeviceLaunch, setUseSameDeviceLaunch] = useState(false)
+  const [frejaReturnUrl, setFrejaReturnUrl] = useState<string | null>(null)
 
   const isQuickRegister = user?.accountType === 'quick_register'
   const accountVerified = Boolean(user) && !isQuickRegister
@@ -201,12 +200,27 @@ export default function IdentityVerification({
     !loading &&
     !isActiveVerification
   const frejaAuthUrl = useMemo(
-    () => (authRef ? buildFrejaAuthUrl(authRef) : ''),
-    [authRef]
+    () =>
+      authRef
+        ? buildFrejaLaunchUrl(
+            authRef,
+            useSameDeviceLaunch ? frejaReturnUrl : null
+          )
+        : '',
+    [authRef, frejaReturnUrl, useSameDeviceLaunch]
   )
   const statusCopy = status ? getStatusCopy(status, locale) : null
   const statusStyles = status ? getStatusStyles(status) : null
   const StatusIcon = status ? getStatusIcon(status) : null
+
+  useEffect(() => {
+    setUseSameDeviceLaunch(isFrejaSameDeviceLaunch())
+    setFrejaReturnUrl(
+      authRef
+        ? buildCurrentPageFrejaReturnUrl({ hash: 'verify-account' })
+        : null
+    )
+  }, [authRef])
 
   useEffect(() => {
     if (accountVerified) {
@@ -380,17 +394,30 @@ export default function IdentityVerification({
         </div>
 
         {!accountVerified && isActiveVerification && frejaAuthUrl ? (
-          <div className='mt-4 flex items-center gap-4 border-t border-gray-100 pt-4'>
-            <div className='rounded-[8px] bg-white p-2'>
-              <QRCodeSVG
-                value={frejaAuthUrl}
-                size={104}
-                fgColor='#111827'
-                bgColor='#ffffff'
-                level='M'
-                marginSize={2}
-              />
-            </div>
+          <div className='mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 sm:flex-row sm:items-center'>
+            {useSameDeviceLaunch ? (
+              <Button
+                as='a'
+                href={frejaAuthUrl}
+                variant='outline'
+                className='rounded-md border-gray-200 text-gray-900 sm:w-auto'
+                aria-label={localizedText(locale, 'Öppna Freja', 'Open Freja')}
+              >
+                <Smartphone className='size-4' />
+                {localizedText(locale, 'Öppna Freja', 'Open Freja')}
+              </Button>
+            ) : (
+              <div className='rounded-[8px] bg-white p-2'>
+                <QRCodeSVG
+                  value={frejaAuthUrl}
+                  size={104}
+                  fgColor='#111827'
+                  bgColor='#ffffff'
+                  level='M'
+                  marginSize={2}
+                />
+              </div>
+            )}
             <p className='flex items-center gap-2 text-sm text-muted-foreground'>
               {loading ? <Loader2Icon className='size-4 animate-spin' /> : null}
               {localizedText(locale, 'Kontrollerar verifieringen automatiskt.', 'Checking the verification automatically.')}
