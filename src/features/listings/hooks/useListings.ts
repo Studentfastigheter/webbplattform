@@ -506,6 +506,71 @@ export function useUpdateListing() {
   });
 }
 
+export function useUpdateListings() {
+  const qc = useQueryClient();
+  return useMutation<
+    void,
+    Error,
+    Parameters<typeof listingService.updateMany>[0],
+    { previousStatusQueries: CachedListingStatusSnapshot }
+  >({
+    mutationFn: (payload) => listingService.updateMany(payload),
+    onMutate: async ({ listingDatas }) => {
+      const statusUpdates = Object.entries(listingDatas)
+        .map(([id, payload]) => ({
+          id,
+          status: payload.status,
+        }))
+        .filter(
+          (item): item is { id: string; status: ListingStatus } =>
+            Boolean(item.status)
+        );
+
+      if (statusUpdates.length === 0) {
+        return { previousStatusQueries: [] };
+      }
+
+      await qc.cancelQueries({
+        predicate: (query) => isListingStatusPatchQuery(query.queryKey),
+      });
+      const previousStatusQueries = qc.getQueriesData<unknown>({
+        predicate: (query) => isListingStatusPatchQuery(query.queryKey),
+      });
+
+      previousStatusQueries.forEach(([queryKey]) => {
+        qc.setQueryData(queryKey, (current: unknown) =>
+          statusUpdates.reduce(
+            (nextData, update) =>
+              patchListingStatusInCache(nextData, update.id, update.status),
+            current
+          )
+        );
+      });
+
+      return { previousStatusQueries };
+    },
+    onError: (_err, _vars, ctx) => {
+      ctx?.previousStatusQueries.forEach(([queryKey, data]) => {
+        qc.setQueryData(queryKey, data);
+      });
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: qk.listings.all });
+      qc.invalidateQueries({ queryKey: qk.queues.all });
+      qc.invalidateQueries({
+        queryKey: ["companies", "analytics-dashboard"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["companies", "listing-performance"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["companies", "listing-performance-detail"],
+      });
+      qc.invalidateQueries({ queryKey: ["companies", "listing-statuses"] });
+    },
+  });
+}
+
 export function useDeleteListing() {
   const qc = useQueryClient();
   return useMutation<void, Error, string>({

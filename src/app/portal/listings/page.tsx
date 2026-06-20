@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useQueries } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import {
   X,
 } from "@/components/icons";
 import ListingCardSmall from "@/features/listings/components/ListingCard_Small";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -23,14 +24,16 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
+import { cn } from "@/lib/utils";
 import { companyService, type ListingViewCounts } from "@/features/companies/services/company-service";
 import {
   useApplicationCountsPerObject,
   useRefreshCompanyListings,
 } from "@/features/companies/hooks/useCompanies";
+import { useUpdateListings } from "@/features/listings/hooks/useListings";
 import { useAllCompanyListings } from "@/features/queues/hooks/useQueues";
 import { qk } from "@/lib/query/keys";
-import { type ListingCardDTO } from "@/types/listing";
+import { type ListingCardDTO, type ListingStatus } from "@/types/listing";
 import PortalListingStatusTag, {
   type PortalListingStatusTone,
 } from "../_components/shared/PortalListingStatusTag";
@@ -57,6 +60,10 @@ type PortalListing = {
 
 type StatsLookup = Map<string, number>;
 type ListingViewCountsLookup = Map<string, ListingViewCounts>;
+
+const BULK_STATUS_OPTIONS: ListingStatus[] = ["AVAILABLE", "HIDDEN", "RENTED"];
+const selectionCheckboxClassName =
+  "size-5 rounded-[7px] border-gray-300 bg-white text-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225] data-[state=checked]:text-white data-[state=indeterminate]:border-[#004225] data-[state=indeterminate]:bg-[#004225] focus-visible:ring-[#004225]/20";
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
   const parts = path.split(".");
@@ -333,6 +340,17 @@ function splitLocation(location: string | undefined, locale: Locale): { area: st
   };
 }
 
+function formatListingStatusOption(status: ListingStatus, locale: Locale) {
+  switch (status) {
+    case "AVAILABLE":
+      return localizedText(locale, "Tillgänglig", "Available");
+    case "HIDDEN":
+      return localizedText(locale, "Dold", "Hidden");
+    case "RENTED":
+      return localizedText(locale, "Uthyrd", "Rented");
+  }
+}
+
 export default function PortalAdsPage() {
   const { locale } = useI18n();
   const router = useRouter();
@@ -343,12 +361,16 @@ export default function PortalAdsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [dateSort, setDateSort] = useState<DateSort>("newest");
   const [cityFilter, setCityFilter] = useState("all");
+  const [selectedListingIds, setSelectedListingIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<ListingStatus>("HIDDEN");
   const hasActiveFilters = statusFilter !== "all" || cityFilter !== "all";
 
   const companyId = getActiveCompanyId(user);
   const canSyncListings = portal.canUseFeature("listingSync");
   const refreshListingsMutation = useRefreshCompanyListings();
+  const updateListingsMutation = useUpdateListings();
   const refreshingListings = refreshListingsMutation.isPending;
+  const updatingListings = updateListingsMutation.isPending;
 
   // Core reads — both shared with the analytics dashboard via the same
   // query keys, so navigating between portal pages reuses cached data.
@@ -360,6 +382,14 @@ export default function PortalAdsPage() {
   } = useAllCompanyListings(companyId, 0, 200);
   const { data: applicationsByObject = [] } =
     useApplicationCountsPerObject(companyId, 200);
+
+  useEffect(() => {
+    const validIds = new Set(companyListings.map((listing) => String(listing.id)));
+    setSelectedListingIds((current) => {
+      const next = current.filter((id) => validIds.has(id));
+      return next.length === current.length ? current : next;
+    });
+  }, [companyListings]);
 
   // Per-listing view counts — N parallel queries, each cached under the
   // same key the analytics page uses. After the listings array settles
@@ -495,6 +525,96 @@ export default function PortalAdsPage() {
           : a.publishedAtTime - b.publishedAtTime;
       });
   }, [ads, cityFilter, dateSort, locale, search, statusFilter]);
+
+  const selectedListingIdSet = useMemo(
+    () => new Set(selectedListingIds),
+    [selectedListingIds]
+  );
+
+  const visibleListingIds = useMemo(
+    () => filteredAds.map((item) => String(item.listing.id)),
+    [filteredAds]
+  );
+
+  const selectedVisibleCount = useMemo(
+    () => visibleListingIds.filter((id) => selectedListingIdSet.has(id)).length,
+    [selectedListingIdSet, visibleListingIds]
+  );
+  const allVisibleListingsSelected =
+    visibleListingIds.length > 0 && selectedVisibleCount === visibleListingIds.length;
+  const selectVisibleChecked = allVisibleListingsSelected
+    ? true
+    : selectedVisibleCount > 0
+      ? "indeterminate"
+      : false;
+
+  const toggleListingSelection = useCallback((listingId: string, checked: boolean) => {
+    setSelectedListingIds((current) => {
+      if (checked) {
+        return current.includes(listingId) ? current : [...current, listingId];
+      }
+
+      const next = current.filter((id) => id !== listingId);
+      return next.length === current.length ? current : next;
+    });
+  }, []);
+
+  const setVisibleListingsSelection = useCallback(
+    (checked: boolean) => {
+      setSelectedListingIds((current) => {
+        if (checked) {
+          const next = new Set(current);
+          visibleListingIds.forEach((id) => next.add(id));
+          return Array.from(next);
+        }
+
+        const visibleIds = new Set(visibleListingIds);
+        const next = current.filter((id) => !visibleIds.has(id));
+        return next.length === current.length ? current : next;
+      });
+    },
+    [visibleListingIds]
+  );
+
+  const clearSelectedListings = useCallback(() => {
+    setSelectedListingIds([]);
+  }, []);
+
+  const handleBulkStatusUpdate = useCallback(async () => {
+    const selectedCount = selectedListingIds.length;
+    if (selectedCount === 0) {
+      return;
+    }
+
+    const listingDatas = selectedListingIds.reduce<
+      Record<string, { status: ListingStatus }>
+    >((acc, listingId) => {
+      acc[listingId] = { status: bulkStatus };
+      return acc;
+    }, {});
+
+    try {
+      await updateListingsMutation.mutateAsync({ listingDatas });
+      setSelectedListingIds([]);
+      toast.success(
+        localizedText(
+          locale,
+          `${selectedCount} annonser har uppdaterats.`,
+          `${selectedCount} listings have been updated.`
+        )
+      );
+    } catch (updateError) {
+      toast.error(
+        updateError instanceof Error
+          ? updateError.message
+          : localizedText(
+              locale,
+              "Kunde inte uppdatera valda annonser.",
+              "Could not update selected listings."
+            )
+      );
+    }
+  }, [bulkStatus, locale, selectedListingIds, updateListingsMutation]);
 
   if (authLoading) {
     return (
@@ -656,6 +776,85 @@ export default function PortalAdsPage() {
               </Select>
             </div>
           </div>
+
+          <div
+            className={cn(
+              "flex w-full min-w-0 flex-col gap-3 rounded-2xl border px-3 py-2.5 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-colors lg:flex-row lg:items-center lg:justify-between",
+              selectedListingIds.length > 0
+                ? "border-[#004225]/20 bg-[#f6fbf8]"
+                : "border-gray-200 bg-white"
+            )}
+          >
+            <div className="flex min-w-0 items-center gap-3 rounded-xl px-1 py-1">
+              <Checkbox
+                checked={selectVisibleChecked}
+                disabled={visibleListingIds.length === 0 || updatingListings}
+                onCheckedChange={(checked) =>
+                  setVisibleListingsSelection(checked === true)
+                }
+                aria-label={localizedText(locale, "Välj alla visade annonser", "Select all visible listings")}
+                className={selectionCheckboxClassName}
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-gray-900">
+                  {localizedText(locale, "Valda annonser", "Selected listings")}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {selectedListingIds.length > 0
+                    ? localizedText(
+                        locale,
+                        `${selectedListingIds.length} valda`,
+                        `${selectedListingIds.length} selected`
+                      )
+                    : localizedText(locale, "Välj annonser att ändra", "Select listings to update")}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <div className="min-w-0 sm:w-[180px]">
+                <Select
+                  value={bulkStatus}
+                  onValueChange={(value) => setBulkStatus(value as ListingStatus)}
+                  disabled={selectedListingIds.length === 0 || updatingListings}
+                >
+                  <PortalControlSelectTrigger
+                    aria-label={localizedText(locale, "Välj ny status", "Choose new status")}
+                    className="h-10 rounded-xl border-[#004225]/15 bg-white text-sm shadow-none hover:border-[#004225]/25"
+                  >
+                    <SelectValue />
+                  </PortalControlSelectTrigger>
+                  <SelectContent>
+                    {BULK_STATUS_OPTIONS.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {formatListingStatusOption(status, locale)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                className="h-10 w-full sm:w-auto"
+                isDisabled={selectedListingIds.length === 0 || updatingListings}
+                isLoading={updatingListings}
+                onPress={() => void handleBulkStatusUpdate()}
+              >
+                {localizedText(locale, "Uppdatera valda", "Update selected")}
+              </Button>
+
+              {selectedListingIds.length > 0 ? (
+                <Button
+                  className="h-10 w-full sm:w-auto"
+                  variant="ghost"
+                  isDisabled={updatingListings}
+                  onPress={clearSelectedListings}
+                >
+                  {localizedText(locale, "Rensa val", "Clear selection")}
+                </Button>
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -677,49 +876,66 @@ export default function PortalAdsPage() {
         <div className="mt-6 grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredAds.map((item) => {
             const { area, city } = splitLocation(item.listing.location, locale);
+            const listingId = String(item.listing.id);
+            const isSelected = selectedListingIdSet.has(listingId);
             return (
-              <div key={item.listing.id} className="flex min-w-0 w-full justify-center">
-                <ListingCardSmall
-                  id={item.listing.id}
-                  title={item.listing.title}
-                  area={area}
-                  city={city}
-                  dwellingType={item.listing.dwellingType || localizedText(locale, "Bostad", "Home")}
-                  rooms={item.listing.rooms || 0}
-                  sizeM2={item.listing.sizeM2 || 0}
-                  rent={item.listing.rent || 0}
-                  imageUrl={item.listing.imageUrl}
-                  landlordType={item.listing.hostType}
-                  hostName={item.listing.hostName}
-                  hostLogoUrl={item.listing.hostLogoUrl}
-                  isVerified={item.listing.verifiedHost}
-                  variant="compact"
-                  showFavoriteButton={false}
-                  showHostLogo={false}
-                  reserveTagSpace={false}
-                  imageTopRightContent={
-                    <PortalListingStatusTag
-                      label={item.statusLabel}
-                      tone={item.statusTone}
-                    />
-                  }
-                  footerContent={
-                    <div className="flex items-end justify-between gap-3 text-[11px] text-gray-600">
-                      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-                        <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
-                          <Eye className="h-3 w-3 text-gray-500" />
-                          {item.detailedViews.toLocaleString(numberLocale(locale))} {localizedText(locale, "visningar", "views")}
+              <div key={item.listing.id} className="flex w-full min-w-0 justify-center">
+                <div className="relative w-full max-w-[360px]">
+                  <Checkbox
+                    checked={isSelected}
+                    disabled={updatingListings}
+                    onClick={(event) => event.stopPropagation()}
+                    onCheckedChange={(checked) =>
+                      toggleListingSelection(listingId, checked === true)
+                    }
+                    aria-label={localizedText(locale, "Välj annons", "Select listing")}
+                    className={cn(
+                      selectionCheckboxClassName,
+                      "absolute left-3 top-3 z-20 size-6 border-white/80 bg-white/95 shadow-[0_8px_18px_rgba(15,23,42,0.16)] backdrop-blur-md"
+                    )}
+                  />
+                  <ListingCardSmall
+                    id={item.listing.id}
+                    title={item.listing.title}
+                    area={area}
+                    city={city}
+                    dwellingType={item.listing.dwellingType || localizedText(locale, "Bostad", "Home")}
+                    rooms={item.listing.rooms || 0}
+                    sizeM2={item.listing.sizeM2 || 0}
+                    rent={item.listing.rent || 0}
+                    imageUrl={item.listing.imageUrl}
+                    landlordType={item.listing.hostType}
+                    hostName={item.listing.hostName}
+                    hostLogoUrl={item.listing.hostLogoUrl}
+                    isVerified={item.listing.verifiedHost}
+                    variant="compact"
+                    showFavoriteButton={false}
+                    showHostLogo={false}
+                    reserveTagSpace={false}
+                    imageTopRightContent={
+                      <PortalListingStatusTag
+                        label={item.statusLabel}
+                        tone={item.statusTone}
+                      />
+                    }
+                    footerContent={
+                      <div className="flex items-end justify-between gap-3 text-[11px] text-gray-600">
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-800">
+                            <Eye className="h-3 w-3 text-gray-500" />
+                            {item.detailedViews.toLocaleString(numberLocale(locale))} {localizedText(locale, "visningar", "views")}
+                          </span>
+                        </div>
+                        <span className="shrink-0 whitespace-nowrap text-right">
+                          {localizedText(locale, `Publicerad ${item.publishedAt}`, `Published ${item.publishedAt}`)}
                         </span>
                       </div>
-                      <span className="shrink-0 whitespace-nowrap text-right">
-                        {localizedText(locale, `Publicerad ${item.publishedAt}`, `Published ${item.publishedAt}`)}
-                      </span>
-                    </div>
-                  }
-                  onClick={() =>
-                    router.push(`${dashboardRelPath}/listings/${item.listing.id}`)
-                  }
-                />
+                    }
+                    onClick={() =>
+                      router.push(`${dashboardRelPath}/listings/${item.listing.id}`)
+                    }
+                  />
+                </div>
               </div>
             );
           })}

@@ -21,6 +21,7 @@ import {
   type ListingNearbyLocationDTO,
   type RequirementsProfileDTO,
   type UpdateListingRequest,
+  type UpdateMultipleListingsRequest,
   type PublishListingRequest,
 } from "@/types/listing";
 
@@ -731,6 +732,19 @@ export const listingService = {
     }
 
     await apiClient<void>(`/listings/${pathSegment(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateMany: async (payload: UpdateMultipleListingsRequest): Promise<void> => {
+    Object.values(payload.listingDatas).forEach((listingPayload) => {
+      if (listingPayload.status && !isListingStatus(listingPayload.status)) {
+        throw new Error("Ogiltig annonsstatus.");
+      }
+    });
+
+    await apiClient<void>("/listings/modify/", {
       method: "PUT",
       body: JSON.stringify(payload),
     });
