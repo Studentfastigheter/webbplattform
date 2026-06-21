@@ -15,7 +15,6 @@ import { formatCityName } from "@/features/cities/city-utils";
 import SimpleCompanyCard from "@/features/cities/components/SimpleCompanyCard";
 import { useCityDetail } from "@/features/cities/hooks/useCities";
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
-import Que_ListingCard from "@/features/listings/components/Que_ListingCard";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import {
   useFavorites,
@@ -688,33 +687,15 @@ export default function CityDetailPage() {
               {localizedText(locale, "Inga företag hittades just nu.", "No companies were found right now.")}
             </div>
           ) : (
-            <div className="grid w-full grid-cols-1 justify-start gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6 2xl:grid-cols-3">
-              {companies.map((company) => {
-                const cities = Array.isArray(company.cities)
-                  ? company.cities.map(formatCityName).filter(Boolean)
-                  : [];
-
-                return (
-                  <div key={company.id} className="flex h-full min-w-0 w-full">
-                    <Que_ListingCard
-                      name={company.name}
-                      area=""
-                      city={cities.join(", ")}
-                      logoUrl={company.logoUrl ?? null}
-                      logoAlt={localizedText(locale, `${company.name} logotyp`, `${company.name} logo`)}
-                      description={company.description ?? company.subtitle}
-                      termsUrl={company.termsUrl}
-                      privacyUrl={company.privacyUrl}
-                      tags={[]}
-                      isJoinDisabled
-                      joinDisabledLabel={localizedText(locale, "Visa kö", "View queue")}
-                      onViewListings={() =>
-                        router.push(localizedHref(`/all-queues/${company.id}`))
-                      }
-                    />
-                  </div>
-                );
-              })}
+            <div className="grid w-full grid-cols-1 justify-start gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {companies.map((company) => (
+                <SimpleCompanyCard
+                  key={company.id}
+                  company={company}
+                  description={company.subtitle ?? company.description}
+                  href={localizedHref(`/all-queues/${company.id}`)}
+                />
+              ))}
             </div>
           )}
         </section>
@@ -741,7 +722,7 @@ export default function CityDetailPage() {
           ) : (
             <div className="grid w-full grid-cols-1 justify-start gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
               {externalCompanies.map((company) => (
-                <SimpleCompanyCard key={company.id} company={company} />
+                <SimpleCompanyCard key={company.id} company={company} size="compact" />
               ))}
             </div>
           )}

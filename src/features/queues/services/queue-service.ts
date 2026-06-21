@@ -85,6 +85,21 @@ export type QueueApplicationDTO = {
   position?: number;
 };
 
+export type CreateHousingQueueRequirementRequest = {
+  requirement: string;
+};
+
+export type QueueApplicationTrendGranularity = "day" | "week" | "month";
+
+export type QueueApplicationTrendDTO = {
+  bucket?: string;
+  date?: string;
+  period?: string;
+  count?: number;
+  value?: number;
+  total?: number;
+};
+
 type MyQueuesResponse =
   | QueueApplicationDTO
   | QueueApplicationDTO[]
@@ -379,6 +394,18 @@ export const queueService = {
     });
   },
 
+  upsertRequirement: async (
+    queueId: string,
+    request: CreateHousingQueueRequirementRequest | string
+  ): Promise<void> => {
+    await apiClient<void>(`/queues/${pathSegment(queueId)}/requirement`, {
+      method: "POST",
+      body: JSON.stringify(
+        typeof request === "string" ? { requirement: request } : request
+      ),
+    });
+  },
+
   getMyQueues: async (
     options: { hydrateQueues?: boolean; signal?: AbortSignal } = {}
   ): Promise<QueueApplicationDTO[]> => {
@@ -543,5 +570,39 @@ export const queueService = {
     );
 
     return queueApplications.flat();
+  },
+
+  getCompanyQueueApplicationsCount: async (
+    companyId: number,
+    options?: ServiceOptions
+  ): Promise<number> => {
+    const result = await apiClient<unknown>(
+      `/companies/${pathSegment(companyId)}/queues/applications/count`,
+      { signal: options?.signal }
+    );
+    const count = Number(result);
+    return Number.isFinite(count) ? count : 0;
+  },
+
+  getCompanyQueueApplicationsTrend: async (
+    companyId: number,
+    options: {
+      from?: string | Date;
+      to?: string | Date;
+      granularity?: QueueApplicationTrendGranularity;
+      signal?: AbortSignal;
+    } = {}
+  ): Promise<QueueApplicationTrendDTO[]> => {
+    const query = buildQuery({
+      from: options.from instanceof Date ? options.from.toISOString() : options.from,
+      to: options.to instanceof Date ? options.to.toISOString() : options.to,
+      granularity: options.granularity ?? "day",
+    });
+    const result = await apiClient<unknown>(
+      `/companies/${pathSegment(companyId)}/queues/applications/trend${query}`,
+      { signal: options.signal }
+    );
+
+    return arrayFromApiResponse<QueueApplicationTrendDTO>(result);
   },
 };

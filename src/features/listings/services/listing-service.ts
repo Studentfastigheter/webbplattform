@@ -21,6 +21,7 @@ import {
   type ListingNearbyLocationDTO,
   type RequirementsProfileDTO,
   type UpdateListingRequest,
+  type UpdateMultipleListingsRequest,
   type PublishListingRequest,
 } from "@/types/listing";
 
@@ -149,6 +150,12 @@ const normalizePublishListingPayload = (
   ...payload,
   dwellingType: normalizeDwellingTypeParam(payload.dwellingType),
 });
+
+function assertUpdateListingPayload(payload: UpdateListingRequest) {
+  if (payload.status && !isListingStatus(payload.status)) {
+    throw new Error("Ogiltig annonsstatus.");
+  }
+}
 
 const applicationBody = (message?: string) => {
   const trimmed = message?.trim();
@@ -726,13 +733,25 @@ export const listingService = {
   },
 
   update: async (id: string, payload: UpdateListingRequest): Promise<void> => {
-    if (payload.status && !isListingStatus(payload.status)) {
-      throw new Error("Ogiltig annonsstatus.");
-    }
+    assertUpdateListingPayload(payload);
 
     await apiClient<void>(`/listings/${pathSegment(id)}`, {
       method: "PUT",
       body: JSON.stringify(payload),
+    });
+  },
+
+  updateMany: async (
+    payload: UpdateMultipleListingsRequest | Record<string, UpdateListingRequest>
+  ): Promise<void> => {
+    const request =
+      "listingDatas" in payload ? payload : { listingDatas: payload };
+
+    Object.values(request.listingDatas).forEach(assertUpdateListingPayload);
+
+    await apiClient<void>("/listings/modify", {
+      method: "PUT",
+      body: JSON.stringify(request),
     });
   },
 

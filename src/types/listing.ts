@@ -146,6 +146,10 @@ export interface UpdateListingRequest {
   availableTo?: DateString | null;
 }
 
+export interface UpdateMultipleListingsRequest {
+  listingDatas: Record<string, UpdateListingRequest>;
+}
+
 export interface PublishListingRequest {
   title?: string;
   city?: string;

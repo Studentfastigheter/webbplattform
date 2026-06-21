@@ -32,6 +32,10 @@ export const qk = {
     session: () => ["auth", "session"] as const,
   },
 
+  ads: {
+    current: () => ["ads", "current"] as const,
+  },
+
   listings: {
     all: ["listings"] as const,
     lists: () => ["listings", "list"] as const,
@@ -98,6 +102,7 @@ export const qk = {
     privateProfile: (id: number) => ["companies", "private", id] as const,
     users: (id: number) => ["companies", "users", id] as const,
     platforms: () => ["companies", "platforms"] as const,
+    externalCompanies: () => ["companies", "external-companies"] as const,
     roles: () => ["companies", "roles"] as const,
     viewCounts: (companyId: number, listingId: string) =>
       ["companies", "view-counts", companyId, listingId] as const,

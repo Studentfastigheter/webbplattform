@@ -77,7 +77,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
       )}
 
       <div className="flex min-w-0 shrink-0 items-start gap-3 sm:gap-4">
-        <div className="flex h-16 w-[76px] shrink-0 items-center justify-center rounded-2xl bg-white sm:h-[82px] sm:w-[96px] sm:border-r sm:border-black/[0.06] sm:pr-4">
+        <div className="flex h-16 w-[76px] shrink-0 items-center justify-center rounded-2xl bg-white sm:h-[82px] sm:w-[96px] sm:pr-4">
           <CompanyLogo
             src={logoUrl}
             alt={logoAlt ?? name}
@@ -87,7 +87,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
           />
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 pt-0.5 text-left sm:gap-2 sm:pt-1">
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 pt-1.5 text-left sm:gap-2 sm:pt-2.5">
           <div className="flex min-h-[30px] min-w-0 flex-wrap items-start justify-start gap-2 overflow-hidden">
             <h3
               className="text-[18px] font-semibold leading-[1.18] tracking-tight text-[#111111] sm:text-[19px]"

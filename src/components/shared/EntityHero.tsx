@@ -127,17 +127,27 @@ export default function EntityHero({
             )}
           >
             {avatarImage ? (
-              <Image
-                src={avatarImage}
-                alt={avatarAlt ?? title}
-                width={144}
-                height={144}
-                className={cn(
-                  "h-full w-full",
-                  avatarFit === "contain" ? "object-contain p-2" : "object-cover"
-                )}
-                unoptimized={avatarFit === "contain"}
-              />
+              avatarFit === "contain" ? (
+                <div className="flex h-full w-full items-center justify-center p-2">
+                  <Image
+                    src={avatarImage}
+                    alt={avatarAlt ?? title}
+                    width={144}
+                    height={144}
+                    className="block h-auto max-h-full w-auto max-w-full object-contain"
+                    unoptimized
+                  />
+                </div>
+              ) : (
+                <Image
+                  src={avatarImage}
+                  alt={avatarAlt ?? title}
+                  width={144}
+                  height={144}
+                  className="h-full w-full object-cover"
+                  unoptimized={false}
+                />
+              )
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gray-50 text-4xl font-semibold text-gray-500 sm:text-5xl">
                 {titleInitial}
@@ -146,8 +156,8 @@ export default function EntityHero({
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
               <h1
                 className={cn(
@@ -190,7 +200,7 @@ export default function EntityHero({
           {hasActions && (
             <div
               className={cn(
-                "flex shrink-0 flex-wrap items-center gap-1.5 md:justify-end",
+                "flex shrink-0 flex-wrap items-center justify-end gap-1.5",
                 actionLinksClassName
               )}
             >

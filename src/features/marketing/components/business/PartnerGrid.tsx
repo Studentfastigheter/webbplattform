@@ -50,10 +50,10 @@ export const PartnerGrid = ({
 
   const gridColsClass =
     columns === 4
-      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 xl:gap-9"
       : columns === 2
-        ? "grid grid-cols-1 md:grid-cols-2 gap-8"
-        : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8";
+        ? "grid grid-cols-1 md:grid-cols-2 gap-8 xl:gap-9"
+        : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 xl:gap-9";
 
   const cardClasses = isFoundingVariant
     ? "group flex h-full min-h-80 flex-col rounded-lg bg-card p-7 shadow-[0_0_20px_rgba(251,191,36,0.35),0_0_6px_rgba(251,191,36,0.25)] transition hover:-translate-y-0.5 hover:shadow-lg"
@@ -63,8 +63,8 @@ export const PartnerGrid = ({
 
   return (
     <section id={id} className={`${sectionClasses} scroll-mt-28`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="max-w-3xl mx-auto text-center mb-14">
+      <div className="max-w-[88rem] mx-auto">
+        <div className="max-w-4xl mx-auto text-center mb-14">
 
           <h2
             className={`text-4xl md:text-5xl font-bold tracking-tight ${
@@ -108,7 +108,7 @@ export const PartnerGrid = ({
                       <img
                         src={getLogoSrc(partner.logoSrc)}
                         alt={localizedText(locale, `${partner.name} logotyp`, `${partner.name} logo`)}
-                        className="max-h-24 max-w-[13rem] object-contain"
+                        className="max-h-24 max-w-full object-contain sm:max-w-[15rem]"
                       />
                     ) : (
                       <span className="text-xl font-bold text-muted-foreground/60">
@@ -174,7 +174,7 @@ export const PartnerGrid = ({
                     <h3 className="mt-6 text-xl font-bold text-foreground">
                       {localizedText(locale, "Presenteras snart", "Revealed soon")}
                     </h3>
-                    <p className="mt-3 max-w-64 text-sm leading-6 text-muted-foreground">
+                    <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
                       {localizedText(
                         locale,
                         "Fler grundande partners visas här när de är redo att presenteras.",
@@ -189,7 +189,7 @@ export const PartnerGrid = ({
                         <img
                           src={getLogoSrc(partner.logoSrc)}
                           alt={localizedText(locale, `${partner.name} logotyp`, `${partner.name} logo`)}
-                          className="max-h-24 max-w-[13rem] object-contain"
+                          className="max-h-24 max-w-full object-contain sm:max-w-[15rem]"
                         />
                       ) : (
                         <span className="text-xl font-bold text-muted-foreground/60">

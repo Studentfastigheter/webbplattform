@@ -199,7 +199,7 @@ export default function QueueHero({
       avatarWrapperClassName="pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-8"
       titleClassName="text-[24px] leading-[30px] font-semibold tracking-normal sm:text-[30px] sm:leading-[36px] lg:text-[34px] lg:leading-[40px]"
       metaClassName="mt-4 w-full gap-0 text-[13px] leading-5 sm:text-sm"
-      actionLinksClassName="mt-1 md:mt-0"
+      actionLinksClassName="mt-0"
       sectionTitleClassName="mb-2.5 text-[15px] font-semibold leading-6 text-gray-900 sm:text-base"
       meta={heroMeta}
       actionLinks={socialItems}

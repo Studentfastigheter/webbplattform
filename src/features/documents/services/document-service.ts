@@ -1,4 +1,4 @@
-import { apiClient, buildQuery, pathSegment } from "@/lib/api/client";
+import { ApiError, apiClient, buildQuery, pathSegment } from "@/lib/api/client";
 import type { DocumentFileType, SystemProvider } from "@/types/common";
 
 export type UploadDocumentTargetDTO = {
@@ -26,6 +26,17 @@ export type UploadDocumentResultDTO = {
   filesystemId?: string;
   sharedWith?: ShareDocumentResultDTO[];
   failedFor?: ShareDocumentFailureDTO[];
+};
+
+export type StudentDocumentFileInfoDTO = {
+  id?: string;
+  filesystemId?: string;
+  documentId?: string;
+  documentType?: DocumentFileType | string;
+  mediaType?: string;
+  originalFilename?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type ExternalDeleteDocumentResultDTO = UploadDocumentTargetDTO;
@@ -93,6 +104,7 @@ export type UploadedDocument = {
   uploadedAt?: string;
   expired?: boolean;
   filesystemId?: string;
+  documentId?: string;
   documentType?: DocumentFileType | string;
   sharedWith?: SharedUserDocumentDTO[];
   notSharedWith?: UploadDocumentTargetDTO[];
@@ -107,19 +119,29 @@ const stringValue = (value: unknown) =>
 function normalizeUserDocument(value: unknown): UploadedDocument | null {
   if (!isRecord(value)) return null;
 
-  const filesystemId = stringValue(value.filesystemId);
+  const filesystemId =
+    stringValue(value.filesystemId) ??
+    stringValue(value.id) ??
+    stringValue(value.documentId);
   if (!filesystemId) return null;
 
+  const originalFilename =
+    stringValue(value.originalFilename) ??
+    stringValue(value.name) ??
+    stringValue(value.filename);
+
   return {
-    name: filesystemId,
+    name: originalFilename ?? filesystemId,
     title:
-      stringValue(value.originalFilename) ??
+      originalFilename ??
       stringValue(value.documentType) ??
       "Dokument",
     filesystemId,
+    documentId: filesystemId,
     documentType: stringValue(value.documentType),
     contentType: stringValue(value.mediaType),
     mimeType: stringValue(value.mediaType),
+    uploadedAt: stringValue(value.createdAt) ?? stringValue(value.updatedAt),
     expired: typeof value.expired === "boolean" ? value.expired : undefined,
     sharedWith: Array.isArray(value.sharedWith)
       ? (value.sharedWith as SharedUserDocumentDTO[])
@@ -177,6 +199,76 @@ function normalizeUploadResult(value: UploadDocumentResultDTO): DocumentPropagat
   };
 }
 
+function normalizeStudentUploadResult(
+  value: StudentDocumentFileInfoDTO
+): DocumentPropagationResult {
+  const filesystemId = value.filesystemId ?? value.id ?? value.documentId;
+
+  return {
+    success: true,
+    filesystemId,
+    sharedWith: [],
+    failedFor: [],
+    succeeded: [],
+    successful: [],
+    successes: [],
+    successfulCompanies: [],
+    failed: [],
+    failures: [],
+    failedCompanies: [],
+    errors: [],
+    successCount: 0,
+    succeededCount: 0,
+    failureCount: 0,
+    failedCount: 0,
+    message: "Dokumentet laddades upp.",
+  };
+}
+
+async function uploadAndPropagate(
+  file: File,
+  options: {
+    targets?: UploadDocumentTargetDTO[];
+    type?: DocumentFileType;
+    signal?: AbortSignal;
+  } = {}
+): Promise<DocumentPropagationResult> {
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+
+  const query = buildQuery({
+    targets: JSON.stringify(options.targets ?? []),
+    type: options.type,
+  });
+
+  const result = await apiClient<UploadDocumentResultDTO>(
+    `/documents/document/upload${query}`,
+    {
+      method: "POST",
+      body: formData,
+      signal: options.signal,
+    }
+  );
+
+  return normalizeUploadResult(result);
+}
+
+async function listPropagatedDocuments(): Promise<UploadedDocument[]> {
+  const documents = await apiClient<unknown>("/documents/document/info");
+  return normalizeUploadedDocuments(documents);
+}
+
+async function deletePropagatedDocument(
+  filesystemId: string
+): Promise<DeleteDocumentResultDTO> {
+  return apiClient<DeleteDocumentResultDTO>(
+    `/documents/document/${pathSegment(filesystemId)}`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
 export const documentService = {
   getUploadTargets: async (): Promise<DocumentRequestTypeDTO[]> => {
     const targets = await apiClient<unknown>("/documents/upload-target", {
@@ -202,19 +294,20 @@ export const documentService = {
     options: {
       targets?: UploadDocumentTargetDTO[];
       type?: DocumentFileType;
+      name?: string;
       signal?: AbortSignal;
     } = {}
   ): Promise<DocumentPropagationResult> => {
+    if (options.targets && options.targets.length > 0) {
+      return uploadAndPropagate(file, options);
+    }
+
     const formData = new FormData();
     formData.append("file", file, file.name);
+    formData.append("name", options.name?.trim() || file.name);
 
-    const query = buildQuery({
-      targets: JSON.stringify(options.targets ?? []),
-      type: options.type,
-    });
-
-    const result = await apiClient<UploadDocumentResultDTO>(
-      `/documents/document/upload${query}`,
+    const result = await apiClient<StudentDocumentFileInfoDTO>(
+      "/me/documents",
       {
         method: "POST",
         body: formData,
@@ -222,12 +315,20 @@ export const documentService = {
       }
     );
 
-    return normalizeUploadResult(result);
+    return normalizeStudentUploadResult(result);
   },
 
   list: async (): Promise<UploadedDocument[]> => {
-    const documents = await apiClient<unknown>("/documents/document/info");
-    return normalizeUploadedDocuments(documents);
+    try {
+      const documents = await apiClient<unknown>("/me/documents");
+      return normalizeUploadedDocuments(documents);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        return listPropagatedDocuments();
+      }
+
+      throw error;
+    }
   },
 
   getInfo: async (filesystemId: string): Promise<UserDocumentDTO> => {
@@ -241,12 +342,65 @@ export const documentService = {
   },
 
   delete: async (filesystemId: string): Promise<DeleteDocumentResultDTO> => {
-    return apiClient<DeleteDocumentResultDTO>(
-      `/documents/document/${pathSegment(filesystemId)}`,
-      {
+    try {
+      await apiClient<void>(`/me/documents/${pathSegment(filesystemId)}`, {
         method: "DELETE",
+      });
+
+      return {
+        success: true,
+        localDeleteResult: "success",
+        succeededFor: [],
+        failedFor: [],
+        totalFailure: false,
+        complete: true,
+      };
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        return deletePropagatedDocument(filesystemId);
       }
+
+      throw error;
+    }
+  },
+
+  listStudentDocuments: async (studentId: number | string): Promise<UploadedDocument[]> => {
+    const documents = await apiClient<unknown>(
+      `/students/${pathSegment(studentId)}/documents`
     );
+    return normalizeUploadedDocuments(documents);
+  },
+
+  getStudentDocumentDownloadUrl: async (
+    studentId: number | string,
+    documentId: string
+  ): Promise<string> => {
+    const response = await apiClient<{ url?: string }>(
+      `/students/${pathSegment(studentId)}/documents/${pathSegment(documentId)}/download`
+    );
+
+    if (!response.url) {
+      throw new Error("Backend returnerade ingen nedladdningslänk.");
+    }
+
+    return response.url;
+  },
+
+  downloadStudentDocument: async (
+    studentId: number | string,
+    documentId: string
+  ): Promise<Blob> => {
+    const url = await documentService.getStudentDocumentDownloadUrl(
+      studentId,
+      documentId
+    );
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Kunde inte ladda ner dokumentet.");
+    }
+
+    return response.blob();
   },
 
   legacy: {
@@ -254,11 +408,11 @@ export const documentService = {
       file: File,
       options: { signal?: AbortSignal } = {}
     ): Promise<DocumentPropagationResult> => {
-      return documentService.upload(file, options);
+      return uploadAndPropagate(file, options);
     },
 
     list: async (): Promise<string[]> => {
-      const documents = await documentService.list();
+      const documents = await listPropagatedDocuments();
       return documents.map((document) => document.name);
     },
 
@@ -267,7 +421,7 @@ export const documentService = {
     },
 
     delete: async (filesystemId: string): Promise<void> => {
-      await documentService.delete(filesystemId);
+      await deletePropagatedDocument(filesystemId);
     },
   },
 };

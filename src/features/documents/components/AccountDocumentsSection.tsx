@@ -45,6 +45,7 @@ type AccountDocument = {
   title: string;
   note?: string;
   name: string;
+  filesystemId?: string;
   file?: File;
   size: number;
   type?: FileIconType;
@@ -282,11 +283,14 @@ function createDocumentFromFile(file: File): AccountDocument {
 }
 
 function createDocumentFromUploaded(document: UploadedDocument): AccountDocument {
+  const stableId = document.filesystemId ?? document.documentId ?? crypto.randomUUID();
+
   return {
-    id: crypto.randomUUID(),
+    id: stableId,
     title: document.title ?? titleFromFileName(document.name),
     note: document.note,
     name: document.name,
+    filesystemId: stableId,
     size: document.size ?? 0,
     mimeType: document.mimeType ?? document.contentType,
     progress: 100,
@@ -355,11 +359,18 @@ export default function AccountDocumentsSection() {
     const loadedDocuments = uploadedDocuments.map(createDocumentFromUploaded);
     setDocuments((current) => {
       if (current.length === 0) return loadedDocuments;
+      const currentBackendIds = new Set(
+        current
+          .map((document) => document.filesystemId)
+          .filter((value): value is string => Boolean(value))
+      );
       const currentNames = new Set(current.map((document) => document.name));
       return [
         ...current,
         ...loadedDocuments.filter(
-          (document) => !currentNames.has(document.name)
+          (document) =>
+            !currentBackendIds.has(document.filesystemId ?? "") &&
+            !currentNames.has(document.name)
         ),
       ];
     });
@@ -408,6 +419,9 @@ export default function AccountDocumentsSection() {
     objectUrlsRef.current.add(objectUrl);
     return objectUrl;
   };
+
+  const getBackendDocumentId = (document: AccountDocument) =>
+    document.filesystemId ?? document.name;
 
   const cacheDocumentDownloadUrl = (documentId: string, downloadUrl: string) => {
     setDocuments((current) =>
@@ -474,6 +488,7 @@ export default function AccountDocumentsSection() {
                 ...item,
                 failed: false,
                 errorMessage: undefined,
+                filesystemId: result.filesystemId ?? item.filesystemId,
                 propagationResult: result,
                 progress: 100,
               }
@@ -561,7 +576,7 @@ export default function AccountDocumentsSection() {
       setDeletingDocumentId(documentId);
 
       try {
-        await deleteDocument.mutateAsync(document.name);
+        await deleteDocument.mutateAsync(getBackendDocumentId(document));
       } catch (error) {
         setDeletingDocumentId(null);
         setMessage({
@@ -617,7 +632,7 @@ export default function AccountDocumentsSection() {
     setMessage(null);
 
     try {
-      const downloadUrl = await getBackendDocumentUrl(document.name);
+      const downloadUrl = await getBackendDocumentUrl(getBackendDocumentId(document));
       triggerBrowserDownload(downloadUrl, document.name);
       window.setTimeout(() => revokeObjectUrl(downloadUrl), 30000);
     } catch (error) {
@@ -648,7 +663,7 @@ export default function AccountDocumentsSection() {
     setMessage(null);
 
     try {
-      const downloadUrl = await getBackendDocumentUrl(document.name);
+      const downloadUrl = await getBackendDocumentUrl(getBackendDocumentId(document));
       cacheDocumentDownloadUrl(documentId, downloadUrl);
       setPreviewDocumentId(documentId);
     } catch (error) {
