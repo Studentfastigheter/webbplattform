@@ -56,10 +56,10 @@ export const PartnerGrid = ({
         : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8";
 
   const cardClasses = isFoundingVariant
-    ? "rounded-xl p-8 flex flex-col h-full transition-shadow shadow-[0_0_20px_rgba(251,191,36,0.35),0_0_6px_rgba(251,191,36,0.25)] hover:shadow-lg"
-    : "bg-card rounded-xl border border-border p-8 flex flex-col h-full transition-shadow hover:shadow-lg";
+    ? "group flex h-full min-h-80 flex-col rounded-lg bg-card p-7 shadow-[0_0_20px_rgba(251,191,36,0.35),0_0_6px_rgba(251,191,36,0.25)] transition hover:-translate-y-0.5 hover:shadow-lg"
+    : "group flex h-full min-h-80 flex-col rounded-lg border border-border bg-card p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md";
   const housingCardClasses =
-    "group flex h-full min-h-72 flex-col rounded-lg border border-border border-t-4 border-t-primary/70 bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md";
+    "group flex h-full min-h-80 flex-col rounded-lg border border-border border-t-4 border-t-primary/70 bg-card p-7 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md";
 
   return (
     <section id={id} className={`${sectionClasses} scroll-mt-28`}>
@@ -103,58 +103,42 @@ export const PartnerGrid = ({
                   key={partner.name}
                   className={housingCardClasses}
                 >
-                  <div className="flex items-start gap-5">
-                    <div className="flex h-20 w-20 shrink-0 items-center justify-center sm:h-24 sm:w-24">
-                      {partner.logoSrc ? (
-                        <img
-                          src={getLogoSrc(partner.logoSrc)}
-                          alt={localizedText(locale, `${partner.name} logotyp`, `${partner.name} logo`)}
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      ) : (
-                        <span className="text-lg font-bold text-muted-foreground/60">
-                          {partner.name}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1 pt-2">
-                      <h3
-                        className="text-xl font-bold leading-tight text-foreground"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
+                  <div className="flex h-32 shrink-0 items-center justify-center px-4">
+                    {partner.logoSrc ? (
+                      <img
+                        src={getLogoSrc(partner.logoSrc)}
+                        alt={localizedText(locale, `${partner.name} logotyp`, `${partner.name} logo`)}
+                        className="max-h-24 max-w-[13rem] object-contain"
+                      />
+                    ) : (
+                      <span className="text-xl font-bold text-muted-foreground/60">
                         {partner.name}
-                      </h3>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex flex-1 flex-col">
+                    <h3 className="text-xl font-bold leading-tight text-foreground">
+                      {partner.name}
+                    </h3>
+
+                    {partnerDescription && (
+                      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                        {partnerDescription}
+                      </p>
+                    )}
+
+                    <div className="mt-auto pt-7">
                       <Link
                         href={localizedHref(partner.href)}
                         {...(partner.href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}
-                        className="mt-3 inline-flex items-center text-sm font-semibold text-primary transition hover:underline"
+                        className="inline-flex items-center text-sm font-bold uppercase tracking-normal text-foreground transition hover:text-primary"
                       >
-                        {localizedText(locale, "Läs mer", "Read more")}
+                        {localizedText(locale, "LÄS MER", "READ MORE")}
                         <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                       </Link>
                     </div>
                   </div>
-
-                  {partnerDescription && (
-                    <div className="mt-5 flex-1 border-t border-border/70 pt-5">
-                      <p
-                        className="text-sm leading-6 text-muted-foreground"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
-                        {partnerDescription}
-                      </p>
-                    </div>
-                  )}
                 </div>
               );
             })
@@ -200,42 +184,43 @@ export const PartnerGrid = ({
                   </div>
                 ) : (
                   <>
-                    <div className="h-32 flex items-center justify-center mb-8 px-4">
+                    <div className="flex h-32 shrink-0 items-center justify-center px-4">
                       {partner.logoSrc ? (
                         <img
                           src={getLogoSrc(partner.logoSrc)}
                           alt={localizedText(locale, `${partner.name} logotyp`, `${partner.name} logo`)}
-                          className="max-h-full w-auto object-contain"
+                          className="max-h-24 max-w-[13rem] object-contain"
                         />
                       ) : (
-                        <span className="text-2xl font-bold text-muted-foreground/60">
+                        <span className="text-xl font-bold text-muted-foreground/60">
                           {partner.name}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex-grow">
-                      <h3 className={`text-xl font-bold text-foreground ${partnerDescription ? "mb-3" : ""}`}>
+                    <div className="mt-6 flex flex-1 flex-col">
+                      <h3 className="text-xl font-bold leading-tight text-foreground">
                         {partner.name}
                       </h3>
+
                       {partnerDescription && (
-                        <p className="text-muted-foreground text-base leading-relaxed mb-8">
+                        <p className="mt-4 text-sm leading-6 text-muted-foreground">
                           {partnerDescription}
                         </p>
                       )}
-                    </div>
 
-                    <div className="mt-auto">
-                      <Link
-                        href={localizedHref(partner.href)}
-                        {...(partner.href.startsWith("http") ? { target: "_blank" } : {})}
-                        className="group inline-flex items-center text-sm font-bold text-foreground hover:text-foreground transition-colors"
-                      >
-                        {partner.href.startsWith("/")
-                          ? localizedText(locale, "KONTAKTA OSS", "CONTACT US")
-                          : localizedText(locale, "LÄS MER", "READ MORE")}
-                        <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                      </Link>
+                      <div className="mt-auto pt-7">
+                        <Link
+                          href={localizedHref(partner.href)}
+                          {...(partner.href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}
+                          className="inline-flex items-center text-sm font-bold uppercase tracking-normal text-foreground transition hover:text-primary"
+                        >
+                          {partner.href.startsWith("/")
+                            ? localizedText(locale, "KONTAKTA OSS", "CONTACT US")
+                            : localizedText(locale, "LÄS MER", "READ MORE")}
+                          <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                        </Link>
+                      </div>
                     </div>
                   </>
                 )}
