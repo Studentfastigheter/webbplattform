@@ -282,10 +282,7 @@ function createUpdatePayload(
   }
 
   const draftTags = getEndpointTagsFromSelection(draft.tags, availableTags);
-  const baselineTags = getEndpointTagsFromSelection(baseline?.tags, availableTags);
-  if (!baseline || !areStringArraysEqual(draftTags, baselineTags)) {
-    payload.tags = draftTags;
-  }
+  payload.tags = draftTags;
 
   if (!baseline || (draft.description ?? "") !== (baseline.description ?? "")) {
     payload.description = draft.description ?? "";
@@ -736,6 +733,10 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
 
   const persistGalleryImages = async (imageUrls: string[]) => {
     const nextImageUrls = imageUrls.filter(Boolean);
+    const endpointTags = getEndpointTagsFromSelection(
+      draft?.tags ?? listing?.tags,
+      availableTags
+    );
     const previousDraftImageUrls = draft?.imageUrls ?? [];
     const previousListingImageUrls = listing?.imageUrls ?? [];
 
@@ -751,7 +752,7 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
     try {
       await updateListing.mutateAsync({
         id,
-        payload: { images: nextImageUrls },
+        payload: { images: nextImageUrls, tags: endpointTags },
       });
       setSaveState({
         status: "success",
@@ -779,9 +780,7 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
     event.preventDefault();
     if (!draft) return;
 
-    const payload = createUpdatePayload(draft, listing, availableTags);
-
-    if (Object.keys(payload).length === 0) {
+    if (!hasUnsavedChanges) {
       const nextSaveState: SaveState = {
         status: "success",
         message: null,
@@ -792,7 +791,13 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
       return;
     }
 
-    if (payload.tags && listingTagsLoading) {
+    const payload = createUpdatePayload(draft, listing, availableTags);
+    const tagsChanged = !areStringArraysEqual(
+      getEndpointTagsFromSelection(draft.tags, availableTags),
+      getEndpointTagsFromSelection(listing?.tags, availableTags)
+    );
+
+    if (tagsChanged && listingTagsLoading) {
       const nextSaveState: SaveState = {
         status: "error",
         message: null,
@@ -803,7 +808,7 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
       return;
     }
 
-    if (payload.tags && listingTagsError) {
+    if (tagsChanged && listingTagsError) {
       const nextSaveState: SaveState = {
         status: "error",
         message: null,
