@@ -40,7 +40,7 @@ export default function SimpleCompanyCard({
   const descriptionLineClamp = 2;
   const className = isCompact
     ? "group/card relative flex h-full w-full max-w-none flex-col gap-3 overflow-hidden rounded-lg border border-black/[0.05] bg-card px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-[#004225]/15 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] sm:px-5 sm:py-4"
-    : "group/card relative flex h-full min-h-80 w-full max-w-none flex-col rounded-lg border border-black/[0.05] bg-card px-7 pb-7 pt-3 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-[#004225]/15 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]";
+    : "group/card relative flex h-full min-h-[18rem] w-full max-w-none flex-col rounded-lg border border-black/[0.05] bg-card p-5 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-[#004225]/15 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] sm:min-h-80 sm:p-6 lg:p-7";
 
   const compactContent = (
     <div className="grid h-full min-w-0 grid-cols-[92px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[112px_minmax(0,1fr)] sm:gap-4 md:grid-cols-[120px_minmax(0,1fr)]">
@@ -86,12 +86,17 @@ export default function SimpleCompanyCard({
 
   const defaultContent = (
     <>
-      <div className="flex h-32 shrink-0 items-center justify-center overflow-visible py-4">
+      <div className="flex h-24 shrink-0 items-center justify-center overflow-hidden px-3 sm:h-28 sm:px-4 lg:h-32">
         {logoUrl ? (
           <img
             src={logoUrl}
             alt={localizedText(locale, `${company.name} logotyp`, `${company.name} logo`)}
-            className="block h-auto max-h-20 w-auto max-w-[84%] object-contain"
+            className="block max-w-full object-contain"
+            style={{
+              height: "100%",
+              width: "auto",
+              objectPosition: "center",
+            }}
           />
         ) : (
           <span className="text-xl font-bold text-muted-foreground/60">
@@ -100,9 +105,9 @@ export default function SimpleCompanyCard({
         )}
       </div>
 
-      <div className="mt-8 flex min-h-0 flex-1 flex-col">
+      <div className="mt-5 flex min-h-0 flex-1 flex-col sm:mt-6">
         <h3
-          className="text-xl font-bold leading-tight text-foreground"
+          className="text-lg font-bold leading-tight text-foreground sm:text-xl"
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,
