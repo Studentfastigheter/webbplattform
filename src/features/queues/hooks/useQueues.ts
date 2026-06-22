@@ -22,7 +22,9 @@ import { useAuth } from "@/context/AuthContext";
 import {
   queueService,
   type CompanyDTO,
+  type CreateHousingQueueRequirementRequest,
   type QueueApplicationDTO,
+  type QueueFilters,
 } from "@/features/queues/services/queue-service";
 import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access";
 import type { HousingQueueDTO } from "@/types/queue";
@@ -31,9 +33,56 @@ import type { ListingCardDTO, PageResponse } from "@/types/listing";
 const STALE_30_SECONDS = 30_000;
 const STALE_5_MINUTES = 5 * 60_000;
 
+function normalizedQueueFilters(filters: QueueFilters = {}): Required<QueueFilters> {
+  return {
+    id: filters.id ?? null,
+    city: filters.city ?? null,
+    pageNumber: filters.pageNumber ?? 1,
+    pageSize: filters.pageSize ?? 12,
+    pageCount: filters.pageCount ?? 1,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // READS
 // ---------------------------------------------------------------------------
+
+export function useQueues(
+  filters: QueueFilters = {},
+  options?: Omit<
+    UseQueryOptions<HousingQueueDTO[]>,
+    "queryKey" | "queryFn"
+  >
+) {
+  const normalizedFilters = normalizedQueueFilters(filters);
+  const { enabled = true, ...restOptions } = options ?? {};
+
+  return useQuery<HousingQueueDTO[]>({
+    ...restOptions,
+    queryKey: qk.queues.list(normalizedFilters),
+    queryFn: ({ signal }) =>
+      queueService.list(normalizedFilters, { signal }),
+    enabled,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAllQueues(
+  options?: Omit<
+    UseQueryOptions<HousingQueueDTO[]>,
+    "queryKey" | "queryFn"
+  >
+) {
+  const { enabled = true, ...restOptions } = options ?? {};
+
+  return useQuery<HousingQueueDTO[]>({
+    ...restOptions,
+    queryKey: qk.queues.unfilteredList(),
+    queryFn: ({ signal }) => queueService.getAll({ signal }),
+    enabled,
+    staleTime: STALE_30_SECONDS,
+  });
+}
 
 /**
  * User's queue applications.
@@ -62,12 +111,13 @@ export function useMyQueues(
   return useQuery<QueueApplicationDTO[]>({
     ...restOptions,
     queryKey: [...qk.queues.my(), { hydrated }] as const,
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       queueService.getMyQueues({
         // Forward the exact same option name the service expects. When
         // hydrated=true we pass no hydrateQueues key so the service's
         // default-true branch runs.
         ...(hydrated ? {} : { hydrateQueues: false as const }),
+        signal,
       }),
     enabled: enabled && isVerifiedStudentAuthAccount(user),
     staleTime: STALE_30_SECONDS,
@@ -77,7 +127,7 @@ export function useMyQueues(
 export function useQueuesByCompany(companyId: number | null | undefined) {
   return useQuery<HousingQueueDTO[]>({
     queryKey: qk.queues.byCompany(companyId ?? -1),
-    queryFn: () => queueService.getByCompany(companyId!),
+    queryFn: ({ signal }) => queueService.getByCompany(companyId!, { signal }),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -86,7 +136,7 @@ export function useQueuesByCompany(companyId: number | null | undefined) {
 export function useQueue(queueId: string | null | undefined) {
   return useQuery<HousingQueueDTO>({
     queryKey: qk.queues.detail(queueId ?? ""),
-    queryFn: () => queueService.get(queueId!),
+    queryFn: ({ signal }) => queueService.get(queueId!, { signal }),
     enabled: Boolean(queueId),
     staleTime: STALE_30_SECONDS,
   });
@@ -100,7 +150,7 @@ export function useQueue(queueId: string | null | undefined) {
 export function useQueueCompany(companyId: number | null | undefined) {
   return useQuery<CompanyDTO>({
     queryKey: qk.queues.company(companyId ?? -1),
-    queryFn: () => queueService.getCompany(companyId!),
+    queryFn: ({ signal }) => queueService.getCompany(companyId!, { signal }),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_5_MINUTES, // company profile is reference-ish data
   });
@@ -113,7 +163,8 @@ export function useCompanyListingsPage(
 ) {
   return useQuery<PageResponse<ListingCardDTO>>({
     queryKey: qk.queues.companyListingsPage(companyId ?? -1, page, size),
-    queryFn: () => queueService.getCompanyListingsPage(companyId!, page, size),
+    queryFn: ({ signal }) =>
+      queueService.getCompanyListingsPage(companyId!, page, size, { signal }),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
     placeholderData: (previousData) => previousData,
@@ -131,7 +182,8 @@ export function useAllCompanyListings(
 ) {
   return useQuery<ListingCardDTO[]>({
     queryKey: qk.queues.allCompanyListings(companyId ?? -1, page, size),
-    queryFn: () => queueService.getAllCompanyListings(companyId!, page, size),
+    queryFn: ({ signal }) =>
+      queueService.getAllCompanyListings(companyId!, page, size, { signal }),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -142,7 +194,8 @@ export function useCompanyQueueApplications(
 ) {
   return useQuery<QueueApplicationDTO[]>({
     queryKey: qk.queues.companyApplications(companyId ?? -1),
-    queryFn: () => queueService.getCompanyQueueApplications(companyId!),
+    queryFn: ({ signal }) =>
+      queueService.getCompanyQueueApplications(companyId!, { signal }),
     enabled: companyId != null && companyId > 0,
     staleTime: STALE_30_SECONDS,
   });
@@ -164,6 +217,26 @@ export function useJoinQueue() {
     mutationFn: (queueId: string) => queueService.join(queueId),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: qk.queues.my() });
+    },
+  });
+}
+
+export function useUpsertQueueRequirement() {
+  const qc = useQueryClient();
+
+  return useMutation<
+    void,
+    Error,
+    {
+      queueId: string;
+      request: CreateHousingQueueRequirementRequest | string;
+    }
+  >({
+    mutationFn: ({ queueId, request }) =>
+      queueService.upsertRequirement(queueId, request),
+    onSettled: (_data, _error, variables) => {
+      qc.invalidateQueries({ queryKey: qk.queues.all });
+      qc.invalidateQueries({ queryKey: qk.queues.detail(variables.queueId) });
     },
   });
 }

@@ -1,19 +1,26 @@
 "use client";
 
 import * as React from "react";
-import { UsersRound } from "@/components/icons";
+import { Save, UsersRound } from "@/components/icons";
+import { toast } from "sonner";
 import {
   TrendBarChart,
   type TrendBarChartPoint,
 } from "@/features/analytics/components/TrendBarChart";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
 import { localizedText, numberLocale } from "@/i18n/text";
 import { getActiveCompanyId } from "@/lib/company-access";
-import { useQueuesByCompany } from "@/features/queues/hooks/useQueues";
+import {
+  useQueue,
+  useQueuesByCompany,
+  useUpsertQueueRequirement,
+} from "@/features/queues/hooks/useQueues";
 import {
   useCompanyQueueApplicationCount,
   useCompanyQueueApplicationsTrend,
@@ -31,6 +38,7 @@ import {
   PortalPage,
   PortalSurface,
 } from "../_components/shared/PortalGrid";
+import type { HousingQueueDTO } from "@/types/queue";
 
 const trendGranularities: Array<{
   value: QueueApplicationTrendGranularity;
@@ -85,6 +93,14 @@ function toTrendPoints(
   }));
 }
 
+function getQueueRequirementText(queue: HousingQueueDTO | null | undefined) {
+  const requirement = queue?.requirements;
+
+  return typeof requirement?.requirements === "string"
+    ? requirement.requirements
+    : "";
+}
+
 function QueueApplicationCountBlock({
   count,
   error,
@@ -99,7 +115,7 @@ function QueueApplicationCountBlock({
   return (
     <PortalGridItem
       contentClassName="flex"
-      size="2x1"
+      size="1x1"
       title={localizedText(locale, "Studenter i bostadskö", "Students in housing queue")}
     >
       {loading ? (
@@ -171,6 +187,8 @@ export default function HousingQueueView() {
   const companyId = getActiveCompanyId(user);
   const [granularity, setGranularity] =
     React.useState<QueueApplicationTrendGranularity>("month");
+  const [selectedQueueId, setSelectedQueueId] = React.useState<string | null>(null);
+  const [requirementDraft, setRequirementDraft] = React.useState("");
   const trendRange = React.useMemo(getLastYearRange, []);
 
   // Company queues. Hook is enabled only when companyId is present, so the
@@ -181,6 +199,15 @@ export default function HousingQueueView() {
     isError: isQueuesError,
     error: queuesErr,
   } = useQueuesByCompany(companyId);
+  const selectedQueueFromList = React.useMemo(
+    () => queues.find((queue) => queue.id === selectedQueueId) ?? queues[0] ?? null,
+    [queues, selectedQueueId]
+  );
+  const resolvedSelectedQueueId = selectedQueueFromList?.id ?? null;
+  const queueDetailQuery = useQueue(resolvedSelectedQueueId);
+  const selectedQueueDetail = queueDetailQuery.data ?? selectedQueueFromList;
+  const savedRequirement = getQueueRequirementText(selectedQueueDetail);
+  const upsertRequirement = useUpsertQueueRequirement();
   const queueApplicationCountQuery = useCompanyQueueApplicationCount(companyId);
   const queueApplicationsTrendQuery = useCompanyQueueApplicationsTrend(companyId, {
     enabled: !authLoading,
@@ -208,6 +235,73 @@ export default function HousingQueueView() {
       ? queueApplicationsTrendQuery.error.message
       : localizedText(locale, "Kunde inte hämta bostadskötrenden.", "Could not load housing queue trend.")
     : null;
+  const requirementLoadError = queueDetailQuery.isError
+    ? queueDetailQuery.error instanceof Error
+      ? queueDetailQuery.error.message
+      : localizedText(locale, "Kunde inte hämta kraven.", "Could not load requirements.")
+    : null;
+  const isRequirementDirty = requirementDraft !== savedRequirement;
+  const queueSelector = queues.length > 1 ? (
+    <div className="flex max-w-full flex-wrap gap-2">
+      {queues.map((queue) => {
+        const isSelected = queue.id === resolvedSelectedQueueId;
+
+        return (
+          <button
+            aria-pressed={isSelected}
+            className={`min-h-9 min-w-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+              isSelected
+                ? "border-[#004225] bg-[#004225] text-white"
+                : "border-gray-200 bg-white text-gray-700 hover:border-[#004225]/40 hover:text-[#004225]"
+            }`}
+            key={queue.id}
+            onClick={() => setSelectedQueueId(queue.id)}
+            type="button"
+          >
+            <span className="block max-w-[220px] truncate">{queue.name}</span>
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
+
+  React.useEffect(() => {
+    if (queues.length === 0) {
+      setSelectedQueueId(null);
+      return;
+    }
+
+    if (!selectedQueueId || !queues.some((queue) => queue.id === selectedQueueId)) {
+      setSelectedQueueId(queues[0].id);
+    }
+  }, [queues, selectedQueueId]);
+
+  React.useEffect(() => {
+    setRequirementDraft(savedRequirement);
+  }, [resolvedSelectedQueueId, savedRequirement]);
+
+  const handleSaveRequirement = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!resolvedSelectedQueueId) {
+      return;
+    }
+
+    try {
+      await upsertRequirement.mutateAsync({
+        queueId: resolvedSelectedQueueId,
+        request: { requirement: requirementDraft },
+      });
+      toast.success(localizedText(locale, "Kraven har sparats.", "Requirements saved."));
+      await queueDetailQuery.refetch();
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : localizedText(locale, "Kunde inte spara kraven.", "Could not save requirements.")
+      );
+    }
+  };
 
   if (authLoading || queuesLoading) {
     return (
@@ -247,48 +341,123 @@ export default function HousingQueueView() {
         </PortalSurface>
       ) : (
         <main className="min-w-0 space-y-5">
-            <PortalGrid>
-              <QueueApplicationCountBlock
-                count={queueApplicationCountQuery.data ?? 0}
-                error={countError}
-                loading={queueApplicationCountQuery.isLoading}
-                locale={locale}
-              />
+          <PortalGrid>
+            <QueueApplicationCountBlock
+              count={queueApplicationCountQuery.data ?? 0}
+              error={countError}
+              loading={queueApplicationCountQuery.isLoading}
+              locale={locale}
+            />
 
-              <PortalGridItem
-                action={
-                  <QueueTrendGranularityToggle
-                    locale={locale}
-                    onChange={setGranularity}
-                    value={granularity}
-                  />
-                }
-                size="2x3"
-                title={localizedText(locale, "Köansökningar över tid", "Queue applications over time")}
+            <PortalGridItem
+              contentClassName="p-4 sm:p-5"
+              size="1x3"
+            >
+              <form
+                className="grid h-full min-w-0 gap-4 lg:grid-cols-[minmax(190px,0.55fr)_minmax(0,1.45fr)]"
+                onSubmit={handleSaveRequirement}
               >
-                <TrendBarChart
-                  data={trendPoints}
-                  defaultInterval="all"
-                  embedded
-                  emptyMessage={localizedText(locale, "Det finns inga köansökningar registrerade för perioden ännu.", "There are no queue applications registered for this period yet.")}
-                  error={trendError}
-                  intervals={[{ value: "all", label: localizedText(locale, "Hela perioden", "Full period") }]}
-                  loading={queueApplicationsTrendQuery.isLoading}
-                  showHeader={false}
-                  showSummary={false}
-                  title={localizedText(locale, "Köansökningar över tid", "Queue applications over time")}
-                  valueLabel={localizedText(locale, "Köansökningar", "Queue applications")}
-                />
-              </PortalGridItem>
+                <div className="flex h-full min-w-0 flex-col justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-base font-semibold leading-6 text-gray-900">
+                      {localizedText(locale, "Krav för bostadskön", "Housing queue requirements")}
+                    </h2>
+                    <p className="mt-2 max-w-sm text-sm leading-6 text-gray-500">
+                      {localizedText(
+                        locale,
+                        "Skriv den information studenter behöver för att förstå vilka villkor de måste uppfylla för att stå i er bostadskö.",
+                        "Write the information students need to understand which conditions they must meet to join your housing queue."
+                      )}
+                    </p>
+                  </div>
 
-              <CompanyDemographyBlock
-                deferUntilSelection
-                description={null}
-                size="4x4"
-                title={localizedText(locale, "Besökardemografi", "Visitor demographics")}
-                useCompaniesQuery
+                  {queueSelector ? (
+                    <div className="max-w-full overflow-x-auto pb-1">
+                      {queueSelector}
+                    </div>
+                  ) : null}
+
+                  <Button
+                    className="w-full shrink-0 shadow-none sm:w-auto sm:self-start"
+                    isDisabled={
+                      !resolvedSelectedQueueId ||
+                      !isRequirementDirty ||
+                      queueDetailQuery.isLoading ||
+                      upsertRequirement.isPending
+                    }
+                    isLoading={upsertRequirement.isPending}
+                    size="sm"
+                    type="submit"
+                  >
+                    <Save className="h-4 w-4" />
+                    {localizedText(locale, "Spara", "Save")}
+                  </Button>
+                </div>
+
+                <div className="h-full min-h-[172px] min-w-0">
+                  {requirementLoadError ? (
+                    <div className="flex h-full min-h-[172px] items-center rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {requirementLoadError}
+                    </div>
+                  ) : (
+                    <div className="h-full min-w-0">
+                      <Textarea
+                        aria-label={localizedText(locale, "Krav för att stå i bostadskön", "Requirements for joining the queue")}
+                        className="h-full min-h-[148px] resize-none rounded-lg border-gray-200 bg-white text-sm leading-6 shadow-none focus:border-[#004225] focus:ring-[#004225]/20"
+                        disabled={
+                          !resolvedSelectedQueueId ||
+                          queueDetailQuery.isLoading ||
+                          upsertRequirement.isPending
+                        }
+                        id="housing-queue-requirements"
+                        onChange={(event) => setRequirementDraft(event.currentTarget.value)}
+                        placeholder={localizedText(
+                          locale,
+                          "Ex. Du behöver vara aktiv student, kunna visa studieintyg och uppfylla våra ålders- eller inkomstkrav.",
+                          "E.g. You must be an active student, be able to provide an enrollment certificate, and meet our age or income requirements."
+                        )}
+                        value={requirementDraft}
+                      />
+                    </div>
+                  )}
+                </div>
+              </form>
+            </PortalGridItem>
+
+            <PortalGridItem
+              action={
+                <QueueTrendGranularityToggle
+                  locale={locale}
+                  onChange={setGranularity}
+                  value={granularity}
+                />
+              }
+              size="2x4"
+              title={localizedText(locale, "Köansökningar över tid", "Queue applications over time")}
+            >
+              <TrendBarChart
+                data={trendPoints}
+                defaultInterval="all"
+                embedded
+                emptyMessage={localizedText(locale, "Det finns inga köansökningar registrerade för perioden ännu.", "There are no queue applications registered for this period yet.")}
+                error={trendError}
+                intervals={[{ value: "all", label: localizedText(locale, "Hela perioden", "Full period") }]}
+                loading={queueApplicationsTrendQuery.isLoading}
+                showHeader={false}
+                showSummary={false}
+                title={localizedText(locale, "Köansökningar över tid", "Queue applications over time")}
+                valueLabel={localizedText(locale, "Köansökningar", "Queue applications")}
               />
-            </PortalGrid>
+            </PortalGridItem>
+
+            <CompanyDemographyBlock
+              deferUntilSelection
+              description={null}
+              size="4x4"
+              title={localizedText(locale, "Besökardemografi", "Visitor demographics")}
+              useCompaniesQuery
+            />
+          </PortalGrid>
         </main>
       )}
     </PortalPage>

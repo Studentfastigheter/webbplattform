@@ -111,6 +111,15 @@ type MyQueuesResponse =
       queueMemberships?: QueueApplicationDTO[];
     };
 
+const queueEndpoints = {
+  list: (query: Record<string, any>) => `/queues${buildQuery(query)}`,
+  all: () => "/queues/all",
+  detail: (id: string) => `/queues/${pathSegment(id)}`,
+  my: () => "/queues/my",
+  join: (queueId: string) => `/queues/${pathSegment(queueId)}/join`,
+  requirement: (id: string) => `/queues/${pathSegment(id)}/requirement`,
+} as const;
+
 export function getQueueApplicationQueueId(
   application: QueueApplicationDTO
 ): string | null {
@@ -332,16 +341,21 @@ function normalizeCompanyDto(value: unknown): CompanyDTO {
 
 export const queueService = {
 
-  list: async ({ id         = null,
-                 city       = null,
-                 pageNumber = 1,
-                 pageSize   = DEFAULT_PAGE_SIZE,
-                 pageCount  = 1,
-               }: QueueFilters = {}): Promise<HousingQueueDTO[]> => {
+  list: async (
+    {
+      id = null,
+      city = null,
+      pageNumber = 1,
+      pageSize = DEFAULT_PAGE_SIZE,
+      pageCount = 1,
+    }: QueueFilters = {},
+    options?: ServiceOptions
+  ): Promise<HousingQueueDTO[]> => {
     const normalizedPageNumber = Math.max(1, pageNumber);
     const normalizedPageSize = Math.max(1, pageSize);
+    const normalizedPageCount = Math.max(1, pageCount);
     const drop = normalizedPageSize * (normalizedPageNumber - 1);
-    const take = normalizedPageSize;
+    const take = normalizedPageSize * normalizedPageCount;
     const query: Record<string, any> = {
       drop: drop,
       take: take,
@@ -352,13 +366,15 @@ export const queueService = {
     if (city !== null) {
       query.city = city;
     }
-    const request = `/queues${buildQuery(query)}`;
-    const queues = await apiClient<unknown>(request, { auth: false });
+    const queues = await apiClient<unknown>(queueEndpoints.list(query), {
+      auth: false,
+      signal: options?.signal,
+    });
     return arrayFromApiResponse<unknown>(queues).map(normalizeHousingQueue);
   },
 
   getAll: async (options?: ServiceOptions): Promise<HousingQueueDTO[]> => {
-    const queues = await apiClient<unknown>("/queues/all", {
+    const queues = await apiClient<unknown>(queueEndpoints.all(), {
       auth: false,
       signal: options?.signal,
     });
@@ -369,7 +385,7 @@ export const queueService = {
     id: string,
     options?: ServiceOptions
   ): Promise<HousingQueueDTO> => {
-    const queue = await apiClient<unknown>(`/queues/${pathSegment(id)}`, {
+    const queue = await apiClient<unknown>(queueEndpoints.detail(id), {
       auth: false,
       signal: options?.signal,
     });
@@ -388,9 +404,9 @@ export const queueService = {
   },
 
   join: async (queueId: string): Promise<string> => {
-    // Vi förväntar oss text/plain svar från backend
-    return apiClient<string>(`/queues/${pathSegment(queueId)}/join`, {
-      method: "POST"
+    return apiClient<string>(queueEndpoints.join(queueId), {
+      method: "POST",
+      responseType: "text",
     });
   },
 
@@ -398,7 +414,7 @@ export const queueService = {
     queueId: string,
     request: CreateHousingQueueRequirementRequest | string
   ): Promise<void> => {
-    await apiClient<void>(`/queues/${pathSegment(queueId)}/requirement`, {
+    await apiClient<void>(queueEndpoints.requirement(queueId), {
       method: "POST",
       body: JSON.stringify(
         typeof request === "string" ? { requirement: request } : request
@@ -409,7 +425,7 @@ export const queueService = {
   getMyQueues: async (
     options: { hydrateQueues?: boolean; signal?: AbortSignal } = {}
   ): Promise<QueueApplicationDTO[]> => {
-    const res = await apiClient<MyQueuesResponse>("/queues/my", {
+    const res = await apiClient<MyQueuesResponse>(queueEndpoints.my(), {
       signal: options.signal,
     });
     const rows = getMyQueuesRows(res);

@@ -21,7 +21,14 @@ export interface HousingQueueDTO {
   contactEmail?: string;
   website?: string;
   socialLinks?: Record<string, string>;
+  requirements?: HousingQueueRequirementDTO | null;
 };
+
+export interface HousingQueueRequirementDTO {
+  id?: string;
+  housingQueueId?: string;
+  requirements?: string | null;
+}
 
 export interface StudentQueueMembershipDTO {
   id: string;

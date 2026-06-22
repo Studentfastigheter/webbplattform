@@ -76,7 +76,8 @@ export const qk = {
 
   queues: {
     all: ["queues"] as const,
-    list: () => ["queues", "list"] as const,
+    list: (filters?: unknown) => ["queues", "list", filters ?? {}] as const,
+    unfilteredList: () => ["queues", "all"] as const,
     my: () => ["queues", "my"] as const,
     byCompany: (companyId: number) =>
       ["queues", "by-company", companyId] as const,
