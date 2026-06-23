@@ -55,7 +55,7 @@ import type {
   School,
 } from "@/types";
 import type {
-  CreateExternalCompanyRequest,
+  CreateExternalCompanyPayload,
   ExternalCompanyDTO,
   ModifyExternalCompanyRequest,
 } from "@/features/companies/services/company-service";
@@ -406,7 +406,7 @@ export function useAdminUpdateCompanyCredentials() {
 
 export function useAdminCreateExternalCompany() {
   const qc = useQueryClient();
-  return useMutation<void, Error, CreateExternalCompanyRequest>({
+  return useMutation<void, Error, CreateExternalCompanyPayload>({
     mutationFn: (payload) => adminService.createExternalCompany(payload),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: qk.admin.externalCompanies() });
@@ -416,11 +416,7 @@ export function useAdminCreateExternalCompany() {
 
 export function useAdminUpdateExternalCompany() {
   const qc = useQueryClient();
-  // The service takes a single `ModifyExternalCompanyRequest` (the payload
-  // already contains the id). We keep the {companyId, payload} call shape
-  // here so consumer code reads naturally; the companyId arg is unused
-  // at the service boundary but matches the verifyCompanyAccount /
-  // deleteCompany call signatures elsewhere on the page.
+  // The service takes a single payload that already contains the id.
   return useMutation<void, Error, ModifyExternalCompanyRequest>({
     mutationFn: (payload) => adminService.updateExternalCompany(payload),
     onSettled: () => {

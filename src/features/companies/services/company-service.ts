@@ -88,6 +88,18 @@ export type CreateExternalCompanyRequest = {
   schoolIds?: number[];
 };
 
+export type CreateExternalCompanyWithLogoRequest = Omit<
+  CreateExternalCompanyRequest,
+  "logoUrl"
+> & {
+  logoFile: File;
+  logoMediaType?: string | null;
+};
+
+export type CreateExternalCompanyPayload =
+  | CreateExternalCompanyRequest
+  | CreateExternalCompanyWithLogoRequest;
+
 export type ModifyExternalCompanyRequest = {
   id: number;
   name?: string | null;
@@ -1091,6 +1103,12 @@ function normalizeExternalCompany(value: unknown): ExternalCompanyDTO | null {
   };
 }
 
+function hasExternalCompanyLogoFile(
+  payload: CreateExternalCompanyPayload
+): payload is CreateExternalCompanyWithLogoRequest {
+  return "logoFile" in payload && payload.logoFile != null;
+}
+
 function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
   if (!isRecord(value)) {
     throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
@@ -1986,12 +2004,40 @@ export const companyService = {
   },
 
   createExternalCompany: async (
-    payload: CreateExternalCompanyRequest
+    payload: CreateExternalCompanyPayload
   ): Promise<void> => {
+    if (hasExternalCompanyLogoFile(payload)) {
+      await companyService.createExternalCompanyWithLogo(payload);
+      return;
+    }
+
     await apiClient<void>("/companies/external-company", {
       method: "POST",
       body: JSON.stringify(payload),
     });
+  },
+
+  createExternalCompanyWithLogo: async (
+    payload: CreateExternalCompanyWithLogoRequest
+  ): Promise<void> => {
+    const { logoFile, logoMediaType, ...request } = payload;
+    const uploadLogo = await createSquareCompanyLogoFile(logoFile);
+    const formData = new FormData();
+    formData.append(
+      "request",
+      new Blob([JSON.stringify(request)], { type: "application/json" })
+    );
+    formData.append("logo", uploadLogo, uploadLogo.name);
+
+    await apiClient<void>(
+      `/companies/external-company/with-logo${buildQuery({
+        mediaType: uploadLogo.type || logoMediaType || logoFile.type,
+      })}`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
   },
 
   updateExternalCompany: async (

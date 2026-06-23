@@ -6,6 +6,7 @@ import {
   CheckCircle2Icon,
   CheckIcon,
   ChevronDownIcon,
+  ExternalLink,
   FileSpreadsheetIcon,
   RefreshCwIcon,
   SearchIcon,
@@ -75,7 +76,11 @@ import {
   useAdminWaitlistStats,
 } from "@/features/admin/hooks/useAdmin";
 import { normalizeCityCode } from "@/features/cities/services/city-service";
-import type { ExternalCompanyDTO } from "@/features/companies/services/company-service";
+import type {
+  CreateExternalCompanyPayload,
+  ExternalCompanyDTO,
+  ModifyExternalCompanyRequest,
+} from "@/features/companies/services/company-service";
 import type {
   AdminAddSchoolRequest,
   AdminCompanyCredentialDTO,
@@ -415,6 +420,28 @@ function FieldRow({ label, children }: { label: string; children: ReactNode }) {
       {label}
       {children}
     </label>
+  );
+}
+
+function FieldGroup({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "grid gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500",
+        className
+      )}
+    >
+      <span>{label}</span>
+      {children}
+    </div>
   );
 }
 
@@ -2503,10 +2530,14 @@ function CompaniesForm() {
   );
 }
 
+type ExternalCompanyLogoSource = "upload" | "url";
+
 type ExternalCompanyFormState = {
   name: string;
   description: string;
+  logoSource: ExternalCompanyLogoSource;
   logoUrl: string;
+  logoFile: File | null;
   websiteUrl: string;
   cityCodes: string[];
   schoolIds: number[];
@@ -2515,17 +2546,21 @@ type ExternalCompanyFormState = {
 const emptyExternalCompanyForm: ExternalCompanyFormState = {
   name: "",
   description: "",
+  logoSource: "upload",
   logoUrl: "",
+  logoFile: null,
   websiteUrl: "",
   cityCodes: [],
   schoolIds: [],
 };
 
-type ExternalCompanyUpdateFormState = Omit<
-  ExternalCompanyFormState,
-  "schoolIds"
-> & {
+type ExternalCompanyUpdateFormState = {
   id: string;
+  name: string;
+  description: string;
+  logoUrl: string;
+  websiteUrl: string;
+  cityCodes: string[];
   replaceCities: boolean;
 };
 
@@ -2539,18 +2574,29 @@ const emptyExternalCompanyUpdateForm: ExternalCompanyUpdateFormState = {
   replaceCities: false,
 };
 
-function buildExternalCompanyPayload(form: ExternalCompanyFormState) {
+function buildExternalCompanyPayload(
+  form: ExternalCompanyFormState
+): CreateExternalCompanyPayload {
   const name = form.name.trim();
+  const description = form.description.trim();
+  const websiteUrl = form.websiteUrl.trim();
+  const logoUrl = form.logoUrl.trim();
+  const logoFile = form.logoFile;
 
   if (!name) {
     throw new Error("Ange ett företagsnamn.");
   }
+  if (!description) {
+    throw new Error("Ange en beskrivning.");
+  }
+  if (!websiteUrl) {
+    throw new Error("Ange en webbplats.");
+  }
 
-  return {
+  const payload = {
     name,
-    description: form.description.trim() || null,
-    logoUrl: form.logoUrl.trim() || null,
-    websiteUrl: form.websiteUrl.trim() || null,
+    description,
+    websiteUrl,
     cityCodes: Array.from(
       new Set(form.cityCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
     ),
@@ -2558,9 +2604,32 @@ function buildExternalCompanyPayload(form: ExternalCompanyFormState) {
       new Set(form.schoolIds.filter((id) => Number.isFinite(id)))
     ),
   };
+
+  if (form.logoSource === "upload") {
+    if (!logoFile) {
+      throw new Error("Välj en logofil.");
+    }
+
+    return {
+      ...payload,
+      logoFile,
+      logoMediaType: logoFile.type || null,
+    };
+  }
+
+  if (!logoUrl) {
+    throw new Error("Ange en logo-URL.");
+  }
+
+  return {
+    ...payload,
+    logoUrl,
+  };
 }
 
-function buildExternalCompanyUpdatePayload(form: ExternalCompanyUpdateFormState) {
+function buildExternalCompanyUpdatePayload(
+  form: ExternalCompanyUpdateFormState
+): ModifyExternalCompanyRequest {
   const payload: {
     id: number;
     name?: string;
@@ -2593,6 +2662,138 @@ function buildExternalCompanyUpdatePayload(form: ExternalCompanyUpdateFormState)
   return payload;
 }
 
+function ExternalCompanyLogoField({
+  source,
+  logoUrl,
+  logoFile,
+  inputId,
+  inputKey,
+  className,
+  onSourceChange,
+  onUrlChange,
+  onFileChange,
+  onClearFile,
+}: {
+  source: ExternalCompanyLogoSource;
+  logoUrl: string;
+  logoFile: File | null;
+  inputId: string;
+  inputKey: number;
+  className?: string;
+  onSourceChange: (source: ExternalCompanyLogoSource) => void;
+  onUrlChange: (logoUrl: string) => void;
+  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onClearFile: () => void;
+}) {
+  return (
+    <FieldGroup label="Logga" className={className}>
+      <div className="rounded-[8px] border border-[#dfe7e3] bg-[#fbfcfb] p-2">
+        <div className="grid grid-cols-2 gap-1 rounded-[8px] bg-[#edf4f0] p-1">
+          <button
+            type="button"
+            onClick={() => onSourceChange("upload")}
+            className={cn(
+              "flex h-9 min-w-0 items-center justify-center gap-2 rounded-[7px] px-3 text-sm font-semibold normal-case tracking-normal transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]",
+              source === "upload"
+                ? "bg-white text-[#004225] shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+                : "text-[#476e66] hover:bg-white/60 hover:text-[#004225]"
+            )}
+          >
+            <UploadIcon className="h-4 w-4 shrink-0" />
+            <span className="truncate">Ladda upp</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onSourceChange("url")}
+            className={cn(
+              "flex h-9 min-w-0 items-center justify-center gap-2 rounded-[7px] px-3 text-sm font-semibold normal-case tracking-normal transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]",
+              source === "url"
+                ? "bg-white text-[#004225] shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+                : "text-[#476e66] hover:bg-white/60 hover:text-[#004225]"
+            )}
+          >
+            <ExternalLink className="h-4 w-4 shrink-0" />
+            <span className="truncate">Extern URL</span>
+          </button>
+        </div>
+
+        {source === "upload" ? (
+          <div className="mt-3">
+            <label
+              htmlFor={inputId}
+              className={cn(
+                "flex min-h-[92px] cursor-pointer items-center gap-3 rounded-[8px] border bg-white px-4 py-3 normal-case tracking-normal transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#004225]",
+                logoFile
+                  ? "border-[#8db2a3]"
+                  : "border-dashed border-[#b7c8c0] hover:border-[#004225] hover:bg-[#f7fbf8]"
+              )}
+            >
+              <Input
+                id={inputId}
+                key={inputKey}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                onChange={onFileChange}
+                className="sr-only"
+              />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] bg-[#eef5f1] text-[#004225]">
+                <UploadIcon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-[#111827]">
+                  {logoFile ? logoFile.name : "Välj logotyp"}
+                </span>
+                <span className="mt-0.5 block text-xs font-medium text-[#66716f]">
+                  PNG, JPG, WEBP, GIF eller SVG
+                </span>
+              </span>
+              {logoFile ? (
+                <span className="hidden shrink-0 items-center gap-1 rounded-full bg-[#eef5f1] px-2.5 py-1 text-xs font-semibold text-[#004225] sm:flex">
+                  <CheckIcon className="h-3.5 w-3.5" />
+                  Vald
+                </span>
+              ) : null}
+            </label>
+            {logoFile ? (
+              <div className="mt-2 flex min-w-0 items-center justify-between gap-3 rounded-[8px] border border-[#dfe7e3] bg-white px-3 py-2 normal-case tracking-normal">
+                <span className="min-w-0 truncate text-sm font-medium text-[#36534d]">
+                  {logoFile.name}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onPress={onClearFile}
+                  className="h-8 min-w-0 shrink-0 rounded-[8px] px-2 text-[#004225]"
+                >
+                  <XIcon className="h-4 w-4" />
+                  Rensa
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="mt-3 normal-case tracking-normal">
+            <div className="relative">
+              <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66716f]" />
+              <Input
+                type="url"
+                value={logoUrl}
+                onChange={(event) => onUrlChange(event.target.value)}
+                placeholder="https://..."
+                className="h-10 rounded-[8px] border-[#dfe7e3] bg-white pl-9 text-[#111827] shadow-theme-xs transition focus-visible:border-brand-500 focus-visible:ring-brand-500/15"
+              />
+            </div>
+            <p className="mt-2 text-xs font-medium text-[#66716f]">
+              Extern logga används via URL och laddas inte upp till Campuslyan.
+            </p>
+          </div>
+        )}
+      </div>
+    </FieldGroup>
+  );
+}
+
 function schoolId(school: School) {
   return school.schoolId ?? school.id;
 }
@@ -2619,6 +2820,7 @@ function ExternalCompaniesForm() {
   const [form, setForm] = useState<ExternalCompanyFormState>(
     emptyExternalCompanyForm
   );
+  const [logoFileInputKey, setLogoFileInputKey] = useState(0);
   const [updateForm, setUpdateForm] = useState<ExternalCompanyUpdateFormState>(
     emptyExternalCompanyUpdateForm
   );
@@ -2636,6 +2838,27 @@ function ExternalCompaniesForm() {
 
   function patchForm(patch: Partial<ExternalCompanyFormState>) {
     setForm((current) => ({ ...current, ...patch }));
+  }
+
+  function handleLogoFileChange(event: ChangeEvent<HTMLInputElement>) {
+    patchForm({ logoFile: event.currentTarget.files?.[0] ?? null });
+  }
+
+  function clearLogoFile() {
+    patchForm({ logoFile: null });
+    setLogoFileInputKey((key) => key + 1);
+  }
+
+  function setLogoSource(logoSource: ExternalCompanyLogoSource) {
+    setForm((current) => ({
+      ...current,
+      logoSource,
+      logoUrl: logoSource === "upload" ? "" : current.logoUrl,
+      logoFile: logoSource === "url" ? null : current.logoFile,
+    }));
+    if (logoSource === "url") {
+      setLogoFileInputKey((key) => key + 1);
+    }
   }
 
   function patchUpdateForm(patch: Partial<ExternalCompanyUpdateFormState>) {
@@ -2705,6 +2928,7 @@ function ExternalCompaniesForm() {
         buildExternalCompanyPayload(form),
       );
       setForm(emptyExternalCompanyForm);
+      setLogoFileInputKey((key) => key + 1);
       setState({ status: "success", message: "Det externa företaget skapades." });
       await refreshExternalCompanies();
     } catch (error) {
@@ -2766,14 +2990,21 @@ function ExternalCompaniesForm() {
     }
   }
 
+  const isCreateLogoMissing =
+    form.logoSource === "upload" ? !form.logoFile : !form.logoUrl.trim();
+
   return (
     <div className="grid gap-4">
       <ActionShell
-      title="Skapa externt företag"
-      description="POST skapar ett externt företag och kopplar det till valda städer och skolor."
-      method="POST"
-      endpoint="/api/companies/external-company"
-    >
+        title="Skapa externt företag"
+        description="POST skapar ett externt företag och kopplar det till valda städer och skolor."
+        method="POST"
+        endpoint={
+          form.logoSource === "upload"
+            ? "/api/companies/external-company/with-logo"
+            : "/api/companies/external-company"
+        }
+      >
       <ResultBlock state={citiesState} />
       <ResultBlock state={schoolsState} />
       <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -2788,11 +3019,17 @@ function ExternalCompaniesForm() {
           onChange={(websiteUrl) => patchForm({ websiteUrl })}
           placeholder="https://..."
         />
-        <FormInput
-          label="Logo URL"
-          value={form.logoUrl}
-          onChange={(logoUrl) => patchForm({ logoUrl })}
-          placeholder="https://..."
+        <ExternalCompanyLogoField
+          source={form.logoSource}
+          logoUrl={form.logoUrl}
+          logoFile={form.logoFile}
+          inputId="external-company-logo-file"
+          inputKey={logoFileInputKey}
+          className="md:col-span-2"
+          onSourceChange={setLogoSource}
+          onUrlChange={(logoUrl) => patchForm({ logoUrl })}
+          onFileChange={handleLogoFileChange}
+          onClearFile={clearLogoFile}
         />
       </div>
       <div className="mt-3">
@@ -2918,7 +3155,12 @@ function ExternalCompaniesForm() {
       <SubmitButton
         isLoading={state.status === "loading"}
         onPress={() => void createExternalCompany()}
-        disabled={!form.name.trim()}
+        disabled={
+          !form.name.trim() ||
+          !form.description.trim() ||
+          !form.websiteUrl.trim() ||
+          isCreateLogoMissing
+        }
       >
         Skapa externt företag
       </SubmitButton>

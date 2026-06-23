@@ -36,7 +36,7 @@ import {
 import {
   companyService,
   type AnalyticsCountBucket,
-  type CreateExternalCompanyRequest,
+  type CreateExternalCompanyPayload,
   type ExternalCompanyDTO,
   type ModifyExternalCompanyRequest,
 } from "@/features/companies/services/company-service";
@@ -212,7 +212,7 @@ export const adminService = {
   },
 
   createExternalCompany: async (
-    company: CreateExternalCompanyRequest
+    company: CreateExternalCompanyPayload
   ): Promise<void> => {
     await companyService.createExternalCompany(company);
   },

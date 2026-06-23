@@ -20,6 +20,15 @@ function companyPublicUrl(companyId: number | string, filename: string): string 
   )}`;
 }
 
+function externalCompanyPublicUrl(
+  externalCompanyId: number | string,
+  filename: string
+): string {
+  return `${API_BASE}/media/external-company/${pathSegment(
+    externalCompanyId
+  )}/public/${pathSegment(filename)}`;
+}
+
 function normalizeMediaUrlString(
   value: string,
   companyId?: number | string
@@ -134,6 +143,13 @@ export const mediaService = {
     return companyPublicUrl(companyId, filename);
   },
 
+  externalCompanyPublicUrl: (
+    externalCompanyId: number | string,
+    filename: string
+  ): string => {
+    return externalCompanyPublicUrl(externalCompanyId, filename);
+  },
+
   uploadCompanyPublic: async (
     companyId: number | string,
     file: File,
@@ -166,6 +182,21 @@ export const mediaService = {
   ): Promise<Blob> => {
     return apiClient<Blob>(
       `/media/company/${pathSegment(companyId)}/public/${pathSegment(filename)}`,
+      {
+        auth: false,
+        responseType: "blob",
+      }
+    );
+  },
+
+  downloadExternalCompanyPublic: async (
+    externalCompanyId: number | string,
+    filename: string
+  ): Promise<Blob> => {
+    return apiClient<Blob>(
+      `/media/external-company/${pathSegment(
+        externalCompanyId
+      )}/public/${pathSegment(filename)}`,
       {
         auth: false,
         responseType: "blob",
