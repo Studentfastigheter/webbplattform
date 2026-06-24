@@ -21,9 +21,12 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  PortalControlSelectTrigger,
+  portalControlSelectContentClassName,
+} from "../shared/PortalControlSelectTrigger";
 import { useApplicationDemography } from "@/features/analytics/hooks/useDemographics";
 import {
   APPLICATION_DEMOGRAPHY_CATEGORIES,
@@ -270,10 +273,10 @@ function CategorySelect({
       onValueChange={(next) => onChange(next as ApplicationDemographyCategory)}
       value={value}
     >
-      <SelectTrigger className="h-9 w-full rounded-lg border-gray-200 bg-white text-sm sm:w-[190px]">
+      <PortalControlSelectTrigger className="text-sm sm:w-[190px]">
         <SelectValue />
-      </SelectTrigger>
-      <SelectContent className="border-gray-200 bg-white">
+      </PortalControlSelectTrigger>
+      <SelectContent align="end" className={portalControlSelectContentClassName}>
         {APPLICATION_DEMOGRAPHY_CATEGORIES.map((category) => (
           <SelectItem key={category} value={category}>
             {labelFor(locale, category)}
@@ -385,17 +388,17 @@ export default function ApplicationDemographicsPanel({
         "Applications for the selected listing split by category and outcome."
       );
   const blockAction = (
-    <div className="grid max-w-full gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:justify-end">
+    <div className="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:w-auto xl:flex xl:flex-wrap xl:justify-end">
       <Input
         aria-label={localizedText(locale, "Från", "From")}
-        className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
+        className="h-9 w-full min-w-0 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
         onChange={(event) => setFromValue(event.target.value)}
         type="datetime-local"
         value={fromValue}
       />
       <Input
         aria-label={localizedText(locale, "Till", "To")}
-        className="h-9 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
+        className="h-9 w-full min-w-0 rounded-lg border-gray-200 bg-white text-sm xl:w-[190px]"
         onChange={(event) => setToValue(event.target.value)}
         type="datetime-local"
         value={toValue}
@@ -405,10 +408,10 @@ export default function ApplicationDemographicsPanel({
         onValueChange={(value) => setGotListing(value as GotListingFilter)}
         value={gotListing}
       >
-        <SelectTrigger className="h-9 w-full rounded-lg border-gray-200 bg-white text-sm sm:w-[170px]">
+        <PortalControlSelectTrigger className="text-sm sm:w-[170px]">
           <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="border-gray-200 bg-white">
+        </PortalControlSelectTrigger>
+        <SelectContent align="end" className={portalControlSelectContentClassName}>
           {(Object.keys(filterLabels) as GotListingFilter[]).map((filter) => (
             <SelectItem key={filter} value={filter}>
               {filterLabelFor(locale, filter)}

@@ -24,9 +24,12 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  PortalControlSelectTrigger,
+  portalControlSelectContentClassName,
+} from "../shared/PortalControlSelectTrigger";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
@@ -442,10 +445,10 @@ function CategorySelect<TCategory extends string>({
 
   return (
     <Select onValueChange={(next) => onChange(next as TCategory)} value={value}>
-      <SelectTrigger className="h-9 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs sm:w-[170px]">
+      <PortalControlSelectTrigger className="min-w-[150px] sm:w-[170px]">
         <SelectValue />
-      </SelectTrigger>
-      <SelectContent className="border-gray-200 bg-white">
+      </PortalControlSelectTrigger>
+      <SelectContent align="end" className={portalControlSelectContentClassName}>
         {categoryOptions(categories, locale).map((category) => (
           <SelectItem key={category.value} value={category.value}>
             {category.label}
@@ -1124,17 +1127,17 @@ export function ApplicationDemographyPortfolioBlock({
   return (
     <AnalyticsBlock
       action={
-        <div className="flex max-w-full flex-wrap items-center gap-2">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap xl:justify-end">
           <Input
             aria-label={localizedText(locale, "Från", "From")}
-            className="h-9 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs"
+            className="h-9 w-full rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs sm:min-w-[170px] xl:w-[170px]"
             onChange={(event) => setFromValue(event.target.value)}
             type="datetime-local"
             value={fromValue}
           />
           <Input
             aria-label={localizedText(locale, "Till", "To")}
-            className="h-9 w-[170px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs"
+            className="h-9 w-full rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs sm:min-w-[170px] xl:w-[170px]"
             onChange={(event) => setToValue(event.target.value)}
             type="datetime-local"
             value={toValue}
@@ -1148,10 +1151,10 @@ export function ApplicationDemographyPortfolioBlock({
             onValueChange={(value) => setGotListing(value as GotListingFilter)}
             value={gotListing}
           >
-            <SelectTrigger className="h-9 w-[140px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs">
+            <PortalControlSelectTrigger className="sm:w-[140px]">
               <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border-gray-200 bg-white">
+            </PortalControlSelectTrigger>
+            <SelectContent align="end" className={portalControlSelectContentClassName}>
               {(Object.keys(gotListingLabels) as GotListingFilter[]).map((filter) => (
                 <SelectItem key={filter} value={filter}>
                   {gotListingLabelFor(locale, filter)}
@@ -1264,12 +1267,12 @@ export function ListingDemographyDrilldownBlock({
   return (
     <AnalyticsBlock
       action={
-        <div className="flex max-w-full flex-col gap-2 sm:flex-row">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:w-auto sm:grid-cols-[minmax(12rem,1fr)_minmax(9.5rem,auto)_auto]">
           <Select onValueChange={setListingId} value={listingId}>
-            <SelectTrigger className="h-9 w-full min-w-[180px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs sm:w-[210px]">
+            <PortalControlSelectTrigger className="min-w-[180px] sm:w-[210px]">
               <SelectValue placeholder={localizedText(locale, "Välj annons", "Choose listing")} />
-            </SelectTrigger>
-            <SelectContent className="border-gray-200 bg-white">
+            </PortalControlSelectTrigger>
+            <SelectContent align="end" className={portalControlSelectContentClassName}>
               {listings.map((listing) => (
                 <SelectItem key={listing.id} value={listing.id}>
                   {listing.title}

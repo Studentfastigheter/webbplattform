@@ -43,7 +43,10 @@ import {
   useUpdateCompanyUser,
   useVerifyCompanyUser,
 } from "@/features/companies/hooks/useCompanies";
-import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
+import {
+  PortalControlSelectTrigger,
+  portalControlSelectContentClassName,
+} from "../_components/shared/PortalControlSelectTrigger";
 import { PortalPage, PortalSurface } from "../_components/shared/PortalGrid";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -577,7 +580,7 @@ export default function UsersPage() {
                   >
                     <SelectValue />
                   </PortalControlSelectTrigger>
-                  <SelectContent>
+                  <SelectContent align="end" className={portalControlSelectContentClassName}>
                     <SelectItem value="all">{localizedText(locale, "Alla roller", "All roles")}</SelectItem>
                     <SelectItem value="admin">{localizedText(locale, "Admin", "Admin")}</SelectItem>
                     <SelectItem value="manager">{localizedText(locale, "Managers", "Managers")}</SelectItem>
@@ -686,7 +689,10 @@ export default function UsersPage() {
                       : localizedText(locale, "Välj roll", "Choose role")}
                   />
                 </PortalControlSelectTrigger>
-                <SelectContent className="z-[1002] border-gray-200 bg-white">
+                <SelectContent
+                  align="end"
+                  className="z-[1002] max-w-[calc(100vw-2rem)] border-gray-200 bg-white"
+                >
                   {roles.map((role) => {
                     const roleName = role.name?.trim();
                     if (!roleName) return null;

@@ -38,7 +38,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,6 +67,10 @@ import {
 } from "../_components/shared/PortalGrid";
 import { useCompanyPortal } from "../_components/layout/CompanyPortalContext";
 import PortalPageHeader from "../_components/shared/PortalPageHeader";
+import {
+  PortalControlSelectTrigger,
+  portalControlSelectContentClassName,
+} from "../_components/shared/PortalControlSelectTrigger";
 import { dashboardRelPath } from "../_statics/variables";
 
 type ApplicationsViewProps = {
@@ -578,13 +581,14 @@ function ApplicationStatusControl({
           onValueChange={(value) => setSelectedStatus(value as ApplicationStatus)}
           value={selectedStatus}
         >
-          <SelectTrigger
+          <PortalControlSelectTrigger
             aria-label={localizedText(locale, "Välj status", "Choose status")}
-            className="h-8 w-full min-w-[150px] rounded-lg border-gray-200 bg-white text-xs shadow-theme-xs sm:w-[170px]"
+            className="h-8 min-w-[150px] sm:w-[170px]"
+            size="sm"
           >
             <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="border-gray-200 bg-white">
+          </PortalControlSelectTrigger>
+          <SelectContent align="end" className={portalControlSelectContentClassName}>
             {APPLICATION_STATUS_VALUES.map((status) => (
               <SelectItem key={status} value={status}>
                 {getApplicationStatusLabel(status, locale)}
@@ -697,19 +701,17 @@ function ApplicationsTrendBlock({
       }) satisfies ChartConfig,
     [locale]
   );
-  const selectTriggerClassName =
-    "h-8 rounded-lg border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10";
   const controls = (
-    <div className="flex min-w-max items-center gap-2">
+    <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:w-auto sm:grid-cols-[5.5rem_6rem]">
       <Select onValueChange={setSelectedInterval} value={selectedInterval}>
-        <SelectTrigger
+        <PortalControlSelectTrigger
           aria-label={localizedText(locale, "Tidsintervall", "Time interval")}
-          className={cn(selectTriggerClassName, "w-[86px]")}
+          className="h-8 sm:w-[86px]"
           size="sm"
         >
           <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="border-gray-200 bg-white">
+        </PortalControlSelectTrigger>
+        <SelectContent align="end" className={portalControlSelectContentClassName}>
           {intervalOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {localizedText(locale, option.label, option.labelEn)}
@@ -722,14 +724,14 @@ function ApplicationsTrendBlock({
         onValueChange={(value) => setSelectedGranularity(value as TrendGranularity)}
         value={selectedGranularity}
       >
-        <SelectTrigger
+        <PortalControlSelectTrigger
           aria-label={localizedText(locale, "Upplösning", "Resolution")}
-          className={cn(selectTriggerClassName, "w-[96px]")}
+          className="h-8 sm:w-[96px]"
           size="sm"
         >
           <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="border-gray-200 bg-white">
+        </PortalControlSelectTrigger>
+        <SelectContent align="end" className={portalControlSelectContentClassName}>
           {granularityOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {localizedText(locale, option.label, option.labelEn)}
@@ -1226,9 +1228,6 @@ function ApplicationsList({
           : left.submittedAtTime - right.submittedAtTime
       );
   }, [applications, search, sort, statusFilter]);
-  const selectTriggerClassName =
-    "h-9 rounded-lg border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10";
-
   return (
     <section className="portal-surface overflow-hidden">
       <div className="flex min-w-0 flex-col gap-4 border-b border-gray-100 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
@@ -1263,13 +1262,13 @@ function ApplicationsList({
             onValueChange={(value) => setStatusFilter(value as ApplicationStatusFilter)}
             value={statusFilter}
           >
-            <SelectTrigger
+            <PortalControlSelectTrigger
               aria-label={localizedText(locale, "Filtrera status", "Filter status")}
-              className={cn(selectTriggerClassName, "w-full md:w-[170px]")}
+              className="md:w-[170px]"
             >
               <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border-gray-200 bg-white">
+            </PortalControlSelectTrigger>
+            <SelectContent align="end" className={portalControlSelectContentClassName}>
               <SelectItem value="all">
                 {localizedText(locale, "Alla statusar", "All statuses")}
               </SelectItem>
@@ -1285,13 +1284,13 @@ function ApplicationsList({
             onValueChange={(value) => setSort(value as ApplicationSort)}
             value={sort}
           >
-            <SelectTrigger
+            <PortalControlSelectTrigger
               aria-label={localizedText(locale, "Sortera", "Sort")}
-              className={cn(selectTriggerClassName, "w-full md:w-[130px]")}
+              className="md:w-[130px]"
             >
               <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border-gray-200 bg-white">
+            </PortalControlSelectTrigger>
+            <SelectContent align="end" className={portalControlSelectContentClassName}>
               <SelectItem value="newest">
                 {localizedText(locale, "Nyast först", "Newest first")}
               </SelectItem>

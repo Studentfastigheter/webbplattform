@@ -18,7 +18,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +36,10 @@ import {
   PortalGridItem,
   type PortalGridItemSize,
 } from "../shared/PortalGrid";
+import {
+  PortalControlSelectTrigger,
+  portalControlSelectContentClassName,
+} from "../shared/PortalControlSelectTrigger";
 
 type IntervalOption = {
   value: string;
@@ -298,22 +301,20 @@ export default function OverviewEngagementTrend({
       }) satisfies ChartConfig,
     [locale]
   );
-  const selectTriggerClassName =
-    "h-8 rounded-lg border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 focus:border-[#004225] focus:ring-4 focus:ring-[#004225]/10";
   const controls = (
-    <div className="flex min-w-max items-center gap-2">
+    <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:w-auto sm:grid-cols-[16.25rem_6.75rem_6.25rem]">
       <Select
         onValueChange={(value) => setSelectedMetric(value as TrendMetricKey)}
         value={selectedMetric}
       >
-        <SelectTrigger
+        <PortalControlSelectTrigger
           aria-label={localizedText(locale, "Kategori", "Category")}
-          className={cn(selectTriggerClassName, "w-[190px] sm:w-[220px]")}
+          className="h-8 sm:w-[260px]"
           size="sm"
         >
           <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="border-gray-200 bg-white">
+        </PortalControlSelectTrigger>
+        <SelectContent align="end" className={portalControlSelectContentClassName}>
           {metricOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {localizedText(locale, option.label, option.labelEn)}
@@ -323,14 +324,14 @@ export default function OverviewEngagementTrend({
       </Select>
 
       <Select onValueChange={setSelectedInterval} value={selectedInterval}>
-        <SelectTrigger
+        <PortalControlSelectTrigger
           aria-label={localizedText(locale, "Tidsintervall", "Time interval")}
-          className={cn(selectTriggerClassName, "w-[86px]")}
+          className="h-8 sm:w-[108px]"
           size="sm"
         >
           <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="border-gray-200 bg-white">
+        </PortalControlSelectTrigger>
+        <SelectContent align="end" className={portalControlSelectContentClassName}>
           {intervalOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {localizedText(locale, option.label, option.labelEn)}
@@ -345,14 +346,14 @@ export default function OverviewEngagementTrend({
         }
         value={selectedGranularity}
       >
-        <SelectTrigger
+        <PortalControlSelectTrigger
           aria-label={localizedText(locale, "Uppl\u00f6sning", "Resolution")}
-          className={cn(selectTriggerClassName, "w-[96px]")}
+          className="h-8 sm:w-[100px]"
           size="sm"
         >
           <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="border-gray-200 bg-white">
+        </PortalControlSelectTrigger>
+        <SelectContent align="end" className={portalControlSelectContentClassName}>
           {granularityOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {localizedText(locale, option.label, option.labelEn)}

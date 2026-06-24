@@ -176,7 +176,11 @@ export function AnalyticsBlock({
                 </h2>
               ) : null}
             </div>
-            {action ? <div className="max-w-full overflow-x-auto">{action}</div> : null}
+            {action ? (
+              <div className="flex w-full min-w-0 flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
+                {action}
+              </div>
+            ) : null}
           </div>
         ) : null}
 

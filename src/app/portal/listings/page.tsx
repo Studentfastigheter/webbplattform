@@ -39,7 +39,10 @@ import PortalListingStatusTag, {
 } from "../_components/shared/PortalListingStatusTag";
 import { useCompanyPortal } from "../_components/layout/CompanyPortalContext";
 import { useDashboardFooter } from "../_components/layout/DashboardShell";
-import { PortalControlSelectTrigger } from "../_components/shared/PortalControlSelectTrigger";
+import {
+  PortalControlSelectTrigger,
+  portalControlSelectContentClassName,
+} from "../_components/shared/PortalControlSelectTrigger";
 import { dashboardRelPath } from "../_statics/variables";
 
 type RawListing = ListingCardDTO & Record<string, unknown>;
@@ -638,7 +641,7 @@ export default function PortalAdsPage() {
               </PortalControlSelectTrigger>
               <SelectContent
                 align="center"
-                className="z-[60] rounded-lg border-gray-200 bg-white p-1 shadow-[0_16px_34px_rgba(15,23,42,0.14)]"
+                className="z-[60] max-w-[calc(100vw-2rem)] rounded-lg border-gray-200 bg-white p-1 shadow-[0_16px_34px_rgba(15,23,42,0.14)]"
               >
                 {BULK_STATUS_OPTIONS.map((status) => (
                   <SelectItem
@@ -795,7 +798,7 @@ export default function PortalAdsPage() {
                     >
                       <SelectValue />
                     </PortalControlSelectTrigger>
-                    <SelectContent>
+                    <SelectContent align="end" className={portalControlSelectContentClassName}>
                       <SelectItem value="all">{localizedText(locale, "Alla statusar", "All statuses")}</SelectItem>
                       <SelectItem value="available">{localizedText(locale, "Tillgängliga", "Available")}</SelectItem>
                       <SelectItem value="hidden">{localizedText(locale, "Dolda", "Hidden")}</SelectItem>
@@ -811,7 +814,7 @@ export default function PortalAdsPage() {
                     >
                       <SelectValue />
                     </PortalControlSelectTrigger>
-                    <SelectContent>
+                    <SelectContent align="end" className={portalControlSelectContentClassName}>
                       <SelectItem value="all">{localizedText(locale, "Alla städer", "All cities")}</SelectItem>
                       {availableCities.map((city) => (
                         <SelectItem key={city} value={city}>
@@ -863,7 +866,7 @@ export default function PortalAdsPage() {
                   >
                     <SelectValue />
                   </PortalControlSelectTrigger>
-                  <SelectContent>
+                  <SelectContent align="end" className={portalControlSelectContentClassName}>
                     <SelectItem value="newest">{localizedText(locale, "Nyast först", "Newest first")}</SelectItem>
                     <SelectItem value="oldest">{localizedText(locale, "Äldst först", "Oldest first")}</SelectItem>
                   </SelectContent>
