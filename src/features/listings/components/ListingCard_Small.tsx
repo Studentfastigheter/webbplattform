@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import CompanyLogo from "@/components/shared/CompanyLogo";
 import Tag from "@/components/ui/Tag";
@@ -222,14 +223,16 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
         )}
 
         {imageUrl ? (
-          <img
+          <Image
             src={imageUrl}
             alt={title}
+            fill
+            sizes={
+              variant === "compact"
+                ? "(max-width: 640px) 86vw, 360px"
+                : "(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 470px"
+            }
             className="absolute inset-0 block h-full w-full object-cover object-center transition-transform duration-500"
-            style={{
-              minWidth: "100%",
-              minHeight: "100%",
-            }}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400">
