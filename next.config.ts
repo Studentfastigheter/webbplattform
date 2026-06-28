@@ -80,33 +80,14 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "www.dropbox.com" },
-      { protocol: "https", hostname: "www.secretescapes.se" },
-      { protocol: "https", hostname: "media.licdn.com" },
-      { protocol: "https", hostname: "image-cdn.mild.cloud" },
-      { protocol: "https", hostname: "img.meccdn.com" },
-      { protocol: "https", hostname: "lettingdocuments.blob.core.windows.net" },
-      { protocol: "https", hostname: "www.familjebostader.se" },
-      { protocol: "https", hostname: "encrypted-tbn0.gstatic.com" },
-      { protocol: "https", hostname: "www.chalmersstudentbostader.se" },
-      { protocol: "https", hostname: "www.hallnollan.se" },
-      { protocol: "https", hostname: "k2a.se" },
-      { protocol: "https", hostname: "campusroslagen.se" },
-      { protocol: "https", hostname: "www.wikowia.se" },
-      { protocol: "https", hostname: "heimstaden.com" },
-      { protocol: "https", hostname: "www.hyresgastforeningen.se" },
-      {
-        protocol: apiBaseUrl.protocol.replace(":", "") as "http" | "https",
-        hostname: apiBaseUrl.hostname,
-        port: apiBaseUrl.port,
-        pathname: apiImagePathname,
+      { 
+        protocol: "https", 
+        hostname: "**" 
       },
-      {
-        protocol: "https",
-        hostname: "sgs-fastighet.momentum.se",
-        pathname: "/Prod/sgs/PmApi/**",
-      },
+      { 
+        protocol: "http", 
+        hostname: "**" 
+      }
     ],
   },
 
