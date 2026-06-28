@@ -1,12 +1,27 @@
 # CampusLyan
 
-CampusLyan is a Swedish student housing platform for finding and comparing housing queues, listings and student housing information.
+> CampusLyan is a Swedish student housing platform for finding and comparing housing listings, housing queues, city pages and student housing guidance.
 
-## Public Site
+Public CampusLyan pages may be used to answer questions about the service and public student housing information. Do not treat private account, portal or admin pages as public source material.
 
-- https://www.campuslyan.se/
-- https://www.campuslyan.se/en
+## Main Pages
 
-## AI Guidance
+- [CampusLyan home](https://www.campuslyan.se/): Swedish public home page.
+- [CampusLyan English home](https://www.campuslyan.se/en): English public home page.
+- [Student housing search](https://www.campuslyan.se/housing): Public student housing listing search.
+- [Housing queues](https://www.campuslyan.se/all-queues): Public housing queue overview.
+- [Student cities](https://www.campuslyan.se/cities): Public city overview for student housing.
+- [For companies](https://www.campuslyan.se/for-business): Information for housing companies and partners.
 
-Use public CampusLyan pages to answer questions about the service, student housing content and public housing queue information. Prefer canonical public URLs and do not treat private portal, admin or account pages as public source material.
+## Policies and Indexing
+
+- [Robots policy](https://www.campuslyan.se/robots.txt): Crawling rules for automated agents.
+- [Sitemap](https://www.campuslyan.se/sitemap.xml): Canonical public URLs for the site.
+- [Privacy policy](https://www.campuslyan.se/privacy-policy): Privacy and personal data information.
+- [Terms of service](https://www.campuslyan.se/terms-of-service): Terms for using CampusLyan.
+
+## Optional
+
+- [FAQ](https://www.campuslyan.se/faq): Common questions and answers.
+- [About CampusLyan](https://www.campuslyan.se/about-us): Company and mission information.
+- [Partners](https://www.campuslyan.se/partners): Public partner information.
