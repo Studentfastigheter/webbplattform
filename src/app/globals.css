@@ -17,7 +17,7 @@
   --muted: oklch(0.97 0 0);
   --muted-bg: #ffffff;
   --pop: #476e66;
-  --pop-contrast: #059669;
+  --pop-contrast: #047857;
   --brand-beige-100: #efefef;
   --brand-beige-200: #f4f4f4;
   --brand-green-light: #708a83;
@@ -69,7 +69,7 @@
   --misty-moor: #708a83;
   --pond-newt: #476e66;
   --pop: var(--pond-newt);
-  --pop-contrast: #059669;
+  --pop-contrast: #047857;
   --brand-beige-100: #ffffff;
   --brand-beige-200: #ffffff;
   --brand-green-light: var(--misty-moor);
@@ -220,6 +220,34 @@ table {
 
 .section { padding-block: 3.5rem; }
 .section-sm { padding-block: 2rem; }
+
+.landing-deferred-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 720px;
+}
+
+.flip-word {
+  animation: flip-word-in 320ms ease-out both;
+  will-change: opacity, transform;
+}
+
+@keyframes flip-word-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.35rem, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-word {
+    animation: none;
+    will-change: auto;
+  }
+}
 
 .shadow-soft { box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.06); }
 

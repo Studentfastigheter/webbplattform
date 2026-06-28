@@ -69,6 +69,8 @@ function routeRedirects(source: string, destination: string) {
 }
 
 const nextConfig: NextConfig = {
+  productionBrowserSourceMaps: true,
+
   allowedDevOrigins: [
     "localhost",
     "192.168.1.126",
@@ -76,6 +78,7 @@ const nextConfig: NextConfig = {
   ],
 
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "www.dropbox.com" },

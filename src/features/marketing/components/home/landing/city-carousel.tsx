@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -10,6 +10,7 @@ import type { CityDTO } from "@/types/city";
 
 const MIN_CAROUSEL_DURATION_SECONDS = 80;
 const CAROUSEL_DURATION_SECONDS_PER_CITY = 5;
+const CITY_LOAD_ROOT_MARGIN = "700px 0px";
 
 type CityCarouselItem = {
   name: string;
@@ -21,13 +22,18 @@ function CityCarouselCard({ city }: { city: CityCarouselItem }) {
   const { t } = useI18n();
   const cardClassName =
     "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-[#004225] ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
-  const style = {
-    ...(city.imageUrl ? { backgroundImage: `url("${city.imageUrl}")` } : {}),
-    backgroundPosition: "center",
-    backgroundSize: "cover",
-  } satisfies CSSProperties;
   const content = (
     <>
+      {city.imageUrl ? (
+        <img
+          src={city.imageUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+          loading="lazy"
+          decoding="async"
+          fetchPriority="low"
+        />
+      ) : null}
       <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/72 transition-opacity group-hover:opacity-95" />
       <span className="absolute bottom-5 left-5 max-w-[calc(100%-2.5rem)] break-words text-[24px] font-medium leading-[1.05] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:text-[28px]">
         {city.name}
@@ -40,7 +46,6 @@ function CityCarouselCard({ city }: { city: CityCarouselItem }) {
       href={`/cities/${encodeURIComponent(city.code)}`}
       aria-label={t("home.cities.openAria", { city: city.name })}
       className={cardClassName}
-      style={style}
     >
       {content}
     </Link>
@@ -75,9 +80,37 @@ function uniqueCarouselCities(cities: CityCarouselItem[]) {
 
 export function CityCarousel() {
   const { t } = useI18n();
+  const sectionRef = useRef<HTMLElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
   const [cities, setCities] = useState<CityCarouselItem[]>([]);
 
   useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || shouldLoad) return;
+
+    if (!("IntersectionObserver" in window)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+
+        setShouldLoad(true);
+        observer.disconnect();
+      },
+      { rootMargin: CITY_LOAD_ROOT_MARGIN },
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  }, [shouldLoad]);
+
+  useEffect(() => {
+    if (!shouldLoad) return;
+
     let active = true;
 
     cityService
@@ -100,7 +133,7 @@ export function CityCarousel() {
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [shouldLoad, t]);
 
   const displayCities = cities;
   const carouselCities = useMemo(
@@ -115,7 +148,11 @@ export function CityCarousel() {
   } as CSSProperties;
 
   return (
-    <section className="py-14 sm:py-20 lg:py-24" aria-labelledby="city-carousel-heading">
+    <section
+      ref={sectionRef}
+      className="landing-deferred-section py-14 sm:py-20 lg:py-24"
+      aria-labelledby="city-carousel-heading"
+    >
       <h2
         id="city-carousel-heading"
         className="mx-auto mb-6 max-w-4xl px-4 text-center text-2xl font-bold leading-tight text-foreground sm:mb-8 sm:text-3xl md:text-4xl"
@@ -123,7 +160,7 @@ export function CityCarousel() {
         {t("home.cities.headingStart")}{" "}
         <span className="text-pop-contrast">{t("home.cities.headingHighlight")}</span>
       </h2>
-      <div className="landing-cities-marquee">
+      <div className="landing-cities-marquee min-h-[362px] sm:min-h-[424px] lg:min-h-[464px]">
         <div className="landing-cities-track" style={carouselStyle}>
           {carouselCities.map((city, index) => (
             <CityCarouselCard

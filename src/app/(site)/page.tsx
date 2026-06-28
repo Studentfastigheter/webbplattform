@@ -11,19 +11,19 @@ import { getDictionary } from "@/i18n/server";
 
 const listingMockups = [
   {
-    src: "/images/mockups/listing1.png",
+    src: "/images/mockups/listing1.webp",
     className: "sm:mt-6 lg:mt-10",
   },
   {
-    src: "/images/mockups/listing2.png",
+    src: "/images/mockups/listing2.webp",
     className: "",
   },
   {
-    src: "/images/mockups/listing3.png",
+    src: "/images/mockups/listing3.webp",
     className: "sm:mt-3 lg:mt-6",
   },
   {
-    src: "/images/mockups/listing4.png",
+    src: "/images/mockups/listing4.webp",
     className: "sm:mt-8 lg:mt-12",
   },
 ];
@@ -37,7 +37,7 @@ function ListingMockupShowcase({
 }) {
   return (
     <section
-      className="relative bg-background px-4 pb-12 pt-2 sm:px-6 sm:pb-16 lg:pb-20"
+      className="landing-deferred-section relative bg-background px-4 pb-12 pt-2 sm:px-6 sm:pb-16 lg:pb-20"
       aria-label={label}
     >
       <div className="mx-auto grid w-full max-w-7xl grid-cols-2 items-center justify-items-center gap-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
@@ -53,6 +53,8 @@ function ListingMockupShowcase({
               height={728}
               sizes="(max-width: 640px) 44vw, (max-width: 1024px) 232px, 292px"
               className="h-auto w-full rounded-[18px] object-contain shadow-[0_20px_45px_rgba(15,23,42,0.14)] ring-1 ring-black/5"
+              loading="lazy"
+              fetchPriority="low"
             />
           </div>
         ))}
@@ -71,13 +73,13 @@ export default async function Home() {
       <Hero
         title={home.hero.title}
         flipWords={[...home.hero.flipWords]}
-        flipWordsClassName="!text-pop-contrast !z-10 relative"
+        flipWordsClassName="![color:#004225] !z-10 relative"
         subtitle={home.hero.subtitle}
         waitlistHref="#register-waitlist"
         businessHref="/for-business"
         interestCta={home.hero.interestCta}
         businessCta={home.hero.businessCta}
-        previewImageSrc="/mockup.svg"
+        previewImageSrc="/mockup-hero.webp"
         previewImageAlt={home.hero.previewAlt}
         backgroundClassName="bg-background"
       />
