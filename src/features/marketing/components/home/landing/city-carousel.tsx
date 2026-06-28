@@ -30,6 +30,7 @@ function CityCarouselCard({ city }: { city: CityCarouselItem }) {
           src={city.imageUrl}
           alt={city.name}
           fill
+          unoptimized
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           sizes="(max-width: 640px) 230px, (max-width: 1024px) 280px, 320px"
         />
