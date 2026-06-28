@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Script from "next/script";
 import { cn } from "@/lib/utils";
 
 const GOOGLE_ADSENSE_CLIENT = "ca-pub-8695010385893430";
@@ -70,18 +71,26 @@ export function GoogleAdSenseUnit({
   }, [slot]);
 
   return (
-    <ins
-      ref={adRef}
-      className={cn(
-        "adsbygoogle !absolute !inset-0 !m-0 block !h-auto !max-h-full !w-full !max-w-full",
-        className,
-      )}
-      style={{ display: "block" }}
-      data-ad-client={GOOGLE_ADSENSE_CLIENT}
-      data-ad-slot={slot}
-      data-ad-format={format}
-      data-full-width-responsive="true"
-      aria-label={label}
-    />
+    <>
+      <Script
+        id="google-adsense"
+        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_CLIENT}`}
+        strategy="lazyOnload"
+        crossOrigin="anonymous"
+      />
+      <ins
+        ref={adRef}
+        className={cn(
+          "adsbygoogle !absolute !inset-0 !m-0 block !h-auto !max-h-full !w-full !max-w-full",
+          className,
+        )}
+        style={{ display: "block" }}
+        data-ad-client={GOOGLE_ADSENSE_CLIENT}
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-full-width-responsive="true"
+        aria-label={label}
+      />
+    </>
   );
 }

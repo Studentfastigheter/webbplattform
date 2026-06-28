@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserEnvironmentProvider } from "@/context/UserEnvironmentContext";
@@ -24,6 +23,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
 const GOOGLE_ADSENSE_ACCOUNT = "ca-pub-8695010385893430";
+const ENABLE_VERCEL_INSIGHTS = process.env.VERCEL === "1";
 
 export const viewport: Viewport = {
   themeColor: "#efefef",
@@ -102,14 +102,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
         />
-        <Script
-          id="google-adsense"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ACCOUNT}`}
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
-        <SpeedInsights />
-        <Analytics />
+        {ENABLE_VERCEL_INSIGHTS ? (
+          <>
+            <SpeedInsights />
+            <Analytics />
+          </>
+        ) : null}
         {/*
           QueryProvider sits OUTSIDE AuthProvider so that AuthContext can later
           be migrated into a query (useAuthSession) without re-shuffling the

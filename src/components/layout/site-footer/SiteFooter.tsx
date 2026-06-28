@@ -1,8 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import type { ComponentType } from "react";
-import { Typography, type TypographyProps } from "@material-tailwind/react";
 import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "@/components/icons";
 import { SiThreads } from "@/components/icons";
 
@@ -10,8 +8,6 @@ import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isPlatformLaunched } from "@/lib/platform-launch";
-
-const Text = Typography as unknown as ComponentType<Partial<TypographyProps>>;
 
 const COLORS = {
   primary: "#004225",
@@ -61,7 +57,7 @@ export default function SiteFooter() {
             alt=""
             fill
             className="object-fill"
-            priority
+            sizes="100vw"
           />
         </div>
       </div>
@@ -73,14 +69,14 @@ export default function SiteFooter() {
               <Link href="/" className="relative block h-14 w-14 shrink-0" aria-label={t("siteFooter.homeAria")}>
                 <Image
                   src="/campuslyan-logo.svg"
-                  alt="CampusLyan"
+                  alt=""
                   fill
                   className="object-contain brightness-0 invert"
                 />
               </Link>
 
               <div className="min-w-0 border-l-2 py-1 pl-4 sm:pl-5" style={{ borderColor: COLORS.accent }}>
-                <Text
+                <div
                   className="max-w-md leading-tight"
                   style={{ color: COLORS.lightestText }}
                 >
@@ -90,7 +86,7 @@ export default function SiteFooter() {
                   <span className="mt-1.5 block text-sm font-light leading-relaxed sm:text-[0.95rem]">
                     {t("siteFooter.tagline")}
                   </span>
-                </Text>
+                </div>
               </div>
             </div>
 

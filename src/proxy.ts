@@ -17,6 +17,33 @@ import {
 import { isPrivateIndexingHost } from "@/lib/seo";
 
 const PRIVATE_SUBDOMAIN_ROBOTS_HEADER = "noindex, nofollow, noarchive, nosnippet";
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https:",
+  "style-src 'self' 'unsafe-inline' https:",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+  "connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws: wss:",
+  "frame-src 'self' https:",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "media-src 'self' https: blob:",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const SECURITY_HEADERS = [
+  ["Content-Security-Policy", CONTENT_SECURITY_POLICY],
+  ["Cross-Origin-Opener-Policy", "same-origin"],
+  ["Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"],
+  ["Referrer-Policy", "strict-origin-when-cross-origin"],
+  ["Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload"],
+  ["X-Content-Type-Options", "nosniff"],
+  ["X-Frame-Options", "DENY"],
+] as const;
 
 function getHostname(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
@@ -34,12 +61,34 @@ function isPublicAssetPath(pathname: string) {
   return /\.[^/]+$/.test(pathname);
 }
 
+function isImmutablePublicAssetPath(pathname: string) {
+  return /\.(?:avif|webp|png|jpe?g|gif|svg|ico|woff2?)$/i.test(pathname);
+}
+
 function setLocaleCookie(response: NextResponse, locale: Locale) {
   response.cookies.set(localeCookieName, locale, {
     maxAge: localeCookieMaxAge,
     path: "/",
     sameSite: "lax",
   });
+}
+
+function withSecurityHeaders(response: NextResponse) {
+  SECURITY_HEADERS.forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+
+  return response;
+}
+
+function nextPublicAsset(pathname: string) {
+  const response = withSecurityHeaders(NextResponse.next());
+
+  if (isImmutablePublicAssetPath(pathname)) {
+    response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  }
+
+  return response;
 }
 
 function requestHeadersWithLocale(req: NextRequest, locale: Locale) {
@@ -71,7 +120,7 @@ function nextWithLocale(req: NextRequest, locale: Locale) {
   });
 
   setLocaleCookie(response, locale);
-  return response;
+  return withSecurityHeaders(response);
 }
 
 function rewriteWithLocale(req: NextRequest, url: URL, locale: Locale) {
@@ -82,14 +131,14 @@ function rewriteWithLocale(req: NextRequest, url: URL, locale: Locale) {
   });
 
   setLocaleCookie(response, locale);
-  return response;
+  return withSecurityHeaders(response);
 }
 
 function redirectWithLocale(url: URL, locale: Locale) {
   const response = NextResponse.redirect(url);
 
   setLocaleCookie(response, locale);
-  return response;
+  return withSecurityHeaders(response);
 }
 
 function withNoIndexHeader(response: NextResponse) {
@@ -113,7 +162,7 @@ export function proxy(req: NextRequest) {
   const routingPathname = stripLocaleFromPathname(pathname);
 
   if (isPublicAssetPath(pathname)) {
-    return nextWithLocale(req, locale);
+    return nextPublicAsset(pathname);
   }
 
   const isPortalSubdomain = hostname.startsWith("portal.");

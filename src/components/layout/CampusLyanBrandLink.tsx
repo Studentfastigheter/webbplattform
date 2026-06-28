@@ -27,7 +27,7 @@ export function CampusLyanBrandLink({
       href={href}
     >
       <Image
-        alt="CampusLyan"
+        alt=""
         className={cn("shrink-0", logoClassName)}
         height={logoSize}
         src="/campuslyan-logo.svg"

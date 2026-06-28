@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 import { isAdminSubdomain, isPortalSubdomain } from "@/lib/subdomain-routing";
 
 function isAppPath(pathname: string) {
@@ -41,37 +40,24 @@ export default function ScrollToTop() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (shouldHide) {
+  if (shouldHide || !showScrollTop) {
     return null;
   }
 
   return (
-    <AnimatePresence>
-      {showScrollTop && (
-        <motion.button
-          initial={{ opacity: 0, y: 20, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.8 }}
-          whileHover={{ y: -5 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={scrollToTop}
-          className={cn(
-            "fixed bottom-6 right-6 z-[60] flex items-center gap-2",
-            "h-12 rounded-full bg-white/90 dark:bg-zinc-900/90 px-4",
-            "text-zinc-900 dark:text-white shadow-xl backdrop-blur-md",
-            "border border-zinc-200 dark:border-zinc-800",
-            "transition-colors hover:bg-white dark:hover:bg-zinc-900",
-            "group outline-none" // Vi tar bort standard-outline helt här
-          )}
-          aria-label="Scrolla till toppen"
-        >
-          <ArrowUp 
-            className="size-5 transition-transform duration-300 group-hover:-translate-y-1" 
-            strokeWidth={2.5} 
-          />
-          <span className="text-sm font-medium pr-1">Till toppen</span>
-        </motion.button>
+    <button
+      onClick={scrollToTop}
+      className={cn(
+        "fixed bottom-6 right-6 z-[60] flex h-12 items-center gap-2 rounded-full border border-zinc-200 bg-white/90 px-4 text-zinc-900 shadow-xl outline-none backdrop-blur-md transition-transform hover:-translate-y-1 hover:bg-white active:scale-95 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-white dark:hover:bg-zinc-900",
+        "group",
       )}
-    </AnimatePresence>
+      aria-label="Scrolla till toppen"
+    >
+      <ArrowUp
+        className="size-5 transition-transform duration-300 group-hover:-translate-y-1"
+        strokeWidth={2.5}
+      />
+      <span className="pr-1 text-sm font-medium">Till toppen</span>
+    </button>
   );
 }

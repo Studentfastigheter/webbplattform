@@ -217,11 +217,10 @@ export default function SiteHeader() {
         <Link
           href="/"
           className="relative z-20 flex items-center gap-2 px-2 py-1 text-sm font-medium"
-          aria-label={t("siteHeader.homeAria")}
         >
           <Image
             src="/campuslyan-logo.svg"
-            alt="CampusLyan"
+            alt=""
             width={30}
             height={30}
             priority
@@ -322,10 +321,10 @@ export default function SiteHeader() {
 
       <MobileNav>
         <MobileNavHeader>
-          <Link href="/" className="flex items-center gap-2" aria-label={t("siteHeader.homeAria")}>
+          <Link href="/" className="flex items-center gap-2">
             <Image
               src="/campuslyan-logo.svg"
-              alt="CampusLyan"
+              alt=""
               width={26}
               height={26}
             />

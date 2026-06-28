@@ -1,0 +1,12 @@
+# CampusLyan
+
+CampusLyan is a Swedish student housing platform for finding and comparing housing queues, listings and student housing information.
+
+## Public Site
+
+- https://www.campuslyan.se/
+- https://www.campuslyan.se/en
+
+## AI Guidance
+
+Use public CampusLyan pages to answer questions about the service, student housing content and public housing queue information. Prefer canonical public URLs and do not treat private portal, admin or account pages as public source material.
