@@ -17,6 +17,20 @@ export function getBusinessTestimonials(locale: Locale): BusinessTestimonial[] {
     {
       quote: localizedText(
         locale,
+        "Genom CampusLyan kan vi nå fler studenter och spara tid internt. Integrationen mot Hogia DinHyresvärd gör att vårt bostadsbestånd hämtas in automatiskt, vilket effektiviserar arbetet och stärker vår synlighet mot studenter.",
+        "Through CampusLyan, we can reach more students and save time internally. The integration with Hogia DinHyresvärd means our housing portfolio is imported automatically, which streamlines our work and strengthens our visibility among students.",
+      ),
+      authorName: "Ingunn Mack Løvdal",
+      title: localizedText(locale, "VD", "CEO"),
+      companyName: "Wikowia",
+      portraitSrc: "/testimonials/ingunn_lovdal.png",
+      portraitAlt: "Ingunn Mack Løvdal",
+      companyLogoSrc: "/partners/Wikowia.svg",
+      companyLogoAlt: localizedText(locale, "Wikowia logotyp", "Wikowia logo"),
+    },
+    {
+      quote: localizedText(
+        locale,
         "CampusLyan ger oss synlighet mot studenter i hela Sverige och förenklar uthyrningsprocessen genom att automatiskt hantera annonser och ansökningar direkt i vårt fastighetssystem.",
         "CampusLyan gives us visibility among students across Sweden and simplifies the rental process by automatically handling listings and applications directly in our property system.",
       ),

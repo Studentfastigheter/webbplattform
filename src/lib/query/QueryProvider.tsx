@@ -1,8 +1,10 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState, type ReactNode } from "react";
+
+import { createQueryClient } from "@/lib/query/create-query-client";
 
 /**
  * Defaults rationale:
@@ -16,26 +18,6 @@ import { useState, type ReactNode } from "react";
  *   retry hides transient blips. Mutations should never silently retry — the
  *   call-site handles the error and decides what to do.
  */
-const QUERY_DEFAULT_STALE_TIME_MS = 30_000;
-const QUERY_DEFAULT_GC_TIME_MS = 5 * 60_000;
-
-function createQueryClient(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: QUERY_DEFAULT_STALE_TIME_MS,
-        gcTime: QUERY_DEFAULT_GC_TIME_MS,
-        retry: 1,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: true,
-      },
-      mutations: {
-        retry: 0,
-      },
-    },
-  });
-}
-
 type QueryProviderProps = {
   children: ReactNode;
 };

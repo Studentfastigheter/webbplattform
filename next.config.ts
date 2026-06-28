@@ -83,6 +83,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "media.licdn.com" },
       { protocol: "https", hostname: "image-cdn.mild.cloud" },
       { protocol: "https", hostname: "img.meccdn.com" },
+      { protocol: "https", hostname: "lettingdocuments.blob.core.windows.net" },
       { protocol: "https", hostname: "www.familjebostader.se" },
       { protocol: "https", hostname: "encrypted-tbn0.gstatic.com" },
       { protocol: "https", hostname: "www.chalmersstudentbostader.se" },
