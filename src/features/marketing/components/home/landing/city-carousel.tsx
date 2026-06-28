@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-
+import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
 import { normalizeCityName } from "@/features/cities/city-utils";
@@ -22,16 +22,16 @@ function CityCarouselCard({ city }: { city: CityCarouselItem }) {
   const { t } = useI18n();
   const cardClassName =
     "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-[#004225] ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
+  
   const content = (
     <>
       {city.imageUrl ? (
-        <img
+        <Image
           src={city.imageUrl}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-          loading="lazy"
-          decoding="async"
-          fetchPriority="low"
+          alt={city.name}
+          fill
+          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+          sizes="(max-width: 640px) 230px, (max-width: 1024px) 280px, 320px"
         />
       ) : null}
       <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/72 transition-opacity group-hover:opacity-95" />
