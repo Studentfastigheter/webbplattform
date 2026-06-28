@@ -7,8 +7,6 @@ import { useQueries } from "@tanstack/react-query";
 import {
   Eye,
   RefreshCw,
-  Search,
-  X,
 } from "@/components/icons";
 import ListingCardSmall from "@/features/listings/components/ListingCard_Small";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { SearchBar } from "@/components/ui/search-bar";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
@@ -746,41 +745,21 @@ export default function PortalAdsPage() {
 
         <div className="flex min-w-0 flex-col gap-3 border-b border-gray-200 pb-4">
           <div className="w-full lg:mx-auto lg:max-w-[720px]">
-            <form
-              className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:h-14 xl:pl-6 xl:pr-2"
+            <SearchBar
+              value={searchInput}
+              onValueChange={setSearchInput}
+              placeholder={localizedText(locale, "Sök på titel, stad eller område", "Search by title, city or area")}
+              submitLabel={localizedText(locale, "Sök", "Search")}
+              clearLabel={localizedText(locale, "Rensa sökning", "Clear search")}
+              onClear={() => {
+                setSearchInput("");
+                setSearch("");
+              }}
               onSubmit={(event) => {
                 event.preventDefault();
                 setSearch(searchInput);
               }}
-            >
-              <Search className="h-[18px] w-[18px] shrink-0 text-black/55 sm:h-5 sm:w-5" />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder={localizedText(locale, "Sök på titel, stad eller område", "Search by title, city or area")}
-                className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/45 sm:text-base"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  aria-label={localizedText(locale, "Rensa sökning", "Clear search")}
-                  onClick={() => {
-                    setSearchInput("");
-                    setSearch("");
-                  }}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#004225] transition-colors hover:bg-[#004225]/5 sm:h-8 sm:w-8"
-                >
-                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </button>
-              )}
-              <button
-                type="submit"
-                className="h-8 shrink-0 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
-              >
-                {localizedText(locale, "Sök", "Search")}
-              </button>
-            </form>
+            />
           </div>
 
           <div className="flex w-full min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
@@ -842,7 +821,7 @@ export default function PortalAdsPage() {
 
             <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center lg:ml-auto lg:w-auto lg:justify-end">
               <Button
-                className="h-9 w-full rounded-lg border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 hover:text-[#004225] sm:w-auto"
+                className="h-9 w-full rounded-lg border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 hover:text-[#004225] sm:w-[112px] sm:min-w-0"
                 isDisabled={
                   loading ||
                   updatingListings ||

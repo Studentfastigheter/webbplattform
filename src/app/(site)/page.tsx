@@ -73,7 +73,7 @@ export default async function Home() {
       <Hero
         title={home.hero.title}
         flipWords={[...home.hero.flipWords]}
-        flipWordsClassName="![color:#004225] !z-10 relative"
+        flipWordsClassName="!text-pop-contrast !z-10 relative"
         subtitle={home.hero.subtitle}
         waitlistHref="#register-waitlist"
         businessHref="/for-business"

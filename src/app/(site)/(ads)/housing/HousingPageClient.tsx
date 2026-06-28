@@ -9,12 +9,10 @@ import {
   Car,
   Cat,
   CookingPot,
-  Search,
   Sofa,
   Sparkles,
   Wifi,
   WashingMachine,
-  X,
 } from "@/components/icons";
 import { getAppIconElement } from "@/components/icons/catalog";
 import { useAuth } from "@/context/AuthContext";
@@ -25,6 +23,7 @@ import ListingsFilterButton, {
 } from "@/features/listings/components/Search/ListingsFilterButton";
 import { FieldSet } from "@/components/ui/field";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { SearchBar } from "@/components/ui/search-bar";
 import SwitchSelect, { SwitchSelectValue } from "@/components/ui/switchSelect";
 
 import {
@@ -672,8 +671,18 @@ export default function ListingsPage() {
           <div className="flex w-full flex-col gap-3 sm:gap-4">
             <div className="flex w-full flex-col items-stretch gap-2 sm:gap-3 md:flex-row md:items-center md:justify-center lg:grid lg:grid-cols-[1fr_minmax(0,680px)_1fr] xl:grid-cols-[1fr_minmax(0,760px)_1fr] 2xl:grid-cols-[1fr_minmax(0,840px)_1fr]">
               <div className="w-full md:max-w-[620px] md:flex-1 lg:col-start-2 lg:max-w-none">
-                <form
-                  className="flex h-11 w-full items-center gap-2 rounded-full border border-black/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_6px_18px_rgba(0,0,0,0.08)] sm:h-12 sm:gap-3 sm:pl-5 xl:pl-6 xl:pr-2"
+                <SearchBar
+                  value={searchInput}
+                  onValueChange={setSearchInput}
+                  placeholder={localizedText(locale, "Sök på stad", "Search by city")}
+                  submitLabel={localizedText(locale, "Sök", "Search")}
+                  clearLabel={localizedText(locale, "Rensa sökning", "Clear search")}
+                  onClear={() => {
+                    setSearchInput("");
+                    setPage(1);
+                    updatePageInUrl(1);
+                    setFilters((prev) => ({ ...prev, city: "" }));
+                  }}
                   onSubmit={(event) => {
                     event.preventDefault();
                     setPage(1);
@@ -683,37 +692,7 @@ export default function ListingsPage() {
                       city: searchInput.trim(),
                     }));
                   }}
-                >
-                  <Search className="h-[18px] w-[18px] shrink-0 text-black/55 sm:h-5 sm:w-5" />
-                  <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder={localizedText(locale, "Sök på stad", "Search by city")}
-                    className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/45 sm:text-base"
-                  />
-                  {searchInput && (
-                    <button
-                      type="button"
-                      aria-label={localizedText(locale, "Rensa sökning", "Clear search")}
-                      onClick={() => {
-                        setSearchInput("");
-                        setPage(1);
-                        updatePageInUrl(1);
-                        setFilters((prev) => ({ ...prev, city: "" }));
-                      }}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#004225] transition-colors hover:bg-[#004225]/5 sm:h-8 sm:w-8"
-                    >
-                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    className="h-8 shrink-0 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
-                  >
-                    {localizedText(locale, "Sök", "Search")}
-                  </button>
-                </form>
+                />
               </div>
               <div className="w-auto self-center md:shrink-0 lg:col-start-3 lg:justify-self-start">
                 <ListingsFilterButton
