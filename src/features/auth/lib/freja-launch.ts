@@ -1,4 +1,8 @@
-const defaultFrejaLaunchBaseUrl = "https://app.test.frejaeid.com/freja";
+// Production Freja eID app launch endpoint. QR codes / same-device deep links
+// built from this open the real Freja eID app. Set
+// NEXT_PUBLIC_FREJA_LAUNCH_BASE_URL="https://app.test.frejaeid.com/freja" to
+// point at the Freja eID+ test app instead (backend must run in test too).
+const defaultFrejaLaunchBaseUrl = "https://app.frejaeid.com/freja";
 
 const frejaLaunchBaseUrl =
   process.env.NEXT_PUBLIC_FREJA_LAUNCH_BASE_URL?.trim() ||
