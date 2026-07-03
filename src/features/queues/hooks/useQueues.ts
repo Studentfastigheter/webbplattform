@@ -221,6 +221,22 @@ export function useJoinQueue() {
   });
 }
 
+/**
+ * Leave a queue. Mirrors useJoinQueue: invalidate the user's queue list so the
+ * queue disappears everywhere it's rendered. No optimistic patch — the leave
+ * endpoint returns 400 if the student isn't actually a member, so we wait for
+ * the server before updating the UI.
+ */
+export function useLeaveQueue() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (queueId: string) => queueService.leave(queueId),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: qk.queues.my() });
+    },
+  });
+}
+
 export function useUpsertQueueRequirement() {
   const qc = useQueryClient();
 

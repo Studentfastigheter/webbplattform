@@ -32,6 +32,12 @@ import { schoolService } from "@/features/schools/services/school-service";
 import {
   cityService,
   normalizeCityCode,
+  type AreaToCityDTO,
+  type AreaToLocationDTO,
+  type CreateAreaToCityRequest,
+  type CreateAreaToLocationRequest,
+  type ModifyAreaToCityRequest,
+  type ModifyAreaToLocationRequest,
 } from "@/features/cities/services/city-service";
 import {
   companyService,
@@ -424,5 +430,57 @@ export const adminService = {
 
   getWaitlistStats: async (): Promise<AdminWaitlistStatsDTO> => {
     return apiClient<AdminWaitlistStatsDTO>("/admin/waitlist");
+  },
+
+  // --- Area-to-city mappings (CityController, admin-only) ---
+
+  getAreaMappings: async (
+    options?: ServiceOptions
+  ): Promise<AreaToCityDTO[]> => {
+    return cityService.listAreaMappings(options);
+  },
+
+  createAreaMapping: async (
+    payload: CreateAreaToCityRequest
+  ): Promise<AreaToCityDTO | null> => {
+    return cityService.createAreaMapping(payload);
+  },
+
+  modifyAreaMapping: async (
+    id: string,
+    payload: ModifyAreaToCityRequest
+  ): Promise<AreaToCityDTO | null> => {
+    return cityService.updateAreaMapping(id, payload);
+  },
+
+  deleteAreaMapping: async (id: string): Promise<void> => {
+    await cityService.deleteAreaMapping(id);
+  },
+
+  // --- Area-to-location overrides (CityController, admin-only) ---
+
+  getAreaLocations: async (
+    options?: ServiceOptions
+  ): Promise<AreaToLocationDTO[]> => {
+    return cityService.listAreaLocations(options);
+  },
+
+  createAreaLocation: async (
+    payload: CreateAreaToLocationRequest
+  ): Promise<AreaToLocationDTO | null> => {
+    return cityService.createAreaLocation(payload);
+  },
+
+  modifyAreaLocation: async (
+    payload: ModifyAreaToLocationRequest
+  ): Promise<AreaToLocationDTO | null> => {
+    return cityService.updateAreaLocation(payload);
+  },
+
+  deleteAreaLocation: async (
+    areaName: string,
+    companyId: number
+  ): Promise<void> => {
+    await cityService.deleteAreaLocation(areaName, companyId);
   },
 };

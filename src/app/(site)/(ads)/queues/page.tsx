@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "@/components/icons";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
@@ -11,7 +11,7 @@ import {
   type QueueRowProps,
 } from "@/features/queues/components/QueueRow";
 import { useAuth } from "@/context/AuthContext";
-import { useMyQueues } from "@/features/queues/hooks/useQueues";
+import { useLeaveQueue, useMyQueues } from "@/features/queues/hooks/useQueues";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access";
@@ -47,7 +47,43 @@ export default function Page() {
     isLoading: loading,
     isError,
   } = useMyQueues({ hydrated: true });
-  const error = isError ? "Kunde inte ladda dina köer." : null;
+
+  const leaveQueue = useLeaveQueue();
+  const [leavingQueueId, setLeavingQueueId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const handleLeave = useCallback(
+    async (queueId: string, queueName: string) => {
+      if (
+        !confirm(
+          localizedText(
+            locale,
+            `Vill du lämna kön "${queueName}"? Din köplats och kötid försvinner.`,
+            `Do you want to leave the queue "${queueName}"? Your position and queue time will be lost.`
+          )
+        )
+      ) {
+        return;
+      }
+
+      setLeavingQueueId(queueId);
+      setActionError(null);
+      try {
+        await leaveQueue.mutateAsync(queueId);
+      } catch (err) {
+        setActionError(
+          (err as Error)?.message ??
+            localizedText(locale, "Kunde inte lämna kön.", "Could not leave the queue.")
+        );
+      } finally {
+        setLeavingQueueId(null);
+      }
+    },
+    [leaveQueue, locale]
+  );
+
+  const error =
+    actionError ?? (isError ? "Kunde inte ladda dina köer." : null);
 
   const queueRows = useMemo<QueueRowProps[]>(() => {
     if (!user || !userApplications) return [];
@@ -63,10 +99,14 @@ export default function Page() {
           rawCompanyId != null && Number.isFinite(Number(rawCompanyId))
             ? Number(rawCompanyId)
             : null;
+        const name =
+          app.queueName ??
+          queue?.name ??
+          localizedText(locale, "Okänd kö", "Unknown queue");
 
         return {
           id: queueId,
-          name: app.queueName ?? queue?.name ?? localizedText(locale, "Okänd kö", "Unknown queue"),
+          name,
           logoUrl:
             queue?.companyLogoUrl ??
             queue?.logoUrl ??
@@ -77,9 +117,11 @@ export default function Page() {
           companyProfileHref: localizedHref(
             companyId != null ? `/all-queues/${companyId}` : "/all-queues"
           ),
+          onLeave: () => handleLeave(queueId, name),
+          leaving: leavingQueueId === queueId,
         };
       });
-  }, [user, userApplications, locale, localizedHref]);
+  }, [user, userApplications, locale, localizedHref, handleLeave, leavingQueueId]);
 
   const rows = useMemo(() => queueRows.map(buildQueueRow), [queueRows]);
   const emptyState = (

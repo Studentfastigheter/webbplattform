@@ -46,6 +46,11 @@ const operationsItems: AdminNavItem[] = [
     path: "/locations",
     icon: <MapPinIcon className="h-5 w-5" />,
   },
+  {
+    name: "Areas",
+    path: "/areas",
+    icon: <MapIcon className="h-5 w-5" />,
+  },
 ];
 
 const accountItems: AdminNavItem[] = [

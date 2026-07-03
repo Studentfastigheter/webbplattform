@@ -1,6 +1,7 @@
 import {
   apiClient,
   arrayFromApiResponse,
+  buildQuery,
   pathSegment,
   type ServiceOptions,
 } from "@/lib/api/client";
@@ -13,6 +14,57 @@ import type {
   CreateCityRequest,
   ModifyCityRequest,
 } from "@/types/city";
+
+// --- Area-to-city mappings (admin) ---
+// Maps an area (sub-city with its own city code, e.g. a district) to the
+// parent city it belongs to, so listings in the area are grouped under it.
+export type AreaToCityDTO = {
+  id: string;
+  areaCode: string;
+  areaName: string | null;
+  parentCityCode: string;
+  parentCityName: string | null;
+};
+
+export type CreateAreaToCityRequest = {
+  areaCode: string;
+  parentCityCode: string;
+};
+
+export type ModifyAreaToCityRequest = {
+  areaCode?: string | null;
+  parentCityCode?: string | null;
+};
+
+// --- Area-to-location overrides (admin) ---
+// Maps a raw area name (per company) to a concrete location. Rows with
+// null city/lat/lng were auto-created when geocoding failed and still need
+// an admin to fill in the correct values.
+export type AreaToLocationDTO = {
+  areaName: string;
+  companyId: number;
+  companyName: string | null;
+  city: string | null;
+  lat: number | null;
+  lng: number | null;
+  filled: boolean;
+};
+
+export type CreateAreaToLocationRequest = {
+  areaName: string;
+  companyId: number;
+  city?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+};
+
+export type ModifyAreaToLocationRequest = {
+  areaName: string;
+  companyId: number;
+  city?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -136,6 +188,58 @@ const normalizeCityStudentActivity = (
   };
 };
 
+const normalizeAreaToCity = (value: unknown): AreaToCityDTO | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = firstString(value.id);
+  const areaCode = firstString(value.areaCode, value.code);
+  const parentCityCode = firstString(value.parentCityCode);
+
+  if (!id || !areaCode || !parentCityCode) {
+    return null;
+  }
+
+  return {
+    id,
+    areaCode,
+    areaName: firstString(value.areaName) ?? null,
+    parentCityCode,
+    parentCityName: firstString(value.parentCityName) ?? null,
+  };
+};
+
+const normalizeAreaToLocation = (value: unknown): AreaToLocationDTO | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const areaName = firstString(value.areaName);
+  const companyId = firstNumber(value.companyId);
+
+  if (!areaName || companyId === undefined) {
+    return null;
+  }
+
+  const lat = firstNumber(value.lat, value.latitude);
+  const lng = firstNumber(value.lng, value.longitude);
+  const city = firstString(value.city) ?? null;
+
+  return {
+    areaName,
+    companyId,
+    companyName: firstString(value.companyName) ?? null,
+    city,
+    lat: lat ?? null,
+    lng: lng ?? null,
+    filled:
+      typeof value.filled === "boolean"
+        ? value.filled
+        : Boolean(city) && lat !== undefined && lng !== undefined,
+  };
+};
+
 const normalizeCityDetail = (value: unknown): CityDetailedDTO => {
   const city = normalizeCity(value);
 
@@ -213,5 +317,103 @@ export const cityService = {
     await apiClient<void>(`/cities/${pathSegment(code)}`, {
       method: "DELETE",
     });
+  },
+
+  // --- Area-to-city mappings (admin) ---
+
+  listAreaMappings: async (
+    options?: ServiceOptions
+  ): Promise<AreaToCityDTO[]> => {
+    const mappings = await apiClient<unknown>("/cities/area-mappings", {
+      signal: options?.signal,
+    });
+    return arrayFromApiResponse<unknown>(mappings)
+      .map(normalizeAreaToCity)
+      .filter((mapping): mapping is AreaToCityDTO => mapping !== null);
+  },
+
+  createAreaMapping: async (
+    payload: CreateAreaToCityRequest
+  ): Promise<AreaToCityDTO | null> => {
+    const created = await apiClient<unknown>("/cities/area-mappings", {
+      method: "POST",
+      body: JSON.stringify({
+        areaCode: normalizeCityCode(payload.areaCode),
+        parentCityCode: normalizeCityCode(payload.parentCityCode),
+      }),
+    });
+    return normalizeAreaToCity(created);
+  },
+
+  updateAreaMapping: async (
+    id: string,
+    payload: ModifyAreaToCityRequest
+  ): Promise<AreaToCityDTO | null> => {
+    const updated = await apiClient<unknown>(
+      `/cities/area-mappings/${pathSegment(id)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          areaCode: payload.areaCode
+            ? normalizeCityCode(payload.areaCode)
+            : undefined,
+          parentCityCode: payload.parentCityCode
+            ? normalizeCityCode(payload.parentCityCode)
+            : undefined,
+        }),
+      }
+    );
+    return normalizeAreaToCity(updated);
+  },
+
+  deleteAreaMapping: async (id: string): Promise<void> => {
+    await apiClient<void>(`/cities/area-mappings/${pathSegment(id)}`, {
+      method: "DELETE",
+    });
+  },
+
+  // --- Area-to-location overrides (admin) ---
+
+  listAreaLocations: async (
+    options?: ServiceOptions
+  ): Promise<AreaToLocationDTO[]> => {
+    const locations = await apiClient<unknown>("/cities/area-locations", {
+      signal: options?.signal,
+    });
+    return arrayFromApiResponse<unknown>(locations)
+      .map(normalizeAreaToLocation)
+      .filter((location): location is AreaToLocationDTO => location !== null);
+  },
+
+  createAreaLocation: async (
+    payload: CreateAreaToLocationRequest
+  ): Promise<AreaToLocationDTO | null> => {
+    const created = await apiClient<unknown>("/cities/area-locations", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return normalizeAreaToLocation(created);
+  },
+
+  updateAreaLocation: async (
+    payload: ModifyAreaToLocationRequest
+  ): Promise<AreaToLocationDTO | null> => {
+    const updated = await apiClient<unknown>("/cities/area-locations", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    return normalizeAreaToLocation(updated);
+  },
+
+  deleteAreaLocation: async (
+    areaName: string,
+    companyId: number
+  ): Promise<void> => {
+    await apiClient<void>(
+      `/cities/area-locations${buildQuery({ areaName, companyId })}`,
+      {
+        method: "DELETE",
+      }
+    );
   },
 };

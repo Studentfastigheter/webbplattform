@@ -117,6 +117,7 @@ const queueEndpoints = {
   detail: (id: string) => `/queues/${pathSegment(id)}`,
   my: () => "/queues/my",
   join: (queueId: string) => `/queues/${pathSegment(queueId)}/join`,
+  leave: (queueId: string) => `/queues/${pathSegment(queueId)}/leave`,
   requirement: (id: string) => `/queues/${pathSegment(id)}/requirement`,
 } as const;
 
@@ -407,6 +408,14 @@ export const queueService = {
     return apiClient<string>(queueEndpoints.join(queueId), {
       method: "POST",
       responseType: "text",
+    });
+  },
+
+  // Lämna en kö (studenten tar bort sitt medlemskap).
+  // Anropar: DELETE /api/queues/{id}/leave
+  leave: async (queueId: string): Promise<void> => {
+    await apiClient<void>(queueEndpoints.leave(queueId), {
+      method: "DELETE",
     });
   },
 

@@ -437,6 +437,8 @@ export const qk = {
     userStatistics: (from?: string, to?: string) =>
       ["admin", "user-statistics", from ?? "", to ?? ""] as const,
     waitlistStats: () => ["admin", "waitlist-stats"] as const,
+    areaMappings: () => ["admin", "area-mappings"] as const,
+    areaLocations: () => ["admin", "area-locations"] as const,
   },
 
   // City detail (the working_main rename). Keyed on the normalized city code

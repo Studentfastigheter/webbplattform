@@ -15,6 +15,8 @@ export type QueueRowProps = {
   status: Status;
   days: number;
   companyProfileHref?: string | null;
+  onLeave?: () => void;
+  leaving?: boolean;
 };
 
 const NameCell: React.FC<
@@ -66,42 +68,66 @@ const DaysCell: React.FC<{ days: number }> = ({ days }) => {
 };
 
 const ActionsCell: React.FC<
-  Pick<QueueRowProps, "companyProfileHref"> & { className?: string }
+  Pick<QueueRowProps, "companyProfileHref" | "onLeave" | "leaving"> & {
+    className?: string;
+  }
 > = ({
   companyProfileHref,
+  onLeave,
+  leaving = false,
   className,
 }) => {
   const { locale } = useI18n();
   const label = localizedText(locale, "Visa företag", "View company");
+  const leaveLabel = leaving
+    ? localizedText(locale, "Lämnar…", "Leaving…")
+    : localizedText(locale, "Lämna kö", "Leave queue");
 
-  if (!companyProfileHref) {
-    return (
-      <div className={clsx("flex min-h-11 items-center justify-center", className)}>
+  return (
+    <div
+      className={clsx(
+        "flex min-h-11 flex-col items-center justify-center gap-1.5",
+        className
+      )}
+    >
+      {companyProfileHref ? (
+        <Link
+          href={companyProfileHref}
+          className={clsx(
+            "inline-flex items-center gap-1 text-[13px] font-semibold text-[#004225]",
+            "transition hover:text-[#00331d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+          )}
+        >
+          {label}
+          <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
+      ) : (
         <span className="inline-flex items-center text-[13px] font-semibold text-gray-400">
           {label}
         </span>
-      </div>
-    );
-  }
+      )}
 
-  return (
-    <div className={clsx("flex min-h-11 items-center justify-center", className)}>
-      <Link
-        href={companyProfileHref}
-        className={clsx(
-          "inline-flex items-center gap-1 text-[13px] font-semibold text-[#004225]",
-          "transition hover:text-[#00331d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
-        )}
-      >
-        {label}
-        <ChevronRight className="h-3.5 w-3.5" />
-      </Link>
+      {onLeave && (
+        <button
+          type="button"
+          onClick={onLeave}
+          disabled={leaving}
+          className={clsx(
+            "inline-flex items-center text-[13px] font-semibold text-red-600",
+            "transition hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50",
+            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+          )}
+        >
+          {leaveLabel}
+        </button>
+      )}
     </div>
   );
 };
 
 export const buildQueueRow = (props: QueueRowProps): ListFrameRow => {
-  const { id, name, logoUrl, status, days, companyProfileHref } = props;
+  const { id, name, logoUrl, status, days, companyProfileHref, onLeave, leaving } =
+    props;
 
   return {
     id,
@@ -110,7 +136,12 @@ export const buildQueueRow = (props: QueueRowProps): ListFrameRow => {
       <NameCell key={`${id}-name`} name={name} logoUrl={logoUrl} />,
       <StatusCell key={`${id}-status`} status={status} />,
       <DaysCell key={`${id}-days`} days={days} />,
-      <ActionsCell key={`${id}-actions`} companyProfileHref={companyProfileHref} />,
+      <ActionsCell
+        key={`${id}-actions`}
+        companyProfileHref={companyProfileHref}
+        onLeave={onLeave}
+        leaving={leaving}
+      />,
     ],
   };
 };
@@ -121,6 +152,8 @@ export const QueueCard: React.FC<QueueRowProps> = ({
   status,
   days,
   companyProfileHref,
+  onLeave,
+  leaving,
 }) => {
   const { locale } = useI18n();
 
@@ -154,10 +187,12 @@ export const QueueCard: React.FC<QueueRowProps> = ({
         </div>
       </div>
 
-      <div className="mt-4 border-t border-gray-100 pt-3">
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
         <ActionsCell
           companyProfileHref={companyProfileHref}
-          className="min-h-0 justify-start"
+          onLeave={onLeave}
+          leaving={leaving}
+          className="min-h-0 flex-row items-center justify-start gap-4"
         />
       </div>
     </article>
