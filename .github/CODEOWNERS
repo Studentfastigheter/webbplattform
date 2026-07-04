@@ -1,0 +1,8 @@
+# Kodägare: PR:er mot skyddade brancher kräver godkännande från ägaren
+# nedan när "Require review from Code Owners" är aktiverat i branch
+# protection för main.
+#
+# ⚠️ BYT UT platshållaren mot Simons riktiga GitHub-användarnamn INNAN
+# "Require review from Code Owners" bockas i — annars kan ingen PR
+# godkännas som kodägare och main blir omergebar.
+* @SIMONS-GITHUB-ANVANDARNAMN

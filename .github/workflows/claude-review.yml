@@ -1,0 +1,76 @@
+# AI-granskning av PR:er mot main med Claude Code.
+#
+# Kräver repo-secret ANTHROPIC_API_KEY (Settings → Secrets and variables →
+# Actions → New repository secret). Utan den failar jobbet tyst för forks
+# och högljutt för interna PR:er — lägg in nyckeln innan första PR:en.
+#
+# Granskningen är rådgivande (kommentarer + inline-anmärkningar). Den
+# blockerande grinden är verify-checken i ci.yml + Simons godkännande
+# via branch protection.
+name: Claude Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+    branches: [main]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Hoppa över utkast — granska när PR:en är redo.
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Granska denna pull request mot main för CampusLyans webbplattform
+            (Next.js 16 / React 19 / TypeScript strict / Tailwind v4).
+            Skriv all feedback på svenska.
+
+            Projektets regler är kodifierade i AGENTS.md, DEVELOPMENT.md och
+            ARCHITECTURE.md i repo-roten — läs dem och granska mot dem.
+            Särskilt viktigt:
+            - Backend-kontrakt får inte ändras ensidigt (endpoints/payloads).
+            - Allt backend-data via apiClient; query keys via qk.* (aldrig
+              ad-hoc-arrayer); mutationer invaliderar i onSettled.
+            - En UI-stack: shadcn/Radix + Tailwind-tokens. Ingen HeroUI/
+              Material Tailwind/react-aria i ny kod. Inga window.confirm/alert.
+            - Endast ljust tema; all synlig text lokaliserad (sv/en);
+              brand-tokens i stället för hex-literaler.
+
+            Fokusera på, i fallande prioritet:
+            1. Buggar och trasig logik (inkl. races, null-hantering, hydration)
+            2. Säkerhet (XSS, injektion, läckta hemligheter, osäkra URL:er)
+            3. Kontrakts-/konventionsbrott enligt ovan
+            4. Prestanda (onödiga renders, N+1-anrop, bundle-vikt)
+            5. Tillgänglighet (fokus, tangentbord, aria)
+
+            Flagga tydligt med allvarlighetsgrad: KRITISK / HÖG / MEDEL / LÅG.
+            Avsluta sammanfattningen med en rekommendation: "Redo att merga",
+            "Merga efter små fixar" eller "Behöver omarbetas".
+
+            PR-branchen är utcheckad i arbetskatalogen.
+            Använd `gh pr comment` för sammanfattningen.
+            Använd `mcp__github_inline_comment__create_inline_comment` (med
+            `confirmed: true`) för radspecifika fynd.
+            Posta enbart GitHub-kommentarer — ingen övrig utskrift.
+
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
