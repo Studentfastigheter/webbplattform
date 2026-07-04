@@ -1,8 +1,13 @@
 name: CI
 
+# verify-jobbet är required status check på main (branch protection).
+# En commit kan bara nå main om exakt samma SHA redan har grön verify —
+# dvs. merga working_main → main med fast-forward efter grön CI, eller gå
+# via PR. Därför MÅSTE push-triggern täcka alla brancher som mergas in.
 on:
   push:
-    branches: [main, "design-sync/**", "etapp/**"]
+    branches:
+      [main, working_main, platform-prod, "design-sync/**", "etapp/**"]
   pull_request:
 
 concurrency:
