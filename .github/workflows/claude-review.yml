@@ -1,8 +1,9 @@
 # AI-granskning av PR:er mot main med Claude Code.
 #
-# Kräver repo-secret ANTHROPIC_API_KEY (Settings → Secrets and variables →
-# Actions → New repository secret). Utan den failar jobbet tyst för forks
-# och högljutt för interna PR:er — lägg in nyckeln innan första PR:en.
+# Autentiserar med prenumerations-token (Claude Max) i stället för
+# API-nyckel: repo-secreten CLAUDE_CODE_OAUTH_TOKEN, genererad med
+# `claude setup-token`. Granskningarna dras från prenumerationen,
+# ingen separat API-fakturering.
 #
 # Granskningen är rådgivande (kommentarer + inline-anmärkningar). Den
 # blockerande grinden är verify-checken i ci.yml + Simons godkännande
@@ -34,7 +35,7 @@ jobs:
 
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           track_progress: true
           prompt: |
             REPO: ${{ github.repository }}
