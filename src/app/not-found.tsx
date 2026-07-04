@@ -17,7 +17,7 @@ export default async function NotFound() {
       <SiteHeader />
       <main className="min-h-screen bg-white px-6 pt-20 text-[#0a2d1d]">
         <section className="mx-auto flex min-h-[72vh] max-w-4xl flex-col justify-center py-20">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#004225]/70">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand/70">
             {copy.code}
           </p>
 
@@ -32,7 +32,7 @@ export default async function NotFound() {
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Link
               href={localizeHref("/", locale)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#004225] px-5 text-sm font-semibold text-white transition hover:bg-[#00341d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-brand px-5 text-sm font-semibold text-white transition hover:bg-[#00341d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               {copy.homeCta}
@@ -40,7 +40,7 @@ export default async function NotFound() {
             {platformLaunched ? (
               <Link
                 href={localizeHref("/housing", locale)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-[#004225]/20 px-5 text-sm font-semibold text-[#004225] transition hover:border-[#004225]/40 hover:bg-[#f4f8f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-brand/20 px-5 text-sm font-semibold text-brand transition hover:border-brand/40 hover:bg-[#f4f8f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 <Search className="h-4 w-4" aria-hidden="true" />
                 {copy.housingCta}

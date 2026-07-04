@@ -1,8 +1,5 @@
-import {
-  decodeRichText,
-  decodeRichTextPayload,
-  encodeRichTextPayload,
-} from "@/lib/rich-text";
+import { decodeRichText, decodeRichTextPayload } from "@/lib/rich-text";
+import { getStoredAuthToken, setStoredAuthToken } from "@/lib/auth-storage";
 
 export const normalizeApiBase = (value: string): string => {
   const trimmed = value.trim().replace(/\/+$/, "");
@@ -74,6 +71,51 @@ export type ServiceOptions = {
   signal?: AbortSignal;
 };
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+
+/**
+ * Kombinerar anroparens ev. AbortSignal med en timeout så att en hängande
+ * backend aldrig lämnar UI:t i evig laddning. Anroparens abort vinner alltid
+ * (dess reason propageras); timeouten markeras med TimeoutError.
+ */
+function createRequestSignal(
+  callerSignal: AbortSignal | null | undefined,
+  timeoutMs: number
+): { signal: AbortSignal; didTimeOut: () => boolean; cleanup: () => void } {
+  const controller = new AbortController();
+  let timedOut = false;
+
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort(
+      new DOMException("Request timed out", "TimeoutError")
+    );
+  }, timeoutMs);
+
+  const onCallerAbort = () => {
+    controller.abort(callerSignal?.reason);
+  };
+
+  if (callerSignal) {
+    if (callerSignal.aborted) {
+      onCallerAbort();
+    } else {
+      callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+    }
+  }
+
+  return {
+    signal: controller.signal,
+    didTimeOut: () => timedOut,
+    // Rensar bara timeouten (när headers anlänt räknas servern som vid liv).
+    // Abort-lyssnaren behålls så att anroparens avbrott fortfarande kan
+    // avbryta body-läsningen; {once:true} städar den åt oss.
+    cleanup: () => {
+      clearTimeout(timeoutId);
+    },
+  };
+}
+
 const READ_DEDUPE_CACHE_MS = 1000;
 const inFlightReadRequests = new Map<string, Promise<unknown>>();
 const completedReadRequests = new Map<
@@ -114,34 +156,6 @@ function createReadRequestKey(
   return `${method} ${url} ${responseType ?? "json"} ${headerKey}`;
 }
 
-function getHeaderValue(headers: Record<string, string>, name: string) {
-  const normalizedName = name.toLowerCase();
-
-  return Object.entries(headers).find(
-    ([key]) => key.toLowerCase() === normalizedName
-  )?.[1];
-}
-
-function encodeJsonRequestBody(
-  body: BodyInit | null | undefined,
-  headers: Record<string, string>
-): BodyInit | null | undefined {
-  if (typeof body !== "string") {
-    return body;
-  }
-
-  const contentType = getHeaderValue(headers, "content-type");
-  if (!contentType?.toLowerCase().includes("application/json")) {
-    return body;
-  }
-
-  try {
-    return JSON.stringify(encodeRichTextPayload(JSON.parse(body)));
-  } catch {
-    return body;
-  }
-}
-
 export function arrayFromApiResponse<T>(value: unknown): T[] {
   if (Array.isArray(value)) {
     return value as T[];
@@ -171,7 +185,9 @@ export function normalizeAuthToken(value: unknown): string | null {
     return null;
   }
 
-  return trimmed.replace(/^Bearer\s+/i, "").trim() || null;
+  // (\s+|$) så att ett ensamt "Bearer" (t.ex. från "Bearer " som trimmats)
+  // också blir null i stället för att returneras som token.
+  return trimmed.replace(/^Bearer(\s+|$)/i, "").trim() || null;
 }
 
 export function buildQuery(params: Record<string, QueryValue>) {
@@ -221,8 +237,7 @@ export async function apiClient<T>(
   // 1. Automatisk Token-hantering
   let authToken = normalizeAuthToken(token);
   if (!authToken && auth !== false && typeof window !== "undefined") {
-    const stored = localStorage.getItem("token");
-    authToken = normalizeAuthToken(stored);
+    authToken = normalizeAuthToken(getStoredAuthToken());
   }
 
   // Vi kollar så att authToken inte är strängen "null" eller "undefined"
@@ -230,7 +245,7 @@ export async function apiClient<T>(
     defaultHeaders.Authorization = `Bearer ${authToken}`;
   }
 
-  const requestBody = encodeJsonRequestBody(customOptions.body, defaultHeaders);
+  const requestBody = customOptions.body;
 
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   const url =
@@ -240,6 +255,11 @@ export async function apiClient<T>(
   const method = (customOptions.method ?? "GET").toUpperCase();
 
   const request = async (): Promise<T> => {
+    const requestSignal = createRequestSignal(
+      customOptions.signal,
+      DEFAULT_REQUEST_TIMEOUT_MS
+    );
+
     let res: Response;
     try {
       res = await fetch(url, {
@@ -247,9 +267,28 @@ export async function apiClient<T>(
         body: requestBody,
         headers: defaultHeaders,
         cache: customOptions.cache ?? "no-store",
+        signal: requestSignal.signal,
       });
     } catch (err) {
-      throw new Error((err as Error)?.message || "Kunde inte nå servern.");
+      // Anroparens abort (TanStack Query-avbrott, unmount) ska behålla sin
+      // identitet — den är inte ett fel som ska visas för användaren.
+      if (customOptions.signal?.aborted) {
+        throw err;
+      }
+
+      if (requestSignal.didTimeOut()) {
+        throw new ApiError(
+          "Servern svarade inte i tid. Försök igen om en stund.",
+          0,
+          null
+        );
+      }
+
+      // Nätverksfel får status 0 så att felhantering/retry kan skilja dem
+      // från deterministiska HTTP-fel.
+      throw new ApiError("Kunde inte nå servern.", 0, null);
+    } finally {
+      requestSignal.cleanup();
     }
 
     if (res.status === 204) {
@@ -276,7 +315,7 @@ export async function apiClient<T>(
     if (!res.ok) {
       // Om token var ogiltig (401), rensa den direkt så vi slipper problem vid nästa laddning
       if (res.status === 401 && typeof window !== "undefined") {
-        localStorage.removeItem("token");
+        setStoredAuthToken(null);
       }
 
       const message =

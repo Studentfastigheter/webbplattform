@@ -22,6 +22,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
+import {
+  CHART_CATEGORICAL,
+  CHART_COMPARISON,
+  CHART_PRIMARY,
+} from "@/features/analytics/chart-palette";
 import { useCompanyOverviewTrend } from "@/features/companies/hooks/useCompanies";
 import type {
   CompanyOverviewTrendEntry,
@@ -86,6 +91,8 @@ const granularityOptions: Array<{
   { value: "month", label: "M\u00e5nad", labelEn: "Month" },
 ];
 
+// F\u00e4rgerna kommer fr\u00e5n den delade diagrampaletten: huvudm\u00e4tv\u00e4rdet i
+// varum\u00e4rkesgr\u00f6nt, \u00f6vriga i palettens kontrastkul\u00f6rer.
 const metricOptions: Array<{
   value: TrendMetricKey;
   label: string;
@@ -96,19 +103,19 @@ const metricOptions: Array<{
     value: "companyProfileViews",
     label: "Profilvisningar",
     labelEn: "Profile views",
-    color: "#2563eb",
+    color: CHART_COMPARISON,
   },
   {
     value: "queueApplications",
     label: "Ans\u00f6kningar till bostadsk\u00f6",
     labelEn: "Housing queue applications",
-    color: "#d97706",
+    color: CHART_CATEGORICAL[2],
   },
   {
     value: "listingApplications",
     label: "Ans\u00f6kningar till bost\u00e4der",
     labelEn: "Housing applications",
-    color: "#16a34a",
+    color: CHART_PRIMARY,
   },
 ];
 

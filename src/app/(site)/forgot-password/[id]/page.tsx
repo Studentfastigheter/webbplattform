@@ -133,7 +133,7 @@ export default function ResetPasswordPage() {
             <FieldDescription className="text-center">
               <Link
                 href="/login"
-                className="font-medium text-[#004225] no-underline"
+                className="font-medium text-brand no-underline"
               >
                 {localizedText(locale, "Tillbaka till inloggning", "Back to sign-in")}
               </Link>
@@ -143,7 +143,7 @@ export default function ResetPasswordPage() {
           {hasSubmitted ? (
             <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
               <div className="max-w-sm space-y-2">
-                <p className="text-base font-semibold text-[#004225]">
+                <p className="text-base font-semibold text-brand">
                   {localizedText(locale, "Lösenordet har sparats", "The password has been saved")}
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
@@ -152,7 +152,7 @@ export default function ResetPasswordPage() {
               </div>
               <Link
                 href="/login"
-                className="mt-6 inline-flex h-10 items-center justify-center rounded-full bg-[#004225] px-5 text-sm font-semibold text-white transition hover:bg-[#004225]/90"
+                className="mt-6 inline-flex h-10 items-center justify-center rounded-full bg-brand px-5 text-sm font-semibold text-white transition hover:bg-brand/90"
               >
                 {localizedText(locale, "Logga in", "Log in")}
               </Link>
@@ -176,14 +176,14 @@ export default function ResetPasswordPage() {
                       minLength={8}
                       required
                       disabled={submitting}
-                      className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                      className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                     />
                     <button
                       type="button"
                       onClick={() =>
                         setIsPasswordVisible((currentValue) => !currentValue)
                       }
-                      className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                      className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                       disabled={submitting}
                     >
                       {isPasswordVisible ? (
@@ -215,7 +215,7 @@ export default function ResetPasswordPage() {
                     ))}
                   </div>
 
-                  <p className="text-right text-sm font-normal text-[#7a7a7a]">
+                  <p className="text-right text-sm font-normal text-[#6b6b6b]">
                     {getPasswordStrengthText(passwordStrengthScore, locale)}
                   </p>
                 </div>
@@ -235,7 +235,7 @@ export default function ResetPasswordPage() {
                       minLength={8}
                       required
                       disabled={submitting}
-                      className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                      className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                     />
                     <button
                       type="button"
@@ -244,7 +244,7 @@ export default function ResetPasswordPage() {
                           (currentValue) => !currentValue
                         )
                       }
-                      className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                      className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                       disabled={submitting}
                     >
                       {isConfirmPasswordVisible ? (
@@ -279,7 +279,7 @@ export default function ResetPasswordPage() {
                     type="submit"
                     fullWidth
                     disabled={submitting}
-                    className="h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
+                    className="h-12 rounded-full bg-brand text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
                   >
                     {submitting
                       ? localizedText(locale, "Sparar...", "Saving...")

@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
             <FieldDescription className="text-center">
               <Link
                 href="/login"
-                className="font-medium text-[#004225] no-underline"
+                className="font-medium text-brand no-underline"
               >
                 {localizedText(locale, "Tillbaka till inloggning", "Back to sign-in")}
               </Link>
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
           {hasSubmitted ? (
             <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
               <div className="max-w-sm space-y-2">
-                <p className="text-base font-semibold text-[#004225]">
+                <p className="text-base font-semibold text-brand">
                   {localizedText(locale, "Återställningslänken är skickad", "The reset link has been sent")}
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
                     autoComplete="email"
                     required
                     disabled={submitting}
-                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                   />
                   <FieldDescription>
                     {localizedText(locale, "Vi skickar instruktioner om e-postadressen finns registrerad.", "We will send instructions if the email address is registered.")}
@@ -128,7 +128,7 @@ export default function ForgotPasswordPage() {
                     type="submit"
                     fullWidth
                     disabled={submitting}
-                    className="h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
+                    className="h-12 rounded-full bg-brand text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
                   >
                     {submitting
                       ? localizedText(locale, "Skickar...", "Sending...")

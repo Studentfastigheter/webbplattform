@@ -38,7 +38,7 @@ export default function PortalPlaceholderPage({
           <PortalEmptyState
             action={
               <Link
-                className="inline-flex items-center text-sm font-medium text-[#004225] hover:underline"
+                className="inline-flex items-center text-sm font-medium text-brand hover:underline"
                 href={dashboardRelPath}
               >
                 {localizedText(locale, "Till \u00f6versikten", "Go to overview")}

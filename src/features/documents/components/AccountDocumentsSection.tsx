@@ -2,7 +2,8 @@
 
 import {
   Fragment,
-  type ComponentProps,
+  type ComponentPropsWithoutRef,
+  type ComponentType,
   useEffect,
   useRef,
   useState,
@@ -12,8 +13,8 @@ import { Download01, Edit03, Eye, File05, XClose } from "@/components/icons";
 import {
   FileUpload,
   type FileListItemProps,
-} from "@/components/application/file-upload/file-upload-base";
-import { Button } from "@/components/base/buttons/button";
+} from "@/features/documents/components/file-upload";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextParagraph } from "@/components/ui/RichText";
@@ -38,7 +39,12 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf";
 
 type FileIconType = FileListItemProps["type"];
-type BaseButtonProps = ComponentProps<typeof Button>;
+
+type ActionButtonProps = ComponentPropsWithoutRef<"button"> & {
+  destructive?: boolean;
+  iconLeading?: ComponentType<{ className?: string }>;
+  isDisabled?: boolean;
+};
 
 type AccountDocument = {
   id: string;
@@ -76,17 +82,14 @@ const emptyEditDraft: EditDraft = {
   note: "",
 };
 
+const actionButtonBaseClassName =
+  "inline-flex items-center gap-1.5 transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
+
 const buttonClassName =
   "rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-none hover:bg-gray-50";
 
 const destructiveButtonClassName =
   "rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 shadow-none hover:bg-red-50";
-
-const dropZoneClassName =
-  "rounded-lg border border-dashed border-gray-300 bg-gray-50/70 text-gray-500 ring-0 transition-colors hover:border-[#004225]/50 hover:bg-white [&_.text-error-primary]:text-red-600 [&_button]:text-[#004225]";
-
-const uploadListItemClassName =
-  "rounded-lg bg-white ring-gray-200 shadow-sm [&_.bg-fg-brand-primary]:bg-[#004225] [&_.bg-quaternary]:bg-gray-100 [&_.text-fg-quaternary]:text-gray-400 [&_.text-fg-success-primary]:text-emerald-600 [&_.text-quaternary]:text-gray-500 [&_.text-secondary]:text-gray-900 [&_.text-success-primary]:text-emerald-700 [&_.text-tertiary]:text-gray-500";
 
 const startUploadProgress = (onProgress: (progress: number) => void) => {
   let progress = 8;
@@ -302,6 +305,7 @@ export default function AccountDocumentsSection() {
   const { locale } = useI18n();
   const uploadDocument = useUploadDocument();
   const deleteDocument = useDeleteDocument();
+  const { confirm, confirmDialog } = useConfirmDialog();
   // `documents` is local state because uploads add transient items (with
   // progress) before they exist server-side. We seed and merge from the
   // useMyDocuments cache via the effect below.
@@ -563,7 +567,13 @@ export default function AccountDocumentsSection() {
     const document = documents.find((item) => item.id === documentId);
     if (!document) return;
 
-    const shouldDelete = window.confirm(localizedText(locale, `Ta bort "${document.title}"?`, `Remove "${document.title}"?`));
+    const shouldDelete = await confirm({
+      title: localizedText(locale, "Ta bort dokument?", "Remove document?"),
+      description: localizedText(locale, `"${document.title}" tas bort permanent.`, `"${document.title}" will be permanently removed.`),
+      confirmLabel: localizedText(locale, "Ta bort", "Remove"),
+      cancelLabel: localizedText(locale, "Avbryt", "Cancel"),
+      destructive: true,
+    });
     if (!shouldDelete) return;
 
     const uploadCleanup = uploadCleanupsRef.current.get(documentId);
@@ -716,21 +726,30 @@ export default function AccountDocumentsSection() {
     handleCancelEdit();
   };
 
-  const renderActionButton = (
-    props: BaseButtonProps & { destructive?: boolean }
-  ) => {
-    const { destructive, className, ...buttonProps } = props;
+  const renderActionButton = (props: ActionButtonProps) => {
+    const {
+      destructive,
+      className,
+      iconLeading: IconLeading,
+      isDisabled,
+      disabled,
+      children,
+      ...buttonProps
+    } = props;
 
     return (
-      <Button
-        color={destructive ? "secondary-destructive" : "secondary"}
-        size="sm"
+      <button
+        disabled={disabled || isDisabled}
         className={cx(
+          actionButtonBaseClassName,
           destructive ? destructiveButtonClassName : buttonClassName,
           className
         )}
         {...buttonProps}
-      />
+      >
+        {IconLeading ? <IconLeading className="size-4 shrink-0" /> : null}
+        {children}
+      </button>
     );
   };
 
@@ -830,7 +849,6 @@ export default function AccountDocumentsSection() {
               onDropFiles={handleDropFiles}
               onDropUnacceptedFiles={handleRejectedFiles}
               onSizeLimitExceed={handleOversizedFiles}
-              className={dropZoneClassName}
             />
 
             {messageText && (
@@ -884,9 +902,13 @@ export default function AccountDocumentsSection() {
                         progress={document.progress}
                         failed={document.failed}
                         type={getFileListItemType(document)}
-                        className={uploadListItemClassName}
                         onDelete={() => void handleDeleteDocument(document.id)}
                         onRetry={() => handleRetryDocument(document.id)}
+                        completeLabel={localizedText(locale, "Klar", "Complete")}
+                        uploadingLabel={localizedText(locale, "Laddar upp...", "Uploading...")}
+                        failedLabel={localizedText(locale, "Misslyckades", "Failed")}
+                        retryLabel={localizedText(locale, "Försök igen", "Try again")}
+                        deleteLabel={localizedText(locale, "Ta bort", "Delete")}
                       />
 
                       <li className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -1109,6 +1131,7 @@ export default function AccountDocumentsSection() {
           </div>
         </div>
       )}
+      {confirmDialog}
     </section>
   );
 }

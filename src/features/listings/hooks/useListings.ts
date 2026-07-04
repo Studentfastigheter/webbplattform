@@ -32,6 +32,7 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
+import { isRecord } from "@/lib/api/normalize";
 import { useAuth } from "@/context/AuthContext";
 import {
   listingService,
@@ -66,10 +67,6 @@ const LISTING_STATUS_LIST_FIELDS = [
   "topListings",
   "pages",
 ] as const;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function isListingStatusPatchQuery(queryKey: readonly unknown[]) {
   const [root, scope] = queryKey;
@@ -495,13 +492,11 @@ export function useUpdateListing() {
       qc.invalidateQueries({
         queryKey: ["companies", "analytics-dashboard"],
       });
+      qc.invalidateQueries({ queryKey: qk.companies.listingPerformanceAll() });
       qc.invalidateQueries({
-        queryKey: ["companies", "listing-performance"],
+        queryKey: qk.companies.listingPerformanceDetailAll(),
       });
-      qc.invalidateQueries({
-        queryKey: ["companies", "listing-performance-detail"],
-      });
-      qc.invalidateQueries({ queryKey: ["companies", "listing-statuses"] });
+      qc.invalidateQueries({ queryKey: qk.companies.listingStatusesAll() });
     },
   });
 }
@@ -560,13 +555,11 @@ export function useUpdateListings() {
       qc.invalidateQueries({
         queryKey: ["companies", "analytics-dashboard"],
       });
+      qc.invalidateQueries({ queryKey: qk.companies.listingPerformanceAll() });
       qc.invalidateQueries({
-        queryKey: ["companies", "listing-performance"],
+        queryKey: qk.companies.listingPerformanceDetailAll(),
       });
-      qc.invalidateQueries({
-        queryKey: ["companies", "listing-performance-detail"],
-      });
-      qc.invalidateQueries({ queryKey: ["companies", "listing-statuses"] });
+      qc.invalidateQueries({ queryKey: qk.companies.listingStatusesAll() });
     },
   });
 }

@@ -114,7 +114,7 @@ export default function CompanyVideoSection({
               onClick={() => goToVideo(index)}
               className={`h-2.5 rounded-full transition ${
                 index === currentIndex
-                  ? "w-7 bg-[#004225]"
+                  ? "w-7 bg-brand"
                   : "w-2.5 bg-gray-300 hover:bg-gray-400"
               }`}
               aria-label={localizedText(

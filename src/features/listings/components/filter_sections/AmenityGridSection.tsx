@@ -44,8 +44,8 @@ const AmenityGridSection: React.FC<AmenityGridSectionProps> = ({
               onClick={() => onToggle(item.id)}
               className={`inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
                 active
-                  ? "border-[#004225] bg-[#004225] text-white"
-                  : "border-black/10 bg-white text-black hover:border-[#004225]/30 hover:bg-[#f6faf8]"
+                  ? "border-brand bg-brand text-white"
+                  : "border-black/10 bg-white text-black hover:border-brand/30 hover:bg-[#f6faf8]"
               }`}
             >
               <span
@@ -54,7 +54,7 @@ const AmenityGridSection: React.FC<AmenityGridSectionProps> = ({
                   "flex h-5 w-5 shrink-0 items-center justify-center",
                   active
                     ? "text-white"
-                    : "text-[#004225]"
+                    : "text-brand"
                 )}
               >
                 {item.icon ?? (

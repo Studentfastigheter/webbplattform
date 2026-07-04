@@ -1,27 +1,13 @@
-const RICH_TEXT_PREFIX = "clrt:v1:";
+/**
+ * Historik: apiClient base64url-kodade tidigare ett antal fritextfält till
+ * "clrt:v1:<base64>"-blobbar i varje request (utan att backend kände till
+ * det). Kodningen på SKRIVVÄGEN är borttagen — ny data sparas som ren text —
+ * men avkodningen på LÄSVÄGEN behålls så att äldre blobbar som redan ligger
+ * i databasen fortfarande renderas korrekt. Ta inte bort avkodningen förrän
+ * datat är migrerat.
+ */
 
-const RICH_TEXT_FIELD_NAMES = new Set([
-  "aboutText",
-  "about_text",
-  "bodyText",
-  "body_text",
-  "caption",
-  "companyDescription",
-  "company_description",
-  "contactNote",
-  "contact_note",
-  "contentText",
-  "content_text",
-  "description",
-  "details",
-  "internalContactNote",
-  "internal_contact_note",
-  "message",
-  "note",
-  "notes",
-  "subtitle",
-  "text",
-]);
+const RICH_TEXT_PREFIX = "clrt:v1:";
 
 type BufferConstructorLike = {
   from(input: Uint8Array): { toString(encoding: string): string };
@@ -31,25 +17,6 @@ type BufferConstructorLike = {
 function getBuffer(): BufferConstructorLike | undefined {
   return (globalThis as typeof globalThis & { Buffer?: BufferConstructorLike })
     .Buffer;
-}
-
-function bytesToBase64Url(bytes: Uint8Array): string {
-  const buffer = getBuffer();
-  const base64 = buffer
-    ? buffer.from(bytes).toString("base64")
-    : (() => {
-        let binary = "";
-        bytes.forEach((byte) => {
-          binary += String.fromCharCode(byte);
-        });
-
-        return btoa(binary);
-      })();
-
-  return base64
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
 }
 
 function base64UrlToBytes(value: string): Uint8Array {
@@ -81,50 +48,27 @@ export function isEncodedRichText(value: unknown): value is string {
   return typeof value === "string" && value.startsWith(RICH_TEXT_PREFIX);
 }
 
-export function encodeRichText(value: string): string {
-  if (!value || value.startsWith(RICH_TEXT_PREFIX)) {
-    return value;
-  }
-
-  const bytes = new TextEncoder().encode(value.normalize("NFC"));
-  return `${RICH_TEXT_PREFIX}${bytesToBase64Url(bytes)}`;
-}
-
 export function decodeRichText(value: string): string {
   if (!isEncodedRichText(value)) {
     return value;
   }
 
+  const encoded = value.slice(RICH_TEXT_PREFIX.length);
+
+  // Buffer.from/atob kastar inte på ogiltig base64 utan hoppar tyst över
+  // ogiltiga tecken — validera teckenmängden själva och kräv strikt UTF-8,
+  // annars returneras hellre originalvärdet än mojibake.
+  if (!/^[A-Za-z0-9_-]*$/.test(encoded)) {
+    return value;
+  }
+
   try {
-    const encoded = value.slice(RICH_TEXT_PREFIX.length);
-    return new TextDecoder().decode(base64UrlToBytes(encoded));
+    return new TextDecoder("utf-8", { fatal: true }).decode(
+      base64UrlToBytes(encoded)
+    );
   } catch {
     return value;
   }
-}
-
-export function shouldEncodeRichTextField(key: string): boolean {
-  return RICH_TEXT_FIELD_NAMES.has(key);
-}
-
-export function encodeRichTextPayload<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((item) => encodeRichTextPayload(item)) as T;
-  }
-
-  if (!isRecord(value)) {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entryValue]) => {
-      if (typeof entryValue === "string" && shouldEncodeRichTextField(key)) {
-        return [key, encodeRichText(entryValue)];
-      }
-
-      return [key, encodeRichTextPayload(entryValue)];
-    })
-  ) as T;
 }
 
 export function decodeRichTextPayload<T>(value: T): T {

@@ -294,6 +294,14 @@ async function getFirestoreAuth(): Promise<
     };
   }
 
+  // api-key-fallbacken fungerar bara om Firestore-reglerna tillåter
+  // oautentiserade skrivningar — det får ALDRIG vara sant i produktion för
+  // en samling med personuppgifter. Kräv service account där; fallbacken
+  // finns kvar enbart för lokal utveckling.
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
+
   const { apiKey, projectId, isConfigured } = getPublicFirestoreConfig();
 
   if (!isConfigured || !apiKey || !projectId) {

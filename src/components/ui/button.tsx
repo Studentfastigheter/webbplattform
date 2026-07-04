@@ -2,12 +2,6 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Button as HeroButton } from "@heroui/react";
-
-type HeroButtonProps = React.ComponentProps<typeof HeroButton>;
-type HeroVariant = HeroButtonProps["variant"];
-type HeroColor = HeroButtonProps["color"];
-type HeroSize = HeroButtonProps["size"];
 
 type AppButtonVariant =
   | "default"
@@ -20,26 +14,40 @@ type AppButtonVariant =
 
 type AppButtonSize = | "xs" | "sm" | "md" | "lg" | "icon" | "icon-sm" | "icon-lg";
 
-export type ButtonProps = Omit<HeroButtonProps, "variant" | "size" | "color"> & {
-  variant?: AppButtonVariant | HeroVariant;
-  color?: HeroColor;
-  size?: AppButtonSize | HeroSize;
+type ButtonOwnProps = {
+  variant?: AppButtonVariant;
+  size?: AppButtonSize;
   fullWidth?: boolean;
-  /**
-   * Om du vill ha enhetlig laddningsstate i hela appen.
-   */
+  /** Visar spinner och blockerar klick — enhetlig laddningsstate i hela appen. */
   isLoading?: boolean;
+  /** HeroUI-kompatibelt alias för disabled. */
+  isDisabled?: boolean;
+  /** HeroUI-kompatibelt alias för onClick. */
+  onPress?: (event: React.MouseEvent<HTMLElement>) => void;
+  /** Polymorf rendering: as="a" eller as={Link} tillsammans med href. */
+  as?: React.ElementType;
+  href?: string;
+  target?: string;
+  rel?: string;
+  /** Accepteras för bakåtkompatibilitet med HeroUI-API:t men ignoreras. */
+  disableAnimation?: boolean;
+  disableRipple?: boolean;
+  color?: string;
 };
 
+export type ButtonProps = ButtonOwnProps &
+  Omit<React.ComponentPropsWithoutRef<"button">, keyof ButtonOwnProps>;
+
 type ButtonVariantsProps = {
-  variant?: AppButtonVariant | HeroVariant;
+  variant?: AppButtonVariant;
   size?: AppButtonSize;
   className?: string;
 };
 
 /**
- * App-wide Button wrapper (HeroUI underneath).
- * Use this everywhere: import { Button } from "@/components/ui/button"
+ * App-wide Button. Ren <button> (eller as-elementet) med appens egna
+ * Tailwind-varianter — visuellt identisk med den tidigare HeroUI-wrappern,
+ * vars alla utseenden redan kom från variantClassMap nedan.
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -47,43 +55,76 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       className,
       variant = "default",
       size = "md",
-      color,
       fullWidth,
       isLoading,
       isDisabled,
-      disableAnimation: disableAnimationProp,
+      onPress,
+      onClick,
+      as,
+      type,
+      disabled,
+      // HeroUI-rester — får inte läcka ut på DOM-elementet:
+      disableAnimation: _disableAnimation,
+      disableRipple: _disableRipple,
+      color: _color,
       children,
       ...props
     },
     ref
   ) => {
-    // Mappar din design-system variant -> HeroUI props
-    const hero = mapToHeroProps(variant, color);
-    const resolvedSize = sizeClasses[(size as AppButtonSize) ?? "md"] ?? sizeClasses.md;
-    const variantClass = variantClassMap[variant as AppButtonVariant] ?? "";
+    const Comp: React.ElementType = as ?? "button";
+    const resolvedSize = sizeClasses[size] ?? sizeClasses.md;
+    const variantClass = variantClassMap[variant] ?? variantClassMap.default;
+    const isButtonElement = Comp === "button";
+    const resolvedDisabled = Boolean(disabled || isDisabled || isLoading);
 
-    const disableAnimation = disableAnimationProp ?? variant === "text";
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      onClick?.(event);
+      onPress?.(event);
+    };
 
     return (
-      <HeroButton
-        ref={ref as any}
-        isLoading={isLoading}
-        isDisabled={isDisabled}
-        // HeroUI använder ofta "variant" + ev. "color"
-        variant={hero.variant as any}
-        color={hero.color as any}
-        disableAnimation={disableAnimation}
+      <Comp
+        ref={ref}
+        // HeroUI defaultade till type="button"; native <button> defaultar till
+        // "submit" — behåll det gamla beteendet så formulär inte auto-submittar.
+        {...(isButtonElement ? { type: type ?? "button", disabled: resolvedDisabled } : {})}
+        aria-busy={isLoading || undefined}
+        onClick={handleClick}
         className={cn(
           baseClasses,
           resolvedSize,
           fullWidth && "w-full justify-center",
           variantClass,
+          !isButtonElement && resolvedDisabled && "pointer-events-none opacity-50",
           className
         )}
         {...props}
       >
+        {isLoading ? (
+          <svg
+            className="size-4 shrink-0 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
+            />
+          </svg>
+        ) : null}
         {children}
-      </HeroButton>
+      </Comp>
     );
   }
 );
@@ -95,7 +136,7 @@ export function buttonVariants({
   size,
   className,
 }: ButtonVariantsProps = {}) {
-  const variantClass = variantClassMap[variant as AppButtonVariant] ?? "";
+  const variantClass = variantClassMap[variant] ?? "";
   const resolvedSize = size ? sizeClasses[size] ?? "" : "";
 
   return cn(baseClasses, resolvedSize, variantClass, className);
@@ -118,48 +159,17 @@ const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:o
 
 const variantClassMap: Partial<Record<AppButtonVariant, string>> = {
   default:
-    `rounded-full bg-[#004225] text-white hover:bg-[#004225]/90 shadow-[0_6px_14px_rgba(0,0,0,0.18)] transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full bg-brand text-white hover:bg-brand/90 shadow-[0_6px_14px_rgba(0,0,0,0.18)] transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   secondary:
-    `rounded-full border border-[#004225]/30 bg-white text-[#004225] hover:bg-[#004225]/5 transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full border border-brand/30 bg-white text-brand hover:bg-brand/5 transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   outline:
-    `rounded-full border border-[#004225] text-[#004225] hover:bg-[#004225]/5 transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full border border-brand text-brand hover:bg-brand/5 transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   ghost:
-    `rounded-full bg-transparent text-[#004225] hover:bg-[#004225]/5 transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full bg-transparent text-brand hover:bg-brand/5 transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   destructive:
     "rounded-full bg-red-600 text-white hover:bg-red-700 shadow-[0_6px_14px_rgba(0,0,0,0.18)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600",
   link:
-    `rounded-full bg-transparent text-[#004225] underline-offset-4 hover:underline transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full bg-transparent text-brand underline-offset-4 hover:underline transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   text:
     "rounded-none bg-transparent text-black underline-offset-2 hover:underline px-0 transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black",
 };
-
-const appVariantMap: Record<
-  AppButtonVariant,
-  { variant: HeroVariant; color?: HeroColor }
-> = {
-  default: { variant: "solid", color: "success" },
-  secondary: { variant: "flat", color: "default" },
-  outline: { variant: "bordered", color: "default" },
-  ghost: { variant: "light", color: "default" },
-  destructive: { variant: "solid", color: "danger" },
-  link: { variant: "light", color: "primary" },
-  text: { variant: "light", color: "default" },
-};
-
-function mapToHeroProps(
-  variant: AppButtonVariant | HeroVariant,
-  color?: HeroColor
-): { variant: HeroVariant; color?: HeroColor } {
-  const mapped = appVariantMap[variant as AppButtonVariant];
-  if (mapped) {
-    return {
-      variant: mapped.variant,
-      color: color ?? mapped.color,
-    };
-  }
-
-  return {
-    variant: (variant as HeroVariant) ?? "solid",
-    color,
-  };
-}

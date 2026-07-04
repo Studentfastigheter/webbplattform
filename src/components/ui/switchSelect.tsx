@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { List, Map } from "@/components/icons";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
@@ -76,7 +76,7 @@ export function SwitchSelect({
         aria-hidden
         className={[
           "absolute inset-y-0 left-0 w-1/2",
-          "bg-[#004225]",
+          "bg-brand",
           "shadow-[0_4px_12px_rgba(0,66,37,0.22)]",
         ].join(" ")}
         initial={false}

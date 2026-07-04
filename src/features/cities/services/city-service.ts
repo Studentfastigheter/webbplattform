@@ -5,6 +5,11 @@ import {
   pathSegment,
   type ServiceOptions,
 } from "@/lib/api/client";
+import {
+  firstFiniteNumber as firstNumber,
+  firstNonEmptyString as firstString,
+  isRecord,
+} from "@/lib/api/normalize";
 import type {
   CityCompanyDTO,
   CityDTO,
@@ -66,26 +71,7 @@ export type ModifyAreaToLocationRequest = {
   lng?: number | null;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const firstString = (...values: unknown[]) =>
-  values.find(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
-  )?.trim();
-
-const firstNumber = (...values: unknown[]) => {
-  for (const value of values) {
-    const numberValue =
-      typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
-
-    if (Number.isFinite(numberValue)) {
-      return numberValue;
-    }
-  }
-
-  return undefined;
-};
+// Delade normaliseringshelpers — se @/lib/api/normalize.
 
 export const normalizeCityCode = (value: string | null | undefined) =>
   value

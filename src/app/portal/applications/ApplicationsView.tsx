@@ -33,6 +33,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
+import { CHART_PRIMARY_DEEP } from "@/features/analytics/chart-palette";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -696,7 +697,7 @@ function ApplicationsTrendBlock({
       ({
         applications: {
           label: localizedText(locale, "Ansökningar", "Applications"),
-          color: "#004225",
+          color: CHART_PRIMARY_DEEP,
         },
       }) satisfies ChartConfig,
     [locale]
@@ -1149,7 +1150,7 @@ function ApplicationRow({
           {listingHref ? (
             <Link
               aria-label={localizedText(locale, "Öppna bostad", "Open listing")}
-              className="shrink-0 text-gray-400 transition hover:text-[#004225]"
+              className="shrink-0 text-gray-400 transition hover:text-brand"
               href={listingHref}
             >
               <ExternalLink className="h-4 w-4" />

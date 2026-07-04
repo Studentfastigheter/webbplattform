@@ -263,11 +263,18 @@ function FrejaIdRegisterContent() {
 
     let active = true;
     let timeout: ReturnType<typeof setTimeout> | undefined;
+    // Backoff vid fel så en nerliggande backend inte hamras varannan sekund
+    // i all evighet; efter maxantalet ger vi ett definitivt felmeddelande.
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 15;
+    const maxErrorDelayMs = 15_000;
 
     async function poll() {
       try {
         const result = await authService.pollAuthStatus(authRef);
         if (!active) return;
+
+        consecutiveErrors = 0;
 
         if (!isFrejaAuthStatus(result)) {
           setPollError(localizedText(locale, "Backend skickade en okänd Freja-status.", "The backend returned an unknown Freja status."));
@@ -293,8 +300,26 @@ function FrejaIdRegisterContent() {
         }
       } catch {
         if (!active) return;
+
+        consecutiveErrors += 1;
+
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          setPollError(
+            localizedText(
+              locale,
+              "Kunde inte kontrollera verifieringen. Ladda om sidan för att försöka igen.",
+              "Could not check the verification. Reload the page to try again."
+            )
+          );
+          return;
+        }
+
         setPollError(localizedText(locale, "Kunde inte kontrollera verifieringen. Försöker igen.", "Could not check the verification. Trying again."));
-        timeout = setTimeout(poll, pollIntervalMs);
+        const delay = Math.min(
+          pollIntervalMs * 2 ** consecutiveErrors,
+          maxErrorDelayMs
+        );
+        timeout = setTimeout(poll, delay);
       }
     }
 
@@ -348,7 +373,7 @@ function FrejaIdRegisterContent() {
         <FieldDescription className="text-center">
           <Link
             href={statusAction.href}
-            className="font-medium text-[#004225] no-underline"
+            className="font-medium text-brand no-underline"
           >
             {statusAction.label}
           </Link>

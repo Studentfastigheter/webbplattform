@@ -147,7 +147,7 @@ const ClusterPreviewPopup: React.FC<{
             event.stopPropagation();
             goToPrevious();
           }}
-          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#004225] shadow-sm backdrop-blur-sm transition hover:bg-white"
+          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-brand shadow-sm backdrop-blur-sm transition hover:bg-white"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -164,7 +164,7 @@ const ClusterPreviewPopup: React.FC<{
             event.stopPropagation();
             goToNext();
           }}
-          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#004225] shadow-sm backdrop-blur-sm transition hover:bg-white"
+          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-brand shadow-sm backdrop-blur-sm transition hover:bg-white"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -191,7 +191,7 @@ const ClusterPreviewPopup: React.FC<{
               event.stopPropagation();
               goToPrevious();
             }}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#004225] transition hover:bg-[#004225]/5"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-brand transition hover:bg-brand/5"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -205,7 +205,7 @@ const ClusterPreviewPopup: React.FC<{
               event.stopPropagation();
               goToNext();
             }}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#004225] transition hover:bg-[#004225]/5"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-brand transition hover:bg-brand/5"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

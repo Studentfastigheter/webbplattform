@@ -79,15 +79,21 @@ const nextConfig: NextConfig = {
 
   images: {
     formats: ["image/avif", "image/webp"],
+    // TILLFÄLLIGT: backend lagrar i vissa fall externa bild-URL:er, så alla
+    // värdar måste tillåtas tills backend normaliserat samtliga bilder till
+    // sin egen media-URL. Backendens mediakatalog står först (den enda som
+    // ska vara kvar efteråt); wildcard-raderna nedan är avsedda att tas bort
+    // när migreringen är klar. OBS: wildcard gör /_next/image till en öppen
+    // proxy/SSRF-yta — återinför den snäva listan så snart det går.
     remotePatterns: [
-      { 
-        protocol: "https", 
-        hostname: "**" 
+      {
+        protocol: apiBaseUrl.protocol === "http:" ? "http" : "https",
+        hostname: apiBaseUrl.hostname,
+        ...(apiBaseUrl.port ? { port: apiBaseUrl.port } : {}),
+        pathname: apiImagePathname,
       },
-      { 
-        protocol: "http", 
-        hostname: "**" 
-      }
+      { protocol: "https", hostname: "**" },
+      { protocol: "http", hostname: "**" },
     ],
   },
 

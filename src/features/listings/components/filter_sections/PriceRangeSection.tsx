@@ -262,8 +262,8 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
                     className={`flex-1 rounded-t-sm transition-[height,background-color,opacity] duration-200 ${
                       bucket.count > 0
                         ? bucket.overlapsSelectedRange
-                          ? "bg-[#004225]"
-                          : "bg-[#004225]/20"
+                          ? "bg-brand"
+                          : "bg-brand/20"
                         : "bg-black/[0.08]"
                     }`}
                     style={{
@@ -302,7 +302,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
             <span className="block text-xs font-semibold uppercase tracking-wide text-black/55">
               {localizedText(locale, "Från", "From")}
             </span>
-            <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-[#004225] focus-within:ring-2 focus-within:ring-[#004225]/10">
+            <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/10">
               <input
                 type="text"
                 inputMode="numeric"
@@ -323,7 +323,7 @@ const PriceRangeSection: React.FC<PriceRangeSectionProps> = ({
             <span className="block text-xs font-semibold uppercase tracking-wide text-black/55">
               {localizedText(locale, "Till", "To")}
             </span>
-            <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-[#004225] focus-within:ring-2 focus-within:ring-[#004225]/10">
+            <div className="flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 shadow-sm transition focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/10">
               <input
                 type="text"
                 inputMode="numeric"

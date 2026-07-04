@@ -16,6 +16,7 @@ import {
   type AnalyticsBlockSize,
 } from "@/features/analytics/components/AnalyticsBlocks";
 import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
+import { CHART_CATEGORICAL } from "@/features/analytics/chart-palette";
 import { useListingByAllCategoriesDemography } from "@/features/analytics/hooks/useDemographics";
 import {
   type DemographyCategory,
@@ -42,19 +43,8 @@ type ListingDemographicsPanelProps = {
   to?: Date;
 };
 
-// Palette mirrors the one used in the portfolio analytics blocks
-// (DemographicsEndpointBlocks) so the per-listing analytics share the same
-// visual rhythm as the company-wide page.
-const colors = [
-  "#16a34a",
-  "#38bdf8",
-  "#fb7185",
-  "#fbbf24",
-  "#2dd4bf",
-  "#a78bfa",
-  "#4ade80",
-  "#94a3b8",
-];
+// Delad kategorisk palett — samma visuella rytm som företagsvyns analytics.
+const colors = CHART_CATEGORICAL;
 
 const labels: Record<string, { sv: string; en: string }> = {
   MOBILE: { sv: "Mobil", en: "Mobile" },
@@ -280,7 +270,7 @@ function StatCard({
             {formatNumber(total, locale)}
           </p>
         </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-[#004225]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-brand">
           {icon}
         </span>
       </div>

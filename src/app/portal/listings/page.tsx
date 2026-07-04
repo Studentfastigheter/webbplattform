@@ -66,7 +66,7 @@ type ListingViewCountsLookup = Map<string, ListingViewCounts>;
 
 const BULK_STATUS_OPTIONS: ListingStatus[] = ["AVAILABLE", "HIDDEN", "RENTED"];
 const selectionCheckboxClassName =
-  "size-5 rounded-[7px] border-gray-300 bg-white text-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225] data-[state=checked]:text-white data-[state=indeterminate]:border-[#004225] data-[state=indeterminate]:bg-[#004225] focus-visible:ring-[#004225]/20";
+  "size-5 rounded-[7px] border-gray-300 bg-white text-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all data-[state=checked]:border-brand data-[state=checked]:bg-brand data-[state=checked]:text-white data-[state=indeterminate]:border-brand data-[state=indeterminate]:bg-brand focus-visible:ring-brand/20";
 
 function readPath(source: Record<string, unknown>, path: string): unknown {
   const parts = path.split(".");
@@ -634,7 +634,7 @@ export default function PortalAdsPage() {
                   "Välj ny status",
                   "Choose new status"
                 )}
-                className="h-8 min-w-0 flex-1 rounded-md border-transparent bg-gray-50 px-2.5 text-xs font-medium shadow-none hover:border-gray-200 hover:bg-gray-50 focus:ring-2 focus:ring-[#004225]/10 sm:max-w-[190px]"
+                className="h-8 min-w-0 flex-1 rounded-md border-transparent bg-gray-50 px-2.5 text-xs font-medium shadow-none hover:border-gray-200 hover:bg-gray-50 focus:ring-2 focus:ring-brand/10 sm:max-w-[190px]"
               >
                 <SelectValue />
               </PortalControlSelectTrigger>
@@ -666,7 +666,7 @@ export default function PortalAdsPage() {
             </Button>
 
             <Button
-              className="h-8 rounded-md px-3 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-[#004225]"
+              className="h-8 rounded-md px-3 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-brand"
               variant="ghost"
               isDisabled={updatingListings}
               onPress={clearSelectedListings}
@@ -812,7 +812,7 @@ export default function PortalAdsPage() {
                     setStatusFilter("all");
                     setCityFilter("all");
                   }}
-                  className="h-9 w-full shrink-0 rounded-lg px-3 text-left text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-[#004225] sm:w-auto sm:text-center"
+                  className="h-9 w-full shrink-0 rounded-lg px-3 text-left text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-brand sm:w-auto sm:text-center"
                 >
                   {localizedText(locale, "Rensa filter", "Clear filters")}
                 </button>
@@ -821,7 +821,7 @@ export default function PortalAdsPage() {
 
             <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center lg:ml-auto lg:w-auto lg:justify-end">
               <Button
-                className="h-9 w-full rounded-lg border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 hover:text-[#004225] sm:w-[112px] sm:min-w-0"
+                className="h-9 w-full rounded-lg border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 shadow-theme-xs hover:border-gray-300 hover:bg-gray-50 hover:text-brand sm:w-[112px] sm:min-w-0"
                 isDisabled={
                   loading ||
                   updatingListings ||
@@ -887,7 +887,7 @@ export default function PortalAdsPage() {
                 <div
                   className={cn(
                     "relative w-full max-w-[360px] rounded-[28px] transition-[box-shadow,transform] duration-200",
-                    isSelected && "ring-2 ring-[#004225]/40 ring-offset-2 ring-offset-white"
+                    isSelected && "ring-2 ring-brand/40 ring-offset-2 ring-offset-white"
                   )}
                 >
                   <Checkbox
@@ -901,7 +901,7 @@ export default function PortalAdsPage() {
                     className={cn(
                       selectionCheckboxClassName,
                       "absolute left-3 top-3 z-20 size-6 border-white/80 bg-white/95 shadow-[0_8px_18px_rgba(15,23,42,0.16)] backdrop-blur-md",
-                      isSelected && "border-[#004225] bg-[#004225]"
+                      isSelected && "border-brand bg-brand"
                     )}
                   />
                   <ListingCardSmall

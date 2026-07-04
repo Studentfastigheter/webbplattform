@@ -595,7 +595,7 @@ export default function UsersPage() {
                   onClick={() => {
                     setRoleFilter("all");
                   }}
-                  className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-[#004225]"
+                  className="h-8 shrink-0 px-1 text-xs font-medium text-gray-500 transition-colors hover:text-brand"
                 >
                   {localizedText(locale, "Rensa filter", "Clear filters")}
                 </button>
@@ -785,7 +785,7 @@ export default function UsersPage() {
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="px-6 py-12 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#004225]/8 text-[#004225]">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/8 text-brand">
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <p className="mt-4 font-medium text-gray-900">
@@ -838,7 +838,7 @@ export default function UsersPage() {
                         </span>
                         <p className="break-words font-medium leading-6 text-gray-900 xl:truncate xl:break-normal">{entry.name}</p>
                         {isCurrentUser ? (
-                          <p className="mt-1 text-xs font-medium text-[#004225]">
+                          <p className="mt-1 text-xs font-medium text-brand">
                             {localizedText(locale, "Du", "You")}
                           </p>
                         ) : null}

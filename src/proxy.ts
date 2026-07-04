@@ -17,6 +17,12 @@ import {
 import { isPrivateIndexingHost } from "@/lib/seo";
 
 const PRIVATE_SUBDOMAIN_ROBOTS_HEADER = "noindex, nofollow, noarchive, nosnippet";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+// 'unsafe-eval' krävs bara av dev-verktyg (Turbopack/React Refresh) och ska
+// aldrig skickas i produktion — det är den enskilt viktigaste XSS-broms som
+// finns kvar så länge auth-token ligger i localStorage. ws:/localhost i
+// connect-src är också rena dev-behov (HMR).
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -26,8 +32,12 @@ const CONTENT_SECURITY_POLICY = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https:",
   "style-src 'self' 'unsafe-inline' https:",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
-  "connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws: wss:",
+  IS_PRODUCTION
+    ? "script-src 'self' 'unsafe-inline' https:"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+  IS_PRODUCTION
+    ? "connect-src 'self' https:"
+    : "connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws: wss:",
   "frame-src 'self' https:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
@@ -35,9 +45,19 @@ const CONTENT_SECURITY_POLICY = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+// Flagg-cookien sätts av src/lib/auth-storage.ts vid inloggning (värdet är
+// alltid "1", aldrig själva tokenen). Saknas den kan vi avvisa anonyma
+// anrop mot portal/admin redan i proxyn i stället för i klientkod.
+const AUTH_FLAG_COOKIE_NAME = "cl_auth";
+
 const SECURITY_HEADERS = [
   ["Content-Security-Policy", CONTENT_SECURITY_POLICY],
-  ["Cross-Origin-Opener-Policy", "same-origin"],
+  // 'same-origin-allow-popups' (inte 'same-origin'): behåller COOP-isoleringen
+  // mot främmande openers men bevarar window.opener för popups sidan själv
+  // öppnar — krävs för att Google Identity Services (Sign in with Google) ska
+  // kunna posta tillbaka ID-tokenen till oss. Ren 'same-origin' kapar opener
+  // och Google-popupen hänger vit utan att logga in.
+  ["Cross-Origin-Opener-Policy", "same-origin-allow-popups"],
   ["Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"],
   ["Referrer-Policy", "strict-origin-when-cross-origin"],
   ["Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload"],
@@ -152,6 +172,39 @@ function redirectToPrelaunchHome(url: URL, locale: Locale) {
   return redirectWithLocale(url, locale);
 }
 
+/**
+ * Serversidigt skydd för portal-/admin-ytorna: utan auth-flagg-cookien
+ * skickas besökaren till inloggningen innan något sidskal renderas.
+ * Klientguardarna är fortfarande auktoritativa (cookien är bara en flagga);
+ * detta stoppar anonym rendering av skyddade sidor och deras prefetch.
+ * Endast i produktion — i dev delas ingen cookie mellan localhost-subdomäner.
+ */
+function requiresAuthRedirect(
+  req: NextRequest,
+  effectivePathname: string,
+  base: "/portal" | "/admin",
+) {
+  if (!IS_PRODUCTION) {
+    return false;
+  }
+
+  const loginPath = `${base}/login`;
+  if (
+    effectivePathname === loginPath ||
+    effectivePathname.startsWith(`${loginPath}/`)
+  ) {
+    return false;
+  }
+
+  return !req.cookies.get(AUTH_FLAG_COOKIE_NAME)?.value;
+}
+
+function redirectToSubdomainLogin(url: URL, locale: Locale) {
+  url.pathname = "/login";
+  url.search = "";
+  return withNoIndexHeader(redirectWithLocale(url, locale));
+}
+
 export function proxy(req: NextRequest) {
   const hostname = getHostname(req);
   const url = req.nextUrl.clone();
@@ -170,6 +223,14 @@ export function proxy(req: NextRequest) {
   const isPrivateSubdomain = isPrivateIndexingHost(hostname);
 
   if (isPortalSubdomain) {
+    const effectivePortalPath = pathStartsWithSegment(routingPathname, "/portal")
+      ? routingPathname
+      : `/portal${routingPathname === "/" ? "" : routingPathname}`;
+
+    if (requiresAuthRedirect(req, effectivePortalPath, "/portal")) {
+      return redirectToSubdomainLogin(url, locale);
+    }
+
     if (!pathStartsWithSegment(routingPathname, "/portal")) {
       url.pathname = `/portal${routingPathname === "/" ? "" : routingPathname}`;
       return withNoIndexHeader(rewriteWithLocale(req, url, locale));
@@ -184,6 +245,14 @@ export function proxy(req: NextRequest) {
   }
 
   if (isAdminSubdomain) {
+    const effectiveAdminPath = pathStartsWithSegment(routingPathname, "/admin")
+      ? routingPathname
+      : `/admin${routingPathname === "/" ? "" : routingPathname}`;
+
+    if (requiresAuthRedirect(req, effectiveAdminPath, "/admin")) {
+      return redirectToSubdomainLogin(url, locale);
+    }
+
     if (routingPathname === "/" || routingPathname === "/admin") {
       url.pathname = "/tags";
       return withNoIndexHeader(redirectWithLocale(url, locale));

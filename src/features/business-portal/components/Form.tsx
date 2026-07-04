@@ -77,7 +77,7 @@ export function MultiselectButton({
     return (
         <Label
          {...props}
-         className={cn("cursor-pointer flex items-start gap-2 justify-between rounded-md border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 has-[[aria-checked=true]]:border-[#004225] has-[[aria-checked=true]]:bg-[#004225]/5", className)}>
+         className={cn("cursor-pointer flex items-start gap-2 justify-between rounded-md border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 has-[[aria-checked=true]]:border-brand has-[[aria-checked=true]]:bg-brand/5", className)}>
             <div className="grid gap-1.5 font-normal">
                 <p className="text-sm leading-none font-medium">
                     {label}
@@ -93,7 +93,7 @@ export function MultiselectButton({
                 checked={checked}
                 defaultChecked={defaultChecked}
                 onCheckedChange={() => onCheckedChange()}
-                className="data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225] data-[state=checked]:text-white"
+                className="data-[state=checked]:border-brand data-[state=checked]:bg-brand data-[state=checked]:text-white"
             />
         </Label>
     )
@@ -122,7 +122,7 @@ export function MultiSelectCard({
     return (
         <Label
          {...props}
-         className={cn("cursor-pointer flex items-start gap-2 justify-between rounded-md border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 has-[[aria-checked=true]]:border-[#004225] has-[[aria-checked=true]]:bg-[#004225]/5", className)}>
+         className={cn("cursor-pointer flex items-start gap-2 justify-between rounded-md border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 has-[[aria-checked=true]]:border-brand has-[[aria-checked=true]]:bg-brand/5", className)}>
             <div>
                 {children}
             </div>
@@ -131,7 +131,7 @@ export function MultiSelectCard({
                 checked={checked}
                 defaultChecked={defaultChecked}
                 onCheckedChange={() => onCheckedChange()}
-                className="data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225] data-[state=checked]:text-white"
+                className="data-[state=checked]:border-brand data-[state=checked]:bg-brand data-[state=checked]:text-white"
             />
         </Label>
     )
@@ -161,7 +161,7 @@ export function TextAreaField({
         <div>
             <RichTextTextarea
                 {...props}
-                className={cn("w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-none placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004225]/15 disabled:cursor-not-allowed disabled:opacity-50", className)}
+                className={cn("w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-none placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-50", className)}
             />
         </div>
     )

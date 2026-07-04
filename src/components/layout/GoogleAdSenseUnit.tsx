@@ -32,7 +32,6 @@ export function GoogleAdSenseUnit({
     const element = adRef.current;
     if (!element || pushedRef.current) return;
 
-    let animationFrame: number | undefined;
     let observer: ResizeObserver | undefined;
 
     const requestAd = () => {
@@ -52,7 +51,7 @@ export function GoogleAdSenseUnit({
       }
     };
 
-    animationFrame = window.requestAnimationFrame(requestAd);
+    const animationFrame = window.requestAnimationFrame(requestAd);
 
     if ("ResizeObserver" in window) {
       observer = new ResizeObserver(requestAd);

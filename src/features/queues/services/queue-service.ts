@@ -5,6 +5,11 @@ import {
   pathSegment,
   type ServiceOptions,
 } from "@/lib/api/client";
+import {
+  firstFiniteNumber as firstNumber,
+  firstNonEmptyString as firstString,
+  isRecord,
+} from "@/lib/api/normalize";
 import { normalizeListingCards } from "@/features/listings/services/listing-service";
 import { HousingQueueDTO } from "@/types/queue";
 import { ListingCardDTO, type PageResponse } from "@/types/listing";
@@ -244,29 +249,6 @@ function normalizeListingPageResponse(
     last: raw?.last ?? page >= totalPages - 1,
     empty: raw?.empty ?? content.length === 0,
   };
-}
-
-function firstString(...values: unknown[]): string | undefined {
-  return values.find(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
-  )?.trim();
-}
-
-function firstNumber(...values: unknown[]): number | undefined {
-  for (const value of values) {
-    const numberValue =
-      typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
-
-    if (Number.isFinite(numberValue)) {
-      return numberValue;
-    }
-  }
-
-  return undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function normalizeHousingQueue(value: unknown): HousingQueueDTO {

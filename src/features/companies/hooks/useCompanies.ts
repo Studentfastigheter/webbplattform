@@ -826,19 +826,20 @@ export function useRefreshCompanyListings() {
     onSettled: (_data, _err, id) => {
       qc.invalidateQueries({ queryKey: qk.queues.allCompanyListingsByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.queues.companyListingsPageByCompany(id) });
-      qc.invalidateQueries({ queryKey: qk.companies.applicationCounts(id, 200) });
+      // Prefix-nyckel (utan size) så alla sidstorlekar invalideras, inte bara 200.
+      qc.invalidateQueries({ queryKey: qk.companies.applicationCountsByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.companies.applicationsByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.companies.applicationsTimeline(id) });
       qc.invalidateQueries({ queryKey: qk.companies.overviewTrendByCompany(id) });
       qc.invalidateQueries({ queryKey: qk.companies.generalAnalytics(id) });
       qc.invalidateQueries({ queryKey: qk.companies.residentAnalytics(id) });
       qc.invalidateQueries({ queryKey: qk.companies.viewCountsByCompany(id) });
-      qc.invalidateQueries({ queryKey: ["companies", "analytics-dashboard", id] });
-      qc.invalidateQueries({ queryKey: ["companies", "analytics-funnel", id] });
-      qc.invalidateQueries({ queryKey: ["companies", "listing-performance", id] });
-      qc.invalidateQueries({ queryKey: ["companies", "listing-statuses", id] });
-      qc.invalidateQueries({ queryKey: ["companies", "application-statuses", id] });
-      qc.invalidateQueries({ queryKey: ["companies", "application-outcomes", id] });
+      qc.invalidateQueries({ queryKey: qk.companies.analyticsDashboardByCompany(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.analyticsFunnelByCompany(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.listingPerformanceByCompany(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.listingStatuses(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.applicationStatusesByCompany(id) });
+      qc.invalidateQueries({ queryKey: qk.companies.applicationOutcomesByCompany(id) });
     },
   });
 }

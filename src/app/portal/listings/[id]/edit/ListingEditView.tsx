@@ -55,10 +55,10 @@ const emptySaveState: SaveState = {
 const genericTagsLoadError = "__TAGS_LOAD_ERROR__";
 
 const inlineInputClass =
-  "min-w-0 rounded-md border border-[#004225]/10 bg-[#004225]/[0.035] px-2 py-1 outline-none transition hover:border-[#004225]/25 hover:bg-white focus:border-[#004225] focus:bg-white focus:ring-4 focus:ring-[#004225]/10";
+  "min-w-0 rounded-md border border-brand/10 bg-brand/[0.035] px-2 py-1 outline-none transition hover:border-brand/25 hover:bg-white focus:border-brand focus:bg-white focus:ring-4 focus:ring-brand/10";
 
 const imageEditButtonClass =
-  "!border-white/80 !bg-white/95 !text-[#004225] shadow-[0_10px_24px_rgba(15,23,42,0.16)] ring-1 ring-white/70 backdrop-blur-md transition-[background-color,border-color,box-shadow,color,transform] duration-150 hover:!border-[#004225]/25 hover:!bg-white hover:!text-[#00351e] hover:shadow-[0_12px_28px_rgba(0,66,37,0.18)] data-[hover=true]:!border-[#004225]/25 data-[hover=true]:!bg-white data-[hover=true]:!text-[#00351e] data-[hover=true]:!opacity-100 data-[pressed=true]:!bg-[#f2f8f5]";
+  "!border-white/80 !bg-white/95 !text-brand shadow-[0_10px_24px_rgba(15,23,42,0.16)] ring-1 ring-white/70 backdrop-blur-md transition-[background-color,border-color,box-shadow,color,transform] duration-150 hover:!border-brand/25 hover:!bg-white hover:!text-[#00351e] hover:shadow-[0_12px_28px_rgba(0,66,37,0.18)] data-[hover=true]:!border-brand/25 data-[hover=true]:!bg-white data-[hover=true]:!text-[#00351e] data-[hover=true]:!opacity-100 data-[pressed=true]:!bg-[#f2f8f5]";
 
 function toDateInputValue(value?: string | null) {
   if (!value) return "";
@@ -570,8 +570,8 @@ function EditableListingPreview({
                       onClick={() => toggleTag(tag)}
                       className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
                         selected
-                          ? "border-[#004225] bg-[#004225] text-white"
-                          : "border-gray-200 bg-white text-gray-700 hover:border-[#004225]/35 hover:bg-[#004225]/[0.035]"
+                          ? "border-brand bg-brand text-white"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-brand/35 hover:bg-brand/[0.035]"
                       }`}
                     >
                       <span className="inline-flex items-center gap-1.5">

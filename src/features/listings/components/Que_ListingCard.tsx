@@ -64,15 +64,15 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
 
   return (
     <div
-      className={`group/card relative flex h-full min-h-[244px] w-full max-w-none flex-col overflow-hidden rounded-[26px] border border-black/[0.05] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-[#004225]/15 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] sm:min-h-[254px] sm:rounded-[28px] sm:p-5 ${
-        isSelected ? "ring-2 ring-[#004225]/20" : ""
+      className={`group/card relative flex h-full min-h-[244px] w-full max-w-none flex-col overflow-hidden rounded-[26px] border border-black/[0.05] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-brand/15 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] sm:min-h-[254px] sm:rounded-[28px] sm:p-5 ${
+        isSelected ? "ring-2 ring-brand/20" : ""
       }`}
     >
       {cardHref && (
         <Link
           href={cardHref}
           aria-label={`${t("queueCard.readMore")} ${name}`}
-          className="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+          className="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         />
       )}
 
@@ -106,12 +106,12 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
 
           <nav
             aria-label={t("queueCard.policyAria", { name })}
-            className="relative z-20 flex min-h-[17px] flex-wrap items-center gap-x-2.5 gap-y-1 overflow-hidden text-[12.5px] font-semibold leading-[17px] text-[#004225] sm:gap-x-3 sm:text-[13px]"
+            className="relative z-20 flex min-h-[17px] flex-wrap items-center gap-x-2.5 gap-y-1 overflow-hidden text-[12.5px] font-semibold leading-[17px] text-brand sm:gap-x-3 sm:text-[13px]"
           >
             {policyLinks.map((link, index) => (
               <React.Fragment key={link.label}>
                 {index > 0 && (
-                  <span className="hidden h-4 w-px bg-[#004225]/40 sm:block" />
+                  <span className="hidden h-4 w-px bg-brand/40 sm:block" />
                 )}
                 <a
                   href={link.href ?? "#"}
@@ -121,7 +121,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
                       event.preventDefault();
                     }
                   }}
-                  className="rounded-sm underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]"
+                  className="rounded-sm underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
                 >
                   {link.label}
                 </a>
@@ -164,7 +164,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
             isAlreadyJoined || isJoinStatusLoading || isJoinDisabled
               ? "border-gray-200 bg-gray-100 text-gray-500 shadow-none"
               : isSelected
-                ? "bg-[#004225] text-white"
+                ? "bg-brand text-white"
                 : ""
           }`}
         >
@@ -193,7 +193,7 @@ const Que_ListingCard: React.FC<QueListingCardProps> = (props) => {
             }}
             size="lg"
             variant="ghost"
-            className="h-auto min-h-10 w-full !min-w-0 !whitespace-normal rounded-full border border-[#004225]/20 bg-white px-2.5 py-2 text-center text-[13px] font-semibold leading-tight text-[#004225] shadow-none transition-colors hover:bg-[#004225]/5 sm:min-h-11 sm:!min-w-0 sm:px-3 sm:text-sm [&>svg]:shrink-0"
+            className="h-auto min-h-10 w-full !min-w-0 !whitespace-normal rounded-full border border-brand/20 bg-white px-2.5 py-2 text-center text-[13px] font-semibold leading-tight text-brand shadow-none transition-colors hover:bg-brand/5 sm:min-h-11 sm:!min-w-0 sm:px-3 sm:text-sm [&>svg]:shrink-0"
           >
             {t("queueCard.readMore")}
             <ChevronRight className="h-4 w-4" aria-hidden />

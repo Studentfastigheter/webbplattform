@@ -48,7 +48,7 @@ const ListingsMap = dynamic(() => import("@/components/shared/map/ListingsMap"),
 });
 
 const inlineLinkButtonClassName =
-  "inline-flex shrink-0 items-center justify-center text-sm font-semibold leading-tight text-[#004225] underline-offset-4 transition-colors hover:text-[#005b33] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]";
+  "inline-flex shrink-0 items-center justify-center text-sm font-semibold leading-tight text-brand underline-offset-4 transition-colors hover:text-[#005b33] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand";
 
 const CITY_LISTINGS_PAGE_SIZE = 6;
 const CITY_MAP_PAGE_SIZE = 500;
@@ -579,7 +579,7 @@ export default function CityDetailPage() {
                         onClick={() => setMapLayer(option.value)}
                         className={`flex min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-[11px] font-semibold transition sm:flex-none sm:gap-2 sm:px-4 sm:text-xs ${
                           isActive
-                            ? "bg-[#004225] text-white shadow-sm"
+                            ? "bg-brand text-white shadow-sm"
                             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         }`}
                       >
@@ -602,7 +602,7 @@ export default function CityDetailPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedActivityCategories(new Set(activityCategories))}
-                      className="h-8 rounded-full border border-black/10 px-3 text-xs font-semibold text-[#004225] transition hover:bg-[#004225]/5"
+                      className="h-8 rounded-full border border-black/10 px-3 text-xs font-semibold text-brand transition hover:bg-brand/5"
                     >
                       {localizedText(locale, "Alla", "All")}
                     </button>

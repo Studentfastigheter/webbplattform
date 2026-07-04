@@ -18,6 +18,7 @@ import {
   PortalHorizontalBarChart,
   PortalVerticalBarChart,
 } from "@/features/analytics/components/PortalBarCharts";
+import { CHART_CATEGORICAL } from "@/features/analytics/chart-palette";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -93,16 +94,7 @@ type PortfolioSummary = {
   cityData: BucketDatum[];
 };
 
-const colors = [
-  "#16a34a",
-  "#38bdf8",
-  "#fb7185",
-  "#fbbf24",
-  "#2dd4bf",
-  "#a78bfa",
-  "#4ade80",
-  "#94a3b8",
-];
+const colors = CHART_CATEGORICAL;
 
 const labels: Record<string, { sv: string; en: string }> = {
   GENDER: { sv: "Kön", en: "Gender" },

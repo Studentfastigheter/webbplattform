@@ -21,7 +21,7 @@ type CityCarouselItem = {
 function CityCarouselCard({ city }: { city: CityCarouselItem }) {
   const { t } = useI18n();
   const cardClassName =
-    "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-[#004225] ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
+    "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-brand ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
   
   const content = (
     <>

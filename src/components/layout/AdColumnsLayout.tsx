@@ -112,7 +112,7 @@ const PlatformAdCreative = ({
       target="_blank"
       rel="noopener noreferrer nofollow sponsored"
       aria-label={headline}
-      className="absolute inset-0 block focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
+      className="absolute inset-0 block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
     >
       {creative}
     </a>
@@ -125,7 +125,6 @@ const AdSlot = ({
   ad,
   ariaLabel,
   className,
-  emptyLabel,
   format,
   googleAdSenseSlot,
   mediaClassName,
@@ -133,53 +132,53 @@ const AdSlot = ({
   ad?: PlatformAd;
   ariaLabel: string;
   className?: string;
-  emptyLabel: string;
   format: AdSenseFormat;
   googleAdSenseSlot?: string;
   mediaClassName: string;
-}) => (
-  <aside className={cn("w-full", className)} aria-label={ariaLabel}>
-    <div
-      className={cn(
-        "relative w-full overflow-hidden rounded-lg border border-gray-200 bg-white",
-        mediaClassName,
-      )}
-    >
-      {isRenderablePlatformAd(ad) ? (
-        <PlatformAdCreative ad={ad} ariaLabel={ariaLabel} />
-      ) : googleAdSenseSlot ? (
-        <GoogleAdSenseUnit
-          slot={googleAdSenseSlot}
-          label={ariaLabel}
-          format={format}
-        />
-      ) : (
-        <div
-          className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-400"
-          aria-label={ariaLabel}
-        >
-          {emptyLabel}
-        </div>
-      )}
-    </div>
-  </aside>
-);
+}) => {
+  const hasPlatformAd = isRenderablePlatformAd(ad);
+
+  if (!hasPlatformAd && !googleAdSenseSlot) {
+    return null;
+  }
+
+  return (
+    <aside className={cn("w-full", className)} aria-label={ariaLabel}>
+      <div
+        className={cn(
+          "relative w-full overflow-hidden rounded-lg",
+          // Synlig ram bara när vi själva ritar en annons. En ofylld
+          // AdSense-yta ska vara osynlig — aldrig en tom vit platshållarbox.
+          hasPlatformAd && "border border-gray-200 bg-white",
+          mediaClassName,
+        )}
+      >
+        {hasPlatformAd ? (
+          <PlatformAdCreative ad={ad} ariaLabel={ariaLabel} />
+        ) : googleAdSenseSlot ? (
+          <GoogleAdSenseUnit
+            slot={googleAdSenseSlot}
+            label={ariaLabel}
+            format={format}
+          />
+        ) : null}
+      </div>
+    </aside>
+  );
+};
 
 const BottomAdSlot = ({
   ad,
   ariaLabel,
-  emptyLabel,
   googleAdSenseSlot,
 }: {
   ad?: PlatformAd;
   ariaLabel: string;
-  emptyLabel: string;
   googleAdSenseSlot?: string;
 }) => (
   <AdSlot
     ad={ad}
     ariaLabel={ariaLabel}
-    emptyLabel={emptyLabel}
     format="horizontal"
     googleAdSenseSlot={googleAdSenseSlot}
     className="mx-auto max-w-[970px]"
@@ -190,13 +189,11 @@ const BottomAdSlot = ({
 const RailAdSlot = ({
   ad,
   ariaLabel,
-  emptyLabel,
   format = "vertical",
   googleAdSenseSlot,
 }: {
   ad?: PlatformAd;
   ariaLabel: string;
-  emptyLabel: string;
   format?: AdSenseFormat;
   googleAdSenseSlot?: string;
 }) => (
@@ -204,7 +201,6 @@ const RailAdSlot = ({
     <AdSlot
       ad={ad}
       ariaLabel={ariaLabel}
-      emptyLabel={emptyLabel}
       format={format}
       googleAdSenseSlot={googleAdSenseSlot}
       mediaClassName="h-[min(600px,calc(100svh-8rem))] min-h-[420px] max-h-[600px]"
@@ -214,7 +210,6 @@ const RailAdSlot = ({
 
 export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
   const { t } = useI18n();
-  const emptyLabel = t("ads.adSpace");
   const { data: platformAds = [] } = useCurrentAds();
   const leftAd = pickPlatformAd(platformAds, "left", 0);
   const bottomAd = pickPlatformAd(platformAds, "bottom", 1);
@@ -225,7 +220,6 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
       <RailAdSlot
         ad={leftAd}
         ariaLabel={t("ads.leftAd")}
-        emptyLabel={emptyLabel}
         format="vertical"
         googleAdSenseSlot={googleAdSenseSlots.left}
       />
@@ -237,7 +231,6 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
           <BottomAdSlot
             ad={bottomAd}
             ariaLabel={t("ads.bottomAd")}
-            emptyLabel={emptyLabel}
             googleAdSenseSlot={googleAdSenseSlots.bottom}
           />
         </div>
@@ -246,7 +239,6 @@ export default function AdColumnsLayout({ children }: AdColumnsLayoutProps) {
       <RailAdSlot
         ad={rightAd}
         ariaLabel={t("ads.rightAd")}
-        emptyLabel={emptyLabel}
         format="vertical"
         googleAdSenseSlot={googleAdSenseSlots.right}
       />

@@ -118,11 +118,28 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
           key={`link-${idx}`}
           className="relative"
           onMouseEnter={() => setHovered(idx)}
+          // Tangentbord: fokus in i länken/undermenyn öppnar den, fokus ut
+          // stänger, Escape stänger direkt. Samma state som hover använder.
+          onFocus={() => setHovered(idx)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setHovered(null);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setHovered(null);
+            }
+          }}
         >
           <Link
             href={item.link}
             onClick={onItemClick}
-            className="relative block rounded-full px-4 py-2 text-neutral-600 transition-colors hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white"
+            aria-haspopup={item.dropdown && item.dropdown.length > 0 ? "menu" : undefined}
+            aria-expanded={
+              item.dropdown && item.dropdown.length > 0 ? hovered === idx : undefined
+            }
+            className="relative block rounded-full px-4 py-2 text-neutral-600 transition-colors hover:text-neutral-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:text-neutral-300 dark:hover:text-white"
           >
             {hovered === idx && (
               <div
@@ -167,7 +184,7 @@ export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
       className={cn(
         "relative z-50 mx-auto flex max-w-[calc(100vw-2rem)] flex-col items-center justify-between bg-transparent py-2 transition-all duration-300 xl:hidden",
         visible
-          ? "w-[90%] translate-y-5 rounded bg-white/80 px-3 dark:bg-neutral-950/80"
+          ? "w-[90%] translate-y-5 rounded-2xl bg-white/80 px-3 dark:bg-neutral-950/80"
           : "w-full translate-y-0 rounded-[2rem] px-0",
         className,
       )}
@@ -234,63 +251,3 @@ export const MobileNavToggle = ({
   );
 };
 
-export const NavbarLogo = () => {
-  return (
-    <a
-      href="#"
-      className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
-    >
-      <img
-        src="https://assets.aceternity.com/logo-dark.png"
-        alt="logo"
-        width={30}
-        height={30}
-      />
-      <span className="font-medium text-black dark:text-white">Startup</span>
-    </a>
-  );
-};
-
-export const NavbarButton = ({
-  href,
-  as,
-  children,
-  className,
-  variant = "primary",
-  ...props
-}: {
-  href?: string;
-  as?: React.ElementType;
-  children: React.ReactNode;
-  className?: string;
-  variant?: "primary" | "secondary" | "dark" | "gradient";
-} & (
-  | React.ComponentPropsWithoutRef<"a">
-  | React.ComponentPropsWithoutRef<"button">
-)) => {
-  const baseStyles =
-    "relative inline-flex cursor-pointer items-center justify-center rounded-md bg-white px-4 py-2 text-center text-sm font-bold text-black transition duration-200 hover:-translate-y-0.5";
-
-  const variantStyles = {
-    primary:
-      "shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
-    secondary: "bg-transparent shadow-none dark:text-white",
-    dark:
-      "bg-black text-white shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
-    gradient:
-      "bg-gradient-to-b from-blue-500 to-blue-700 text-white shadow-[0px_2px_0px_0px_rgba(255,255,255,0.3)_inset]",
-  };
-
-  const Tag = as ?? (href ? Link : "button");
-
-  return (
-    <Tag
-      {...(href ? { href } : {})}
-      {...(!href && Tag === "button" ? { type: "button" } : {})}
-      className={cn(baseStyles, variantStyles[variant], className)}
-      {...props}
-    >
-      {children}
-    </Tag>
-  );
-};

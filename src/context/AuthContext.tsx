@@ -1,7 +1,9 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { normalizeAuthToken } from "@/lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { ApiError, normalizeAuthToken } from "@/lib/api/client";
+import { getStoredAuthToken, setStoredAuthToken } from "@/lib/auth-storage";
 import {
   authService,
   getOptionalAuthResponseToken,
@@ -103,6 +105,7 @@ type AuthCtx = {
 const Ctx = createContext<AuthCtx | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null); // NYTT: State för att lagra token
   const [isLoading, setIsLoading] = useState(true);
@@ -113,30 +116,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const transferredToken = getTransferredTokenFromHash();
       const storedToken =
         typeof window !== "undefined"
-          ? transferredToken ?? normalizeAuthToken(localStorage.getItem("token"))
+          ? transferredToken ?? normalizeAuthToken(getStoredAuthToken())
           : null;
-      
+
       if (!storedToken) {
-        localStorage.removeItem("token");
+        setStoredAuthToken(null);
         setIsLoading(false);
         return;
       }
 
       try {
-        localStorage.setItem("token", storedToken);
+        setStoredAuthToken(storedToken);
         setToken(storedToken); // Synka state med localStorage
 
         const session = await authService.session(storedToken);
         const accessToken = getOptionalAuthResponseToken(session) ?? storedToken;
         const userData = withSessionEmail(getAuthResponseUser(session), accessToken);
-        localStorage.setItem("token", accessToken);
+        setStoredAuthToken(accessToken);
         setToken(accessToken);
         setUser(userData);
       } catch (error) {
-        console.error("Token ogiltig", error);
-        localStorage.removeItem("token");
-        setToken(null);
-        setUser(null);
+        // Rensa token ENBART när servern uttryckligen avvisar den (401/403).
+        // Nätverksfel eller 5xx vid sidladdning får inte logga ut användaren.
+        if (
+          error instanceof ApiError &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          console.error("Token ogiltig", error);
+          setStoredAuthToken(null);
+          setToken(null);
+          setUser(null);
+        } else {
+          console.error("Kunde inte verifiera sessionen (behåller token)", error);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -152,11 +164,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       getAuthResponseUser(normalizedResponse),
       accessToken
     );
-    localStorage.setItem("token", accessToken);
+    // Ny inloggning = potentiellt ny identitet. Töm cachen så att personlig
+    // data (ansökningar, favoriter, köer) aldrig läcker mellan konton.
+    queryClient.clear();
+    setStoredAuthToken(accessToken);
     setToken(accessToken);
     setUser(userData);
     return userData;
-  }, []);
+  }, [queryClient]);
 
   const applyAuthResponseFromSession = useCallback(async (res: AuthInput) => {
     const normalizedResponse = normalizeAuthResponse(res as AuthPayload);
@@ -166,7 +181,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accessToken
     );
 
-    localStorage.setItem("token", accessToken);
+    queryClient.clear();
+    setStoredAuthToken(accessToken);
     setToken(accessToken);
     setUser(responseUser);
 
@@ -175,18 +191,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const sessionToken = getOptionalAuthResponseToken(session) ?? accessToken;
       const userData = withSessionEmail(getAuthResponseUser(session), sessionToken);
 
-      localStorage.setItem("token", sessionToken);
+      setStoredAuthToken(sessionToken);
       setToken(sessionToken);
       setUser(userData);
       return userData;
     } catch (error) {
       console.warn("Could not refresh session after auth response", error);
-      localStorage.setItem("token", accessToken);
+      setStoredAuthToken(accessToken);
       setToken(accessToken);
       setUser(responseUser);
       return responseUser;
     }
-  }, []);
+  }, [queryClient]);
 
   // 2. Login
   const login = async (data: LoginRequest) => {
@@ -224,6 +240,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authService.logout();
     setToken(null); // Rensa state vid utloggning
     setUser(null);
+    // Töm hela query-cachen: personliga nycklar är inte användarskopade,
+    // så cachad data skulle annars överleva till nästa konto på samma dator.
+    queryClient.clear();
   };
 
   // 5. Refresh (Hämta om användaren från servern)
@@ -232,10 +251,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const session = await authService.session();
       const accessToken =
         getOptionalAuthResponseToken(session) ??
-        normalizeAuthToken(localStorage.getItem("token"));
+        normalizeAuthToken(getStoredAuthToken());
       const updatedUser = withSessionEmail(getAuthResponseUser(session), accessToken);
       if (accessToken) {
-        localStorage.setItem("token", accessToken);
+        setStoredAuthToken(accessToken);
         setToken(accessToken);
       }
       setUser(updatedUser);

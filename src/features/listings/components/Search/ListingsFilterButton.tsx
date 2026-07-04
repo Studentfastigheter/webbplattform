@@ -373,13 +373,13 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                   handleSchoolSearchChange(event.target.value)
                 }
                 placeholder={localizedText(locale, "Sök skola eller universitet", "Search school or university")}
-                className="h-11 w-full rounded-lg border border-black/15 bg-white px-3.5 pr-24 text-sm outline-none transition focus:border-[#004225] focus:ring-2 focus:ring-[#004225]/10"
+                className="h-11 w-full rounded-lg border border-black/15 bg-white px-3.5 pr-24 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
               />
               {state.schoolId && (
                 <button
                   type="button"
                   onClick={clearSchool}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold text-[#004225] transition hover:bg-[#004225]/10"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold text-brand transition hover:bg-brand/10"
                 >
                   {localizedText(locale, "Rensa", "Clear")}
                 </button>
@@ -416,7 +416,7 @@ const ListingsFilterButton: React.FC<ListingsFilterButtonProps> = ({
                       aria-pressed={isSelected}
                       className={`flex w-full items-start justify-between gap-3 rounded-md px-3 py-2 text-left transition ${
                         isSelected
-                          ? "bg-[#004225] text-white"
+                          ? "bg-brand text-white"
                           : "text-black hover:bg-[#f6faf8]"
                       }`}
                     >

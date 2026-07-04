@@ -159,7 +159,7 @@ export function GoogleAuthButton({
       <button
         type="button"
         disabled
-        className={cn(buttonChromeClassName, "text-[#7a7a7a]")}
+        className={cn(buttonChromeClassName, "text-[#6b6b6b]")}
       >
         <GoogleLogo />
         {localizedText(locale, "Google Sign-In saknar client id", "Google Sign-In is missing a client ID")}
@@ -172,7 +172,7 @@ export function GoogleAuthButton({
       <button
         type="button"
         disabled
-        className={cn(buttonChromeClassName, "text-[#7a7a7a]")}
+        className={cn(buttonChromeClassName, "text-[#6b6b6b]")}
       >
         <GoogleLogo />
         {resolvedLabel}
@@ -183,7 +183,7 @@ export function GoogleAuthButton({
   return (
     <div
       ref={rootRef}
-      className="group relative min-h-[48px] w-full rounded-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#004225]"
+      className="group relative min-h-[48px] w-full rounded-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand"
     >
       <div
         className={cn(

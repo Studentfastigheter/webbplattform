@@ -6,6 +6,11 @@ import {
   pathSegment,
   type ServiceOptions,
 } from "@/lib/api/client";
+import {
+  firstFiniteNumber as firstNumber,
+  firstNonEmptyString as firstString,
+  isRecord,
+} from "@/lib/api/normalize";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 import { createSquareCompanyLogoFile } from "@/lib/company-logo";
 import type { SystemProvider } from "@/types/common";
@@ -429,21 +434,11 @@ const systemProviderValues = [
   "HOGIA_LANDLORD",
 ] as const satisfies readonly SystemProvider[];
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function toNumber(value: unknown, fallback = 0) {
   const numberValue =
     typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
 
   return Number.isFinite(numberValue) ? numberValue : fallback;
-}
-
-function firstString(...values: unknown[]): string | undefined {
-  return values.find(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
-  )?.trim();
 }
 
 function normalizeSystemProvider(value: unknown): SystemProvider | string | null {
@@ -456,19 +451,6 @@ function normalizeSystemProvider(value: unknown): SystemProvider | string | null
   return systemProviderValues.includes(normalized as SystemProvider)
     ? (normalized as SystemProvider)
     : provider;
-}
-
-function firstNumber(...values: unknown[]): number | undefined {
-  for (const value of values) {
-    const numberValue =
-      typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
-
-    if (Number.isFinite(numberValue)) {
-      return numberValue;
-    }
-  }
-
-  return undefined;
 }
 
 function normalizeApplicationStatus(value: unknown): ApplicationStatus | undefined {
@@ -1111,14 +1093,14 @@ function hasExternalCompanyLogoFile(
 
 function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
   if (!isRecord(value)) {
-    throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+    throw new Error("Oväntat svar från servern.");
   }
 
   const id = firstNumber(value.id, value.companyId);
   const name = firstString(value.name, value.companyName);
 
   if (id === undefined || !name) {
-    throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+    throw new Error("Oväntat svar från servern.");
   }
 
   const rawCities = value.cities ?? value.companyCities;
@@ -1379,7 +1361,7 @@ export const companyService = {
     });
     const normalizedCompany = normalizeCompanyPublic(company);
     if (!normalizedCompany) {
-      throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+      throw new Error("Oväntat svar från servern.");
     }
     return normalizedCompany;
   },
@@ -1719,7 +1701,7 @@ export const companyService = {
     const normalized = normalizeListingAnalyticsPerformance(result);
 
     if (!normalized) {
-      throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+      throw new Error("Oväntat svar från servern.");
     }
 
     return normalized;

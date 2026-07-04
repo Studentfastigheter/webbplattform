@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node .ds-sync/lib/preview-rebuild.mjs --config .design-sync/config.json --node-modules ./node_modules --out ./ds-bundle --components ScrollArea)",
+      "Bash(node .ds-sync/package-capture.mjs --out ./ds-bundle --components ScrollArea)",
+      "Bash(node .ds-sync/lib/preview-rebuild.mjs --config .design-sync/config.json --node-modules ./node_modules --out ./ds-bundle --components Navbar,EntityHero,CampusLyanBrandLink,ButtonUtility,FileUpload,ChartContainer,Toaster)",
+      "Bash(node .ds-sync/package-capture.mjs --out ./ds-bundle --components Navbar,EntityHero,CampusLyanBrandLink,ButtonUtility,FileUpload,ChartContainer,Toaster)",
+      "Bash(node .ds-sync/package-build.mjs --config .design-sync/config.json --node-modules ./node_modules --out ./ds-bundle)",
+      "Bash(echo \"build exit: $?\")",
+      "Bash(node .ds-sync/package-validate.mjs ./ds-bundle)",
+      "Bash(echo \"validate exit: $?\")",
+      "Bash(node -e 'const d=require\\(\"./ds-bundle/.render-check.json\"\\); console.log\\(\"bad:\", d.filter\\(e=>e.bad\\).map\\(e=>e.name\\).join\\(\", \"\\)||\"\\(none\\)\"\\);')",
+      "Bash(node -e ' *)",
+      "Bash(node .design-sync/gen-entry.mjs)",
+      "Bash(node .design-sync/compile-css.mjs)",
+      "Bash(node .ds-sync/resync.mjs --config .design-sync/config.json --node-modules ./node_modules --out ./ds-bundle)",
+      "Bash(echo \"driver exit: $?\")",
+      "Bash(node \"C:/Users/blixx/AppData/Local/Temp/claude/b--VSCode-CampusLyan-webbplattform/5de9f38a-4d5e-420c-8473-31d8e8e58980/scratchpad/closeout-list.mjs\")",
+      "Bash(node -e 'console.log\\(require\\(\"./.design-sync/.cache/closeout-files.json\"\\).filter\\(f=>f.startsWith\\(\"components/\"\\)\\).length\\)')"
+    ]
+  }
+}

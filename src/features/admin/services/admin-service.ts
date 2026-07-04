@@ -107,7 +107,7 @@ function normalizeSchoolCityPayload(school: AdminAddSchoolRequest): AdminAddScho
   const city = school.city.trim();
 
   if (!cityCode) {
-    throw new Error("VÃ¤lj en stad innan du sparar skolan.");
+    throw new Error("Välj en stad innan du sparar skolan.");
   }
 
   return {

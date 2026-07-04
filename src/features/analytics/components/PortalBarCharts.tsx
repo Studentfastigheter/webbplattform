@@ -18,11 +18,18 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  CHART_MUTED,
+  CHART_PRIMARY,
+  CHART_PRIMARY_DEEP,
+} from "@/features/analytics/chart-palette";
 import { cn } from "@/lib/utils";
 
-export const PORTAL_BAR_COLOR = "#465fff";
-export const PORTAL_BAR_MUTED_COLOR = "#c7d2fe";
-export const PORTAL_BAR_LINE_COLOR = "#f472b6";
+// Varumärkesförankrad palett (se features/analytics/chart-palette) i stället
+// för TailAdmin-mallens indigo/rosa. Namnen behålls för konsumenterna.
+export const PORTAL_BAR_COLOR = CHART_PRIMARY;
+export const PORTAL_BAR_MUTED_COLOR = CHART_MUTED;
+export const PORTAL_BAR_LINE_COLOR = CHART_PRIMARY_DEEP;
 
 type ChartMargin = {
   top?: number;

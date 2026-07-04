@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
+# Användning: api-login <email> <lösenord>
+# eller sätt CAMPUSLYAN_DEV_EMAIL / CAMPUSLYAN_DEV_PASSWORD i din miljö.
+# Inga inloggningsuppgifter får hårdkodas här — repot är inte rätt plats för dem.
 
-EMAIL=contact@campuslyan.se
-PASSWORD=demo123
+EMAIL=${CAMPUSLYAN_DEV_EMAIL:-}
+PASSWORD=${CAMPUSLYAN_DEV_PASSWORD:-}
 
 if [[ $1 ]]; then
   EMAIL=$1
@@ -11,6 +14,11 @@ fi
 if [[ $1 ]]; then
   PASSWORD=$1
   shift
+fi
+
+if [[ -z $EMAIL || -z $PASSWORD ]]; then
+  echo "api-login: ange e-post och lösenord (argument eller CAMPUSLYAN_DEV_EMAIL/CAMPUSLYAN_DEV_PASSWORD)." >&2
+  exit 1
 fi
 
 api-request /auth/login "{

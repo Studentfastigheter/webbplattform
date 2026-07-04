@@ -192,7 +192,7 @@ export default function RegisterPage() {
           footer={
             <FieldDescription className="text-center">
               {localizedText(locale, "Har du redan ett konto?", "Already have an account?")}{" "}
-              <Link href="/login" className="font-medium text-[#004225] no-underline">
+              <Link href="/login" className="font-medium text-brand no-underline">
                 {localizedText(locale, "Logga in", "Log in")}
               </Link>
             </FieldDescription>
@@ -203,7 +203,7 @@ export default function RegisterPage() {
               <div className="grid gap-3">
                 <Link
                   href="/register/freja-id?start=freja"
-                  className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#252525] transition-colors hover:bg-[#e8e8e8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                  className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-transparent bg-[#f2f2f2] px-4 text-sm font-semibold text-[#252525] transition-colors hover:bg-[#e8e8e8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                   aria-label={localizedText(locale, "Registrera med Freja ID", "Register with Freja ID")}
                 >
                   <Image
@@ -239,7 +239,7 @@ export default function RegisterPage() {
                   autoComplete="email"
                   required
                   disabled={loading}
-                  className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                  className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                 />
               </Field>
 
@@ -257,14 +257,14 @@ export default function RegisterPage() {
                     autoComplete="new-password"
                     required
                     disabled={loading}
-                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                   />
                   <button
                     type="button"
                     onClick={() =>
                       setIsPasswordVisible((currentValue) => !currentValue)
                     }
-                    className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                    className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                     disabled={loading}
                   >
                     {isPasswordVisible ? (
@@ -296,7 +296,7 @@ export default function RegisterPage() {
                   ))}
                 </div>
 
-                <p className="text-right text-sm font-normal text-[#7a7a7a]">
+                <p className="text-right text-sm font-normal text-[#6b6b6b]">
                   {getPasswordStrengthText(passwordStrengthScore, locale)}
                 </p>
               </div>
@@ -317,7 +317,7 @@ export default function RegisterPage() {
                     autoComplete="new-password"
                     required
                     disabled={loading}
-                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                   />
                   <button
                     type="button"
@@ -326,7 +326,7 @@ export default function RegisterPage() {
                         (currentValue) => !currentValue
                       )
                     }
-                    className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                    className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                     disabled={loading}
                   >
                     {isConfirmPasswordVisible ? (
@@ -360,7 +360,7 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   fullWidth
-                  className="mt-1 h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
+                  className="mt-1 h-12 rounded-full bg-brand text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
                   disabled={loading}
                 >
                   {loading

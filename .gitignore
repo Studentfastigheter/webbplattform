@@ -50,6 +50,13 @@ src/data/*.local.json
 next-env.d.ts
 
 
+# --- design-sync (claude.ai/design import) ---
+/.ds-sync/
+/ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+
 # --- Java / Maven Backend ---
 target/
 *.class
@@ -59,3 +66,9 @@ target/
 
 # Maven wrapper
 !.mvn/wrapper/maven-wrapper.jar
+
+# --- Agent-skills ---
+# .agents/skills + skills-lock.json checkas in (delade, reproducerbara skills).
+# .claude/skills/ är en maskinspecifik junction/symlänk som skills-CLI:t
+# återskapar lokalt per maskin – checkas inte in.
+.claude/skills/

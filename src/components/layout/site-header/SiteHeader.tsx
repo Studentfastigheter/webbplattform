@@ -244,7 +244,7 @@ export default function SiteHeader() {
               </Link>
               <Link
                 href="/register"
-                className="inline-flex rounded-full bg-[#004225] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00341d]"
+                className="inline-flex rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#00341d]"
               >
                 {t("siteHeader.auth.createAccount")}
               </Link>
@@ -256,14 +256,24 @@ export default function SiteHeader() {
                   href="/register/freja-id?flow=quick-register"
                   className="inline-flex rounded-full bg-[#3E3A93] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#302d78] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E3A93]"
                 >
-                  {localizedText(locale, "Verify now", "Verify now")}
+                  {localizedText(locale, "Verifiera nu", "Verify now")}
                 </Link>
               ) : null}
-              <div ref={accountMenuRef} className="relative">
+              <div
+                ref={accountMenuRef}
+                className="relative"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    setIsAccountMenuOpen(false);
+                  }
+                }}
+              >
                 <button
                   type="button"
                   onClick={handleAccountToggle}
-                  className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]"
+                  aria-haspopup="menu"
+                  aria-expanded={isAccountMenuOpen}
+                  className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                 >
                   <div className="hidden max-w-32 sm:block">
                     <p className="truncate text-left text-sm font-medium text-neutral-900">
@@ -380,7 +390,7 @@ export default function SiteHeader() {
                 <Link
                   href="/register"
                   onClick={closeMenus}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-[#004225] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
+                  className="inline-flex w-full items-center justify-center rounded-full bg-brand px-5 py-3 text-base font-semibold text-white transition hover:bg-[#00341d]"
                 >
                   {t("siteHeader.auth.createAccount")}
                 </Link>
@@ -393,7 +403,7 @@ export default function SiteHeader() {
                     onClick={closeMenus}
                     className="mb-3 inline-flex w-full items-center justify-center rounded-full bg-[#3E3A93] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#302d78]"
                   >
-                    {localizedText(locale, "Verify now", "Verify now")}
+                    {localizedText(locale, "Verifiera nu", "Verify now")}
                   </Link>
                 ) : null}
                 <div className="mb-3 px-1">

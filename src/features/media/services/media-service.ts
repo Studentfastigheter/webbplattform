@@ -5,14 +5,7 @@ import {
   pathSegment,
   type ServiceOptions,
 } from "@/lib/api/client";
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const firstString = (...values: unknown[]) =>
-  values.find(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
-  )?.trim();
+import { firstNonEmptyString as firstString, isRecord } from "@/lib/api/normalize";
 
 function companyPublicUrl(companyId: number | string, filename: string): string {
   return `${API_BASE}/media/company/${pathSegment(companyId)}/public/${pathSegment(

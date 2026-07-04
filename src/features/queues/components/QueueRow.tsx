@@ -94,8 +94,8 @@ const ActionsCell: React.FC<
         <Link
           href={companyProfileHref}
           className={clsx(
-            "inline-flex items-center gap-1 text-[13px] font-semibold text-[#004225]",
-            "transition hover:text-[#00331d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+            "inline-flex items-center gap-1 text-[13px] font-semibold text-brand",
+            "transition hover:text-[#00331d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           )}
         >
           {label}
