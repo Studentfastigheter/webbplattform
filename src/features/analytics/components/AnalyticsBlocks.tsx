@@ -175,6 +175,11 @@ export function AnalyticsBlock({
                   {title}
                 </h2>
               ) : null}
+              {description ? (
+                <p className="mt-0.5 truncate text-xs leading-5 text-gray-500">
+                  {description}
+                </p>
+              ) : null}
             </div>
             {action ? (
               <div className="flex w-full min-w-0 flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">

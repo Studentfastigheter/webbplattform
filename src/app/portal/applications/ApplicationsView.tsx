@@ -33,6 +33,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
+import { CHART_PRIMARY_DEEP } from "@/features/analytics/chart-palette";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -696,7 +697,7 @@ function ApplicationsTrendBlock({
       ({
         applications: {
           label: localizedText(locale, "Ansökningar", "Applications"),
-          color: "#004225",
+          color: CHART_PRIMARY_DEEP,
         },
       }) satisfies ChartConfig,
     [locale]

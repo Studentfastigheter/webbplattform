@@ -17,6 +17,7 @@ import {
   type AnalyticsBlockSize,
 } from "@/features/analytics/components/AnalyticsBlocks";
 import { PortalVerticalBarChart } from "@/features/analytics/components/PortalBarCharts";
+import { CHART_CATEGORICAL } from "@/features/analytics/chart-palette";
 import {
   Select,
   SelectContent,
@@ -55,19 +56,8 @@ type ApplicationDemographicsPanelProps = {
   to: Date;
 };
 
-// Palette mirrors the portfolio analytics blocks so listing-level
-// application demographics share the same visual rhythm as the company-wide
-// analytics page.
-const colors = [
-  "#16a34a",
-  "#38bdf8",
-  "#fb7185",
-  "#fbbf24",
-  "#2dd4bf",
-  "#a78bfa",
-  "#4ade80",
-  "#94a3b8",
-];
+// Delad kategorisk palett — samma visuella rytm som företagsvyns analytics.
+const colors = CHART_CATEGORICAL;
 
 const labels: Record<string, { sv: string; en: string }> = {
   GENDER: { sv: "Kön", en: "Gender" },

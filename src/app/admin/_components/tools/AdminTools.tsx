@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { CHART_PRIMARY_DEEP } from "@/features/analytics/chart-palette";
 import { adminService } from "@/features/admin/services/admin-service";
 import {
   useAdminActivities,
@@ -4527,7 +4528,7 @@ function CitiesForm() {
 const waitlistChartConfig = {
   count: {
     label: "Nya anmälningar",
-    color: "#004225",
+    color: CHART_PRIMARY_DEEP,
   },
 } satisfies ChartConfig;
 

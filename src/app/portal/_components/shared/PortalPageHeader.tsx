@@ -13,6 +13,7 @@ type PortalPageHeaderProps = {
 
 export default function PortalPageHeader({
   title,
+  description,
   action,
   className,
 }: PortalPageHeaderProps) {
@@ -27,6 +28,11 @@ export default function PortalPageHeader({
         <h1 className="break-words text-2xl font-semibold leading-8 text-gray-950">
           {title}
         </h1>
+        {description ? (
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500">
+            {description}
+          </p>
+        ) : null}
       </div>
       {action ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2">
