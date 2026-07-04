@@ -1,78 +1,115 @@
-# CampusLyan Webbplattform
+# CampusLyan – Webbplattform
 
-Next.js-app för CampusLyan-plattformen. Appen använder Next App Router och kommunicerar med backend via ett samlat API-lager i `src/lib/api`.
+Frontend för CampusLyan, en svensk studentbostadsplattform. Byggd med **Next.js 16 (App Router)**, **React 19**, **TypeScript** och **Tailwind CSS v4**. All kommunikation med CampusLyan-backend går genom ett samlat API-lager i [`src/lib/api`](src/lib/api).
 
-## Kom igang
+Plattformen består av **tre ytor** i samma kodbas:
+
+| Yta | Route-grupp | Subdomän (prod) | För vem |
+|-----|-------------|-----------------|---------|
+| **Publika sajten** | `src/app/(site)` | `campuslyan.se` | Studenter & besökare |
+| **Företagsportalen** | `src/app/portal` | `portal.campuslyan.se` | Bostadsföretag |
+| **Admin** | `src/app/admin` | `admin.campuslyan.se` | Intern personal |
+
+Subdomän-routing, lokalisering och säkerhetsheaders hanteras centralt i [`src/proxy.ts`](src/proxy.ts) (Next 16:s middleware).
+
+---
+
+## Kom igång
 
 ```bash
 npm install
-npm run dev
+npm run dev          # http://localhost:3000 (Turbopack)
 ```
 
-Miljovariabeln `NEXT_PUBLIC_API_URL` maste finnas i `.env.local`. Vardet normaliseras automatiskt till en backend-bas som slutar med `/api`.
-
-## Waitlist i produktion
-
-Waitlisten sparas via `src/app/api/waitlist`. Lokalt kan den falla tillbaka till
-`data/waitlist.local.json` om Firestore nekar skrivningen, men pa Vercel returneras
-felet till klienten.
-
-Med de publika Firestore-reglerna for waitlisten racker dessa Vercel-variabler:
-
-```text
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-```
-
-Routen satter `CreatedAt` med Firestore server timestamp (`REQUEST_TIME`), vilket
-kravs av regeln `request.resource.data.CreatedAt == request.time`.
-
-Om publika writes stangs av helt kan routen i stallet anvanda service account:
-
-```text
-FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
-```
-
-Alternativt kan samma service account delas upp:
-
-```text
-FIREBASE_PROJECT_ID=...
-FIREBASE_CLIENT_EMAIL=...
-FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
-```
-
-## Launch-lage
-
-Utan extra konfiguration kor frontend i pre-launch-lage. Da ar bara startsidan,
-`/for-foretag`, `/partners`, `/om-oss`, `/anvandarvillkor`,
-`/integritetspolicy`, `/cookiepolicy` och losenordsaterstallning via
-`/glomt-losenord` publika pa huvuddomanen.
-
-Satt `NEXT_PUBLIC_PLATFORM_LAUNCHED=true` och redeploya nar hela plattformen ska
-oppnas. Det slar pa plattformsnavigation, publika bostads-/ko-sidor och
-studentlogin/registrering igen.
-
-## Vanliga kommandon
+Skapa `.env.local` med minst:
 
 ```bash
-npm run dev
-npm run typecheck
-npm run build
+NEXT_PUBLIC_API_URL=http://localhost:8080   # normaliseras automatiskt till .../api
 ```
 
-## Struktur
+En backend på den adressen förväntas för fulla integrationsflöden — `/api/*` proxias dit (se [`next.config.ts`](next.config.ts)). Utan backend fungerar sidorna men datadrivna anrop faller tillbaka på fel-/tomtillstånd.
+
+Fullständig lista över miljövariabler (waitlist/Firebase, launch-läge, m.m.) finns i [DEVELOPMENT.md](DEVELOPMENT.md#miljövariabler).
+
+---
+
+## Scripts
+
+```bash
+npm run dev          # Utvecklingsserver (Turbopack)
+npm run build        # Produktionsbygge (Turbopack)
+npm run start        # Kör produktionsbygget
+npm run typecheck    # tsc --noEmit (strict)
+npm run lint         # ESLint 9 (flat config)
+npm run test         # Vitest (enhetstester)
+npm run test:watch   # Vitest i watch-läge
+```
+
+**Kvalitetsgrindar före merge:** `typecheck` + `lint` + `test` + `build` ska vara gröna. Samtliga körs även i CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) på push och PR.
+
+---
+
+## Teknik
+
+| Område | Val |
+|--------|-----|
+| Ramverk | Next.js 16 (App Router, Server Components som default) |
+| Språk | TypeScript 5 (`strict`, `isolatedModules`, `moduleResolution: bundler`) |
+| UI-primitiver | [shadcn/ui](https://ui.shadcn.com) (new-york) ovanpå Radix (`radix-ui`-metapaketet) |
+| Styling | Tailwind CSS v4 — tokens i [`src/app/globals.css`](src/app/globals.css) `@theme` (ingen `tailwind.config.js`) |
+| Serverdata | TanStack Query 5 ([`src/lib/query`](src/lib/query)) |
+| Animation | `motion` (Framer Motion v12-API) |
+| Diagram | Recharts — palett i [`src/features/analytics/chart-palette.ts`](src/features/analytics/chart-palette.ts) |
+| Kartor | Leaflet / react-leaflet |
+| Toaster | sonner |
+| Ikoner | Material Symbols via [`src/components/icons`](src/components/icons) |
+
+En enda UI-stack: HeroUI, Material Tailwind, react-aria och @radix-ui/themes har fasats ut. Använd shadcn/Radix + Tailwind i all ny kod.
+
+---
+
+## Struktur (översikt)
 
 ```text
 src/
-  app/          Next.js routes, layouts och route handlers
-  components/   Delade UI-, layout- och designsystemkomponenter
-  features/     Feature-agd UI, services och featurelogik
-  lib/api/      API-klient, auth headers, query helpers och API-fel
-  lib/          Delade helpers som inte ar feature-specifika
-  types/        Delade API-, domain- och UI-typer
-  hooks/        Generella React hooks
-  context/      Globala providers
-  data/         Statisk frontenddata
+  app/
+    (site)/        Publika sajten (startsida, login, faq, partners …)
+    portal/        Företagsportalen (listings, ansökningar, analytics …)
+    admin/         Intern admin (konton, städer, företag, väntelista …)
+    api/           Next route handlers (waitlist, admin-proxy)
+    layout.tsx     Root-layout (providers, fonter, metadata)
+  features/<x>/    Feature-ägd kod: components / hooks / services / types
+  components/
+    ui/            shadcn/Radix-primitiver (button, dialog, select …)
+    layout/        Header, footer, globala layout-delar
+    shared/        Delade komponenter (t.ex. kartor)
+    icons/         Centraliserat ikonsystem (Material Symbols)
+  lib/
+    api/           apiClient, ApiError, normalize-helpers
+    query/         QueryClient, query-key-fabrik, hydration
+    auth-storage.ts  Token + auth-flagg-cookie
+    utils.ts       cn() m.m.
+  context/         Globala providers (AuthContext, UserEnvironment)
+  i18n/            Lokalisering (sv/en)
+  types/           Delade API-/domän-/UI-typer
+  data/            Statisk frontenddata
+  proxy.ts         Middleware: subdomäner, locale, CSP, routeskydd
 ```
 
-Se `DEVELOPMENT.md` for riktlinjer for nya features, API-anrop och typer.
+Detaljerade konventioner för nya features, API-anrop och typer: [DEVELOPMENT.md](DEVELOPMENT.md).
+Arkitektur, dataflöde och designsystem: [ARCHITECTURE.md](ARCHITECTURE.md).
+Riktlinjer för AI-agenter (Claude Code, Copilot m.fl.): [AGENTS.md](AGENTS.md).
+
+---
+
+## Launch-läge
+
+Utan `NEXT_PUBLIC_PLATFORM_LAUNCHED` kör frontend i **pre-launch-läge**: bara ett fåtal publika sidor är nåbara på huvuddomänen. Den auktoritativa listan finns i [`src/lib/platform-launch.ts`](src/lib/platform-launch.ts) (`prelaunchPublicSitePathnames`).
+
+Sätt `NEXT_PUBLIC_PLATFORM_LAUNCHED=true` och redeploya för att öppna hela plattformen — plattformsnavigation, publika bostads-/kösidor och studentlogin/registrering.
+
+---
+
+## Deploy
+
+Byggs och körs som en vanlig Next.js-app (Vercel eller motsvarande). Node `20.x` / npm `10.x` (se `package.json` `engines`, `.nvmrc`). Sätt samtliga miljövariabler i hostingmiljön. `admin.`- och `portal.`-subdomänerna måste peka på samma deploy — [`src/proxy.ts`](src/proxy.ts) routar dem till rätt route-träd.
