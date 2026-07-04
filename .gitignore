@@ -66,3 +66,9 @@ target/
 
 # Maven wrapper
 !.mvn/wrapper/maven-wrapper.jar
+
+# --- Agent-skills ---
+# .agents/skills + skills-lock.json checkas in (delade, reproducerbara skills).
+# .claude/skills/ är en maskinspecifik junction/symlänk som skills-CLI:t
+# återskapar lokalt per maskin – checkas inte in.
+.claude/skills/
