@@ -19,9 +19,6 @@ const eslintConfig = defineConfig([
     "data/**",
     "public/**",
     "tooling/**",
-    // Död Tailwind v3-konfig (laddas aldrig under v4) — tas bort i Etapp 3
-    // tillsammans med HeroUI.
-    "tailwind.config.js",
   ]),
   {
     rules: {
