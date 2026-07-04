@@ -283,7 +283,7 @@ export function useAdminCreateSchool() {
       // Portal /useSchools shares the same upstream — drop it too.
       qc.invalidateQueries({ queryKey: qk.schools.all });
       qc.invalidateQueries({ queryKey: qk.cities.all });
-      qc.invalidateQueries({ queryKey: ["admin", "city-detail"] });
+      qc.invalidateQueries({ queryKey: qk.admin.cityDetails() });
     },
   });
 }
@@ -296,7 +296,7 @@ export function useAdminCreateSchools() {
       qc.invalidateQueries({ queryKey: qk.admin.schools() });
       qc.invalidateQueries({ queryKey: qk.schools.all });
       qc.invalidateQueries({ queryKey: qk.cities.all });
-      qc.invalidateQueries({ queryKey: ["admin", "city-detail"] });
+      qc.invalidateQueries({ queryKey: qk.admin.cityDetails() });
     },
   });
 }
@@ -309,7 +309,7 @@ export function useAdminModifySchool() {
       qc.invalidateQueries({ queryKey: qk.admin.schools() });
       qc.invalidateQueries({ queryKey: qk.schools.all });
       qc.invalidateQueries({ queryKey: qk.cities.all });
-      qc.invalidateQueries({ queryKey: ["admin", "city-detail"] });
+      qc.invalidateQueries({ queryKey: qk.admin.cityDetails() });
     },
   });
 }

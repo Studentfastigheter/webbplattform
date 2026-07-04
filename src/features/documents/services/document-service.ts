@@ -1,4 +1,5 @@
 import { ApiError, apiClient, buildQuery, pathSegment } from "@/lib/api/client";
+import { isRecord } from "@/lib/api/normalize";
 import type { DocumentFileType, SystemProvider } from "@/types/common";
 
 export type UploadDocumentTargetDTO = {
@@ -109,9 +110,6 @@ export type UploadedDocument = {
   sharedWith?: SharedUserDocumentDTO[];
   notSharedWith?: UploadDocumentTargetDTO[];
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const stringValue = (value: unknown) =>
   typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;

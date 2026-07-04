@@ -70,8 +70,10 @@ export const qk = {
     queueListings: (queueId: string, page: number, size: number) =>
       ["listings", "queue", queueId, page, size] as const,
 
-    nearby: (cityOrArea: string | null, size: number) =>
-      ["listings", "nearby", cityOrArea, size] as const,
+    // listingId ingår eftersom queryFn filtrerar bort den aktuella annonsen —
+    // två annonser i samma stad får annars fel delat cacheresultat.
+    nearby: (listingId: string | null, cityOrArea: string | null, size: number) =>
+      ["listings", "nearby", listingId, cityOrArea, size] as const,
   },
 
   queues: {
@@ -111,6 +113,8 @@ export const qk = {
       ["companies", "view-counts", companyId] as const,
     applicationCounts: (companyId: number, size: number) =>
       ["companies", "application-counts", companyId, size] as const,
+    applicationCountsByCompany: (companyId: number) =>
+      ["companies", "application-counts", companyId] as const,
     applicationsByCompany: (companyId: number) =>
       ["companies", "applications", companyId] as const,
     applications: (companyId: number, pageSize: number, maxPages: number) =>
@@ -171,6 +175,9 @@ export const qk = {
       ] as const,
     listingPerformanceByCompany: (companyId: number) =>
       ["companies", "listing-performance", companyId] as const,
+    listingPerformanceAll: () => ["companies", "listing-performance"] as const,
+    listingPerformanceDetailAll: () =>
+      ["companies", "listing-performance-detail"] as const,
     listingPerformanceDetail: (
       companyId: number,
       listingId: string,
@@ -187,6 +194,7 @@ export const qk = {
       ] as const,
     listingStatuses: (companyId: number) =>
       ["companies", "listing-statuses", companyId] as const,
+    listingStatusesAll: () => ["companies", "listing-statuses"] as const,
     applicationStatuses: (companyId: number, from: string, to: string) =>
       ["companies", "application-statuses", companyId, from, to] as const,
     applicationStatusesByCompany: (companyId: number) =>
@@ -423,6 +431,7 @@ export const qk = {
     cityNames: () => ["admin", "city-names"] as const,
     citySummaries: () => ["admin", "city-summaries"] as const,
     cityDetail: (code: string) => ["admin", "city-detail", code] as const,
+    cityDetails: () => ["admin", "city-detail"] as const,
     locationCategories: () => ["admin", "location-categories"] as const,
     activities: () => ["admin", "activities"] as const,
     companies: () => ["admin", "companies"] as const,

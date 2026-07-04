@@ -5,6 +5,11 @@ import {
   pathSegment,
   type ServiceOptions,
 } from "@/lib/api/client";
+import {
+  firstFiniteNumber,
+  firstNonEmptyString,
+  isRecord,
+} from "@/lib/api/normalize";
 import { cityService } from "@/features/cities/services/city-service";
 import {
   DWELLING_TYPE_VALUES,
@@ -285,25 +290,11 @@ function buildListingSearchQuery(
   });
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
+// Delade helpers i @/lib/api/normalize; den här servicen behåller sitt
+// historiska 0-fallback för tal.
+const firstString = firstNonEmptyString;
 
-const firstString = (...values: unknown[]) =>
-  values.find(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
-  )?.trim();
-
-const firstNumber = (...values: unknown[]) => {
-  for (const value of values) {
-    const numberValue =
-      typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
-    if (Number.isFinite(numberValue)) {
-      return numberValue;
-    }
-  }
-
-  return 0;
-};
+const firstNumber = (...values: unknown[]) => firstFiniteNumber(...values) ?? 0;
 
 const firstStringArray = (...values: unknown[]) => {
   for (const value of values) {

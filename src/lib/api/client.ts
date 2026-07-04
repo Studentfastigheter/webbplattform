@@ -71,6 +71,51 @@ export type ServiceOptions = {
   signal?: AbortSignal;
 };
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+
+/**
+ * Kombinerar anroparens ev. AbortSignal med en timeout så att en hängande
+ * backend aldrig lämnar UI:t i evig laddning. Anroparens abort vinner alltid
+ * (dess reason propageras); timeouten markeras med TimeoutError.
+ */
+function createRequestSignal(
+  callerSignal: AbortSignal | null | undefined,
+  timeoutMs: number
+): { signal: AbortSignal; didTimeOut: () => boolean; cleanup: () => void } {
+  const controller = new AbortController();
+  let timedOut = false;
+
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort(
+      new DOMException("Request timed out", "TimeoutError")
+    );
+  }, timeoutMs);
+
+  const onCallerAbort = () => {
+    controller.abort(callerSignal?.reason);
+  };
+
+  if (callerSignal) {
+    if (callerSignal.aborted) {
+      onCallerAbort();
+    } else {
+      callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+    }
+  }
+
+  return {
+    signal: controller.signal,
+    didTimeOut: () => timedOut,
+    // Rensar bara timeouten (när headers anlänt räknas servern som vid liv).
+    // Abort-lyssnaren behålls så att anroparens avbrott fortfarande kan
+    // avbryta body-läsningen; {once:true} städar den åt oss.
+    cleanup: () => {
+      clearTimeout(timeoutId);
+    },
+  };
+}
+
 const READ_DEDUPE_CACHE_MS = 1000;
 const inFlightReadRequests = new Map<string, Promise<unknown>>();
 const completedReadRequests = new Map<
@@ -210,6 +255,11 @@ export async function apiClient<T>(
   const method = (customOptions.method ?? "GET").toUpperCase();
 
   const request = async (): Promise<T> => {
+    const requestSignal = createRequestSignal(
+      customOptions.signal,
+      DEFAULT_REQUEST_TIMEOUT_MS
+    );
+
     let res: Response;
     try {
       res = await fetch(url, {
@@ -217,9 +267,28 @@ export async function apiClient<T>(
         body: requestBody,
         headers: defaultHeaders,
         cache: customOptions.cache ?? "no-store",
+        signal: requestSignal.signal,
       });
     } catch (err) {
-      throw new Error((err as Error)?.message || "Kunde inte nå servern.");
+      // Anroparens abort (TanStack Query-avbrott, unmount) ska behålla sin
+      // identitet — den är inte ett fel som ska visas för användaren.
+      if (customOptions.signal?.aborted) {
+        throw err;
+      }
+
+      if (requestSignal.didTimeOut()) {
+        throw new ApiError(
+          "Servern svarade inte i tid. Försök igen om en stund.",
+          0,
+          null
+        );
+      }
+
+      // Nätverksfel får status 0 så att felhantering/retry kan skilja dem
+      // från deterministiska HTTP-fel.
+      throw new ApiError("Kunde inte nå servern.", 0, null);
+    } finally {
+      requestSignal.cleanup();
     }
 
     if (res.status === 204) {

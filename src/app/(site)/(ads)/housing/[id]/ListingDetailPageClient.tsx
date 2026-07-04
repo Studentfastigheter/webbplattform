@@ -437,6 +437,7 @@ export default function ListingDetailPage() {
   // one key. Disabled until we have a listing.
   const nearbyQuery = useQuery<ListingCardDTO[]>({
     queryKey: qk.listings.nearby(
+      listing?.id ?? null,
       listing?.city || listing?.area || null,
       NEARBY_LISTINGS_FETCH_SIZE
     ),

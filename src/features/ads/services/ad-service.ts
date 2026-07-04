@@ -3,6 +3,7 @@ import {
   arrayFromApiResponse,
   type ServiceOptions,
 } from "@/lib/api/client";
+import { isRecord } from "@/lib/api/normalize";
 
 export type PlatformAd = {
   id: number;
@@ -17,9 +18,6 @@ export type PlatformAd = {
   ctaText?: string;
   placement?: string;
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const stringValue = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;

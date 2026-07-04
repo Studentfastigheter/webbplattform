@@ -785,14 +785,38 @@ export default function ListingsPage() {
                   </div>
                 </div>
 
-                <div className="z-10 h-[280px] w-full shrink-0 overflow-hidden rounded-xl sm:h-[350px] lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:rounded-2xl 2xl:col-span-2">
-                  <ListingsMap
-                    listings={mapListings}
-                    activeListingId={hoveredListingId}
-                    getIsFavorite={(id) => favoriteIds.has(id)}
-                    onFavoriteToggle={handleFavoriteToggle}
-                    onOpenListing={(id) => router.push(localizedHref(`/housing/${id}`))}
-                  />
+                <div className="relative z-10 h-[280px] w-full shrink-0 overflow-hidden rounded-xl sm:h-[350px] lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:rounded-2xl 2xl:col-span-2">
+                  {mapQuery.isError ? (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 border border-red-200 bg-red-50 px-6 text-center">
+                      <p className="text-sm font-medium text-red-800">
+                        {localizedText(locale, "Kartan kunde inte laddas.", "The map could not be loaded.")}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void mapQuery.refetch()}
+                        className="rounded-full border border-red-300 bg-white px-4 py-1.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                      >
+                        {localizedText(locale, "Försök igen", "Try again")}
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <ListingsMap
+                        listings={mapListings}
+                        activeListingId={hoveredListingId}
+                        getIsFavorite={(id) => favoriteIds.has(id)}
+                        onFavoriteToggle={handleFavoriteToggle}
+                        onOpenListing={(id) => router.push(localizedHref(`/housing/${id}`))}
+                      />
+                      {mapQuery.isLoading && (
+                        <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-white/60">
+                          <span className="animate-pulse text-sm text-gray-600">
+                            {localizedText(locale, "Hämtar bostäder till kartan...", "Loading homes for the map...")}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
