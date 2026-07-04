@@ -52,7 +52,12 @@ const AUTH_FLAG_COOKIE_NAME = "cl_auth";
 
 const SECURITY_HEADERS = [
   ["Content-Security-Policy", CONTENT_SECURITY_POLICY],
-  ["Cross-Origin-Opener-Policy", "same-origin"],
+  // 'same-origin-allow-popups' (inte 'same-origin'): behåller COOP-isoleringen
+  // mot främmande openers men bevarar window.opener för popups sidan själv
+  // öppnar — krävs för att Google Identity Services (Sign in with Google) ska
+  // kunna posta tillbaka ID-tokenen till oss. Ren 'same-origin' kapar opener
+  // och Google-popupen hänger vit utan att logga in.
+  ["Cross-Origin-Opener-Policy", "same-origin-allow-popups"],
   ["Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"],
   ["Referrer-Policy", "strict-origin-when-cross-origin"],
   ["Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload"],
