@@ -79,15 +79,16 @@ const nextConfig: NextConfig = {
 
   images: {
     formats: ["image/avif", "image/webp"],
+    // Endast backendens mediakatalog. Wildcard (https/http + hostname "**")
+    // gör /_next/image till en öppen proxy/SSRF-yta — lägg till nya värdar
+    // explicit här om fler bildkällor tillkommer.
     remotePatterns: [
-      { 
-        protocol: "https", 
-        hostname: "**" 
+      {
+        protocol: apiBaseUrl.protocol === "http:" ? "http" : "https",
+        hostname: apiBaseUrl.hostname,
+        ...(apiBaseUrl.port ? { port: apiBaseUrl.port } : {}),
+        pathname: apiImagePathname,
       },
-      { 
-        protocol: "http", 
-        hostname: "**" 
-      }
     ],
   },
 

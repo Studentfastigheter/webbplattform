@@ -1,4 +1,5 @@
 import { apiClient, normalizeAuthToken, pathSegment } from "@/lib/api/client";
+import { setStoredAuthToken } from "@/lib/auth-storage";
 import { isAdminSubdomain } from "@/lib/subdomain-routing";
 import {
   User,
@@ -368,7 +369,7 @@ function persistAuthToken(token: string | null) {
     return;
   }
 
-  localStorage.setItem("token", token);
+  setStoredAuthToken(token);
 }
 
 function clearAuthToken() {
@@ -376,7 +377,7 @@ function clearAuthToken() {
     return;
   }
 
-  localStorage.removeItem("token");
+  setStoredAuthToken(null);
 }
 
 export function isStudentRegistrationResponse(

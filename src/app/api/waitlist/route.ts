@@ -14,6 +14,47 @@ export const runtime = "nodejs";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Enkel rate limit per IP (fast fönster). In-memory: skyddar per
+// serverinstans, vilket räcker som friktion mot skript-spam på en publik
+// skrivendpoint. Byt till KV/Upstash om plattformen skalar till många
+// instanser och det behöver vara globalt.
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_MAX_TRACKED_IPS = 10_000;
+const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const bucket = rateLimitBuckets.get(ip);
+
+  if (!bucket || bucket.resetAt <= now) {
+    if (rateLimitBuckets.size >= RATE_LIMIT_MAX_TRACKED_IPS) {
+      for (const [key, value] of rateLimitBuckets) {
+        if (value.resetAt <= now) rateLimitBuckets.delete(key);
+      }
+
+      if (rateLimitBuckets.size >= RATE_LIMIT_MAX_TRACKED_IPS) {
+        rateLimitBuckets.clear();
+      }
+    }
+
+    rateLimitBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  bucket.count += 1;
+  return bucket.count > RATE_LIMIT_MAX_REQUESTS;
+}
+
 type WaitlistRequest = {
   email?: unknown;
 };
@@ -30,6 +71,13 @@ function validateEmail(email: string): string | null {
 }
 
 export async function POST(request: Request) {
+  if (isRateLimited(getClientIp(request))) {
+    return NextResponse.json(
+      { error: "För många försök. Vänta en stund och prova igen." },
+      { status: 429 },
+    );
+  }
+
   let body: WaitlistRequest;
 
   try {
