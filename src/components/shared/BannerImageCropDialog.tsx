@@ -262,7 +262,7 @@ export default function BannerImageCropDialog({
                   value={zoom}
                   disabled={!objectUrl || isCropping}
                   onChange={(event) => setZoom(Number(event.target.value))}
-                  className="h-1.5 w-full cursor-pointer accent-[#004225] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-1.5 w-full cursor-pointer accent-brand disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <span className="text-right text-sm tabular-nums text-gray-600">
                   {zoomLabel}

@@ -133,14 +133,14 @@ export default function RequirementsProfilesPage() {
                         type="button"
                         className={`relative w-full rounded-lg px-3 py-3 pl-4 text-left text-sm font-medium transition-colors ${
                           isSelected
-                            ? "bg-[#004225]/5 text-[#004225]"
+                            ? "bg-brand/5 text-brand"
                             : "text-gray-700 hover:bg-gray-50"
                         }`}
                         key={profileKey}
                         onClick={() => setSelectedProfileKey(profileKey)}
                       >
                         {isSelected ? (
-                          <span className="absolute bottom-2 left-1.5 top-2 w-1 rounded-full bg-[#004225]" />
+                          <span className="absolute bottom-2 left-1.5 top-2 w-1 rounded-full bg-brand" />
                         ) : null}
                         <span className="block truncate">
                           {profile.title || localizedText(locale, "Namnlös kravprofil", "Untitled requirement profile")}

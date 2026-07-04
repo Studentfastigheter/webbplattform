@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, X } from "@/components/icons";
 import { RichTextParagraph } from "@/components/ui/RichText";
@@ -184,7 +185,7 @@ function ImagePreviewGrid({
     return (
       <button
         type="button"
-        className="group relative block aspect-[16/10] w-full overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-[#004225] focus-visible:ring-offset-2 sm:aspect-[16/9] lg:aspect-[16/8] lg:rounded-3xl"
+        className="group relative block aspect-[16/10] w-full overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:aspect-[16/9] lg:aspect-[16/8] lg:rounded-3xl"
         onClick={() => onImageClick(0)}
       >
         <Image
@@ -207,7 +208,7 @@ function ImagePreviewGrid({
       {/* Main image */}
       <button
         type="button"
-        className="group relative aspect-[16/10] overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-[#004225] focus-visible:ring-offset-2 sm:aspect-[16/9] lg:h-full lg:aspect-auto lg:rounded-l-3xl lg:rounded-r-none"
+        className="group relative aspect-[16/10] overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:aspect-[16/9] lg:h-full lg:aspect-auto lg:rounded-l-3xl lg:rounded-r-none"
         onClick={() => onImageClick(0)}
       >
         <Image
@@ -237,7 +238,7 @@ function ImagePreviewGrid({
               key={`${src}-${i + 1}`}
               type="button"
               className={cn(
-                "group relative aspect-[16/10] min-h-[118px] overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-[#004225] focus-visible:ring-offset-2 sm:aspect-[16/9] lg:h-full lg:min-h-0 lg:aspect-auto",
+                "group relative aspect-[16/10] min-h-[118px] overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:aspect-[16/9] lg:h-full lg:min-h-0 lg:aspect-auto",
                 side.length > 1 && isFirst && "lg:rounded-bl-none lg:rounded-br-none lg:rounded-tl-none lg:rounded-tr-3xl",
                 side.length > 1 && isEnd && "lg:rounded-bl-none lg:rounded-br-3xl lg:rounded-tl-none lg:rounded-tr-none",
                 side.length === 1 && "lg:rounded-l-none lg:rounded-r-3xl"
@@ -531,7 +532,7 @@ export default function ListingDetailPage() {
   const handleFavoriteToggle = useCallback(
     async (id: string, isFav: boolean) => {
       if (!user) {
-        alert(localizedText(locale, "Du måste vara inloggad för att spara bostäder", "You must be signed in to save homes"));
+        toast.error(localizedText(locale, "Du måste vara inloggad för att spara bostäder", "You must be signed in to save homes"));
         return;
       }
 

@@ -1149,7 +1149,7 @@ function ApplicationRow({
           {listingHref ? (
             <Link
               aria-label={localizedText(locale, "Öppna bostad", "Open listing")}
-              className="shrink-0 text-gray-400 transition hover:text-[#004225]"
+              className="shrink-0 text-gray-400 transition hover:text-brand"
               href={listingHref}
             >
               <ExternalLink className="h-4 w-4" />

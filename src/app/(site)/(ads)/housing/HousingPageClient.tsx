@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
@@ -359,7 +360,7 @@ export default function ListingsPage() {
   const handleFavoriteToggle = useCallback(
     (id: string, isFav: boolean) => {
       if (!user) {
-        alert(localizedText(locale, "Du måste vara inloggad för att spara bostäder", "You must be signed in to save homes"));
+        toast.error(localizedText(locale, "Du måste vara inloggad för att spara bostäder", "You must be signed in to save homes"));
         return;
       }
 
@@ -704,7 +705,7 @@ export default function ListingsPage() {
                       ? `${localizedText(locale, "Filtrera", "Filter")} (${activeFilterCount})`
                       : localizedText(locale, "Filtrera", "Filter")
                   }
-                  className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-[#004225] shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
+                  className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-brand shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                   amenities={availableAmenities}
                   propertyTypes={propertyTypeOptions}
                   hostTypes={hostTypeOptions}

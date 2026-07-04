@@ -307,7 +307,7 @@ export function AdminAnalyticsDashboard() {
             {erroredRows.length > 0 ? ` · ${formatNumber(erroredRows.length)} fel` : ""}
           </div>
           <Button
-            className="bg-[#004225] text-white hover:bg-[#00351e]"
+            className="bg-brand text-white hover:bg-[#00351e]"
             isLoading={isRefreshing}
             onPress={refresh}
             type="button"

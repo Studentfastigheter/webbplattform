@@ -76,7 +76,7 @@ export function SwitchSelect({
         aria-hidden
         className={[
           "absolute inset-y-0 left-0 w-1/2",
-          "bg-[#004225]",
+          "bg-brand",
           "shadow-[0_4px_12px_rgba(0,66,37,0.22)]",
         ].join(" ")}
         initial={false}

@@ -1224,7 +1224,7 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
           <div className="space-y-5">
             <Link
               href={`${dashboardRelPath}/listings`}
-              className="portal-control inline-flex h-9 w-fit items-center gap-2 px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-[#004225]"
+              className="portal-control inline-flex h-9 w-fit items-center gap-2 px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-brand"
             >
               <ArrowLeft className="h-4 w-4" />
               {localizedText(locale, "Tillbaka till annonser", "Back to listings")}
@@ -1321,7 +1321,7 @@ export default function ListingOverviewView({ id }: ListingOverviewViewProps) {
                         type="button"
                         aria-pressed={isCurrent}
                         className={cn(
-                          "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:pointer-events-none disabled:opacity-60",
+                          "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:pointer-events-none disabled:opacity-60",
                           isCurrent
                             ? "bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100 shadow-none"
                             : "text-gray-500 hover:bg-white hover:text-gray-900"

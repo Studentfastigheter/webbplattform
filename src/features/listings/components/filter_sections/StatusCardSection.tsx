@@ -45,8 +45,8 @@ const StatusCardSection: React.FC<StatusCardSectionProps> = ({
               className={cn(
                 "flex flex-col rounded-lg border px-4 py-3 text-left transition",
                 active
-                  ? "border-[#004225] bg-[#004225] text-white shadow-[0_6px_14px_rgba(0,66,37,0.14)]"
-                  : "border-black/10 bg-white text-black hover:border-[#004225]/30 hover:bg-[#f6faf8]"
+                  ? "border-brand bg-brand text-white shadow-[0_6px_14px_rgba(0,66,37,0.14)]"
+                  : "border-black/10 bg-white text-black hover:border-brand/30 hover:bg-[#f6faf8]"
               )}
             >
               <span className="text-sm font-semibold">{item.label}</span>

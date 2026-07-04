@@ -14,6 +14,7 @@ import {
   FileUpload,
   type FileListItemProps,
 } from "@/features/documents/components/file-upload";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextParagraph } from "@/components/ui/RichText";
@@ -82,7 +83,7 @@ const emptyEditDraft: EditDraft = {
 };
 
 const actionButtonBaseClassName =
-  "inline-flex items-center gap-1.5 transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]";
+  "inline-flex items-center gap-1.5 transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
 const buttonClassName =
   "rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-none hover:bg-gray-50";
@@ -304,6 +305,7 @@ export default function AccountDocumentsSection() {
   const { locale } = useI18n();
   const uploadDocument = useUploadDocument();
   const deleteDocument = useDeleteDocument();
+  const { confirm, confirmDialog } = useConfirmDialog();
   // `documents` is local state because uploads add transient items (with
   // progress) before they exist server-side. We seed and merge from the
   // useMyDocuments cache via the effect below.
@@ -565,7 +567,13 @@ export default function AccountDocumentsSection() {
     const document = documents.find((item) => item.id === documentId);
     if (!document) return;
 
-    const shouldDelete = window.confirm(localizedText(locale, `Ta bort "${document.title}"?`, `Remove "${document.title}"?`));
+    const shouldDelete = await confirm({
+      title: localizedText(locale, "Ta bort dokument?", "Remove document?"),
+      description: localizedText(locale, `"${document.title}" tas bort permanent.`, `"${document.title}" will be permanently removed.`),
+      confirmLabel: localizedText(locale, "Ta bort", "Remove"),
+      cancelLabel: localizedText(locale, "Avbryt", "Cancel"),
+      destructive: true,
+    });
     if (!shouldDelete) return;
 
     const uploadCleanup = uploadCleanupsRef.current.get(documentId);
@@ -1123,6 +1131,7 @@ export default function AccountDocumentsSection() {
           </div>
         </div>
       )}
+      {confirmDialog}
     </section>
   );
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "@/components/icons";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   buildQueueRow,
   QueueCard,
@@ -49,20 +50,24 @@ export default function Page() {
   } = useMyQueues({ hydrated: true });
 
   const leaveQueue = useLeaveQueue();
+  const { confirm: confirmAction, confirmDialog } = useConfirmDialog();
   const [leavingQueueId, setLeavingQueueId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const handleLeave = useCallback(
     async (queueId: string, queueName: string) => {
-      if (
-        !confirm(
-          localizedText(
-            locale,
-            `Vill du lämna kön "${queueName}"? Din köplats och kötid försvinner.`,
-            `Do you want to leave the queue "${queueName}"? Your position and queue time will be lost.`
-          )
-        )
-      ) {
+      const shouldLeave = await confirmAction({
+        title: localizedText(locale, "Lämna kön?", "Leave the queue?"),
+        description: localizedText(
+          locale,
+          `Din köplats och kötid i "${queueName}" försvinner.`,
+          `Your position and queue time in "${queueName}" will be lost.`
+        ),
+        confirmLabel: localizedText(locale, "Lämna kön", "Leave queue"),
+        cancelLabel: localizedText(locale, "Avbryt", "Cancel"),
+        destructive: true,
+      });
+      if (!shouldLeave) {
         return;
       }
 
@@ -79,7 +84,7 @@ export default function Page() {
         setLeavingQueueId(null);
       }
     },
-    [leaveQueue, locale]
+    [leaveQueue, locale, confirmAction]
   );
 
   const error =
@@ -175,6 +180,7 @@ export default function Page() {
           emptyState={emptyState}
         />
       </div>
+      {confirmDialog}
     </main>
   );
 }

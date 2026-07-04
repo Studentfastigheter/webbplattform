@@ -1400,7 +1400,7 @@ function SchoolsForm() {
               accept=".csv,text/csv"
               disabled={importState.status === "loading"}
               onChange={handleCsvFileChange}
-              className="h-10 rounded-[8px] border-[#dfe7e3] bg-white normal-case tracking-normal text-[#111827] file:mr-3 file:rounded-[6px] file:bg-[#eef5f1] file:px-3 file:text-[#004225]"
+              className="h-10 rounded-[8px] border-[#dfe7e3] bg-white normal-case tracking-normal text-[#111827] file:mr-3 file:rounded-[6px] file:bg-[#eef5f1] file:px-3 file:text-brand"
             />
           </FieldRow>
           <FormSelect
@@ -1427,7 +1427,7 @@ function SchoolsForm() {
             size="sm"
             isDisabled={!bulkCity.trim() || importRows.length === 0}
             onPress={applyBulkCity}
-            className="rounded-[8px] px-3 text-[#004225]"
+            className="rounded-[8px] px-3 text-brand"
           >
             Applicera stad på alla
           </Button>
@@ -1437,7 +1437,7 @@ function SchoolsForm() {
             size="sm"
             isDisabled={importRows.length === 0}
             onPress={clearImportRows}
-            className="rounded-[8px] px-3 text-[#004225]"
+            className="rounded-[8px] px-3 text-brand"
           >
             Rensa import
           </Button>
@@ -1497,7 +1497,7 @@ function SchoolsForm() {
                             onChange={(event) =>
                               updateImportRow(row.id, { city: event.target.value })
                             }
-                            className="h-9 w-full rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm text-[#111827] outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/20"
+                            className="h-9 w-full rounded-[8px] border border-[#dfe7e3] bg-white px-3 text-sm text-[#111827] outline-none focus-visible:ring-2 focus-visible:ring-brand/20"
                           >
                             <option value="">
                               {citiesLoading ? "Hämtar..." : "Välj stad"}
@@ -1567,7 +1567,7 @@ function SchoolsForm() {
                   importState.status === "loading"
                 }
                 onPress={() => void createImportedSchools()}
-                className="rounded-[8px] bg-[#004225] text-white hover:bg-[#00351e]"
+                className="rounded-[8px] bg-brand text-white hover:bg-[#00351e]"
               >
                 <UploadIcon className="h-4 w-4" />
                 Skapa {importRows.length} skolor
@@ -2164,7 +2164,7 @@ function CompanyFields({
               onPress={() =>
                 onChange({ cityCodes: cityOptions.map((option) => option.code) })
               }
-              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              className="min-w-0 rounded-[8px] px-3 text-brand"
             >
               Markera alla
             </Button>
@@ -2174,7 +2174,7 @@ function CompanyFields({
               size="sm"
               isDisabled={form.cityCodes.length === 0}
               onPress={() => onChange({ cityCodes: [] })}
-              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              className="min-w-0 rounded-[8px] px-3 text-brand"
             >
               Rensa
             </Button>
@@ -2197,7 +2197,7 @@ function CompanyFields({
                   onCheckedChange={(checked) =>
                     setCompanyCitySelection(code, checked === true)
                   }
-                  className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                  className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-brand data-[state=checked]:bg-brand"
                 />
                 <span>{cityOptionLabel(city)}</span>
               </label>
@@ -2414,7 +2414,7 @@ function CompaniesForm() {
             isLoading={updateState.status === "loading"}
             isDisabled={!updateForm.companyId?.trim()}
             onPress={() => void save("update")}
-            className="bg-[#004225] text-white hover:bg-[#00351e]"
+            className="bg-brand text-white hover:bg-[#00351e]"
           >
             Uppdatera vald
           </Button>
@@ -2693,10 +2693,10 @@ function ExternalCompanyLogoField({
             type="button"
             onClick={() => onSourceChange("upload")}
             className={cn(
-              "flex h-9 min-w-0 items-center justify-center gap-2 rounded-[7px] px-3 text-sm font-semibold normal-case tracking-normal transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]",
+              "flex h-9 min-w-0 items-center justify-center gap-2 rounded-[7px] px-3 text-sm font-semibold normal-case tracking-normal transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
               source === "upload"
-                ? "bg-white text-[#004225] shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
-                : "text-[#476e66] hover:bg-white/60 hover:text-[#004225]"
+                ? "bg-white text-brand shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+                : "text-[#476e66] hover:bg-white/60 hover:text-brand"
             )}
           >
             <UploadIcon className="h-4 w-4 shrink-0" />
@@ -2706,10 +2706,10 @@ function ExternalCompanyLogoField({
             type="button"
             onClick={() => onSourceChange("url")}
             className={cn(
-              "flex h-9 min-w-0 items-center justify-center gap-2 rounded-[7px] px-3 text-sm font-semibold normal-case tracking-normal transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]",
+              "flex h-9 min-w-0 items-center justify-center gap-2 rounded-[7px] px-3 text-sm font-semibold normal-case tracking-normal transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
               source === "url"
-                ? "bg-white text-[#004225] shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
-                : "text-[#476e66] hover:bg-white/60 hover:text-[#004225]"
+                ? "bg-white text-brand shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+                : "text-[#476e66] hover:bg-white/60 hover:text-brand"
             )}
           >
             <ExternalLink className="h-4 w-4 shrink-0" />
@@ -2722,10 +2722,10 @@ function ExternalCompanyLogoField({
             <label
               htmlFor={inputId}
               className={cn(
-                "flex min-h-[92px] cursor-pointer items-center gap-3 rounded-[8px] border bg-white px-4 py-3 normal-case tracking-normal transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#004225]",
+                "flex min-h-[92px] cursor-pointer items-center gap-3 rounded-[8px] border bg-white px-4 py-3 normal-case tracking-normal transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand",
                 logoFile
                   ? "border-[#8db2a3]"
-                  : "border-dashed border-[#b7c8c0] hover:border-[#004225] hover:bg-[#f7fbf8]"
+                  : "border-dashed border-[#b7c8c0] hover:border-brand hover:bg-[#f7fbf8]"
               )}
             >
               <Input
@@ -2736,7 +2736,7 @@ function ExternalCompanyLogoField({
                 onChange={onFileChange}
                 className="sr-only"
               />
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] bg-[#eef5f1] text-[#004225]">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] bg-[#eef5f1] text-brand">
                 <UploadIcon className="h-5 w-5" />
               </span>
               <span className="min-w-0 flex-1">
@@ -2748,7 +2748,7 @@ function ExternalCompanyLogoField({
                 </span>
               </span>
               {logoFile ? (
-                <span className="hidden shrink-0 items-center gap-1 rounded-full bg-[#eef5f1] px-2.5 py-1 text-xs font-semibold text-[#004225] sm:flex">
+                <span className="hidden shrink-0 items-center gap-1 rounded-full bg-[#eef5f1] px-2.5 py-1 text-xs font-semibold text-brand sm:flex">
                   <CheckIcon className="h-3.5 w-3.5" />
                   Vald
                 </span>
@@ -2764,7 +2764,7 @@ function ExternalCompanyLogoField({
                   variant="ghost"
                   size="sm"
                   onPress={onClearFile}
-                  className="h-8 min-w-0 shrink-0 rounded-[8px] px-2 text-[#004225]"
+                  className="h-8 min-w-0 shrink-0 rounded-[8px] px-2 text-brand"
                 >
                   <XIcon className="h-4 w-4" />
                   Rensa
@@ -3055,7 +3055,7 @@ function ExternalCompaniesForm() {
                 onPress={() =>
                   patchForm({ cityCodes: cityOptions.map((option) => option.code) })
                 }
-                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+                className="min-w-0 rounded-[8px] px-3 text-brand"
               >
                 Markera alla
               </Button>
@@ -3065,7 +3065,7 @@ function ExternalCompaniesForm() {
                 size="sm"
                 isDisabled={form.cityCodes.length === 0 || state.status === "loading"}
                 onPress={() => patchForm({ cityCodes: [] })}
-                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+                className="min-w-0 rounded-[8px] px-3 text-brand"
               >
                 Rensa
               </Button>
@@ -3084,7 +3084,7 @@ function ExternalCompaniesForm() {
                     checked={form.cityCodes.includes(code)}
                     disabled={state.status === "loading"}
                     onCheckedChange={(checked) => setCitySelection(code, checked === true)}
-                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-brand data-[state=checked]:bg-brand"
                   />
                   <span>{cityOptionLabel(city)}</span>
                 </label>
@@ -3110,7 +3110,7 @@ function ExternalCompaniesForm() {
                 onPress={() =>
                   patchForm({ schoolIds: schoolOptions.map((option) => option.id) })
                 }
-                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+                className="min-w-0 rounded-[8px] px-3 text-brand"
               >
                 Markera alla
               </Button>
@@ -3120,7 +3120,7 @@ function ExternalCompaniesForm() {
                 size="sm"
                 isDisabled={form.schoolIds.length === 0 || state.status === "loading"}
                 onPress={() => patchForm({ schoolIds: [] })}
-                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+                className="min-w-0 rounded-[8px] px-3 text-brand"
               >
                 Rensa
               </Button>
@@ -3139,7 +3139,7 @@ function ExternalCompaniesForm() {
                     checked={form.schoolIds.includes(id)}
                     disabled={state.status === "loading"}
                     onCheckedChange={(checked) => setSchoolSelection(id, checked === true)}
-                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-brand data-[state=checked]:bg-brand"
                   />
                   <span>{schoolOptionLabel(school)}</span>
                 </label>
@@ -3229,7 +3229,7 @@ function ExternalCompaniesForm() {
             onCheckedChange={(checked) =>
               patchUpdateForm({ replaceCities: checked === true })
             }
-            className="border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+            className="border-[#9fb4ad] data-[state=checked]:border-brand data-[state=checked]:bg-brand"
           />
           Ersätt stadskopplingar
         </label>
@@ -3251,7 +3251,7 @@ function ExternalCompaniesForm() {
               onPress={() =>
                 patchUpdateForm({ cityCodes: cityOptions.map((option) => option.code) })
               }
-              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              className="min-w-0 rounded-[8px] px-3 text-brand"
             >
               Markera alla
             </Button>
@@ -3265,7 +3265,7 @@ function ExternalCompaniesForm() {
                 !updateForm.replaceCities
               }
               onPress={() => patchUpdateForm({ cityCodes: [] })}
-              className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+              className="min-w-0 rounded-[8px] px-3 text-brand"
             >
               Rensa
             </Button>
@@ -3288,7 +3288,7 @@ function ExternalCompaniesForm() {
                   onCheckedChange={(checked) =>
                     setUpdateCitySelection(code, checked === true)
                   }
-                  className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                  className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-brand data-[state=checked]:bg-brand"
                 />
                 <span>{cityOptionLabel(city)}</span>
               </label>
@@ -4044,7 +4044,7 @@ function CompanyAccountForm() {
                     className={[
                       "grid gap-3 rounded-[8px] border px-3 py-2 text-sm transition sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center",
                       isSelected
-                        ? "border-[#004225] bg-white text-[#111827]"
+                        ? "border-brand bg-white text-[#111827]"
                         : "border-[#dfe7e3] bg-white/70 text-[#36534d] hover:bg-white",
                     ].join(" ")}
                   >
@@ -4076,7 +4076,7 @@ function CompanyAccountForm() {
                           verifyingAccountId !== null ||
                           deletingAccountId !== null
                         }
-                        className="inline-flex h-8 items-center justify-center gap-2 rounded-[8px] border border-[#004225] bg-white px-3 text-xs font-semibold text-[#004225] hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:border-[#dfe7e3] disabled:text-[#9aa7a4] disabled:opacity-70"
+                        className="inline-flex h-8 items-center justify-center gap-2 rounded-[8px] border border-brand bg-white px-3 text-xs font-semibold text-brand hover:bg-[#edf5f1] disabled:cursor-not-allowed disabled:border-[#dfe7e3] disabled:text-[#9aa7a4] disabled:opacity-70"
                       >
                         <CheckCircle2Icon
                           className={[
@@ -4467,7 +4467,7 @@ function CitiesForm() {
                 size="sm"
                 isDisabled={deletableCities.length === 0 || deleteState.status === "loading"}
                 onPress={selectAllDeleteCities}
-                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+                className="min-w-0 rounded-[8px] px-3 text-brand"
               >
                 Markera alla
               </Button>
@@ -4477,7 +4477,7 @@ function CitiesForm() {
                 size="sm"
                 isDisabled={deleteCodes.length === 0 || deleteState.status === "loading"}
                 onPress={() => setDeleteCodes([])}
-                className="min-w-0 rounded-[8px] px-3 text-[#004225]"
+                className="min-w-0 rounded-[8px] px-3 text-brand"
               >
                 Rensa
               </Button>
@@ -4496,7 +4496,7 @@ function CitiesForm() {
                     checked={deleteCodes.includes(code)}
                     disabled={deleteState.status === "loading"}
                     onCheckedChange={(checked) => setCityDeleteSelection(code, checked === true)}
-                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-[#004225] data-[state=checked]:bg-[#004225]"
+                    className="mt-0.5 border-[#9fb4ad] data-[state=checked]:border-brand data-[state=checked]:bg-brand"
                   />
                   <span>{cityOptionLabel(city)}</span>
                 </label>
@@ -4737,7 +4737,7 @@ function WaitlistDashboard() {
           type="button"
           isLoading={state.status === "loading"}
           onPress={() => void refresh()}
-          className="bg-[#004225] text-white hover:bg-[#00351e]"
+          className="bg-brand text-white hover:bg-[#00351e]"
         >
           <RefreshCwIcon className="h-4 w-4" />
           Uppdatera

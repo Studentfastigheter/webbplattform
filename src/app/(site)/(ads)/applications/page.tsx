@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useQueries } from "@tanstack/react-query";
 
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   buildListingApplicationRow,
   type ListingApplicationRowProps,
@@ -237,17 +238,25 @@ export default function MyApplicationsPage() {
   const withdrawApplication = useWithdrawApplication();
   const acceptOffer = useAcceptOffer();
   const rejectOffer = useRejectOffer();
+  const { confirm, confirmDialog } = useConfirmDialog();
 
   const handleWithdraw = useCallback(
     async (applicationId: number, listingTitle: string) => {
-      if (!confirm(localizedText(locale, `Vill du dra tillbaka din ansökan till "${listingTitle}"?`, `Do you want to withdraw your application for "${listingTitle}"?`))) return;
+      const shouldWithdraw = await confirm({
+        title: localizedText(locale, "Dra tillbaka ansökan?", "Withdraw application?"),
+        description: localizedText(locale, `Din ansökan till "${listingTitle}" tas bort.`, `Your application for "${listingTitle}" will be removed.`),
+        confirmLabel: localizedText(locale, "Dra tillbaka", "Withdraw"),
+        cancelLabel: localizedText(locale, "Avbryt", "Cancel"),
+        destructive: true,
+      });
+      if (!shouldWithdraw) return;
       try {
         await withdrawApplication.mutateAsync(applicationId);
       } catch (err: any) {
         setError(err?.message ?? localizedText(locale, "Kunde inte dra tillbaka ansökan.", "Could not withdraw the application."));
       }
     },
-    [withdrawApplication, locale]
+    [withdrawApplication, locale, confirm]
   );
 
   const handleOfferAction = useCallback(
@@ -256,10 +265,19 @@ export default function MyApplicationsPage() {
       listingTitle: string,
       action: "accept" | "reject"
     ) => {
-      const actionLabel = action === "accept"
-        ? localizedText(locale, "acceptera", "accept")
-        : localizedText(locale, "neka", "reject");
-      if (!confirm(localizedText(locale, `Vill du ${actionLabel} erbjudandet för "${listingTitle}"?`, `Do you want to ${actionLabel} the offer for "${listingTitle}"?`))) {
+      const isAccept = action === "accept";
+      const shouldProceed = await confirm({
+        title: isAccept
+          ? localizedText(locale, "Acceptera erbjudandet?", "Accept the offer?")
+          : localizedText(locale, "Neka erbjudandet?", "Reject the offer?"),
+        description: localizedText(locale, `Gäller erbjudandet för "${listingTitle}".`, `Applies to the offer for "${listingTitle}".`),
+        confirmLabel: isAccept
+          ? localizedText(locale, "Acceptera", "Accept")
+          : localizedText(locale, "Neka", "Reject"),
+        cancelLabel: localizedText(locale, "Avbryt", "Cancel"),
+        destructive: !isAccept,
+      });
+      if (!shouldProceed) {
         return;
       }
 
@@ -283,7 +301,7 @@ export default function MyApplicationsPage() {
         setProcessingOfferId(null);
       }
     },
-    [acceptOffer, rejectOffer, locale]
+    [acceptOffer, rejectOffer, locale, confirm]
   );
 
   // Build the row models from applications + per-listing details. Memoized
@@ -455,6 +473,7 @@ export default function MyApplicationsPage() {
           }
         />
       </div>
+      {confirmDialog}
     </main>
   );
 }

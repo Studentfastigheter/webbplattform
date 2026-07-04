@@ -28,7 +28,7 @@ function CityCard({ city }: { city: CityCardData }) {
     <LocalizedLink
       href={cityHref}
       aria-label={localizedText(locale, `Öppna ${city.name}`, `Open ${city.name}`)}
-      className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-[#004225] shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35 sm:h-[245px]"
+      className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-brand shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:h-[245px]"
     >
       {city.imageUrl ? (
         <Image

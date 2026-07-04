@@ -198,8 +198,8 @@ const FileUploadDropZone = ({
       onDragEnd={handleDragOut}
       onDrop={handleDrop}
       className={cx(
-        "relative flex flex-col items-center gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50/70 px-6 py-4 text-gray-500 transition-colors duration-100 ease-linear hover:border-[#004225]/50 hover:bg-white",
-        isDraggingOver && "border-solid border-[#004225] bg-white",
+        "relative flex flex-col items-center gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50/70 px-6 py-4 text-gray-500 transition-colors duration-100 ease-linear hover:border-brand/50 hover:bg-white",
+        isDraggingOver && "border-solid border-brand bg-white",
         isDisabled && "cursor-not-allowed opacity-60 hover:border-gray-300 hover:bg-gray-50/70",
         className
       )}
@@ -222,7 +222,7 @@ const FileUploadDropZone = ({
           />
           <label
             htmlFor={id}
-            className="flex cursor-pointer text-sm font-semibold text-[#004225] hover:underline peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#004225]"
+            className="flex cursor-pointer text-sm font-semibold text-brand hover:underline peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand"
           >
             {buttonLabel}
             <span className="ml-1 md:hidden">{mobileButtonSuffix}</span>
@@ -331,7 +331,7 @@ const FileListItemProgressBar = ({
             onClick={onDelete}
             aria-label={deleteLabel}
             title={deleteLabel}
-            className="-mt-2 -mr-2 inline-flex size-8 shrink-0 items-center justify-center self-start rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+            className="-mt-2 -mr-2 inline-flex size-8 shrink-0 items-center justify-center self-start rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
             <Trash01 className="size-4" aria-hidden="true" />
           </button>
@@ -348,7 +348,7 @@ const FileListItemProgressBar = ({
             >
               <div
                 style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
-                className="h-full rounded-full bg-[#004225] transition-[width] duration-150 ease-linear"
+                className="h-full rounded-full bg-brand transition-[width] duration-150 ease-linear"
               />
             </div>
             <span className="text-sm font-medium tabular-nums text-gray-700">

@@ -159,17 +159,17 @@ const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:o
 
 const variantClassMap: Partial<Record<AppButtonVariant, string>> = {
   default:
-    `rounded-full bg-[#004225] text-white hover:bg-[#004225]/90 shadow-[0_6px_14px_rgba(0,0,0,0.18)] transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full bg-brand text-white hover:bg-brand/90 shadow-[0_6px_14px_rgba(0,0,0,0.18)] transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   secondary:
-    `rounded-full border border-[#004225]/30 bg-white text-[#004225] hover:bg-[#004225]/5 transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full border border-brand/30 bg-white text-brand hover:bg-brand/5 transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   outline:
-    `rounded-full border border-[#004225] text-[#004225] hover:bg-[#004225]/5 transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full border border-brand text-brand hover:bg-brand/5 transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   ghost:
-    `rounded-full bg-transparent text-[#004225] hover:bg-[#004225]/5 transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full bg-transparent text-brand hover:bg-brand/5 transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   destructive:
     "rounded-full bg-red-600 text-white hover:bg-red-700 shadow-[0_6px_14px_rgba(0,0,0,0.18)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600",
   link:
-    `rounded-full bg-transparent text-[#004225] underline-offset-4 hover:underline transition-colors duration-150 ${focusRing} focus-visible:outline-[#004225]`,
+    `rounded-full bg-transparent text-brand underline-offset-4 hover:underline transition-colors duration-150 ${focusRing} focus-visible:outline-brand`,
   text:
     "rounded-none bg-transparent text-black underline-offset-2 hover:underline px-0 transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black",
 };

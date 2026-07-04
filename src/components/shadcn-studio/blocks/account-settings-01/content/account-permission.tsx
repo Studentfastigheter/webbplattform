@@ -27,7 +27,7 @@ export default function AccountPermission() {
       <div className="lg:col-span-2">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#004225]/10 text-[#004225]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-brand/10 text-brand">
               {permission.isLoading ? (
                 <Loader2Icon className="size-5 animate-spin" />
               ) : (

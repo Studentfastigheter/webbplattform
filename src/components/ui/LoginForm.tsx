@@ -242,7 +242,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
               autoComplete="email"
               required
               disabled={isLoading || submitting}
-              className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+              className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-brand focus-visible:ring-brand/20"
             />
           </Field>
 
@@ -252,7 +252,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
               {mode === "student" && (
                 <Link
                   href="/forgot-password"
-                  className="text-sm font-medium text-[#004225] underline-offset-4 hover:underline"
+                  className="text-sm font-medium text-brand underline-offset-4 hover:underline"
                 >
                   {localizedText(locale, "Glömt ditt lösenord?", "Forgot your password?")}
                 </Link>
@@ -268,12 +268,12 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
                 autoComplete="current-password"
                 required
                 disabled={isLoading || submitting}
-                className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20"
+                className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-brand focus-visible:ring-brand/20"
               />
               <button
                 type="button"
                 onClick={() => setIsPasswordVisible((currentValue) => !currentValue)}
-                className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
+                className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                 disabled={isLoading || submitting}
               >
                 {isPasswordVisible ? (
@@ -294,7 +294,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
             <Button
               type="submit"
               fullWidth
-              className="h-12 rounded-full bg-[#004225] text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
+              className="h-12 rounded-full bg-brand text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
               disabled={isLoading || submitting}
             >
               {submitting
@@ -309,11 +309,11 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
 
       <FieldDescription className="text-center text-xs text-muted-foreground">
         {localizedText(locale, "Genom att logga in godkänner du våra", "By signing in, you accept our")}{" "}
-        <Link href={termsHref} className="text-[#004225] underline underline-offset-4">
+        <Link href={termsHref} className="text-brand underline underline-offset-4">
           {localizedText(locale, "användarvillkor", "terms of use")}
         </Link>{" "}
         {localizedText(locale, "och", "and")}{" "}
-        <Link href={privacyPolicyHref} className="text-[#004225] underline underline-offset-4">
+        <Link href={privacyPolicyHref} className="text-brand underline underline-offset-4">
           {localizedText(locale, "integritetspolicy", "privacy policy")}
         </Link>
         .
@@ -322,7 +322,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
       {copy.showRegisterLink && (
         <FieldDescription className="text-center text-sm">
           {localizedText(locale, "Har du inte ett konto?", "Do not have an account?")}{" "}
-          <Link href="/register" className="font-medium text-[#004225] no-underline">
+          <Link href="/register" className="font-medium text-brand no-underline">
             {localizedText(locale, "Skapa ett nu", "Create one now")}
           </Link>
         </FieldDescription>

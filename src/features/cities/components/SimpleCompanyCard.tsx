@@ -39,8 +39,8 @@ export default function SimpleCompanyCard({
   const isCompact = size === "compact";
   const descriptionLineClamp = 2;
   const className = isCompact
-    ? "group/card relative flex h-full min-h-[6.25rem] w-full max-w-none flex-col gap-3 overflow-hidden rounded-lg border border-black/[0.05] bg-card px-3 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-[#004225]/15 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] sm:min-h-0 sm:px-5 sm:py-4"
-    : "group/card relative flex h-full min-h-[18rem] w-full max-w-none flex-col rounded-lg border border-black/[0.05] bg-card p-5 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-[#004225]/15 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] sm:min-h-80 sm:p-6 lg:p-7";
+    ? "group/card relative flex h-full min-h-[6.25rem] w-full max-w-none flex-col gap-3 overflow-hidden rounded-lg border border-black/[0.05] bg-card px-3 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-brand/15 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:min-h-0 sm:px-5 sm:py-4"
+    : "group/card relative flex h-full min-h-[18rem] w-full max-w-none flex-col rounded-lg border border-black/[0.05] bg-card p-5 shadow-[0_12px_32px_rgba(15,23,42,0.08)] transition-all duration-200 hover:border-brand/15 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:min-h-80 sm:p-6 lg:p-7";
 
   const compactContent = (
     <div className="grid h-full min-w-0 grid-cols-[76px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[112px_minmax(0,1fr)] sm:gap-4 md:grid-cols-[120px_minmax(0,1fr)]">

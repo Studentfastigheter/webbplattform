@@ -263,7 +263,7 @@ export default function ImageUploadGallery({
               tabIndex={pendingAction ? -1 : 0}
               onKeyDown={triggerFileLabelOnKeyboard}
               className={cn(
-                "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(0,66,37,0.22)] transition hover:bg-[#00351e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]",
+                "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-full bg-brand px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(0,66,37,0.22)] transition hover:bg-[#00351e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
                 pendingAction && "pointer-events-none opacity-60"
               )}
             >
@@ -287,7 +287,7 @@ export default function ImageUploadGallery({
         <div className="max-h-[calc(100vh-14rem)] overflow-y-auto bg-[#f8fafb] px-5 py-5 sm:px-6">
           {draftImages.length === 0 ? (
             <div className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-10 text-center">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#004225]/10 text-[#004225]">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-brand">
                 <ImagePlus className="h-6 w-6" />
               </div>
               <p className="text-sm font-semibold text-gray-900">
@@ -298,7 +298,7 @@ export default function ImageUploadGallery({
                 tabIndex={pendingAction ? -1 : 0}
                 onKeyDown={triggerFileLabelOnKeyboard}
                 className={cn(
-                  "mt-4 inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-full border border-[#004225]/20 bg-white px-4 text-sm font-semibold text-[#004225] transition hover:bg-[#004225]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]",
+                  "mt-4 inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-full border border-brand/20 bg-white px-4 text-sm font-semibold text-brand transition hover:bg-brand/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
                   pendingAction && "pointer-events-none opacity-60"
                 )}
               >
@@ -350,10 +350,10 @@ export default function ImageUploadGallery({
                     "group overflow-hidden rounded-lg border bg-white shadow-sm transition-all duration-150 ease-out",
                     "hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md",
                     draggedIndex === index
-                      ? "scale-[0.98] border-[#004225] opacity-60 shadow-lg"
+                      ? "scale-[0.98] border-brand opacity-60 shadow-lg"
                       : "border-gray-200",
                     dragOverIndex === index && draggedIndex !== index
-                      ? "ring-2 ring-[#004225]/40"
+                      ? "ring-2 ring-brand/40"
                       : "ring-0",
                   )}
                 >
@@ -368,7 +368,7 @@ export default function ImageUploadGallery({
                         {index + 1}
                       </span>
                       {index === 0 && (
-                        <span className="rounded-full bg-[#004225] px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+                        <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
                           {localizedText(locale, "Huvudbild", "Main image")}
                         </span>
                       )}
@@ -415,7 +415,7 @@ export default function ImageUploadGallery({
                         aria-label={localizedText(locale, "Byt bild", "Replace image")}
                         title={localizedText(locale, "Byt bild", "Replace image")}
                         className={cn(
-                          "inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[#004225] transition hover:bg-[#004225]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]",
+                          "inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-brand transition hover:bg-brand/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
                           pendingAction && "pointer-events-none opacity-50"
                         )}
                       >

@@ -280,7 +280,7 @@ function StatCard({
             {formatNumber(total, locale)}
           </p>
         </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-[#004225]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-brand">
           {icon}
         </span>
       </div>

@@ -66,7 +66,7 @@ export default function BostadLandlord({ advertiser }: Props) {
                 {advertiser.companyPageUrl && (
                   <Link
                     href={advertiser.companyPageUrl}
-                    className="group mt-3 inline-flex h-9 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-4 text-[13px] font-semibold text-white shadow-[0_8px_18px_rgba(0,66,37,0.18)] transition-all hover:bg-[#00331b] hover:shadow-[0_10px_22px_rgba(0,66,37,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] active:scale-[0.98] min-[560px]:hidden"
+                    className="group mt-3 inline-flex h-9 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-4 text-[13px] font-semibold text-white shadow-[0_8px_18px_rgba(0,66,37,0.18)] transition-all hover:bg-[#00331b] hover:shadow-[0_10px_22px_rgba(0,66,37,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.98] min-[560px]:hidden"
                   >
                     <span>{localizedText(locale, "Visa profil", "View profile")}</span>
                     <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -109,7 +109,7 @@ export default function BostadLandlord({ advertiser }: Props) {
             {advertiser.companyPageUrl && (
               <Link
                 href={advertiser.companyPageUrl}
-                className="group hidden h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-[#004225] px-5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(0,66,37,0.18)] transition-all hover:bg-[#00331b] hover:shadow-[0_10px_22px_rgba(0,66,37,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] active:scale-[0.98] min-[560px]:ml-4 min-[560px]:inline-flex min-[560px]:self-center"
+                className="group hidden h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(0,66,37,0.18)] transition-all hover:bg-[#00331b] hover:shadow-[0_10px_22px_rgba(0,66,37,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.98] min-[560px]:ml-4 min-[560px]:inline-flex min-[560px]:self-center"
               >
                 <span>{localizedText(locale, "Visa profil", "View profile")}</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -155,7 +155,7 @@ export default function BostadLandlord({ advertiser }: Props) {
                   key={requirement}
                   className="flex items-start gap-3 text-sm text-gray-700"
                 >
-                  <span className="mt-[3px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-white text-[#004225]">
+                  <span className="mt-[3px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-white text-brand">
                     <Check className="h-3 w-3 stroke-[2.4]" />
                   </span>
 

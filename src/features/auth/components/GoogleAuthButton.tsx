@@ -183,7 +183,7 @@ export function GoogleAuthButton({
   return (
     <div
       ref={rootRef}
-      className="group relative min-h-[48px] w-full rounded-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#004225]"
+      className="group relative min-h-[48px] w-full rounded-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand"
     >
       <div
         className={cn(

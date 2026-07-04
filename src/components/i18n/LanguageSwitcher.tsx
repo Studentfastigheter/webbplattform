@@ -64,7 +64,7 @@ export function LanguageSwitcher({
         <button
           type="button"
           className={cn(
-            "inline-flex h-9 w-9 items-center justify-center text-xl leading-none transition hover:opacity-75 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#004225]/35",
+            "inline-flex h-9 w-9 items-center justify-center text-xl leading-none transition hover:opacity-75 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/35",
             inverted
               ? "text-white focus-visible:ring-white/60"
               : "text-neutral-900",
@@ -89,7 +89,7 @@ export function LanguageSwitcher({
             >
               <span aria-hidden className="text-lg leading-none">{flagByLocale[option.locale]}</span>
               <span className="flex-1">{option.label}</span>
-              {isActive && <Check className="h-4 w-4 text-[#004225]" aria-hidden />}
+              {isActive && <Check className="h-4 w-4 text-brand" aria-hidden />}
             </DropdownMenuItem>
           );
         })}

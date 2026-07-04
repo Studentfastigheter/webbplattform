@@ -373,7 +373,7 @@ function FrejaIdRegisterContent() {
         <FieldDescription className="text-center">
           <Link
             href={statusAction.href}
-            className="font-medium text-[#004225] no-underline"
+            className="font-medium text-brand no-underline"
           >
             {statusAction.label}
           </Link>

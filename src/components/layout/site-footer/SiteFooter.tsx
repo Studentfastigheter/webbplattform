@@ -9,12 +9,6 @@ import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isPlatformLaunched } from "@/lib/platform-launch";
 
-const COLORS = {
-  primary: "#004225",
-  lightestText: "#EFEFEF",
-  accent: "#708A83",
-};
-
 const SOCIAL_LINKS = [
   { href: "https://www.linkedin.com/company/campuslyan", label: "LinkedIn", icon: <FaLinkedin /> },
   { href: "https://www.instagram.com/campuslyanse", label: "Instagram", icon: <FaInstagram /> },
@@ -49,7 +43,7 @@ export default function SiteFooter() {
   ];
 
   return (
-    <footer className="relative mt-40 w-full sm:mt-48 lg:mt-56" style={{ backgroundColor: COLORS.primary }}>
+    <footer className="relative mt-40 w-full bg-brand sm:mt-48 lg:mt-56">
       <div className="absolute left-0 right-0 top-0 z-10 w-full -translate-y-[88%] overflow-hidden leading-[0]">
         <div className="relative h-[72px] w-full sm:h-[104px] lg:h-[136px]">
           <Image
@@ -75,11 +69,8 @@ export default function SiteFooter() {
                 />
               </Link>
 
-              <div className="min-w-0 border-l-2 py-1 pl-4 sm:pl-5" style={{ borderColor: COLORS.accent }}>
-                <div
-                  className="max-w-md leading-tight"
-                  style={{ color: COLORS.lightestText }}
-                >
+              <div className="min-w-0 border-l-2 border-brand-green-light py-1 pl-4 sm:pl-5">
+                <div className="max-w-md leading-tight text-brand-beige-100">
                   <span className="block text-2xl font-bold leading-none sm:text-[1.7rem]">
                     CampusLyan
                   </span>
@@ -98,8 +89,7 @@ export default function SiteFooter() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="transition-colors hover:opacity-80"
-                  style={{ color: COLORS.lightestText }}
+                  className="text-brand-beige-100 transition-colors hover:opacity-80"
                 >
                   {social.icon}
                 </a>
@@ -115,11 +105,8 @@ export default function SiteFooter() {
                 { title: t("siteFooter.sections.campuslyan"), links: companyLinks },
               ].map((section) => (
                 <div key={section.title}>
-                  <div
-                    className="mb-5 flex items-center gap-2 text-[0.8rem] font-bold uppercase tracking-widest sm:text-sm"
-                    style={{ color: COLORS.lightestText }}
-                  >
-                    <span className="h-4 w-[2px]" style={{ backgroundColor: COLORS.accent }} />
+                  <div className="mb-5 flex items-center gap-2 text-[0.8rem] font-bold uppercase tracking-widest text-brand-beige-100 sm:text-sm">
+                    <span className="h-4 w-[2px] bg-brand-green-light" />
                     {section.title}
                   </div>
                   <ul className="flex flex-col gap-3">
@@ -127,8 +114,7 @@ export default function SiteFooter() {
                       <li key={link.href}>
                         <Link
                           href={link.href}
-                          className="text-xs font-bold uppercase tracking-wide transition-colors hover:underline hover:underline-offset-4"
-                          style={{ color: COLORS.lightestText }}
+                          className="text-xs font-bold uppercase tracking-wide text-brand-beige-100 transition-colors hover:underline hover:underline-offset-4"
                         >
                           {link.label}
                         </Link>
@@ -141,10 +127,7 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div
-          className="mt-20 flex flex-col items-start justify-between gap-4 border-t pt-6 text-xs font-medium sm:flex-row sm:items-center"
-          style={{ borderColor: COLORS.accent, color: COLORS.lightestText }}
-        >
+        <div className="mt-20 flex flex-col items-start justify-between gap-4 border-t border-brand-green-light pt-6 text-xs font-medium text-brand-beige-100 sm:flex-row sm:items-center">
           <div>{t("siteFooter.copyright", { year })}</div>
           <LanguageSwitcher compact inverted />
         </div>

@@ -59,7 +59,7 @@ function isVerified(value: unknown) {
 }
 
 const inputClassName =
-  'h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-[#004225] focus-visible:ring-[#004225]/20'
+  'h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-brand focus-visible:ring-brand/20'
 const fieldClassName = 'flex flex-col items-start gap-2'
 
 const PersonalInfo = forwardRef<
@@ -217,7 +217,7 @@ const PersonalInfo = forwardRef<
                 ) : (
                   <button
                     type='button'
-                    className='absolute inset-y-0 right-3 text-sm font-medium text-[#004225] hover:underline disabled:text-muted-foreground disabled:no-underline'
+                    className='absolute inset-y-0 right-3 text-sm font-medium text-brand hover:underline disabled:text-muted-foreground disabled:no-underline'
                     disabled={emailVerificationLoading}
                     onClick={startEmailVerification}
                   >

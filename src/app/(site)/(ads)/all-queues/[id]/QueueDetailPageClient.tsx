@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import QueueHero from "@/features/ads/components/QueueHero";
 import QueueListings from "@/features/ads/components/QueueListings";
 import CompanyMap from "@/features/ads/components/CompanyMap";
@@ -426,7 +427,7 @@ export default function QueueDetailPage() {
     }
 
     if (queueVerificationError) {
-      alert(queueVerificationError);
+      toast.error(queueVerificationError);
       return;
     }
 
@@ -439,9 +440,9 @@ export default function QueueDetailPage() {
       await joinQueueMutation.mutateAsync(queueId);
       // The hook's onSettled invalidates the my-queues cache, which is what
       // drives joinedQueueIds above. We don't need to patch local state.
-      alert(localizedText(locale, "Du står nu i kön!", "You are now in the queue!"));
+      toast.success(localizedText(locale, "Du står nu i kön!", "You are now in the queue!"));
     } catch (err: any) {
-      alert(
+      toast.error(
         err.message ||
           localizedText(
             locale,
@@ -546,18 +547,18 @@ export default function QueueDetailPage() {
           {companyPolicyLinks.length > 0 ? (
             <nav
               aria-label={t("queueCard.policyAria", { name: companyName })}
-              className="flex min-h-[17px] w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 overflow-hidden text-center text-[13px] font-medium leading-[17px] text-[#004225] md:w-auto md:justify-start md:text-left"
+              className="flex min-h-[17px] w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 overflow-hidden text-center text-[13px] font-medium leading-[17px] text-brand md:w-auto md:justify-start md:text-left"
             >
               {companyPolicyLinks.map((link, index) => (
                 <span key={link.label} className="inline-flex items-center gap-x-4">
                   {index > 0 && (
-                    <span className="hidden h-5 w-px bg-[#004225]/70 sm:block" />
+                    <span className="hidden h-5 w-px bg-brand/70 sm:block" />
                   )}
                   <a
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-sm underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]"
+                    className="rounded-sm underline-offset-4 transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
                   >
                     {link.label}
                   </a>

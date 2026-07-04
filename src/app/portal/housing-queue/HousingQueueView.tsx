@@ -251,8 +251,8 @@ export default function HousingQueueView() {
             aria-pressed={isSelected}
             className={`min-h-9 min-w-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
               isSelected
-                ? "border-[#004225] bg-[#004225] text-white"
-                : "border-gray-200 bg-white text-gray-700 hover:border-[#004225]/40 hover:text-[#004225]"
+                ? "border-brand bg-brand text-white"
+                : "border-gray-200 bg-white text-gray-700 hover:border-brand/40 hover:text-brand"
             }`}
             key={queue.id}
             onClick={() => setSelectedQueueId(queue.id)}
@@ -403,7 +403,7 @@ export default function HousingQueueView() {
                     <div className="h-full min-w-0">
                       <Textarea
                         aria-label={localizedText(locale, "Krav för att stå i bostadskön", "Requirements for joining the queue")}
-                        className="h-full min-h-[148px] resize-none rounded-lg border-gray-200 bg-white text-sm leading-6 shadow-none focus:border-[#004225] focus:ring-[#004225]/20"
+                        className="h-full min-h-[148px] resize-none rounded-lg border-gray-200 bg-white text-sm leading-6 shadow-none focus:border-brand focus:ring-brand/20"
                         disabled={
                           !resolvedSelectedQueueId ||
                           queueDetailQuery.isLoading ||

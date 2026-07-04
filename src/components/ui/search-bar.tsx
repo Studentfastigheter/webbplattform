@@ -47,14 +47,14 @@ export function SearchBar({
           type="button"
           aria-label={clearLabel}
           onClick={onClear}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#004225] transition-colors hover:bg-[#004225]/5 sm:h-8 sm:w-8"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-brand transition-colors hover:bg-brand/5 sm:h-8 sm:w-8"
         >
           <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
       ) : null}
       <button
         type="submit"
-        className="h-8 shrink-0 rounded-full bg-[#004225] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#004225]/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
+        className="h-8 shrink-0 rounded-full bg-brand px-4 text-sm font-semibold text-white transition-colors hover:bg-brand/90 sm:h-9 sm:px-5 xl:h-10 xl:px-6"
       >
         {submitLabel}
       </button>

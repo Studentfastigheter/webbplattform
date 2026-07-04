@@ -37,7 +37,7 @@ type QueueContactRow = {
 
 const metaItemClassName =
   "inline-flex max-w-full min-w-0 items-center gap-2 font-medium text-gray-600";
-const metaIconClassName = "shrink-0 text-[#004225]";
+const metaIconClassName = "shrink-0 text-brand";
 
 function socialPlatformIconKey(platform: string) {
   return platform.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -157,7 +157,7 @@ export default function QueueHero({
                 target={item.external ? "_blank" : undefined}
                 rel={item.external ? "noopener noreferrer" : undefined}
                 aria-label={`${item.title}: ${item.label}`}
-                className={`${metaItemClassName} transition-colors hover:text-gray-900 focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004225]`}
+                className={`${metaItemClassName} transition-colors hover:text-gray-900 focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand`}
               >
                 <span className={metaIconClassName}>
                   {item.icon}

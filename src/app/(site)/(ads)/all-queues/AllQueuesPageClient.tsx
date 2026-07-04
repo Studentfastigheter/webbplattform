@@ -465,7 +465,7 @@ export default function Page() {
                   size="icon-lg"
                   title={t("allQueues.filterTitle")}
                   triggerLabel={t("allQueues.filterTrigger")}
-                  className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-[#004225] shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
+                  className="h-10 w-auto min-w-0 rounded-full border-0 bg-transparent px-2 text-sm font-medium text-brand shadow-none hover:bg-transparent sm:h-12 sm:text-base xl:h-14 [&_svg]:h-[18px] [&_svg]:w-[18px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                   cities={cityFilterOptions}
                   cityCounts={cityCounts}
                   citySelectionMode="single"
@@ -508,7 +508,7 @@ export default function Page() {
                   <button
                     type="button"
                     onClick={toggleSelectAllInCity}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#004225] transition-opacity hover:opacity-80 sm:text-sm"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-brand transition-opacity hover:opacity-80 sm:text-sm"
                   >
                     {allFilteredSelected ? (
                       <>

@@ -34,7 +34,50 @@ type CookieTableRow = {
 };
 
 const cookieRows: CookieTableRow[] = [
-
+  {
+    id: "token",
+    nameAndDomain: "token (localStorage, campuslyan.se)",
+    type: "Lokal lagring",
+    category: "Nödvändig",
+    purpose:
+      "Håller dig inloggad genom att spara din sessionsnyckel efter inloggning.",
+    retention: "Tills du loggar ut eller sessionen löper ut.",
+  },
+  {
+    id: "cl_auth",
+    nameAndDomain: "cl_auth (.campuslyan.se)",
+    type: "Cookie (förstapart)",
+    category: "Nödvändig",
+    purpose:
+      "Flagga som talar om att du är inloggad så att skyddade sidor kan avvisas redan på servern. Innehåller ingen personlig information.",
+    retention: "30 dagar, tas bort vid utloggning.",
+  },
+  {
+    id: "campuslyan_locale",
+    nameAndDomain: "campuslyan_locale (campuslyan.se)",
+    type: "Cookie (förstapart)",
+    category: "Inställningar",
+    purpose: "Kommer ihåg vilket språk (svenska eller engelska) du valt.",
+    retention: "12 månader.",
+  },
+  {
+    id: "google-adsense",
+    nameAndDomain: "__gads, __gpi m.fl. (google.com, doubleclick.net)",
+    type: "Cookie (tredjepart)",
+    category: "Marknadsföring",
+    purpose:
+      "Sätts av Google AdSense för att visa och mäta annonser på plattformens annonsytor. Se Googles policy för detaljer.",
+    retention: "Upp till 13 månader (styrs av Google).",
+  },
+  {
+    id: "calendly",
+    nameAndDomain: "Calendly (calendly.com)",
+    type: "Cookie (tredjepart)",
+    category: "Funktionell",
+    purpose:
+      "Möjliggör mötesbokning via Calendly-widgeten på sidan För företag. Sätts först när widgeten används.",
+    retention: "Styrs av Calendly.",
+  },
 ];
 
 function Paragraph({ children }: { children: ReactNode }) {

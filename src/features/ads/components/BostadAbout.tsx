@@ -248,7 +248,7 @@ function BostadAboutContent({
           "flex items-center justify-center gap-2",
           actionSizeClass,
           "rounded-full",
-          "bg-[#004225] text-white",
+          "bg-brand text-white",
           actionTextClass,
           "font-medium",
           "shadow-sm hover:shadow-md transition-all",

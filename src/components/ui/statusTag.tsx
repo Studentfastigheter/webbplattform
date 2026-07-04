@@ -23,14 +23,17 @@ type StatusTagProps = {
   className?: string;
 };
 
-const colorMap: Record<Status, string> = {
-  Antagen: "#008000",
-  Aktiv: "#008000",
-  "Under granskning": "#FFD32C",
-  Bearbetas: "#FFD32C",
-  Erbjudande: "#2563EB",
-  Nekad: "#FF3333",
-  Inaktiv: "#FF3333",
+// Mjuka chips (tonad bakgrund + mörk text) i stället för råa webbfärger —
+// samma familj som övriga statusytor (emerald/amber/red-50) och godkänd
+// kontrast (gult med vit text klarade inte WCAG).
+const colorMap: Record<Status, { bg: string; text: string }> = {
+  Antagen: { bg: "#ecfdf5", text: "#047857" },
+  Aktiv: { bg: "#ecfdf5", text: "#047857" },
+  "Under granskning": { bg: "#fffbeb", text: "#b45309" },
+  Bearbetas: { bg: "#fffbeb", text: "#b45309" },
+  Erbjudande: { bg: "#eff6ff", text: "#1d4ed8" },
+  Nekad: { bg: "#fef2f2", text: "#b91c1c" },
+  Inaktiv: { bg: "#f3f4f6", text: "#4b5563" },
 };
 
 export default function StatusTag(props: StatusTagProps) {
@@ -38,14 +41,16 @@ export default function StatusTag(props: StatusTagProps) {
   const {
     status,
     bgColorOverride,
-    textColor = "#FFFFFF",
+    textColor,
     height = 20,
     horizontalPadding = 10,
     width,
     className = "",
   } = props;
 
-  const bgColor = bgColorOverride ?? colorMap[status];
+  const colors = colorMap[status];
+  const bgColor = bgColorOverride ?? colors.bg;
+  const resolvedTextColor = textColor ?? colors.text;
   const displayText: Record<Status, string> = {
     Antagen: localizedText(locale, "Antagen", "Accepted"),
     Aktiv: localizedText(locale, "Aktiv", "Active"),
@@ -60,7 +65,7 @@ export default function StatusTag(props: StatusTagProps) {
     <Tag
       text={displayText[status] ?? status}
       bgColor={bgColor}
-      textColor={textColor}
+      textColor={resolvedTextColor}
       height={height}
       horizontalPadding={horizontalPadding}
       className={className}

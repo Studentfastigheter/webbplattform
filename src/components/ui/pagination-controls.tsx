@@ -17,10 +17,10 @@ type PaginationControlsProps = {
 };
 
 const pageButtonBase =
-  "flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:cursor-not-allowed";
+  "flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed";
 
 const arrowButtonClass =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#004225] transition-colors hover:bg-[#004225]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225] disabled:cursor-not-allowed disabled:text-[#004225]/25 disabled:hover:bg-transparent";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-brand transition-colors hover:bg-brand/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:text-brand/25 disabled:hover:bg-transparent";
 
 export function PaginationControls({
   currentPage,
@@ -65,8 +65,8 @@ export function PaginationControls({
         aria-label={pageLabel?.(pageNumber)}
         className={`${pageButtonBase} ${
           isActive
-            ? "bg-[#004225] text-white disabled:opacity-100"
-            : "text-[#004225] hover:bg-[#004225]/5 disabled:opacity-40"
+            ? "bg-brand text-white disabled:opacity-100"
+            : "text-brand hover:bg-brand/5 disabled:opacity-40"
         }`}
       >
         {pageNumber}
@@ -93,7 +93,7 @@ export function PaginationControls({
         {paginationPages[0] > 1 && (
           <>
             {renderPageButton(1)}
-            <span className="flex h-8 min-w-4 items-center justify-center text-sm font-medium text-[#004225]/45">
+            <span className="flex h-8 min-w-4 items-center justify-center text-sm font-medium text-brand/45">
               ...
             </span>
           </>
@@ -103,7 +103,7 @@ export function PaginationControls({
 
         {paginationPages[paginationPages.length - 1] < safeTotalPages && (
           <>
-            <span className="flex h-8 min-w-4 items-center justify-center text-sm font-medium text-[#004225]/45">
+            <span className="flex h-8 min-w-4 items-center justify-center text-sm font-medium text-brand/45">
               ...
             </span>
             {renderPageButton(safeTotalPages)}
