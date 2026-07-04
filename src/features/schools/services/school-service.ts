@@ -62,7 +62,7 @@ export const schoolService = {
   add: async (school: Omit<School, "id">): Promise<void> => {
     const cityCode = normalizeCityCode(school.cityCode);
     if (!cityCode) {
-      throw new Error("VÃ¤lj en stad innan du sparar skolan.");
+      throw new Error("Välj en stad innan du sparar skolan.");
     }
 
     await apiClient<void>("/schools/add", {

@@ -1111,14 +1111,14 @@ function hasExternalCompanyLogoFile(
 
 function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
   if (!isRecord(value)) {
-    throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+    throw new Error("Oväntat svar från servern.");
   }
 
   const id = firstNumber(value.id, value.companyId);
   const name = firstString(value.name, value.companyName);
 
   if (id === undefined || !name) {
-    throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+    throw new Error("Oväntat svar från servern.");
   }
 
   const rawCities = value.cities ?? value.companyCities;
@@ -1379,7 +1379,7 @@ export const companyService = {
     });
     const normalizedCompany = normalizeCompanyPublic(company);
     if (!normalizedCompany) {
-      throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+      throw new Error("Oväntat svar från servern.");
     }
     return normalizedCompany;
   },
@@ -1719,7 +1719,7 @@ export const companyService = {
     const normalized = normalizeListingAnalyticsPerformance(result);
 
     if (!normalized) {
-      throw new Error("OvÃ¤ntat svar frÃ¥n servern.");
+      throw new Error("Oväntat svar från servern.");
     }
 
     return normalized;

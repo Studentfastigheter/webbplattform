@@ -6,7 +6,6 @@ import { UserEnvironmentProvider } from "@/context/UserEnvironmentContext";
 import { QueryProvider } from "@/lib/query/QueryProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import { Theme } from "@radix-ui/themes";
 import { Toaster } from "@/components/ui/sonner";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { I18nProvider } from "@/i18n/I18nProvider";
@@ -118,21 +117,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <I18nProvider initialLocale={locale}>
           <AuthProvider>
             <UserEnvironmentProvider>
-              <Theme>
-                <ScrollToTop />
-                {children}
-                <Toaster
-                  position="bottom-right"
-                  richColors
-                  toastOptions={{
-                    duration: 4000,
-                    classNames: {
-                      actionButton: "",
-                    },
-                  }}
-                  theme="light"
-                />
-              </Theme>
+              <ScrollToTop />
+              {children}
+              <Toaster
+                position="bottom-right"
+                richColors
+                toastOptions={{
+                  duration: 4000,
+                  classNames: {
+                    actionButton: "",
+                  },
+                }}
+                theme="light"
+              />
             </UserEnvironmentProvider>
           </AuthProvider>
           </I18nProvider>

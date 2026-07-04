@@ -53,9 +53,19 @@ export function decodeRichText(value: string): string {
     return value;
   }
 
+  const encoded = value.slice(RICH_TEXT_PREFIX.length);
+
+  // Buffer.from/atob kastar inte på ogiltig base64 utan hoppar tyst över
+  // ogiltiga tecken — validera teckenmängden själva och kräv strikt UTF-8,
+  // annars returneras hellre originalvärdet än mojibake.
+  if (!/^[A-Za-z0-9_-]*$/.test(encoded)) {
+    return value;
+  }
+
   try {
-    const encoded = value.slice(RICH_TEXT_PREFIX.length);
-    return new TextDecoder().decode(base64UrlToBytes(encoded));
+    return new TextDecoder("utf-8", { fatal: true }).decode(
+      base64UrlToBytes(encoded)
+    );
   } catch {
     return value;
   }

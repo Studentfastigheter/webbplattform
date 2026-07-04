@@ -140,7 +140,9 @@ export function normalizeAuthToken(value: unknown): string | null {
     return null;
   }
 
-  return trimmed.replace(/^Bearer\s+/i, "").trim() || null;
+  // (\s+|$) så att ett ensamt "Bearer" (t.ex. från "Bearer " som trimmats)
+  // också blir null i stället för att returneras som token.
+  return trimmed.replace(/^Bearer(\s+|$)/i, "").trim() || null;
 }
 
 export function buildQuery(params: Record<string, QueryValue>) {

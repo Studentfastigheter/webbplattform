@@ -1204,7 +1204,7 @@ export default function ProfilePage() {
 
   const uploadGalleryImages = async (files: File[]) => {
     if (!draft) {
-      throw new Error(localizedText(locale, "Kunde inte hitta fÃ¶retagsprofilen.", "Could not find the company profile."));
+      throw new Error(localizedText(locale, "Kunde inte hitta företagsprofilen.", "Could not find the company profile."));
     }
 
     return Promise.all(

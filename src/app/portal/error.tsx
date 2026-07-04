@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 
 export default function PortalError({
   error,
@@ -34,12 +35,12 @@ export default function PortalError({
           >
             Försök igen
           </button>
-          <a
+          <Link
             href="/"
             className="rounded-full border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:text-gray-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004225]"
           >
             Till översikten
-          </a>
+          </Link>
         </div>
       </div>
     </main>
