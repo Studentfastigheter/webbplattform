@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CHART_PRIMARY_DEEP } from "@/features/analytics/chart-palette";
 import { adminService } from "@/features/admin/services/admin-service";
 import {
@@ -3502,6 +3503,7 @@ function CompanyAccountVerificationBadge({ verified }: { verified?: boolean }) {
 }
 
 function CompanyAccountForm() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const { items: companies, state: companiesState } = useResourceList(useAdminCompanies());
   const { items: roles, state: rolesState } = useResourceList(useAdminCompanyRoles());
   const { items: cities, state: citiesState } = useResourceList(useAdminCitySummaries());
@@ -3823,7 +3825,13 @@ function CompanyAccountForm() {
     }
 
     const accountName = companyAccountName(account);
-    if (!window.confirm(`Ta bort företagskontot ${accountName}? Detta går inte att ångra.`)) {
+    const confirmed = await confirm({
+      title: "Ta bort företagskonto?",
+      description: `${accountName} tas bort permanent och kan inte återställas.`,
+      confirmLabel: "Ta bort",
+      destructive: true,
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -4114,6 +4122,7 @@ function CompanyAccountForm() {
       </SubmitButton>
       <ResultBlock state={saveState} />
     </ActionShell>
+    {confirmDialog}
     </div>
   );
 }

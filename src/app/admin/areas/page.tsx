@@ -16,6 +16,7 @@
 
 import { useMemo, useState } from "react";
 import { Loader2, Plus, Save, Trash2 } from "@/components/icons";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { useCompanies } from "@/features/companies/hooks/useCompanies";
 import {
@@ -73,6 +74,7 @@ function AreaMappingsSection({ onError }: { onError: (message: string) => void }
   const createMapping = useAdminCreateAreaMapping();
   const modifyMapping = useAdminModifyAreaMapping();
   const deleteMapping = useAdminDeleteAreaMapping();
+  const { confirm, confirmDialog } = useConfirmDialog();
 
   const [areaCode, setAreaCode] = useState("");
   const [parentCityCode, setParentCityCode] = useState("");
@@ -111,7 +113,13 @@ function AreaMappingsSection({ onError }: { onError: (message: string) => void }
   };
 
   const handleDelete = async (id: string, label: string) => {
-    if (!confirm(`Ta bort mappningen för "${label}"?`)) return;
+    const confirmed = await confirm({
+      title: "Ta bort mappning?",
+      description: `Kopplingen för "${label}" tas bort.`,
+      confirmLabel: "Ta bort",
+      destructive: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteMapping.mutateAsync(id);
     } catch (err) {
@@ -236,6 +244,7 @@ function AreaMappingsSection({ onError }: { onError: (message: string) => void }
           Inga områdesmappningar än.
         </p>
       )}
+      {confirmDialog}
     </SectionCard>
   );
 }
@@ -251,6 +260,7 @@ function AreaLocationRow({
 }) {
   const modifyLocation = useAdminModifyAreaLocation();
   const deleteLocation = useAdminDeleteAreaLocation();
+  const { confirm, confirmDialog } = useConfirmDialog();
 
   const [city, setCity] = useState(location.city ?? "");
   const [lat, setLat] = useState(location.lat != null ? String(location.lat) : "");
@@ -271,7 +281,13 @@ function AreaLocationRow({
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Ta bort platsen för "${location.areaName}"?`)) return;
+    const confirmed = await confirm({
+      title: "Ta bort plats?",
+      description: `Platsöverstyrningen för "${location.areaName}" tas bort.`,
+      confirmLabel: "Ta bort",
+      destructive: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteLocation.mutateAsync({
         areaName: location.areaName,
@@ -346,6 +362,7 @@ function AreaLocationRow({
           >
             <Trash2 className="h-4 w-4" />
           </button>
+          {confirmDialog}
         </div>
       </td>
     </tr>
