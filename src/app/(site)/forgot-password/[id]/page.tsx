@@ -176,7 +176,7 @@ export default function ResetPasswordPage() {
                       minLength={8}
                       required
                       disabled={submitting}
-                      className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-brand focus-visible:ring-brand/20"
+                      className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                     />
                     <button
                       type="button"
@@ -215,7 +215,7 @@ export default function ResetPasswordPage() {
                     ))}
                   </div>
 
-                  <p className="text-right text-sm font-normal text-[#7a7a7a]">
+                  <p className="text-right text-sm font-normal text-[#6b6b6b]">
                     {getPasswordStrengthText(passwordStrengthScore, locale)}
                   </p>
                 </div>
@@ -235,7 +235,7 @@ export default function ResetPasswordPage() {
                       minLength={8}
                       required
                       disabled={submitting}
-                      className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-brand focus-visible:ring-brand/20"
+                      className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                     />
                     <button
                       type="button"

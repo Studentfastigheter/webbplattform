@@ -151,24 +151,17 @@ export const PartnerGrid = ({
                 key={partner.name || `placeholder-${index}`}
                 className={
                   isPlaceholder
-                    ? `${cardClasses} items-center justify-center border border-dashed border-amber-300/70 bg-card/85 text-center shadow-[0_0_14px_rgba(251,191,36,0.18)]`
-                    : cardClasses
-                }
-                style={
-                  isFoundingVariant && !isPlaceholder
-                    ? {
-                        border: "2px solid transparent",
-                        backgroundImage:
-                          "linear-gradient(var(--card), var(--card)), linear-gradient(145deg, #d4a017, #f5d778, #b8860b, #f5d778, #d4a017)",
-                        backgroundOrigin: "border-box",
-                        backgroundClip: "padding-box, border-box",
-                      }
-                    : undefined
+                    ? `${cardClasses} items-center justify-center border border-dashed border-brand-green-light/70 bg-card/85 text-center`
+                    : isFoundingVariant
+                      ? // Grundarpartner markeras med brandens egen accent i stället
+                        // för den tidigare guldgradienten (enda gula i hela varumärket).
+                        `${cardClasses} border-2 border-brand-green-light shadow-[0_0_18px_rgba(112,138,131,0.35)]`
+                      : cardClasses
                 }
               >
                 {isPlaceholder ? (
                   <div className="flex min-h-64 flex-col items-center justify-center">
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-amber-300/60 bg-amber-50 text-amber-700">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-brand-green-light/60 bg-brand-50 text-brand">
                       <EyeOff className="h-6 w-6" aria-hidden="true" />
                     </span>
                     <h3 className="mt-6 text-xl font-bold text-foreground">

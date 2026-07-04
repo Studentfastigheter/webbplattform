@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
                     autoComplete="email"
                     required
                     disabled={submitting}
-                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-brand focus-visible:ring-brand/20"
+                    className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
                   />
                   <FieldDescription>
                     {localizedText(locale, "Vi skickar instruktioner om e-postadressen finns registrerad.", "We will send instructions if the email address is registered.")}

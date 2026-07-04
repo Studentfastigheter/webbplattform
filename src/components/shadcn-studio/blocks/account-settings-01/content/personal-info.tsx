@@ -59,7 +59,7 @@ function isVerified(value: unknown) {
 }
 
 const inputClassName =
-  'h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#7a7a7a] focus-visible:border-brand focus-visible:ring-brand/20'
+  'h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20'
 const fieldClassName = 'flex flex-col items-start gap-2'
 
 const PersonalInfo = forwardRef<

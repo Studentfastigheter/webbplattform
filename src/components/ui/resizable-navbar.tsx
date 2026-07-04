@@ -184,7 +184,7 @@ export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
       className={cn(
         "relative z-50 mx-auto flex max-w-[calc(100vw-2rem)] flex-col items-center justify-between bg-transparent py-2 transition-all duration-300 xl:hidden",
         visible
-          ? "w-[90%] translate-y-5 rounded bg-white/80 px-3 dark:bg-neutral-950/80"
+          ? "w-[90%] translate-y-5 rounded-2xl bg-white/80 px-3 dark:bg-neutral-950/80"
           : "w-full translate-y-0 rounded-[2rem] px-0",
         className,
       )}
