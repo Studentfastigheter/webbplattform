@@ -60,7 +60,9 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
     landlordType,
   } = listing;
 
-  const resolvedImage = imageUrl || images?.find((image) => image.imageUrl)?.imageUrl;
+  const [brokenImage, setBrokenImage] = React.useState<string | null>(null);
+  const firstImage = imageUrl || images?.find((image) => image.imageUrl)?.imageUrl;
+  const resolvedImage = firstImage && firstImage !== brokenImage ? firstImage : undefined;
   const resolvedRent =
     typeof rent === "number" ? formatLocalizedNumber(locale, rent) : null;
   const locationLabel = [area, city].filter(Boolean).join(", ") || "-";
@@ -90,6 +92,7 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
             alt={title}
             className="block h-full min-h-full w-full min-w-full object-cover object-center"
             loading="lazy"
+            onError={() => setBrokenImage(resolvedImage)}
           />
         ) : (
           <ListingImagePlaceholder className="absolute inset-0" />

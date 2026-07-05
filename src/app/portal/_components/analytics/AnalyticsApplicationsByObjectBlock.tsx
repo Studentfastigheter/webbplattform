@@ -138,6 +138,9 @@ function ListingApplicationPreviewRow({
   index: number;
   locale: Locale;
 }) {
+  const [brokenImageUrl, setBrokenImageUrl] = React.useState<string | null>(null);
+  const imageUrl =
+    item.imageUrl && item.imageUrl !== brokenImageUrl ? item.imageUrl : undefined;
   const title = item.title || item.address || localizedText(locale, `Annons ${index + 1}`, `Listing ${index + 1}`);
   const location = item.location || item.address;
   const rent = formatRent(item.rent, locale);
@@ -149,12 +152,13 @@ function ListingApplicationPreviewRow({
   const content = (
     <div className="grid min-h-[118px] min-w-0 grid-cols-[96px_minmax(0,1fr)] sm:grid-cols-[132px_minmax(0,1fr)]">
       <div className="relative h-full min-h-[118px] overflow-hidden bg-gray-100">
-        {item.imageUrl ? (
+        {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             alt=""
             className="absolute inset-0 block !h-full !w-full max-w-none object-cover object-center"
-            src={item.imageUrl}
+            src={imageUrl}
+            onError={() => setBrokenImageUrl(imageUrl)}
           />
         ) : (
           <ListingImagePlaceholder className="absolute inset-0" />

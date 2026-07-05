@@ -92,6 +92,11 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
   const [isLiked, setIsLiked] = useState(isFavorite || false);
+  // Trasiga bild-URL:er (utgångna blob-länkar m.m.) ska ge platshållaren,
+  // inte webbläsarens trasig-bild-ikon.
+  const [brokenImageUrl, setBrokenImageUrl] = useState<string | null>(null);
+  const resolvedImageUrl =
+    imageUrl && imageUrl !== brokenImageUrl ? imageUrl : undefined;
   
   useEffect(() => {
     if (isFavorite !== undefined) {
@@ -221,9 +226,9 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           </button>
         )}
 
-        {imageUrl ? (
+        {resolvedImageUrl ? (
           <Image
-            src={imageUrl}
+            src={resolvedImageUrl}
             alt={title}
             fill
             sizes={
@@ -232,6 +237,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
                 : "(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 470px"
             }
             className="absolute inset-0 block h-full w-full object-cover object-center transition-transform duration-500"
+            onError={() => setBrokenImageUrl(resolvedImageUrl)}
           />
         ) : (
           <ListingImagePlaceholder className="absolute inset-0" />
