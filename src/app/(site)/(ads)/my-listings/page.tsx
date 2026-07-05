@@ -7,19 +7,8 @@ import ListingCardSmall from "@/features/listings/components/ListingCard_Small";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useMyListings } from "@/features/listings/hooks/useListings";
-import { listingService } from "@/features/listings/services/listing-service";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
-import { type ListingCardDTO } from "@/types/listing";
-
-function splitLocation(location?: string | null) {
-  const parts = location?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
-
-  return {
-    area: parts[0] ?? "",
-    city: parts[1] ?? parts[0] ?? "",
-  };
-}
 
 export default function Page() {
   const router = useRouter();
@@ -109,14 +98,11 @@ export default function Page() {
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {gridListings.map((listing) => {
-              const { area, city } = splitLocation(listing.location);
-
               return (
                 <ListingCardSmall
                   key={listing.id}
                   title={listing.title}
-                  area={area}
-                  city={city}
+                  location={listing.location}
                   dwellingType={listing.dwellingType ?? ""}
                   rooms={listing.rooms ?? 0}
                   sizeM2={listing.sizeM2 ?? 0}

@@ -8,6 +8,7 @@ import {
 } from "@/features/analytics/components/AnalyticsBlocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
@@ -156,9 +157,7 @@ function ListingApplicationPreviewRow({
             src={item.imageUrl}
           />
         ) : (
-          <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-brand-50 text-xs font-semibold text-brand-500">
-            {localizedText(locale, "Ingen bild", "No image")}
-          </div>
+          <ListingImagePlaceholder className="absolute inset-0" />
         )}
 
         <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-white/95 px-1.5 text-[11px] font-semibold text-gray-900 shadow-sm">

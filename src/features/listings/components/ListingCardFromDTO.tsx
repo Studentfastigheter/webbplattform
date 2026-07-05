@@ -25,19 +25,6 @@ type ListingCardFromDTOProps = {
   | "contentTopRightContent"
 >;
 
-const splitLocation = (location: string | null | undefined, fallback: string) => {
-  const [area, ...cityParts] = (location ?? "")
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-  const city = cityParts.join(", ");
-
-  return {
-    area: area || fallback,
-    city: city || location || fallback,
-  };
-};
-
 const ListingCardFromDTO: React.FC<ListingCardFromDTOProps> = ({
   listing,
   isFavorite,
@@ -46,15 +33,12 @@ const ListingCardFromDTO: React.FC<ListingCardFromDTOProps> = ({
   ...cardProps
 }) => {
   const { locale } = useI18n();
-  const fallback = localizedText(locale, "Ej angivet", "Not specified");
-  const { area, city } = splitLocation(listing.location, fallback);
 
   return (
     <ListingCardSmall
       id={listing.id}
       title={listing.title}
-      area={area}
-      city={city}
+      location={listing.location}
       dwellingType={listing.dwellingType || localizedText(locale, "Bostad", "Home")}
       rooms={listing.rooms || 0}
       sizeM2={listing.sizeM2 || 0}
