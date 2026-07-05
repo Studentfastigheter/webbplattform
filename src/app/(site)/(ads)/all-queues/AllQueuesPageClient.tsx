@@ -7,6 +7,7 @@ import { Check, X } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/ui/search-bar";
 import Que_ListingCard from "@/features/listings/components/Que_ListingCard";
+import QueueCardSkeleton from "@/features/listings/components/QueueCardSkeleton";
 import QueueFilterButton, {
   type QueueFilterState,
 } from "@/features/listings/components/Search/QueueFilterButton";
@@ -563,8 +564,10 @@ export default function Page() {
             )}
 
             {loading ? (
-              <div className="py-12 text-center text-sm text-gray-500">
-                {t("allQueues.loadingQueues")}
+              <div className={queueGridClasses} aria-busy="true">
+                {Array.from({ length: 6 }, (_, index) => (
+                  <QueueCardSkeleton key={`queue-skeleton-${index}`} />
+                ))}
               </div>
             ) : filteredQueues.length === 0 ? (
               <div className="py-12 text-center text-sm text-gray-500 sm:py-20 sm:text-base">

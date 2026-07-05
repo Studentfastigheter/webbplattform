@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -15,6 +14,10 @@ import { cn } from "@/lib/utils";
 import BostadAbout from "@/features/ads/components/BostadAbout";
 import BostadLandlord from "@/features/ads/components/BostadLandlord";
 import ImageSlideshow from "@/features/ads/components/ImageSlideshow";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
+import ListingCardSkeleton from "@/features/listings/components/ListingCardSkeleton";
+import SafeImage from "@/components/shared/SafeImage";
+import { Skeleton } from "@/components/ui/skeleton";
 import QueueListings from "@/features/ads/components/QueueListings";
 
 import { listingService } from "@/features/listings/services/listing-service";
@@ -116,13 +119,18 @@ function Lightbox({
 
       {/* Image */}
       <div className="max-h-[calc(100vh-9rem)] max-w-[94vw]" onClick={(e) => e.stopPropagation()}>
-        <Image
+        <SafeImage
           src={images[current]}
           alt={localizedText(locale, `Bild ${current + 1}`, `Image ${current + 1}`)}
           width={1600}
           height={1000}
           sizes="94vw"
           className="max-h-[calc(100vh-9rem)] max-w-[94vw] rounded-xl object-contain shadow-2xl"
+          fallback={
+            <div className="aspect-[16/10] w-[min(94vw,860px)] overflow-hidden rounded-xl shadow-2xl">
+              <ListingImagePlaceholder />
+            </div>
+          }
         />
       </div>
 
@@ -149,12 +157,13 @@ function Lightbox({
                 i === current ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-75"
               }`}
             >
-              <Image
+              <SafeImage
                 src={src}
                 alt=""
                 fill
                 sizes="80px"
                 className="object-cover object-center"
+                fallback={<ListingImagePlaceholder className="absolute inset-0" />}
               />
             </button>
           ))}
@@ -177,7 +186,14 @@ function ImagePreviewGrid({
   onImageClick: (index: number) => void;
 }) {
   const { locale } = useI18n();
-  if (images.length === 0) return null;
+
+  if (images.length === 0) {
+    return (
+      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl sm:aspect-[16/9] lg:aspect-[16/8] lg:rounded-3xl">
+        <ListingImagePlaceholder className="absolute inset-0" />
+      </div>
+    );
+  }
 
   const shown = images.slice(0, MAX_PREVIEW_IMAGES);
 
@@ -188,13 +204,14 @@ function ImagePreviewGrid({
         className="group relative block aspect-[16/10] w-full overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:aspect-[16/9] lg:aspect-[16/8] lg:rounded-3xl"
         onClick={() => onImageClick(0)}
       >
-        <Image
+        <SafeImage
           src={shown[0]}
           alt={localizedText(locale, "Bild 1", "Image 1")}
           fill
           priority
           sizes="(max-width: 1024px) 100vw, 1280px"
           className={PREVIEW_IMAGE_CLASS}
+          fallback={<ListingImagePlaceholder className="absolute inset-0" />}
         />
         <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
       </button>
@@ -211,13 +228,14 @@ function ImagePreviewGrid({
         className="group relative aspect-[16/10] overflow-hidden rounded-2xl bg-gray-100 outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:aspect-[16/9] lg:h-full lg:aspect-auto lg:rounded-l-3xl lg:rounded-r-none"
         onClick={() => onImageClick(0)}
       >
-        <Image
+        <SafeImage
           src={shown[0]}
           alt={localizedText(locale, "Bild 1", "Image 1")}
           fill
           priority
           sizes="(max-width: 1024px) 100vw, 850px"
           className={PREVIEW_IMAGE_CLASS}
+          fallback={<ListingImagePlaceholder className="absolute inset-0" />}
         />
         <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
       </button>
@@ -245,12 +263,13 @@ function ImagePreviewGrid({
               )}
               onClick={() => onImageClick(i + 1)}
             >
-              <Image
+              <SafeImage
                 src={src}
                 alt={localizedText(locale, `Bild ${i + 2}`, `Image ${i + 2}`)}
                 fill
                 sizes="(max-width: 1024px) 50vw, 380px"
                 className={PREVIEW_IMAGE_CLASS}
+                fallback={<ListingImagePlaceholder className="absolute inset-0" />}
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/10">
                 {isLast && (
@@ -647,9 +666,24 @@ export default function ListingDetailPage() {
 
   if (loading) {
     return (
-      <main className={DETAIL_PAGE_CONTAINER_CLASS}>
-        <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-gray-500">
+      <main className={DETAIL_PAGE_CONTAINER_CLASS} aria-busy="true">
+        <span className="sr-only" role="status">
           {localizedText(locale, "Laddar annons...", "Loading listing...")}
+        </span>
+        <div className="flex w-full flex-col gap-6 sm:gap-8 lg:gap-10" aria-hidden="true">
+          {/* Skugga av bildgrid + rubrik/pris + innehållsblock */}
+          <Skeleton className="aspect-[16/10] w-full rounded-2xl motion-reduce:animate-none sm:aspect-[16/9] lg:aspect-[16/8] lg:rounded-3xl" />
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-4 w-32 motion-reduce:animate-none" />
+            <Skeleton className="h-8 w-2/3 max-w-md motion-reduce:animate-none" />
+            <Skeleton className="h-5 w-40 motion-reduce:animate-none" />
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <Skeleton className="h-4 w-full max-w-2xl motion-reduce:animate-none" />
+            <Skeleton className="h-4 w-full max-w-xl motion-reduce:animate-none" />
+            <Skeleton className="h-4 w-2/3 max-w-lg motion-reduce:animate-none" />
+          </div>
+          <Skeleton className="h-[300px] w-full rounded-2xl motion-reduce:animate-none sm:h-[360px] sm:rounded-3xl lg:h-[420px]" />
         </div>
       </main>
     );
@@ -752,19 +786,30 @@ export default function ListingDetailPage() {
                   {localizedText(locale, "Fler bostäder i närheten", "More homes nearby")}
                 </h2>
 
-                <div
-                  className={`rounded-xl border border-dashed px-4 py-8 text-center sm:p-10 ${
-                    nearbyError
-                      ? "border-red-200 bg-red-50 text-red-700"
-                      : "border-gray-300 bg-gray-50 text-gray-500"
-                  }`}
-                >
-                  {nearbyLoading
-                    ? localizedText(locale, "Hämtar fler bostäder...", "Loading more homes...")
-                    : nearbyError
-                    ? nearbyError
-                    : localizedText(locale, "Inga fler bostäder hittades just nu.", "No more homes were found right now.")}
-                </div>
+                {nearbyLoading ? (
+                  <div
+                    className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6 2xl:grid-cols-3"
+                    aria-busy="true"
+                  >
+                    {Array.from({ length: 3 }, (_, index) => (
+                      <div key={`nearby-skeleton-${index}`} className="flex w-full justify-center">
+                        <ListingCardSkeleton />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className={`rounded-xl border border-dashed px-4 py-8 text-center sm:p-10 ${
+                      nearbyError
+                        ? "border-red-200 bg-red-50 text-red-700"
+                        : "border-gray-300 bg-gray-50 text-gray-500"
+                    }`}
+                  >
+                    {nearbyError
+                      ? nearbyError
+                      : localizedText(locale, "Inga fler bostäder hittades just nu.", "No more homes were found right now.")}
+                  </div>
+                )}
               </>
             )}
           </section>

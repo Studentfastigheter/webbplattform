@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+import SafeImage from "@/components/shared/SafeImage";
+import ListingCardSkeleton from "@/features/listings/components/ListingCardSkeleton";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -122,7 +123,7 @@ function CompanyImageBoard({
     >
       <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
         {images.map((image, index) => (
-          <Image
+          <SafeImage
             key={`${image}-${index}`}
             src={image}
             alt={localizedText(
@@ -632,8 +633,15 @@ export default function QueueDetailPage() {
             onPageChange={handleListingPageChange}
           />
         ) : listingsLoading ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
-            {localizedText(locale, "Hämtar bostäder...", "Loading homes...")}
+          <div
+            className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6 2xl:grid-cols-3"
+            aria-busy="true"
+          >
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={`listing-skeleton-${index}`} className="flex w-full justify-center">
+                <ListingCardSkeleton />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">

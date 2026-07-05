@@ -1,7 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
+
+import CityCardMedia from "@/features/cities/components/CityCardMedia";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { FieldSet } from "@/components/ui/field";
@@ -28,23 +30,13 @@ function CityCard({ city }: { city: CityCardData }) {
     <LocalizedLink
       href={cityHref}
       aria-label={localizedText(locale, `Öppna ${city.name}`, `Open ${city.name}`)}
-      className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-brand shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:h-[245px]"
+      className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-brand-25 shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:h-[245px]"
     >
-      {city.imageUrl ? (
-        <Image
-          src={city.imageUrl}
-          alt=""
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-          className="object-cover object-center"
-        />
-      ) : null}
-      <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/70 transition-opacity group-hover:opacity-95" />
-      <span className="absolute bottom-5 left-5 right-5 block max-w-[calc(100%-2.5rem)] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:right-6">
-        <span className="break-words text-[25px] font-medium leading-[1.05] sm:text-[29px]">
-          {city.name}
-        </span>
-      </span>
+      <CityCardMedia
+        cityName={city.name}
+        imageUrl={city.imageUrl}
+        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+      />
     </LocalizedLink>
   );
 }
@@ -160,8 +152,16 @@ export default function CitiesPage() {
             )}
 
             {loading ? (
-              <div className="py-12 text-center text-sm text-gray-500">
-                {localizedText(locale, "Laddar städer...", "Loading cities...")}
+              <div
+                className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3"
+                aria-busy="true"
+              >
+                {Array.from({ length: 6 }, (_, index) => (
+                  <Skeleton
+                    key={`city-skeleton-${index}`}
+                    className="h-[225px] w-full rounded-[22px] motion-reduce:animate-none sm:h-[245px]"
+                  />
+                ))}
               </div>
             ) : filteredCities.length === 0 ? (
               <div className="py-12 text-center text-sm text-gray-500 sm:py-20 sm:text-base">

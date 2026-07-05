@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { ComponentProps, ImgHTMLAttributes, ReactNode } from "react";
 import { Building2 } from "@/components/icons";
 import { cn } from "@/lib/utils";
@@ -34,6 +37,9 @@ export default function CompanyLogo({
   ...props
 }: CompanyLogoProps) {
   const initial = getInitial(name);
+  // Trasiga logo-URL:er ska ge initial/ikon-fallbacken, inte trasig-bild-ikonen.
+  const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
+  const resolvedSrc = src && src !== brokenSrc ? src : undefined;
 
   return (
     <div
@@ -43,15 +49,16 @@ export default function CompanyLogo({
       )}
       {...props}
     >
-      {src ? (
+      {resolvedSrc ? (
         <img
-          src={src}
+          src={resolvedSrc}
           alt={alt}
           className={cn("block h-full w-full object-contain p-1.5", imageClassName)}
           loading={loading}
           fetchPriority={fetchPriority}
           decoding="async"
           referrerPolicy={referrerPolicy}
+          onError={() => setBrokenSrc(resolvedSrc)}
         />
       ) : fallback ? (
         fallback

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { NotificationItem } from "@/types";
 import { QueueUpdateNotificationCard } from "./cards/queue-update-card";
 import { ListingStatusNotificationCard } from "./cards/listing-status-card";
@@ -9,7 +10,6 @@ import {
   useMarkNotificationRead,
   useNotifications,
 } from "@/features/notifications/hooks/useNotifications";
-import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
@@ -47,7 +47,27 @@ export function NotificationsFeed({ items: initialItems }: Props) {
   );
 
   if (loading) {
-    return <div className="p-4 text-center text-sm text-muted-foreground">{localizedText(locale, "Laddar notiser...", "Loading notifications...")}</div>;
+    return (
+      <div className="space-y-2 p-3" aria-busy="true">
+        <span className="sr-only" role="status">
+          {localizedText(locale, "Laddar notiser...", "Loading notifications...")}
+        </span>
+        {Array.from({ length: 3 }, (_, index) => (
+          <div
+            key={`notification-skeleton-${index}`}
+            aria-hidden="true"
+            className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-4"
+          >
+            <Skeleton className="h-10 w-10 shrink-0 rounded-full motion-reduce:animate-none" />
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Skeleton className="h-4 w-1/2 motion-reduce:animate-none" />
+              <Skeleton className="h-3 w-3/4 motion-reduce:animate-none" />
+              <Skeleton className="h-3 w-24 motion-reduce:animate-none" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (

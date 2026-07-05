@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2 } from "@/components/icons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useQueries } from "@tanstack/react-query";
 
@@ -31,6 +31,35 @@ import { formatLocalizedDate, localizedText } from "@/i18n/text";
 import { type CompanyId } from "@/types";
 import type { ListingDetailDTO, ListingTagDTO, StudentApplicationDTO } from "@/types/listing";
 import { isVerifiedStudentAuthAccount } from "@/features/auth/lib/account-access";
+
+function ApplicationRowsSkeleton({ bare = false }: { bare?: boolean }) {
+  const rows = (
+    <div aria-hidden="true" className="flex flex-col divide-y divide-gray-100">
+      {Array.from({ length: 4 }, (_, index) => (
+        <div key={`application-skeleton-${index}`} className="flex items-start gap-4 px-4 py-5">
+          <Skeleton className="h-32 w-44 shrink-0 rounded-2xl motion-reduce:animate-none" />
+          <div className="flex min-w-0 flex-1 flex-col gap-2.5 py-1">
+            <Skeleton className="h-4 w-1/3 max-w-56 motion-reduce:animate-none" />
+            <Skeleton className="h-3 w-1/4 max-w-40 motion-reduce:animate-none" />
+            <Skeleton className="h-3 w-1/2 max-w-72 motion-reduce:animate-none" />
+            <Skeleton className="h-4 w-24 motion-reduce:animate-none" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (bare) return rows;
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+      <div className="border-b border-gray-200 bg-gray-50/80 px-6 py-4">
+        <Skeleton className="h-3 w-40 motion-reduce:animate-none" />
+      </div>
+      {rows}
+    </div>
+  );
+}
 
 const getStudentColumns = (locale: Locale): ListFrameColumn[] => [
   { id: "annons", label: localizedText(locale, "Annons", "Listing"), width: "2.6fr" },
@@ -437,8 +466,8 @@ export default function MyApplicationsPage() {
 
   if (authLoading || !isStudent) {
     return (
-      <main className="flex h-[50vh] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <main className="w-full py-6" aria-busy="true">
+        <ApplicationRowsSkeleton />
       </main>
     );
   }
@@ -467,9 +496,13 @@ export default function MyApplicationsPage() {
             "[&_div.divide-y]:divide-gray-100 [&_div.grid]:px-4 [&_div.grid]:py-5"
           )}
           emptyState={
-            <div className="py-16 text-center text-sm text-gray-400">
-              {emptyMessage}
-            </div>
+            loading ? (
+              <ApplicationRowsSkeleton bare />
+            ) : (
+              <div className="py-16 text-center text-sm text-gray-400">
+                {emptyMessage}
+              </div>
+            )
           }
         />
       </div>

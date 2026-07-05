@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,13 @@ export default function EntityHero({
 }: EntityHeroProps) {
   const hasActions = actionLinks.length > 0 || Boolean(headerActions);
   const titleInitial = title.trim().charAt(0).toUpperCase() || "?";
+  // Trasiga bild-URL:er ska ge samma fallback som saknad bild.
+  const [brokenBanner, setBrokenBanner] = useState<string | null>(null);
+  const [brokenAvatar, setBrokenAvatar] = useState<string | null>(null);
+  const resolvedBanner =
+    bannerImage && bannerImage !== brokenBanner ? bannerImage : undefined;
+  const resolvedAvatar =
+    avatarImage && avatarImage !== brokenAvatar ? avatarImage : undefined;
 
   return (
     <section className={cn("w-full", className)}>
@@ -96,15 +104,16 @@ export default function EntityHero({
         )}
         style={bannerAspectRatio ? { aspectRatio: bannerAspectRatio } : undefined}
       >
-        {bannerImage ? (
+        {resolvedBanner ? (
           <Image
-            src={bannerImage}
+            src={resolvedBanner}
             alt={bannerAlt ?? title}
             fill
             className="object-cover"
             priority
             sizes="(min-width: 1024px) 896px, 100vw"
             unoptimized
+            onError={() => setBrokenBanner(resolvedBanner)}
           />
         ) : (
           <div className="h-full w-full bg-gray-100" />
@@ -126,26 +135,28 @@ export default function EntityHero({
                 : "h-28 w-28 rounded-2xl sm:h-36 sm:w-36"
             )}
           >
-            {avatarImage ? (
+            {resolvedAvatar ? (
               avatarFit === "contain" ? (
                 <div className="flex h-full w-full items-center justify-center p-2">
                   <Image
-                    src={avatarImage}
+                    src={resolvedAvatar}
                     alt={avatarAlt ?? title}
                     width={144}
                     height={144}
                     className="block h-auto max-h-full w-auto max-w-full object-contain"
                     unoptimized
+                    onError={() => setBrokenAvatar(resolvedAvatar)}
                   />
                 </div>
               ) : (
                 <Image
-                  src={avatarImage}
+                  src={resolvedAvatar}
                   alt={avatarAlt ?? title}
                   width={144}
                   height={144}
                   className="h-full w-full object-cover"
                   unoptimized={false}
+                  onError={() => setBrokenAvatar(resolvedAvatar)}
                 />
               )
             ) : (
