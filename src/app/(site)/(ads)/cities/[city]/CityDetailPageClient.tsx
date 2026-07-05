@@ -1,6 +1,8 @@
 "use client";
 
-import Image from "next/image";
+import SafeImage from "@/components/shared/SafeImage";
+import ListingCardSkeleton from "@/features/listings/components/ListingCardSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
@@ -471,7 +473,7 @@ export default function CityDetailPage() {
             className="relative min-h-[180px] w-full overflow-hidden rounded-[22px] bg-gray-100 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:aspect-[1440/425] sm:min-h-0 sm:rounded-3xl"
           >
             {cityBannerUrl ? (
-              <Image
+              <SafeImage
                 src={cityBannerUrl}
                 alt=""
                 fill
@@ -517,8 +519,15 @@ export default function CityDetailPage() {
             )}
 
             {listingsLoading ? (
-              <div className="rounded-2xl border border-black/5 bg-white px-4 py-10 text-center text-sm text-gray-500 shadow-sm">
-                {localizedText(locale, "Hämtar bostäder...", "Loading homes...")}
+              <div
+                className="grid grid-cols-1 justify-items-center gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3"
+                aria-busy="true"
+              >
+                {Array.from({ length: 3 }, (_, index) => (
+                  <div key={`listing-skeleton-${index}`} className="flex w-full justify-center">
+                    <ListingCardSkeleton />
+                  </div>
+                ))}
               </div>
             ) : listings.length === 0 ? (
               <div className="rounded-2xl border border-black/5 bg-white px-4 py-10 text-center text-sm text-gray-500 shadow-sm">
@@ -682,8 +691,16 @@ export default function CityDetailPage() {
           )}
 
           {companiesLoading ? (
-            <div className="py-12 text-center text-sm text-gray-500">
-              {localizedText(locale, "Hämtar företag...", "Loading companies...")}
+            <div
+              className="grid w-full grid-cols-1 justify-start gap-8 md:grid-cols-2 lg:grid-cols-3"
+              aria-busy="true"
+            >
+              {Array.from({ length: 3 }, (_, index) => (
+                <Skeleton
+                  key={`company-skeleton-${index}`}
+                  className="min-h-[18rem] w-full rounded-lg motion-reduce:animate-none sm:min-h-80"
+                />
+              ))}
             </div>
           ) : companies.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
@@ -715,8 +732,16 @@ export default function CityDetailPage() {
           )}
 
           {companiesLoading ? (
-            <div className="py-12 text-center text-sm text-gray-500">
-              {localizedText(locale, "Hämtar företag...", "Loading companies...")}
+            <div
+              className="grid w-full grid-cols-1 justify-start gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3"
+              aria-busy="true"
+            >
+              {Array.from({ length: 3 }, (_, index) => (
+                <Skeleton
+                  key={`external-company-skeleton-${index}`}
+                  className="h-24 w-full rounded-lg motion-reduce:animate-none"
+                />
+              ))}
             </div>
           ) : externalCompanies.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">

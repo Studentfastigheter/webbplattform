@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 import ListingCardSmall from "@/features/listings/components/ListingCard_Small";
+import ListingCardSkeleton from "@/features/listings/components/ListingCardSkeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useMyListings } from "@/features/listings/hooks/useListings";
@@ -86,8 +87,10 @@ export default function Page() {
 
       <section>
         {loading ? (
-          <div className="py-12 text-center text-sm text-gray-500">
-            {localizedText(locale, "Laddar annonser...", "Loading listings...")}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+            {Array.from({ length: 3 }, (_, index) => (
+              <ListingCardSkeleton key={`my-listing-skeleton-${index}`} />
+            ))}
           </div>
         ) : gridListings.length === 0 ? (
           <div className="py-12 text-center text-sm text-gray-500">

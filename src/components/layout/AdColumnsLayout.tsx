@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/I18nProvider";
 import { GoogleAdSenseUnit } from "@/components/layout/GoogleAdSenseUnit";
@@ -75,7 +75,9 @@ const PlatformAdCreative = ({
   ariaLabel: string;
 }) => {
   const linkUrl = safeExternalUrl(ad.linkUrl);
-  const imageUrl = safeImageUrl(ad.imageUrl);
+  const [brokenImageUrl, setBrokenImageUrl] = useState<string | null>(null);
+  const safeUrl = safeImageUrl(ad.imageUrl);
+  const imageUrl = safeUrl && safeUrl !== brokenImageUrl ? safeUrl : null;
   const headline = ad.headline ?? ad.company ?? ariaLabel;
   const body = ad.body;
   const ctaText = ad.ctaText;
@@ -87,6 +89,7 @@ const PlatformAdCreative = ({
           alt={headline}
           className="absolute inset-0 h-full w-full object-cover"
           loading="lazy"
+          onError={() => setBrokenImageUrl(imageUrl)}
         />
       ) : null}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />

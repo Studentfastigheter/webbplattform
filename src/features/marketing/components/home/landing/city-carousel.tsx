@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+import CityCardMedia from "@/features/cities/components/CityCardMedia";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
 import { normalizeCityName } from "@/features/cities/city-utils";
@@ -21,25 +21,16 @@ type CityCarouselItem = {
 function CityCarouselCard({ city }: { city: CityCarouselItem }) {
   const { t } = useI18n();
   const cardClassName =
-    "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-brand ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
-  
+    "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-brand-25 ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
+
   const content = (
-    <>
-      {city.imageUrl ? (
-        <Image
-          src={city.imageUrl}
-          alt={city.name}
-          fill
-          unoptimized
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-          sizes="(max-width: 640px) 230px, (max-width: 1024px) 280px, 320px"
-        />
-      ) : null}
-      <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/72 transition-opacity group-hover:opacity-95" />
-      <span className="absolute bottom-5 left-5 max-w-[calc(100%-2.5rem)] break-words text-[24px] font-medium leading-[1.05] text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.42)] sm:bottom-6 sm:left-6 sm:text-[28px]">
-        {city.name}
-      </span>
-    </>
+    <CityCardMedia
+      cityName={city.name}
+      imageUrl={city.imageUrl}
+      unoptimized
+      sizes="(max-width: 640px) 230px, (max-width: 1024px) 280px, 320px"
+      imageClassName="transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.03]"
+    />
   );
 
   return (

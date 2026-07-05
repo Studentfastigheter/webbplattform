@@ -2,6 +2,7 @@
 
 import { Dispatch, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, GripVertical, ImagePlus, Trash2, Upload } from "@/components/icons";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,15 @@ export default function ImageUploadGallery({
   const draftImagesRef = useRef<string[]>(initialImages);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [brokenImages, setBrokenImages] = useState<ReadonlySet<string>>(new Set());
+
+  const markImageBroken = (src: string) =>
+    setBrokenImages((prev) => {
+      if (prev.has(src)) return prev;
+      const next = new Set(prev);
+      next.add(src);
+      return next;
+    });
   const [pendingAction, setPendingAction] = useState(false);
 
   useEffect(() => {
@@ -358,11 +368,16 @@ export default function ImageUploadGallery({
                   )}
                 >
                   <div className="relative aspect-[4/3] bg-gray-100">
-                    <img
-                      src={image}
-                      alt={localizedText(locale, `Bild ${index + 1}`, `Image ${index + 1}`)}
-                      className="h-full w-full object-cover object-center"
-                    />
+                    {brokenImages.has(image) ? (
+                      <ListingImagePlaceholder className="absolute inset-0" />
+                    ) : (
+                      <img
+                        src={image}
+                        alt={localizedText(locale, `Bild ${index + 1}`, `Image ${index + 1}`)}
+                        className="h-full w-full object-cover object-center"
+                        onError={() => markImageBroken(image)}
+                      />
+                    )}
                     <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2">
                       <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-white/95 px-2 text-xs font-semibold text-gray-950 shadow-sm">
                         {index + 1}

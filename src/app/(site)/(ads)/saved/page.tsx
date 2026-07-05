@@ -3,7 +3,9 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, Loader2 } from "@/components/icons";
+import { Heart } from "@/components/icons";
+import ListingCardSkeleton from "@/features/listings/components/ListingCardSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import { Button } from "@/components/ui/button";
@@ -67,8 +69,22 @@ export default function Page() {
 
   if (authLoading || !canViewFavorites || loading) {
     return (
-      <main className="flex h-[50vh] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <main className="w-full pb-12 pt-4 sm:pt-6" aria-busy="true">
+        <div className="container mx-auto w-full px-3 sm:px-4 md:px-6 lg:px-8">
+          <section
+            aria-hidden="true"
+            className="flex flex-col-reverse gap-4 sm:gap-6 lg:grid lg:grid-cols-2 lg:items-start 2xl:grid-cols-3"
+          >
+            <div className="grid w-full grid-cols-1 justify-items-center gap-3 2xl:col-span-1">
+              {Array.from({ length: 3 }, (_, index) => (
+                <div key={`saved-skeleton-${index}`} className="flex w-full justify-center">
+                  <ListingCardSkeleton />
+                </div>
+              ))}
+            </div>
+            <Skeleton className="z-10 h-[320px] w-full shrink-0 rounded-xl motion-reduce:animate-none sm:h-[420px] lg:sticky lg:top-24 lg:h-[calc(100svh-96px)] lg:rounded-2xl 2xl:col-span-2" />
+          </section>
+        </div>
       </main>
     );
   }

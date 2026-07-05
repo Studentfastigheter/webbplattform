@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { cn } from "@/lib/utils";
@@ -31,9 +33,19 @@ function ImageTile({
   onImageClick,
   readOnly,
 }: TileProps) {
+  const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const content = (
     <>
-      <img src={src} alt={alt} className="absolute inset-0 !h-full !w-full !max-w-none object-cover object-center" />
+      {src && src !== brokenSrc ? (
+        <img
+          src={src}
+          alt={alt}
+          className="absolute inset-0 !h-full !w-full !max-w-none object-cover object-center"
+          onError={() => setBrokenSrc(src)}
+        />
+      ) : (
+        <ListingImagePlaceholder className="absolute inset-0" />
+      )}
       <div
         className={cn(
           "absolute inset-0 flex items-center justify-center bg-black/0",

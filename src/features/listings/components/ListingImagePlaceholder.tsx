@@ -6,12 +6,14 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
 // Logomarkens path (public/logos/campuslyan-logo.svg, viewBox 375×375) —
-// återanvänds som mitthuset i gatumotivet.
-const LOGOMARK_PATH =
+// återanvänds som mitthuset i gatumotivet och i stadskortens siluettrand.
+export const LOGOMARK_PATH =
   "M 37.5 239.269531 L 93.289062 278.109375 L 93.289062 141.976562 L 186.304688 76.121094 L 187.042969 75.726562 L 187.507812 75.390625 L 187.96875 75.726562 L 281.722656 141.90625 L 281.722656 270.183594 L 173.164062 270.183594 L 125.28125 303.726562 L 125.28125 367.90625 L 184.855469 326.070312 L 281.722656 326.101562 L 332.910156 326.125 L 335.230469 326.125 L 335.992188 326.128906 L 337.507812 326.128906 L 337.507812 113.011719 L 281.722656 73.621094 L 235.871094 41.25 L 187.96875 7.429688 L 187.507812 7.101562 L 187.042969 7.429688 L 139.140625 41.25 L 93.289062 73.621094 L 37.5 113.011719 Z";
 
 type ListingImagePlaceholderProps = {
   className?: string;
+  /** Sätt när omgivningen redan bär informationen (t.ex. stadskort med synligt namn). */
+  decorative?: boolean;
 };
 
 /**
@@ -21,14 +23,16 @@ type ListingImagePlaceholderProps = {
  */
 const ListingImagePlaceholder: React.FC<ListingImagePlaceholderProps> = ({
   className,
+  decorative = false,
 }) => {
   const { locale } = useI18n();
   const gradientId = useId();
 
   return (
     <svg
-      role="img"
-      aria-label={localizedText(locale, "Ingen bild", "No image")}
+      role={decorative ? undefined : "img"}
+      aria-label={decorative ? undefined : localizedText(locale, "Ingen bild", "No image")}
+      aria-hidden={decorative || undefined}
       viewBox="0 0 470 294"
       preserveAspectRatio="xMidYMax slice"
       className={cn("block h-full w-full text-brand", className)}
