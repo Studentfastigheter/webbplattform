@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "@/components/icons";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
@@ -17,7 +18,16 @@ const SLIDESHOW_IMAGE_CLASS =
 export default function ImageSlideshow({ images, title }: ImageSlideshowProps) {
   const { locale } = useI18n();
   const [current, setCurrent] = useState(0);
+  const [brokenImages, setBrokenImages] = useState<ReadonlySet<string>>(new Set());
   const sliderRef = useRef<HTMLDivElement>(null);
+
+  const markBroken = (src: string) =>
+    setBrokenImages((prev) => {
+      if (prev.has(src)) return prev;
+      const next = new Set(prev);
+      next.add(src);
+      return next;
+    });
 
   useEffect(() => {
     setCurrent(0);
@@ -43,11 +53,16 @@ export default function ImageSlideshow({ images, title }: ImageSlideshowProps) {
   return (
     <section className="w-full">
       <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden rounded-2xl bg-gray-100 sm:aspect-video sm:rounded-3xl lg:aspect-[16/8]">
-        <img
-          src={images[currentIndex]}
-          alt={localizedText(locale, `${title} - bild ${currentIndex + 1}`, `${title} - image ${currentIndex + 1}`)}
-          className={SLIDESHOW_IMAGE_CLASS}
-        />
+        {brokenImages.has(images[currentIndex]) ? (
+          <ListingImagePlaceholder className="absolute inset-0" />
+        ) : (
+          <img
+            src={images[currentIndex]}
+            alt={localizedText(locale, `${title} - bild ${currentIndex + 1}`, `${title} - image ${currentIndex + 1}`)}
+            className={SLIDESHOW_IMAGE_CLASS}
+            onError={() => markBroken(images[currentIndex])}
+          />
+        )}
         <span className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white sm:bottom-4 sm:right-4 sm:text-sm">
           {currentIndex + 1} / {images.length}
         </span>
@@ -93,11 +108,16 @@ export default function ImageSlideshow({ images, title }: ImageSlideshowProps) {
                   : "border-transparent opacity-60 hover:opacity-90"
               }`}
             >
-              <img
-                src={src}
-                alt=""
-                className="block h-full w-full object-cover object-center"
-              />
+              {brokenImages.has(src) ? (
+                <ListingImagePlaceholder />
+              ) : (
+                <img
+                  src={src}
+                  alt=""
+                  className="block h-full w-full object-cover object-center"
+                  onError={() => markBroken(src)}
+                />
+              )}
             </button>
           ))}
         </div>

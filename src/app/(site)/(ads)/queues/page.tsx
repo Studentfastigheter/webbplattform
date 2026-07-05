@@ -3,8 +3,8 @@
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "@/components/icons";
 import ListFrame, { type ListFrameColumn } from "@/components/layout/ListFrame";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   buildQueueRow,
@@ -23,6 +23,23 @@ const statusToRowStatus = (status?: string): QueueRowProps["status"] => {
   if (normalized === "offered") return "Erbjudande";
   return "Inaktiv";
 };
+
+function QueueRowsSkeleton() {
+  return (
+    <div aria-hidden="true" className="flex flex-col divide-y divide-gray-100">
+      {Array.from({ length: 3 }, (_, index) => (
+        <div key={`queue-skeleton-${index}`} className="flex items-center gap-4 px-4 py-5">
+          <Skeleton className="h-12 w-12 shrink-0 rounded-xl motion-reduce:animate-none" />
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <Skeleton className="h-4 w-1/3 max-w-56 motion-reduce:animate-none" />
+            <Skeleton className="h-3 w-1/4 max-w-36 motion-reduce:animate-none" />
+          </div>
+          <Skeleton className="h-9 w-24 shrink-0 rounded-full motion-reduce:animate-none" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function Page() {
   const router = useRouter();
@@ -129,11 +146,11 @@ export default function Page() {
   }, [user, userApplications, locale, localizedHref, handleLeave, leavingQueueId]);
 
   const rows = useMemo(() => queueRows.map(buildQueueRow), [queueRows]);
-  const emptyState = (
+  const emptyState = loading ? (
+    <QueueRowsSkeleton />
+  ) : (
     <div className="py-16 text-center text-sm text-gray-400">
-      {loading
-        ? localizedText(locale, "Laddar dina köplatser...", "Loading your queue positions...")
-        : user
+      {user
         ? localizedText(locale, "Du står inte i några bostadsköer än.", "You are not in any housing queues yet.")
         : localizedText(locale, "Du måste vara inloggad för att se dina köer.", "You must be logged in to view your queues.")}
     </div>
@@ -141,8 +158,13 @@ export default function Page() {
 
   if (authLoading || !canViewQueues) {
     return (
-      <main className="flex h-[50vh] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <main className="w-full py-4 sm:py-6" aria-busy="true">
+        <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+          <div className="border-b border-gray-200 bg-gray-50/80 px-6 py-4">
+            <Skeleton className="h-3 w-40 motion-reduce:animate-none" />
+          </div>
+          <QueueRowsSkeleton />
+        </div>
       </main>
     );
   }

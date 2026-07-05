@@ -19,6 +19,7 @@ import { getAppIconElement } from "@/components/icons/catalog";
 import { useAuth } from "@/context/AuthContext";
 
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
+import ListingCardSkeleton from "@/features/listings/components/ListingCardSkeleton";
 import ListingsFilterButton, {
   type ListingsFilterState,
 } from "@/features/listings/components/Search/ListingsFilterButton";
@@ -778,6 +779,12 @@ export default function ListingsPage() {
                     <div className="col-span-full py-12 text-center text-sm text-gray-500 sm:py-20 sm:text-base">
                       {localizedText(locale, "Inga bostäder matchade din sökning.", "No homes matched your search.")}
                     </div>
+                  ) : listings.length === 0 ? (
+                    Array.from({ length: 4 }, (_, index) => (
+                      <div key={`listing-skeleton-${index}`} className="flex w-full justify-center">
+                        <ListingCardSkeleton />
+                      </div>
+                    ))
                   ) : (
                     listings.map((listing) => renderListingCard(listing))
                   )}
@@ -828,14 +835,20 @@ export default function ListingsPage() {
                   </div>
                 )}
 
-                <div className={listingGridClasses}>
-                  {listings.map((listing) => renderListingCard(listing))}
+                <div className={listingGridClasses} aria-busy={loading}>
+                  {loading && listings.length === 0
+                    ? Array.from({ length: 9 }, (_, index) => (
+                        <div key={`listing-skeleton-${index}`} className="flex w-full justify-center">
+                          <ListingCardSkeleton />
+                        </div>
+                      ))
+                    : listings.map((listing) => renderListingCard(listing))}
                 </div>
 
                 <div
                   className="flex min-h-[60px] w-full items-center justify-center py-6 sm:py-8"
                 >
-                  {loading && (
+                  {loading && listings.length > 0 && (
                     <span className="animate-pulse text-xs text-gray-500 sm:text-sm">
                       {localizedText(locale, "Hämtar bostäder...", "Loading homes...")}
                     </span>

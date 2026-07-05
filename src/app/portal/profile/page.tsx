@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/shared/CompanyLogo";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
 import {
   Field,
@@ -437,6 +438,15 @@ function EditableImageGallerySection({
   const visibleImages = normalizeUrlList(imageUrls);
   const [pendingGalleryAction, setPendingGalleryAction] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [brokenImages, setBrokenImages] = useState<ReadonlySet<string>>(new Set());
+
+  const markImageBroken = (src: string) =>
+    setBrokenImages((prev) => {
+      if (prev.has(src)) return prev;
+      const next = new Set(prev);
+      next.add(src);
+      return next;
+    });
   const uploadInputId = "company-profile-gallery-upload";
 
   const uploadFiles = async (files: File[]) => {
@@ -569,15 +579,22 @@ function EditableImageGallerySection({
               key={`${image}-${index}`}
               className="relative mb-4 block w-full break-inside-avoid align-top"
             >
-              <img
-                src={image}
-                alt={localizedText(
-                  locale,
-                  `${companyName} - bild ${index + 1}`,
-                  `${companyName} - image ${index + 1}`
-                )}
-                className="block h-auto w-full rounded-xl"
-              />
+              {brokenImages.has(image) ? (
+                <div className="aspect-[16/10] w-full overflow-hidden rounded-xl">
+                  <ListingImagePlaceholder />
+                </div>
+              ) : (
+                <img
+                  src={image}
+                  alt={localizedText(
+                    locale,
+                    `${companyName} - bild ${index + 1}`,
+                    `${companyName} - image ${index + 1}`
+                  )}
+                  className="block h-auto w-full rounded-xl"
+                  onError={() => markImageBroken(image)}
+                />
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -790,6 +807,9 @@ function EditableCompanyPreview({
   onSaveGalleryImages: (imageUrls: string[]) => Promise<void>;
 }) {
   const { locale } = useI18n();
+  const [brokenBannerUrl, setBrokenBannerUrl] = useState<string | null>(null);
+  const bannerUrl =
+    draft.bannerUrl && draft.bannerUrl !== brokenBannerUrl ? draft.bannerUrl : "";
   const updateAdditionalSocialLink = (
     index: number,
     patch: Partial<SocialLinkDraft>
@@ -833,11 +853,12 @@ function EditableCompanyPreview({
           className="relative w-full overflow-hidden rounded-2xl bg-gray-100"
           style={{ aspectRatio: COMPANY_BANNER_ASPECT_RATIO }}
         >
-          {draft.bannerUrl ? (
+          {bannerUrl ? (
             <img
-              src={draft.bannerUrl}
+              src={bannerUrl}
               alt=""
               className="h-full w-full object-cover"
+              onError={() => setBrokenBannerUrl(bannerUrl)}
             />
           ) : (
             <div className="h-full w-full bg-[linear-gradient(135deg,#f8fafc_0%,#eef2f7_100%)]" />

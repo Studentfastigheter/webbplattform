@@ -251,11 +251,15 @@ function AreaMappingsSection({ onError }: { onError: (message: string) => void }
 
 // --- Area-to-location overrides ----------------------------------------------
 
+type CityNameOption = { name: string; label: string };
+
 function AreaLocationRow({
   location,
+  cityOptions,
   onError,
 }: {
   location: AreaToLocationDTO;
+  cityOptions: CityNameOption[];
   onError: (message: string) => void;
 }) {
   const modifyLocation = useAdminModifyAreaLocation();
@@ -314,12 +318,23 @@ function AreaLocationRow({
         </span>
       </td>
       <td className="py-2.5 pr-3">
-        <input
+        <select
           className={cn(inputClass, "h-9 max-w-[180px]")}
           value={city}
           onChange={(event) => setCity(event.target.value)}
-          placeholder="Stad"
-        />
+          aria-label="Stad"
+        >
+          <option value="">Välj stad…</option>
+          {/* Bevara ett sparat värde som inte längre finns i stadslistan */}
+          {city && !cityOptions.some((option) => option.name === city) && (
+            <option value={city}>{city} (okänd stad)</option>
+          )}
+          {cityOptions.map((option) => (
+            <option key={option.name} value={option.name}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </td>
       <td className="py-2.5 pr-3">
         <input
@@ -372,6 +387,7 @@ function AreaLocationRow({
 function AreaLocationsSection({ onError }: { onError: (message: string) => void }) {
   const locations = useAdminAreaLocations();
   const companies = useCompanies();
+  const cities = useAdminCitySummaries();
   const createLocation = useAdminCreateAreaLocation();
 
   const [areaName, setAreaName] = useState("");
@@ -392,6 +408,24 @@ function AreaLocationsSection({ onError }: { onError: (message: string) => void 
             typeof option.id === "number" && option.label.length > 0
         ),
     [companies.data]
+  );
+
+  // Backend refererar staden via dess unika namn (FK mot City.name) —
+  // därför select bland befintliga städer istället för fritext.
+  const cityOptions = useMemo<CityNameOption[]>(
+    () =>
+      (cities.data ?? [])
+        .map((city) => {
+          const name = (city.city ?? "").trim();
+          const code = (city.code ?? "").trim();
+          return {
+            name,
+            label: code && code !== name ? `${name} (${code})` : name,
+          };
+        })
+        .filter((option) => option.name.length > 0)
+        .sort((a, b) => a.name.localeCompare(b.name, "sv")),
+    [cities.data]
   );
 
   const handleCreate = async () => {
@@ -440,12 +474,19 @@ function AreaLocationsSection({ onError }: { onError: (message: string) => void 
             </option>
           ))}
         </select>
-        <input
+        <select
           className={inputClass}
           value={city}
           onChange={(event) => setCity(event.target.value)}
-          placeholder="Stad (valfritt)"
-        />
+          aria-label="Stad (valfritt)"
+        >
+          <option value="">Stad (valfritt)…</option>
+          {cityOptions.map((option) => (
+            <option key={option.name} value={option.name}>
+              {option.label}
+            </option>
+          ))}
+        </select>
         <input
           className={inputClass}
           value={lat}
@@ -498,6 +539,7 @@ function AreaLocationsSection({ onError }: { onError: (message: string) => void 
                 <AreaLocationRow
                   key={`${location.companyId}-${location.areaName}`}
                   location={location}
+                  cityOptions={cityOptions}
                   onError={onError}
                 />
               ))}

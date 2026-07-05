@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
 import CompanyLogo from "@/components/shared/CompanyLogo";
 import { RichTextParagraph } from "@/components/ui/RichText";
@@ -35,7 +36,9 @@ export default function SimpleCompanyCard({
     company.description?.trim() ||
     company.subtitle?.trim() ||
     localizedText(locale, "Läs mer om företaget på deras hemsida.", "Read more about the company on its website.");
-  const logoUrl = company.logoUrl?.trim() || "";
+  const [brokenLogoUrl, setBrokenLogoUrl] = useState<string | null>(null);
+  const rawLogoUrl = company.logoUrl?.trim() || "";
+  const logoUrl = rawLogoUrl && rawLogoUrl !== brokenLogoUrl ? rawLogoUrl : "";
   const isCompact = size === "compact";
   const descriptionLineClamp = 2;
   const className = isCompact
@@ -97,6 +100,7 @@ export default function SimpleCompanyCard({
               width: "auto",
               objectPosition: "center",
             }}
+            onError={() => setBrokenLogoUrl(logoUrl)}
           />
         ) : (
           <span className="text-xl font-bold text-muted-foreground/60">
