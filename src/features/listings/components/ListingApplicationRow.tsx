@@ -2,6 +2,7 @@ import React from "react";
 import clsx from "clsx";
 import { ChevronRight, Home, MapPin, Ruler, Trash2 } from "@/components/icons";
 import CompanyLogo from "@/components/shared/CompanyLogo";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import Tag from "@/components/ui/Tag";
 import type { ListFrameRow } from "@/components/layout/ListFrame";
 import { Button } from "@/components/ui/button";
@@ -91,9 +92,7 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
-            <Home className="h-7 w-7" />
-          </div>
+          <ListingImagePlaceholder className="absolute inset-0" />
         )}
       </div>
       <div className="flex min-h-32 min-w-0 flex-col justify-start py-1">

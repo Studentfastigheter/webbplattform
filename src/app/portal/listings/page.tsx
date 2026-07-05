@@ -879,7 +879,6 @@ export default function PortalAdsPage() {
           )}
         >
           {filteredAds.map((item) => {
-            const { area, city } = splitLocation(item.listing.location, locale);
             const listingId = String(item.listing.id);
             const isSelected = selectedListingIdSet.has(listingId);
             return (
@@ -907,8 +906,7 @@ export default function PortalAdsPage() {
                   <ListingCardSmall
                     id={item.listing.id}
                     title={item.listing.title}
-                    area={area}
-                    city={city}
+                    location={item.listing.location}
                     dwellingType={item.listing.dwellingType || localizedText(locale, "Bostad", "Home")}
                     rooms={item.listing.rooms || 0}
                     sizeM2={item.listing.sizeM2 || 0}
