@@ -2,6 +2,7 @@ import React from "react";
 import clsx from "clsx";
 import { ChevronRight, Home, MapPin, Ruler, Trash2 } from "@/components/icons";
 import CompanyLogo from "@/components/shared/CompanyLogo";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import Tag from "@/components/ui/Tag";
 import type { ListFrameRow } from "@/components/layout/ListFrame";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,9 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
     landlordType,
   } = listing;
 
-  const resolvedImage = imageUrl || images?.find((image) => image.imageUrl)?.imageUrl;
+  const [brokenImage, setBrokenImage] = React.useState<string | null>(null);
+  const firstImage = imageUrl || images?.find((image) => image.imageUrl)?.imageUrl;
+  const resolvedImage = firstImage && firstImage !== brokenImage ? firstImage : undefined;
   const resolvedRent =
     typeof rent === "number" ? formatLocalizedNumber(locale, rent) : null;
   const locationLabel = [area, city].filter(Boolean).join(", ") || "-";
@@ -89,11 +92,10 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
             alt={title}
             className="block h-full min-h-full w-full min-w-full object-cover object-center"
             loading="lazy"
+            onError={() => setBrokenImage(resolvedImage)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
-            <Home className="h-7 w-7" />
-          </div>
+          <ListingImagePlaceholder className="absolute inset-0" />
         )}
       </div>
       <div className="flex min-h-32 min-w-0 flex-col justify-start py-1">

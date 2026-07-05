@@ -3,6 +3,7 @@
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import CompanyLogo from "@/components/shared/CompanyLogo";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import Tag from "@/components/ui/Tag";
 import { Heart } from "@/components/icons";
 import { useAuth } from "@/context/AuthContext";
@@ -14,8 +15,8 @@ import { formatLocalizedCurrency, localizedText } from "@/i18n/text";
 // ÄNDRING: Vi definierar props manuellt istället för att ärva från gamla ListingWithRelations
 export type ListingCardSmallProps = {
   title: string;
-  area: string;
-  city: string;
+  /** Visas som den kommer från backend, som redan formaterar område/stad. */
+  location?: string | null;
   dwellingType: string;
   rooms: number;
   sizeM2: number;
@@ -60,8 +61,7 @@ const getTagLabel = (tag: string | ListingTagDTO) =>
 const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const {
     title,
-    area,
-    city,
+    location,
     dwellingType,
     rooms,
     sizeM2,
@@ -92,6 +92,11 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
   const [isLiked, setIsLiked] = useState(isFavorite || false);
+  // Trasiga bild-URL:er (utgångna blob-länkar m.m.) ska ge platshållaren,
+  // inte webbläsarens trasig-bild-ikon.
+  const [brokenImageUrl, setBrokenImageUrl] = useState<string | null>(null);
+  const resolvedImageUrl =
+    imageUrl && imageUrl !== brokenImageUrl ? imageUrl : undefined;
   
   useEffect(() => {
     if (isFavorite !== undefined) {
@@ -156,8 +161,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     })
     .filter((tag): tag is { label: string } => tag !== null);
   const locationText =
-    [area, city].filter(Boolean).join(", ") ||
-    localizedText(locale, "Ej angivet", "Not specified");
+    location?.trim() || localizedText(locale, "Ej angivet", "Not specified");
   const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} ${localizedText(locale, "rum", "rooms")} \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
   const shouldShowHostLogo = showHostLogo && Boolean(hostLogoUrl);
   const logoSize = variant === "compact" ? 60 : 76;
@@ -222,9 +226,9 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
           </button>
         )}
 
-        {imageUrl ? (
+        {resolvedImageUrl ? (
           <Image
-            src={imageUrl}
+            src={resolvedImageUrl}
             alt={title}
             fill
             sizes={
@@ -233,18 +237,10 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
                 : "(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 470px"
             }
             className="absolute inset-0 block h-full w-full object-cover object-center transition-transform duration-500"
+            onError={() => setBrokenImageUrl(resolvedImageUrl)}
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-            <span
-              style={{
-                fontSize: scaleValue(14),
-                lineHeight: scaleValue(18),
-              }}
-            >
-              {localizedText(locale, "Ingen bild", "No image")}
-            </span>
-          </div>
+          <ListingImagePlaceholder className="absolute inset-0" />
         )}
       </div>
 

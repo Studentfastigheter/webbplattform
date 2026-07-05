@@ -8,6 +8,7 @@ import {
 } from "@/features/analytics/components/AnalyticsBlocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import ListingImagePlaceholder from "@/features/listings/components/ListingImagePlaceholder";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Locale } from "@/i18n/config";
@@ -137,6 +138,9 @@ function ListingApplicationPreviewRow({
   index: number;
   locale: Locale;
 }) {
+  const [brokenImageUrl, setBrokenImageUrl] = React.useState<string | null>(null);
+  const imageUrl =
+    item.imageUrl && item.imageUrl !== brokenImageUrl ? item.imageUrl : undefined;
   const title = item.title || item.address || localizedText(locale, `Annons ${index + 1}`, `Listing ${index + 1}`);
   const location = item.location || item.address;
   const rent = formatRent(item.rent, locale);
@@ -148,17 +152,16 @@ function ListingApplicationPreviewRow({
   const content = (
     <div className="grid min-h-[118px] min-w-0 grid-cols-[96px_minmax(0,1fr)] sm:grid-cols-[132px_minmax(0,1fr)]">
       <div className="relative h-full min-h-[118px] overflow-hidden bg-gray-100">
-        {item.imageUrl ? (
+        {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             alt=""
             className="absolute inset-0 block !h-full !w-full max-w-none object-cover object-center"
-            src={item.imageUrl}
+            src={imageUrl}
+            onError={() => setBrokenImageUrl(imageUrl)}
           />
         ) : (
-          <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-brand-50 text-xs font-semibold text-brand-500">
-            {localizedText(locale, "Ingen bild", "No image")}
-          </div>
+          <ListingImagePlaceholder className="absolute inset-0" />
         )}
 
         <span className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-white/95 px-1.5 text-[11px] font-semibold text-gray-900 shadow-sm">
