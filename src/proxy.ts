@@ -42,7 +42,11 @@ const CONTENT_SECURITY_POLICY = [
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "media-src 'self' https: blob:",
-  "upgrade-insecure-requests",
+  // Bara i produktion: Safari/WebKit undantar inte localhost från
+  // upgrade-insecure-requests som Chrome/Firefox gör, så i dev skulle alla
+  // chunkar/fonter tvingas till https://localhost:3000 där ingen TLS-server
+  // finns — sidan blir helt tom i Safari.
+  ...(IS_PRODUCTION ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 // Flagg-cookien sätts av src/lib/auth-storage.ts vid inloggning (värdet är
@@ -50,7 +54,7 @@ const CONTENT_SECURITY_POLICY = [
 // anrop mot portal/admin redan i proxyn i stället för i klientkod.
 const AUTH_FLAG_COOKIE_NAME = "cl_auth";
 
-const SECURITY_HEADERS = [
+const SECURITY_HEADERS: ReadonlyArray<readonly [string, string]> = [
   ["Content-Security-Policy", CONTENT_SECURITY_POLICY],
   // 'same-origin-allow-popups' (inte 'same-origin'): behåller COOP-isoleringen
   // mot främmande openers men bevarar window.opener för popups sidan själv
@@ -60,10 +64,15 @@ const SECURITY_HEADERS = [
   ["Cross-Origin-Opener-Policy", "same-origin-allow-popups"],
   ["Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"],
   ["Referrer-Policy", "strict-origin-when-cross-origin"],
-  ["Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload"],
+  // HSTS bara i produktion: skulle dev någon gång servas över https pinnar
+  // headern localhost (inkl. subdomäner) till https i två år för webbläsaren
+  // och knäcker alla andra lokala http-servrar.
+  ...(IS_PRODUCTION
+    ? [["Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload"] as const]
+    : []),
   ["X-Content-Type-Options", "nosniff"],
   ["X-Frame-Options", "DENY"],
-] as const;
+];
 
 function getHostname(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
