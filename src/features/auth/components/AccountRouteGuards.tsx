@@ -36,14 +36,15 @@ export function SiteAccountGuard({ children }: RouteGuardProps) {
     }
   }, [isLoading, localizedHref, logout, router, user]);
 
-  if (isLoading) {
-    return <RouteFallback message={localizedText(locale, "Laddar...", "Loading...")} />;
-  }
-
   if (user && !isSiteAuthAccount(user)) {
     return <RouteFallback message={localizedText(locale, "Skickar dig vidare...", "Redirecting you...")} />;
   }
 
+  // Blockera INTE på isLoading: publika sajten (inkl. login/registrering)
+  // ska målas direkt även när backendens sessionskoll är långsam. Guarden
+  // finns bara för att slussa bort portal-/admin-konton, och det hanterar
+  // effekten ovan i efterhand — `user` är null tills kollen är klar, så
+  // fel kontotyp kan aldrig hinna interagera som site-användare.
   return children;
 }
 

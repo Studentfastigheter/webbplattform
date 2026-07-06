@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError, normalizeAuthToken } from "@/lib/api/client";
 import { getStoredAuthToken, setStoredAuthToken } from "@/lib/auth-storage";
@@ -109,10 +109,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null); // NYTT: State för att lagra token
   const [isLoading, setIsLoading] = useState(true);
+  // Räknas upp vid varje in-/utloggning. Async-flöden (initiala sessions-
+  // kollen, session-refresh) fångar värdet före sitt await och skriver bara
+  // om auth-state om ingen hunnit logga in/ut under tiden — annars skulle
+  // t.ex. en Google-inloggning som startas medan sessionskollen pågår kunna
+  // skrivas över av ett gammalt svar.
+  const authEpochRef = useRef(0);
 
   // 1. Initiera vid start
   useEffect(() => {
     const initAuth = async () => {
+      const epoch = authEpochRef.current;
       const transferredToken = getTransferredTokenFromHash();
       const storedToken =
         typeof window !== "undefined"
@@ -130,12 +137,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(storedToken); // Synka state med localStorage
 
         const session = await authService.session(storedToken);
+        if (authEpochRef.current !== epoch) return; // en inloggning hann före
+
         const accessToken = getOptionalAuthResponseToken(session) ?? storedToken;
         const userData = withSessionEmail(getAuthResponseUser(session), accessToken);
         setStoredAuthToken(accessToken);
         setToken(accessToken);
         setUser(userData);
       } catch (error) {
+        if (authEpochRef.current !== epoch) return; // en inloggning hann före
+
         // Rensa token ENBART när servern uttryckligen avvisar den (401/403).
         // Nätverksfel eller 5xx vid sidladdning får inte logga ut användaren.
         if (
@@ -158,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const applyAuthResponse = useCallback((res: AuthInput) => {
+    authEpochRef.current += 1;
     const normalizedResponse = normalizeAuthResponse(res as AuthPayload);
     const accessToken = getAuthResponseToken(normalizedResponse);
     const userData = withSessionEmail(
@@ -174,6 +186,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient]);
 
   const applyAuthResponseFromSession = useCallback(async (res: AuthInput) => {
+    authEpochRef.current += 1;
+    const epoch = authEpochRef.current;
     const normalizedResponse = normalizeAuthResponse(res as AuthPayload);
     const accessToken = getAuthResponseToken(normalizedResponse);
     const responseUser = withSessionEmail(
@@ -188,6 +202,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const session = await authService.session(accessToken);
+      if (authEpochRef.current !== epoch) return responseUser;
+
       const sessionToken = getOptionalAuthResponseToken(session) ?? accessToken;
       const userData = withSessionEmail(getAuthResponseUser(session), sessionToken);
 
@@ -197,9 +213,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return userData;
     } catch (error) {
       console.warn("Could not refresh session after auth response", error);
-      setStoredAuthToken(accessToken);
-      setToken(accessToken);
-      setUser(responseUser);
+      if (authEpochRef.current === epoch) {
+        setStoredAuthToken(accessToken);
+        setToken(accessToken);
+        setUser(responseUser);
+      }
       return responseUser;
     }
   }, [queryClient]);
@@ -237,6 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 4. Logout
   const logout = () => {
+    authEpochRef.current += 1;
     authService.logout();
     setToken(null); // Rensa state vid utloggning
     setUser(null);
@@ -247,8 +266,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 5. Refresh (Hämta om användaren från servern)
   const refreshUser = async () => {
+    const epoch = authEpochRef.current;
     try {
       const session = await authService.session();
+      if (authEpochRef.current !== epoch) return;
+
       const accessToken =
         getOptionalAuthResponseToken(session) ??
         normalizeAuthToken(getStoredAuthToken());

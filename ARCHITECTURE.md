@@ -44,7 +44,10 @@ Beroenderiktning: `app → features → lib`. Delad UI (`components`) beror aldr
 4. Servicen **normaliserar** svaret (via [`src/lib/api/normalize.ts`](src/lib/api/normalize.ts) + ev. mapper) till en frontendmodell.
 5. Mutationer invaliderar rätt query-nycklar i `onSettled` så UI:t uppdateras.
 
-Publika sidor prefetchar på servern och hydrerar via `PrefetchedQueryBoundary` ([`src/lib/query`](src/lib/query)).
+Publika sidor prefetchar på servern och hydrerar via `PrefetchedQueryBoundary` ([`src/lib/query`](src/lib/query)). Två regler håller navigeringen responsiv även när backend är långsam:
+
+- **Varje route-segment som awaitar en prefetch har en `loading.tsx`** med skelett som speglar sidans layout — App Router visar den direkt vid klick medan serverrenderingen streamar klart.
+- **Prefetchar som inte är SEO-kritiska awaitas inte** (t.ex. annonserna i `(site)/(ads)/layout.tsx`): den pending queryn dehydreras och streamas till klienten (se `dehydrate`-konfigen i [`create-query-client.ts`](src/lib/query/create-query-client.ts)) i stället för att blockera sidinnehållet.
 
 ---
 
