@@ -155,50 +155,52 @@ export function safeJsonLd(value: unknown) {
 export function websiteJsonLd(locale: Locale, description: string) {
   const url = absoluteUrl(canonicalPath("/", locale));
 
-  return [
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "@id": `${siteConfig.url}/#organization`,
-      name: siteConfig.name,
-      legalName: siteConfig.legalName,
-      url: siteConfig.url,
-      logo: absoluteUrl("/logo.png"),
-      sameAs: siteConfig.socialLinks,
-      taxID: siteConfig.organizationNumber,
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "@id": `${siteConfig.url}/#website`,
-      name: siteConfig.name,
-      url: siteConfig.url,
-      inLanguage: locale,
-      description,
-      publisher: {
+  // Toppnivån måste vara ett objekt med "@context" (via "@graph") — en ren
+  // array kraschar naiva JSON-LD-läsare som gör r["@context"].toLowerCase().
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
         "@id": `${siteConfig.url}/#organization`,
+        name: siteConfig.name,
+        legalName: siteConfig.legalName,
+        url: siteConfig.url,
+        logo: absoluteUrl("/logo.png"),
+        sameAs: siteConfig.socialLinks,
+        taxID: siteConfig.organizationNumber,
       },
-      potentialAction: {
-        "@type": "SearchAction",
-        target: `${siteConfig.url}${canonicalPath("/housing", locale)}?city={search_term_string}`,
-        "query-input": "required name=search_term_string",
-      },
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      "@id": `${url}#webpage`,
-      url,
-      name: siteConfig.name,
-      isPartOf: {
+      {
+        "@type": "WebSite",
         "@id": `${siteConfig.url}/#website`,
+        name: siteConfig.name,
+        url: siteConfig.url,
+        inLanguage: locale,
+        description,
+        publisher: {
+          "@id": `${siteConfig.url}/#organization`,
+        },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${siteConfig.url}${canonicalPath("/housing", locale)}?city={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
       },
-      about: {
-        "@id": `${siteConfig.url}/#organization`,
+      {
+        "@type": "WebPage",
+        "@id": `${url}#webpage`,
+        url,
+        name: siteConfig.name,
+        isPartOf: {
+          "@id": `${siteConfig.url}/#website`,
+        },
+        about: {
+          "@id": `${siteConfig.url}/#organization`,
+        },
+        inLanguage: locale,
       },
-      inLanguage: locale,
-    },
-  ];
+    ],
+  };
 }
 
 export function breadcrumbJsonLd(locale: Locale, items: BreadcrumbItem[]) {

@@ -1,4 +1,8 @@
-import { QueryClient, type DefaultOptions } from "@tanstack/react-query";
+import {
+  QueryClient,
+  defaultShouldDehydrateQuery,
+  type DefaultOptions,
+} from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/api/client";
 
@@ -28,6 +32,13 @@ export const queryDefaultOptions = {
   },
   mutations: {
     retry: 0,
+  },
+  dehydrate: {
+    // Tar med pending-queries i dehydreringen så att en server-prefetch inte
+    // måste awaitas: promisen streamas via RSC-payloaden och klienten tar
+    // över när svaret kommer, i stället för att blockera hela sidrenderingen.
+    shouldDehydrateQuery: (query) =>
+      defaultShouldDehydrateQuery(query) || query.state.status === "pending",
   },
 } satisfies DefaultOptions;
 

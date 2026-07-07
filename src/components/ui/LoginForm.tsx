@@ -105,7 +105,10 @@ function isAllowedAccount(user: User, mode: LoginMode) {
 
 export function LoginForm({ mode = "student", className, ...props }: LoginFormProps) {
   const router = useRouter();
-  const { login, adminLogin, googleLogin, logout, isLoading } = useAuth();
+  // Medvetet inte gate:ad på auth-kontextens isLoading: den initiala
+  // sessionskollen mot backend ska aldrig hindra att en NY inloggning
+  // startas (AuthContexts epoch-skydd gör de samtidiga flödena säkra).
+  const { login, adminLogin, googleLogin, logout } = useAuth();
   const { locale, localizedHref } = useI18n();
   const baseCopy = loginCopy[mode];
   const copy = {
@@ -161,7 +164,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isLoading || submitting) return;
+    if (submitting) return;
 
     setError(null);
 
@@ -184,7 +187,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
   }
 
   async function onGoogleCredential(googleIdToken: string) {
-    if (isLoading || submitting || !copy.showGoogle) return;
+    if (submitting || !copy.showGoogle) return;
 
     setError(null);
     setSubmitting(true);
@@ -204,13 +207,6 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
     <AuthCard
       title={copy.title}
       subtitle={copy.subtitle}
-      helper={
-        isLoading && (
-          <p className="text-sm text-muted-foreground">
-            {localizedText(locale, "Vi laddar dina inställningar ...", "Loading your settings ...")}
-          </p>
-        )
-      }
       className={className}
       {...props}
     >
@@ -220,7 +216,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
             <>
               <GoogleAuthButton
                 label={localizedText(locale, "Fortsätt med Google", "Continue with Google")}
-                disabled={isLoading || submitting}
+                disabled={submitting}
                 onCredential={onGoogleCredential}
                 onError={setError}
               />
@@ -241,7 +237,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
               required
-              disabled={isLoading || submitting}
+              disabled={submitting}
               className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
             />
           </Field>
@@ -267,14 +263,14 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
                 required
-                disabled={isLoading || submitting}
+                disabled={submitting}
                 className="h-14 rounded-[8px] border-transparent bg-[#f2f2f2] px-4 pr-12 text-base shadow-none placeholder:text-[#6b6b6b] focus-visible:border-brand focus-visible:ring-brand/20"
               />
               <button
                 type="button"
                 onClick={() => setIsPasswordVisible((currentValue) => !currentValue)}
                 className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                disabled={isLoading || submitting}
+                disabled={submitting}
               >
                 {isPasswordVisible ? (
                   <EyeOffIcon className="h-5 w-5" />
@@ -295,7 +291,7 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
               type="submit"
               fullWidth
               className="h-12 rounded-full bg-brand text-base font-semibold text-white shadow-none hover:bg-[#00351e] disabled:bg-[#c8c8c8] disabled:text-white"
-              disabled={isLoading || submitting}
+              disabled={submitting}
             >
               {submitting
                 ? localizedText(locale, "Loggar in...", "Signing in...")

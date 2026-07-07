@@ -676,7 +676,7 @@ export default function ListingsPage() {
                 <SearchBar
                   value={searchInput}
                   onValueChange={setSearchInput}
-                  placeholder={localizedText(locale, "Sök på stad", "Search by city")}
+                  placeholder={localizedText(locale, "Sök på stad, adress eller bostad", "Search by city, address or home")}
                   submitLabel={localizedText(locale, "Sök", "Search")}
                   clearLabel={localizedText(locale, "Rensa sökning", "Clear search")}
                   onClear={() => {

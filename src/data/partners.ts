@@ -25,6 +25,12 @@ export const foundingPartners: PartnerItem[] = [
     logoSrc: "/partners/CampusRoslagen_dubbelrad.png",
     href: "https://campusroslagen.se/",
   },
+  {
+    name: "ByggVesta",
+    description: "ByggVesta är ett fastighetsbolag som utvecklar, bygger och förvaltar hyresrätter och studentbostäder, med omkring 4 000 bostäder i attraktiva lägen i Sveriges största städer. Med smart planerade bostäder och hållbara lösningar skapar vi trygga hem där det är enkelt att leva, trivas och känna sig hemma.",
+    logoSrc: "/partners/BV_Logo2022_Horizontal_Blue_RGB.svg",
+    href: "https://www.byggvesta.se/",
+  },
 ];
 
 export const housingPartners: PartnerItem[] = [
@@ -57,6 +63,12 @@ export const housingPartners: PartnerItem[] = [
     description: "Campus Roslagen erbjuder bostäder för både studenter, unga och nyrekryterade i kommunen. Genom ett nära samarbete med Norrtälje kommun och Roslagsbostäder skapas möjligheter för fler att snabbt hitta ett tryggt och prisvärt boende.",
     logoSrc: "/partners/CampusRoslagen_dubbelrad.png",
     href: "https://campusroslagen.se/",
+  },
+  {
+    name: "ByggVesta",
+    description: "ByggVesta är ett fastighetsbolag som utvecklar, bygger och förvaltar hyresrätter och studentbostäder, med omkring 4 000 bostäder i attraktiva lägen i Sveriges största städer. Med smart planerade bostäder och hållbara lösningar skapar vi trygga hem där det är enkelt att leva, trivas och känna sig hemma.",
+    logoSrc: "/partners/BV_Logo2022_Horizontal_Blue_RGB.svg",
+    href: "https://www.byggvesta.se/",
   },
 ];
 

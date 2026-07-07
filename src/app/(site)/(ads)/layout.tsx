@@ -8,8 +8,12 @@ import { qk } from "@/lib/query/keys";
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <PrefetchedQueryBoundary
-      prefetch={async (queryClient) => {
-        await queryClient.prefetchQuery({
+      prefetch={(queryClient) => {
+        // Medvetet inte awaitad: annonserna är aldrig värda att blockera
+        // sidinnehållet för. Den pending queryn streamas till klienten
+        // (se dehydrate-konfigen i create-query-client.ts) och annonserna
+        // dyker upp när backend svarar.
+        void queryClient.prefetchQuery({
           queryKey: qk.ads.current(),
           queryFn: () => adService.current(),
         });
