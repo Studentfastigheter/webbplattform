@@ -27,7 +27,7 @@ export const foundingPartners: PartnerItem[] = [
   },
   {
     name: "ByggVesta",
-    description: "ByggVesta är ett fastighetsbolag som utvecklar, bygger och förvaltar hyresrätter och studentbostäder, med omkring 4 000 bostäder i attraktiva lägen i Sveriges största städer. Med smart planerade bostäder och hållbara lösningar skapar vi trygga hem där det är enkelt att leva, trivas och känna sig hemma.",
+    description: "ByggVesta är ett fastighetsbolag som utvecklar, bygger och förvaltar hyresrätter och studentbostäder, med ca 4 000 bostäder i attraktiva lägen i Sveriges största städer. Med smart planerade bostäder och hållbara lösningar skapar vi trygga hem där det är enkelt att leva, trivas och känna sig hemma.",
     logoSrc: "/partners/BV_Logo2022_Horizontal_Blue_RGB.svg",
     href: "https://www.byggvesta.se/",
   },
@@ -66,7 +66,7 @@ export const housingPartners: PartnerItem[] = [
   },
   {
     name: "ByggVesta",
-    description: "ByggVesta är ett fastighetsbolag som utvecklar, bygger och förvaltar hyresrätter och studentbostäder, med omkring 4 000 bostäder i attraktiva lägen i Sveriges största städer. Med smart planerade bostäder och hållbara lösningar skapar vi trygga hem där det är enkelt att leva, trivas och känna sig hemma.",
+    description: "ByggVesta är ett fastighetsbolag som utvecklar, bygger och förvaltar hyresrätter och studentbostäder, med ca 4 000 bostäder i attraktiva lägen i Sveriges största städer. Med smart planerade bostäder och hållbara lösningar skapar vi trygga hem där det är enkelt att leva, trivas och känna sig hemma.",
     logoSrc: "/partners/BV_Logo2022_Horizontal_Blue_RGB.svg",
     href: "https://www.byggvesta.se/",
   },
