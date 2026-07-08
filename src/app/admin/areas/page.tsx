@@ -3,12 +3,16 @@
 /**
  * Admin — Areas.
  *
- * Wires the CityController admin-only geo endpoints that had no frontend:
- *  - Area-to-city mappings   (/api/cities/area-mappings)      — group a
- *    sub-city area under a parent city.
- *  - Area-to-location overrides (/api/cities/area-locations)  — resolve a raw
- *    area name (per company) to a concrete city + coordinates. Rows created
- *    automatically when geocoding fails start as "needs action" (filled=false).
+ * Manages the area aliases (/api/cities/area-aliases): each row links a raw
+ * area name (as delivered by an external property system, per company) to the
+ * city it belongs to. Rows without a city were queued automatically — imported
+ * from the external system's area register or surfaced by a listing whose
+ * location could not be resolved — and are marked "Behöver åtgärd".
+ *
+ * Linking an area to a city is authoritative: the backend re-resolves every
+ * listing with that area, correcting its city and re-geocoding its coordinates
+ * from the listing's own address with the city as a constraint. Aliases carry
+ * no coordinates by design.
  *
  * Renders inside the admin shell (see admin/layout.tsx), so this file only
  * provides the <main> content, mirroring AdminToolPage's header.
@@ -20,17 +24,13 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { useCompanies } from "@/features/companies/hooks/useCompanies";
 import {
-  useAdminAreaLocations,
-  useAdminAreaMappings,
+  useAdminAreaAliases,
   useAdminCitySummaries,
-  useAdminCreateAreaLocation,
-  useAdminCreateAreaMapping,
-  useAdminDeleteAreaLocation,
-  useAdminDeleteAreaMapping,
-  useAdminModifyAreaLocation,
-  useAdminModifyAreaMapping,
+  useAdminCreateAreaAlias,
+  useAdminDeleteAreaAlias,
+  useAdminModifyAreaAlias,
 } from "@/features/admin/hooks/useAdmin";
-import type { AreaToLocationDTO } from "@/features/cities/services/city-service";
+import type { AreaAliasDTO } from "@/features/cities/services/city-service";
 
 const inputClass =
   "h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20";
@@ -39,266 +39,51 @@ const buttonClass =
 const ghostButtonClass =
   "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
 
-function toNumberOrUndefined(value: string): number | undefined {
-  const trimmed = value.trim().replace(",", ".");
-  if (!trimmed) return undefined;
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
+type CityOption = { code: string; label: string };
 
-function SectionCard({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-950">{title}</h2>
-        <p className="mt-1 text-sm text-gray-500">{description}</p>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-// --- Area-to-city mappings ---------------------------------------------------
-
-function AreaMappingsSection({ onError }: { onError: (message: string) => void }) {
-  const mappings = useAdminAreaMappings();
-  const cities = useAdminCitySummaries();
-  const createMapping = useAdminCreateAreaMapping();
-  const modifyMapping = useAdminModifyAreaMapping();
-  const deleteMapping = useAdminDeleteAreaMapping();
-  const { confirm, confirmDialog } = useConfirmDialog();
-
-  const [areaCode, setAreaCode] = useState("");
-  const [parentCityCode, setParentCityCode] = useState("");
-
-  const cityOptions = useMemo(
-    () =>
-      (cities.data ?? [])
-        .map((city) => ({
-          code: (city.code ?? "").trim(),
-          label: city.city ?? city.code ?? "",
-        }))
-        .filter((option) => option.code.length > 0),
-    [cities.data]
-  );
-
-  const handleCreate = async () => {
-    if (!areaCode || !parentCityCode) return;
-    try {
-      await createMapping.mutateAsync({ areaCode, parentCityCode });
-      setAreaCode("");
-      setParentCityCode("");
-    } catch (err) {
-      onError((err as Error)?.message ?? "Kunde inte skapa mappningen.");
-    }
-  };
-
-  const handleModifyParent = async (id: string, nextParentCityCode: string) => {
-    try {
-      await modifyMapping.mutateAsync({
-        id,
-        payload: { parentCityCode: nextParentCityCode },
-      });
-    } catch (err) {
-      onError((err as Error)?.message ?? "Kunde inte ändra mappningen.");
-    }
-  };
-
-  const handleDelete = async (id: string, label: string) => {
-    const confirmed = await confirm({
-      title: "Ta bort mappning?",
-      description: `Kopplingen för "${label}" tas bort.`,
-      confirmLabel: "Ta bort",
-      destructive: true,
-    });
-    if (!confirmed) return;
-    try {
-      await deleteMapping.mutateAsync(id);
-    } catch (err) {
-      onError((err as Error)?.message ?? "Kunde inte ta bort mappningen.");
-    }
-  };
-
-  return (
-    <SectionCard
-      title="Områden → stad"
-      description="Koppla ett delområde (egen stadskod) till den stad det tillhör, så att annonser i området grupperas under rätt stad."
-    >
-      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <select
-          className={inputClass}
-          value={areaCode}
-          onChange={(event) => setAreaCode(event.target.value)}
-          aria-label="Områdeskod"
-        >
-          <option value="">Välj område…</option>
-          {cityOptions.map((option) => (
-            <option key={`area-${option.code}`} value={option.code}>
-              {option.label} ({option.code})
-            </option>
-          ))}
-        </select>
-        <select
-          className={inputClass}
-          value={parentCityCode}
-          onChange={(event) => setParentCityCode(event.target.value)}
-          aria-label="Moderstad"
-        >
-          <option value="">Välj moderstad…</option>
-          {cityOptions.map((option) => (
-            <option key={`parent-${option.code}`} value={option.code}>
-              {option.label} ({option.code})
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className={buttonClass}
-          onClick={handleCreate}
-          disabled={!areaCode || !parentCityCode || createMapping.isPending}
-        >
-          {createMapping.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          Lägg till
-        </button>
-      </div>
-
-      {mappings.isLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-        </div>
-      ) : mappings.data && mappings.data.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                <th className="py-2 pr-3">Område</th>
-                <th className="py-2 pr-3">Moderstad</th>
-                <th className="py-2 pr-3 text-right">Åtgärd</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {mappings.data.map((mapping) => (
-                <tr key={mapping.id}>
-                  <td className="py-2.5 pr-3">
-                    <span className="font-medium text-gray-900">
-                      {mapping.areaName ?? mapping.areaCode}
-                    </span>
-                    <span className="ml-1 text-xs text-gray-400">
-                      {mapping.areaCode}
-                    </span>
-                  </td>
-                  <td className="py-2.5 pr-3">
-                    <select
-                      className={cn(inputClass, "h-9 max-w-[220px]")}
-                      value={mapping.parentCityCode}
-                      onChange={(event) =>
-                        handleModifyParent(mapping.id, event.target.value)
-                      }
-                      disabled={modifyMapping.isPending}
-                    >
-                      {cityOptions.map((option) => (
-                        <option
-                          key={`${mapping.id}-${option.code}`}
-                          value={option.code}
-                        >
-                          {option.label} ({option.code})
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-2.5 pr-1 text-right">
-                    <button
-                      type="button"
-                      className={cn(ghostButtonClass, "text-red-600 hover:bg-red-50")}
-                      onClick={() =>
-                        handleDelete(
-                          mapping.id,
-                          mapping.areaName ?? mapping.areaCode
-                        )
-                      }
-                      disabled={deleteMapping.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Ta bort
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="py-6 text-center text-sm text-gray-400">
-          Inga områdesmappningar än.
-        </p>
-      )}
-      {confirmDialog}
-    </SectionCard>
-  );
-}
-
-// --- Area-to-location overrides ----------------------------------------------
-
-type CityNameOption = { name: string; label: string };
-
-function AreaLocationRow({
-  location,
+function AreaAliasRow({
+  alias,
   cityOptions,
   onError,
 }: {
-  location: AreaToLocationDTO;
-  cityOptions: CityNameOption[];
+  alias: AreaAliasDTO;
+  cityOptions: CityOption[];
   onError: (message: string) => void;
 }) {
-  const modifyLocation = useAdminModifyAreaLocation();
-  const deleteLocation = useAdminDeleteAreaLocation();
+  const modifyAlias = useAdminModifyAreaAlias();
+  const deleteAlias = useAdminDeleteAreaAlias();
   const { confirm, confirmDialog } = useConfirmDialog();
 
-  const [city, setCity] = useState(location.city ?? "");
-  const [lat, setLat] = useState(location.lat != null ? String(location.lat) : "");
-  const [lng, setLng] = useState(location.lng != null ? String(location.lng) : "");
+  const [cityCode, setCityCode] = useState(alias.cityCode ?? "");
 
   const handleSave = async () => {
+    if (!cityCode) return;
     try {
-      await modifyLocation.mutateAsync({
-        areaName: location.areaName,
-        companyId: location.companyId,
-        city: city.trim() || undefined,
-        lat: toNumberOrUndefined(lat),
-        lng: toNumberOrUndefined(lng),
+      await modifyAlias.mutateAsync({
+        areaName: alias.areaName,
+        companyId: alias.companyId,
+        cityCode,
       });
     } catch (err) {
-      onError((err as Error)?.message ?? "Kunde inte spara platsen.");
+      onError((err as Error)?.message ?? "Kunde inte koppla området.");
     }
   };
 
   const handleDelete = async () => {
     const confirmed = await confirm({
-      title: "Ta bort plats?",
-      description: `Platsöverstyrningen för "${location.areaName}" tas bort.`,
+      title: "Ta bort områdeskoppling?",
+      description: `Kopplingen för "${alias.areaName}" tas bort. Berörda annonser platsupplöses om vid nästa synk.`,
       confirmLabel: "Ta bort",
       destructive: true,
     });
     if (!confirmed) return;
     try {
-      await deleteLocation.mutateAsync({
-        areaName: location.areaName,
-        companyId: location.companyId,
+      await deleteAlias.mutateAsync({
+        areaName: alias.areaName,
+        companyId: alias.companyId,
       });
     } catch (err) {
-      onError((err as Error)?.message ?? "Kunde inte ta bort platsen.");
+      onError((err as Error)?.message ?? "Kunde inte ta bort kopplingen.");
     }
   };
 
@@ -306,53 +91,36 @@ function AreaLocationRow({
     <tr>
       <td className="py-2.5 pr-3">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900">{location.areaName}</span>
-          {!location.filled && (
+          <span className="font-medium text-gray-900">{alias.areaName}</span>
+          {!alias.filled && (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
               Behöver åtgärd
             </span>
           )}
         </div>
         <span className="text-xs text-gray-400">
-          {location.companyName ?? `Företag #${location.companyId}`}
+          {alias.companyName ?? `Företag #${alias.companyId}`}
         </span>
       </td>
       <td className="py-2.5 pr-3">
         <select
-          className={cn(inputClass, "h-9 max-w-[180px]")}
-          value={city}
-          onChange={(event) => setCity(event.target.value)}
+          className={cn(inputClass, "h-9 max-w-[220px]")}
+          value={cityCode}
+          onChange={(event) => setCityCode(event.target.value)}
           aria-label="Stad"
         >
           <option value="">Välj stad…</option>
           {/* Bevara ett sparat värde som inte längre finns i stadslistan */}
-          {city && !cityOptions.some((option) => option.name === city) && (
-            <option value={city}>{city} (okänd stad)</option>
-          )}
+          {cityCode &&
+            !cityOptions.some((option) => option.code === cityCode) && (
+              <option value={cityCode}>{cityCode} (okänd stad)</option>
+            )}
           {cityOptions.map((option) => (
-            <option key={option.name} value={option.name}>
+            <option key={option.code} value={option.code}>
               {option.label}
             </option>
           ))}
         </select>
-      </td>
-      <td className="py-2.5 pr-3">
-        <input
-          className={cn(inputClass, "h-9 max-w-[110px]")}
-          value={lat}
-          onChange={(event) => setLat(event.target.value)}
-          placeholder="Lat"
-          inputMode="decimal"
-        />
-      </td>
-      <td className="py-2.5 pr-3">
-        <input
-          className={cn(inputClass, "h-9 max-w-[110px]")}
-          value={lng}
-          onChange={(event) => setLng(event.target.value)}
-          placeholder="Lng"
-          inputMode="decimal"
-        />
       </td>
       <td className="py-2.5 pr-1 text-right">
         <div className="flex items-center justify-end gap-2">
@@ -360,20 +128,20 @@ function AreaLocationRow({
             type="button"
             className={ghostButtonClass}
             onClick={handleSave}
-            disabled={modifyLocation.isPending}
+            disabled={!cityCode || modifyAlias.isPending}
           >
-            {modifyLocation.isPending ? (
+            {modifyAlias.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Spara
+            Koppla
           </button>
           <button
             type="button"
             className={cn(ghostButtonClass, "text-red-600 hover:bg-red-50")}
             onClick={handleDelete}
-            disabled={deleteLocation.isPending}
+            disabled={deleteAlias.isPending}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -384,17 +152,15 @@ function AreaLocationRow({
   );
 }
 
-function AreaLocationsSection({ onError }: { onError: (message: string) => void }) {
-  const locations = useAdminAreaLocations();
+function AreaAliasesSection({ onError }: { onError: (message: string) => void }) {
+  const aliases = useAdminAreaAliases();
   const companies = useCompanies();
   const cities = useAdminCitySummaries();
-  const createLocation = useAdminCreateAreaLocation();
+  const createAlias = useAdminCreateAreaAlias();
 
   const [areaName, setAreaName] = useState("");
   const [companyId, setCompanyId] = useState("");
-  const [city, setCity] = useState("");
-  const [lat, setLat] = useState("");
-  const [lng, setLng] = useState("");
+  const [cityCode, setCityCode] = useState("");
 
   const companyOptions = useMemo(
     () =>
@@ -410,51 +176,77 @@ function AreaLocationsSection({ onError }: { onError: (message: string) => void 
     [companies.data]
   );
 
-  // Backend refererar staden via dess unika namn (FK mot City.name) —
+  // Backend refererar staden via dess oföränderliga kod (cities.code) —
   // därför select bland befintliga städer istället för fritext.
-  const cityOptions = useMemo<CityNameOption[]>(
+  const cityOptions = useMemo<CityOption[]>(
     () =>
       (cities.data ?? [])
         .map((city) => {
-          const name = (city.city ?? "").trim();
           const code = (city.code ?? "").trim();
+          const name = (city.city ?? "").trim();
           return {
-            name,
-            label: code && code !== name ? `${name} (${code})` : name,
+            code,
+            label: name && name !== code ? `${name} (${code})` : code,
           };
         })
-        .filter((option) => option.name.length > 0)
-        .sort((a, b) => a.name.localeCompare(b.name, "sv")),
+        .filter((option) => option.code.length > 0)
+        .sort((a, b) => a.label.localeCompare(b.label, "sv")),
     [cities.data]
+  );
+
+  const unresolvedCount = useMemo(
+    () => (aliases.data ?? []).filter((alias) => !alias.filled).length,
+    [aliases.data]
+  );
+
+  // Obehandlade områden överst, därefter alfabetiskt.
+  const sortedAliases = useMemo(
+    () =>
+      [...(aliases.data ?? [])].sort((a, b) => {
+        if (a.filled !== b.filled) return a.filled ? 1 : -1;
+        return a.areaName.localeCompare(b.areaName, "sv");
+      }),
+    [aliases.data]
   );
 
   const handleCreate = async () => {
     const numericCompanyId = Number(companyId);
     if (!areaName.trim() || !Number.isFinite(numericCompanyId)) return;
     try {
-      await createLocation.mutateAsync({
+      await createAlias.mutateAsync({
         areaName: areaName.trim(),
         companyId: numericCompanyId,
-        city: city.trim() || undefined,
-        lat: toNumberOrUndefined(lat),
-        lng: toNumberOrUndefined(lng),
+        cityCode: cityCode || undefined,
       });
       setAreaName("");
       setCompanyId("");
-      setCity("");
-      setLat("");
-      setLng("");
+      setCityCode("");
     } catch (err) {
-      onError((err as Error)?.message ?? "Kunde inte skapa platsen.");
+      onError((err as Error)?.message ?? "Kunde inte skapa kopplingen.");
     }
   };
 
   return (
-    <SectionCard
-      title="Områden → plats"
-      description="Lös upp ett råområdesnamn (per företag) till en konkret stad och koordinater. Rader markerade “Behöver åtgärd” skapades automatiskt när geokodningen misslyckades."
-    >
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1.2fr_1fr_0.8fr_0.8fr_auto]">
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-gray-950">
+          Områden → stad
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Koppla ett områdesnamn (per företag) till staden det ligger i. Staden
+          blir facit för alla annonser i området, och deras koordinater
+          geokodas om från respektive annons adress inom den staden. Rader
+          markerade “Behöver åtgärd” har importerats från fastighetssystemet
+          eller skapats när en annons inte kunde platsupplösas.
+          {unresolvedCount > 0 && (
+            <span className="ml-1 font-semibold text-amber-700">
+              {unresolvedCount} väntar på koppling.
+            </span>
+          )}
+        </p>
+      </div>
+
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1.2fr_1fr_auto]">
         <input
           className={inputClass}
           value={areaName}
@@ -476,40 +268,24 @@ function AreaLocationsSection({ onError }: { onError: (message: string) => void 
         </select>
         <select
           className={inputClass}
-          value={city}
-          onChange={(event) => setCity(event.target.value)}
+          value={cityCode}
+          onChange={(event) => setCityCode(event.target.value)}
           aria-label="Stad (valfritt)"
         >
           <option value="">Stad (valfritt)…</option>
           {cityOptions.map((option) => (
-            <option key={option.name} value={option.name}>
+            <option key={option.code} value={option.code}>
               {option.label}
             </option>
           ))}
         </select>
-        <input
-          className={inputClass}
-          value={lat}
-          onChange={(event) => setLat(event.target.value)}
-          placeholder="Lat"
-          inputMode="decimal"
-        />
-        <input
-          className={inputClass}
-          value={lng}
-          onChange={(event) => setLng(event.target.value)}
-          placeholder="Lng"
-          inputMode="decimal"
-        />
         <button
           type="button"
           className={buttonClass}
           onClick={handleCreate}
-          disabled={
-            !areaName.trim() || !companyId || createLocation.isPending
-          }
+          disabled={!areaName.trim() || !companyId || createAlias.isPending}
         >
-          {createLocation.isPending ? (
+          {createAlias.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Plus className="h-4 w-4" />
@@ -518,27 +294,25 @@ function AreaLocationsSection({ onError }: { onError: (message: string) => void 
         </button>
       </div>
 
-      {locations.isLoading ? (
+      {aliases.isLoading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
         </div>
-      ) : locations.data && locations.data.length > 0 ? (
+      ) : sortedAliases.length > 0 ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <th className="py-2 pr-3">Område / företag</th>
                 <th className="py-2 pr-3">Stad</th>
-                <th className="py-2 pr-3">Lat</th>
-                <th className="py-2 pr-3">Lng</th>
                 <th className="py-2 pr-1 text-right">Åtgärd</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {locations.data.map((location) => (
-                <AreaLocationRow
-                  key={`${location.companyId}-${location.areaName}`}
-                  location={location}
+              {sortedAliases.map((alias) => (
+                <AreaAliasRow
+                  key={`${alias.companyId}-${alias.areaName}`}
+                  alias={alias}
                   cityOptions={cityOptions}
                   onError={onError}
                 />
@@ -548,10 +322,10 @@ function AreaLocationsSection({ onError }: { onError: (message: string) => void 
         </div>
       ) : (
         <p className="py-6 text-center text-sm text-gray-400">
-          Inga platsöverstyrningar än.
+          Inga områdeskopplingar än.
         </p>
       )}
-    </SectionCard>
+    </section>
   );
 }
 
@@ -566,8 +340,8 @@ export default function AdminAreasPage() {
             Områden
           </h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-500">
-            Hantera hur områden grupperas under städer och lös upp
-            områdesnamn till platser för importerade annonser.
+            Koppla importerade områden till städer så att annonserna får rätt
+            stad och kartposition.
           </p>
         </div>
         <div className="portal-control flex h-10 w-fit shrink-0 items-center gap-2 px-3 text-xs font-semibold text-gray-600">
@@ -589,10 +363,7 @@ export default function AdminAreasPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-5">
-        <AreaMappingsSection onError={setError} />
-        <AreaLocationsSection onError={setError} />
-      </div>
+      <AreaAliasesSection onError={setError} />
     </main>
   );
 }
