@@ -51,7 +51,6 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
     rent,
     area,
     city,
-    dwellingType,
     rooms,
     sizeM2,
     images,
@@ -72,7 +71,6 @@ const AdCell: React.FC<{ listing: ListingSummary; onOpen?: () => void }> = ({
     localizedText(locale, "Hyresvärd", "Landlord");
   const landlordLogo = advertiser?.logoUrl;
   const details = [
-    dwellingType,
     rooms != null ? `${rooms} ${localizedText(locale, "rum", "rooms")}` : null,
     sizeM2 != null ? `${sizeM2} m²` : null,
   ]

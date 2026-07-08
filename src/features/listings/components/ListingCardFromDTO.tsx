@@ -5,8 +5,6 @@ import ListingCardSmall, {
   type ListingCardSmallProps,
 } from "@/features/listings/components/ListingCard_Small";
 import type { ListingCardDTO } from "@/types/listing";
-import { useI18n } from "@/i18n/I18nProvider";
-import { localizedText } from "@/i18n/text";
 
 type ListingCardFromDTOProps = {
   listing: ListingCardDTO;
@@ -32,14 +30,11 @@ const ListingCardFromDTO: React.FC<ListingCardFromDTOProps> = ({
   onOpen,
   ...cardProps
 }) => {
-  const { locale } = useI18n();
-
   return (
     <ListingCardSmall
       id={listing.id}
       title={listing.title}
       location={listing.location}
-      dwellingType={listing.dwellingType || localizedText(locale, "Bostad", "Home")}
       rooms={listing.rooms || 0}
       sizeM2={listing.sizeM2 || 0}
       rent={listing.rent || 0}

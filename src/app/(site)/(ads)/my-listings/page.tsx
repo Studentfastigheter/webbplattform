@@ -106,7 +106,6 @@ export default function Page() {
                   key={listing.id}
                   title={listing.title}
                   location={listing.location}
-                  dwellingType={listing.dwellingType ?? ""}
                   rooms={listing.rooms ?? 0}
                   sizeM2={listing.sizeM2 ?? 0}
                   rent={listing.rent ?? 0}

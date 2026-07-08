@@ -17,7 +17,6 @@ export type ListingCardSmallProps = {
   title: string;
   /** Visas som den kommer från backend, som redan formaterar område/stad. */
   location?: string | null;
-  dwellingType: string;
   rooms: number;
   sizeM2: number;
   rent: number;
@@ -62,7 +61,6 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
   const {
     title,
     location,
-    dwellingType,
     rooms,
     sizeM2,
     rent,
@@ -162,7 +160,7 @@ const ListingCardSmall: React.FC<ListingCardSmallProps> = (props) => {
     .filter((tag): tag is { label: string } => tag !== null);
   const locationText =
     location?.trim() || localizedText(locale, "Ej angivet", "Not specified");
-  const detailsText = `${dwellingType ?? "-"} \u00b7 ${rooms ?? "-"} ${localizedText(locale, "rum", "rooms")} \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
+  const detailsText = `${rooms ?? "-"} ${localizedText(locale, "rum", "rooms")} \u00b7 ${sizeM2 ?? "-"} m\u00b2`;
   const shouldShowHostLogo = showHostLogo && Boolean(hostLogoUrl);
   const logoSize = variant === "compact" ? 60 : 76;
   const contentPadding = isCompact ? 12 : 14;
