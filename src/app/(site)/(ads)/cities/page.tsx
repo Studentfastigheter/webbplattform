@@ -7,6 +7,7 @@ import { qk } from "@/lib/query/keys";
 export default function CitiesPage() {
   return (
     <PrefetchedQueryBoundary
+      strategy="stream"
       prefetch={async (queryClient) => {
         await queryClient.prefetchQuery({
           queryKey: qk.cities.list(),

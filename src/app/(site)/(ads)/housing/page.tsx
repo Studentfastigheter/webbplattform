@@ -38,6 +38,7 @@ export default async function ListingsPage({ searchParams }: HousingPageProps) {
 
   return (
     <PrefetchedQueryBoundary
+      strategy="stream"
       prefetch={async (queryClient) => {
         await Promise.allSettled([
           queryClient.prefetchQuery({

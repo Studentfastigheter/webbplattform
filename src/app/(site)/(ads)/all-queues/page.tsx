@@ -7,6 +7,7 @@ import { qk } from "@/lib/query/keys";
 export default function AllQueuesPage() {
   return (
     <PrefetchedQueryBoundary
+      strategy="stream"
       prefetch={async (queryClient) => {
         await queryClient.prefetchQuery({
           queryKey: qk.companies.list(),
