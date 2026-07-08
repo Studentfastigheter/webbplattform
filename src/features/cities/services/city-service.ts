@@ -20,55 +20,32 @@ import type {
   ModifyCityRequest,
 } from "@/types/city";
 
-// --- Area-to-city mappings (admin) ---
-// Maps an area (sub-city with its own city code, e.g. a district) to the
-// parent city it belongs to, so listings in the area are grouped under it.
-export type AreaToCityDTO = {
-  id: string;
-  areaCode: string;
-  areaName: string | null;
-  parentCityCode: string;
-  parentCityName: string | null;
-};
-
-export type CreateAreaToCityRequest = {
-  areaCode: string;
-  parentCityCode: string;
-};
-
-export type ModifyAreaToCityRequest = {
-  areaCode?: string | null;
-  parentCityCode?: string | null;
-};
-
-// --- Area-to-location overrides (admin) ---
-// Maps a raw area name (per company) to a concrete location. Rows with
-// null city/lat/lng were auto-created when geocoding failed and still need
-// an admin to fill in the correct values.
-export type AreaToLocationDTO = {
+// --- Area aliases (admin) ---
+// Links a raw area name (as delivered by an external property system, per
+// company) to the city it belongs to. Rows without a city were queued
+// automatically — imported from the external system's area register or
+// surfaced by an unresolvable listing — and still need an admin to link them.
+// Aliases carry no coordinates: listing coordinates are always geocoded from
+// the listing's own address, with the linked city as a constraint.
+export type AreaAliasDTO = {
   areaName: string;
   companyId: number;
   companyName: string | null;
-  city: string | null;
-  lat: number | null;
-  lng: number | null;
+  cityCode: string | null;
+  cityName: string | null;
   filled: boolean;
 };
 
-export type CreateAreaToLocationRequest = {
+export type CreateAreaAliasRequest = {
   areaName: string;
   companyId: number;
-  city?: string | null;
-  lat?: number | null;
-  lng?: number | null;
+  cityCode?: string | null;
 };
 
-export type ModifyAreaToLocationRequest = {
+export type ModifyAreaAliasRequest = {
   areaName: string;
   companyId: number;
-  city?: string | null;
-  lat?: number | null;
-  lng?: number | null;
+  cityCode: string;
 };
 
 // Delade normaliseringshelpers — se @/lib/api/normalize.
@@ -174,29 +151,7 @@ const normalizeCityStudentActivity = (
   };
 };
 
-const normalizeAreaToCity = (value: unknown): AreaToCityDTO | null => {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  const id = firstString(value.id);
-  const areaCode = firstString(value.areaCode, value.code);
-  const parentCityCode = firstString(value.parentCityCode);
-
-  if (!id || !areaCode || !parentCityCode) {
-    return null;
-  }
-
-  return {
-    id,
-    areaCode,
-    areaName: firstString(value.areaName) ?? null,
-    parentCityCode,
-    parentCityName: firstString(value.parentCityName) ?? null,
-  };
-};
-
-const normalizeAreaToLocation = (value: unknown): AreaToLocationDTO | null => {
+const normalizeAreaAlias = (value: unknown): AreaAliasDTO | null => {
   if (!isRecord(value)) {
     return null;
   }
@@ -208,21 +163,15 @@ const normalizeAreaToLocation = (value: unknown): AreaToLocationDTO | null => {
     return null;
   }
 
-  const lat = firstNumber(value.lat, value.latitude);
-  const lng = firstNumber(value.lng, value.longitude);
-  const city = firstString(value.city) ?? null;
+  const cityCode = firstString(value.cityCode) ?? null;
 
   return {
     areaName,
     companyId,
     companyName: firstString(value.companyName) ?? null,
-    city,
-    lat: lat ?? null,
-    lng: lng ?? null,
-    filled:
-      typeof value.filled === "boolean"
-        ? value.filled
-        : Boolean(city) && lat !== undefined && lng !== undefined,
+    cityCode,
+    cityName: firstString(value.cityName) ?? null,
+    filled: typeof value.filled === "boolean" ? value.filled : Boolean(cityCode),
   };
 };
 
@@ -305,98 +254,43 @@ export const cityService = {
     });
   },
 
-  // --- Area-to-city mappings (admin) ---
+  // --- Area aliases (admin) ---
 
-  listAreaMappings: async (
-    options?: ServiceOptions
-  ): Promise<AreaToCityDTO[]> => {
-    const mappings = await apiClient<unknown>("/cities/area-mappings", {
+  listAreaAliases: async (options?: ServiceOptions): Promise<AreaAliasDTO[]> => {
+    const aliases = await apiClient<unknown>("/cities/area-aliases", {
       signal: options?.signal,
     });
-    return arrayFromApiResponse<unknown>(mappings)
-      .map(normalizeAreaToCity)
-      .filter((mapping): mapping is AreaToCityDTO => mapping !== null);
+    return arrayFromApiResponse<unknown>(aliases)
+      .map(normalizeAreaAlias)
+      .filter((alias): alias is AreaAliasDTO => alias !== null);
   },
 
-  createAreaMapping: async (
-    payload: CreateAreaToCityRequest
-  ): Promise<AreaToCityDTO | null> => {
-    const created = await apiClient<unknown>("/cities/area-mappings", {
-      method: "POST",
-      body: JSON.stringify({
-        areaCode: normalizeCityCode(payload.areaCode),
-        parentCityCode: normalizeCityCode(payload.parentCityCode),
-      }),
-    });
-    return normalizeAreaToCity(created);
-  },
-
-  updateAreaMapping: async (
-    id: string,
-    payload: ModifyAreaToCityRequest
-  ): Promise<AreaToCityDTO | null> => {
-    const updated = await apiClient<unknown>(
-      `/cities/area-mappings/${pathSegment(id)}`,
-      {
-        method: "PUT",
-        body: JSON.stringify({
-          areaCode: payload.areaCode
-            ? normalizeCityCode(payload.areaCode)
-            : undefined,
-          parentCityCode: payload.parentCityCode
-            ? normalizeCityCode(payload.parentCityCode)
-            : undefined,
-        }),
-      }
-    );
-    return normalizeAreaToCity(updated);
-  },
-
-  deleteAreaMapping: async (id: string): Promise<void> => {
-    await apiClient<void>(`/cities/area-mappings/${pathSegment(id)}`, {
-      method: "DELETE",
-    });
-  },
-
-  // --- Area-to-location overrides (admin) ---
-
-  listAreaLocations: async (
-    options?: ServiceOptions
-  ): Promise<AreaToLocationDTO[]> => {
-    const locations = await apiClient<unknown>("/cities/area-locations", {
-      signal: options?.signal,
-    });
-    return arrayFromApiResponse<unknown>(locations)
-      .map(normalizeAreaToLocation)
-      .filter((location): location is AreaToLocationDTO => location !== null);
-  },
-
-  createAreaLocation: async (
-    payload: CreateAreaToLocationRequest
-  ): Promise<AreaToLocationDTO | null> => {
-    const created = await apiClient<unknown>("/cities/area-locations", {
+  createAreaAlias: async (
+    payload: CreateAreaAliasRequest
+  ): Promise<AreaAliasDTO | null> => {
+    const created = await apiClient<unknown>("/cities/area-aliases", {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    return normalizeAreaToLocation(created);
+    return normalizeAreaAlias(created);
   },
 
-  updateAreaLocation: async (
-    payload: ModifyAreaToLocationRequest
-  ): Promise<AreaToLocationDTO | null> => {
-    const updated = await apiClient<unknown>("/cities/area-locations", {
+  updateAreaAlias: async (
+    payload: ModifyAreaAliasRequest
+  ): Promise<AreaAliasDTO | null> => {
+    const updated = await apiClient<unknown>("/cities/area-aliases", {
       method: "PUT",
       body: JSON.stringify(payload),
     });
-    return normalizeAreaToLocation(updated);
+    return normalizeAreaAlias(updated);
   },
 
-  deleteAreaLocation: async (
+  deleteAreaAlias: async (
     areaName: string,
     companyId: number
   ): Promise<void> => {
     await apiClient<void>(
-      `/cities/area-locations${buildQuery({ areaName, companyId })}`,
+      `/cities/area-aliases${buildQuery({ areaName, companyId })}`,
       {
         method: "DELETE",
       }

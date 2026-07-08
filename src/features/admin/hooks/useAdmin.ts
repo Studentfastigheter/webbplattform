@@ -32,12 +32,9 @@ import { qk } from "@/lib/query/keys";
 import { adminService } from "@/features/admin/services/admin-service";
 import type { AdminCompanyListingStatusStats } from "@/features/admin/services/admin-service";
 import type {
-  AreaToCityDTO,
-  AreaToLocationDTO,
-  CreateAreaToCityRequest,
-  CreateAreaToLocationRequest,
-  ModifyAreaToCityRequest,
-  ModifyAreaToLocationRequest,
+  AreaAliasDTO,
+  CreateAreaAliasRequest,
+  ModifyAreaAliasRequest,
 } from "@/features/cities/services/city-service";
 import type {
   AdminAddSchoolRequest,
@@ -218,25 +215,14 @@ export function useAdminWaitlistStats() {
 }
 
 /**
- * Area-to-city mappings (CityController, admin-only). Groups sub-city areas
- * under their parent city so listings in the area display under the parent.
+ * Area aliases (CityController, admin-only). Each row links a raw area name
+ * (per company) to its city; rows with a false `filled` flag are queued areas
+ * awaiting an admin to link them.
  */
-export function useAdminAreaMappings() {
-  return useQuery<AreaToCityDTO[]>({
-    queryKey: qk.admin.areaMappings(),
-    queryFn: ({ signal }) => adminService.getAreaMappings({ signal }),
-    staleTime: STALE_30_SECONDS,
-  });
-}
-
-/**
- * Area-to-location overrides (CityController, admin-only). Rows with a false
- * `filled` flag are unresolved areas awaiting an admin to set city/lat/lng.
- */
-export function useAdminAreaLocations() {
-  return useQuery<AreaToLocationDTO[]>({
-    queryKey: qk.admin.areaLocations(),
-    queryFn: ({ signal }) => adminService.getAreaLocations({ signal }),
+export function useAdminAreaAliases() {
+  return useQuery<AreaAliasDTO[]>({
+    queryKey: qk.admin.areaAliases(),
+    queryFn: ({ signal }) => adminService.getAreaAliases({ signal }),
     staleTime: STALE_30_SECONDS,
   });
 }
@@ -589,66 +575,29 @@ export function useAdminCityPayloadAction(
   });
 }
 
-// ---- area-to-city mappings ----
+// ---- area aliases ----
 
-// Mappings change how areas roll up into parent cities, so the public city
-// caches are dropped alongside the admin list.
-function invalidateAreaMappings(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: qk.admin.areaMappings() });
-  qc.invalidateQueries({ queryKey: qk.cities.all });
+function invalidateAreaAliases(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: qk.admin.areaAliases() });
 }
 
-export function useAdminCreateAreaMapping() {
+export function useAdminCreateAreaAlias() {
   const qc = useQueryClient();
-  return useMutation<AreaToCityDTO | null, Error, CreateAreaToCityRequest>({
-    mutationFn: (payload) => adminService.createAreaMapping(payload),
-    onSettled: () => invalidateAreaMappings(qc),
+  return useMutation<AreaAliasDTO | null, Error, CreateAreaAliasRequest>({
+    mutationFn: (payload) => adminService.createAreaAlias(payload),
+    onSettled: () => invalidateAreaAliases(qc),
   });
 }
 
-export function useAdminModifyAreaMapping() {
+export function useAdminModifyAreaAlias() {
   const qc = useQueryClient();
-  return useMutation<
-    AreaToCityDTO | null,
-    Error,
-    { id: string; payload: ModifyAreaToCityRequest }
-  >({
-    mutationFn: ({ id, payload }) => adminService.modifyAreaMapping(id, payload),
-    onSettled: () => invalidateAreaMappings(qc),
+  return useMutation<AreaAliasDTO | null, Error, ModifyAreaAliasRequest>({
+    mutationFn: (payload) => adminService.modifyAreaAlias(payload),
+    onSettled: () => invalidateAreaAliases(qc),
   });
 }
 
-export function useAdminDeleteAreaMapping() {
-  const qc = useQueryClient();
-  return useMutation<void, Error, string>({
-    mutationFn: (id) => adminService.deleteAreaMapping(id),
-    onSettled: () => invalidateAreaMappings(qc),
-  });
-}
-
-// ---- area-to-location overrides ----
-
-export function useAdminCreateAreaLocation() {
-  const qc = useQueryClient();
-  return useMutation<AreaToLocationDTO | null, Error, CreateAreaToLocationRequest>({
-    mutationFn: (payload) => adminService.createAreaLocation(payload),
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: qk.admin.areaLocations() });
-    },
-  });
-}
-
-export function useAdminModifyAreaLocation() {
-  const qc = useQueryClient();
-  return useMutation<AreaToLocationDTO | null, Error, ModifyAreaToLocationRequest>({
-    mutationFn: (payload) => adminService.modifyAreaLocation(payload),
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: qk.admin.areaLocations() });
-    },
-  });
-}
-
-export function useAdminDeleteAreaLocation() {
+export function useAdminDeleteAreaAlias() {
   const qc = useQueryClient();
   return useMutation<
     void,
@@ -656,9 +605,7 @@ export function useAdminDeleteAreaLocation() {
     { areaName: string; companyId: number }
   >({
     mutationFn: ({ areaName, companyId }) =>
-      adminService.deleteAreaLocation(areaName, companyId),
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: qk.admin.areaLocations() });
-    },
+      adminService.deleteAreaAlias(areaName, companyId),
+    onSettled: () => invalidateAreaAliases(qc),
   });
 }
