@@ -907,7 +907,6 @@ export default function PortalAdsPage() {
                     id={item.listing.id}
                     title={item.listing.title}
                     location={item.listing.location}
-                    dwellingType={item.listing.dwellingType || localizedText(locale, "Bostad", "Home")}
                     rooms={item.listing.rooms || 0}
                     sizeM2={item.listing.sizeM2 || 0}
                     rent={item.listing.rent || 0}
