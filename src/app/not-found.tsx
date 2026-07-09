@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Search } from "@/components/icons";
 
@@ -6,6 +7,11 @@ import SiteHeader from "@/components/layout/site-header/SiteHeader";
 import { localizeHref } from "@/i18n/config";
 import { getDictionary, getRequestLocale } from "@/i18n/server";
 import { isPlatformLaunched } from "@/lib/platform-launch";
+import { noIndexRobots } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  robots: noIndexRobots,
+};
 
 export default async function NotFound() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getRequestLocale()]);
