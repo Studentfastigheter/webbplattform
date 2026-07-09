@@ -10,8 +10,10 @@ import {
   firstNonEmptyString as firstString,
   isRecord,
 } from "@/lib/api/normalize";
+import { normalizeCityRef } from "@/features/cities/services/city-service";
 import { normalizeListingCards } from "@/features/listings/services/listing-service";
 import { HousingQueueDTO } from "@/types/queue";
+import type { CityRef } from "@/types/city";
 import { ListingCardDTO, type PageResponse } from "@/types/listing";
 
 export interface CompanyDTO {
@@ -34,7 +36,7 @@ export interface CompanyDTO {
   pictureUrlList?: string[];
   videoUrlList?: string[];
   socialLinks?: Record<string, string>;
-  cities?: string[];
+  cities?: CityRef[];
   schools?: Array<{
     id?: number;
     schoolId?: number;
@@ -308,7 +310,9 @@ function normalizeCompanyDto(value: unknown): CompanyDTO {
     termsUrl: firstString(source.termsUrl),
     privacyUrl: firstString(source.privacyUrl, source.privacyPolicyUrl, source.policyUrl),
     privacyPolicyUrl: firstString(source.privacyPolicyUrl, source.privacyUrl, source.policyUrl),
-    cities: arrayFromApiResponse<string>(source.cities ?? source.companyCities),
+    cities: arrayFromApiResponse<unknown>(source.cities ?? source.companyCities)
+      .map(normalizeCityRef)
+      .filter((city): city is CityRef => city !== null),
     schools: arrayFromApiResponse<NonNullable<CompanyDTO["schools"]>[number]>(
       source.schools ?? source.companySchools
     ),

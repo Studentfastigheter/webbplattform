@@ -1,6 +1,5 @@
 import CityDetailPageClient from "./CityDetailPageClient";
 
-import { formatCityName } from "@/features/cities/city-utils";
 import { cityService, normalizeCityCode } from "@/features/cities/services/city-service";
 import { listingService, normalizeListingSearchParams } from "@/features/listings/services/listing-service";
 import { PrefetchedQueryBoundary } from "@/lib/query/PrefetchedQueryBoundary";
@@ -47,16 +46,16 @@ export default async function CityDetailPage({ params }: CityDetailPageProps) {
           qk.cities.detail(normalizedCityCode),
         );
 
-        const fallbackCityName = formatCityName(routeCity) || routeCity;
-        const cityName =
-          formatCityName(cityDetail?.city ?? fallbackCityName) || fallbackCityName;
+        // Listings are prefetched on the stable city code relation — the same
+        // key the client uses — so no display-name spelling can miss the cache.
+        const cityCode = cityDetail?.code ?? normalizedCityCode;
         const cityListingsSearchParams = normalizeListingSearchParams({
-          city: cityName,
+          cityCode,
           page: 0,
           size: CITY_LISTINGS_PAGE_SIZE,
         });
 
-        if (!cityName) {
+        if (!cityCode) {
           return;
         }
 

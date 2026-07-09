@@ -38,7 +38,9 @@ import {
 } from "@/features/companies/hooks/useCompanies";
 import { useQueuesByCompany } from "@/features/queues/hooks/useQueues";
 import { type HousingQueueDTO } from "@/types/queue";
-import { formatCityName } from "@/features/cities/city-utils";
+import { cityRefLabel, formatCityName } from "@/features/cities/city-utils";
+import type { Locale } from "@/i18n/config";
+import type { CityRef } from "@/types/city";
 import CompanyVideoSection, {
   type CompanyVideo,
 } from "@/features/ads/components/CompanyVideoSection";
@@ -79,12 +81,14 @@ type ProfileDraft = {
   name: string;
   subtitle: string;
   description: string;
+  subtitleEn: string;
+  descriptionEn: string;
   websiteUrl: string;
   privacyPolicyUrl: string;
   termsUrl: string;
   contactEmail: string;
   contactPhone: string;
-  cities: string[];
+  cities: CityRef[];
   logoUrl: string;
   bannerUrl: string;
   additionalSocialLinks: SocialLinkDraft[];
@@ -176,11 +180,11 @@ function toCompanyVideo(url: string): CompanyVideo | null {
   };
 }
 
-function uniqueCityLabels(values: Array<string | null | undefined>) {
+function uniqueCityLabels(values: CityRef[]) {
   const labels = new Map<string, string>();
 
-  values.forEach((value) => {
-    const label = formatCityName(value?.replace(/_/g, " ") ?? "");
+  values.forEach((ref) => {
+    const label = cityRefLabel(ref);
     if (!label) return;
     labels.set(label.toLocaleLowerCase("sv-SE"), label);
   });
@@ -225,6 +229,8 @@ function buildInitialDraft(
     name: companyData.name ?? "",
     subtitle: companyData.subtitle ?? "",
     description: companyData.description ?? "",
+    subtitleEn: companyData.subtitleEn ?? "",
+    descriptionEn: companyData.descriptionEn ?? "",
     websiteUrl: companyData.website ?? "",
     privacyPolicyUrl: companyData.privacyPolicyUrl ?? "",
     termsUrl: companyData.termsUrl ?? "",
@@ -273,9 +279,11 @@ function buildCompanyChangePayload(draft: ProfileDraft): CompanyChangeableDataDT
     logoUrl: toNullableString(draft.logoUrl),
     bannerUrl: toNullableString(draft.bannerUrl),
     companyDescription: toNullableString(draft.description),
+    companyDescriptionEn: toNullableString(draft.descriptionEn),
     phone: toNullableString(draft.contactPhone),
     contactEmail: toNullableString(draft.contactEmail),
     subtitle: toNullableString(draft.subtitle),
+    subtitleEn: toNullableString(draft.subtitleEn),
     privacyPolicyUrl: toNullableString(draft.privacyPolicyUrl),
     termsUrl: toNullableString(draft.termsUrl),
     websiteUrl: toNullableString(draft.websiteUrl),
@@ -296,6 +304,8 @@ function mergeSavedCompany(
     }),
     subtitle: draft.subtitle,
     description: draft.description,
+    subtitleEn: draft.subtitleEn,
+    descriptionEn: draft.descriptionEn,
     website: draft.websiteUrl,
     privacyPolicyUrl: draft.privacyPolicyUrl,
     termsUrl: draft.termsUrl,
@@ -1048,6 +1058,33 @@ function EditableCompanyPreview({
             onValueChange={(value) => onDraftChange("description", value)}
             className={`${inlineInputClass} min-h-40 w-full resize-y text-base leading-relaxed text-gray-600`}
             placeholder={localizedText(locale, "Beskriv företaget", "Describe the company")}
+          />
+        </div>
+
+        <div className="mt-8">
+          <h2 className="mb-1 text-lg font-semibold text-gray-900">
+            {localizedText(locale, "Engelska texter", "English texts")}
+          </h2>
+          <p className="mb-3 text-sm text-gray-500">
+            {localizedText(
+              locale,
+              "Visas för besökare som använder plattformen på engelska. Lämna tomt så visas den svenska texten.",
+              "Shown to visitors using the platform in English. Leave empty to fall back to the Swedish text."
+            )}
+          </p>
+          <input
+            aria-label={localizedText(locale, "Underrubrik (engelska)", "Subtitle (English)")}
+            value={draft.subtitleEn}
+            onChange={(event) => onDraftChange("subtitleEn", event.target.value)}
+            className={`${inlineInputClass} mb-3 w-full max-w-2xl text-sm font-medium text-gray-600 sm:text-base`}
+            placeholder={localizedText(locale, "Underrubrik på engelska", "Subtitle in English")}
+          />
+          <RichTextTextarea
+            aria-label={localizedText(locale, "Om oss (engelska)", "About us (English)")}
+            value={draft.descriptionEn}
+            onValueChange={(value) => onDraftChange("descriptionEn", value)}
+            className={`${inlineInputClass} min-h-40 w-full resize-y text-base leading-relaxed text-gray-600`}
+            placeholder={localizedText(locale, "Beskriv företaget på engelska", "Describe the company in English")}
           />
         </div>
 

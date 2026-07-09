@@ -14,9 +14,10 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { RichTextParagraph } from "@/components/ui/RichText";
 import type { BaseMarker } from "@/components/shared/map/BaseMap";
 import { useAuth } from "@/context/AuthContext";
-import { formatCityName } from "@/features/cities/city-utils";
+import { cityDisplayName, formatCityName } from "@/features/cities/city-utils";
 import SimpleCompanyCard from "@/features/cities/components/SimpleCompanyCard";
 import { useCityDetail } from "@/features/cities/hooks/useCities";
+import { normalizeCityCode } from "@/features/cities/services/city-service";
 import type { CompanyPublicDTO } from "@/features/companies/services/company-service";
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import {
@@ -32,7 +33,7 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 import { qk } from "@/lib/query/keys";
-import type { CityCompanyDTO } from "@/types/city";
+import type { CityCompanyDTO, CityRef } from "@/types/city";
 import type { ListingCardDTO } from "@/types/listing";
 
 const CityPointsMap = dynamic(() => import("@/components/shared/map/BaseMap"), {
@@ -69,7 +70,7 @@ const decodeRouteParam = (value: string | undefined) => {
 
 const cityCompanyToPublicCompany = (
   company: CityCompanyDTO,
-  cityName: string
+  cityRef: CityRef
 ): CompanyPublicDTO | null => {
   if (typeof company.id !== "number" || !company.name?.trim()) {
     return null;
@@ -83,7 +84,7 @@ const cityCompanyToPublicCompany = (
     websiteUrl: company.websiteUrl ?? null,
     logoUrl: company.logoUrl ?? null,
     bannerUrl: company.bannerUrl ?? null,
-    cities: [cityName],
+    cities: [cityRef],
   };
 };
 
@@ -174,6 +175,9 @@ export default function CityDetailPage() {
   const { user } = useAuth();
   const homesSectionRef = useRef<HTMLElement | null>(null);
   const routeCity = decodeRouteParam(params?.city);
+  // The route segment is the stable city code (e.g. "gothenburg"); it is only
+  // an identifier — display names come from the city detail response.
+  const routeCityCode = normalizeCityCode(routeCity);
   const fallbackCityName = formatCityName(routeCity) || localizedText(locale, "Stad", "City");
 
   // City detail — companies, external companies, schools, activities, banner.
@@ -186,7 +190,14 @@ export default function CityDetailPage() {
     isError: isCityDetailError,
   } = useCityDetail(routeCity || fallbackCityName);
 
-  const cityName = formatCityName(cityDetail?.city ?? fallbackCityName) || fallbackCityName;
+  const cityName = cityDisplayName(cityDetail) || fallbackCityName;
+  const cityRef = useMemo<CityRef>(
+    () => ({
+      code: cityDetail?.code ?? routeCityCode,
+      name: cityDetail?.name ?? cityName,
+    }),
+    [cityDetail, routeCityCode, cityName]
+  );
   const cityDescription = cityDetail?.description?.trim() || "";
   const cityBannerUrl = cityDetail?.bannerUrl?.trim() || null;
 
@@ -194,18 +205,21 @@ export default function CityDetailPage() {
 
   useEffect(() => {
     setCityListingsPage(1);
-  }, [cityName]);
+  }, [routeCityCode]);
 
-  // Listings in this city — paged card section, 6 items per page.
+  // Listings in this city — paged card section, 6 items per page. Filtered on
+  // the city code relation, never the display name: the code is available
+  // before the detail response resolves and is immune to diacritic/language
+  // differences.
   // The map below has its own all-pages query so map markers are not limited by
   // this card page size.
   const cityListingsSearchParams = useMemo<ListingSearchParams>(
     () => ({
-      city: cityName,
+      cityCode: routeCityCode,
       page: cityListingsPage - 1,
       size: CITY_LISTINGS_PAGE_SIZE,
     }),
-    [cityName, cityListingsPage]
+    [routeCityCode, cityListingsPage]
   );
   const {
     data: listingsPage,
@@ -229,17 +243,17 @@ export default function CityDetailPage() {
   const cityMapSearchParams = useMemo(
     () =>
       normalizeListingSearchParams(
-        { city: cityName },
+        { cityCode: routeCityCode },
         {
           includePageable: false,
         }
       ),
-    [cityName]
+    [routeCityCode]
   );
 
   const mapListingsQuery = useQuery<ListingCardDTO[]>({
     queryKey: qk.listings.map(cityMapSearchParams),
-    enabled: Boolean(cityName),
+    enabled: Boolean(routeCityCode),
     staleTime: 30_000,
     queryFn: async () => {
       const firstPage = await listingService.getAll({
@@ -315,16 +329,16 @@ export default function CityDetailPage() {
   const companies = useMemo<CompanyPublicDTO[]>(
     () =>
       (cityDetail?.companies ?? [])
-        .map((company) => cityCompanyToPublicCompany(company, cityName))
+        .map((company) => cityCompanyToPublicCompany(company, cityRef))
         .filter((company): company is CompanyPublicDTO => company !== null),
-    [cityDetail, cityName],
+    [cityDetail, cityRef],
   );
   const externalCompanies = useMemo<CompanyPublicDTO[]>(
     () =>
       (cityDetail?.externalCompanies ?? [])
-        .map((company) => cityCompanyToPublicCompany(company, cityName))
+        .map((company) => cityCompanyToPublicCompany(company, cityRef))
         .filter((company): company is CompanyPublicDTO => company !== null),
-    [cityDetail, cityName],
+    [cityDetail, cityRef],
   );
   const companiesLoading = cityDetailLoading;
   const companiesError = isCityDetailError
@@ -505,7 +519,9 @@ export default function CityDetailPage() {
                 {localizedText(locale, `Bostäder i ${cityName}`, `Homes in ${cityName}`)}
               </h2>
               <LocalizedLink
-                href={`/housing?city=${encodeURIComponent(cityName)}&page=1`}
+                // Free-text link; the housing page's own search tolerates
+                // either language and the city page filter uses the code.
+                href={`/housing?city=${encodeURIComponent(cityRef.name)}&page=1`}
                 className={inlineLinkButtonClassName}
               >
                 {localizedText(locale, "Visa alla", "Show all")}
@@ -677,7 +693,7 @@ export default function CityDetailPage() {
               {localizedText(locale, `Företag i ${cityName}`, `Companies in ${cityName}`)}
             </h2>
             <LocalizedLink
-              href={`/all-queues?city=${encodeURIComponent(cityName)}`}
+              href={`/all-queues?city=${encodeURIComponent(cityRef.code)}`}
               className={inlineLinkButtonClassName}
             >
               {localizedText(locale, "Sök alla", "Search all")}

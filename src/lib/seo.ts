@@ -279,7 +279,7 @@ export function listingJsonLd(
 }
 
 export function cityJsonLd(locale: Locale, city: CityDetailedDTO, path: string) {
-  const cityName = city.city ?? city.code ?? "";
+  const cityName = city.name ?? city.code ?? "";
 
   return {
     "@context": "https://schema.org",

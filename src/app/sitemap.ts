@@ -116,7 +116,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [cityEntries, listingEntries, companyEntries] = await Promise.all([
     resolveSitemapEntries(() => cityService.list(), (cities) =>
       cities.flatMap((city) => {
-        const code = city.code ?? city.city;
+        const code = city.code ?? city.name;
         if (!code) {
           return [];
         }

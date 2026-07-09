@@ -33,7 +33,9 @@ import {
   getClientDeviceType,
   ignoreDemographicsRecordError,
 } from "@/features/analytics/services/demographics-service";
-import { formatCityName } from "@/features/cities/city-utils";
+import { cityRefLabel } from "@/features/cities/city-utils";
+import type { Locale } from "@/i18n/config";
+import type { CityRef } from "@/types/city";
 import { useAuth } from "@/context/AuthContext";
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
 import {
@@ -142,11 +144,11 @@ function CompanyImageBoard({
   );
 }
 
-const uniqueCityLabels = (values: Array<string | null | undefined>) => {
+const uniqueCityLabels = (values: CityRef[]) => {
   const labels = new Map<string, string>();
 
-  values.forEach((value) => {
-    const label = formatCityName(value?.replace(/_/g, " ") ?? "");
+  values.forEach((ref) => {
+    const label = cityRefLabel(ref);
     if (!label) return;
     labels.set(label.toLocaleLowerCase("sv-SE"), label);
   });

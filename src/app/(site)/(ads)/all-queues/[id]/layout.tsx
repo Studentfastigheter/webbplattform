@@ -59,7 +59,7 @@ export async function generateMetadata({
       "studentbostäder",
       "bostadskö",
       "student housing",
-      ...(company?.cities ?? []),
+      ...(company?.cities ?? []).map((city) => city.name),
     ],
     index: Boolean(company),
   });

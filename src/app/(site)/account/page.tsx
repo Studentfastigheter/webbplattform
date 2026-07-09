@@ -7,6 +7,7 @@ import AccountSettingsShell from "@/components/shadcn-studio/blocks/account-sett
 import { LoadingScreen } from "@/components/ui/loader";
 import { useAuth } from "@/context/AuthContext";
 import AccountDocumentsSection from "@/features/documents/components/AccountDocumentsSection";
+import StudentInterestsSection from "@/features/students/components/StudentInterestsSection";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
 
@@ -40,6 +41,7 @@ export default function Page() {
         )}
         showVerification
       >
+        {user.accountType === "student" && <StudentInterestsSection />}
         <AccountDocumentsSection />
       </AccountSettingsShell>
     </main>

@@ -142,7 +142,7 @@ export function cityOptionMatchesValue(option: CityOption, value: string) {
   const lookupValue = normalizeCityLookupValue(value);
   if (!lookupValue) return false;
 
-  return [option.code, option.city.code, option.city.city].some(
+  return [option.code, option.city.code, option.city.name].some(
     (candidate) => normalizeCityLookupValue(candidate) === lookupValue
   );
 }
@@ -464,14 +464,14 @@ export function schoolOptionLabel(school: School) {
   return [school.name, school.city, schoolId(school)].filter(Boolean).join(" - ");
 }
 
-export function externalCompanyOptionLabel(company: ExternalCompanyDTO) {
+export function externalCompanyOptionLabel(company: { name?: string | null; id?: number | null }) {
   return [company.name, company.id].filter(Boolean).join(" - ");
 }
 
 export function cityCode(city: CityDTO) {
-  return normalizeCityCode(city.code ?? city.city ?? "");
+  return normalizeCityCode(city.code ?? city.name ?? "");
 }
 
 export function cityOptionLabel(city: CityDTO) {
-  return [city.city, cityCode(city)].filter(Boolean).join(" - ");
+  return [city.name, cityCode(city)].filter(Boolean).join(" - ");
 }

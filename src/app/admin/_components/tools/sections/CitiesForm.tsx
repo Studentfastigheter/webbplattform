@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { adminService } from "@/features/admin/services/admin-service";
 import { useAdminCitySummaries, useAdminCreateCity, useAdminDeleteCity, useAdminModifyCity } from "@/features/admin/hooks/useAdmin";
 import { normalizeCityCode } from "@/features/cities/services/city-service";
-import type { CityDTO, CityDetailedDTO, CreateCityRequest, ModifyCityRequest } from "@/types";
+import type { CityAdminDTO, CityDTO, CityDetailedDTO, CreateCityRequest, ModifyCityRequest } from "@/types";
 import {
   type AdminActionState,
   useResourceList,
@@ -24,22 +24,40 @@ import {
 type CityFormState = {
   code: string;
   name: string;
+  nameEn: string;
   description: string;
+  descriptionEn: string;
   bannerUrl: string;
 };
 
 const emptyCityForm: CityFormState = {
   code: "",
   name: "",
+  nameEn: "",
   description: "",
+  descriptionEn: "",
   bannerUrl: "",
 };
 
+function cityAdminToForm(city: CityAdminDTO): CityFormState {
+  return {
+    code: normalizeCityCode(city.code),
+    name: city.nameSv ?? "",
+    nameEn: city.nameEn ?? "",
+    description: city.descriptionSv ?? "",
+    descriptionEn: city.descriptionEn ?? "",
+    bannerUrl: city.bannerUrl ?? "",
+  };
+}
+
+/** Fallback prefill from the localized list row when the admin view fails. */
 function cityToForm(city: CityDTO | CityDetailedDTO): CityFormState {
   return {
     code: cityCode(city),
-    name: city.city ?? "",
+    name: city.name ?? "",
+    nameEn: "",
     description: city.description ?? "",
+    descriptionEn: "",
     bannerUrl: city.bannerUrl ?? "",
   };
 }
@@ -58,7 +76,9 @@ function buildCreateCityPayload(form: CityFormState): CreateCityRequest {
   return {
     code,
     name,
+    nameEn: form.nameEn.trim(),
     description: form.description.trim() || null,
+    descriptionEn: form.descriptionEn.trim(),
     bannerUrl: form.bannerUrl.trim() || null,
   };
 }
@@ -71,7 +91,9 @@ function buildModifyCityPayload(form: CityFormState): ModifyCityRequest {
 
   return {
     name,
+    nameEn: form.nameEn.trim(),
     description: form.description.trim() || null,
+    descriptionEn: form.descriptionEn.trim(),
     bannerUrl: form.bannerUrl.trim() || null,
   };
 }
@@ -89,13 +111,24 @@ function CityFields({
     <>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <FormInput
-          label="Kod"
+          label="Kod (engelskt namn, används i URL:en)"
           value={form.code}
           onChange={(code) => onChange({ code })}
-          placeholder="LUND"
+          placeholder="GOTHENBURG"
           disabled={lockCode}
         />
-        <FormInput label="Namn" value={form.name} onChange={(name) => onChange({ name })} />
+        <FormInput
+          label="Namn (svenska)"
+          value={form.name}
+          onChange={(name) => onChange({ name })}
+          placeholder="Göteborg"
+        />
+        <FormInput
+          label="Namn (engelska, lämna tomt om samma som svenska)"
+          value={form.nameEn}
+          onChange={(nameEn) => onChange({ nameEn })}
+          placeholder="Gothenburg"
+        />
         <FormInput
           label="Banner URL"
           value={form.bannerUrl}
@@ -105,9 +138,16 @@ function CityFields({
       </div>
       <div className="mt-3">
         <FormTextarea
-          label="Beskrivning"
+          label="Beskrivning (svenska)"
           value={form.description}
           onChange={(description) => onChange({ description })}
+        />
+      </div>
+      <div className="mt-3">
+        <FormTextarea
+          label="Beskrivning (engelska, lämna tomt om samma som svenska)"
+          value={form.descriptionEn}
+          onChange={(descriptionEn) => onChange({ descriptionEn })}
         />
       </div>
     </>
@@ -158,9 +198,12 @@ function CitiesForm() {
 
     setUpdateState({ status: "loading", message: "Hämtar stadsdetaljer..." });
     try {
-      const detail = await adminService.getCity(code);
+      const [detail, adminView] = await Promise.all([
+        adminService.getCity(code),
+        adminService.getCityAdmin(code),
+      ]);
       setCityDetail(detail);
-      setUpdateForm(cityToForm(detail));
+      setUpdateForm(cityAdminToForm(adminView));
       setUpdateState({ status: "idle" });
     } catch (error) {
       const fallback = items.find((city) => cityCode(city) === code);
@@ -184,7 +227,9 @@ function CitiesForm() {
       setUpdateForm({
         code: payload.code,
         name: payload.name ?? "",
+        nameEn: payload.nameEn ?? "",
         description: payload.description ?? "",
+        descriptionEn: payload.descriptionEn ?? "",
         bannerUrl: payload.bannerUrl ?? "",
       });
       setCreateState({ status: "success", message: "Staden sparades." });

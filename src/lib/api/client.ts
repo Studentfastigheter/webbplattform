@@ -1,5 +1,49 @@
 import { decodeRichText, decodeRichTextPayload } from "@/lib/rich-text";
 import { getStoredAuthToken, setStoredAuthToken } from "@/lib/auth-storage";
+import {
+  getLocaleFromCookieValue,
+  getLocaleFromPathname,
+  localeCookieName,
+  type Locale,
+} from "@/i18n/config";
+
+/**
+ * The backend mirrors the Hogia public APIs: the Accept-Language header
+ * (sv-SE default, en-GB) selects the language of every localizable string in
+ * a response. Resolved per request so every backend call carries the active
+ * site language — client-side from the /en path prefix or the locale cookie,
+ * server-side from the x-campuslyan-locale header the proxy stamps on the
+ * page request (read lazily via next/headers so this module stays isomorphic).
+ */
+const toAcceptLanguage = (locale: Locale | null | undefined) =>
+  locale === "en" ? "en-GB" : "sv-SE";
+
+const readClientLocaleCookie = (): Locale | null => {
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${localeCookieName}=([^;]*)`)
+  );
+  return match ? getLocaleFromCookieValue(decodeURIComponent(match[1])) : null;
+};
+
+async function resolveAcceptLanguage(): Promise<string> {
+  if (typeof window !== "undefined") {
+    const locale =
+      getLocaleFromPathname(window.location.pathname) ?? readClientLocaleCookie();
+    return toAcceptLanguage(locale);
+  }
+
+  try {
+    const { headers } = await import("next/headers");
+    const requestHeaders = await headers();
+    const locale = getLocaleFromCookieValue(
+      requestHeaders.get("x-campuslyan-locale")
+    );
+    return toAcceptLanguage(locale);
+  } catch {
+    // Outside a request scope (build-time, scripts): Swedish default.
+    return toAcceptLanguage(null);
+  }
+}
 
 export const normalizeApiBase = (value: string): string => {
   const trimmed = value.trim().replace(/\/+$/, "");
@@ -230,6 +274,7 @@ export async function apiClient<T>(
     typeof FormData !== "undefined" && customOptions.body instanceof FormData;
 
   const defaultHeaders: Record<string, string> = {
+    "Accept-Language": await resolveAcceptLanguage(),
     ...(hasBody && !isFormDataBody ? { "Content-Type": "application/json" } : {}),
     ...(headers as Record<string, string>),
   };

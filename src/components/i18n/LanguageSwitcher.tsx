@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizeHref, type Locale } from "@/i18n/config";
+import { useQueryClient } from "@tanstack/react-query";
 
 type LanguageSwitcherProps = {
   className?: string;
@@ -31,6 +32,7 @@ export function LanguageSwitcher({
 }: LanguageSwitcherProps) {
   const { locale, setLocale, t } = useI18n();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const pathname = usePathname() || "/";
   const searchParams = useSearchParams();
   const query = searchParams.toString();
@@ -49,6 +51,10 @@ export function LanguageSwitcher({
     const nextHref = localizeHref(getCurrentHref(), nextLocale);
 
     setLocale(nextLocale);
+    // Backend responses are localized per Accept-Language but cached under
+    // locale-agnostic query keys — drop everything so the new language
+    // refetches instead of serving the old language from cache.
+    queryClient.clear();
     router.push(nextHref);
   };
 

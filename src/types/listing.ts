@@ -19,6 +19,8 @@ export interface ListingCardDTO {
   location: string;
   rent: number;
   dwellingType: string;
+  /** Display label for the dwelling type, localized by the backend. */
+  dwellingTypeLabel?: string | null;
   rooms: number;
   sizeM2: number;
   tags: ListingTagDTO[];
@@ -49,6 +51,8 @@ export interface ListingDetailDTO {
   fullAddress?: string | null;
   rent: number;
   dwellingType: string;
+  /** Display label for the dwelling type, localized by the backend. */
+  dwellingTypeLabel?: string | null;
   rooms: number;
   sizeM2: number | null;
   description: string;
