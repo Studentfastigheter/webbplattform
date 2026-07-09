@@ -287,15 +287,20 @@ const getHostTypeCounts = (facets: ListingSearchFacetsDTO | null) => {
 
 type HousingPageClientProps = {
   /**
-   * Per-visit seed for the backend's shuffled feed order. Comes from the
-   * server page so the SSR prefetch and the client queries share the same
-   * key; it stays constant while the user paginates, so the order is stable
-   * within the visit.
+   * Seed for the backend's shuffled feed order, minted per server render.
+   * The first mount's value matches the SSR prefetch key; later values are
+   * ignored (see the state capture below).
    */
   listingShuffleSeed: string;
 };
 
 export default function ListingsPage({ listingShuffleSeed }: HousingPageClientProps) {
+  // Pagination round-trips through the URL (?page=), which re-renders the
+  // server page and mints a fresh seed each time. Freeze the first seed for
+  // the lifetime of this mount so the shuffled order stays identical while
+  // the visitor pages back and forth — paging away and back must show the
+  // same listings on the same page.
+  const [shuffleSeed] = useState(listingShuffleSeed);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -502,11 +507,11 @@ export default function ListingsPage({ listingShuffleSeed }: HousingPageClientPr
   const listingsSearchParams = useMemo<ListingSearchParams>(
     () => ({
       ...currentFilters,
-      seed: listingShuffleSeed,
+      seed: shuffleSeed,
       page: page - 1,
       size: PAGE_SIZE,
     }),
-    [currentFilters, listingShuffleSeed, page]
+    [currentFilters, shuffleSeed, page]
   );
   const {
     data: listingsPageData,
@@ -567,12 +572,12 @@ export default function ListingsPage({ listingShuffleSeed }: HousingPageClientPr
   const normalizedMapFilters = useMemo(
     () =>
       normalizeListingSearchParams(
-        { ...currentFilters, seed: listingShuffleSeed },
+        { ...currentFilters, seed: shuffleSeed },
         {
           includePageable: false,
         }
       ),
-    [currentFilters, listingShuffleSeed]
+    [currentFilters, shuffleSeed]
   );
   const mapQuery = useQuery<ListingCardDTO[]>({
     queryKey: qk.listings.map(normalizedMapFilters),
