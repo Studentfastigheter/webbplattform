@@ -26,6 +26,10 @@ export default async function CityDetailPage({ params }: CityDetailPageProps) {
   const { city } = await params;
   const routeCity = decodeRouteParam(city);
   const normalizedCityCode = normalizeCityCode(routeCity);
+  // One shuffle seed per visit — see the housing page: keeps the backend's
+  // shuffled feed order stable across the client's pagination while sharing
+  // the query key with the SSR prefetch below.
+  const listingShuffleSeed = crypto.randomUUID();
 
   return (
     <PrefetchedQueryBoundary
@@ -51,6 +55,7 @@ export default async function CityDetailPage({ params }: CityDetailPageProps) {
         const cityCode = cityDetail?.code ?? normalizedCityCode;
         const cityListingsSearchParams = normalizeListingSearchParams({
           cityCode,
+          seed: listingShuffleSeed,
           page: 0,
           size: CITY_LISTINGS_PAGE_SIZE,
         });
@@ -65,7 +70,7 @@ export default async function CityDetailPage({ params }: CityDetailPageProps) {
         });
       }}
     >
-      <CityDetailPageClient />
+      <CityDetailPageClient listingShuffleSeed={listingShuffleSeed} />
     </PrefetchedQueryBoundary>
   );
 }
