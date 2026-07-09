@@ -171,6 +171,52 @@ export function useCompanyListingsPage(
   });
 }
 
+const COMPLETE_LISTINGS_PAGE_SIZE = 100;
+
+/**
+ * Every published listing for a company, gathered by walking all pages of
+ * the public listings endpoint. Used by the company map, which needs the
+ * full set — useCompanyListingsPage above only holds the page currently
+ * shown in the listings grid.
+ */
+export function useCompanyListingsComplete(
+  companyId: number | null | undefined
+) {
+  return useQuery<ListingCardDTO[]>({
+    queryKey: qk.queues.companyListingsComplete(companyId ?? -1),
+    queryFn: async ({ signal }) => {
+      const firstPage = await queueService.getCompanyListingsPage(
+        companyId!,
+        0,
+        COMPLETE_LISTINGS_PAGE_SIZE,
+        { signal }
+      );
+      const items = [...(firstPage.content ?? [])];
+      const totalPages = firstPage.totalPages ?? 1;
+
+      if (totalPages > 1) {
+        const remainingPages = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, index) =>
+            queueService.getCompanyListingsPage(
+              companyId!,
+              index + 1,
+              COMPLETE_LISTINGS_PAGE_SIZE,
+              { signal }
+            )
+          )
+        );
+        remainingPages.forEach((pageResponse) => {
+          items.push(...(pageResponse.content ?? []));
+        });
+      }
+
+      return items;
+    },
+    enabled: companyId != null && companyId > 0,
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
 /**
  * The 5x-duplicated call. Now shared across analytics blocks and any other
  * caller that asks with the same (companyId, page, size).
