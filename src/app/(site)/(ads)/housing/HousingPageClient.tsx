@@ -285,7 +285,17 @@ const getHostTypeCounts = (facets: ListingSearchFacetsDTO | null) => {
   };
 };
 
-export default function ListingsPage() {
+type HousingPageClientProps = {
+  /**
+   * Per-visit seed for the backend's shuffled feed order. Comes from the
+   * server page so the SSR prefetch and the client queries share the same
+   * key; it stays constant while the user paginates, so the order is stable
+   * within the visit.
+   */
+  listingShuffleSeed: string;
+};
+
+export default function ListingsPage({ listingShuffleSeed }: HousingPageClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -490,8 +500,13 @@ export default function ListingsPage() {
   // placeholderData keeps the previous page on screen while the next one
   // loads, so the user never sees an empty grid mid-pagination.
   const listingsSearchParams = useMemo<ListingSearchParams>(
-    () => ({ ...currentFilters, page: page - 1, size: PAGE_SIZE }),
-    [currentFilters, page]
+    () => ({
+      ...currentFilters,
+      seed: listingShuffleSeed,
+      page: page - 1,
+      size: PAGE_SIZE,
+    }),
+    [currentFilters, listingShuffleSeed, page]
   );
   const {
     data: listingsPageData,
@@ -546,12 +561,18 @@ export default function ListingsPage() {
   // Map view — a separate cache slot. The same filters produce TWO entries
   // (lista PAGE_SIZE vs karta MAP_PAGE_SIZE * pages); that's intentional.
   // Only fetches while in map view, via enabled.
+  // The map fans out over every result page in parallel, so the stable seed
+  // matters here too: it freezes the full ordering while the pages are
+  // fetched, so no listing is duplicated or dropped between them.
   const normalizedMapFilters = useMemo(
     () =>
-      normalizeListingSearchParams(currentFilters, {
-        includePageable: false,
-      }),
-    [currentFilters]
+      normalizeListingSearchParams(
+        { ...currentFilters, seed: listingShuffleSeed },
+        {
+          includePageable: false,
+        }
+      ),
+    [currentFilters, listingShuffleSeed]
   );
   const mapQuery = useQuery<ListingCardDTO[]>({
     queryKey: qk.listings.map(normalizedMapFilters),

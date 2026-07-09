@@ -168,7 +168,17 @@ function CityPointPopup({
   );
 }
 
-export default function CityDetailPage() {
+type CityDetailPageClientProps = {
+  /**
+   * Per-visit seed for the backend's shuffled feed order — shared with the
+   * server page's SSR prefetch and constant across the client's pagination.
+   */
+  listingShuffleSeed: string;
+};
+
+export default function CityDetailPage({
+  listingShuffleSeed,
+}: CityDetailPageClientProps) {
   const params = useParams<{ city: string }>();
   const router = useRouter();
   const { locale, localizedHref } = useI18n();
@@ -216,10 +226,11 @@ export default function CityDetailPage() {
   const cityListingsSearchParams = useMemo<ListingSearchParams>(
     () => ({
       cityCode: routeCityCode,
+      seed: listingShuffleSeed,
       page: cityListingsPage - 1,
       size: CITY_LISTINGS_PAGE_SIZE,
     }),
-    [routeCityCode, cityListingsPage]
+    [routeCityCode, listingShuffleSeed, cityListingsPage]
   );
   const {
     data: listingsPage,
@@ -240,15 +251,18 @@ export default function CityDetailPage() {
       )
     : null;
 
+  // The map fans out over every result page in parallel; the stable seed
+  // freezes the full ordering meanwhile, so no listing is duplicated or
+  // dropped between the pages.
   const cityMapSearchParams = useMemo(
     () =>
       normalizeListingSearchParams(
-        { cityCode: routeCityCode },
+        { cityCode: routeCityCode, seed: listingShuffleSeed },
         {
           includePageable: false,
         }
       ),
-    [routeCityCode]
+    [routeCityCode, listingShuffleSeed]
   );
 
   const mapListingsQuery = useQuery<ListingCardDTO[]>({
