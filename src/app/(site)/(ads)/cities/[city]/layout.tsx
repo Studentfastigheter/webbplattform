@@ -65,6 +65,7 @@ export async function generateMetadata({
       `bostadskö ${cityName}`,
       `student housing ${cityName}`,
     ],
+    index: Boolean(city),
   });
 }
 
