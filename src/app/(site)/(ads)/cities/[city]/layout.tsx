@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cache, type ReactNode } from "react";
 
-import { formatCityName } from "@/features/cities/city-utils";
+import { cityDisplayName, formatCityName } from "@/features/cities/city-utils";
 import { cityService } from "@/features/cities/services/city-service";
 import { getRequestLocale } from "@/i18n/server";
 import { localizedText } from "@/i18n/text";
@@ -40,7 +40,8 @@ export async function generateMetadata({
   const [{ city: rawCity }, locale] = await Promise.all([params, getRequestLocale()]);
   const cityParam = decodeRouteParam(rawCity);
   const city = await getCityForSeo(cityParam);
-  const cityName = formatCityName(city?.city ?? cityParam) || cityParam;
+  const cityName =
+    cityDisplayName(city) || formatCityName(cityParam) || cityParam;
   const path = `/cities/${encodeURIComponent(city?.code ?? cityParam)}`;
   const fallbackDescription = localizedText(
     locale,
@@ -79,7 +80,8 @@ export default async function CityDetailLayout({
     return children;
   }
 
-  const cityName = formatCityName(city.city ?? cityParam) || cityParam;
+  const cityName =
+    cityDisplayName(city) || formatCityName(cityParam) || cityParam;
   const path = `/cities/${encodeURIComponent(city.code ?? cityParam)}`;
 
   return (

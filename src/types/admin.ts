@@ -1,3 +1,4 @@
+import type { CityRef } from "./city";
 import type { SystemProvider } from "./common";
 import type { AddSchoolRequest } from "./school";
 
@@ -40,7 +41,8 @@ export type AdminCompanyDetailedDTO = {
   pictureUrlList?: string[];
   videoUrlList?: string[];
   websiteUrl?: string;
-  cities?: string[];
+  /** Responses carry {code, nameSv, nameEn} objects; requests may send plain codes. */
+  cities?: Array<string | CityRef>;
 };
 
 export type AdminCompanyPublicDTO = {
@@ -51,7 +53,7 @@ export type AdminCompanyPublicDTO = {
   housingQueueId?: string;
   privacyUrl?: string;
   termsUrl?: string;
-  cities?: string[];
+  cities?: CityRef[];
 };
 
 export type AdminCreateCompanyRequest = {

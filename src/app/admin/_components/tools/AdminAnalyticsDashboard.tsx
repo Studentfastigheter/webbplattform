@@ -234,7 +234,9 @@ export function AdminAnalyticsDashboard() {
   const normalizedSearch = search.trim().toLocaleLowerCase("sv-SE");
   const visibleRows = normalizedSearch
     ? rows.filter((row) => {
-        const haystack = `${companyName(row.company)} ${row.company.id} ${(row.company.cities ?? []).join(" ")}`.toLocaleLowerCase("sv-SE");
+        const haystack = `${companyName(row.company)} ${row.company.id} ${(row.company.cities ?? [])
+          .flatMap((city) => [city.name, city.code])
+          .join(" ")}`.toLocaleLowerCase("sv-SE");
         return haystack.includes(normalizedSearch);
       })
     : rows;
@@ -370,7 +372,9 @@ export function AdminAnalyticsDashboard() {
                           </p>
                           <p className="mt-0.5 truncate text-xs text-gray-500">
                             ID {row.company.id}
-                            {row.company.cities?.length ? ` · ${row.company.cities.join(", ")}` : ""}
+                            {row.company.cities?.length
+                              ? ` · ${row.company.cities.map((city) => city.name).join(", ")}`
+                              : ""}
                           </p>
                         </div>
                       </div>

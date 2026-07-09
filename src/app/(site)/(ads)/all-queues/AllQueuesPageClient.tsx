@@ -15,6 +15,9 @@ import { FieldSet } from "@/components/ui/field";
 
 import { type CompanyPublicDTO } from "@/features/companies/services/company-service";
 import { useCompanies } from "@/features/companies/hooks/useCompanies";
+import { cityRefLabel } from "@/features/cities/city-utils";
+import { normalizeCityCode } from "@/features/cities/services/city-service";
+import type { Locale } from "@/i18n/config";
 import { buildJoinedQueueIdSet } from "@/features/queues/services/queue-service";
 import { useMyQueues, useJoinQueue } from "@/features/queues/hooks/useQueues";
 import { useAuth } from "@/context/AuthContext";
@@ -85,9 +88,11 @@ const formatCityName = (value: string) => {
     .replace(/(^|[\s-])\p{L}/gu, (match) => match.toLocaleUpperCase("sv-SE"));
 };
 
-function mapCompanyToCard(company: CompanyPublicDTO): CompanyQueueCard {
+function mapCompanyToCard(company: CompanyPublicDTO, locale: Locale): CompanyQueueCard {
   const cities = Array.isArray(company.cities)
-    ? company.cities.map(formatCityName).filter((city) => city.length > 0)
+    ? company.cities
+        .map((ref) => cityRefLabel(ref))
+        .filter((city) => city.length > 0)
     : [];
 
   return {
@@ -129,14 +134,14 @@ export default function Page() {
   const { locale, localizedHref, t } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
-  const cityFromUrl = formatCityName(searchParams.get("city") ?? "");
+  const cityFromUrlRaw = searchParams.get("city") ?? "";
   const [searchInput, setSearchInput] = useState("");
   const [searchValues, setSearchValues] = useState<SearchValues>({
     queueName: "",
   });
   const [filters, setFilters] = useState<QueueFilterState>(() => ({
     ...defaultQueueFilterState,
-    cities: cityFromUrl ? [cityFromUrl] : [],
+    cities: cityFromUrlRaw ? [formatCityName(cityFromUrlRaw)] : [],
   }));
   const [loadingMore, setLoadingMore] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -157,12 +162,43 @@ export default function Page() {
   } = useCompanies();
   const error = isCompaniesError ? "Kunde inte ladda företag." : null;
 
-  // Map raw companies → card shape. Memoized so identity is stable across
-  // re-renders driven by filter/search changes.
+  // Map raw companies → card shape. City chips carry the display name in the
+  // active site language. Memoized so identity is stable across re-renders
+  // driven by filter/search changes.
   const queues = useMemo<CompanyQueueCard[]>(
-    () => (companiesData ?? []).map(mapCompanyToCard),
-    [companiesData]
+    () => (companiesData ?? []).map((company) => mapCompanyToCard(company, locale)),
+    [companiesData, locale]
   );
+
+  // code -> localized label, used to resolve a ?city= URL value that carries
+  // the stable city code (as the city pages link it) into the chip label.
+  const cityLabelByCode = useMemo(() => {
+    const byCode = new Map<string, string>();
+    (companiesData ?? []).forEach((company) =>
+      (company.cities ?? []).forEach((ref) => byCode.set(ref.code, cityRefLabel(ref)))
+    );
+    return byCode;
+  }, [companiesData, locale]);
+
+  // The URL is the source of truth for the city filter: it may carry the
+  // stable code ("GOTHENBURG") from a city page link or a display name from a
+  // chip selection — both resolve to the localized chip label.
+  useEffect(() => {
+    const resolved = cityFromUrlRaw
+      ? cityLabelByCode.get(normalizeCityCode(cityFromUrlRaw)) ??
+        formatCityName(cityFromUrlRaw)
+      : null;
+    setFilters((current) => {
+      const currentCity = current.cities[0] ?? null;
+      if (currentCity === (resolved || null)) {
+        return current;
+      }
+      return {
+        ...defaultQueueFilterState,
+        cities: resolved ? [resolved] : [],
+      };
+    });
+  }, [cityFromUrlRaw, cityLabelByCode]);
 
   // My queues — used here only for membership lookup (no hydration needed).
   // Shared with the /alla-koer/[id] page so navigating between them is free.

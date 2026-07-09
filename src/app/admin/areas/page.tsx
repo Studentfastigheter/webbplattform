@@ -183,7 +183,7 @@ function AreaAliasesSection({ onError }: { onError: (message: string) => void })
       (cities.data ?? [])
         .map((city) => {
           const code = (city.code ?? "").trim();
-          const name = (city.city ?? "").trim();
+          const name = (city.name ?? "").trim();
           return {
             code,
             label: name && name !== code ? `${name} (${code})` : code,

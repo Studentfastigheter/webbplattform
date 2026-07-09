@@ -76,6 +76,8 @@ export type ListingSearchParams = {
   size?: number;
   sort?: string | string[];
   city?: string | null;
+  /** Exact match on the listing's resolved city relation (e.g. "GOTHENBURG") — unlike `city`, which is a free-text term. */
+  cityCode?: string | null;
   dwellingType?: DwellingType | string | null;
   minRent?: number | null;
   maxRent?: number | null;
@@ -226,6 +228,8 @@ export function normalizeListingSearchParams(
 
   const city = normalizedString(params.city);
   if (city) normalized.city = city;
+  const cityCode = normalizedString(params.cityCode);
+  if (cityCode) normalized.cityCode = cityCode.toLocaleUpperCase("en-US");
   if (dwellingType) normalized.dwellingType = dwellingType;
   const minRent = finiteNumber(params.minRent);
   if (minRent !== undefined) normalized.minRent = minRent;
@@ -272,6 +276,7 @@ function buildListingSearchQuery(
         }
       : {}),
     city: normalized.city,
+    cityCode: normalized.cityCode,
     dwellingType: normalized.dwellingType,
     minRent: normalized.minRent,
     maxRent: normalized.maxRent,
@@ -480,6 +485,7 @@ const normalizeListingCard = (value: unknown): ListingCardDTO | null => {
     location: location || "Ej angivet",
     rent: firstNumber(source.rent),
     dwellingType: firstString(source.dwellingType) ?? "Bostad",
+    dwellingTypeLabel: firstString(source.dwellingTypeLabel) ?? null,
     rooms: firstNumber(source.rooms),
     sizeM2: firstNumber(source.sizeM2),
     tags: normalizeListingTags(source.tags),
@@ -529,6 +535,7 @@ const normalizeListingDetail = (dto: ListingDetailDTO): ListingDetailDTO => {
   return {
     ...dto,
     tags: normalizeListingTags(source.tags),
+    dwellingTypeLabel: firstString(source.dwellingTypeLabel) ?? null,
     imageUrls: firstStringArray(source.imageUrls, source.images),
     requirementsProfileId:
       firstString(source.requirementsProfileId, source.requirementProfileId) ??
@@ -721,6 +728,17 @@ export const listingService = {
       auth: false,
       body: JSON.stringify({ type }),
     });
+  },
+
+  /** Owner edit view of the listing's English texts. */
+  getTranslations: async (
+    id: string,
+    options?: ServiceOptions
+  ): Promise<import("@/types/listing").ListingTranslationsDTO> => {
+    return apiClient<import("@/types/listing").ListingTranslationsDTO>(
+      `/listings/${pathSegment(id)}/translations`,
+      { signal: options?.signal }
+    );
   },
 
   update: async (id: string, payload: UpdateListingRequest): Promise<void> => {

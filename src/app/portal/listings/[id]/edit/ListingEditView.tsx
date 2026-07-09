@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Home, MapPin, Pencil } from "@/components/icons";
 
@@ -8,6 +9,7 @@ import BostadImagePreviewGrid from "@/features/ads/components/BostadImagePreview
 import ImageUploadGallery from "@/features/business-portal/components/ImageUploadGallery";
 import { Button } from "@/components/ui/button";
 import { RichTextTextarea } from "@/components/ui/RichTextTextarea";
+import { listingService } from "@/features/listings/services/listing-service";
 import { useAuth } from "@/context/AuthContext";
 import {
   useListing,
@@ -45,6 +47,9 @@ type SaveState = {
 
 type EditableListingDraft = Omit<ListingDetailDTO, "tags"> & {
   tags: string[];
+  /** English texts (owner edit surface); empty string = falls back to Swedish. */
+  titleEn: string;
+  descriptionEn: string;
 };
 
 const emptySaveState: SaveState = {
@@ -80,6 +85,8 @@ function cloneEditableListing(listing: ListingDetailDTO): EditableListingDraft {
     tags: normalizeTagList(listing.tags),
     imageUrls: [...(listing.imageUrls ?? [])],
     description: listing.description ?? "",
+    titleEn: "",
+    descriptionEn: "",
   };
 }
 
@@ -228,6 +235,8 @@ function getEditableSnapshot(
     tags: getEndpointTagsFromSelection(listing.tags, availableTags),
     description: listing.description ?? "",
     imageUrls: listing.imageUrls ?? [],
+    titleEn: "titleEn" in listing ? listing.titleEn : "",
+    descriptionEn: "descriptionEn" in listing ? listing.descriptionEn : "",
   });
 }
 
@@ -286,6 +295,15 @@ function createUpdatePayload(
 
   if (!baseline || (draft.description ?? "") !== (baseline.description ?? "")) {
     payload.description = draft.description ?? "";
+  }
+
+  // English texts: an empty string clears the translation on the backend so
+  // English falls back to Swedish again.
+  if (!baseline || draft.titleEn !== baseline.titleEn) {
+    payload.titleEn = draft.titleEn;
+  }
+  if (!baseline || draft.descriptionEn !== baseline.descriptionEn) {
+    payload.descriptionEn = draft.descriptionEn;
   }
 
   if (!baseline || !areStringArraysEqual(draft.imageUrls, baseline.imageUrls)) {
@@ -421,6 +439,17 @@ function EditableListingPreview({
                 onChange={(event) => onDraftChange({ title: event.target.value })}
                 className={`${inlineInputClass} -mx-2 w-full text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl`}
                 placeholder={localizedText(locale, "Titel", "Title")}
+              />
+              <input
+                aria-label={localizedText(locale, "Titel (engelska)", "Title (English)")}
+                value={draft.titleEn}
+                onChange={(event) => onDraftChange({ titleEn: event.target.value })}
+                className={`${inlineInputClass} -mx-2 mt-1 w-full text-lg font-semibold tracking-tight text-gray-500`}
+                placeholder={localizedText(
+                  locale,
+                  "Titel på engelska (valfritt, annars visas svenska)",
+                  "Title in English (optional, Swedish shown otherwise)"
+                )}
               />
 
               <div className="mt-4 grid gap-3 text-sm text-gray-600">
@@ -602,6 +631,26 @@ function EditableListingPreview({
               placeholder={localizedText(locale, "Beskriv bostaden", "Describe the dwelling")}
             />
           </div>
+
+          <div className="mt-2">
+            <h2 className="mb-1 border-b border-gray-100 pb-2 text-lg font-semibold text-gray-900">
+              {localizedText(locale, "Beskrivning (engelska)", "Description (English)")}
+            </h2>
+            <p className="mb-2 text-sm text-gray-500">
+              {localizedText(
+                locale,
+                "Visas för besökare som använder plattformen på engelska. Lämna tomt så visas den svenska texten.",
+                "Shown to visitors using the platform in English. Leave empty to fall back to the Swedish text."
+              )}
+            </p>
+            <RichTextTextarea
+              aria-label={localizedText(locale, "Beskrivning (engelska)", "Description (English)")}
+              value={draft.descriptionEn}
+              onValueChange={(value) => onDraftChange({ descriptionEn: value })}
+              className={`${inlineInputClass} min-h-44 w-full resize-y text-[15px] leading-relaxed text-gray-700`}
+              placeholder={localizedText(locale, "Beskriv bostaden på engelska", "Describe the dwelling in English")}
+            />
+          </div>
         </div>
       </section>
     </section>
@@ -636,6 +685,13 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
     isLoading: listingTagsLoading,
     isError: isListingTagsError,
   } = useListingTags();
+  // The public listing DTO carries a single localized string per field; the
+  // English variants for the edit form come from the owner translations view.
+  const { data: listingTranslations } = useQuery({
+    queryKey: ["listings", "translations", id],
+    queryFn: ({ signal }) => listingService.getTranslations(id, { signal }),
+    enabled: Boolean(id),
+  });
 
   const loading = listingLoading;
   const error =
@@ -656,6 +712,8 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
       return;
     }
     const normalized = cloneEditableListing(serverListing);
+    normalized.titleEn = listingTranslations?.titleEn ?? "";
+    normalized.descriptionEn = listingTranslations?.descriptionEn ?? "";
 
     if (preserveDraftOnNextImageHydrationRef.current) {
       preserveDraftOnNextImageHydrationRef.current = false;
@@ -675,7 +733,7 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
     setListing(normalized);
     setDraft({ ...normalized, imageUrls: [...(normalized.imageUrls ?? [])] });
     setSaveState(emptySaveState);
-  }, [serverListing, id]);
+  }, [serverListing, listingTranslations, id]);
 
   const galleryImages = useMemo(
     () => draft?.imageUrls?.filter(Boolean) ?? [],

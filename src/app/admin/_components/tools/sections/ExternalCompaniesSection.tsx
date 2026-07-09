@@ -35,6 +35,7 @@ type ExternalCompanyLogoSource = "upload" | "url";
 type ExternalCompanyFormState = {
   name: string;
   description: string;
+  descriptionEn: string;
   logoSource: ExternalCompanyLogoSource;
   logoUrl: string;
   logoFile: File | null;
@@ -46,6 +47,7 @@ type ExternalCompanyFormState = {
 const emptyExternalCompanyForm: ExternalCompanyFormState = {
   name: "",
   description: "",
+  descriptionEn: "",
   logoSource: "upload",
   logoUrl: "",
   logoFile: null,
@@ -58,6 +60,7 @@ type ExternalCompanyUpdateFormState = {
   id: string;
   name: string;
   description: string;
+  descriptionEn: string;
   logoUrl: string;
   websiteUrl: string;
   cityCodes: string[];
@@ -68,6 +71,7 @@ const emptyExternalCompanyUpdateForm: ExternalCompanyUpdateFormState = {
   id: "",
   name: "",
   description: "",
+  descriptionEn: "",
   logoUrl: "",
   websiteUrl: "",
   cityCodes: [],
@@ -96,6 +100,7 @@ function buildExternalCompanyPayload(
   const payload = {
     name,
     description,
+    descriptionEn: form.descriptionEn.trim() || null,
     websiteUrl,
     cityCodes: Array.from(
       new Set(form.cityCodes.map((code) => normalizeCityCode(code)).filter(Boolean))
@@ -134,6 +139,7 @@ function buildExternalCompanyUpdatePayload(
     id: number;
     name?: string;
     description?: string;
+    descriptionEn?: string;
     logoUrl?: string;
     websiteUrl?: string;
     cities?: string[];
@@ -147,6 +153,9 @@ function buildExternalCompanyUpdatePayload(
   if (form.description.trim()) {
     payload.description = form.description.trim();
   }
+  // Always sent: a blank value clears the English translation so the
+  // description falls back to Swedish again.
+  payload.descriptionEn = form.descriptionEn.trim();
   if (form.logoUrl.trim()) {
     payload.logoUrl = form.logoUrl.trim();
   }
@@ -363,7 +372,8 @@ function ExternalCompaniesForm() {
     setUpdateForm({
       id,
       name: selected.name,
-      description: selected.description ?? "",
+      description: selected.descriptionSv ?? "",
+      descriptionEn: selected.descriptionEn ?? "",
       logoUrl: selected.logoUrl ?? "",
       websiteUrl: selected.websiteUrl ?? "",
       cityCodes: (selected.cityCodes ?? [])
@@ -522,9 +532,16 @@ function ExternalCompaniesForm() {
       </div>
       <div className="mt-3">
         <FormTextarea
-          label="Beskrivning"
+          label="Beskrivning (svenska)"
           value={form.description}
           onChange={(description) => patchForm({ description })}
+        />
+      </div>
+      <div className="mt-3">
+        <FormTextarea
+          label="Beskrivning (engelska, lämna tomt om samma som svenska)"
+          value={form.descriptionEn}
+          onChange={(descriptionEn) => patchForm({ descriptionEn })}
         />
       </div>
 
@@ -703,9 +720,16 @@ function ExternalCompaniesForm() {
       </div>
       <div className="mt-3">
         <FormTextarea
-          label="Beskrivning"
+          label="Beskrivning (svenska)"
           value={updateForm.description}
           onChange={(description) => patchUpdateForm({ description })}
+        />
+      </div>
+      <div className="mt-3">
+        <FormTextarea
+          label="Beskrivning (engelska, lämna tomt om samma som svenska)"
+          value={updateForm.descriptionEn}
+          onChange={(descriptionEn) => patchUpdateForm({ descriptionEn })}
         />
       </div>
 

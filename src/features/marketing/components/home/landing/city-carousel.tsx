@@ -4,8 +4,9 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
 import CityCardMedia from "@/features/cities/components/CityCardMedia";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
-import { normalizeCityName } from "@/features/cities/city-utils";
+import { cityCodeToUrlSegment, normalizeCityName } from "@/features/cities/city-utils";
 import { cityService } from "@/features/cities/services/city-service";
+import { localizedText } from "@/i18n/text";
 import type { CityDTO } from "@/types/city";
 
 const MIN_CAROUSEL_DURATION_SECONDS = 80;
@@ -20,12 +21,13 @@ type CityCarouselItem = {
 
 function CityCarouselCard({ city }: { city: CityCarouselItem }) {
   const { t } = useI18n();
+  const name = city.name;
   const cardClassName =
     "group relative block h-[330px] w-[230px] shrink-0 overflow-hidden rounded-[22px] bg-brand-25 ring-1 ring-black/[0.04] transition-transform duration-300 ease-out hover:-translate-y-3 focus-visible:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:h-[390px] sm:w-[280px] lg:h-[430px] lg:w-[320px]";
 
   const content = (
     <CityCardMedia
-      cityName={city.name}
+      cityName={name}
       imageUrl={city.imageUrl}
       unoptimized
       sizes="(max-width: 640px) 230px, (max-width: 1024px) 280px, 320px"
@@ -35,8 +37,8 @@ function CityCarouselCard({ city }: { city: CityCarouselItem }) {
 
   return (
     <Link
-      href={`/cities/${encodeURIComponent(city.code)}`}
-      aria-label={t("home.cities.openAria", { city: city.name })}
+      href={`/cities/${encodeURIComponent(cityCodeToUrlSegment(city.code))}`}
+      aria-label={t("home.cities.openAria", { city: name })}
       className={cardClassName}
     >
       {content}
@@ -45,7 +47,7 @@ function CityCarouselCard({ city }: { city: CityCarouselItem }) {
 }
 
 function normalizeCarouselCity(city: CityDTO): CityCarouselItem | null {
-  const name = normalizeCityName(city.city ?? city.code);
+  const name = normalizeCityName(city.name ?? city.code);
   if (!name) return null;
 
   return {

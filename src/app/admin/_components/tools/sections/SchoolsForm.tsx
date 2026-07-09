@@ -298,7 +298,7 @@ function buildSchoolPayload(
   if (!selectedCity) {
     throw new Error("Den valda staden finns inte i stadslistan.");
   }
-  const cityName = selectedCity.city.city?.trim() || selectedCity.code;
+  const cityName = selectedCity.city.name?.trim() || selectedCity.code;
 
   return {
     ...(schoolId ? { schoolId } : {}),

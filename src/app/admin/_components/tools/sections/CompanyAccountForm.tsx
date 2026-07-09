@@ -218,14 +218,24 @@ function CompanyAccountForm() {
     .map((city) => ({ city, code: cityCode(city) }))
     .filter((item): item is { city: CityDTO; code: string } => Boolean(item.code));
   const createCityOptions = createForm.city.trim() && !cityOptions.some((item) => item.code === createForm.city.trim())
-    ? [{ city: { city: createForm.city.trim(), code: createForm.city.trim() }, code: createForm.city.trim() }, ...cityOptions]
+    ? [
+        {
+          city: {
+            nameSv: createForm.city.trim(),
+            nameEn: createForm.city.trim(),
+            code: createForm.city.trim(),
+          },
+          code: createForm.city.trim(),
+        },
+        ...cityOptions,
+      ]
     : cityOptions;
 
   function getDefaultCompanyCity(companyId: string) {
     const selectedCompany = companyOptions.find(
       (company) => String(company.id) === companyId
     );
-    return normalizeCityCode(selectedCompany?.cities?.[0] ?? "G\u00d6TEBORG");
+    return selectedCompany?.cities?.[0]?.code ?? "GOTHENBURG";
   }
 
   function createNewCompanyAdminForm(companyId = createForm.companyId) {

@@ -1,8 +1,28 @@
+/**
+ * Reference to a city as the API serialises it: a stable code (also the city
+ * page URL segment) plus the display name, already localized by the backend
+ * from the request's Accept-Language header.
+ */
+export type CityRef = {
+  code: string;
+  name: string;
+};
+
 export type CityDTO = {
-  city?: string | null;
+  code?: string | null;
+  name?: string | null;
   bannerUrl?: string | null;
   description?: string | null;
-  code?: string | null;
+};
+
+/** Admin edit view: all language variants explicit (GET /cities/{code}/admin). */
+export type CityAdminDTO = {
+  code: string;
+  nameSv?: string | null;
+  nameEn?: string | null;
+  descriptionSv?: string | null;
+  descriptionEn?: string | null;
+  bannerUrl?: string | null;
 };
 
 export type CityCompanyDTO = {
@@ -40,12 +60,16 @@ export type CityDetailedDTO = CityDTO & {
 export type CreateCityRequest = {
   code: string;
   name?: string | null;
+  nameEn?: string | null;
   description?: string | null;
+  descriptionEn?: string | null;
   bannerUrl?: string | null;
 };
 
 export type ModifyCityRequest = {
   name?: string | null;
+  nameEn?: string | null;
   description?: string | null;
+  descriptionEn?: string | null;
   bannerUrl?: string | null;
 };

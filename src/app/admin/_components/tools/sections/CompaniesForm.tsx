@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { adminService } from "@/features/admin/services/admin-service";
 import { useAdminCitySummaries, useAdminCompanies, useAdminCreateCompany, useAdminDeleteCompany, useAdminModifyCompany, useAdminRefreshCompanyListings, useAdminUpdateCompanyCredentials } from "@/features/admin/hooks/useAdmin";
-import { normalizeCityCode } from "@/features/cities/services/city-service";
+import { normalizeCityCode, normalizeCityRef } from "@/features/cities/services/city-service";
 import type { AdminCompanyCredentialDTO, AdminCompanyDetailedDTO, AdminCreateCompanyRequest, CityDTO } from "@/types";
 import {
   type AdminActionState,
@@ -100,7 +100,7 @@ function companyDetailsToForm(details: AdminCompanyDetailedDTO): CompanyFormStat
     description: details.description ?? "",
     websiteUrl: details.websiteUrl ?? "",
     cityCodes: (details.cities ?? [])
-      .map((code) => normalizeCityCode(code))
+      .map((city) => normalizeCityRef(city)?.code ?? "")
       .filter(Boolean),
     socialLinks: formatSocialLinksInput(details.socialLinks),
     pictureUrlList: (details.pictureUrlList ?? []).join("\n"),
