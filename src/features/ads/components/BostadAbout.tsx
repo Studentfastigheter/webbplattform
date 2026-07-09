@@ -375,7 +375,8 @@ export default function BostadAbout({
 }: Props) {
   const { locale } = useI18n();
   const dwellingLabel = [
-    listing.dwellingType ? formatDwellingType(listing.dwellingType, locale) : null,
+    listing.dwellingTypeLabel ??
+      (listing.dwellingType ? formatDwellingType(listing.dwellingType, locale) : null),
     listing.rooms ? `${listing.rooms} ${localizedText(locale, "rum", "rooms")}` : null,
     listing.sizeM2 ? `${listing.sizeM2} m²` : null,
   ]

@@ -150,6 +150,10 @@ export const adminService = {
     return cityService.get(code);
   },
 
+  getCityAdmin: async (code: string) => {
+    return cityService.getAdmin(code);
+  },
+
   createSchool: async (school: AdminAddSchoolRequest): Promise<void> => {
     await apiClient<void>("/admin/school", {
       method: "POST",
@@ -224,6 +228,10 @@ export const adminService = {
     company: ModifyExternalCompanyRequest
   ): Promise<void> => {
     await companyService.updateExternalCompany(company);
+  },
+
+  getExternalCompaniesAdmin: async () => {
+    return companyService.getExternalCompaniesAdmin();
   },
 
   getExternalCompanies: async (): Promise<ExternalCompanyDTO[]> => {

@@ -13,6 +13,8 @@ import {
 } from "@/lib/api/normalize";
 import { getActiveCompanyId, getActiveCompanySummary } from "@/lib/company-access";
 import { createSquareCompanyLogoFile } from "@/lib/company-logo";
+import { normalizeCityRef } from "@/features/cities/services/city-service";
+import type { CityRef } from "@/types/city";
 import type { SystemProvider } from "@/types/common";
 
 export type GraphEntry = {
@@ -37,6 +39,9 @@ export type CompanyPrivateDTO = {
   name: string;
   subtitle?: string | null;
   description?: string | null;
+  /** English profile texts (owner edit surface); null falls back to Swedish. */
+  subtitleEn?: string | null;
+  descriptionEn?: string | null;
   website?: string | null;
   privacyPolicyUrl?: string | null;
   termsUrl?: string | null;
@@ -48,7 +53,7 @@ export type CompanyPrivateDTO = {
   contactPhone?: string | null;
   contactNote?: string | null;
   orgNumber?: string | null;
-  cities?: string[];
+  cities?: CityRef[];
   pictureUrlList?: string[];
   videoUrlList?: string[];
   socialLinks?: Record<string, string>;
@@ -73,7 +78,7 @@ export type CompanyPublicDTO = {
   privacyUrl?: string | null;
   privacyPolicyUrl?: string | null;
   termsUrl?: string | null;
-  cities?: string[];
+  cities?: CityRef[];
   schools?: ResidentSchool[];
   pictureUrlList?: string[];
   videoUrlList?: string[];
@@ -87,6 +92,7 @@ export type CompanyListParams = {
 export type CreateExternalCompanyRequest = {
   name: string;
   description?: string | null;
+  descriptionEn?: string | null;
   logoUrl?: string | null;
   websiteUrl?: string | null;
   cityCodes?: string[];
@@ -109,6 +115,8 @@ export type ModifyExternalCompanyRequest = {
   id: number;
   name?: string | null;
   description?: string | null;
+  /** Blank clears the English translation (falls back to Swedish). */
+  descriptionEn?: string | null;
   logoUrl?: string | null;
   websiteUrl?: string | null;
   cities?: string[];
@@ -118,6 +126,18 @@ export type ExternalCompanyDTO = {
   id: number;
   name: string;
   description?: string | null;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  cityCodes?: CityRef[];
+  schoolIds?: number[];
+};
+
+/** Admin edit view: all language variants explicit, city codes as plain strings. */
+export type ExternalCompanyAdminDTO = {
+  id: number;
+  name: string;
+  descriptionSv?: string | null;
+  descriptionEn?: string | null;
   logoUrl?: string | null;
   websiteUrl?: string | null;
   cityCodes?: string[];
@@ -170,10 +190,14 @@ export type CompanyChangeableDataDTO = {
   logoUrl?: string | null;
   bannerUrl?: string | null;
   companyDescription?: string | null;
+  /** English description; blank clears the translation (falls back to Swedish). */
+  companyDescriptionEn?: string | null;
   phone?: string | null;
   contactEmail?: string | null;
   companyUrl?: string | null;
   subtitle?: string | null;
+  /** English subtitle; blank clears the translation (falls back to Swedish). */
+  subtitleEn?: string | null;
   privacyPolicyUrl?: string | null;
   termsUrl?: string | null;
   websiteUrl?: string | null;
@@ -1047,7 +1071,9 @@ function normalizeCompanyPublic(value: unknown): CompanyPublicDTO | null {
     privacyUrl: firstString(value.privacyUrl, value.privacyPolicyUrl, value.policyUrl),
     privacyPolicyUrl: firstString(value.privacyPolicyUrl, value.privacyUrl, value.policyUrl),
     termsUrl: firstString(value.termsUrl),
-    cities: toArray<string>(value.cities ?? value.companyCities),
+    cities: toArray<unknown>(value.cities ?? value.companyCities)
+      .map(normalizeCityRef)
+      .filter((city): city is CityRef => city !== null),
     schools,
     pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
     videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
@@ -1073,7 +1099,9 @@ function normalizeExternalCompany(value: unknown): ExternalCompanyDTO | null {
     description: firstString(value.description, value.companyDescription) ?? null,
     logoUrl: firstString(value.logoUrl, value.logoURL) ?? null,
     websiteUrl: firstString(value.websiteUrl, value.website, value.companyUrl) ?? null,
-    cityCodes: toArray<string>(value.cityCodes ?? value.cities ?? value.companyCities),
+    cityCodes: toArray<unknown>(value.cityCodes ?? value.cities ?? value.companyCities)
+      .map(normalizeCityRef)
+      .filter((city): city is CityRef => city !== null),
     schoolIds: toArray<unknown>(value.schoolIds ?? value.schools ?? value.companySchools)
       .map((school) => {
         if (isRecord(school)) {
@@ -1111,6 +1139,8 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     orgNumber: firstString(value.orgNumber),
     subtitle: firstString(value.subtitle),
     description: firstString(value.description, value.companyDescription),
+    subtitleEn: firstString(value.subtitleEn) ?? null,
+    descriptionEn: firstString(value.descriptionEn) ?? null,
     website: firstString(value.website, value.websiteUrl),
     privacyPolicyUrl: firstString(value.privacyPolicyUrl, value.privacyUrl, value.policyUrl),
     termsUrl: firstString(value.termsUrl),
@@ -1122,7 +1152,13 @@ function normalizeCompanyPrivate(value: unknown): CompanyPrivateDTO {
     contactEmail: firstString(value.contactEmail, value.email),
     contactPhone: firstString(value.contactPhone, value.phone),
     contactNote: firstString(value.contactNote, value.internalContactNote),
-    ...(rawCities !== undefined ? { cities: toArray<string>(rawCities) } : {}),
+    ...(rawCities !== undefined
+      ? {
+          cities: toArray<unknown>(rawCities)
+            .map(normalizeCityRef)
+            .filter((city): city is CityRef => city !== null),
+        }
+      : {}),
     pictureUrlList: toArray<string>(value.pictureUrlList ?? value.companyPictures),
     videoUrlList: toArray<string>(value.videoUrlList ?? value.companyVideos),
     socialLinks: normalizeStringRecord(value.socialLinks),
@@ -2038,6 +2074,14 @@ export const companyService = {
     return arrayFromApiResponse<unknown>(companies)
       .map(normalizeExternalCompany)
       .filter((company): company is ExternalCompanyDTO => company !== null);
+  },
+
+  /** Admin edit list with every language variant explicit (requires admin auth). */
+  getExternalCompaniesAdmin: async (): Promise<ExternalCompanyAdminDTO[]> => {
+    const companies = await apiClient<unknown>("/companies/external-company/admin");
+    return arrayFromApiResponse<ExternalCompanyAdminDTO>(companies).filter(
+      (company) => typeof company?.id === "number"
+    );
   },
 
   deleteExternalCompany: async (id: number): Promise<void> => {

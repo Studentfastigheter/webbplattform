@@ -19,6 +19,8 @@ export interface ListingCardDTO {
   location: string;
   rent: number;
   dwellingType: string;
+  /** Display label for the dwelling type, localized by the backend. */
+  dwellingTypeLabel?: string | null;
   rooms: number;
   sizeM2: number;
   tags: ListingTagDTO[];
@@ -49,6 +51,8 @@ export interface ListingDetailDTO {
   fullAddress?: string | null;
   rent: number;
   dwellingType: string;
+  /** Display label for the dwelling type, localized by the backend. */
+  dwellingTypeLabel?: string | null;
   rooms: number;
   sizeM2: number | null;
   description: string;
@@ -134,16 +138,26 @@ export type HostType = (typeof HOST_TYPE_VALUES)[number];
 
 export interface UpdateListingRequest {
   title?: string;
+  /** English title; empty string clears the translation (falls back to Swedish). */
+  titleEn?: string;
   rooms?: number | null;
   sizeM2?: number | null;
   rent?: number | null;
   description?: string;
+  /** English description; empty string clears the translation (falls back to Swedish). */
+  descriptionEn?: string;
   tags?: string[];
   status?: ListingStatus;
   images?: string[];
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
+}
+
+/** Owner edit view of a listing's English texts (GET /listings/{id}/translations). */
+export interface ListingTranslationsDTO {
+  titleEn?: string | null;
+  descriptionEn?: string | null;
 }
 
 export interface UpdateMultipleListingsRequest {

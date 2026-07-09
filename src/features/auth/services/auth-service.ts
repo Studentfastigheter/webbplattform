@@ -144,18 +144,6 @@ function decodeJwtPayload(token: string | null): JwtPayload {
   }
 }
 
-function normalizeCityEnum(value: string | undefined | null): string | undefined {
-  const trimmed = value?.normalize("NFC").trim();
-  if (!trimmed) {
-    return undefined;
-  }
-
-  const enumKey = trimmed.toLocaleUpperCase("sv-SE").replace(/[\s-]+/g, "_");
-  const asciiKey = enumKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  return SWEDISH_CITY_ENUMS[enumKey] ?? SWEDISH_CITY_ENUMS[asciiKey] ?? enumKey;
-}
-
 function normalizeAccountTypeValue(value: string | undefined): User["accountType"] | undefined {
   const accountType = value?.toLowerCase();
   if (!accountType) {
@@ -490,7 +478,6 @@ export const authService = {
       firstName: payload.firstName?.trim(),
       surname: payload.surname?.trim(),
       phone: payload.phone?.trim(),
-      city: normalizeCityEnum(payload.city),
       companyName: payload.companyName?.trim(),
       roleName: payload.roleName?.trim(),
       fullName: payload.fullName?.trim(),
@@ -609,7 +596,6 @@ export const authService = {
       firstName: data.firstName,
       surname: data.surname,
       phone: data.phone,
-      city: data.city,
       aboutText: data.aboutText,
       description: data.description,
     });

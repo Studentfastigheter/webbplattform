@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { FieldSet } from "@/components/ui/field";
 import { SearchBar } from "@/components/ui/search-bar";
-import { normalizeCityName } from "@/features/cities/city-utils";
+import { cityCodeToUrlSegment, normalizeCityName } from "@/features/cities/city-utils";
 import { useCitiesList } from "@/features/cities/hooks/useCities";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatLocalizedNumber, localizedCount, localizedText } from "@/i18n/text";
@@ -24,16 +24,18 @@ type CityCardData = {
 
 function CityCard({ city }: { city: CityCardData }) {
   const { locale } = useI18n();
-  const cityHref = `/cities/${encodeURIComponent(city.code)}`;
+  const name = city.name;
+  // City page URLs use the lowercased English-derived code (/cities/gothenburg).
+  const cityHref = `/cities/${encodeURIComponent(cityCodeToUrlSegment(city.code))}`;
 
   return (
     <LocalizedLink
       href={cityHref}
-      aria-label={localizedText(locale, `Öppna ${city.name}`, `Open ${city.name}`)}
+      aria-label={localizedText(locale, `Öppna ${name}`, `Open ${name}`)}
       className="group relative block h-[225px] w-full overflow-hidden rounded-[22px] border border-black/[0.06] bg-brand-25 shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 sm:h-[245px]"
     >
       <CityCardMedia
-        cityName={city.name}
+        cityName={name}
         imageUrl={city.imageUrl}
         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
       />
@@ -42,7 +44,7 @@ function CityCard({ city }: { city: CityCardData }) {
 }
 
 function normalizeCityCard(city: CityDTO): CityCardData | null {
-  const name = normalizeCityName(city.city ?? city.code);
+  const name = normalizeCityName(city.name ?? city.code);
   if (!name) return null;
 
   const code = city.code?.trim() || name;
@@ -170,7 +172,7 @@ export default function CitiesPage() {
             ) : (
               <div className="grid w-full grid-cols-1 justify-start gap-3 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-3">
                 {filteredCities.map((city) => (
-                  <CityCard key={city.name} city={city} />
+                  <CityCard key={city.code} city={city} />
                 ))}
               </div>
             )}

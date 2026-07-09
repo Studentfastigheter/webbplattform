@@ -11,14 +11,17 @@ import {
   isRecord,
 } from "@/lib/api/normalize";
 import type {
+  CityAdminDTO,
   CityCompanyDTO,
   CityDTO,
   CityDetailedDTO,
+  CityRef,
   CitySchoolDTO,
   CityStudentActivityDTO,
   CreateCityRequest,
   ModifyCityRequest,
 } from "@/types/city";
+import { formatCityName } from "@/features/cities/city-utils";
 
 // --- Area aliases (admin) ---
 // Links a raw area name (as delivered by an external property system, per
@@ -52,7 +55,10 @@ export type ModifyAreaAliasRequest = {
 
 export const normalizeCityCode = (value: string | null | undefined) =>
   value
-    ?.normalize("NFC")
+    ?.normalize("NFD")
+    // City codes are ASCII (derived from the English name) — fold any
+    // diacritics so legacy display-name inputs still normalise to a code.
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLocaleUpperCase("sv-SE")
     .replace(/[\s-]+/g, "_") ?? "";
@@ -60,26 +66,54 @@ export const normalizeCityCode = (value: string | null | undefined) =>
 const normalizeCity = (value: unknown): CityDTO | null => {
   if (typeof value === "string") {
     const city = value.trim();
-    return city ? { city, code: normalizeCityCode(city) } : null;
+    return city ? { name: city, code: normalizeCityCode(city) } : null;
   }
 
   if (!isRecord(value)) {
     return null;
   }
 
-  const city = firstString(value.city, value.name, value.displayName);
+  const name = firstString(value.name, value.nameSv, value.city, value.displayName);
   const code = firstString(value.code, value.cityCode, value.id);
 
-  if (!city && !code) {
+  if (!name && !code) {
     return null;
   }
 
   return {
-    city: city ?? code ?? "",
-    code: normalizeCityCode(code ?? city),
+    name: name ?? code ?? "",
+    code: normalizeCityCode(code ?? name),
     bannerUrl: firstString(value.bannerUrl, value.bannerURL) ?? null,
     description: firstString(value.description) ?? null,
   };
+};
+
+/**
+ * Normalises a company's city reference — the API's {code, name} object
+ * (name already localized by the backend), or a legacy plain code/name
+ * string — into a CityRef.
+ */
+export const normalizeCityRef = (value: unknown): CityRef | null => {
+  if (typeof value === "string") {
+    const code = normalizeCityCode(value);
+    if (!code) {
+      return null;
+    }
+    return { code, name: formatCityName(value) };
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const code = normalizeCityCode(
+    firstString(value.code, value.cityCode, value.name)
+  );
+  if (!code) {
+    return null;
+  }
+  const name = firstString(value.name, value.nameSv, value.city) ?? formatCityName(code);
+  return { code, name };
 };
 
 const normalizeCityCompany = (value: unknown): CityCompanyDTO | null => {
@@ -215,15 +249,30 @@ export const cityService = {
   listNames: async (options?: ServiceOptions): Promise<string[]> => {
     const cities = await cityService.list(options);
     return cities
-      .map((city) => firstString(city.city, city.code))
+      .map((city) => firstString(city.name, city.code))
       .filter((city): city is string => Boolean(city));
   },
 
   listCodes: async (options?: ServiceOptions): Promise<string[]> => {
     const cities = await cityService.list(options);
     return cities
-      .map((city) => normalizeCityCode(firstString(city.code, city.city)))
+      .map((city) => normalizeCityCode(firstString(city.code, city.name)))
       .filter(Boolean);
+  },
+
+  /** Admin edit view with every language variant explicit. */
+  getAdmin: async (code: string, options?: ServiceOptions): Promise<CityAdminDTO> => {
+    const city = await apiClient<CityAdminDTO>(`/cities/${pathSegment(code)}/admin`, {
+      signal: options?.signal,
+    });
+    return {
+      code: normalizeCityCode(city.code),
+      nameSv: city.nameSv ?? null,
+      nameEn: city.nameEn ?? null,
+      descriptionSv: city.descriptionSv ?? null,
+      descriptionEn: city.descriptionEn ?? null,
+      bannerUrl: city.bannerUrl ?? null,
+    };
   },
 
   get: async (code: string, options?: ServiceOptions): Promise<CityDetailedDTO> => {

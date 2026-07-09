@@ -41,8 +41,8 @@ const loginCopy: Record<
   {
     title: string;
     titleEn: string;
-    subtitle: string;
-    subtitleEn: string;
+    subtitle?: string;
+    subtitleEn?: string;
     invalidAccountMessage: string;
     invalidAccountMessageEn: string;
     successPath: string;
@@ -53,8 +53,6 @@ const loginCopy: Record<
   student: {
     title: "Logga in",
     titleEn: "Log in",
-    subtitle: "För CampusLyan-konton.",
-    subtitleEn: "For CampusLyan accounts.",
     invalidAccountMessage:
       "Det här kontot kan inte logga in här.",
     invalidAccountMessageEn:
@@ -114,7 +112,10 @@ export function LoginForm({ mode = "student", className, ...props }: LoginFormPr
   const copy = {
     ...baseCopy,
     title: localizedText(locale, baseCopy.title, baseCopy.titleEn),
-    subtitle: localizedText(locale, baseCopy.subtitle, baseCopy.subtitleEn),
+    subtitle:
+      baseCopy.subtitle && baseCopy.subtitleEn
+        ? localizedText(locale, baseCopy.subtitle, baseCopy.subtitleEn)
+        : undefined,
     invalidAccountMessage: localizedText(
       locale,
       baseCopy.invalidAccountMessage,

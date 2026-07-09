@@ -61,7 +61,7 @@ import type {
 } from "@/types";
 import type {
   CreateExternalCompanyPayload,
-  ExternalCompanyDTO,
+  ExternalCompanyAdminDTO,
   ModifyExternalCompanyRequest,
 } from "@/features/companies/services/company-service";
 
@@ -189,9 +189,9 @@ export function useAdminCompanyUsers(companyId: number | null | undefined) {
 }
 
 export function useAdminExternalCompanies() {
-  return useQuery<ExternalCompanyDTO[]>({
+  return useQuery<ExternalCompanyAdminDTO[]>({
     queryKey: qk.admin.externalCompanies(),
-    queryFn: () => adminService.getExternalCompanies(),
+    queryFn: () => adminService.getExternalCompaniesAdmin(),
     staleTime: STALE_30_SECONDS,
   });
 }
