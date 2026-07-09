@@ -105,6 +105,13 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
+      // vercel.app-produktionsdomänen får inte indexeras som kopia av sajten.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "webbplattform.vercel.app" }],
+        destination: "https://www.campuslyan.se/:path*",
+        permanent: true,
+      },
       { source: "/logga-in", destination: "/login", permanent: true },
       { source: "/en/logga-in", destination: "/en/login", permanent: true },
       { source: "/logga-in/freja-id", destination: "/register/freja-id?start=freja", permanent: true },
