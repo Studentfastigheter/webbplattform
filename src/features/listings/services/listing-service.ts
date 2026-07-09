@@ -730,6 +730,17 @@ export const listingService = {
     });
   },
 
+  /** Owner edit view of the listing's English texts. */
+  getTranslations: async (
+    id: string,
+    options?: ServiceOptions
+  ): Promise<import("@/types/listing").ListingTranslationsDTO> => {
+    return apiClient<import("@/types/listing").ListingTranslationsDTO>(
+      `/listings/${pathSegment(id)}/translations`,
+      { signal: options?.signal }
+    );
+  },
+
   update: async (id: string, payload: UpdateListingRequest): Promise<void> => {
     assertUpdateListingPayload(payload);
 

@@ -138,16 +138,26 @@ export type HostType = (typeof HOST_TYPE_VALUES)[number];
 
 export interface UpdateListingRequest {
   title?: string;
+  /** English title; empty string clears the translation (falls back to Swedish). */
+  titleEn?: string;
   rooms?: number | null;
   sizeM2?: number | null;
   rent?: number | null;
   description?: string;
+  /** English description; empty string clears the translation (falls back to Swedish). */
+  descriptionEn?: string;
   tags?: string[];
   status?: ListingStatus;
   images?: string[];
   applyBy?: DateString | null;
   availableFrom?: DateString | null;
   availableTo?: DateString | null;
+}
+
+/** Owner edit view of a listing's English texts (GET /listings/{id}/translations). */
+export interface ListingTranslationsDTO {
+  titleEn?: string | null;
+  descriptionEn?: string | null;
 }
 
 export interface UpdateMultipleListingsRequest {
