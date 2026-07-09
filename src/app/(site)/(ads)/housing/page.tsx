@@ -27,8 +27,14 @@ export default async function ListingsPage({ searchParams }: HousingPageProps) {
   const city = firstSearchParam(params.city)?.trim() ?? "";
   const page = pageFromSearchParam(params.page);
   const currentFilters: ListingSearchParams = city ? { city } : {};
+  // One shuffle seed per visit: the backend orders the default feed
+  // seed-stably (random but consistent across pages) and interleaves
+  // companies. Generated here so the SSR prefetch and the client share the
+  // same query key; a fresh page load reshuffles.
+  const listingShuffleSeed = crypto.randomUUID();
   const listingsSearchParams = normalizeListingSearchParams({
     ...currentFilters,
+    seed: listingShuffleSeed,
     page: page - 1,
     size: PAGE_SIZE,
   });
@@ -60,7 +66,7 @@ export default async function ListingsPage({ searchParams }: HousingPageProps) {
         ]);
       }}
     >
-      <HousingPageClient />
+      <HousingPageClient listingShuffleSeed={listingShuffleSeed} />
     </PrefetchedQueryBoundary>
   );
 }
