@@ -17,6 +17,7 @@ import {
   type CompanyDTO,
 } from "@/features/queues/services/queue-service";
 import {
+  useCompanyListingsComplete,
   useCompanyListingsPage,
   useJoinQueue,
   useMyQueues,
@@ -413,13 +414,16 @@ export default function QueueDetailPage() {
       .filter((video): video is CompanyVideo => video !== null);
   }, [company?.videoUrlList]);
 
+  // The map shows every published listing for the company — not just the
+  // 6 currently visible in the paginated grid below.
+  const { data: allListingsData } = useCompanyListingsComplete(companyIdNumber);
   const mapListings = useMemo(
     () =>
-      listings.filter(
+      uniqueListingsById(allListingsData ?? []).filter(
         (listing) =>
           typeof listing.lat === "number" && typeof listing.lng === "number",
       ),
-    [listings],
+    [allListingsData],
   );
   const queueToJoin = queues[0] ?? null;
 

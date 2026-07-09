@@ -94,6 +94,8 @@ export const qk = {
       ["queues", "company-listings-page", companyId, page, size] as const,
     companyListingsPageByCompany: (companyId: number) =>
       ["queues", "company-listings-page", companyId] as const,
+    companyListingsComplete: (companyId: number) =>
+      ["queues", "company-listings-complete", companyId] as const,
     allCompanyListingsByCompany: (companyId: number) =>
       ["queues", "all-company-listings", companyId] as const,
   },
