@@ -154,9 +154,15 @@ export interface UpdateListingRequest {
   availableTo?: DateString | null;
 }
 
-/** Owner edit view of a listing's English texts (GET /listings/{id}/translations). */
+/** Owner edit view of a listing's texts in both languages (GET /listings/{id}/translations). */
 export interface ListingTranslationsDTO {
+  /** Swedish (base) title. */
+  title?: string | null;
+  /** Swedish (base) description. */
+  description?: string | null;
+  /** English title; null when falling back to Swedish. */
   titleEn?: string | null;
+  /** English description; null when falling back to Swedish. */
   descriptionEn?: string | null;
 }
 
