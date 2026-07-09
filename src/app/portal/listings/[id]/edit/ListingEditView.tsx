@@ -436,7 +436,17 @@ function EditableListingPreview({
               <input
                 aria-label={localizedText(locale, "Titel", "Title")}
                 value={draft.title ?? ""}
-                onChange={(event) => onDraftChange({ title: event.target.value })}
+                onChange={(event) => {
+                  const title = event.target.value;
+                  // While the English title still matches the Swedish one it
+                  // follows along, so the "same title in both languages"
+                  // default holds until the English title is edited itself.
+                  onDraftChange(
+                    draft.titleEn === (draft.title ?? "")
+                      ? { title, titleEn: title }
+                      : { title }
+                  );
+                }}
                 className={`${inlineInputClass} -mx-2 w-full text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl`}
                 placeholder={localizedText(locale, "Titel", "Title")}
               />
@@ -685,15 +695,18 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
     isLoading: listingTagsLoading,
     isError: isListingTagsError,
   } = useListingTags();
-  // The public listing DTO carries a single localized string per field; the
-  // English variants for the edit form come from the owner translations view.
-  const { data: listingTranslations } = useQuery({
-    queryKey: ["listings", "translations", id],
-    queryFn: ({ signal }) => listingService.getTranslations(id, { signal }),
-    enabled: Boolean(id),
-  });
+  // The public listing DTO carries a single localized string per field (it
+  // could serve English text if the portal user's UI language is English);
+  // the explicit Swedish + English variants for the edit form come from the
+  // owner translations view.
+  const { data: listingTranslations, isFetched: listingTranslationsFetched } =
+    useQuery({
+      queryKey: ["listings", "translations", id],
+      queryFn: ({ signal }) => listingService.getTranslations(id, { signal }),
+      enabled: Boolean(id),
+    });
 
-  const loading = listingLoading;
+  const loading = listingLoading || !listingTranslationsFetched;
   const error =
     isListingError && listingErr
       ? listingErr instanceof Error
@@ -712,7 +725,14 @@ export default function ListingEditView({ id }: ListingEditViewProps) {
       return;
     }
     const normalized = cloneEditableListing(serverListing);
-    normalized.titleEn = listingTranslations?.titleEn ?? "";
+    // Prefer the explicit Swedish base texts over the localized detail DTO,
+    // which serves English when the portal user's UI language is English.
+    normalized.title = listingTranslations?.title ?? normalized.title;
+    normalized.description =
+      listingTranslations?.description ?? normalized.description;
+    // The English title defaults to the Swedish one (usually an address);
+    // the backend only stores it when it actually differs.
+    normalized.titleEn = listingTranslations?.titleEn ?? normalized.title ?? "";
     normalized.descriptionEn = listingTranslations?.descriptionEn ?? "";
 
     if (preserveDraftOnNextImageHydrationRef.current) {
