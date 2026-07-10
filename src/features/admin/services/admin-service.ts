@@ -2,12 +2,12 @@ import {
   ApiError,
   apiClient,
   arrayFromApiResponse,
-  buildQuery,
   pathSegment,
   type ServiceOptions,
 } from "@/lib/api/client";
 import type {
   AdminAddSchoolRequest,
+  AdminApplicationsStatsDTO,
   AdminCompanyDetailedDTO,
   AdminCompanyCredentialDTO,
   AdminCompanyPublicDTO,
@@ -16,11 +16,16 @@ import type {
   AdminCreateCompanyRequest,
   AdminCreateCompanyUserRequest,
   AdminCreatePOIRequest,
+  AdminEngagementStatsDTO,
+  AdminGeographyStatsDTO,
   AdminListingTagDetailDTO,
+  AdminListingsStatsDTO,
   AdminLocationCategoryDTO,
   AdminModifyPOIRequest,
+  AdminOverviewStatsDTO,
   AdminPointOfInterestDTO,
-  AdminUserTrendDTO,
+  AdminQuickRegisterStatsDTO,
+  AdminUsersStatsDTO,
   AdminWaitlistStatsDTO,
   CityDTO,
   CityDetailedDTO,
@@ -420,17 +425,35 @@ export const adminService = {
     });
   },
 
-  getUserStatistics: async (
-    options: { from?: string | Date; to?: string | Date } = {}
-  ): Promise<AdminUserTrendDTO[]> => {
-    const response = await apiClient<unknown>(
-      `/admin/statistics/users${buildQuery({
-        from: options.from instanceof Date ? options.from.toISOString() : options.from,
-        to: options.to instanceof Date ? options.to.toISOString() : options.to,
-      })}`
-    );
+  // --- Platform statistics (AdminStatisticsController). Timeframe-dependent
+  // endpoints default to the last 12 months on the backend. ---
 
-    return arrayFromApiResponse<AdminUserTrendDTO>(response);
+  getStatisticsOverview: async (): Promise<AdminOverviewStatsDTO> => {
+    return apiClient<AdminOverviewStatsDTO>("/admin/statistics/overview");
+  },
+
+  getUsersStatistics: async (): Promise<AdminUsersStatsDTO> => {
+    return apiClient<AdminUsersStatsDTO>("/admin/statistics/users");
+  },
+
+  getQuickRegisterStatistics: async (): Promise<AdminQuickRegisterStatsDTO> => {
+    return apiClient<AdminQuickRegisterStatsDTO>("/admin/statistics/quick-registers");
+  },
+
+  getListingsStatistics: async (): Promise<AdminListingsStatsDTO> => {
+    return apiClient<AdminListingsStatsDTO>("/admin/statistics/listings");
+  },
+
+  getApplicationsStatistics: async (): Promise<AdminApplicationsStatsDTO> => {
+    return apiClient<AdminApplicationsStatsDTO>("/admin/statistics/applications");
+  },
+
+  getEngagementStatistics: async (): Promise<AdminEngagementStatsDTO> => {
+    return apiClient<AdminEngagementStatsDTO>("/admin/statistics/engagement");
+  },
+
+  getGeographyStatistics: async (): Promise<AdminGeographyStatsDTO> => {
+    return apiClient<AdminGeographyStatsDTO>("/admin/statistics/geography");
   },
 
   getWaitlistStats: async (): Promise<AdminWaitlistStatsDTO> => {

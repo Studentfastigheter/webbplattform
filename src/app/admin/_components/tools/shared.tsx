@@ -81,7 +81,8 @@ export const ADMIN_SECTION_DETAILS = {
   },
   statistics: {
     title: "Statistics",
-    description: "Fetch admin reporting data for registered users and growth analysis.",
+    description:
+      "Platform-wide KPI dashboard: users, quick registers, listings, applications, engagement, and geography.",
     badge: "Reporting",
   },
   analytics: {
