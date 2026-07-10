@@ -528,8 +528,16 @@ export const authService = {
     return authService.registerStudent();
   },
 
-  pollAuthStatus: async (authRef: string): Promise<FrejaAuthStatus> => {
-    return apiClient<FrejaAuthStatus>(
+  /**
+   * Pollar Freja-verifieringen. Svaret är polymorft: en statussträng
+   * (PENDING/MATCHES/...) under pågående flöde, men vid lyckad
+   * Freja-only-registrering svarar backend 201 med hela inloggningen
+   * ({ accessToken, user }) — detektera med isAuthResponse().
+   */
+  pollAuthStatus: async (
+    authRef: string
+  ): Promise<FrejaAuthStatus | AuthResponse> => {
+    return apiClient<FrejaAuthStatus | AuthResponse>(
       `/auth/poll/${pathSegment(authRef)}`,
       { auth: false }
     );

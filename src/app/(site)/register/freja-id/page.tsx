@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { FieldDescription, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { authService } from "@/features/auth/services/auth-service";
+import { authService, isAuthResponse } from "@/features/auth/services/auth-service";
 import {
   buildCurrentPageFrejaReturnUrl,
   buildFrejaLaunchUrl,
@@ -97,7 +97,7 @@ function getStatusAction(status: FrejaAuthStatus, flow: FrejaFlow, locale: "sv" 
   }
 
   if (status === "MATCHES") {
-    return { href: "/login", label: localizedText(locale, "Gå till inloggning", "Go to login") };
+    return { href: "/housing", label: localizedText(locale, "Fortsätt", "Continue") };
   }
 
   if (status === "EXPIRED" || status === "CANCELED") {
@@ -153,7 +153,7 @@ function StatusPill({ status }: { status: FrejaAuthStatus }) {
 function FrejaIdRegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isLoading: authLoading, refreshUser } = useAuth();
+  const { user, isLoading: authLoading, refreshUser, completeAuth } = useAuth();
   const { locale, localizedHref } = useI18n();
   const initialAuthRef = searchParams.get("authRef")?.trim() ?? "";
   const shouldStartFrejaOnly = searchParams.get("start") === "freja";
@@ -276,6 +276,27 @@ function FrejaIdRegisterContent() {
 
         consecutiveErrors = 0;
 
+        // Lyckad Freja-only-registrering: backend svarar med inloggningen
+        // (201 { accessToken, user }) i stället för en statussträng. Logga
+        // in den nyskapade användaren direkt — ingen manuell inloggning med
+        // det mejlade lösenordet ska behövas.
+        if (isAuthResponse(result)) {
+          setStatus("MATCHES");
+          setPollError(null);
+          try {
+            completeAuth(result);
+            if (flow === "quick-register") {
+              clearQuickRegisterAuthRef(user);
+            }
+            router.replace(localizedHref("/housing"));
+          } catch {
+            // Svaret saknade en användbar token — degradera till det gamla
+            // beteendet så att användaren åtminstone kan logga in själv.
+            router.replace(localizedHref("/login"));
+          }
+          return;
+        }
+
         if (!isFrejaAuthStatus(result)) {
           setPollError(localizedText(locale, "Backend skickade en okänd Freja-status.", "The backend returned an unknown Freja status."));
           return;
@@ -329,10 +350,10 @@ function FrejaIdRegisterContent() {
       active = false;
       if (timeout) clearTimeout(timeout);
     };
-  }, [authRef, flow, locale, localizedHref, refreshUser, router, user]);
+  }, [authRef, completeAuth, flow, locale, localizedHref, refreshUser, router, user]);
 
   const successText = isFrejaOnlyFlow
-    ? localizedText(locale, "Kontot är verifierat. Du skickas vidare till inloggning.", "The account is verified. You will be redirected to sign in.")
+    ? localizedText(locale, "Kontot är skapat och du är inloggad. Du skickas vidare.", "The account is created and you are signed in. You will be redirected.")
     : localizedText(locale, statusMessages.MATCHES.sv, statusMessages.MATCHES.en);
   const statusAction = getStatusAction(status, flow, locale);
   const pageTitle = localizedText(locale, "Verifiera med Freja", "Verify with Freja");
