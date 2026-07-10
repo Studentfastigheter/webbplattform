@@ -17,6 +17,7 @@ import {
 } from "@/components/icons";
 import { getAppIconElement } from "@/components/icons/catalog";
 import { useAuth } from "@/context/AuthContext";
+import { useLoginGate } from "@/features/auth/hooks/useLoginGate";
 
 import ListingCardFromDTO from "@/features/listings/components/ListingCardFromDTO";
 import ListingCardSkeleton from "@/features/listings/components/ListingCardSkeleton";
@@ -306,6 +307,7 @@ export default function ListingsPage({ listingShuffleSeed }: HousingPageClientPr
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const { locale, localizedHref } = useI18n();
+  const requireLogin = useLoginGate();
   const propertyTypeOptions = useMemo(() => getPropertyTypeOptions(locale), [locale]);
   const hostTypeOptions = useMemo(() => getHostTypeOptions(locale), [locale]);
   const defaultAmenityOptions = useMemo(() => getAmenityOptions(locale), [locale]);
@@ -713,6 +715,7 @@ export default function ListingsPage({ listingShuffleSeed }: HousingPageClientPr
                   }}
                   onSubmit={(event) => {
                     event.preventDefault();
+                    if (!requireLogin()) return;
                     setPage(1);
                     updatePageInUrl(1);
                     setFilters((prev) => ({
@@ -747,6 +750,7 @@ export default function ListingsPage({ listingShuffleSeed }: HousingPageClientPr
                   schools={schools}
                   initialState={filters}
                   onApply={(state) => {
+                    if (!requireLogin()) return;
                     setPage(1);
                     updatePageInUrl(1);
                     setFilterPreview(state);
