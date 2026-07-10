@@ -445,8 +445,18 @@ export const qk = {
     companyListingStatuses: (companyId: number) =>
       ["admin", "company-listing-statuses", companyId] as const,
     externalCompanies: () => ["admin", "external-companies"] as const,
-    userStatistics: (from?: string, to?: string) =>
-      ["admin", "user-statistics", from ?? "", to ?? ""] as const,
+    // Platform statistics dashboard. All keys share the ["admin", "statistics"]
+    // prefix so one invalidation refreshes every block.
+    statisticsAll: ["admin", "statistics"] as const,
+    statisticsOverview: () => ["admin", "statistics", "overview"] as const,
+    statisticsUsers: () => ["admin", "statistics", "users"] as const,
+    statisticsQuickRegisters: () =>
+      ["admin", "statistics", "quick-registers"] as const,
+    statisticsListings: () => ["admin", "statistics", "listings"] as const,
+    statisticsApplications: () =>
+      ["admin", "statistics", "applications"] as const,
+    statisticsEngagement: () => ["admin", "statistics", "engagement"] as const,
+    statisticsGeography: () => ["admin", "statistics", "geography"] as const,
     waitlistStats: () => ["admin", "waitlist-stats"] as const,
     areaAliases: () => ["admin", "area-aliases"] as const,
   },
