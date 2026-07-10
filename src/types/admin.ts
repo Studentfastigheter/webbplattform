@@ -105,11 +105,67 @@ export type AdminPointOfInterestDTO = {
   lastFetchedAt?: string;
 };
 
-export type AdminUserTrendDTO = {
-  year?: number;
-  month?: number;
-  day?: number;
-  userCount?: number;
+export type AdminTrendPointDTO = {
+  /** ISO date (yyyy-MM-dd), UTC day boundaries. */
+  date: string;
+  count: number;
+  cumulative: number;
+};
+
+export type AdminCountBucketDTO = {
+  key: string;
+  count: number;
+};
+
+export type AdminOverviewStatsDTO = {
+  students: number;
+  verifiedStudents: number;
+  verifiedStudentRatio: number;
+  pendingQuickRegisters: number;
+  companies: number;
+  listings: number;
+  listingsByStatus: AdminCountBucketDTO[];
+  applications: number;
+};
+
+export type AdminUsersStatsDTO = {
+  total: number;
+  verified: number;
+  registrations: AdminTrendPointDTO[];
+};
+
+export type AdminQuickRegisterStatsDTO = {
+  pending: number;
+  created: AdminTrendPointDTO[];
+};
+
+export type AdminListingsStatsDTO = {
+  created: AdminTrendPointDTO[];
+  byStatus: AdminCountBucketDTO[];
+  byCity: AdminCountBucketDTO[];
+  bySource: AdminCountBucketDTO[];
+};
+
+export type AdminApplicationsStatsDTO = {
+  submitted: AdminTrendPointDTO[];
+  byStatus: AdminCountBucketDTO[];
+  answeredTotal: number;
+  answeredGotListing: number;
+  gotListingShare: number;
+};
+
+export type AdminEngagementStatsDTO = {
+  views: AdminTrendPointDTO[];
+  likes: AdminTrendPointDTO[];
+  watchlists: AdminTrendPointDTO[];
+  messages: AdminTrendPointDTO[];
+};
+
+export type AdminGeographyStatsDTO = {
+  topCityInterests: AdminCountBucketDTO[];
+  /** ISO 3166 country codes; "UNKNOWN" for students without a country. */
+  studentsPerCountry: AdminCountBucketDTO[];
+  genderSplit: AdminCountBucketDTO[];
 };
 
 export type AdminWaitlistTrendPointDTO = {

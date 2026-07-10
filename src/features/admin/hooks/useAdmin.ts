@@ -47,11 +47,17 @@ import type {
   AdminCreateCompanyRequest,
   AdminCreateCompanyUserRequest,
   AdminCreatePOIRequest,
+  AdminApplicationsStatsDTO,
+  AdminEngagementStatsDTO,
+  AdminGeographyStatsDTO,
   AdminListingTagDetailDTO,
+  AdminListingsStatsDTO,
   AdminLocationCategoryDTO,
   AdminModifyPOIRequest,
+  AdminOverviewStatsDTO,
   AdminPointOfInterestDTO,
-  AdminUserTrendDTO,
+  AdminQuickRegisterStatsDTO,
+  AdminUsersStatsDTO,
   AdminWaitlistStatsDTO,
   CityDTO,
   CityDetailedDTO,
@@ -196,12 +202,61 @@ export function useAdminExternalCompanies() {
   });
 }
 
-export function useAdminUserStatistics(
-  options: { from?: string; to?: string } = {},
-) {
-  return useQuery<AdminUserTrendDTO[]>({
-    queryKey: qk.admin.userStatistics(options.from, options.to),
-    queryFn: () => adminService.getUserStatistics(options),
+// Platform statistics dashboard (AdminStatisticsController). One hook per
+// block so each card loads and fails independently.
+
+export function useAdminStatisticsOverview() {
+  return useQuery<AdminOverviewStatsDTO>({
+    queryKey: qk.admin.statisticsOverview(),
+    queryFn: () => adminService.getStatisticsOverview(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminUsersStatistics() {
+  return useQuery<AdminUsersStatsDTO>({
+    queryKey: qk.admin.statisticsUsers(),
+    queryFn: () => adminService.getUsersStatistics(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminQuickRegisterStatistics() {
+  return useQuery<AdminQuickRegisterStatsDTO>({
+    queryKey: qk.admin.statisticsQuickRegisters(),
+    queryFn: () => adminService.getQuickRegisterStatistics(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminListingsStatistics() {
+  return useQuery<AdminListingsStatsDTO>({
+    queryKey: qk.admin.statisticsListings(),
+    queryFn: () => adminService.getListingsStatistics(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminApplicationsStatistics() {
+  return useQuery<AdminApplicationsStatsDTO>({
+    queryKey: qk.admin.statisticsApplications(),
+    queryFn: () => adminService.getApplicationsStatistics(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminEngagementStatistics() {
+  return useQuery<AdminEngagementStatsDTO>({
+    queryKey: qk.admin.statisticsEngagement(),
+    queryFn: () => adminService.getEngagementStatistics(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminGeographyStatistics() {
+  return useQuery<AdminGeographyStatsDTO>({
+    queryKey: qk.admin.statisticsGeography(),
+    queryFn: () => adminService.getGeographyStatistics(),
     staleTime: STALE_30_SECONDS,
   });
 }
