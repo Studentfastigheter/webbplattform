@@ -92,6 +92,12 @@
       "businessCta": "For companies",
       "previewAlt": "Preview of the CampusLyan platform"
     },
+    "featuredListings": {
+      "heading": "Featured homes",
+      "subtitle": "A selection of available student homes right now.",
+      "viewAll": "See all listings",
+      "loadError": "Could not load listings."
+    },
     "steps": {
       "headingStart": "From registration to",
       "headingHighlight": "move-in",
