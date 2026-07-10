@@ -92,6 +92,12 @@
       "businessCta": "För företag",
       "previewAlt": "Preview av CampusLyan plattformen"
     },
+    "featuredListings": {
+      "heading": "Utvalda bostäder",
+      "subtitle": "Ett axplock av lediga studentbostäder just nu.",
+      "viewAll": "Se alla annonser",
+      "loadError": "Kunde inte ladda annonser."
+    },
     "steps": {
       "headingStart": "Från registrering till",
       "headingHighlight": "inflytt",
