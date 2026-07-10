@@ -8,6 +8,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
 import ScrollToTop from "@/components/layout/ScrollToTop";
+import ScrollReset from "@/components/layout/ScrollReset";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { getDictionary, getRequestLocale } from "@/i18n/server";
 import {
@@ -117,6 +118,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <I18nProvider initialLocale={locale}>
           <AuthProvider>
             <UserEnvironmentProvider>
+              <ScrollReset />
               <ScrollToTop />
               {children}
               <Toaster
