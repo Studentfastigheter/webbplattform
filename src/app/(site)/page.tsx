@@ -8,6 +8,7 @@ import StepsTimeline from "@/features/marketing/components/home/landing/StepsTim
 import { StickyCards } from "@/features/marketing/components/home/landing/sticky-cards";
 import { getHomePageData } from "@/data/home-page";
 import { getDictionary } from "@/i18n/server";
+import { isPlatformLaunched } from "@/lib/platform-launch";
 
 const listingMockups = [
   {
@@ -67,6 +68,7 @@ export default async function Home() {
   const dictionary = await getDictionary();
   const { featuresData, stickyCardsData, stepsData } = getHomePageData(dictionary);
   const home = dictionary.home;
+  const platformLaunched = isPlatformLaunched();
 
   return (
     <main className="main-marketing-theme relative overflow-x-clip bg-background font-sans text-foreground">
@@ -75,9 +77,9 @@ export default async function Home() {
         flipWords={[...home.hero.flipWords]}
         flipWordsClassName="!text-pop-contrast !z-10 relative"
         subtitle={home.hero.subtitle}
-        waitlistHref="#register-waitlist"
+        primaryHref={platformLaunched ? "/housing" : "#register-waitlist"}
         businessHref="/for-business"
-        interestCta={home.hero.interestCta}
+        primaryCta={platformLaunched ? home.hero.searchCta : home.hero.interestCta}
         businessCta={home.hero.businessCta}
         previewImageSrc="/mockup-hero.webp"
         previewImageAlt={home.hero.previewAlt}
@@ -124,12 +126,14 @@ export default async function Home() {
         moreLabel={dictionary.common.more}
       />
 
-      <HeroWaitlist
-        id="register-waitlist"
-        backgroundClassName="bg-background"
-        heading={home.waitlist.heading}
-        subtitle={home.waitlist.subtitle}
-      />
+      {!platformLaunched ? (
+        <HeroWaitlist
+          id="register-waitlist"
+          backgroundClassName="bg-background"
+          heading={home.waitlist.heading}
+          subtitle={home.waitlist.subtitle}
+        />
+      ) : null}
     </main>
   );
 }
