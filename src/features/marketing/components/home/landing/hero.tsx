@@ -16,10 +16,8 @@ type HeroProps = {
   backgroundClassName?: string;
   previewImageSrc?: string;
   previewImageAlt?: string;
-  waitlistHref?: string;
-  businessHref?: string;
-  interestCta?: string;
-  businessCta?: string;
+  primaryHref?: string;
+  primaryCta?: string;
 };
 
 const MOCKUP_HERO_SRC = "/mockup-hero.webp";
@@ -36,10 +34,8 @@ export const Hero: React.FC<HeroProps> = ({
   backgroundClassName = "bg-background",
   previewImageSrc = "/CampusLyan-Mockup.svg",
   previewImageAlt,
-  waitlistHref = "#register-waitlist",
-  businessHref = "/for-business",
-  interestCta,
-  businessCta,
+  primaryHref = "#register-waitlist",
+  primaryCta,
 }) => {
   const { dictionary, t } = useI18n();
   const words =
@@ -92,11 +88,8 @@ export const Hero: React.FC<HeroProps> = ({
             </p>
           ) : null}
           <div className="order-4 mt-6 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row md:order-3">
-            <Button as={Link} href={waitlistHref} variant="default" className="w-full rounded-full px-6 sm:w-auto">
-              {interestCta ?? t("home.hero.interestCta")}
-            </Button>
-            <Button as={Link} href={businessHref} variant="secondary" className="w-full rounded-full px-6 sm:w-auto">
-              {businessCta ?? t("home.hero.businessCta")}
+            <Button as={Link} href={primaryHref} variant="default" className="w-full rounded-full px-6 sm:w-auto">
+              {primaryCta ?? t("home.hero.interestCta")}
             </Button>
           </div>
         </div>

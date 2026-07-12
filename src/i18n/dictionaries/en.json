@@ -88,8 +88,15 @@
       "flipWords": ["Gothenburg", "Stockholm", "Lund", "Uppsala", "Linköping"],
       "subtitle": "Everything for student housing across Sweden. Listings, queues, verified housing companies and guides. Completely free.",
       "interestCta": "Join the waitlist",
+      "searchCta": "Find housing",
       "businessCta": "For companies",
       "previewAlt": "Preview of the CampusLyan platform"
+    },
+    "featuredListings": {
+      "heading": "Featured homes",
+      "subtitle": "A selection of available student homes right now.",
+      "viewAll": "See all listings",
+      "loadError": "Could not load listings."
     },
     "steps": {
       "headingStart": "From registration to",

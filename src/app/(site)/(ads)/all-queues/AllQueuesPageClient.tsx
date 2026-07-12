@@ -21,6 +21,7 @@ import type { Locale } from "@/i18n/config";
 import { buildJoinedQueueIdSet } from "@/features/queues/services/queue-service";
 import { useMyQueues, useJoinQueue } from "@/features/queues/hooks/useQueues";
 import { useAuth } from "@/context/AuthContext";
+import { useLoginGate } from "@/features/auth/hooks/useLoginGate";
 import { type CompanyId } from "@/types";
 
 import { getApplicationVerificationError } from "@/lib/application-eligibility";
@@ -133,6 +134,7 @@ export default function Page() {
   const searchParams = useSearchParams();
   const { locale, localizedHref, t } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
+  const requireLogin = useLoginGate();
   const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
   const cityFromUrlRaw = searchParams.get("city") ?? "";
   const [searchInput, setSearchInput] = useState("");
@@ -490,6 +492,7 @@ export default function Page() {
                   }}
                   onSubmit={(event) => {
                     event.preventDefault();
+                    if (!requireLogin()) return;
                     setSearchValues({
                       queueName: toSearchString(searchInput),
                     });
@@ -509,6 +512,7 @@ export default function Page() {
                   statuses={[]}
                   initialState={filters}
                   onApply={(state) => {
+                    if (!requireLogin()) return;
                     const selectedCity = state.cities[0] ?? null;
                     setFilters({
                       ...defaultQueueFilterState,
