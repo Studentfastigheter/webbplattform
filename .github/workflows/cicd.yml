@@ -1,0 +1,232 @@
+name: CI/CD
+
+# verify-jobbet är required status check på main (branch protection).
+# En commit kan bara nå main om exakt samma SHA redan har grön verify —
+# dvs. merga working_main → main med fast-forward efter grön CI, eller gå
+# via PR. Därför MÅSTE push-triggern täcka alla brancher som mergas in.
+#
+# Pipeline-design:
+#   CI: quality / test / build körs parallellt → kortare väntetid till grönt.
+#       verify aggregerar dem och är den enda check som ska vara required.
+#       audit (npm audit) är informativ och blockerar inte merge.
+#   CD: deploy-preview  → Vercel preview på PR:er och pushar till arbetsbrancher.
+#       deploy-production → Vercel prod på push till main. Båda kräver grön verify.
+#       Deployjobben bygger med riktiga env-värden via `vercel pull` — de får
+#       INTE ärva byggtidsplaceholdern nedan (därför ligger den per jobb).
+#
+# Kräver secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# (org/projekt-id fås från .vercel/project.json efter `vercel link`).
+# OBS: Stäng av Vercels egna git-autodeploys (Project Settings → Git),
+# annars deployas varje commit dubbelt.
+#
+# Actions är pinnade till commit-SHA (supply chain-skydd); versionen står
+# i kommentaren bredvid. Uppdatera SHA + kommentar tillsammans.
+on:
+  push:
+    branches:
+      [main, working_main, platform-prod, "design-sync/**", "etapp/**"]
+  pull_request:
+
+# GITHUB_TOKEN får endast läsrättigheter som default; jobb som behöver mer
+# höjer själva (deploy-preview: pull-requests: write för URL-kommentaren).
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Avbryt inte pågående körningar på main — varje SHA ska få sin verify
+  # och prod-deploys ska köras i ordning, inte avbrytas.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Byggtidsplaceholder i quality/test/build — next.config.ts och
+# lib/api/client.ts kastar utan den. Inga anrop görs under bygget; riktiga
+# värden hämtas i deployjobben via `vercel pull`. Placeholdern sätts per jobb
+# (inte på workflownivå) så att den ALDRIG läcker in i deploybyggen.
+
+jobs:
+  quality:
+    name: Typecheck & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NEXT_PUBLIC_API_URL: https://api.example.invalid/api
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          # Läser Node-versionen från "engines" i package.json — en källa.
+          node-version-file: package.json
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NEXT_PUBLIC_API_URL: https://api.example.invalid/api
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_API_URL: https://api.example.invalid/api
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      # Återanvänd Next.js inkrementella byggcache mellan körningar
+      # (officiell rekommendation: nextjs.org/docs/app/guides/ci-build-caching).
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  # Informativ säkerhetskoll — ingår inte i verify och blockerar inte merge.
+  # Behöver inte node_modules; npm audit läser lockfilen.
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: package.json
+
+      - name: npm audit (high+)
+        run: npm audit --audit-level=high
+
+  # Aggregeringsjobb — behåller namnet "verify" så att branch protection på
+  # main fortsätter fungera oförändrat. if: always() krävs: annars skippas
+  # jobbet när ett beroende fallerar, och en skippad required check räknas
+  # som godkänd av GitHub.
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [quality, test, build]
+    if: always()
+    steps:
+      - name: Fail om något jobb inte lyckades
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: exit 1
+      - name: OK
+        run: echo "Alla kontroller gröna."
+
+  # Preview-deploy till Vercel för PR:er (ej från forks — de saknar secrets)
+  # och för pushar till arbetsbrancher. Bygger lokalt med `vercel build` och
+  # laddar upp färdigt resultat (--prebuilt) — samma artefakt som deployas.
+  deploy-preview:
+    name: Deploy (preview)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: verify
+    if: >-
+      needs.verify.result == 'success' &&
+      ((github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository) ||
+       (github.event_name == 'push' && github.ref != 'refs/heads/main'))
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: Hämta env & projektkonfig från Vercel
+        run: npx vercel@55.0.0 pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Bygg (preview)
+        run: npx vercel@55.0.0 build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploya till Vercel (preview)
+        id: deploy
+        run: echo "url=$(npx vercel@55.0.0 deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
+
+      - name: Kommentera preview-URL på PR:en
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --edit-last --create-if-none \
+            --body "🔍 **Preview:** ${{ steps.deploy.outputs.url }} (commit ${{ github.event.pull_request.head.sha }})"
+
+  # Produktionsdeploy — endast push till main, endast efter grön verify.
+  # GitHub-environmentet ger deployhistorik + möjlighet att kräva manuell
+  # approval (Settings → Environments → production → Required reviewers).
+  deploy-production:
+    name: Deploy (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: verify
+    if: >-
+      needs.verify.result == 'success' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: Hämta env & projektkonfig från Vercel
+        run: npx vercel@55.0.0 pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Bygg (production)
+        run: npx vercel@55.0.0 build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploya till Vercel (production)
+        id: deploy
+        run: echo "url=$(npx vercel@55.0.0 deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
