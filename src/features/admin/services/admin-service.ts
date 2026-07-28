@@ -7,6 +7,8 @@ import {
 } from "@/lib/api/client";
 import type {
   AdminAddSchoolRequest,
+  AdminApplicationListDTO,
+  AdminApplicationListParams,
   AdminApplicationsStatsDTO,
   AdminCompanyDetailedDTO,
   AdminCompanyCredentialDTO,
@@ -24,6 +26,8 @@ import type {
   AdminModifyPOIRequest,
   AdminOverviewStatsDTO,
   AdminPointOfInterestDTO,
+  AdminQueueMembershipListDTO,
+  AdminQueueMembershipListParams,
   AdminQuickRegisterStatsDTO,
   AdminUsersStatsDTO,
   AdminWaitlistStatsDTO,
@@ -60,6 +64,20 @@ export type AdminCompanyListingStatusStats = {
 
 function jsonBody(value: unknown) {
   return JSON.stringify(value);
+}
+
+/** Serializes admin list params, dropping empty values. */
+function adminListQueryString(
+  params: Record<string, string | number | undefined>,
+): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") {
+      query.set(key, String(value));
+    }
+  }
+  const encoded = query.toString();
+  return encoded ? `?${encoded}` : "";
 }
 
 function isAuthorizationError(error: unknown) {
@@ -458,6 +476,22 @@ export const adminService = {
 
   getWaitlistStats: async (): Promise<AdminWaitlistStatsDTO> => {
     return apiClient<AdminWaitlistStatsDTO>("/admin/waitlist");
+  },
+
+  getApplicationList: async (
+    params: AdminApplicationListParams = {},
+  ): Promise<AdminApplicationListDTO> => {
+    return apiClient<AdminApplicationListDTO>(
+      `/admin/insights/applications${adminListQueryString(params)}`,
+    );
+  },
+
+  getQueueMembershipList: async (
+    params: AdminQueueMembershipListParams = {},
+  ): Promise<AdminQueueMembershipListDTO> => {
+    return apiClient<AdminQueueMembershipListDTO>(
+      `/admin/insights/queue-memberships${adminListQueryString(params)}`,
+    );
   },
 
   // --- Area aliases (CityController, admin-only) ---

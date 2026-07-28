@@ -9,6 +9,8 @@ import { OverviewKpiRow } from "./OverviewKpiRow";
 import { UsersBlock } from "./UsersBlock";
 import { ListingsBlock } from "./ListingsBlock";
 import { ApplicationsBlock } from "./ApplicationsBlock";
+import { ApplicationListBlock } from "./ApplicationListBlock";
+import { QueueMembershipListBlock } from "./QueueMembershipListBlock";
 import { EngagementBlock } from "./EngagementBlock";
 import { GeographyBlock } from "./GeographyBlock";
 
@@ -43,6 +45,8 @@ export function StatisticsDashboard() {
       <UsersBlock />
       <ListingsBlock />
       <ApplicationsBlock />
+      <ApplicationListBlock />
+      <QueueMembershipListBlock />
       <EngagementBlock />
       <GeographyBlock />
     </div>

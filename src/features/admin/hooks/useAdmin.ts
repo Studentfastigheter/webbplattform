@@ -47,6 +47,8 @@ import type {
   AdminCreateCompanyRequest,
   AdminCreateCompanyUserRequest,
   AdminCreatePOIRequest,
+  AdminApplicationListDTO,
+  AdminApplicationListParams,
   AdminApplicationsStatsDTO,
   AdminEngagementStatsDTO,
   AdminGeographyStatsDTO,
@@ -56,6 +58,8 @@ import type {
   AdminModifyPOIRequest,
   AdminOverviewStatsDTO,
   AdminPointOfInterestDTO,
+  AdminQueueMembershipListDTO,
+  AdminQueueMembershipListParams,
   AdminQuickRegisterStatsDTO,
   AdminUsersStatsDTO,
   AdminWaitlistStatsDTO,
@@ -258,6 +262,25 @@ export function useAdminGeographyStatistics() {
     queryKey: qk.admin.statisticsGeography(),
     queryFn: () => adminService.getGeographyStatistics(),
     staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminApplicationList(params: AdminApplicationListParams) {
+  return useQuery<AdminApplicationListDTO>({
+    queryKey: qk.admin.statisticsApplicationList(params),
+    queryFn: () => adminService.getApplicationList(params),
+    staleTime: STALE_30_SECONDS,
+    // Keep the previous page rendered while the next one loads.
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useAdminQueueMembershipList(params: AdminQueueMembershipListParams) {
+  return useQuery<AdminQueueMembershipListDTO>({
+    queryKey: qk.admin.statisticsQueueMembershipList(params),
+    queryFn: () => adminService.getQueueMembershipList(params),
+    staleTime: STALE_30_SECONDS,
+    placeholderData: (previous) => previous,
   });
 }
 

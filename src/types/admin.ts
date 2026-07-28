@@ -188,6 +188,78 @@ export type AdminWaitlistStatsDTO = {
   generatedAt?: string;
 };
 
+/** One row in the admin application list (live or archived/decided). */
+export type AdminApplicationRowDTO = {
+  /** Numeric for active rows, UUID for archived rows. */
+  id: string;
+  source: "active" | "archived";
+  status: "SUBMITTED" | "UNDER_REVIEW" | "OFFERED" | "ACCEPTED" | "REJECTED";
+  appliedAt: string;
+  /** Null when the student account has since been deleted. */
+  studentId: number | null;
+  studentFirstName: string | null;
+  studentSurname: string | null;
+  studentEmail: string | null;
+  /** Null when the listing has since been deleted. */
+  listingId: string | null;
+  listingTitle: string | null;
+  listingCity: string | null;
+  ownerType: "COMPANY" | "PRIVATE" | null;
+  companyId: number | null;
+  ownerName: string | null;
+};
+
+export type AdminApplicationListDTO = {
+  total: number;
+  page: number;
+  size: number;
+  applications: AdminApplicationRowDTO[];
+};
+
+export type AdminApplicationListParams = {
+  search?: string;
+  source?: "active" | "archived";
+  status?: string;
+  ownerType?: "COMPANY" | "PRIVATE";
+  companyId?: number;
+  sort?: "APPLIED_DESC" | "APPLIED_ASC" | "STUDENT_ASC" | "OWNER_ASC";
+  page?: number;
+  size?: number;
+};
+
+/** One row in the admin queue-membership list. */
+export type AdminQueueMembershipRowDTO = {
+  id: string;
+  studentId: number;
+  studentFirstName: string | null;
+  studentSurname: string | null;
+  studentEmail: string;
+  queueId: string;
+  queueName: string;
+  queueCity: string | null;
+  companyId: number;
+  companyName: string;
+  joinedAt: string;
+  status: string;
+  external: boolean;
+};
+
+export type AdminQueueMembershipListDTO = {
+  total: number;
+  page: number;
+  size: number;
+  memberships: AdminQueueMembershipRowDTO[];
+};
+
+export type AdminQueueMembershipListParams = {
+  search?: string;
+  companyId?: number;
+  status?: string;
+  sort?: "JOINED_DESC" | "JOINED_ASC" | "STUDENT_ASC" | "COMPANY_ASC";
+  page?: number;
+  size?: number;
+};
+
 export type AdminCityPayload = Record<string, unknown>;
 
 export type AdminAddSchoolRequest = AddSchoolRequest;

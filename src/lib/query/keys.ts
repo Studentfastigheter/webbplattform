@@ -457,6 +457,12 @@ export const qk = {
       ["admin", "statistics", "applications"] as const,
     statisticsEngagement: () => ["admin", "statistics", "engagement"] as const,
     statisticsGeography: () => ["admin", "statistics", "geography"] as const,
+    // Row-level insight lists live under the statistics prefix so the
+    // dashboard's refresh button refetches them too.
+    statisticsApplicationList: (params: Record<string, unknown>) =>
+      ["admin", "statistics", "application-list", params] as const,
+    statisticsQueueMembershipList: (params: Record<string, unknown>) =>
+      ["admin", "statistics", "queue-membership-list", params] as const,
     waitlistStats: () => ["admin", "waitlist-stats"] as const,
     areaAliases: () => ["admin", "area-aliases"] as const,
   },
