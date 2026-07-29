@@ -188,6 +188,77 @@ export type AdminWaitlistStatsDTO = {
   generatedAt?: string;
 };
 
+/** End-user KPIs for the admin Users tab. */
+export type AdminUserKpisDTO = {
+  totalAccounts: number;
+  students: number;
+  pendingQuickRegisters: number;
+  verifiedIdentity: number;
+  verifiedIdentityRatio: number;
+  /** Accounts with a login in the last 30 days; only meaningful after login stamping rolled out. */
+  activeLast30Days: number;
+};
+
+export type AdminRegistrationFunnelDTO = {
+  quickRegistersCreated: number;
+  verificationsStarted: number;
+  uniqueUsersStarted: number;
+  verificationsCompleted: number;
+  createdTrend: AdminTrendPointDTO[];
+  startedTrend: AdminTrendPointDTO[];
+  completedTrend: AdminTrendPointDTO[];
+};
+
+export type AdminVerificationOutcomesDTO = {
+  totalAttempts: number;
+  /** MATCHES, CANCELED, EXPIRED, CLASHING, PENDING and ABANDONED. */
+  outcomes: AdminCountBucketDTO[];
+  byFlow: AdminCountBucketDTO[];
+  attemptsTrend: AdminTrendPointDTO[];
+};
+
+export type AdminRegistrationMethodsDTO = {
+  students: AdminCountBucketDTO[];
+  quickRegisters: AdminCountBucketDTO[];
+};
+
+/** One row in the admin user list: a student or a pending quick-register. */
+export type AdminUserRowDTO = {
+  id: number;
+  accountType: "student" | "quick_register";
+  firstName: string | null;
+  surname: string | null;
+  email: string;
+  registrationMethod: "EMAIL" | "GOOGLE" | "FREJA" | "UNKNOWN";
+  verifiedIdentity: boolean;
+  verifiedEmail: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+export type AdminUserListDTO = {
+  total: number;
+  page: number;
+  size: number;
+  users: AdminUserRowDTO[];
+};
+
+export type AdminUserListParams = {
+  search?: string;
+  accountType?: "student" | "quick_register";
+  method?: string;
+  verified?: boolean;
+  sort?:
+    | "CREATED_DESC"
+    | "CREATED_ASC"
+    | "LAST_LOGIN_DESC"
+    | "LAST_LOGIN_ASC"
+    | "EMAIL_ASC"
+    | "EMAIL_DESC";
+  page?: number;
+  size?: number;
+};
+
 /** One row in the admin application list (live or archived/decided). */
 export type AdminApplicationRowDTO = {
   /** Numeric for active rows, UUID for archived rows. */

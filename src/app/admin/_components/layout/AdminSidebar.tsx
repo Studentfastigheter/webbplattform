@@ -85,6 +85,11 @@ const accountItems: AdminNavItem[] = [
     icon: <BarChart3Icon className="h-5 w-5" />,
   },
   {
+    name: "Users",
+    path: "/users",
+    icon: <UsersIcon className="h-5 w-5" />,
+  },
+  {
     name: "Analytics",
     path: "/analytics",
     icon: <BarChart3Icon className="h-5 w-5" />,

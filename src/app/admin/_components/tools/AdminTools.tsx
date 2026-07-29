@@ -39,6 +39,7 @@ const SECTION_COMPONENTS: Record<AdminSection, ComponentType> = {
   activities: dyn(() => import("./sections/ActivitiesForm")),
   waitlist: dyn(() => import("./sections/WaitlistDashboard")),
   statistics: dyn(() => import("./sections/StatisticsSection")),
+  users: dyn(() => import("./sections/users/UsersSection")),
   analytics: dyn(() =>
     import("./AdminAnalyticsDashboard").then((m) => ({
       default: m.AdminAnalyticsDashboard,

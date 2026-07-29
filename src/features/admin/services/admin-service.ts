@@ -29,7 +29,13 @@ import type {
   AdminQueueMembershipListDTO,
   AdminQueueMembershipListParams,
   AdminQuickRegisterStatsDTO,
+  AdminRegistrationFunnelDTO,
+  AdminRegistrationMethodsDTO,
+  AdminUserKpisDTO,
+  AdminUserListDTO,
+  AdminUserListParams,
   AdminUsersStatsDTO,
+  AdminVerificationOutcomesDTO,
   AdminWaitlistStatsDTO,
   CityDTO,
   CityDetailedDTO,
@@ -68,7 +74,7 @@ function jsonBody(value: unknown) {
 
 /** Serializes admin list params, dropping empty values. */
 function adminListQueryString(
-  params: Record<string, string | number | undefined>,
+  params: Record<string, string | number | boolean | undefined>,
 ): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -476,6 +482,30 @@ export const adminService = {
 
   getWaitlistStats: async (): Promise<AdminWaitlistStatsDTO> => {
     return apiClient<AdminWaitlistStatsDTO>("/admin/waitlist");
+  },
+
+  getUserKpis: async (): Promise<AdminUserKpisDTO> => {
+    return apiClient<AdminUserKpisDTO>("/admin/statistics/user-kpis");
+  },
+
+  getRegistrationFunnel: async (): Promise<AdminRegistrationFunnelDTO> => {
+    return apiClient<AdminRegistrationFunnelDTO>("/admin/statistics/registration-funnel");
+  },
+
+  getVerificationOutcomes: async (): Promise<AdminVerificationOutcomesDTO> => {
+    return apiClient<AdminVerificationOutcomesDTO>("/admin/statistics/verification-outcomes");
+  },
+
+  getRegistrationMethods: async (): Promise<AdminRegistrationMethodsDTO> => {
+    return apiClient<AdminRegistrationMethodsDTO>("/admin/statistics/registration-methods");
+  },
+
+  getUserList: async (
+    params: AdminUserListParams = {},
+  ): Promise<AdminUserListDTO> => {
+    return apiClient<AdminUserListDTO>(
+      `/admin/users${adminListQueryString(params)}`,
+    );
   },
 
   getApplicationList: async (

@@ -463,6 +463,15 @@ export const qk = {
       ["admin", "statistics", "application-list", params] as const,
     statisticsQueueMembershipList: (params: Record<string, unknown>) =>
       ["admin", "statistics", "queue-membership-list", params] as const,
+    // Users tab (user insights). Own prefix so its refresh button refetches
+    // exactly these without touching the statistics dashboard.
+    userInsightsAll: ["admin", "user-insights"] as const,
+    userInsightsKpis: () => ["admin", "user-insights", "kpis"] as const,
+    userInsightsFunnel: () => ["admin", "user-insights", "funnel"] as const,
+    userInsightsOutcomes: () => ["admin", "user-insights", "outcomes"] as const,
+    userInsightsMethods: () => ["admin", "user-insights", "methods"] as const,
+    userInsightsList: (params: Record<string, unknown>) =>
+      ["admin", "user-insights", "list", params] as const,
     waitlistStats: () => ["admin", "waitlist-stats"] as const,
     areaAliases: () => ["admin", "area-aliases"] as const,
   },

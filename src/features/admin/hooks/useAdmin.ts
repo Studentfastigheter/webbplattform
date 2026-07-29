@@ -61,7 +61,13 @@ import type {
   AdminQueueMembershipListDTO,
   AdminQueueMembershipListParams,
   AdminQuickRegisterStatsDTO,
+  AdminRegistrationFunnelDTO,
+  AdminRegistrationMethodsDTO,
+  AdminUserKpisDTO,
+  AdminUserListDTO,
+  AdminUserListParams,
   AdminUsersStatsDTO,
+  AdminVerificationOutcomesDTO,
   AdminWaitlistStatsDTO,
   CityDTO,
   CityDetailedDTO,
@@ -262,6 +268,47 @@ export function useAdminGeographyStatistics() {
     queryKey: qk.admin.statisticsGeography(),
     queryFn: () => adminService.getGeographyStatistics(),
     staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminUserKpis() {
+  return useQuery<AdminUserKpisDTO>({
+    queryKey: qk.admin.userInsightsKpis(),
+    queryFn: () => adminService.getUserKpis(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminRegistrationFunnel() {
+  return useQuery<AdminRegistrationFunnelDTO>({
+    queryKey: qk.admin.userInsightsFunnel(),
+    queryFn: () => adminService.getRegistrationFunnel(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminVerificationOutcomes() {
+  return useQuery<AdminVerificationOutcomesDTO>({
+    queryKey: qk.admin.userInsightsOutcomes(),
+    queryFn: () => adminService.getVerificationOutcomes(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminRegistrationMethods() {
+  return useQuery<AdminRegistrationMethodsDTO>({
+    queryKey: qk.admin.userInsightsMethods(),
+    queryFn: () => adminService.getRegistrationMethods(),
+    staleTime: STALE_30_SECONDS,
+  });
+}
+
+export function useAdminUserList(params: AdminUserListParams) {
+  return useQuery<AdminUserListDTO>({
+    queryKey: qk.admin.userInsightsList(params),
+    queryFn: () => adminService.getUserList(params),
+    staleTime: STALE_30_SECONDS,
+    placeholderData: (previous) => previous,
   });
 }
 

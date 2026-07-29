@@ -28,6 +28,7 @@ export const ADMIN_TABS = [
   "activities",
   "waitlist",
   "statistics",
+  "users",
   "analytics",
 ] as const;
 
@@ -83,6 +84,12 @@ export const ADMIN_SECTION_DETAILS = {
     title: "Statistics",
     description:
       "Platform-wide KPI dashboard: users, quick registers, listings, applications, engagement, and geography.",
+    badge: "Reporting",
+  },
+  users: {
+    title: "Users",
+    description:
+      "End-user insights: registration methods, verification funnel, Freja outcomes, and a searchable account list.",
     badge: "Reporting",
   },
   analytics: {
