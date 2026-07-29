@@ -95,6 +95,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable}`}>
+      <head>
+        {/* Google Identity Services (inloggningsknappen) laddar både skript
+            och iframe från accounts.google.com först efter React-mount —
+            förvärmda DNS/TLS-handskakningar kapar sekunder på långsamma nät. */}
+        <link rel="preconnect" href="https://accounts.google.com" />
+      </head>
       <body
         className="min-h-svh overflow-x-clip bg-background font-sans text-foreground antialiased"
       >

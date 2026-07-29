@@ -78,7 +78,15 @@ const nextConfig: NextConfig = {
   ],
 
   images: {
-    formats: ["image/avif", "image/webp"],
+    // Endast WebP: AVIF-enkodning är flera gånger CPU-tyngre, och på Cloud
+    // Run är bildcachen per instans och flyktig — varje ny instans betalar
+    // om enkodningen. Uppmätt 2026-07-29: ~1-1.4s per kall AVIF-optimering
+    // av stadsbilderna (externa mångmegabyte-original).
+    formats: ["image/webp"],
+    // Stadsfoton och annonsbilder är i praktiken statiska — låt webbläsare
+    // och mellanliggande cachar behålla optimerade varianter länge i stället
+    // för att träffa vår flyktiga instanscache igen.
+    minimumCacheTTL: 2_678_400, // 31 dygn
     // TILLFÄLLIGT: backend lagrar i vissa fall externa bild-URL:er, så alla
     // värdar måste tillåtas tills backend normaliserat samtliga bilder till
     // sin egen media-URL. Backendens mediakatalog står först (den enda som

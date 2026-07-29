@@ -112,7 +112,6 @@ export default function EntityHero({
             className="object-cover"
             priority
             sizes="(min-width: 1024px) 896px, 100vw"
-            unoptimized
             onError={() => setBrokenBanner(resolvedBanner)}
           />
         ) : (
@@ -144,7 +143,6 @@ export default function EntityHero({
                     width={144}
                     height={144}
                     className="block h-auto max-h-full w-auto max-w-full object-contain"
-                    unoptimized
                     onError={() => setBrokenAvatar(resolvedAvatar)}
                   />
                 </div>
@@ -155,7 +153,6 @@ export default function EntityHero({
                   width={144}
                   height={144}
                   className="h-full w-full object-cover"
-                  unoptimized={false}
                   onError={() => setBrokenAvatar(resolvedAvatar)}
                 />
               )

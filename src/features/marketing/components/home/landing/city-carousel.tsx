@@ -29,7 +29,6 @@ function CityCarouselCard({ city }: { city: CityCarouselItem }) {
     <CityCardMedia
       cityName={name}
       imageUrl={city.imageUrl}
-      unoptimized
       sizes="(max-width: 640px) 230px, (max-width: 1024px) 280px, 320px"
       imageClassName="transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.03]"
     />
