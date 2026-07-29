@@ -1,40 +1,9 @@
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 
-import { locales, localizePathname } from "@/i18n/config";
-import {
-  isPlatformLaunched,
-  prelaunchPublicSitePathnames,
-} from "@/lib/platform-launch";
 import { isPrivateIndexingHost, siteConfig } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
-
-const prelaunchBlockedPaths = [
-  "/admin",
-  "/account",
-  "/all-queues",
-  "/api/",
-  "/applications",
-  "/cities",
-  "/housing",
-  "/knowledge-bank",
-  "/login",
-  "/messages",
-  "/my-listings",
-  "/notifications",
-  "/offers",
-  "/portal",
-  "/queues",
-  "/register",
-  "/saved",
-];
-
-function localizedRobotsPaths(paths: readonly string[]) {
-  return paths.flatMap((path) =>
-    locales.map((locale) => localizePathname(path, locale))
-  );
-}
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const headerStore = await headers();
@@ -47,25 +16,6 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
         allow: "/",
         disallow: ["/api/"],
       },
-    };
-  }
-
-  if (!isPlatformLaunched()) {
-    return {
-      rules: {
-        userAgent: "*",
-        allow: [
-          ...localizedRobotsPaths(prelaunchPublicSitePathnames),
-          "/_next/static/",
-          "/_next/image/",
-          "/apple-touch-icon.png",
-          "/campuslyan-og.png",
-          "/favicon.ico",
-          "/site.webmanifest",
-        ],
-        disallow: localizedRobotsPaths(prelaunchBlockedPaths),
-      },
-      sitemap: `${siteConfig.url}/sitemap.xml`,
     };
   }
 

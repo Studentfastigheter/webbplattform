@@ -10,7 +10,6 @@ import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocalizedLink as Link } from "@/components/i18n/LocalizedLink";
 import { useI18n } from "@/i18n/I18nProvider";
 import { localizedText } from "@/i18n/text";
-import { isPlatformLaunched } from "@/lib/platform-launch";
 import {
   MobileNav,
   MobileNavHeader,
@@ -27,12 +26,11 @@ type NavItem = NavbarItem;
 export default function SiteHeader() {
   const { user, logout, isLoading } = useAuth();
   const { locale, localizedHref, t } = useI18n();
-  const platformLaunched = isPlatformLaunched();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const currentUser = platformLaunched ? user : null;
+  const currentUser = user;
   const userType = currentUser?.accountType;
   const isQuickRegister = userType === "quick_register";
   const roleLabel =
@@ -46,21 +44,13 @@ export default function SiteHeader() {
   const displayName = getUserDisplayName(currentUser);
 
   const publicNavItems = useMemo<NavItem[]>(
-    () =>
-      platformLaunched
-        ? [
-            { name: t("siteHeader.nav.home"), link: localizedHref("/") },
-            { name: t("siteHeader.nav.housing"), link: localizedHref("/housing") },
-            { name: t("siteHeader.nav.allQueues"), link: localizedHref("/all-queues") },
-            { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },
-          ]
-        : [
-            { name: t("siteHeader.nav.home"), link: localizedHref("/") },
-            { name: t("siteFooter.links.forBusiness"), link: localizedHref("/for-business") },
-            { name: t("siteFooter.links.ourPartners"), link: localizedHref("/partners") },
-            { name: t("siteFooter.links.about"), link: localizedHref("/about-us") },
-          ],
-    [localizedHref, platformLaunched, t],
+    () => [
+      { name: t("siteHeader.nav.home"), link: localizedHref("/") },
+      { name: t("siteHeader.nav.housing"), link: localizedHref("/housing") },
+      { name: t("siteHeader.nav.allQueues"), link: localizedHref("/all-queues") },
+      { name: t("siteHeader.nav.cities"), link: localizedHref("/cities") },
+    ],
+    [localizedHref, t],
   );
 
   const studentNavItems = useMemo<NavItem[]>(
@@ -201,7 +191,7 @@ export default function SiteHeader() {
     };
   }, [isMobileMenuOpen]);
 
-  if (platformLaunched && isLoading) {
+  if (isLoading) {
     return (
       <Navbar className="top-4 opacity-0">
         <NavBody>
@@ -234,7 +224,7 @@ export default function SiteHeader() {
 
         <div className="relative z-20 hidden items-center gap-2 xl:flex">
           <LanguageSwitcher compact />
-          {platformLaunched && !currentUser ? (
+          {!currentUser ? (
             <>
               <Link
                 href="/login"
@@ -249,7 +239,7 @@ export default function SiteHeader() {
                 {t("siteHeader.auth.createAccount")}
               </Link>
             </>
-          ) : platformLaunched && currentUser ? (
+          ) : currentUser ? (
             <>
               {isQuickRegister ? (
                 <Link
@@ -378,7 +368,7 @@ export default function SiteHeader() {
               </div>
             ))}
 
-            {platformLaunched && !currentUser ? (
+            {!currentUser ? (
               <>
                 <Link
                   href="/login"
@@ -395,7 +385,7 @@ export default function SiteHeader() {
                   {t("siteHeader.auth.createAccount")}
                 </Link>
               </>
-            ) : platformLaunched && currentUser ? (
+            ) : currentUser ? (
               <div className="mt-2 w-full border-t border-neutral-200 pt-4">
                 {isQuickRegister ? (
                   <Link

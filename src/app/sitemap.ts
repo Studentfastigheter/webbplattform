@@ -4,10 +4,6 @@ import { cityService } from "@/features/cities/services/city-service";
 import { listingService } from "@/features/listings/services/listing-service";
 import { queueService } from "@/features/queues/services/queue-service";
 import { locales, localizePathname, type Locale } from "@/i18n/config";
-import {
-  isPlatformLaunched,
-  prelaunchPublicSitePathnames,
-} from "@/lib/platform-launch";
 import { absoluteUrl, languageAlternates } from "@/lib/seo";
 import type { ListingCardDTO } from "@/types/listing";
 
@@ -94,24 +90,12 @@ function publishedListingEntries(listings: ListingCardDTO[]) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const isLaunched = isPlatformLaunched();
-  const visibleStaticRoutes = isLaunched
-    ? staticRoutes
-    : staticRoutes.filter((route) =>
-        prelaunchPublicSitePathnames.includes(
-          route.path as (typeof prelaunchPublicSitePathnames)[number]
-        )
-      );
-  const staticEntries = visibleStaticRoutes.flatMap((route) =>
+  const staticEntries = staticRoutes.flatMap((route) =>
     localizedEntries(route.path, {
       priority: route.priority,
       changeFrequency: route.changeFrequency,
     })
   );
-
-  if (!isLaunched) {
-    return staticEntries;
-  }
 
   const [cityEntries, listingEntries, companyEntries] = await Promise.all([
     resolveSitemapEntries(() => cityService.list(), (cities) =>

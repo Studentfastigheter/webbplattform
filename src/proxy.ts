@@ -10,10 +10,6 @@ import {
   stripLocaleFromPathname,
   type Locale,
 } from "@/i18n/config";
-import {
-  isPlatformLaunched,
-  isPrelaunchPublicSitePath,
-} from "@/lib/platform-launch";
 import { isPrivateIndexingHost } from "@/lib/seo";
 
 const PRIVATE_SUBDOMAIN_ROBOTS_HEADER = "noindex, nofollow, noarchive, nosnippet";
@@ -175,12 +171,6 @@ function withNoIndexHeader(response: NextResponse) {
   return response;
 }
 
-function redirectToPrelaunchHome(url: URL, locale: Locale) {
-  url.pathname = localizePathname("/", locale);
-  url.search = "";
-  return redirectWithLocale(url, locale);
-}
-
 /**
  * Serversidigt skydd för portal-/admin-ytorna: utan auth-flagg-cookien
  * skickas besökaren till inloggningen innan något sidskal renderas.
@@ -287,10 +277,6 @@ export function proxy(req: NextRequest) {
     url.pathname = "/404";
     const response = rewriteWithLocale(req, url, locale);
     return isPrivateSubdomain ? withNoIndexHeader(response) : response;
-  }
-
-  if (!isPlatformLaunched() && !isPrelaunchPublicSitePath(routingPathname)) {
-    return redirectToPrelaunchHome(url, locale);
   }
 
   if (internalLocale && !urlLocale) {
