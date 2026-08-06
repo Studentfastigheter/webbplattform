@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
+import { isValidEmail } from "@/lib/auth-error-messages";
 import { getActiveCompanyId } from "@/lib/company-access";
 import {
   type CompanyRole,
@@ -318,6 +319,16 @@ export default function UsersPage() {
     currentCompanyUser?.verified === true &&
     canRoleManageUsers(currentCompanyUser.roleDetails);
 
+  // `@Email` on the backend's RegisterRequest rejects anything that isn't a
+  // bare address — pasting "Name <address@example.com>" out of a mail client is
+  // the common way to trip it. Flag it while the field is still on screen
+  // rather than letting the save round-trip and fail. Create mode only; the
+  // email input is disabled when editing.
+  const emailIsInvalid =
+    formMode === "create" &&
+    Boolean(accountForm.email.trim()) &&
+    !isValidEmail(accountForm.email);
+
   const patchAccountForm = useCallback((patch: Partial<UserAccountFormState>) => {
     setAccountForm((current) => ({ ...current, ...patch }));
   }, []);
@@ -373,6 +384,10 @@ export default function UsersPage() {
     if (formMode === "create") {
       if (!email || !password) {
         toast.error(localizedText(locale, "E-post och lösenord krävs.", "Email and password are required."));
+        return;
+      }
+      if (!isValidEmail(email)) {
+        toast.error(localizedText(locale, "Ange en giltig e-postadress.", "Enter a valid email address."));
         return;
       }
       if (password.length < 6) {
@@ -650,8 +665,19 @@ export default function UsersPage() {
                   type="email"
                   value={accountForm.email}
                   disabled={formMode === "edit"}
+                  aria-invalid={emailIsInvalid || undefined}
+                  aria-describedby={emailIsInvalid ? "company-user-email-error" : undefined}
                   onChange={(event) => patchAccountForm({ email: event.target.value })}
                 />
+                {emailIsInvalid ? (
+                  <p id="company-user-email-error" className="text-xs font-medium text-red-600">
+                    {localizedText(
+                      locale,
+                      "Ange en giltig e-postadress, till exempel namn@foretag.se.",
+                      "Enter a valid email address, for example name@company.com."
+                    )}
+                  </p>
+                ) : null}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="company-user-phone">{localizedText(locale, "Telefon", "Phone")}</Label>
@@ -726,7 +752,7 @@ export default function UsersPage() {
             <Button
               type="button"
               isLoading={savingAccount}
-              isDisabled={rolesLoading || roles.length === 0}
+              isDisabled={rolesLoading || roles.length === 0 || emailIsInvalid}
               onPress={handleSaveAccount}
             >
               {formMode === "create"
